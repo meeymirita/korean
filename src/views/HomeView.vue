@@ -6,7 +6,7 @@ import ContactBar from "@/components/ContactBar.vue";
 
 <template>
   <div class="hero">
-    <img src="/frieren.png" alt="">
+    <img src="/frieren.webp" alt="">
     <div class="shade"></div>
 
     <side-bar/>

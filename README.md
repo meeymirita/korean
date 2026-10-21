@@ -28,7 +28,7 @@ npm run preview
 ## Структура
 
 ```
-public/              картинки (frieren.png, dona.jpg, Vue.png)
+public/              картинки (frieren.webp, dona.jpg, Vue.png)
 src/
   assets/base.css    глобальные стили
   components/
