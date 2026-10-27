@@ -1,0 +1,648 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Хлебушек — корейский</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap');
+:root{--bg:#fff;--card:#fff;--text:#111;--mut:#666;--acc:#111;--acc7:#111;--acc6:#333;--acc1:#eee;--on:#fff;--blue:#111;--pink:#111;--orange:#111;--purple:#111;--green:#111;--red:#111;--rule:rgba(0,0,0,.35);--soft:#f2f2f2;--hl:#ddd;--warn:#f2f2f2;--tipb:#f2f2f2;--okb:#f2f2f2;--hf:'Archivo','Noto Sans KR',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Archivo','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;line-height:1.5;font-size:15px}
+button{font-family:inherit}
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;align-self:start;height:100vh;border-right:2px solid var(--text);display:flex;flex-direction:column;overflow-y:auto}
+.logo{padding:24px 24px 30px;border-bottom:2px solid var(--text);font-family:var(--hf);font-weight:900;font-size:26px;letter-spacing:-.02em;line-height:1.1}
+.logo small{display:block;font-family:inherit;font-weight:400;font-size:13px;letter-spacing:0;color:var(--mut);margin-top:4px}
+.tab{display:grid;grid-template-columns:28px 1fr auto;align-items:center;border:0;border-bottom:2px solid var(--text);background:transparent;color:var(--text);padding:14px 24px;font:inherit;font-size:16px;font-weight:500;cursor:pointer;text-align:left}
+.tab:hover{background:var(--acc1)}
+.tab.on{background:var(--acc);color:var(--on);font-weight:700}
+.tab .ic{font-size:12px;font-variant-numeric:tabular-nums}
+.tab .ct{font-size:13px}
+.side .foot{margin-top:auto;padding:24px;font-size:12px;color:var(--mut)}
+section[hidden]{display:none}
+.wrap{max-width:1200px;margin:0 auto;padding:32px 32px 64px}
+header.h{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;padding-bottom:24px;border-bottom:2px solid var(--text);text-align:left}
+header.h .kk{font-size:13px;font-weight:600;color:var(--acc7);text-transform:uppercase;letter-spacing:.08em}
+header.h h1{margin:8px 0 0;font-family:var(--hf);font-weight:900;font-size:clamp(36px,6vw,64px);line-height:1;letter-spacing:-.03em;color:var(--text)}
+header.h .big{font-family:var(--hf);font-weight:800;font-size:clamp(36px,6vw,64px);line-height:1;color:var(--acc)}
+.sub{color:var(--mut);font-size:14px;margin-top:10px}
+.bar{position:sticky;top:0;background:var(--bg);padding:24px 0 0;z-index:5}
+.sb{display:flex;align-items:stretch;background:var(--card);border:2px solid var(--text)}
+.sb input{flex:1;border:0;outline:0;background:transparent;color:var(--text);font-size:18px;padding:16px 20px;min-width:0;font-family:inherit}
+.sb input::placeholder{color:var(--mut)}
+.sb button{border:0;border-left:2px solid var(--text);background:transparent;color:var(--text);padding:0 20px;cursor:pointer;font-size:14px;font-weight:600}
+.sb button:hover{background:var(--acc1)}
+.sb button#rnd,.sb button#x+button{background:var(--acc);color:var(--on)}
+.sb button#rnd:hover{background:var(--acc6)}
+.meta{display:flex;justify-content:space-between;gap:8px 16px;color:var(--mut);font-size:13px;margin:12px 0 0;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.chip{border:2px solid var(--text);background:transparent;color:var(--text);padding:3px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.chip:hover{background:var(--acc1)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.tb{border-top:2px solid var(--text);margin-top:24px}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,2fr);gap:16px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--rule);font-size:15px}
+.row:hover{background:var(--acc1)}
+.row.h{background:transparent!important;border-bottom:2px solid var(--text);padding:10px 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.row .n{color:var(--acc7);font-size:13px;font-variant-numeric:tabular-nums}
+.row .k{font-size:22px;font-weight:700}
+.row .rd{color:var(--mut);font-size:15px}
+.row .tr{font-size:16px}
+.row .se{color:var(--mut);font-size:15px}
+@media(max-width:560px){.row{grid-template-columns:28px 1fr;gap:4px 10px}.row .k{grid-column:2}.row .rd{grid-column:2}.row .tr,.row .se{grid-column:2}.row.h{display:none}}
+mark{background:var(--hl);color:inherit;padding:0 2px}
+.empty{padding:32px 0;font-size:18px}.empty .big{display:none}
+.tip0{border-left:4px solid var(--acc);background:var(--acc1);padding:10px 14px;font-size:13px;margin-top:16px}
+/* sentences */
+.sc{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:baseline;padding:20px 0;border-bottom:1px solid var(--rule)}
+.sc .ko{font-size:24px;font-weight:700;line-height:1.3}.sc .sw{font-size:15px}.sc .sw b{color:var(--acc7)}.sc .sw i{color:var(--acc7);font-style:normal;font-weight:700;margin-right:6px}
+#out2{border-top:2px solid var(--text);margin-top:24px}
+@media(max-width:640px){.sc{grid-template-columns:1fr;gap:4px}}
+/* grammar grid */
+.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));margin-top:32px;border-top:2px solid var(--text);border-left:2px solid var(--text)}
+.gc{display:flex;flex-direction:column;gap:12px;padding:24px;min-height:200px;border:0;border-right:2px solid var(--text);border-bottom:2px solid var(--text);background:var(--bg);color:inherit;font:inherit;cursor:pointer;text-align:left}
+.gc:hover{background:var(--acc1)}
+.gc h3{margin:0;font-family:var(--hf);font-size:34px;font-weight:900;color:var(--acc);line-height:1.1;letter-spacing:-.01em}
+.gc .rn{font-size:15px;font-weight:600}
+.gc .d{font-size:14px;line-height:1.45;color:var(--mut)}
+.gc .ft{margin-top:auto;padding-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;font-size:11px;border:1px solid var(--acc);color:var(--acc7);padding:1px 9px}
+.pill.l{background:#ddd;border-color:transparent;color:#111}.pill.s{background:var(--okb);border-color:transparent;color:var(--green)}.pill.n{background:var(--warn);border-color:transparent;color:var(--orange)}
+/* modal */
+.gm{position:fixed;inset:0;background:color-mix(in srgb,var(--text) 55%,transparent);display:flex;align-items:center;justify-content:center;z-index:50;padding:24px}
+.gm[hidden]{display:none}
+.gp{background:var(--bg);border:2px solid var(--text);width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(42,29,34,.3);overflow:hidden}
+.gh{display:flex;align-items:flex-start;gap:0;padding:0;border-bottom:2px solid var(--text)}
+.gh .tt{flex:1;padding:16px 24px 14px}
+.gh h2{margin:0;font-family:var(--hf);font-weight:900;font-size:40px;color:var(--acc);line-height:1.1}
+.gh .rn{font-weight:600;font-size:15px;margin-top:4px}
+.gh .pl{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.gh button{border:0;border-left:2px solid var(--text);background:transparent;color:var(--text);width:56px;align-self:stretch;font-size:18px;font-weight:700;cursor:pointer;flex:none}
+.gh button:hover{background:var(--acc1)}
+.gb{overflow-y:auto;padding:8px 24px 28px}
+.gb p{margin:10px 0}
+.gb .rule,.gb .warn,.gb .tip,.gb .ok{padding:10px 14px;margin:14px 0;font-size:15px;border-left:4px solid}
+.gb .rule{background:var(--acc1);border-color:var(--acc);font-size:16px}
+.gb .warn{background:var(--warn);border-color:var(--orange)}
+.gb .tip{background:var(--tipb);border-color:var(--purple)}
+.gb .ok{background:var(--okb);border-color:var(--green)}
+.gb .pron{color:var(--mut);font-size:14px;margin:10px 0}.gb .pron:before{content:"🔊 "}
+.gb .formula{font-size:18px;font-weight:700;text-align:center;background:var(--card);border:2px solid var(--text);padding:12px;margin:14px 0}
+.gb h4{margin:20px 0 6px;font-size:12px;font-weight:700;color:var(--acc7);text-transform:uppercase;letter-spacing:.08em}
+.exl{border:2px solid var(--text);background:var(--card);margin:8px 0}
+.exl div{display:flex;justify-content:space-between;gap:12px;padding:9px 14px;border-bottom:1px solid var(--rule);font-size:15px}
+.exl div:last-child{border-bottom:0}.exl b{font-size:19px}.exl div>span{color:var(--mut);text-align:right;font-size:14px}
+table.t{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;background:var(--card);border:2px solid var(--text)}
+table.t th{background:var(--acc1);text-align:left;padding:7px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--text)}
+table.t td{padding:7px 10px;border-top:1px solid var(--rule);vertical-align:top}
+.c-o{color:var(--text);font-weight:800;text-decoration:underline;text-underline-offset:3px}.c-b{color:var(--blue);font-weight:700}.c-g{color:var(--green);font-weight:700}.c-p{color:var(--purple);font-weight:700}.c-r{color:var(--red);font-weight:700}.c-k{color:var(--pink);font-weight:700}
+/* cheat / generic cards */
+.card{background:var(--card);border:2px solid var(--text);padding:16px 20px;margin-top:16px}
+.card h3{margin:0 0 8px;font-family:var(--hf);font-size:18px;font-weight:800;color:var(--acc7)}
+.fm{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:16px}
+.fm .card{margin:0}.fm .card b.n{color:var(--acc);font-size:20px}
+h2.st{margin:32px 0 0;padding-top:16px;border-top:2px solid var(--text);font-family:var(--hf);font-size:24px;font-weight:800}
+/* lessons */
+.ls{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));margin-top:32px;border-top:2px solid var(--text);border-left:2px solid var(--text)}
+.lc{padding:20px;border-right:2px solid var(--text);border-bottom:2px solid var(--text);border-top:6px solid var(--acc)}
+.lc:hover{background:var(--acc1)}
+.lc.e{opacity:.6}.lc h3{margin:0;font-size:16px;font-weight:800}.lc h3 b{color:var(--acc);margin-right:6px;font-size:22px}
+.lc .dt{font-size:12px;color:var(--mut);margin-top:2px}.lc ul{margin:10px 0 0;padding-left:18px;font-size:13.5px}
+/* talk */
+details.dg{border:2px solid var(--text);background:var(--card);margin-top:16px}
+details.dg summary{cursor:pointer;padding:14px 20px;font-weight:800;font-size:17px;list-style:none;display:flex;gap:8px;align-items:center}
+details.dg summary:hover{background:var(--acc1)}
+details.dg summary::-webkit-details-marker{display:none}
+details.dg summary:after{content:"+";margin-left:auto;font-size:22px;color:var(--acc)}
+details.dg[open] summary:after{content:"−"}
+details.dg summary .ct{margin-left:auto;margin-right:10px;font-size:12px;color:var(--mut);font-weight:400}
+details.dg[open] summary{border-bottom:2px solid var(--text)}
+.ph{padding:10px 20px;border-bottom:1px solid var(--rule)}.ph:last-child{border-bottom:0}
+.ph b{font-size:19px}.ph span{color:var(--mut);margin-left:10px;font-size:14px}.ph small{display:block;color:var(--orange);font-size:12px;margin-top:2px}
+.dl{padding:14px 20px;font-size:16px}.dl p{margin:2px 0}.dl i{display:block;color:var(--mut);font-size:13px;margin-top:8px}
+/* hangul */
+.hg{overflow-x:auto;margin-top:24px}
+.hg table{border-collapse:collapse;font-size:15px;background:var(--card);min-width:720px;border:2px solid var(--text)}
+.hg th,.hg td{border:1px solid var(--rule);padding:4px;text-align:center}
+.hg th{background:var(--acc1);font-size:13px}
+.hg td b{display:block;font-size:19px;line-height:1.1}.hg td i{font-style:normal;font-size:11px;color:var(--mut)}
+pre{background:var(--soft);padding:10px 12px;overflow-x:auto;font-size:13px;font-family:ui-monospace,'Noto Sans KR',monospace;margin:8px 0;border-left:4px solid var(--acc)}
+/* numbers */
+.nm{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));margin-top:12px;border-top:2px solid var(--text);border-left:2px solid var(--text)}
+.nm div{padding:16px;border-right:2px solid var(--text);border-bottom:2px solid var(--text);min-height:100px;display:flex;flex-direction:column;gap:6px}
+.nm div:hover{background:var(--acc1)}
+.nm b{display:block;font-size:30px;font-weight:900;line-height:1.1;color:var(--text);margin-top:auto}.nm span{font-size:13px;color:var(--mut)}
+/* flashcards */
+.fc{margin:32px 0 0;min-height:360px;background:var(--card);border:2px solid var(--text);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px;cursor:pointer;padding:32px;text-align:left}
+.fc:hover{background:var(--acc1)}
+.fc .big{font-size:clamp(56px,10vw,110px);font-weight:900;line-height:1;letter-spacing:-.02em;color:var(--text)}
+.fc .hint{color:var(--mut);font-size:13px}
+.fc .ans{display:none;font-size:20px}.fc .ans b{display:block;font-size:34px;font-weight:800;color:var(--text);margin-top:4px}.fc.open .ans{display:block}.fc.open .hint{display:none}
+.fcb{display:flex;gap:0;margin-top:16px;flex-wrap:wrap}
+.fcb button,.fcb select{border:2px solid var(--text);background:transparent;color:var(--text);padding:14px 24px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.fcb button{background:var(--acc);color:var(--on);border-color:var(--acc)}.fcb button:hover{background:var(--acc6)}
+@media(max-width:760px){.app{grid-template-columns:1fr}.side{position:sticky;top:0;height:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:2px solid var(--text);background:var(--bg);z-index:10}.tab{white-space:nowrap;padding:12px 14px;border-bottom:0;border-right:2px solid var(--text);grid-template-columns:auto auto;gap:8px}.tab .ct,.logo,.side .foot{display:none}.bar{top:50px}.wrap{padding:20px 16px 48px}.gm{padding:0;align-items:flex-end}.gp{max-height:94vh}header.h .big{display:none}}
+</style></head><body><div class="app"><nav class="side" id="side">
+<div class="logo">Хлебушек<small>서울대 한국어+ 1A</small></div>
+<button class="tab on" data-t="words"><span class="ic">01</span>Слова<span class="ct" id="wc"></span></button>
+<button class="tab" data-t="gram"><span class="ic">02</span>Грамматика<span class="ct" id="gc2"></span></button>
+<button class="tab" data-t="cheat"><span class="ic">03</span>Шпаргалка</button>
+<button class="tab" data-t="talk"><span class="ic">04</span>Разговорник</button>
+<button class="tab" data-t="hangul"><span class="ic">05</span>Хангыль</button>
+<button class="tab" data-t="read"><span class="ic">06</span>Чтение</button>
+<button class="tab" data-t="sent"><span class="ic">07</span>Примеры</button>
+<button class="tab" data-t="num"><span class="ic">08</span>Числа</button>
+<button class="tab" data-t="rev"><span class="ic">09</span>Повторение</button>
+<div class="foot">서울대 한국어+ 1A<br>данные из Notion · 27.10.2026</div>
+</nav><main>
+
+<section id="t-words"><div class="wrap">
+<header class="h"><div><div class="kk">01 — Словарь</div><h1>Слова</h1><div class="sub">словарь корейского · <span id="wcount"></span></div></div><div class="big" id="wbig"></div></header>
+<div class="bar"><div class="sb"><input id="q" type="text" autocomplete="off" placeholder="ем, есть, 먹다, мокта…" autofocus><button id="x" title="Очистить">✕</button><button id="rnd" title="Случайное слово">🎲</button></div>
+<div class="meta"><span id="cnt"></span><span>ищет по переводу, корейскому, чтению, примеру</span></div>
+<div class="chips" id="wchips"></div></div>
+<div id="out"></div></div></section>
+
+<section id="t-gram" hidden><div class="wrap">
+<header class="h"><div><div class="kk">02 — Правила</div><h1>Грамматика</h1><div class="sub">нажми на карточку — откроется объяснение</div></div></header>
+<div class="chips" id="gchips"></div>
+<div class="gg" id="ggrid"></div></div></section>
+
+<section id="t-cheat" hidden><div class="wrap"><header class="h"><div><div class="kk">03 — Формулы</div><h1>Шпаргалка</h1><div class="sub">частицы, формулы, шаблоны предложений</div></div></header><div id="cheatbody"></div></div></section>
+
+
+<section id="t-talk" hidden><div class="wrap"><header class="h"><div><div class="kk">04 — Фразы</div><h1>Разговорник</h1><div class="sub">фразы из TikTok, диалоги знакомства, слэнг</div></div></header><div id="talkbody"></div></div></section>
+
+<section id="t-hangul" hidden><div class="wrap"><header class="h"><div><div class="kk">05 — Письмо</div><h1>Хангыль</h1><div class="sub">таблица слогов, как читать и писать</div></div></header><div id="hanbody"></div></div></section>
+<section id="t-read" hidden><div class="wrap"><header class="h"><div><div class="kk">06 — Чтение</div><h1>Правила чтения</h1><div class="sub">как звучит ㄹ, что происходит между гласными, 받침 и другие случаи</div></div></header><div id="readbody"></div></div></section>
+
+<section id="t-sent" hidden><div class="wrap">
+<header class="h"><div><div class="kk">07 — Из словаря</div><h1>Примеры предложений</h1><div class="sub">все предложения из словаря</div></div></header>
+<div class="bar"><div class="sb"><input id="q2" type="text" autocomplete="off" placeholder="поиск по предложению, слову или переводу"><button id="x2">✕</button></div><div class="meta"><span id="cnt2"></span></div></div>
+<div id="out2"></div></div></section>
+
+<section id="t-num" hidden><div class="wrap"><header class="h"><div><div class="kk">08 — Счёт</div><h1>Числа и счёт</h1><div class="sub">цены, количество, счётные слова</div></div></header><div id="numbody"></div></div></section>
+
+<section id="t-rev" hidden><div class="wrap">
+<header class="h"><div><div class="kk">09 — Карточки</div><h1>Повторение</h1><div class="sub">случайная карточка — нажми, чтобы увидеть ответ</div></div></header>
+<div class="fcb"><select id="fsel"></select></div>
+<div class="fc" id="fc"><div class="big" id="fk"></div><div class="hint">нажми, чтобы открыть</div><div class="ans" id="fa"></div></div>
+<div class="fcb"><button id="fn">Следующее →</button></div></div></section>
+</main></div>
+
+<div class="gm" id="gm" hidden><div class="gp"><div class="gh"><div class="tt"><h2 id="gt"></h2><div class="rn" id="gr"></div><div class="pl" id="gpl"></div></div><button id="gprev" title="Предыдущая">←</button><button id="gnext" title="Следующая">→</button><button id="gx" title="Закрыть">✕</button></div><div class="gb" id="gbody"></div></div></div>
+
+<script>
+const D=[{"n": 1, "k": "사람", "r": "сарам", "t": "человек", "s": "안녕하세요, 저는 사람이에요."}, {"n": 2, "k": "친구", "r": "чингу", "t": "друг", "s": "친구가 학교에 있어요."}, {"n": 3, "k": "아이", "r": "аи", "t": "ребенок", "s": "아이가 공원에 있어요."}, {"n": 4, "k": "여자", "r": "ёджа", "t": "женщина", "s": "저 여자는 제 친구예요."}, {"n": 5, "k": "학생", "r": "хаксен", "t": "ученик", "s": "저는 학생이에요."}, {"n": 6, "k": "선생님", "r": "сонсенним", "t": "учитель", "s": "선생님이 교실에 있어요."}, {"n": 7, "k": "나무", "r": "наму", "t": "дерево", "s": "공원에 나무가 많아요."}, {"n": 8, "k": "바다", "r": "бада", "t": "море", "s": "바다가 커요."}, {"n": 9, "k": "엄마", "r": "омма", "t": "мама", "s": "엄마는 부엌에 있어요."}, {"n": 10, "k": "아빠", "r": "аппа", "t": "папа", "s": "아빠는 회사에 가요."}, {"n": 11, "k": "형", "r": "хён", "t": "старший брат", "s": "형은 대학생이에요."}, {"n": 12, "k": "가족", "r": "каджок", "t": "семья", "s": "우리 가족은 네 명이에요."}, {"n": 13, "k": "꽃", "r": "ккот", "t": "цветок", "s": "꽃이 예뻐요."}, {"n": 14, "k": "산", "r": "сан", "t": "гора", "s": "산이 높아요."}, {"n": 15, "k": "하늘", "r": "ханыль", "t": "небо", "s": "하늘이 맑아요."}, {"n": 16, "k": "눈", "r": "нун", "t": "снег", "s": "눈이 와요."}, {"n": 17, "k": "문", "r": "мун", "t": "дверь", "s": "문이 커요."}, {"n": 18, "k": "비", "r": "пи", "t": "дождь", "s": "비가 와요."}, {"n": 19, "k": "집", "r": "чип", "t": "дом", "s": "집에 가요."}, {"n": 20, "k": "의자", "r": "ыичжа", "t": "стул", "s": "의자가 작아요."}, {"n": 21, "k": "책상", "r": "чхексан", "t": "стол", "s": "책상이 커요."}, {"n": 22, "k": "물", "r": "муль", "t": "вода", "s": "물을 마셔요."}, {"n": 23, "k": "밥", "r": "пап", "t": "еда (рис)", "s": "저는 밥을 먹어요."}, {"n": 24, "k": "우유", "r": "ую", "t": "молоко", "s": "우유가 냉장고에 있어요."}, {"n": 25, "k": "침대", "r": "чхимде", "t": "кровать", "s": "침대가 방에 있어요."}, {"n": 26, "k": "고기", "r": "коги", "t": "мясо", "s": "고기가 맛있어요."}, {"n": 27, "k": "빵", "r": "ппан", "t": "хлеб", "s": "빵이 맛있어요."}, {"n": 28, "k": "사과", "r": "сагва", "t": "яблоко", "s": "사과를 먹어요."}, {"n": 29, "k": "공원", "r": "конвон", "t": "парк", "s": "공원에 가요."}, {"n": 30, "k": "김치", "r": "кимчхи", "t": "кимчи", "s": "김치가 맛있어요."}, {"n": 31, "k": "학교", "r": "хаккё", "t": "школа", "s": "학교에 가요."}, {"n": 32, "k": "가게", "r": "каге", "t": "магазин", "s": "가게에서 물을 사요."}, {"n": 33, "k": "나라", "r": "нара", "t": "страна", "s": "나라가 커요."}, {"n": 34, "k": "병원", "r": "пёнвон", "t": "больница", "s": "병원에 가요."}, {"n": 35, "k": "개", "r": "кэ", "t": "собака", "s": "개가 귀여워요."}, {"n": 36, "k": "고양이", "r": "коянъи", "t": "кошка", "s": "고양이가 침대에 있어요."}, {"n": 37, "k": "말", "r": "маль", "t": "лошадь", "s": "말이 커요."}, {"n": 38, "k": "물고기", "r": "мульгоги", "t": "рыба", "s": "물고기가 물에 있어요."}, {"n": 39, "k": "새", "r": "сэ", "t": "птица", "s": "새가 하늘에 있어요."}, {"n": 40, "k": "구두", "r": "куду", "t": "обувь, туфли", "s": "구두가 비싸요."}, {"n": 41, "k": "다리", "r": "тари", "t": "нога, мост", "s": "다리가 아파요."}, {"n": 42, "k": "사자", "r": "саджа", "t": "лев", "s": "사자가 커요."}, {"n": 43, "k": "자주", "r": "чаджу", "t": "часто", "s": "저는 자주 커피를 마셔요."}, {"n": 44, "k": "가수", "r": "касу", "t": "певец", "s": "형은 가수예요."}, {"n": 45, "k": "나", "r": "на", "t": "я (неформальное)", "s": "나는 학생이에요."}, {"n": 46, "k": "동생", "r": "тонсэн", "t": "младший брат или сестра", "s": "동생은 학생이에요."}, {"n": 47, "k": "뭐", "r": "мво", "t": "что (вопрос. слово)", "s": "이름이 뭐예요?"}, {"n": 48, "k": "요리사", "r": "ёриса", "t": "повар", "s": "아빠는 요리사예요."}, {"n": 49, "k": "이름", "r": "ирым", "t": "имя", "s": "이름이 뭐예요?"}, {"n": 50, "k": "저", "r": "чо", "t": "я (вежливое)", "s": "저예요."}, {"n": 51, "k": "책", "r": "чек", "t": "книга", "s": "책이에요."}, {"n": 52, "k": "커피", "r": "кофи", "t": "кофе", "s": "커피예요."}, {"n": 53, "k": "회사원", "r": "хвесавон", "t": "сотрудник компании, офисный работник", "s": "아빠는 회사원이에요."}, {"n": 54, "k": "이것", "r": "игот (само по себе), игосын (с частицей 은)", "t": "это, эта вещь (иго + кот)", "s": "이것은 책이에요."}, {"n": 55, "k": "저것", "r": "чогот (само по себе), чогосын (с частицей 은)", "t": "то, та вещь (чо + кот)", "s": "저것은 꽃이에요."}, {"n": 56, "k": "남자", "r": "намджа", "t": "мужчина", "s": "남자예요?"}, {"n": 57, "k": "누구", "r": "нугу", "t": "кто (вопрос. слово)", "s": "안나 씨가 누구예요?"}, {"n": 58, "k": "어디", "r": "оди", "t": "где (вопрос. слово)", "s": "카페가 어디예요?"}, {"n": 59, "k": "언니", "r": "онни", "t": "старшая сестра (так говорит девушка)", "s": "언니가 아니에요."}, {"n": 60, "k": "여기", "r": "ёги", "t": "здесь, тут", "s": "카페가 여기예요."}, {"n": 61, "k": "일본", "r": "ильбон", "t": "Япония", "s": "일본 사람이에요."}, {"n": 62, "k": "직업", "r": "чигоп", "t": "профессия", "s": "직업이 뭐예요?"}, {"n": 63, "k": "카페", "r": "капхе", "t": "кафе", "s": "카페가 어디예요?"}, {"n": 64, "k": "누나", "r": "нуна", "t": "старшая сестра (так говорит парень)", "s": "이 사람이 누나예요?"}, {"n": 65, "k": "가끔", "r": "кагым", "t": "иногда", "s": "가끔 영화를 봐요."}, {"n": 66, "k": "같이", "r": "качи", "t": "вместе", "s": "같이 공부해요!"}, {"n": 67, "k": "금방", "r": "кымбанг", "t": "скоро, только что", "s": "금방 갈게요."}, {"n": 68, "k": "다시", "r": "таши", "t": "снова", "s": "다시 말해 주세요."}, {"n": 69, "k": "바로", "r": "паро", "t": "сразу", "s": "집에 가서 바로 잤어요."}, {"n": 70, "k": "벌써", "r": "полссэ", "t": "уже", "s": "벌써 끝났어요?"}, {"n": 71, "k": "보통", "r": "пхотон", "t": "обычно", "s": "저는 보통 7시에 일어나요."}, {"n": 72, "k": "아직", "r": "ачик", "t": "ещё, пока", "s": "아직 안 먹었어요."}, {"n": 73, "k": "항상", "r": "хангсан", "t": "всегда", "s": "그는 항상 일찍 와요."}, {"n": 74, "k": "고민", "r": "комин", "t": "переживание/раздумья", "s": "고민이 있어요."}, {"n": 75, "k": "기쁨", "r": "киппым", "t": "радость", "s": "기쁨이 느껴져요."}, {"n": 76, "k": "내일 봐", "r": "нэиль бва", "t": "увидимся завтра (казуально)", "s": "내일 봐!"}, {"n": 77, "k": "답답하다", "r": "таптапхада", "t": "смесь раздражения, беспомощности и зажатости (букв. «душный»)", "s": "답답해…"}, {"n": 78, "k": "사랑", "r": "саран", "t": "любовь", "s": "사랑해요."}, {"n": 79, "k": "선약", "r": "соняк", "t": "заранее назначенная встреча/договорённость", "s": "선약이 있어요."}, {"n": 80, "k": "슬픔", "r": "сыльпхым", "t": "грусть", "s": "슬픔이 느껴져요."}, {"n": 81, "k": "시원하다", "r": "щивонхада", "t": "облегчение (физическое или эмоциональное), букв. «освежающий»", "s": "시원해요~"}, {"n": 82, "k": "질투", "r": "чильтху", "t": "ревность, зависть", "s": "질투가 나요."}, {"n": 83, "k": "피곤해", "r": "пхигонхэ", "t": "я устал(а) (неформально)", "s": "너무 피곤해."}, {"n": 84, "k": "행복", "r": "хэнъбок", "t": "счастье", "s": "지금 행복해요."}, {"n": 85, "k": "화", "r": "хва", "t": "злость, гнев", "s": "화가 나요."}, {"n": 86, "k": "놀람", "r": "ноллам", "t": "удивление", "s": "놀람을 금하지 못했어요."}, {"n": 87, "k": "두려움", "r": "турьёум", "t": "страх", "s": "두려움을 느껴요."}, {"n": 88, "k": "부끄러움", "r": "пуккыроум", "t": "стыд, смущение", "s": "부끄러움을 느껴요."}, {"n": 89, "k": "불안", "r": "пульан", "t": "тревога, беспокойство", "s": "불안이 느껴져요."}, {"n": 90, "k": "실망", "r": "сильман", "t": "разочарование", "s": "실망이에요."}, {"n": 91, "k": "외로움", "r": "вероум", "t": "одиночество", "s": "외로움을 느껴요."}, {"n": 92, "k": "지루함", "r": "чирухам", "t": "скука", "s": "지루해요."}, {"n": 93, "k": "편안함", "r": "пхянанхам", "t": "спокойствие, умиротворение", "s": "마음이 편안해요."}, {"n": 94, "k": "러시아", "r": "росиа", "t": "Россия", "s": "러시아 사람이에요."}, {"n": 95, "k": "만나서 반가워요", "r": "маннасо пангавоё", "t": "Приятно познакомиться", "s": "안녕하세요, 만나서 반가워요."}, {"n": 96, "k": "말레이시아", "r": "маллеисиа", "t": "Малайзия", "s": "말레이시아 사람이에요."}, {"n": 97, "k": "몽골", "r": "монголь", "t": "Монголия", "s": "몽골 사람이에요."}, {"n": 98, "k": "미국", "r": "мигук", "t": "США", "s": "미국 사람이에요."}, {"n": 99, "k": "베트남", "r": "бетынам", "t": "Вьетнам", "s": "베트남 사람이에요."}, {"n": 100, "k": "브라질", "r": "пыраджиль", "t": "Бразилия", "s": "브라질 사람이에요."}, {"n": 101, "k": "어느 나라 사람이에요?", "r": "оны нара сарамиеё", "t": "Вы из какой страны? (какой национальности?)", "s": "안나 씨는 어느 나라 사람이에요?"}, {"n": 102, "k": "중국", "r": "чунгук", "t": "Китай", "s": "중국 사람이에요."}, {"n": 103, "k": "프랑스", "r": "пхырансы", "t": "Франция", "s": "프랑스 사람이에요."}, {"n": 104, "k": "한국", "r": "хангук", "t": "Корея", "s": "한국 사람이에요."}, {"n": 105, "k": "안녕하세요?", "r": "аннёнхасеё", "t": "Здравствуйте / Привет (вежливо)", "s": "안녕하세요? 저는 마리예요."}, {"n": 106, "k": "교수", "r": "кёсу", "t": "профессор", "s": "교수님은 대학교에 있어요."}, {"n": 107, "k": "라디오", "r": "радио", "t": "радио", "s": "저는 라디오를 들어요."}, {"n": 108, "k": "머리", "r": "мори", "t": "голова; волосы", "s": "머리가 아파요."}, {"n": 109, "k": "모자", "r": "моджа", "t": "шапка, шляпа", "s": "모자가 예뻐요."}, {"n": 110, "k": "바나나", "r": "банана", "t": "банан", "s": "바나나가 맛있어요."}, {"n": 111, "k": "바지", "r": "паджи", "t": "брюки, штаны", "s": "바지가 작아요."}, {"n": 112, "k": "벼", "r": "пё", "t": "рис (растение, колосья)", "s": "벼가 커요."}, {"n": 113, "k": "소", "r": "со", "t": "корова", "s": "소가 커요."}, {"n": 114, "k": "아기", "r": "аги", "t": "младенец, малыш", "s": "아기가 자요."}, {"n": 115, "k": "아버지", "r": "абоджи", "t": "папа (вежливо)", "s": "아버지는 회사원이에요."}, {"n": 116, "k": "아우", "r": "ау", "t": "младший брат/сестра", "s": "제 아우는 학생이에요."}, {"n": 117, "k": "야구", "r": "ягу", "t": "бейсбол", "s": "저는 야구를 좋아해요."}, {"n": 118, "k": "야자수", "r": "яджасу", "t": "пальма", "s": "바다에 야자수가 있어요."}, {"n": 119, "k": "어머니", "r": "омони", "t": "мама (вежливо)", "s": "어머니는 부엌에 있어요."}, {"n": 120, "k": "오", "r": "о", "t": "пять (число)", "s": "오 층에 가요."}, {"n": 121, "k": "오이", "r": "ои", "t": "огурец", "s": "오이가 냉장고에 있어요."}, {"n": 122, "k": "요가", "r": "ёга", "t": "йога", "s": "저는 요가를 해요."}, {"n": 123, "k": "요리", "r": "ёри", "t": "готовка, кулинария", "s": "엄마는 요리를 좋아해요."}, {"n": 124, "k": "유리", "r": "юри", "t": "стекло", "s": "유리가 깨끗해요."}, {"n": 125, "k": "이", "r": "и", "t": "зуб", "s": "이가 아파요."}, {"n": 126, "k": "이야기", "r": "ияги", "t": "разговор, история", "s": "저는 친구와 이야기해요."}, {"n": 127, "k": "지도", "r": "чидо", "t": "карта", "s": "지도가 책상 위에 있어요."}, {"n": 128, "k": "지하", "r": "чиха", "t": "подземный (напр. 지하철 — метро)", "s": "지하에 식당이 있어요."}, {"n": 129, "k": "허리", "r": "хори", "t": "поясница, талия", "s": "허리가 아파요."}, {"n": 130, "k": "혀", "r": "хё", "t": "язык (орган во рту)", "s": "혀가 아파요."}, {"n": 131, "k": "휴지", "r": "хюджи", "t": "туалетная бумага, салфетка", "s": "휴지가 화장실에 있어요."}, {"n": 132, "k": "가다", "r": "када", "t": "идти / ехать", "s": "빵은 집에 가요."}, {"n": 133, "k": "공부하다", "r": "конбухада", "t": "учить / заниматься", "s": "형은 한국어를 공부해요."}, {"n": 134, "k": "먹다", "r": "мокта", "t": "есть / кушать", "s": "친구는 사과를 먹어요."}, {"n": 135, "k": "읽다", "r": "ильда", "t": "читать", "s": "저는 책을 읽어요."}, {"n": 136, "k": "좋아하다", "r": "чоахада", "t": "любить / нравиться (с частицей 을/를)", "s": "미라는 커피를 좋아해요."}, {"n": 137, "k": "느리다", "r": "нырида", "t": "медленный", "s": "버스가 느려요."}, {"n": 138, "k": "덥다", "r": "топта", "t": "жарко", "s": "오늘 더워요."}, {"n": 139, "k": "듣다", "r": "тыта", "t": "слушать", "s": "저는 음악을 들어요."}, {"n": 140, "k": "많다", "r": "манта", "t": "много", "s": "사람이 많아요."}, {"n": 141, "k": "말하다", "r": "мальхада", "t": "говорить", "s": "선생님이 말해요."}, {"n": 142, "k": "멀다", "r": "мольда", "t": "далеко", "s": "학교가 멀어요."}, {"n": 143, "k": "무엇", "r": "муот", "t": "что (полная форма от 뭐)", "s": "이것은 무엇이에요?"}, {"n": 144, "k": "보다", "r": "пода", "t": "смотреть, видеть", "s": "저는 영화를 봐요."}, {"n": 145, "k": "사다", "r": "сада", "t": "покупать", "s": "저는 빵을 사요."}, {"n": 146, "k": "살다", "r": "сальда", "t": "жить, проживать", "s": "저는 서울에 살아요."}, {"n": 147, "k": "서울", "r": "соуль", "t": "Сеул (город)", "s": "서울에 가요."}, {"n": 148, "k": "앉다", "r": "анта", "t": "сидеть", "s": "의자에 앉아요."}, {"n": 149, "k": "오늘", "r": "онъыль", "t": "сегодня", "s": "오늘 학교에 가요."}, {"n": 150, "k": "좋다", "r": "чота", "t": "хороший / нравиться", "s": "날씨가 좋아요."}, {"n": 151, "k": "지루하다", "r": "чирухада", "t": "скучно", "s": "영화가 지루해요."}, {"n": 152, "k": "직장", "r": "чикчанъ", "t": "работа, место работы", "s": "제 직장은 서울에 있어요."}, {"n": 153, "k": "매일", "r": "мэиль", "t": "каждый день", "s": "저는 매일 커피를 마셔요."}, {"n": 154, "k": "모르다", "r": "морыда", "t": "не знать", "s": "저는 몰라요."}, {"n": 155, "k": "숙제", "r": "сукче", "t": "домашнее задание", "s": "숙제가 많아요."}, {"n": 156, "k": "쓰다", "r": "ссыда", "t": "писать", "s": "저는 일기를 써요."}, {"n": 157, "k": "안", "r": "ан", "t": "частица отрицания («не»)", "s": "저는 커피를 안 마셔요."}, {"n": 158, "k": "알다", "r": "альда", "t": "знать", "s": "저는 그 사람을 알아요."}, {"n": 159, "k": "여러분", "r": "ёробун", "t": "вы все, ребята (вежливое обращение к группе)", "s": "여러분, 안녕하세요!"}, {"n": 160, "k": "운동하다", "r": "ундонъхада", "t": "заниматься спортом", "s": "저는 공원에서 운동해요."}, {"n": 161, "k": "음악", "r": "ымак", "t": "музыка", "s": "음악이 좋아요."}, {"n": 162, "k": "일기", "r": "ильги", "t": "дневник", "s": "저는 매일 일기를 써요."}, {"n": 163, "k": "지금", "r": "чигым", "t": "сейчас", "s": "지금 공부해요."}, {"n": 164, "k": "청소하다", "r": "чхонсохада", "t": "убираться", "s": "저는 방을 청소해요."}, {"n": 165, "k": "피곤하다", "r": "пхигонхада", "t": "усталый", "s": "오늘 피곤해요."}, {"n": 166, "k": "노래", "r": "норэ", "t": "песня", "s": "저는 노래를 들어요."}, {"n": 167, "k": "라면", "r": "рамыон", "t": "рамен (лапша быстрого приготовления)", "s": "저는 라면을 먹어요."}, {"n": 168, "k": "여행", "r": "ёхенг", "t": "путешествие", "s": "저는 여행을 좋아해요."}, {"n": 169, "k": "영화", "r": "ёнгхва", "t": "кино, фильм", "s": "영화가 재미있어요."}, {"n": 170, "k": "편지", "r": "пхянджи", "t": "письмо", "s": "저는 편지를 써요."}, {"n": 171, "k": "가방", "r": "кабанъ", "t": "сумка", "s": "가방이 의자 위에 있어요."}, {"n": 172, "k": "거울", "r": "коуль", "t": "зеркало", "s": "거울이 방에 있어요."}, {"n": 173, "k": "공책", "r": "конъчхэк", "t": "тетрадь", "s": "공책이 가방에 있어요."}, {"n": 174, "k": "교실", "r": "кёсиль", "t": "класс, аудитория", "s": "교실이 커요."}, {"n": 175, "k": "그거", "r": "когo", "t": "то (разговорное)", "s": "그거 뭐예요?"}, {"n": 176, "k": "그것", "r": "когот", "t": "то, та вещь (письм.)", "s": "그것은 책이에요."}, {"n": 177, "k": "기숙사", "r": "кисукса", "t": "общежитие", "s": "저는 기숙사에 살아요."}, {"n": 178, "k": "기자", "r": "киджа", "t": "журналист", "s": "아빠는 기자예요."}, {"n": 179, "k": "냉장고", "r": "ненджанго", "t": "холодильник", "s": "우유가 냉장고에 있어요."}, {"n": 180, "k": "노트북", "r": "нотхыбук", "t": "ноутбук", "s": "노트북이 가방에 있어요."}, {"n": 181, "k": "누구의", "r": "нугуый", "t": "чей, чья", "s": "이것은 누구의 가방이에요?"}, {"n": 182, "k": "대학교", "r": "тэхаккё", "t": "университет", "s": "형은 대학교에 가요."}, {"n": 183, "k": "대학생", "r": "тэхаксэн", "t": "студент университета", "s": "저는 대학생이에요."}, {"n": 184, "k": "대학원생", "r": "тэхагвонсэн", "t": "аспирант, магистрант", "s": "형은 대학원생이에요."}, {"n": 185, "k": "러시아 사람", "r": "росиа сарам", "t": "русский", "s": "저는 러시아 사람이에요."}, {"n": 186, "k": "룸메이트", "r": "румеиты", "t": "сосед по комнате", "s": "제 룸메이트는 학생이에요."}, {"n": 187, "k": "말레이시아 사람", "r": "маллеисиа сарам", "t": "малазиец", "s": "제 친구는 말레이시아 사람이에요."}, {"n": 188, "k": "맞아요", "r": "маджаё", "t": "верно", "s": "네, 맞아요."}, {"n": 189, "k": "몽골 사람", "r": "монголь сарам", "t": "монгол", "s": "제 친구는 몽골 사람이에요."}, {"n": 190, "k": "뭐예요?", "r": "мвоеё", "t": "Что это?", "s": "이것은 뭐예요?"}, {"n": 191, "k": "미국 사람", "r": "мигук сарам", "t": "американец", "s": "저는 미국 사람이에요."}, {"n": 192, "k": "방", "r": "панъ", "t": "комната", "s": "방이 깨끗해요."}, {"n": 193, "k": "배우", "r": "пэу", "t": "актёр", "s": "저 사람은 배우예요."}, {"n": 194, "k": "베트남 사람", "r": "бетынам сарам", "t": "вьетнамец", "s": "제 친구는 베트남 사람이에요."}, {"n": 195, "k": "볼펜", "r": "польпхен", "t": "шариковая ручка", "s": "볼펜이 필통에 있어요."}, {"n": 196, "k": "부엌", "r": "пуок", "t": "кухня", "s": "엄마는 부엌에 있어요."}, {"n": 197, "k": "브라질 사람", "r": "пыраджиль сарам", "t": "бразилец", "s": "제 친구는 브라질 사람이에요."}, {"n": 198, "k": "세탁기", "r": "сетхакки", "t": "стиральная машина", "s": "세탁기가 화장실에 있어요."}, {"n": 199, "k": "소파", "r": "сопха", "t": "диван", "s": "소파가 방에 있어요."}, {"n": 200, "k": "시계", "r": "сигэ", "t": "часы", "s": "시계가 책상 위에 있어요."}, {"n": 201, "k": "아니다", "r": "анида", "t": "не быть (отриц. связка)", "s": "저는 선생님이 아니에요."}, {"n": 202, "k": "아니요", "r": "аниё", "t": "нет", "s": "아니요, 학생이 아니에요."}, {"n": 203, "k": "없다", "r": "оптта / 없어요", "t": "не быть, отсутствовать", "s": "교실에 선생님이 없어요."}, {"n": 204, "k": "에어컨", "r": "еокхон", "t": "кондиционер", "s": "에어컨이 방에 있어요."}, {"n": 205, "k": "연필", "r": "ёнпхиль", "t": "карандаш", "s": "연필이 필통에 있어요."}, {"n": 206, "k": "옷걸이", "r": "откори", "t": "вешалка", "s": "옷걸이가 방에 있어요."}, {"n": 207, "k": "와이파이", "r": "вайпхаи", "t": "вайфай", "s": "카페에 와이파이가 있어요."}, {"n": 208, "k": "운동선수", "r": "ундонсонсу", "t": "спортсмен", "s": "형은 운동선수예요."}, {"n": 209, "k": "의사", "r": "ыйса", "t": "врач", "s": "엄마는 의사예요."}, {"n": 210, "k": "이거", "r": "иго", "t": "это (разговорное)", "s": "이거 뭐예요?"}, {"n": 211, "k": "이다", "r": "ида", "t": "быть, являться (связка)", "s": "이것은 가방이에요."}, {"n": 212, "k": "일본 사람", "r": "ильбон сарам", "t": "японец", "s": "제 친구는 일본 사람이에요."}, {"n": 213, "k": "있다", "r": "итта / 있어요", "t": "быть, иметься, находиться", "s": "책상 위에 책이 있어요."}, {"n": 214, "k": "저거", "r": "чого", "t": "вон то (разговорное)", "s": "저거 뭐예요?"}, {"n": 215, "k": "중국 사람", "r": "чунгук сарам", "t": "китаец", "s": "제 친구는 중국 사람이에요."}, {"n": 216, "k": "지우개", "r": "чиугэ", "t": "ластик", "s": "지우개가 필통에 있어요."}, {"n": 217, "k": "직업이 뭐예요?", "r": "чигоби мвоеё", "t": "Кто вы по профессии?", "s": "안나 씨는 직업이 뭐예요?"}, {"n": 218, "k": "창문", "r": "чханмун", "t": "окно", "s": "창문이 커요."}, {"n": 219, "k": "컴퓨터", "r": "кхомпхютхо", "t": "компьютер", "s": "컴퓨터가 책상 위에 있어요."}, {"n": 220, "k": "텔레비전", "r": "тхеллебиджон", "t": "телевизор", "s": "텔레비전이 방에 있어요."}, {"n": 221, "k": "틀려요", "r": "тхыллёё", "t": "неверно", "s": "이것은 틀려요."}, {"n": 222, "k": "프랑스 사람", "r": "пхырансы сарам", "t": "француз", "s": "제 친구는 프랑스 사람이에요."}, {"n": 223, "k": "프로그래머", "r": "пхырогырэмо", "t": "программист", "s": "아빠는 프로그래머예요."}, {"n": 224, "k": "필통", "r": "пхильтхонъ", "t": "пенал", "s": "필통이 가방에 있어요."}, {"n": 225, "k": "한국 사람", "r": "хангук сарам", "t": "кореец", "s": "저는 한국 사람이 아니에요."}, {"n": 226, "k": "화장실", "r": "хваджансиль", "t": "туалет, ванная", "s": "화장실이 어디예요?"}, {"n": 227, "k": "휴대폰", "r": "хюдэпхон", "t": "мобильный телефон", "s": "휴대폰이 가방에 있어요."}, {"n": 228, "k": "가능성", "r": "канынсон", "t": "возможность, вероятность", "s": "가능성이 있어요."}, {"n": 229, "k": "감", "r": "кам", "t": "чувство, ощущение", "s": "감이 좋아요."}, {"n": 230, "k": "감사", "r": "камса", "t": "благодарность", "s": "감사해요."}, {"n": 231, "k": "감정", "r": "камджон", "t": "эмоция, чувство", "s": "감정이 있어요."}, {"n": 232, "k": "거리감", "r": "коригам", "t": "ощущение дистанции", "s": "거리감이 있어요."}, {"n": 233, "k": "경력", "r": "кённён", "t": "опыт работы", "s": "저는 경력이 많아요."}, {"n": 234, "k": "공", "r": "кон/гон", "t": "общественный, общий, пустой", "s": "공부를 해요."}, {"n": 235, "k": "공감", "r": "конгам", "t": "сопереживание, эмпатия", "s": "저는 그 이야기에 공감해요."}, {"n": 236, "k": "공공", "r": "гонгон", "t": "общественный", "s": "공공 도서관에 가요."}, {"n": 237, "k": "공기", "r": "гонги", "t": "воздух", "s": "공원은 공기가 좋아요."}, {"n": 238, "k": "공부", "r": "конбу", "t": "учёба", "s": "저는 매일 공부해요."}, {"n": 239, "k": "공사", "r": "гонса", "t": "строительство, ремонт", "s": "학교 앞에서 공사해요."}, {"n": 240, "k": "공장", "r": "гонджан", "t": "завод", "s": "아빠는 공장에서 일해요."}, {"n": 241, "k": "공항", "r": "гонхан", "t": "аэропорт", "s": "공항에 가요."}, {"n": 242, "k": "관", "r": "кван", "t": "связь, отношение, смотреть, учреждение", "s": "영화관에 가요."}, {"n": 243, "k": "관계", "r": "кванге", "t": "отношения, связь", "s": "친구와 관계가 좋아요."}, {"n": 244, "k": "관광", "r": "квангван", "t": "туризм", "s": "저는 서울에서 관광해요."}, {"n": 245, "k": "관람", "r": "кваллам", "t": "просмотр, посещение", "s": "저는 영화를 관람해요."}, {"n": 246, "k": "관리", "r": "кванли", "t": "управление, контроль", "s": "저는 가게를 관리해요."}, {"n": 247, "k": "관심", "r": "квансим", "t": "интерес", "s": "저는 한국어에 관심이 있어요."}, {"n": 248, "k": "구성", "r": "кусон", "t": "состав, структура", "s": "우리 가족 구성은 네 명이에요."}, {"n": 249, "k": "기", "r": "ки", "t": "энергия, основа, запись, устройство", "s": "기가 막혀요."}, {"n": 250, "k": "기관", "r": "кигван", "t": "организация, учреждение", "s": "은행은 기관이에요."}, {"n": 251, "k": "기념", "r": "кинём", "t": "память, воспоминание", "s": "기념으로 책을 사요."}, {"n": 252, "k": "기분", "r": "кибун", "t": "настроение", "s": "오늘 기분이 좋아요."}, {"n": 253, "k": "기억력", "r": "кионнён", "t": "память", "s": "기억력이 좋아요."}, {"n": 254, "k": "기차", "r": "кичха", "t": "поезд", "s": "기차가 느려요."}, {"n": 255, "k": "기초", "r": "кичхо", "t": "основа, база", "s": "기초가 중요해요."}, {"n": 256, "k": "기회", "r": "кихве", "t": "возможность", "s": "좋은 기회예요."}, {"n": 257, "k": "남성", "r": "намсон", "t": "мужчина", "s": "저 남성은 의사예요."}, {"n": 258, "k": "노력", "r": "норёк", "t": "усилие, старание", "s": "저는 매일 노력해요."}, {"n": 259, "k": "능력", "r": "ныннён", "t": "способность", "s": "능력이 있어요."}, {"n": 260, "k": "도서관", "r": "тосогван", "t": "библиотека", "s": "도서관에 가요."}, {"n": 261, "k": "력", "r": "рёк/нёк", "t": "сила, способность, мощь", "s": "저는 협력해요."}, {"n": 262, "k": "만족감", "r": "манджоккам", "t": "чувство удовлетворения", "s": "만족감이 있어요."}, {"n": 263, "k": "미술관", "r": "мисульгван", "t": "художественная галерея", "s": "미술관에 가요."}, {"n": 264, "k": "박물관", "r": "панмунгван", "t": "музей", "s": "박물관에 가요."}, {"n": 265, "k": "성", "r": "сон", "t": "успех, завершение, характер, природа", "s": "성격이 좋아요."}, {"n": 266, "k": "성격", "r": "сонгёк", "t": "характер", "s": "친구는 성격이 좋아요."}, {"n": 267, "k": "성공", "r": "сонгон", "t": "успех", "s": "저는 꼭 성공해요."}, {"n": 268, "k": "성장", "r": "сонджан", "t": "рост, развитие", "s": "아기가 성장해요."}, {"n": 269, "k": "성적", "r": "сонджок", "t": "оценка, успеваемость", "s": "성적이 좋아요."}, {"n": 270, "k": "소속감", "r": "сосоккам", "t": "чувство принадлежности", "s": "소속감이 있어요."}, {"n": 271, "k": "실력", "r": "силлёк", "t": "способности, мастерство", "s": "실력이 좋아요."}, {"n": 272, "k": "안정", "r": "анджон", "t": "безопасность, стабильность", "s": "안정이 필요해요."}, {"n": 273, "k": "안정감", "r": "анджонгам", "t": "чувство стабильности", "s": "안정감이 있어요."}, {"n": 274, "k": "여성", "r": "ёсон", "t": "женщина", "s": "저 여성은 선생님이에요."}, {"n": 275, "k": "영향력", "r": "ёнхяннён", "t": "влияние", "s": "영향력이 커요."}, {"n": 276, "k": "예정", "r": "йечжон", "t": "план, расписание", "s": "오늘 예정이 있어요."}, {"n": 277, "k": "완성", "r": "вансон", "t": "завершение", "s": "숙제를 완성해요."}, {"n": 278, "k": "용기", "r": "ёнги", "t": "смелость", "s": "용기가 있어요."}, {"n": 279, "k": "우정", "r": "учжон", "t": "дружба", "s": "우정이 중요해요."}, {"n": 280, "k": "인기", "r": "инги", "t": "популярность", "s": "이 가수는 인기가 많아요."}, {"n": 281, "k": "자신감", "r": "часингам", "t": "уверенность в себе", "s": "저는 자신감이 있어요."}, {"n": 282, "k": "전기", "r": "чонги", "t": "электричество", "s": "전기가 없어요."}, {"n": 283, "k": "정", "r": "чон", "t": "правильный, определённый, чувство, любовь", "s": "우리는 정이 많아요."}, {"n": 284, "k": "정답", "r": "чондап", "t": "правильный ответ", "s": "정답이 뭐예요?"}, {"n": 285, "k": "정리", "r": "чонни", "t": "порядок, организация", "s": "저는 방을 정리해요."}, {"n": 286, "k": "정문", "r": "чонмун", "t": "главный вход", "s": "학교 정문 앞에 있어요."}, {"n": 287, "k": "정보", "r": "чонбо", "t": "информация", "s": "정보가 많아요."}, {"n": 288, "k": "정상", "r": "чонсан", "t": "вершина, норма", "s": "산 정상에 가요."}, {"n": 289, "k": "정직", "r": "чонджик", "t": "честность", "s": "정직이 중요해요."}, {"n": 290, "k": "제공", "r": "чегон", "t": "предоставление", "s": "학교가 책을 제공해요."}, {"n": 291, "k": "집중력", "r": "чипчуннён", "t": "концентрация", "s": "집중력이 좋아요."}, {"n": 292, "k": "책임감", "r": "чхэгимгам", "t": "чувство ответственности", "s": "저는 책임감이 있어요."}, {"n": 293, "k": "체력", "r": "чхэрёк", "t": "физическая сила", "s": "체력이 좋아요."}, {"n": 294, "k": "체육관", "r": "чхеюгван", "t": "спортивный зал", "s": "저는 체육관에서 운동해요."}, {"n": 295, "k": "학력", "r": "ханнён", "t": "уровень образования", "s": "학력이 중요해요."}, {"n": 296, "k": "학생성", "r": "хаксэнсон", "t": "студенческие качества", "s": "학생성이 중요해요."}, {"n": 297, "k": "협력", "r": "хёмнён", "t": "сотрудничество", "s": "친구와 협력해요."}, {"n": 298, "k": "호감", "r": "хогам", "t": "симпатия", "s": "호감이 가요."}, {"n": 299, "k": "걷다", "r": "котта", "t": "идти пешком", "s": "저는 공원에서 걸어요."}, {"n": 300, "k": "마시다", "r": "масида", "t": "пить", "s": "저는 커피를 마셔요."}, {"n": 301, "k": "만나다", "r": "маннада", "t": "встречаться", "s": "저는 친구를 만나요."}, {"n": 302, "k": "만들다", "r": "мандыльда", "t": "делать, готовить", "s": "저는 빵을 만들어요."}, {"n": 303, "k": "바쁘다", "r": "паппыда", "t": "занятый", "s": "저는 오늘 바빠요."}, {"n": 304, "k": "배우다", "r": "пэуда", "t": "учиться, изучать", "s": "저는 한국어를 배워요."}, {"n": 305, "k": "씻다", "r": "ссита", "t": "мыться, умываться", "s": "저는 손을 씻어요."}, {"n": 306, "k": "오다", "r": "ода", "t": "приходить, приезжать", "s": "친구가 집에 와요."}, {"n": 307, "k": "일어나다", "r": "ироната", "t": "вставать, просыпаться", "s": "저는 아침에 일어나요."}, {"n": 308, "k": "일하다", "r": "ильхада", "t": "работать", "s": "아빠는 회사에서 일해요."}, {"n": 309, "k": "입다", "r": "ипта", "t": "надевать (одежду)", "s": "저는 바지를 입어요."}, {"n": 310, "k": "자다", "r": "чада", "t": "спать", "s": "아기가 침대에서 자요."}, {"n": 311, "k": "작다", "r": "чакта", "t": "маленький", "s": "이 가방은 작아요."}, {"n": 312, "k": "주다", "r": "чуда", "t": "давать", "s": "엄마가 저에게 사과를 줘요."}, {"n": 313, "k": "크다", "r": "кхыда", "t": "быть большим", "s": "이 집은 커요."}, {"n": 314, "k": "타다", "r": "тада", "t": "садиться (на транспорт), ехать", "s": "저는 버스를 타요."}, {"n": 315, "k": "필통", "r": "пхильтхон", "t": "пенал", "s": "필통이 책상 위에 있어요."}, {"n": 316, "k": "교실", "r": "кёщиль", "t": "класс, аудитория", "s": "교실에 학생이 있어요."}, {"n": 317, "k": "수박", "r": "субак", "t": "арбуз", "s": "수박이 냉장고에 있어요."}, {"n": 318, "k": "딸기", "r": "тальги", "t": "клубника", "s": "딸기가 냉장고에 있어요."}, {"n": 319, "k": "아르바이트하다", "r": "арыбаитыхада", "t": "подрабатывать", "s": "저는 카페에서 아르바이트해요."}, {"n": 320, "k": "전화하다", "r": "чонхвахада", "t": "звонить (по телефону)", "s": "저는 지금 전화해요."}, {"n": 321, "k": "쉬다", "r": "свида", "t": "отдыхать", "s": "저는 집에서 쉬어요."}, {"n": 322, "k": "기다리다", "r": "кидарида", "t": "ждать", "s": "저는 카페에서 친구를 기다려요."}, {"n": 323, "k": "마트", "r": "матхы", "t": "супермаркет", "s": "저는 마트에서 우유를 사요."}, {"n": 324, "k": "백화점", "r": "пэкхваджом", "t": "универмаг", "s": "친구는 백화점에 가요."}, {"n": 325, "k": "산책하다", "r": "санчхэкхада", "t": "гулять", "s": "저는 공원에서 산책해요."}, {"n": 326, "k": "서점", "r": "соджом", "t": "книжный магазин", "s": "저는 서점에서 책을 사요."}, {"n": 327, "k": "쇼핑하다", "r": "сёпинхада", "t": "ходить по магазинам", "s": "저는 백화점에서 쇼핑해요."}, {"n": 328, "k": "수영하다", "r": "суёнхада", "t": "плавать", "s": "저는 바다에서 수영해요."}, {"n": 329, "k": "숙제하다", "r": "сукчехада", "t": "делать домашнее задание", "s": "저는 도서관에서 숙제해요."}, {"n": 330, "k": "스포츠 센터", "r": "спхоччы сэнтхо", "t": "спортивный центр", "s": "오늘 스포츠 센터에 가요."}, {"n": 331, "k": "시장", "r": "сиджан", "t": "рынок", "s": "엄마는 시장에서 사과를 사요."}, {"n": 332, "k": "식당", "r": "сиктан", "t": "ресторан, столовая", "s": "저는 식당에서 밥을 먹어요."}, {"n": 333, "k": "약국", "r": "якук", "t": "аптека", "s": "병원 옆에 약국이 있어요."}, {"n": 334, "k": "영화관", "r": "ёнхвагван", "t": "кинотеатр", "s": "저는 영화관에서 영화를 봐요."}, {"n": 335, "k": "요리하다", "r": "ёрихада", "t": "готовить (еду)", "s": "엄마는 부엌에서 요리해요."}, {"n": 336, "k": "우리", "r": "ури", "t": "мы, наш", "s": "친구가 우리 집에 와요."}, {"n": 337, "k": "우체국", "r": "учхегук", "t": "почта", "s": "저는 우체국에 가요."}, {"n": 338, "k": "은행", "r": "ынхэн", "t": "банк", "s": "아빠는 은행에 가요."}, {"n": 339, "k": "주스", "r": "чусы", "t": "сок", "s": "저는 카페에서 주스를 마셔요."}, {"n": 340, "k": "지하철역", "r": "чихачхольрёк", "t": "станция метро", "s": "지하철역은 저기에 있어요."}, {"n": 341, "k": "편의점", "r": "пхёниджом", "t": "круглосуточный магазин", "s": "저는 편의점에서 커피를 사요."}, {"n": 342, "k": "회사", "r": "хвэса", "t": "компания, офис", "s": "아빠는 회사에서 일해요."}, {"n": 343, "k": "고향", "r": "когхян", "t": "родной город, родина", "s": "제 고향은 서울이에요."}, {"n": 344, "k": "과일", "r": "кваиль", "t": "фрукты", "s": "크리스 씨는 시장에서 과일을 사요."}, {"n": 345, "k": "샌드위치", "r": "сэндывичхи", "t": "сэндвич", "s": "안나 씨는 샌드위치를 먹어요."}, {"n": 346, "k": "혼자", "r": "хонджа", "t": "один, в одиночку", "s": "아야나 씨는 혼자 영화를 봐요."}, {"n": 347, "k": "뒤", "r": "тви", "t": "за, сзади", "s": "학교 뒤에 공원이 있어요."}, {"n": 348, "k": "밖", "r": "пак", "t": "снаружи", "s": "교실 밖에 있어요."}, {"n": 349, "k": "아래(밑)", "r": "арэ (мит)", "t": "под, низ", "s": "의자 아래에 가방이 있어요."}, {"n": 350, "k": "안 (внутри)", "r": "ан", "t": "внутри (не путать с частицей отрицания 안)", "s": "가방 안에 책이 있어요."}, {"n": 351, "k": "앞", "r": "ап", "t": "перед, спереди", "s": "학교 앞에 있어요."}, {"n": 352, "k": "옆", "r": "ёп", "t": "рядом, сбоку", "s": "병원 옆에 있어요."}, {"n": 353, "k": "위", "r": "ви", "t": "над, верх", "s": "책상 위에 책이 있어요."}, {"n": 354, "k": "음료수", "r": "ымнёсу", "t": "напиток", "s": "음료수가 냉장고에 있어요."}, {"n": 355, "k": "음식", "r": "ымсик", "t": "еда", "s": "한국 음식이 맛있어요."}, {"n": 356, "k": "명동", "r": "мёндон", "t": "Мёндон (район Сеула)", "s": "명동에 가요."}, {"n": 357, "k": "층", "r": "чхын", "t": "этаж (счётное слово: 2층 — 2 этаж)", "s": "저는 2층에 살아요."}, {"n": 358, "k": "거기", "r": "когы", "t": "там (у собеседника / о чём уже говорили)", "s": "거기에 가방이 있어요."}, {"n": 359, "k": "그리고", "r": "кыриго", "t": "и, а ещё, затем", "s": "빵을 먹어요. 그리고 커피를 마셔요."}, {"n": 360, "k": "반", "r": "пан", "t": "класс, группа", "s": "우리 반 친구들이 많아요."}, {"n": 361, "k": "서울대학교", "r": "соуль тэхаккё", "t": "Сеульский университет", "s": "저는 서울대학교에서 한국어를 배워요."}, {"n": 362, "k": "저기", "r": "чогы", "t": "вон там (далеко от обоих)", "s": "저기에 은행이 있어요."}, {"n": 363, "k": "학생 식당", "r": "хаксэн сиктан", "t": "студенческая столовая", "s": "학생 식당에서 밥을 먹어요."}, {"n": 364, "k": "한국어", "r": "ханго", "t": "корейский язык", "s": "저는 한국어를 배워요."}, {"n": 365, "k": "갈비탕", "r": "кальбитхан", "t": "суп из рёбрышек", "s": "갈비탕이 비싸요."}, {"n": 366, "k": "김밥", "r": "кимбап", "t": "кимбап (роллы)", "s": "김밥이 싸요."}, {"n": 367, "k": "김치찌개", "r": "кимчхиччигэ", "t": "суп с кимчи", "s": "김치찌개가 맛있어요."}, {"n": 368, "k": "깨끗하다", "r": "ккэккытхада", "t": "быть чистым", "s": "교실이 깨끗해요."}, {"n": 369, "k": "냉면", "r": "нэнмён", "t": "холодная лапша", "s": "냉면이 맛있어요."}, {"n": 370, "k": "떡볶이", "r": "ттокпокки", "t": "острые рисовые клёцки", "s": "떡볶이가 맛있어요."}, {"n": 371, "k": "맛없다", "r": "мадопта", "t": "быть невкусным", "s": "불고기가 맛없어요."}, {"n": 372, "k": "맛있다", "r": "масита", "t": "быть вкусным", "s": "비빔밥이 맛있어요."}, {"n": 373, "k": "메뉴", "r": "мэню", "t": "меню", "s": "메뉴가 많아요."}, {"n": 374, "k": "불고기", "r": "пульгоги", "t": "пулькоги (маринованная говядина)", "s": "불고기가 맛있어요."}, {"n": 375, "k": "비빔밥", "r": "пибимбап", "t": "бибимбап", "s": "비빔밥이 맛있어요."}, {"n": 376, "k": "비싸다", "r": "писсада", "t": "быть дорогим", "s": "사과가 비싸요."}, {"n": 377, "k": "삼겹살", "r": "самгёпсаль", "t": "самгёпсаль (жареная свиная грудинка)", "s": "삼겹살이 맛있어요."}, {"n": 378, "k": "싸다", "r": "ссада", "t": "быть дешёвым", "s": "커피가 싸요."}, {"n": 379, "k": "재미없다", "r": "чемиопта", "t": "быть скучным", "s": "책이 재미없어요."}, {"n": 380, "k": "재미있다", "r": "чемиитта", "t": "быть интересным", "s": "영화가 재미있어요."}, {"n": 381, "k": "친절하다", "r": "чхинджорхада", "t": "быть приветливым", "s": "선생님이 친절해요."}, {"n": 382, "k": "아래", "r": "арэ", "t": "под, внизу", "s": "책이 책상 아래에 있어요."}, {"n": 383, "k": "간호사", "r": "канхоса", "t": "медсестра", "s": "간호사가 병원에 있어요."}, {"n": 384, "k": "감자", "r": "камджа", "t": "картофель", "s": "감자가 맛있어요."}, {"n": 385, "k": "경찰", "r": "кёнчхаль", "t": "полицейский", "s": "경찰이 앞에 있어요."}, {"n": 386, "k": "곰", "r": "ком", "t": "медведь", "s": "곰이 산에 있어요."}, {"n": 387, "k": "과자", "r": "кваджа", "t": "печенье, снеки", "s": "과자가 맛있어요."}, {"n": 388, "k": "귀", "r": "кви", "t": "ухо", "s": "귀가 커요."}, {"n": 389, "k": "귤", "r": "кюль", "t": "мандарин", "s": "귤을 먹어요."}, {"n": 390, "k": "남편", "r": "намппхён", "t": "муж", "s": "남편은 회사에 있어요."}, {"n": 391, "k": "달걀", "r": "тальгяль", "t": "яйцо", "s": "달걀이 냉장고에 있어요."}, {"n": 392, "k": "닭", "r": "так", "t": "курица", "s": "닭이 많아요."}, {"n": 393, "k": "당근", "r": "тангын", "t": "морковь", "s": "당근이 싸요."}, {"n": 394, "k": "돼지", "r": "твэджи", "t": "свинья", "s": "돼지가 커요."}, {"n": 395, "k": "딸", "r": "таль", "t": "дочь", "s": "딸이 방에 있어요."}, {"n": 396, "k": "맥주", "r": "мэкчу", "t": "пиво", "s": "맥주를 마셔요."}, {"n": 397, "k": "목", "r": "мок", "t": "шея, горло", "s": "목이 길어요."}, {"n": 398, "k": "몸", "r": "мом", "t": "тело", "s": "몸이 커요."}, {"n": 399, "k": "발", "r": "пал", "t": "ступня", "s": "발이 작아요."}, {"n": 400, "k": "배", "r": "пэ", "t": "живот", "s": "배가 커요."}, {"n": 401, "k": "설탕", "r": "сольтхан", "t": "сахар", "s": "설탕이 있어요."}, {"n": 402, "k": "소금", "r": "согым", "t": "соль", "s": "소금이 없어요."}, {"n": 403, "k": "손", "r": "сон", "t": "рука (кисть)", "s": "손이 커요."}, {"n": 404, "k": "손님", "r": "сонним", "t": "гость, клиент", "s": "손님이 카페에 있어요."}, {"n": 405, "k": "쌀", "r": "ссаль", "t": "рис (сырой)", "s": "쌀이 부엌에 있어요."}, {"n": 406, "k": "아내", "r": "ане", "t": "жена", "s": "아내는 시장에 가요."}, {"n": 407, "k": "아들", "r": "адыль", "t": "сын", "s": "아들이 학교에 가요."}, {"n": 408, "k": "아이스크림", "r": "айсыкхырим", "t": "мороженое", "s": "아이스크림이 싸요."}, {"n": 409, "k": "얼굴", "r": "ольгуль", "t": "лицо", "s": "얼굴이 예뻐요."}, {"n": 410, "k": "오리", "r": "ори", "t": "утка", "s": "오리가 물에 있어요."}, {"n": 411, "k": "원숭이", "r": "вонсунъи", "t": "обезьяна", "s": "원숭이가 나무에 있어요."}, {"n": 412, "k": "입", "r": "ип", "t": "рот", "s": "입이 작아요."}, {"n": 413, "k": "차", "r": "чха", "t": "чай", "s": "차를 마셔요."}, {"n": 414, "k": "치킨", "r": "чхикхин", "t": "жареная курица", "s": "치킨이 맛있어요."}, {"n": 415, "k": "케이크", "r": "кхэикху", "t": "торт", "s": "케이크가 맛있어요."}, {"n": 416, "k": "코", "r": "кхо", "t": "нос", "s": "코가 커요."}, {"n": 417, "k": "토끼", "r": "токки", "t": "кролик", "s": "토끼가 공원에 있어요."}, {"n": 418, "k": "팔", "r": "пхаль", "t": "рука (от плеча)", "s": "팔이 길어요."}, {"n": 419, "k": "포도", "r": "пходо", "t": "виноград", "s": "포도가 맛있어요."}, {"n": 420, "k": "피자", "r": "пхиджа", "t": "пицца", "s": "피자를 먹어요."}, {"n": 421, "k": "할머니", "r": "хальмони", "t": "бабушка", "s": "할머니는 집에 있어요."}, {"n": 422, "k": "할아버지", "r": "харабоджи", "t": "дедушка", "s": "할아버지가 공원에 가요."}, {"n": 423, "k": "햄버거", "r": "хэмбого", "t": "гамбургер", "s": "햄버거를 먹어요."}, {"n": 424, "k": "호랑이", "r": "хоранъи", "t": "тигр", "s": "호랑이가 커요."}, {"n": 425, "k": "가을", "r": "каыль", "t": "осень", "s": "가을이 시원해요."}, {"n": 426, "k": "강", "r": "кан", "t": "река", "s": "강이 커요."}, {"n": 427, "k": "겨울", "r": "кёуль", "t": "зима", "s": "겨울에 눈이 와요."}, {"n": 428, "k": "구름", "r": "курым", "t": "облако", "s": "구름이 많아요."}, {"n": 429, "k": "그림", "r": "кырим", "t": "картина, рисунок", "s": "그림이 예뻐요."}, {"n": 430, "k": "길", "r": "киль", "t": "дорога", "s": "길이 커요."}, {"n": 431, "k": "날씨", "r": "нальси", "t": "погода", "s": "날씨가 좋아요."}, {"n": 432, "k": "달", "r": "таль", "t": "луна", "s": "달이 예뻐요."}, {"n": 433, "k": "돈", "r": "тон", "t": "деньги", "s": "돈이 없어요."}, {"n": 434, "k": "바람", "r": "парам", "t": "ветер", "s": "바람이 시원해요."}, {"n": 435, "k": "버스", "r": "босы", "t": "автобус", "s": "버스가 와요."}, {"n": 436, "k": "별", "r": "пёль", "t": "звезда", "s": "별이 많아요."}, {"n": 437, "k": "봄", "r": "пом", "t": "весна", "s": "봄에 꽃이 많아요."}, {"n": 438, "k": "빵집", "r": "ппанчип", "t": "пекарня", "s": "빵집에서 빵을 사요."}, {"n": 439, "k": "사진", "r": "саджин", "t": "фото", "s": "사진이 책상 위에 있어요."}, {"n": 440, "k": "선물", "r": "сонмуль", "t": "подарок", "s": "선물이 가방에 있어요."}, {"n": 441, "k": "숟가락", "r": "суткарак", "t": "ложка", "s": "숟가락이 없어요."}, {"n": 442, "k": "시간", "r": "сиган", "t": "время", "s": "시간이 없어요."}, {"n": 443, "k": "신발", "r": "синбаль", "t": "обувь", "s": "신발이 문 앞에 있어요."}, {"n": 444, "k": "안경", "r": "анкён", "t": "очки", "s": "안경이 책상 위에 있어요."}, {"n": 445, "k": "양말", "r": "янмаль", "t": "носки", "s": "양말이 많아요."}, {"n": 446, "k": "여름", "r": "ёрым", "t": "лето", "s": "여름이 더워요."}, {"n": 447, "k": "역", "r": "ёк", "t": "станция", "s": "역이 앞에 있어요."}, {"n": 448, "k": "열쇠", "r": "ёльсве", "t": "ключ", "s": "열쇠가 가방에 있어요."}, {"n": 449, "k": "옷", "r": "от", "t": "одежда", "s": "옷이 많아요."}, {"n": 450, "k": "우산", "r": "усан", "t": "зонт", "s": "우산이 가방에 있어요."}, {"n": 451, "k": "이불", "r": "ибуль", "t": "одеяло", "s": "이불이 침대 위에 있어요."}, {"n": 452, "k": "전화", "r": "чонхва", "t": "телефонный звонок", "s": "전화가 와요."}, {"n": 453, "k": "접시", "r": "чопси", "t": "тарелка", "s": "접시가 부엌에 있어요."}, {"n": 454, "k": "젓가락", "r": "чоткарак", "t": "палочки для еды", "s": "젓가락이 있어요."}, {"n": 455, "k": "지하철", "r": "чихачхоль", "t": "метро", "s": "지하철이 와요."}, {"n": 456, "k": "치마", "r": "чхима", "t": "юбка", "s": "치마가 예뻐요."}, {"n": 457, "k": "컵", "r": "кхоп", "t": "чашка", "s": "컵이 책상 위에 있어요."}, {"n": 458, "k": "티셔츠", "r": "тхишёчху", "t": "футболка", "s": "티셔츠가 싸요."}, {"n": 459, "k": "표", "r": "пхё", "t": "билет", "s": "표가 있어요."}, {"n": 460, "k": "학원", "r": "хагвон", "t": "частная школа, курсы", "s": "학원에 가요."}, {"n": 461, "k": "해", "r": "хэ", "t": "солнце", "s": "해가 커요."}, {"n": 462, "k": "호텔", "r": "хотхэль", "t": "отель", "s": "호텔이 명동에 있어요."}, {"n": 463, "k": "가르치다", "r": "карычхида", "t": "учить (кого-то), преподавать", "s": "선생님이 학생을 가르쳐요."}, {"n": 464, "k": "길다", "r": "килда", "t": "длинный", "s": "다리가 길어요."}, {"n": 465, "k": "끄다", "r": "ккыда", "t": "выключать", "s": "텔레비전을 꺼요."}, {"n": 466, "k": "끝나다", "r": "ккытнада", "t": "заканчиваться", "s": "학교가 끝나요."}, {"n": 467, "k": "나쁘다", "r": "наппыда", "t": "плохой", "s": "기분이 나빠요."}, {"n": 468, "k": "내리다", "r": "нэрида", "t": "выходить (из транспорта), спускаться", "s": "지하철에서 내려요."}, {"n": 469, "k": "너무", "r": "номо", "t": "слишком", "s": "너무 커요."}, {"n": 470, "k": "놀다", "r": "нольда", "t": "играть, гулять", "s": "공원에서 놀아요."}, {"n": 471, "k": "높다", "r": "нопта", "t": "высокий", "s": "산이 높아요."}, {"n": 472, "k": "닫다", "r": "татта", "t": "закрывать", "s": "문을 닫아요."}, {"n": 473, "k": "따뜻하다", "r": "ттаттытхада", "t": "тёплый", "s": "방이 따뜻해요."}, {"n": 474, "k": "또", "r": "то", "t": "снова, ещё", "s": "또 와요."}, {"n": 475, "k": "많이", "r": "мани", "t": "много", "s": "물을 많이 마셔요."}, {"n": 476, "k": "먼저", "r": "монджо", "t": "сначала, первым", "s": "먼저 가요."}, {"n": 477, "k": "받다", "r": "патта", "t": "получать", "s": "선물을 받아요."}, {"n": 478, "k": "배고프다", "r": "пэгопхыда", "t": "голодный", "s": "저는 배고파요."}, {"n": 479, "k": "빠르다", "r": "ппарыда", "t": "быстрый", "s": "버스가 빨라요."}, {"n": 480, "k": "빨리", "r": "ппальли", "t": "быстро", "s": "빨리 가요."}, {"n": 481, "k": "서다", "r": "сода", "t": "стоять, встать", "s": "문 앞에 서요."}, {"n": 482, "k": "시작하다", "r": "сичакхада", "t": "начинать", "s": "공부를 시작해요."}, {"n": 483, "k": "아주", "r": "аджу", "t": "очень", "s": "아주 맛있어요."}, {"n": 484, "k": "아프다", "r": "апхыда", "t": "болеть, больно", "s": "배가 아파요."}, {"n": 485, "k": "열다", "r": "ёльда", "t": "открывать", "s": "문을 열어요."}, {"n": 486, "k": "예쁘다", "r": "еппыда", "t": "красивый", "s": "공원이 예뻐요."}, {"n": 487, "k": "울다", "r": "ульда", "t": "плакать", "s": "아기가 울어요."}, {"n": 488, "k": "웃다", "r": "утта", "t": "смеяться, улыбаться", "s": "아이가 웃어요."}, {"n": 489, "k": "적다", "r": "чокта", "t": "мало", "s": "돈이 적어요."}, {"n": 490, "k": "정말", "r": "чонмаль", "t": "правда, очень", "s": "정말 예뻐요."}, {"n": 491, "k": "제일", "r": "чеиль", "t": "самый", "s": "제일 맛있어요."}, {"n": 492, "k": "조금", "r": "чогым", "t": "немного", "s": "조금 작아요."}, {"n": 493, "k": "조용하다", "r": "чоёнхада", "t": "тихий", "s": "도서관이 조용해요."}, {"n": 494, "k": "찾다", "r": "чхатта", "t": "искать", "s": "열쇠를 찾아요."}, {"n": 495, "k": "천천히", "r": "чхончхони", "t": "медленно", "s": "천천히 먹어요."}, {"n": 496, "k": "춥다", "r": "чхупта", "t": "холодный (о погоде)", "s": "오늘 추워요."}, {"n": 497, "k": "켜다", "r": "кхёда", "t": "включать", "s": "텔레비전을 켜요."}, {"n": 498, "k": "하다", "r": "хада", "t": "делать", "s": "저는 공부를 해요."}, {"n": 499, "k": "행복하다", "r": "хэнбокхада", "t": "счастливый", "s": "저는 행복해요."}, {"n": 500, "k": "신문", "r": "синмун", "t": "газета", "s": "신문이 책상 위에 있어요."}, {"n": 501, "k": "얼마", "r": "олма", "t": "сколько (о цене)", "s": "이거는 얼마예요?"}, {"n": 502, "k": "천", "r": "чхон", "t": "тысяча (китайское число)", "s": "이거는 천 원이에요."}, {"n": 503, "k": "하나", "r": "хана", "t": "один (перед счётным словом 한)", "s": "사과가 하나 있어요."}, {"n": 504, "k": "콜라", "r": "колла", "t": "кола", "s": "콜라 한 병 주세요."}, {"n": 505, "k": "가격", "r": "кагёк", "t": "цена", "s": "가격이 얼마예요?"}, {"n": 506, "k": "열", "r": "ёль", "t": "десять", "s": "빵이 열 개 있어요."}, {"n": 507, "k": "일곱", "r": "ильгоп", "t": "семь", "s": "친구가 일곱 명 있어요."}, {"n": 508, "k": "아침", "r": "ачим", "t": "утро", "s": "아침에 커피를 마셔요."}, {"n": 509, "k": "넷", "r": "нет", "t": "четыре (перед счётным словом 네)", "s": "학생이 넷 있어요."}, {"n": 510, "k": "모두", "r": "моду", "t": "всё вместе, всего", "s": "모두 얼마예요?"}, {"n": 511, "k": "몇", "r": "мёт", "t": "сколько (о количестве)", "s": "볼펜이 몇 개 있어요?"}, {"n": 512, "k": "일찍", "r": "ильчик", "t": "рано", "s": "저는 아침 일찍 일어나요."}, {"n": 513, "k": "그릇", "r": "кырыт", "t": "миска, тарелка (счётное слово)", "s": "비빔밥 한 그릇 주세요."}, {"n": 514, "k": "여덟", "r": "ёдол", "t": "восемь", "s": "물이 여덟 병 있어요."}, {"n": 515, "k": "아홉", "r": "ахоп", "t": "девять", "s": "빵이 아홉 개 있어요."}, {"n": 516, "k": "병", "r": "пён", "t": "бутылка (счётное слово)", "s": "물 세 병 주세요."}, {"n": 517, "k": "만", "r": "ман", "t": "десять тысяч (китайское число)", "s": "이거는 만 원이에요."}, {"n": 518, "k": "백", "r": "пэк", "t": "сто (китайское число)", "s": "이거는 백 원이에요."}, {"n": 519, "k": "여섯", "r": "ёсот", "t": "шесть", "s": "사과가 여섯 개 있어요."}, {"n": 520, "k": "잔", "r": "чан", "t": "чашка, стакан (счётное слово)", "s": "커피 두 잔 주세요."}, {"n": 521, "k": "원", "r": "вон", "t": "вона (деньги)", "s": "커피는 사천 원이에요."}, {"n": 522, "k": "다섯", "r": "тасот", "t": "пять", "s": "볼펜이 다섯 개 있어요."}, {"n": 523, "k": "둘", "r": "туль", "t": "два (перед счётным словом 두)", "s": "친구가 둘 있어요."}, {"n": 524, "k": "셋", "r": "сет", "t": "три (перед счётным словом 세)", "s": "우리 가족은 셋이에요."}];
+const CAT={"еда": ["우유", "고기", "빵", "밥", "김치", "사과", "커피", "바나나", "요리", "오이", "먹다", "라면", "마시다", "수박", "딸기", "요리하다", "주스", "과일", "샌드위치", "음료수", "음식", "비빔밥", "김치찌개", "갈비탕", "김밥", "불고기", "냉면", "삼겹살", "떡볶이", "치킨", "햄버거", "감자", "달걀", "당근", "설탕", "아이스크림", "소금", "차", "맥주", "피자", "포도", "케이크", "쌀", "과자", "귤", "콜라"], "животные": ["말", "고양이", "새", "개", "사자", "물고기", "소", "닭", "오리", "원숭이", "호랑이", "곰", "돼지", "토끼"], "место": ["공원", "병원", "가게", "나라", "학교", "카페", "여기", "일본", "말레이시아", "브라질", "몽골", "중국", "프랑스", "한국", "베트남", "지하", "러시아", "미국", "서울", "살다", "직장", "대학교", "화장실", "기숙사", "부엌", "방", "체육관", "공항", "박물관", "공장", "미술관", "도서관", "교실", "지하철역", "은행", "우체국", "시장", "약국", "스포츠 센터", "마트", "영화관", "백화점", "편의점", "식당", "회사", "서점", "고향", "밖", "아래(밑)", "안 (внутри)", "옆", "뒤", "위", "앞", "명동", "층", "저기", "거기", "서울대학교", "학생 식당", "학원", "호텔", "역", "빵집", "다리"], "наречие": ["자주", "항상", "금방", "보통", "아직", "벌써", "바로", "같이", "가끔", "다시", "읽다", "무엇", "많다", "오늘", "느리다", "멀다", "매일", "지금", "안", "작다", "크다", "혼자", "그리고", "높다", "빠르다", "조용하다", "따뜻하다", "아프다", "먼저", "천천히", "춥다", "적다", "길다", "또", "제일", "조금", "나쁘다", "배고프다", "빨리", "많이", "아주", "예쁘다", "정말", "너무", "얼마", "모두", "몇", "일찍"], "одежда": ["구두", "모자", "바지", "입다", "양말", "옷", "신발", "티셔츠", "치마"], "окружение": ["책상", "의자", "침대", "집", "문", "책", "저것", "이것", "유리", "라디오", "휴지", "지도", "시계", "와이파이", "냉장고", "볼펜", "공책", "가방", "창문", "그것", "지우개", "소파", "이거", "에어컨", "텔레비전", "저거", "휴대폰", "필통", "연필", "컴퓨터", "노트북", "옷걸이", "거울", "세탁기", "교실", "그거", "반", "한국어", "열쇠", "버스", "접시", "돈", "컵", "표", "지하철", "이불", "그림", "젓가락", "전화", "우산", "길", "사진", "시간", "안경", "숟가락", "선물", "신문", "그릇", "병", "잔", "원", "가격"], "природа": ["공원", "바다", "나무", "꽃", "눈", "하늘", "물", "산", "비", "야자수", "벼", "덥다", "달", "가을", "해", "별", "봄", "강", "날씨", "여름", "바람", "구름", "겨울"], "событие": ["공부하다", "가다", "말하다", "사다", "청소하다", "편지", "여행", "쓰다", "모르다", "노래", "음악", "숙제", "일기", "알다", "영화", "오다", "타다", "일하다", "주다", "만나다", "배우다", "만들다", "전화하다", "아르바이트하다", "쉬다", "산책하다", "숙제하다", "쇼핑하다", "기다리다", "받다", "찾다", "닫다", "가르치다", "열다", "시작하다", "놀다", "웃다", "끄다", "서다", "끝나다", "하다", "울다", "내리다", "켜다", "아침"], "тело": ["다리", "이", "머리", "허리", "혀", "보다", "듣다", "앉다", "운동하다", "걷다", "씻다", "일어나다", "자다", "수영하다", "발", "코", "입", "몸", "손", "팔", "배", "목", "얼굴", "귀"], "эмоции": ["행복", "슬픔", "화", "기쁨", "질투", "사랑", "불안", "실망", "두려움", "놀람", "편안함", "부끄러움", "외로움", "지루함", "좋아하다", "지루하다", "좋다", "피곤하다", "공감", "책임감", "감사", "용기", "안정", "기분", "안정감", "자신감", "소속감", "우정", "거리감", "만족감", "감", "감정", "호감", "바쁘다", "행복하다"], "Люди": ["아이", "사람", "친구", "학생", "선생님", "여자", "엄마", "아빠", "가족", "형", "나", "요리사", "가수", "저", "회사원", "동생", "언니", "직업", "누나", "남자", "아우", "교수", "아버지", "어머니", "아기", "여러분", "운동선수", "러시아 사람", "프로그래머", "프랑스 사람", "몽골 사람", "미국 사람", "기자", "일본 사람", "중국 사람", "말레이시아 사람", "한국 사람", "대학원생", "룸메이트", "배우", "대학생", "브라질 사람", "의사", "베트남 사람", "여성", "남성", "우리", "간호사", "아내", "손님", "아들", "남편", "경찰", "할머니", "딸", "할아버지"]};
+const SYN={"ем":"есть","ешь":"есть","ест":"есть","едим":"есть","едят":"есть","ела":"есть","ел":"есть","кушаю":"кушать","пью":"пить","пьёшь":"пить","пьет":"пить","пьёт":"пить","пьём":"пить","иду":"идти","идёшь":"идти","идет":"идти","идёт":"идти","еду":"ехать","смотрю":"смотреть","вижу":"видеть","читаю":"читать","пишу":"писать","люблю":"любить","хочу":"хотеть","знаю":"знать","даю":"давать","покупаю":"покупать","работаю":"работать","учу":"учить","учусь":"учиться","живу":"жить","делаю":"делать","говорю":"говорить","слушаю":"слушать","сплю":"спать","встаю":"вставать","прихожу":"приходить","звоню":"звонить","гуляю":"гулять","играю":"играть","жду":"ждать","сижу":"сидеть","стою":"стоять","открываю":"открывать","закрываю":"закрывать"};
+const norm=s=>s.toLowerCase().replace(/ё/g,"е").trim();
+const $=id=>document.getElementById(id);
+function F(s){return String(s).replace(/\{(o|b|g|p|r|k)\|([^}]*)\}/g,'<span class="c-$1">$2</span>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')}
+function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+
+/* ---------- tabs ---------- */
+const TABS=['words','gram','cheat','talk','hangul','read','sent','num','rev'];
+function openTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));TABS.forEach(x=>$('t-'+x).hidden=(x!==t));window.scrollTo(0,0)}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>openTab(b.dataset.t));
+
+/* ---------- words ---------- */
+const CATN={"Люди":"Люди","природа":"Природа","окружение":"Окружение","еда":"Еда","место":"Место","животные":"Животные","одежда":"Одежда","событие":"Событие","тело":"Тело","наречие":"Наречие","эмоции":"Эмоции"};
+const W2C={};Object.entries(CAT).forEach(([c,l])=>l.forEach(w=>{(W2C[w]=W2C[w]||[]).push(c)}));
+D.forEach(d=>{d.ft=norm(d.t);d.fr=norm(d.r);d.fs=norm(d.s);d.c=W2C[d.k]||[]});
+let curCat='';
+$('wc').textContent=D.length;$('wcount').textContent=D.length+' слов';$('wbig').textContent=D.length;
+function hl(text,qs){let out=esc(text);qs.filter(Boolean).forEach(q=>{const re=new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi");out=out.replace(/(<[^>]+>)|([^<]+)/g,(m,tag,txt)=>tag?tag:txt.replace(re,"<mark>$1</mark>"))});return out}
+function score(d,qs){let tot=0;for(const q of qs){let s=0;
+ const words=d.ft.split(/[^а-яa-z0-9ё]+/).filter(Boolean);
+ if(d.ft===q||words.includes(q))s=100;
+ else if(words.some(w=>w.startsWith(q)))s=70;
+ else if(d.k===q)s=95;else if(d.k.startsWith(q))s=80;else if(d.k.includes(q))s=50;
+ else if(d.fr===q)s=90;else if(d.fr.startsWith(q))s=60;
+ else if(d.ft.includes(q))s=40;
+ else if(d.fr.includes(q))s=30;
+ else if(d.fs.includes(q)||d.s.includes(q))s=10;
+ if(!s)return 0;tot+=s}return tot}
+function card(d,qs){return `<div class="row"><span class="n">${d.n}</span><span class="k">${hl(d.k,qs)}</span><span class="rd">${hl(d.r,qs)}</span><span class="tr">${hl(d.t,qs)}</span><span class="se">${hl(d.s,qs)}</span></div>`}
+const HEAD='<div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span class="tr2">Перевод</span><span class="se2">Предложение</span></div>';
+function renderWords(){const raw=$('q').value;let qs=norm(raw).split(/\s+/).filter(Boolean).map(w=>SYN[w]||w);
+ const pool=curCat?D.filter(d=>d.c.includes(curCat)):D;
+ if(!qs.length){$('out').innerHTML='<div class="tb">'+HEAD+pool.map(d=>card(d,[])).join("")+'</div>';$('cnt').textContent=(curCat?CATN[curCat]+': ':'Всего слов: ')+pool.length;return}
+ const r=pool.map(d=>[score(d,qs),d]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]||a[1].n-b[1].n);
+ $('out').innerHTML=r.length?'<div class="tb">'+HEAD+r.map(x=>card(x[1],qs)).join("")+'</div>':`<div class="empty"><div class="big">✿</div>Ничего не нашлось по «${esc(raw)}».<br>Попробуй другое слово или часть слова.</div>`;
+ $('cnt').textContent="Найдено: "+r.length}
+$('wchips').innerHTML='<button class="chip on" data-c="">Все</button>'+Object.keys(CATN).map(c=>`<button class="chip" data-c="${c}">${CATN[c]}</button>`).join('');
+$('wchips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;curCat=b.dataset.c;document.querySelectorAll('#wchips .chip').forEach(x=>x.classList.toggle('on',x===b));renderWords()};
+$('q').addEventListener('input',renderWords);
+$('x').onclick=()=>{$('q').value="";renderWords();$('q').focus()};
+$('rnd').onclick=()=>{const d=D[Math.floor(Math.random()*D.length)];$('q').value="";$('out').innerHTML='<div class="tb">'+HEAD+card(d,[])+'</div>';$('cnt').textContent="Случайное слово №"+d.n};
+renderWords();
+
+/* ---------- grammar data ---------- */
+const G=[
+{id:'iyo',ko:'이에요 / 예요',ru:'быть, являться («это…», «я…»)',s:'Быть и отрицание',l:'Урок 1',st:'ok',d:'вежливая связка в конце предложения',b:[
+['p','Вежливое окончание «это… / я…» — базовая связка для утвердительных предложений (стиль 해요체). Ставится в конце предложения.'],
+['formula','[слово] + {o|이에요} / {b|예요}'],
+['rule','Есть 받침 (согласная внизу) → {o|이에요}. Нет 받침 (чистая гласная) → {b|예요}.<br>Смотри на последнюю букву слова перед окончанием.'],
+['tbl',['Слово','받침?','Форма','Пример'],[['친구','нет','{b|예요}','친구{b|예요}'],['고기','нет','{b|예요}','고기{b|예요}'],['학생','есть (ㅇ)','{o|이에요}','학생{o|이에요}'],['사람','есть (ㅁ)','{o|이에요}','사람{o|이에요}'],['물','есть (ㄹ)','{o|이에요}','물{o|이에요}']]],
+['h','Примеры'],
+['ex',[['책{o|이에요}.','Это книга.'],['커피{b|예요}.','Это кофе.'],['저는 학생{o|이에요}.','Я студент.'],['저는 친구{b|예요}.','Я друг.'],['이것은 물{o|이에요}.','Это вода.'],['이것은 사과{b|예요}.','Это яблоко.']]],
+['pron','연음: 책이에요 читается «че-ги-е-ё» — согласная из 받침 «переезжает» в начало следующего слога, у которого нет своей согласной (ㅇ).'],
+['tip','Метки из Notion: {o|жирный с подчёркиванием} = у слова ЕСТЬ 받침, {b|просто жирный} = у слова НЕТ 받침. Так же работают 은/는, 이/가, 을/를.'],
+['p','**Слова урока 1:** 커피, 의자, 책, 꽃, 저/나 (я — вежливо / разговорно), 이름, 뭐, 회사원. В уроке 4 диалога: как зовут, откуда ты, про студента и работу.']]},
+
+{id:'eun',ko:'은 / 는',ru:'частица темы',s:'Частицы',l:'Урок 2',st:'ok',d:'«а что касается…» — о чём идёт речь',b:[
+['p','Показывает, о чём или о ком идёт речь («а вот это…»). Обычно стоит после первого слова в предложении. ≈ «я / это (тема разговора)».'],
+['formula','[тема] + {o|은} / {b|는}'],
+['rule','Есть 받침 → {o|은}. Нет 받침 → {b|는}.<br>Правило то же, что у 이에요/예요 — только применяется в начале предложения, а не в конце.'],
+['ex',[['형{o|은} …','старший брат (тема)'],['아빠{b|는} …','папа (тема)'],['저{b|는} 학생이에요.','Я студент.'],['이것{o|은} 책이에요.','Это книга.'],['저{b|는} 학생이 아니에요.','Я не студент.']]],
+['tip','Чем 은/는 отличается от 이/가 — смотри карточку «이 / 가». Правило по 받침 одинаковое, разница в смысле.'],
+['p','**Слова урока 2:** 형, 동생, 아빠, 엄마, 가수, 회사원, 요리사. Задание на составление предложений (나/학생, 친구/가수 и т.д.).']]},
+
+{id:'iga',ko:'이 / 가',ru:'частица подлежащего',s:'Частицы',l:'Урок 3',st:'ok',d:'«кто / что именно»',b:[
+['p','Выделяет подлежащее: «кто/что именно» делает действие или является предметом разговора. Часто стоит в вопросах или когда называешь что-то впервые.'],
+['formula','[подлежащее] + {o|이} / {b|가}'],
+['rule','Есть 받침 → {o|이}. Нет 받침 → {b|가}.'],
+['ex',[['이름{o|이} 뭐예요?','Как тебя зовут?'],['카페{b|가} 어디예요?','Где кафе?'],['이 사람{o|이} 누구예요?','Кто этот человек?'],['비{b|가} 와요.','Идёт дождь.'],['친구{b|가} 있어요.','Есть друг.']]],
+['tip','**은/는 vs 이/가:** правило по 받침 одинаковое, разница в смысле. 은/는 — «а вот об этом человеке/предмете» (тема, уже известное). 이/가 — «именно этот» (называешь новое, отвечаешь на вопрос, или сам вопрос «кто/что»). Вопросы и слова 있다/없다 почти всегда просят 이/가.'],
+['warn','Не путай с указательным 이 «этот» и с 이 в 이에요 — это разные 이, см. карточку «이 / 그 / 저».'],
+['p','**Слова урока 3:** 직업, 카페, 여기, 어디, 누구. 4 диалога: имя, профессия, где кафе, кто это.']]},
+
+{id:'anie',ko:'이 아니에요 / 가 아니에요',ru:'не являться («это не…», «я не…»)',s:'Быть и отрицание',l:'Урок 4',st:'ok',d:'отрицание от 이에요/예요',b:[
+['p','Отрицательная форма от 이에요/예요 — «это не… / я не…».'],
+['formula','[слово] + {o|이} / {b|가} 아니에요'],
+['rule','Есть 받침 → {o|이 아니에요}. Нет 받침 → {b|가 아니에요}.'],
+['ex',[['동생{o|이 아니에요}.','Это не младший/ая.'],['누나{b|가 아니에요}.','Это не старшая сестра.'],['저는 학생{o|이 아니에요}.','Я не студент.'],['일본 사람{o|이 아니에요}.','Я не японец.'],['저는 한국 사람{o|이 아니에요}.','Я не кореец.']]],
+['warn','아니에요 не сокращается — читается полностью «а-ни-е-ё».'],
+['tip','С 이에요/예요 и 있어요/없어요 частицу 안 не используют: для «быть» отрицание — 이/가 아니에요.'],
+['p','**Слова урока 4:** 일본, 누나/언니 (старшая сестра: 누나 говорит парень, 언니 — девушка), 남자.']]},
+
+{id:'iss',ko:'에 있어요 / 없어요',ru:'есть / нет (о месте)',s:'Место и направление',l:'Урок 5',st:'ok',d:'что где находится',b:[
+['p','있다 — быть, находиться, 없다 — отсутствовать. С частицей 에 (место) показывает, есть что-то или кто-то в месте или нет. «Есть» о предмете почти всегда с 이/가 (не 은/는).'],
+['formula','[место] + {k|에} + [предмет] + 이/가 + 있어요 / 없어요'],
+['ex',[['침대{b|가} 있어요.','Кровать есть.'],['지갑에 돈{o|이} 없어요.','В кошельке нет денег.'],['교실에 학생{o|이} 있어요.','В классе есть ученик.'],['집에 고양이{b|가} 있어요.','Дома есть кошка.'],['나나 씨는 학교에 있어요.','Нана в школе.'],['은행은 백화점 앞에 있어요.','Банк перед универмагом.']]],
+['rule','에 от 받침 **не меняется**: 학교에, 백화점에 — всегда 에.'],
+['warn','Частая ошибка: пропускать 에 после места.'],
+['pron','학교에 있어요 [학꾜에 이써요], 없어요 [업써요]'],
+['tip','이/가 тут — та же частица подлежащего (карточка «이 / 가»), а не 은/는: называем предмет впервые, отвечаем на «что/кто есть».'],
+['p','**Слова урока 5:** 침대, 방, 지갑, 돈, 교실, 학생들 (показатель мн. числа 들), 옆에. Диалог про кровать + предложения про кошелёк/деньги, брата дома, учеников в классе.']]},
+
+{id:'ayo',ko:'아요 / 어요 / 여요',ru:'вежливое настоящее время',s:'Глаголы и просьбы',l:'Урок 6',st:'ok',d:'глаголы: убираем 다, добавляем окончание',b:[
+['p','У словарной формы убирается **다**, добавляется одно из трёх окончаний — по **последней гласной основы** (а не по 받침!). Это единственное правило, которое не смотрит на 받침.'],
+['rule','Основа на {g|ㅏ} или {g|ㅗ} → {g|아요}<br>Основа на любую другую гласную → {p|어요}<br>Глаголы на 하다 → {k|해요} (не «하여요»)'],
+['tbl',['Словарная форма','Вежливая форма','Значение'],[['많다','많{g|아요}','много'],['먹다','먹{p|어요}','ем / кушаю'],['공부하다','공부{k|해요}','учусь'],['보다','봐요','смотрю (보+아요 → 봐요)'],['오다','와요','прихожу (오+아요 → 와요)'],['가다','가요','иду'],['자다','자요','сплю'],['사다','사요','покупаю'],['배우다','배워요','учусь'],['마시다','마셔요','пью'],['쓰다','써요','пишу'],['느리다','느려요','медленный']]],
+['ex',[['아야나는 자요.','Аяна спит.'],['테오는 샌드위치를 먹어요.','Тео ест сэндвич.'],['저는 책을 읽어요.','Я читаю книгу.']]],
+['warn','**Гласные сливаются:** 사다→사요, 보다→봐요; корейцы никогда не говорят несжатый вариант. **Неправильные:** 듣다→들어요 (ㄷ-неправильный, 받침 меняется), 덥다→더워요 (ㅂ-неправильный, 받침 исчезает и превращается в 워). Их нужно запоминать по одному.'],
+['pron','먹어요 [머거요] (연음), 와요 [와요], 해요 [해요]'],
+['p','**Слова урока 6:** 많다, 좋다, 먹다, 읽다, 말하다, 앉다, 듣다, 덥다, 살다, 보다, 느리다, 사다, 지루하다. 3 диалога: про яблоки (무엇이 있어요?), про еду (밥 먹어요?), про человека (이 사람은 누구예요?) + предложения про школу/работу.']]},
+
+{id:'adj',ko:'형용사 + 아요 / 어요',ru:'прилагательные «какой?»',s:'Глаголы и просьбы',l:'Урок 6',st:'ok',d:'прилагательное — это глагол состояния',b:[
+['p','Прилагательное — это глагол состояния: к основе добавляют -아요/어요, и получается вежливое «вкусный, дорогой, чистый». Предмет описания берёт 이/가.'],
+['rule','Последняя гласная основы ㅏ, ㅗ → -아요. Остальные → -어요. На -하다 → 해요.<br>Существительное перед прилагательным: есть 받침 → 이, нет → 가.'],
+['tbl',['Основа','Окончание','Результат'],[['좋','ㅗ → {g|아요}','좋아요'],['맛있','ㅣ → {p|어요}','맛있어요'],['친절하','하다 → {k|해요}','친절해요']]],
+['ex',[['사과가 비싸요.','Яблоки дорогие.'],['교실이 깨끗해요.','Класс чистый.'],['명동에 사람이 많아요? — 네, 많아요.','В Мёндоне много людей? — Да, много.']]],
+['tip','Вопрос и ответ звучат одинаково — меняется интонация: 많아요? — 네, 많아요.']]},
+
+{id:'an',ko:'안 + 아요 / 어요',ru:'отрицание глаголов',s:'Быть и отрицание',l:'Урок 7',st:'ok',d:'«не делаю», «не такой»',b:[
+['p','**{r|안}** ставится ПЕРЕД глаголом или прилагательным и превращает его в отрицание «не…». Окончание выбирается по тому же правилу, что в «아요/어요».'],
+['formula','{r|안} + [глагол в вежливой форме]'],
+['ex',[['{r|안} 많아요.','Не много.'],['{r|안} 먹어요.','Не ем.'],['{r|안} 해요.','Не делаю.'],['저는 드라마를 {r|안} 봐요.','Я не смотрю дораму.'],['방이 {r|안} 깨끗해요.','Комната не чистая.'],['오늘 일해요? — 아니요, 일 {r|안} 해요.','Сегодня работаешь? — Нет, не работаю.']]],
+['warn','**Три исключения.**<br>1) Длинная форма: 안+слово = слово-지 않아요 (оба верны): 가지 않아요 = 안 가요.<br>2) Составные [сущ.]+하다: 안 встаёт ВНУТРИ, перед 하다: 공부 안 해요 (не 안 공부해요), 청소 안 해요. Исключение: 좋아하다 → 안 좋아해요.<br>3) Слова с готовым антонимом: 알다→{r|모르다} (몰라요), 있다→{r|없다} (없어요).'],
+['tip','Не используется с 이에요/예요 (там 이/가 아니에요) и с 있어요/없어요.'],
+['p','**Слова урока 7:** 지금, 음악, 여러분, 운동하다, 숙제, 일기, 쓰다, 매일, 알다, 모르다, 청소하다, 피곤하다.']]},
+
+{id:'eul',ko:'을 / 를',ru:'частица прямого дополнения',s:'Частицы',l:'Урок 8',st:'ok',d:'на что направлено действие',b:[
+['p','Показывает, НА ЧТО направлено действие — «что именно» делают, «кого/что».'],
+['formula','[объект] + {o|을} / {b|를} + [действие]'],
+['rule','Есть 받침 → {o|을}. Нет 받침 → {b|를}.'],
+['ex',[['책{o|을} 읽어요.','Читаю книгу.'],['커피{b|를} 마셔요.','Пью кофе.'],['편지{b|를} 써요.','Пишу письмо.'],['저는 커피{b|를} 사요.','Я покупаю кофе.'],['저는 빵{o|을} 만들어요.','Я делаю хлеб.']]],
+['tip','**뭐 vs 무엇:** оба «что» — два варианта одного слова. 뭐 — разговорная короткая форма, 무엇 — формальная. После 뭐 частицу 를 часто опускают (뭐 해요? — норма). С 무엇 частицу не опускают (무엇을 해요?). 뭘 = стянутое 뭐+를.'],
+['p','**Слова урока 8:** 편지, 노래, 영화, 라면, 여행.']]},
+
+{id:'gada',ko:'에 가다 / 오다',ru:'идти / приходить в место',s:'Место и направление',l:'Урок 9',st:'ok',d:'направление: куда идём',b:[
+['formula','[место] + {k|에} + 가요 / 와요'],
+['rule','**가다** — движение ОТ говорящего. **오다** — движение К говорящему.<br>Если говорящий уже находится в месте назначения, говорят 와요.<br>에 нельзя пропускать, от 받침 не меняется.'],
+['ex',[['크리스는 식당에 가요.','Крис идёт в ресторан.'],['학교에 가요.','Иду в школу.'],['친구가 집에 와요.','Друг приходит домой.'],['병원에 가요.','Иду в больницу.']]],
+['warn','Неверно: 백화점 가요 ✗ → верно: 백화점{k|에} 가요 ✓'],
+['pron','식당에 가요 [식땅에 가요]. 오다 → 와요 (ㅗ + 아 сливаются в 와).']]},
+
+{id:'eseo',ko:'에서',ru:'место действия',s:'Место и направление',l:'Урок 10',st:'ok',d:'где что-то делают',b:[
+['formula','[место] + {k|에서} + [глагол действия]'],
+['p','Отвечает на вопрос «где происходит действие». От 받침 не зависит — всегда 에서.'],
+['ex',[['안나는 도서관에서 공부해요.','Анна учится в библиотеке.'],['식당에서 밥을 먹어요.','Ем в столовой.'],['공원에서 운동해요.','Занимаюсь спортом в парке.'],['카페에서 아르바이트해요.','Подрабатываю в кафе.']]],
+['h','Сравни: 에 или 에서?'],
+['tbl',['После слова места…','Частица'],[['있어요 / 없어요 или 가요 / 와요','{k|에}'],['глагол действия (공부해요, 먹어요, 운동해요)','{k|에서}']]],
+['pron','도서관에서 [도서과네서]: ㄴ из 관 переезжает к 에 (연음).']]},
+
+{id:'hago',ko:'하고',ru:'«и» между существительными',s:'Частицы',l:'Урок 11',st:'ok',d:'соединяет слова: вода и сок',b:[
+['formula','[сущ.] + {k|하고} + [сущ.]'],
+['p','Соединяет слова как «и». От 받침 не зависит — всегда 하고. Частица (이/가, 을/를) ставится один раз, после последнего слова.'],
+['ex',[['물하고 주스','вода и сок'],['빵하고 커피','хлеб и кофе'],['물하고 주스가 있어요.','Есть вода и сок.'],['빵하고 커피 주세요.','Дайте хлеб и кофе.'],['우리 반 친구들하고 같이 학생 식당에 가요.','Мы с одногруппниками идём в студенческую столовую.']]],
+['pron','물하고 [мульхаго], 빵하고 [ппанхаго].'],
+['tip','В уроке 11 по курсу — 와/과 (вариант по 받침). Конспекта урока в Notion пока нет.']]},
+
+{id:'pos',ko:'앞 / 뒤 / 옆 / 위 / 아래',ru:'слова положения',s:'Место и направление',l:'',st:'ok',d:'перед, за, рядом, над, под',b:[
+['formula','[сущ.] + 앞 / 뒤 / 옆 / 위 / 아래 + {k|에} + 있어요'],
+['rule','Слово положения стоит ПОСЛЕ существительного («банк-перед»), а 에 — после слова положения: 백화점 앞에.'],
+['tbl',['Слово','Значение'],[['앞','перед'],['뒤','за, сзади'],['옆','рядом, сбоку'],['위','над, на'],['아래 (밑)','под, низ'],['안','внутри'],['밖','снаружи']]],
+['ex',[['은행은 백화점 앞에 있어요.','Банк перед универмагом.'],['학교 뒤에 공원이 있어요.','За школой есть парк.'],['병원 옆에 약국이 있어요.','Рядом с больницей аптека.'],['책상 위에 책이 있어요.','На столе книга.'],['의자 아래에 가방이 있어요.','Под стулом сумка.'],['가방 안에 책이 있어요.','В сумке книга.'],['교실 밖에 있어요.','Снаружи класса.']]],
+['pron','앞에 [아페], 옆에 [여페]: последняя согласная переезжает к 에 (연음).'],
+['warn','안 «внутри» — не то же самое, что частица отрицания 안 (см. «안 + 아요/어요»).']]},
+
+{id:'here',ko:'여기 / 거기 / 저기',ru:'здесь / там / вон там',s:'Место и направление',l:'',st:'ok',d:'указатели места',b:[
+['tbl',['Слово','Значение'],[['여기 [ёги]','здесь, рядом с говорящим'],['거기 [коги]','там, рядом с собеседником или то, о чём уже сказали'],['저기 [чоги]','вон там, далеко от обоих']]],
+['p','Частицы по обычному правилу: слова кончаются на гласную, значит 가, 는, 를. 에 не меняется.'],
+['ex',[['저기에 은행이 있어요.','Вон там банк.'],['카페가 여기예요.','Кафе здесь.'],['거기에 가방이 있어요.','Там сумка.'],['지하철역은 저기에 있어요.','Станция метро вон там.']]]]},
+
+{id:'deul',ko:'들',ru:'множественное число',s:'Частицы',l:'Урок 5',st:'ok',d:'친구 → 친구들 (несколько)',b:[
+['p','Существительное + 들. Показывает «несколько», а не слово «много». 들 читается «тыль».'],
+['rule','들 заканчивается на ㄹ (받침 **есть**), поэтому после него идут {o|은 / 이 / 을}, а не 는 / 가 / 를.'],
+['ex',[['친구들{o|은} 학교에 가요.','Друзья идут в школу.'],['학생들{o|이} 도서관에서 숙제해요.','Ученики делают домашнее задание в библиотеке.'],['저는 친구{b|를} 만나요.','Я встречаюсь с другом.']]],
+['pron','친구들은 [чингудырын], 친구들이 [чингудыри], 친구들을 [чингудырыль].'],
+['warn','Ошибка: 친구들는 ✗ → 친구들{o|은} ✓. С числом 들 обычно не нужен (친구 둘 — два друга); если и так ясно, что их много, 들 часто опускают. Глагол по числу не меняется: 가요 и для «друг идёт», и для «друзья идут».']]},
+
+{id:'nuga',ko:'누구 vs 누가',ru:'«кто» в двух формах',s:'Указатели и вопросы',l:'',st:'ok',d:'сказуемое или подлежащее',b:[
+['p','Одно слово 누구 (кто) в двух формах — базовой и с частицей подлежащего.'],
+['rule','«Кто» — сказуемое (после «это/этот», перед 예요) → **누구**.<br>«Кто» — сам действует (подлежащее, перед глаголом) → **누가** (누구+가, особое стяжение, 구 выпадает).'],
+['tip','Быстрая проверка: поставь вопрос по-русски и посмотри, что идёт сразу после «кто»: глагол → 누가. Связка «это/есть» → 누구.'],
+['ex',[['이 사람이 {g|누구}예요?','Кто этот человек?'],['{p|누가} 책을 읽어요?','Кто читает книгу?'],['{p|누가} 음악을 안 들어요?','Кто не слушает музыку?'],['저 사람이 {g|누구}예요?','Кто тот человек вон там?'],['이것은 누구의 가방이에요?','Чья это сумка?']]]]},
+
+{id:'ijeo',ko:'이 / 그 / 저',ru:'указательные и 이것 / 그것 / 저것',s:'Указатели и вопросы',l:'',st:'ok',d:'«этот», «тот», «вон тот»',b:[
+['p','Это слова «этот / тот», совсем другое, чем частица подлежащего 이.'],
+['h','Перед существительным'],
+['tbl',['Слово','Значение','Пример'],[['{b|이}','этот, рядом со мной','이 책 — эта книга'],['{o|그}','тот / этот, рядом с собеседником или уже известный','그 책 — та книга'],['{r|저}','вон тот, далеко от обоих','저 책 — та книга вон там']]],
+['h','Самостоятельно: «эта вещь»'],
+['p','것 = вещь, предмет. 이+것 = **이것** (разговорно **이거**) — эта вещь рядом со мной. 그것 (그거) — та вещь у собеседника. 저것 (저거) — та вещь далеко.'],
+['ex',[['이 사람','этот человек (рядом со мной)'],['이거 뭐예요?','Что это? (вещь в твоей руке)'],['그거 커피예요?','Это у тебя кофе?'],['저 호텔','тот отель вон там']]],
+['warn','**Четыре разных 이, которые просто одинаково пишутся:**'],
+['tbl',['Что это за 이','Пример','Разбор'],[['1) Указательное «этот»','{p|이} 사람이 누구예요?','первое 이 — самостоятельное слово, стоит ПЕРЕД существительным'],['2) Частица подлежащего','이 사람{p|이} 누구예요?','второе 이 приклеено к 사람 (есть 받침 ㅁ)'],['3) Часть окончания 이에요','책{p|이에요}.','кусок окончания «быть», отдельно не выделяется'],['4) Часть слова 이것/이거','{p|이것}은 책이에요.','цельное местоимение «эта вещь»']]],
+['ok','**Как отличить:** после 이 стоит существительное (이 사람) — указательное «этот». 이 приклеено К КОНЦУ слова (사람이, 책이에요) — частица или окончание. Целое слово 이것/이거 отдельно — местоимение.']]},
+
+{id:'juse',ko:'주세요',ru:'«дайте, пожалуйста»',s:'Глаголы и просьбы',l:'',st:'ok',d:'вежливая просьба в кафе и магазине',b:[
+['formula','[сущ.] + {k|주세요}'],
+['p','Вежливая просьба дать или сделать что-то — очень частая в ресторанах и магазинах.'],
+['ex',[['물 주세요.','Дайте воды, пожалуйста.'],['메뉴 주세요.','Дайте меню.'],['이거 주세요.','Дайте вот это.'],['포크 주세요.','Дайте вилку.'],['빵하고 커피 주세요.','Дайте хлеб и кофе.'],['커피 두 잔 주세요.','Два кофе, пожалуйста.'],['비빔밥 한 그릇 주세요.','Одну порцию бибимбапа.'],['물 세 병 주세요.','Три бутылки воды.']]],
+['pron','물 주세요 [муль чусеё], 메뉴 주세요 [меню чусеё], 이거 주세요 [иго чусеё].'],
+['tip','Счётные слова 잔, 병, 그릇 — в разделе «Числа».']]},
+
+{id:'jima',ko:'-지 마',ru:'«не делай…»',s:'Глаголы и просьбы',l:'',st:'ok',d:'неформальный запрет, просьба',b:[
+['formula','основа глагола (без 다) + {r|지 마}'],
+['p','Неформальная, резкая просьба или запрет — как в речи друзей или эмоционально («не плачь», «не уходи»).'],
+['ex',[['울다 → 울지마','не плачь'],['가다 → 가지마','не уходи'],['걱정하다 → 걱정하지마','не волнуйся'],['포기하지마','не сдавайся']]],
+['pron','울지마 [ульчима], 가지마 [каджима], 포기하지마 [погихаджима].'],
+['tip','В уроке 15 по курсу — вежливая форма 지 마세요.']]},
+
+{id:'ege',ko:'에게 / 한테 / 께',ru:'«кому» (дательный)',s:'Частицы',l:'Урок 30',st:'soon',d:'получатель — человек или животное',b:[
+['p','Указывает получателя — «кому» (только для людей и животных).'],
+['rule','**에게** — нейтрально / письменно. **한테** — разговорный вариант. **께** — вежливая форма для старших и уважаемых людей (бабушки, дедушки). От 받침 не зависят.'],
+['ex',[['친구에게 선물을 줬어요.','Подарила подарок другу.'],['할머니께 전화를 드렸어요.','Позвонила бабушке.']]],
+['tip','Тема ещё не пройдена (по курсу — урок 30).']]},
+
+{id:'egeseo',ko:'에게서 / 한테서',ru:'«от кого» (исходный)',s:'Частицы',l:'Урок 30',st:'soon',d:'источник — от человека',b:[
+['p','Указывает источник — «от кого» (только для людей и животных).'],
+['rule','**에게서** — нейтрально / письменно. **한테서** — разговорный. Взаимозаменяемы, от 받침 не зависят.'],
+['ex',[['친구에게서 선물을 받았어요.','Получила подарок от друга.'],['엄마한테서 전화를 받았어요.','Мне позвонила мама.']]],
+['tip','Тема ещё не пройдена (по курсу — урок 30).']]},
+
+{id:'ro',ko:'(으)로',ru:'«чем / на чём» (творительный)',s:'Частицы',l:'Урок 28',st:'soon',d:'способ, инструмент, роль',b:[
+['p','Указывает способ или инструмент — «кем / чем / с помощью чего».'],
+['rule','Нет 받침 → {b|로}. Есть 받침 → {o|으로}. Немного иначе, чем остальные частицы: с 받침 перед 로 добавляется гласная 으.'],
+['ex',[['버스{b|로} 학교에 가요.','Еду в школу на автобусе.'],['젓가락{o|으로} 먹어요.','Ем палочками.'],['회사원{o|으로} 일해요.','Работаю офисным работником.']]],
+['tip','Тема ещё не пройдена (по курсу — урок 28).']]},
+
+{id:'thanks',ko:'감사합니다',ru:'уровни вежливости «спасибо»',s:'Вежливость',l:'',st:'ok',d:'от 고마워 до 진심으로 감사합니다',b:[
+['p','Выбор формы зависит от того, кому говоришь — от самого неформального до самого торжественного.'],
+['tbl',['Уровень','Форма','Чтение','Кому'],[['1','고마워','комаво','друзьям (самое неформальное)'],['2','고마워요','комавоё','знакомым / близким старше тебя'],['3','감사해요','камсахэё','коллегам, товарищам'],['4','감사합니다','камсахамнида','по работе / бизнесу, начальнику'],['5','정말 감사합니다','чонгмаль камсахамнида','огромное спасибо'],['6','진심으로 감사합니다','чинсимыро камсахамнида','искренне благодарю (самое формальное)']]]]},
+
+{id:'mor',ko:'몰라 → 잘 모르겠습니다',ru:'уровни вежливости «не знаю»',s:'Вежливость',l:'',st:'ok',d:'от неформального до официального',b:[
+['p','Та же логика, что со «спасибо»: от неформального до официально-вежливого стиля.'],
+['tbl',['Форма','Чтение','Где'],[['몰라','молла','другу, неформально'],['몰라요','моллаё','вежливо'],['모르겠어요','морыгессоё','мягче, «не уверен(а)»'],['잘 모르겠습니다','чаль морыгессымнида','официально']]],
+['tip','Основа — 모르다 (не знать), антоним к 알다; в Теме «안» это пример слова с готовым антонимом.']]},
+
+{id:'yeon',ko:'연음',ru:'связывание звуков',s:'Произношение',l:'',st:'ok',d:'받침 переезжает в следующий слог',b:[
+['p','Слог заканчивается на согласную (받침), а следующий слог начинается с пустой ㅇ (как в 이에요, 은/는, 이 и т.д.). Тогда согласная из 받침 «переезжает» в начало следующего слога.'],
+['tbl',['Написано','Как звучит на самом деле','По буквам'],[['이것은','и-го-сын','и-гот-ын'],['저것은','чо-го-сын','чо-гот-ын'],['책이에요','че-ги-е-ё','чек-ие-ё'],['먹어요','мо-го-ё','мок-оё'],['앞에','а-пе','ап-е']]]]},
+
+{id:'pyeong',ko:'평음',ru:'озвончение ㄱ ㄷ ㅂ ㅈ',s:'Произношение',l:'',st:'ok',d:'в начале слова глухо, дальше звонко',b:[
+['p','Простые согласные ㄱ ㄷ ㅂ ㅈ (к/г, т/д, п/б, ч/дж) звучат глухо только в самом начале слова или фразы. Если та же буква оказывается не в начале (между гласными или после ㄴ/ㅁ/ㄹ), она автоматически озвончается. Одно правило для всех четырёх букв.'],
+['tbl',['Написано','Звучит'],[['가가가','ка-га-га'],['다다다','та-да-да'],['바바바','па-ба-ба'],['자자자','ча-джа-джа']]]]}
+];
+
+
+/* ---------- grammar ui ---------- */
+const SECS=['Быть и отрицание','Частицы','Место и направление','Глаголы и просьбы','Указатели и вопросы','Вежливость','Произношение'];
+let gSec='';$('gc2').textContent=G.length;
+function renderGram(){const L=gSec?G.filter(g=>g.s===gSec):G;
+ $('ggrid').innerHTML=L.map(g=>`<button class="gc" data-id="${g.id}"><h3>${F(g.ko)}</h3><div class="rn">${g.ru}</div><div class="d">${g.d}</div><div class="ft"><span class="pill">${g.s}</span>${g.l?`<span class="pill l">${g.l}</span>`:''}<span class="pill ${g.st==='ok'?'s':'n'}">${g.st==='ok'?'пройдено':'ещё рано'}</span></div></button>`).join('')}
+$('gchips').innerHTML='<button class="chip on" data-c="">Все</button>'+SECS.map(s=>`<button class="chip" data-c="${s}">${s}</button>`).join('');
+$('gchips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;gSec=b.dataset.c;document.querySelectorAll('#gchips .chip').forEach(x=>x.classList.toggle('on',x===b));renderGram()};
+$('ggrid').onclick=e=>{const b=e.target.closest('.gc');if(b)openG(b.dataset.id)};
+function blk(b){const[t,a,c]=b;
+ if(t==='p')return `<p>${F(a)}</p>`;
+ if(t==='h')return `<h4>${a}</h4>`;
+ if(t==='rule')return `<div class="rule">${F(a)}</div>`;
+ if(t==='formula')return `<div class="formula">${F(a)}</div>`;
+ if(t==='warn')return `<div class="warn">⚠️ ${F(a)}</div>`;
+ if(t==='tip')return `<div class="tip">💡 ${F(a)}</div>`;
+ if(t==='ok')return `<div class="ok">✅ ${F(a)}</div>`;
+ if(t==='pron')return `<div class="pron">${F(a)}</div>`;
+ if(t==='ex')return `<div class="exl">${a.map(r=>`<div><b>${F(r[0])}</b><span>${F(r[1])}</span></div>`).join('')}</div>`;
+ if(t==='tbl')return `<table class="t"><tr>${a.map(h=>`<th>${F(h)}</th>`).join('')}</tr>${c.map(r=>`<tr>${r.map(x=>`<td>${F(x)}</td>`).join('')}</tr>`).join('')}</table>`;
+ return ''}
+let gi=0;
+function openG(id){gi=G.findIndex(g=>g.id===id);const g=G[gi];
+ $('gt').innerHTML=F(g.ko);$('gr').textContent=g.ru;
+ $('gpl').innerHTML=`<span class="pill">${g.s}</span>${g.l?`<span class="pill l">${g.l}</span>`:''}<span class="pill ${g.st==='ok'?'s':'n'}">${g.st==='ok'?'пройдено':'ещё рано'}</span>`;
+ $('gbody').innerHTML=g.b.map(blk).join('');$('gbody').scrollTop=0;$('gm').hidden=false;document.body.style.overflow='hidden'}
+function closeG(){$('gm').hidden=true;document.body.style.overflow=''}
+$('gx').onclick=closeG;$('gm').onclick=e=>{if(e.target===$('gm'))closeG()};
+$('gprev').onclick=()=>openG(G[(gi+G.length-1)%G.length].id);
+$('gnext').onclick=()=>openG(G[(gi+1)%G.length].id);
+document.addEventListener('keydown',e=>{if($('gm').hidden)return;if(e.key==='Escape')closeG();if(e.key==='ArrowLeft')$('gprev').click();if(e.key==='ArrowRight')$('gnext').click()});
+renderGram();
+
+/* ---------- cheat ---------- */
+const A=(id,t)=>`<a data-g="${id}" style="cursor:pointer;color:var(--acc7);text-decoration:underline dotted">${t}</a>`;
+const CHEAT=[
+{h:'Частицы одной таблицей',b:[
+['tbl',['Частица','Когда','Смотрит на 받침?','Пример'],[
+[A('eun','{k|은 / 는}'),'тема («а что касается…»)','да: 은 после согласной, 는 после гласной','저는 학생이에요'],
+[A('iga','{k|이 / 가}'),'подлежащее («кто/что»)','да: 이 после согласной, 가 после гласной','이름이 뭐예요?'],
+[A('eul','{k|을 / 를}'),'объект действия («что»)','да: 을 после согласной, 를 после гласной','커피를 마셔요'],
+[A('iss','{k|에}'),'где находится / куда идут','нет, всегда 에','학교에 있어요 / 식당에 가요'],
+[A('eseo','{k|에서}'),'где что-то делают','нет, всегда 에서','도서관에서 공부해요'],
+[A('hago','{k|하고}'),'«и» между существительными','нет, всегда 하고','물하고 주스']]],
+['p','Частицы смотрят на 받침 слова перед ними. После 들 (мн. число) частицы берутся как после слова с 받침, потому что 들 кончается на ㄹ: 친구들은 / 친구들이 / 친구들을. А -아요/어요 смотрит на последнюю гласную основы глагола — это другое правило.']]},
+
+{h:'После слова места: 에 или 에서?',b:[
+['rule','Дальше {k|있어요 / 없어요} или {k|가요 / 와요} → **에**<br>Дальше глагол действия (공부해요, 먹어요, 운동해요) → **에서**<br>Слово положения (앞/뒤/옆/위/아래) стоит **после** существительного, а 에 после него: 백화점 앞에.']]},
+
+{h:'Две частые путаницы',b:[
+['tip','**가요 или 와요:** 가다 — от говорящего, 오다 — к говорящему. Если ты уже в месте назначения, говорят 와요.'],
+['tip','**은/는 или 이/가:** форму выбирает 받침 слова перед частицей, смысл у них разный (тема и подлежащее).']]},
+
+{h:'5 формул для составления предложений',b:[
+['tbl',['Что сказать','Формула','Пример'],[
+['{k|1.} X это Y','[X]는/은 [Y]예요/이에요.','저는 학생이에요. — Я студент.'],
+['{k|2.} X не Y','[X]는/은 [Y]가/이 아니에요.','저는 학생이 아니에요. — Я не студент.'],
+['{k|3.} Есть/нет в месте','[место]에 [X]가/이 있어요/없어요.','집에 고양이가 있어요. — Дома есть кошка.'],
+['{k|4.} X делает действие','[X]는/은 [Y]을/를 [действие]아요/어요/여요.','저는 책을 읽어요. — Я читаю книгу.'],
+['{k|5.} Вопросы что/кто/где','뭐 / 누구(누가) / 어디 + 예요? / 해요?','이게 뭐예요? / 카페가 어디예요? / 누가 책을 읽어요?']]]]},
+
+{h:'Сводная таблица по цвету',b:[
+['tbl',['Правило по 받침','{o|Есть 받침}','{b|Нет 받침}'],[
+['быть (Тема 1)','{o|이에요}','{b|예요}'],['тема (Тема 2)','{o|은}','{b|는}'],['подлежащее (Темы 3, 5)','{o|이}','{b|가}'],['не является (Тема 4)','{o|이 아니에요}','{b|가 아니에요}'],['прямое дополнение (Тема 8)','{o|을}','{b|를}']]],
+['ok','Глаголы (아요/어요/여요 и 안) — единственная группа, которая работает НЕ по 받침, а по гласной основы: {g|아요} / {p|어요} / {k|해요}, плюс {r|안} для отрицания. Не путай эти два правила.']]},
+
+{h:'3 шаблона предложений (вежливый стиль)',b:[
+['tbl',['Что сказать','Шаблон','Примеры'],[
+['Я — [слово]','**저는 + слово + 예요/이에요**','저는 친구예요 — Я друг<br>저는 학생이에요 — Я ученик<br>저는 사람이에요 — Я человек'],
+['Это — [слово]','**이것은 + слово + 예요/이에요**','이것은 고기예요 — Это мясо<br>이것은 물이에요 — Это вода<br>이것은 사과예요 — Это яблоко'],
+['Есть [слово]','**слово + 이/가 + 있어요**','물이 있어요 — Есть вода<br>친구가 있어요 — Есть друг<br>시간이 있어요 — Есть время']]],
+['p','**Алгоритм:** 1) выбери шаблон (я / это / есть) → 2) поставь 저는 или 이것은 → 3) впиши слово из словаря → 4) проверь 받침 → 예요 или 이에요 → 5) запиши в колонку «Предложение» словаря.'],
+['tbl',['Слово','Готовое предложение'],[['친구 — друг','저는 친구예요.'],['학생 — ученик','저는 학생이에요.'],['사람 — человек','저는 사람이에요.'],['고기 — мясо','이것은 고기예요.'],['물 — вода','이것은 물이에요. / 물이 있어요.'],['사과 — яблоко','이것은 사과예요.'],['김치 — кимчи','이것은 김치예요.'],['바다 — море','이것은 바다예요.'],['한국 — Корея','이것은 한국이에요.'],['개 — собака','개가 귀여워요. (Собака милая.)'],['집 — дом','이것은 집이에요.']]]]},
+
+{h:'Частые ошибки новичка',b:[
+['tbl',['Ошибка','Правильно'],[['나 친구','저는 친구{b|예요}'],['저는 학생예요','저는 학생{o|이에요} (есть 받침)'],['이것은 물예요','이것은 물{o|이에요}'],['친구이 있어요','친구{b|가} 있어요 (после гласной → 가)'],['저는 엄마예요 (хочу сказать «есть мама»)','엄마{b|가} 있어요'],['백화점 가요','백화점{k|에} 가요'],['친구들는','친구들{o|은}'],['안 공부해요','공부 {r|안} 해요']]]]},
+
+{h:'Быстрая проверка',b:[
+['ok','1. Смотри на последнюю букву слова — есть 받침?<br>2. Есть → {o|이에요 / 은 / 이 / 을}. Нет → {b|예요 / 는 / 가 / 를}.<br>3. «Я» → 저는. «Это» → 이것은.<br>4. У глагола смотри на гласную основы, а не на 받침.']]}
+];
+
+$('cheatbody').innerHTML=CHEAT.map(blk2).join('');
+function blk2(c){return `<div class="card"><h3>${c.h}</h3>${c.b.map(blk).join('')}</div>`}
+$('cheatbody').onclick=e=>{const a=e.target.closest('[data-g]');if(a)openG(a.dataset.g)};
+
+/* ---------- lessons ---------- */
+
+/* ---------- talk ---------- */
+const PH=[
+['💭 Мысли и размышления',[['그래도 해야겠다','всё равно надо сделать'],['한번 해봐야겠다','надо попробовать'],['생각 좀 해볼게요','подумаю'],['그럴 수도 있겠네요','возможно','있+겠 — 받침 ㅆ перед согласной звучит как «т», не «с»'],['아무래도 그런 것 같아요','думаю, так и есть','것 в конце слова звучит как «гот», ㅅ превращается в «т»'],['잘 모르겠어요','не знаю'],['좀 애매하네요','неоднозначно','буква ㅐ — отдельный звук «э», не путай с ㅔ'],['그건 아닌 것 같은데요','думаю, это не так','та же особенность с 것'],['이제 이해됐어요','теперь понял','됐 — составная гласная ㅙ, звучит как «твэ»'],['그럴 줄 알았어요','я так и знал']]],
+['😲 Реакции',[['진짜요?','правда?'],['정말요?','серьёзно?'],['대박','офигеть'],['헐','жесть / ого'],['와 미쳤다','вау, капец'],['장난 아니네요','ничего себе'],['그러게요','и правда'],['아 그렇구나','аа вот как'],['그렇군요','понятно','ㅎ в конце слога + ㄱ в начале следующего сливаются в один придыхательный звук'],['와 부럽다','завидую'],['대단하네요','круто'],['어떡해','о нет / что делать','сокращённая форма от 어떻게 해, читается слитно'],['세상에','боже мой']]],
+['✅ Согласие',[['그래요','понятно / хорошо'],['좋아요','хорошо'],['오케이','окей'],['그럼요','конечно'],['맞아요','верно'],['맞죠','правда ведь'],['당연하죠','конечно же'],['그렇죠','ну да'],['저도요','я тоже'],['괜찮아요','всё нормально'],['상관없어요','не важно / без разницы'],['그렇게 할게요','так и сделаю','та же связка ㅎ+ㄱ, что в 그렇군요'],['알겠어요','понял'],['알겠습니다','понял (формально)','겠+습니다 — формальное окончание, читается слитно']]],
+['🌙 Перед сном',[['잘 자~','Спокойной ночи.'],['좋은 꿈 꿔.','Сладких снов.'],['푹 쉬어.','Хорошенько отдохни.'],['조심히 들어가.','Доберись домой аккуратно.'],['내일 봐!','До завтра!']]],
+['📅 Договориться о встрече',[['언제 시간 돼?','Когда ты свободен(на)?'],['같이 갈래?','Хочешь пойти вместе?'],['몇 시에 만날까?','Во сколько встретимся?','몇 перед согласной звучит как «мёт», не «мёч»'],['어디서 볼까?','Где встретимся?'],['도착하면 연락해.','Напиши, когда приедешь.']]],
+['💬 Часто используемые',[['나중에 연락할게.','Напишу позже.'],['알겠어.','Понял(а).'],['맞아.','Да, точно.'],['진짜?','Правда?'],['설마!','Да ну!']]],
+['✉️ Когда отвечаешь',[['이제 봤어.','Только сейчас увидел(а).'],['바빠서 답장 못 했어.','Не смог(ла) ответить, был(а) занят(а).'],['늦게 답장해서 미안해.','Извини, что поздно ответил(а).','늦게 — ㅈ+ㄱ сливаются в резкий звук, звучит жёстче'],['지금 연락 가능해?','Сейчас можешь поговорить?'],['잠깐만.','Подожди минутку.']]],
+['👋 Начало разговора',[['지금 뭐 해?','Что делаешь?'],['잘 지냈어?','Как дела? Как поживал(а)?'],['오늘 어땠어?','Как прошёл день?'],['어디야?','Ты где?'],['뭐 하고 있었어?','Чем занимался(ась)?']]],
+['🎬 K-drama фразы',[['뭐 하는 거야?','Что ты делаешь?'],['그만해','Прекрати'],['보고 싶어','Скучаю (по тебе)','싶+어 — 받침 ㅍ переезжает в начало следующего слога'],['장난해?','Ты издеваешься? / Шутишь?'],['울지 마','Не плачь'],['가지 마','Не уходи']]],
+['✨ Отдельные выражения',[['가자','пойдём'],['안녕','привет']]]
+];
+const DLG=[
+['대화 1 — Простое знакомство',['가: 안녕하세요? 저는 소날이에요.','나: 안녕하세요? 저는 크리스예요.','가: 만나서 반가워요, 크리스 씨.','나: 반가워요.'],'Здравствуйте, я Сональ. / Здравствуйте, я Крис. / Приятно познакомиться, Крис. / Взаимно.'],
+['대화 2 — Знакомство + откуда ты',['가: 안녕하세요? 저는 김민우예요. 한국 사람이에요.','나: 안녕하세요? 저는 다니엘이에요. 미국 사람이에요.','가: 만나서 반가워요, 다니엘 씨.','나: 반가워요, 민우 씨.'],'Я Ким Мину, я кореец / Я Даниэль, я американец. Обрати внимание: 은/는 после имени, 이에요/예요 после страны+사람.'],
+['대화 3 — Откуда собеседник',['가: 안녕하세요? 저는 에릭이에요. 어느 나라 사람이에요?','나: 저는 프랑스 사람이에요.','가: 만나서 반가워요.','나: 저도요.'],'Здравствуйте, я Эрик. Вы из какой страны? / Я из Франции. / Приятно познакомиться. / Взаимно (я тоже).'],
+['대화 4 — Трое в диалоге',['가: 안녕하세요? 저는 베른이에요. 러시아 사람이에요.','나: 안녕하세요? 저는 마리예요. 중국 사람이에요.','다: 안녕하세요? 저는 베르마예요. 몽골 사람이에요.','모두: 만나서 반가워요!'],'Три человека по очереди представляются, все говорят «приятно познакомиться» хором.'],
+['대화 5 — Расскажи о себе',['안녕하세요? 저는 ___이에요/예요. ___ 사람이에요. 만나서 반가워요.','안녕하세요. 저는 미라예요.','저는 러시아 사람이에요.','만나서 반가워요.'],'Подставь своё имя и страну. Проверка: 미라 без 받침 → 예요; 사람 с 받침 ㅁ → 이에요.']
+];
+const SLANG=[['ㅎㅇㅌ','화이팅','Удачи!'],['ㅊㅋ','축하해','Поздравляю!'],['ㅇㅋ','오케이','Ок'],['ㄱㅊ','괜찮아','Всё в порядке'],['ㅇㄷ','어디','Ты где?']];
+
+$('talkbody').innerHTML=
+ PH.map(g=>`<details class="dg"><summary>${g[0]}<span class="ct">${g[1].length}</span></summary>${g[1].map(p=>`<div class="ph"><b>${p[0]}</b><span>${p[1]}</span>${p[2]?`<small>🟡 ${p[2]}</small>`:''}</div>`).join('')}</details>`).join('')+
+ '<h2 class="st">Диалоги знакомства</h2>'+
+ DLG.map(g=>`<details class="dg"><summary>${g[0]}</summary><div class="dl">${g[1].map(l=>`<p>${l}</p>`).join('')}<i>${g[2]}</i></div></details>`).join('')+
+ '<h2 class="st">Слэнг в переписке</h2><div class="card"><p>Корейцы сокращают фразы до первых согласных каждого слога — как наши «спс», «пжлст». Только для друзей, не для официальной речи.</p>'+blk(['tbl',['Сокращение','Полная фраза','Значение'],SLANG])+'</div>';
+
+/* ---------- hangul ---------- */
+(function(){
+const CONS=[['ㄱ',0,'г'],['ㄴ',2,'н'],['ㄷ',3,'д'],['ㄹ',5,'р'],['ㅁ',6,'м'],['ㅂ',7,'б'],['ㅅ',9,'с'],['ㅇ',11,''],['ㅈ',12,'ч'],['ㅊ',14,'ч'],['ㅋ',15,'к'],['ㅌ',16,'т'],['ㅍ',17,'п'],['ㅎ',18,'х']];
+const VOW=[['ㅏ',0,'а'],['ㅑ',2,'я'],['ㅓ',4,'о'],['ㅕ',6,'ё'],['ㅗ',8,'о'],['ㅛ',12,'ё'],['ㅜ',13,'у'],['ㅠ',17,'ю'],['ㅡ',18,'ы'],['ㅣ',20,'и']];
+const JCH={'я':'а','ё':'о','ю':'у'};
+function rd(c,v,ci){let r=c[2];let vv=v[2];
+ if(ci===8||ci===9){ if(v[0]==='ㅑ')vv='а';else if(v[0]==='ㅕ'||v[0]==='ㅛ')vv='о';else if(v[0]==='ㅠ')vv='у'}
+ return c[2]+vv}
+let t='<div class="hg"><table><tr><th></th>'+CONS.map(c=>`<th>${c[0]} ${c[2]||'–'}</th>`).join('')+'</tr>';
+VOW.forEach(v=>{t+=`<tr><th>${v[0]}<br>${v[2]}</th>`+CONS.map((c,ci)=>{const ch=String.fromCharCode(0xAC00+(c[1]*21+v[1])*28);return `<td><b>${ch}</b><i>${rd(c,v,ci)}</i></td>`}).join('')+'</tr>'});
+t+='</table></div>';
+const det=(h,body)=>`<details class="dg"><summary>${h}</summary><div style="padding:6px 16px 14px">${body}</div></details>`;
+const words=[['바다','바 + 다','ㅂ+ㅏ / ㄷ+ㅏ','бада','море'],['친구','친 + 구','ㅊ+ㅣ+ㄴ / ㄱ+ㅜ','чингу','друг'],['학생','학 + 생','ㅎ+ㅏ+ㄱ / ㅅ+ㅐ+ㅇ','хаксэн','ученик'],['사람','사 + 람','ㅅ+ㅏ / ㄹ+ㅏ+ㅁ','сарам','человек'],['물','물','ㅁ+ㅜ+ㄹ','муль','вода'],['고기','고 + 기','ㄱ+ㅗ / ㄱ+ㅣ','коги','мясо'],['아이','아 + 이','ㅇ+ㅏ / ㅇ+ㅣ','аи','ребёнок'],['한국','한 + 국','ㅎ+ㅏ+ㄴ / ㄱ+ㅜ+ㄱ','хангук','Корея'],['자주','자 + 주','ㅈ+ㅏ / ㅈ+ㅜ','чаджу','часто'],['구두','구 + 두','ㄱ+ㅜ / ㄷ+ㅜ','куду','туфли'],['나무','나 + 무','ㄴ+ㅏ / ㅁ+ㅜ','наму','дерево'],['엄마','엄 + 마','ㅇ+ㅓ+ㅁ / ㅁ+ㅏ','омма','мама'],['학교','학 + 교','ㅎ+ㅏ+ㄱ / ㄱ+ㅛ','хаккё','школа'],['고양이','고 + 양 + 이','ㄱ+ㅗ / ㅇ+ㅑ+ㅇ / ㅇ+ㅣ','коянъи','кошка'],['물고기','물 + 고 + 기','ㅁ+ㅜ+ㄹ / ㄱ+ㅗ / ㄱ+ㅣ','мульгоги','рыба'],['집','집','ㅈ+ㅣ+ㅂ','чип','дом'],['김치','김 + 치','ㄱ+ㅣ+ㅁ / ㅊ+ㅣ','кимчхи','кимчи'],['공원','공 + 원','ㄱ+ㅗ+ㅇ / ㅇ+ㅝ+ㄴ','конвон','парк'],['사과','사 + 과','ㅅ+ㅏ / ㄱ+ㅗ+ㅏ','сагва','яблоко'],['개','개','ㄱ+ㅐ','кэ','собака']];
+$('hanbody').innerHTML=
+'<div class="card"><h3>Таблица слогов</h3><p>14 согласных × 10 гласных = 140 слогов. <b>ㅓ</b> = о (среднее), <b>ㅗ</b> = о (глубокое). <b>ㅇ</b> в начале слога не читается, <b>ㅇ</b> в конце = «нг».</p>'+t+'</div>'+
+det('Как читать слово: 3 шага',blk(['p','**1.** Разбей слово на слоги — каждый квадратик = один слог. **2.** Прочитай каждый слог по таблице. **3.** Соедини, читай подряд без пауз.'])+'<pre>Простой слог:     [согласная + гласная]       →  가 = ㄱ+ㅏ\nС 받침 (конец):   [согласная + гласная + 받침]  →  물 = ㅁ+ㅜ+ㄹ</pre>'+blk(['tip','**받침** (пачим) — согласная внизу слога. Влияет на чтение и на грамматику (예요 / 이에요).']))+
+det('Разбор слов из словаря',blk(['tbl',['Слово','Слоги','Из чего','Чтение','Перевод'],words]))+
+det('Частые ловушки',blk(['tbl',['Ловушка','Как не ошибиться'],[['ㅓ и ㅗ','ㅓ = о среднее (머, 서). ㅗ = о глубокое (고, 보)'],['ㅈ и ㅊ','ㅈ = ч/дж (자, 지). ㅊ = ч посильнее (차, 치)'],['ㄷ в начале / конце','В начале: д/т (다). В конце слога: чаще т'],['ㅇ в начале','Не читается: 아 = «а», 아이 = «аи»'],['ㅇ в конце','Звук «нг»: 공 = «конг», 방 = «бан(г)»'],['ㄹ в начале слога','Читается «р» (между гласными — лёгкое «р»): 라 = «ра», 사람 = «сарам», 오리 = «ори»'],['ㄹ в конце слога (받침)','Читается «ль»: 물 = «муль», 하늘 = «ханыль», 아들 = «адыль». Если дальше идёт гласная, ㄹ переходит на следующий слог и снова «р»: 들이 = «дыри»']]]))+
+det('Практика: разбери сам',[['빵 (хлеб)','один слог ㅂ+ㅏ+ㅇ → <b>ппан</b>'],['병원 (больница)','병 + 원 → ㅂ+ㅕ+ㅇ / ㅇ+ㅓ+ㄴ → <b>пёнвон</b>'],['새 (птица)','ㅅ+ㅐ → <b>сэ</b>'],['침대 (кровать)','침 + 대 → ㅊ+ㅣ+ㅁ / ㄷ+ㅐ → <b>чхимде</b>'],['선생님 (учитель)','선 + 생 + 님 → <b>сонсенним</b>']].map(x=>`<details style="margin:6px 0"><summary style="cursor:pointer">${x[0]}</summary><p style="margin:6px 0 0 14px">${x[1]}</p></details>`).join(''))+
+det('Как писать хангыль: сборка слога',
+ blk(['p','Ты **не пишешь слово буква за буквой в ряд**. Ты собираешь слог в один квадратик — как пазл из 2–3 частей.'])+
+ blk(['rule','**Вертикальные гласные** (ㅏ ㅑ ㅓ ㅕ ㅣ) → согласная **слева**: ㄱ+ㅏ = 가.<br>**Горизонтальные гласные** (ㅗ ㅛ ㅜ ㅠ ㅡ) → согласная **сверху**: ㄱ+ㅗ = 고.<br>Запомни: «Вертикальная гласная — слева. Горизонтальная — сверху.»'])+
+ blk(['h','Как выглядят согласные'])+'<pre>ㄱ  уголок + горизонтальная палочка (как Г без ножки)\nㄴ  угол вниз-вправо\nㄷ  две горизонтали + вертикаль слева\nㄹ  похож на ㄷ, но с «крючком» (сложная — пока копируй)\nㅁ  квадрат / рамка\nㅂ  две палочки сверху + вертикаль\nㅅ  галочка вверх\nㅇ  круг (в начале слога не читается!)\nㅈ  ㅅ + горизонтальная палочка сверху</pre>'+
+ blk(['h','Как выглядят гласные'])+'<pre>Вертикальные:    ㅏ | + палочка вправо   ㅑ | + две палочки\n                 ㅓ | + палочка влево    ㅕ | + две влево    ㅣ просто вертикаль\nГоризонтальные:  ㅗ палочка сверху, вертикаль снизу   ㅛ две палочки сверху\n                 ㅜ вертикаль сверху, палочка снизу   ㅠ две палочки снизу\n                 ㅡ просто горизонталь</pre>'+
+ blk(['h','Согласная в конце слога (батчим)'])+'<pre>한 = ㅎ + ㅏ + ㄴ   →  «хан»\n방 = ㅂ + ㅏ + ㅇ   →  «бан» (ㅇ в конце = нг)</pre>'+blk(['p','Верх = согласная + гласная (как обычно), низ = финальная согласная.'])+
+ blk(['h','Шаг: как писать слово'])+blk(['warn','Неправильно: 바 + 다 → ㅂㅏㄷㅏ (в ряд, как латиницу).'])+blk(['ok','Правильно: каждый слог — квадратик: [바][다] → 바다. Слоги идут слева направо.'])+
+ blk(['h','Упражнение на 10 минут'])+blk(['p','1) Напиши ㅏ 5 раз. 2) Напиши ㄱ ㄴ ㄷ ㄹ ㅁ по 3 раза. 3) Собери 가 나 다 라 마 — сначала мелко части, потом слитный блок. 4) Одно слово: 바다 — разбор + итог.'])+
+ blk(['h','Частые ошибки'])+blk(['tbl',['Ошибка','Как правильно'],[['Пишу ㅂㅏㄷㅏ в одну строку','Каждый слог — отдельный квадрат: 바다'],['ㅗ и ㅓ путаю при сборке','ㅗ → согласная сверху. ㅓ → согласная слева'],['ㅇ читаю в начале','아 = просто «а», ㅇ молчит'],['ㅇ в конце = «н»','방 = «бан(г)» — это нг'],['ㄹ пишу как латинскую L','Копируй форму, не спеши — придёт с рукой']]])+
+ '<pre>Вертикальная гласная (ㅏㅑㅓㅕㅣ) → [С|Г]\nГоризонтальная гласная (ㅗㅛㅜㅠㅡ) → [С над Г]\nЕсть конец слога → [С|Г] + согласная снизу\nСлово = блок + блок + блок → слева направо</pre>');
+})();
+
+
+/* ---------- sentences ---------- */
+const SE=[];const seen=new Set();D.forEach(d=>{if(d.s&&!seen.has(d.s)){seen.add(d.s);SE.push(d)}});
+function rs(){const qs=norm($('q2').value).split(/\s+/).filter(Boolean).map(w=>SYN[w]||w);
+ const r=qs.length?SE.filter(d=>qs.every(q=>d.s.includes(q)||d.k.includes(q)||d.ft.includes(q)||d.fr.includes(q))):SE;
+ $('out2').innerHTML=r.map(d=>`<div class="sc"><div class="ko">${hl(d.s,qs)}</div><div class="sw"><i>${d.n}</i><b>${hl(d.k,qs)}</b> · ${hl(d.t,qs)}</div></div>`).join('')||'<div class="empty"><div class="big">✿</div>Ничего не нашлось</div>';
+ $('cnt2').textContent=(qs.length?'Найдено: ':'Всего предложений: ')+r.length}
+$('q2').addEventListener('input',rs);$('x2').onclick=()=>{$('q2').value='';rs();$('q2').focus()};rs();
+
+/* ---------- numbers ---------- */
+const NB=(a)=>`<div class="nm">${a.map(x=>`<div><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div>`;
+$('numbody').innerHTML=
+'<h2 class="st">Корейские (счёт, количество)</h2>'+
+NB([['하나','1 · хана'],['둘','2 · туль'],['셋','3 · сет'],['넷','4 · нет'],['다섯','5 · тасот'],['여섯','6 · ёсот'],['일곱','7 · ильгоп'],['여덟','8 · ёдол'],['아홉','9 · ахоп'],['열','10 · ёль']])+
+blk(['tip','Перед счётным словом 하나/둘/셋/넷 сокращаются: **한** (1), **두** (2), **세** (3), **네** (4). Остальные числа не меняются.'])+
+'<h2 class="st">Китайские (цены, большие числа)</h2>'+
+NB([['일','1 · иль'],['이','2 · и'],['삼','3 · сам'],['사','4 · са'],['오','5 · о'],['육','6 · юк'],['칠','7 · чхиль'],['팔','8 · пхаль'],['구','9 · ку'],['십','10 · сип'],['백','100 · пэк'],['천','1 000 · чхон'],['만','10 000 · ман']])+
+'<div class="sub" style="text-align:left;margin-top:6px">Конспекты уроков 12–13 (числительные) в Notion пока пустые; числа 일–십 — стандартные, остальное из словаря.</div>'+
+'<h2 class="st">Счётные слова</h2>'+
+blk(['tbl',['Слово','Чтение','Значение'],[['개','кэ','штука (в примерах: 열 개)'],['명','мён','человек (в примерах: 일곱 명)'],['병','пён','бутылка'],['잔','чан','чашка, стакан'],['그릇','кырыт','миска, тарелка (порция)'],['원','вон','вона (деньги)']]])+
+'<h2 class="st">Вопросы</h2>'+
+blk(['tbl',['Слово','Значение'],[['몇','сколько (о количестве): 볼펜이 몇 개 있어요?'],['얼마','сколько (о цене): 이거는 얼마예요?'],['가격','цена: 가격이 얼마예요?'],['모두','всего, всё вместе: 모두 얼마예요?']]])+
+'<h2 class="st">Примеры из словаря</h2>'+
+blk(['ex',[['사과가 하나 있어요.','Есть одно яблоко.'],['빵이 열 개 있어요.','Есть десять булок.'],['친구가 일곱 명 있어요.','У меня семь друзей.'],['학생이 넷 있어요.','Есть четыре ученика.'],['우리 가족은 셋이에요.','Нас в семье трое.'],['콜라 한 병 주세요.','Одну бутылку колы.'],['커피 두 잔 주세요.','Два кофе, пожалуйста.'],['비빔밥 한 그릇 주세요.','Одну порцию бибимбапа.'],['물 세 병 주세요.','Три бутылки воды.'],['이거는 백 원이에요.','Это стоит сто вон.'],['이거는 천 원이에요.','Это стоит тысячу вон.'],['이거는 만 원이에요.','Это стоит десять тысяч вон.'],['커피는 사천 원이에요.','Кофе стоит четыре тысячи вон.'],['모두 얼마예요?','Сколько всего?']]]);
+
+
+/* ---------- flashcards ---------- */
+$('fsel').innerHTML='<option value="">Все слова</option>'+Object.keys(CATN).map(c=>`<option value="${c}">${CATN[c]}</option>`).join('');
+function nf(){const c=$('fsel').value;const pool=c?D.filter(d=>d.c.includes(c)):D;const d=pool[Math.floor(Math.random()*pool.length)];$('fc').classList.remove('open');$('fk').textContent=d.k;$('fa').innerHTML=d.r+'<br><b>'+esc(d.t)+'</b><br><small style="color:var(--mut)">'+esc(d.s)+'</small>'}
+$('fc').onclick=()=>$('fc').classList.toggle('open');$('fn').onclick=nf;$('fsel').onchange=nf;nf();
+
+/* ---------- reading rules ---------- */
+(function(){
+const T=(rows)=>blk(['tbl',['Слово','Как звучит'],rows.map(r=>['**'+r[0]+'**'+(r[1]!==r[0]?' → '+r[1]:''),r[2]])]);
+const S=(h,body,open)=>`<details class="dg"${open?' open':''}><summary>${h}</summary><div style="padding:6px 16px 14px">${body}</div></details>`;
+const R=[];
+R.push(S('1. ㄹ — «р» или «ль»',
+ blk(['rule','**ㄹ перед гласной = «р»** (лёгкое, как русское «р» в «дар»). **ㄹ в конце слога (받침) = «ль»**.'])+
+ T([['라디오','라디오','радио'],['사람','사람','сарам'],['오리','오리','ори (утка)'],['물','물','муль (вода)'],['하늘','하늘','ханыль (небо)'],['아들','아들','адыль (сын)'],['말','말','маль (слово)']])+
+ blk(['h','ㄹ + ㄹ'])+blk(['p','Двойная ㄹㄹ читается как долгое «льл»: **물론** → мульлон, **달라요** → тальлаё.'])+
+ blk(['h','ㄹ + гласная на стыке слогов'])+blk(['p','Если после слога с ㄹ-받침 идёт слог с ㅇ, ㄹ «перетекает» и снова читается «р»: **물이** → [무리] мури, **하늘이** → [하느리] ханыри, **들을** → [드를] дырыль.'])+blk(['h','Вопрос репетитору'])+blk(['p','«Я вот что-то читаю слова, а не понимаю: **살아요** — сараё или салаё?»'])+blk(['ok','Ответ: **[사라요] — сарайо (сараё)**. Не «салаё». 살 кончается на ㄹ-받침, а следующий слог 아 начинается с ㅇ (пустой звук) — поэтому ㄹ перескакивает на него и читается как «р»: 살 + 아요 → **사 + 라요**.'])+blk(['tbl',['Слово','Как звучит'],[['**살아요**','[사라요] сарайо (жить) — ㄹ перешла на 아'],['**살다**','[살다] саль-да — после ㄹ идёт согласная ㄷ, ㄹ остаётся в конце слога: «ль»'],['**달라요**','[달라요] тальлаё — тут ㄹㄹ уже в письме, поэтому «льл»'],['**알아요**','[아라요] арайо (знать)'],['**놀아요**','[노라요] норайо (играть)']]])+blk(['tip','Как отличить: смотри на букву **после** ㄹ-받침. Если это **ㅇ** (살아요, 알아요) — читай «р» на стыке. Если там согласная (살다) — «ль» на конце слога. Если там тоже ㄹ (달라요) — «льл».']),true));
+R.push(S('2. Озвончение: между гласными звуки «мягчают»',
+ blk(['rule','**ㄱ ㄷ ㅂ ㅈ** в начале слова — глухие (к, т, п, ч), а **между гласными** (и после ㄴ ㅁ ㅇ ㄹ) — звонкие (г, д, б, дж). Писать ничего не нужно, это просто так звучит.'])+
+ T([['가다','가다','када (к- в начале, д между гласными)'],['아기','아기','аги (ребёнок)'],['구두','구두','куду (туфли)'],['바보','바보','пабо'],['어제','어제','оджэ (вчера)'],['친구','친구','чингу (г после ㄴ)'],['한국','한국','хангук'],['바다','바다','пада / бада (между гласными д звонкое)']])+
+ blk(['tip','Русский различает «г» и «к», корейский — нет: важна не сама буква, а её позиция в слове.'])));
+R.push(S('3. 받침: семь звуков в конце слога',
+ blk(['rule','В конце слога (и перед согласной, и в конце слова) любая согласная читается как **одна из семи**: **к, н, т, ль, м, п, нг**.'])+
+ blk(['tbl',['Что написано','Читается','Пример'],[['ㄱ ㅋ ㄲ','**к**','부엌 → [부억] пуок · 밖 → [박] пак'],['ㄴ','**н**','친구 → чингу'],['ㄷ ㅅ ㅆ ㅈ ㅊ ㅌ ㅎ','**т**','옷 → [옫] от · 꽃 → [꼳] ккот · 낮 → [낟] нат · 있다 → [읻따] итта'],['ㄹ','**ль**','물 → муль'],['ㅁ','**м**','사람 → сарам'],['ㅂ ㅍ','**п**','앞 → [압] ап · 밥 → пап'],['ㅇ','**нг**','공 → конг · 방 → бан(г)']]])+
+ blk(['warn','Даже если в слове написано ㅅ, ㅈ, ㅊ или ㅌ — в конце слога вы слышите только «т». Поэтому 옷 (одежда), 꽃, 낮 звучат одинаково на конце.'])));
+R.push(S('4. Перенос на следующий слог (연음)',
+ blk(['rule','Если слог с 받침 стоит перед слогом, начинающимся с **ㅇ** (то есть с гласной), согласная **«перепрыгивает»** на этот слог и читается обычно (не как конечная).'])+
+ T([['한국어','한국어','[한구거] хангуго'],['사람이','사람이','[사라미] сарами'],['밥을','밥을','[바블] пабыль'],['옷이','옷이','[오시] оши'],['꽃이','꽃이','[꼬치] ккочи (ㅊ возвращается!)'],['앞에','앞에','[아페] апхэ'],['부엌에','부엌에','[부어케] пуокхэ'],['음악','음악','[으막] ымак'],['집에','집에','[지베] чибэ']])+
+ blk(['tip','Именно из-за этого частицы 이/을/은 после слова с 받침 звучат слитно, как часть слова: 사람이 → сарами. Это не ошибка, а правило.'])));
+R.push(S('5. ㅎ: слабая и «пропадающая»',
+ blk(['rule','**ㅎ между гласными почти не слышна**: 좋아요 → [조아요] чоайо. **ㅎ + ㄱ/ㄷ/ㅈ** → читается как придыхательная **ㅋ / ㅌ / ㅊ**.'])+
+ T([['좋아요','좋아요','[조아요] чоайо'],['좋다','좋다','[조타] чота'],['많다','많다','[만타] манта'],['많아요','많아요','[마나요] манайо'],['싫어요','싫어요','[시러요] широё']])));
+R.push(S('6. Носовые: ㄱ ㄷ ㅂ перед ㄴ ㅁ меняются',
+ blk(['rule','**ㄱ → нг**, **ㅂ → м**, **ㄷ/ㅅ → н**, когда следом идёт **ㄴ или ㅁ**.'])+
+ T([['한국말','한국말','[한궁말] хангунмаль'],['먹는','먹는','[멍는] монын'],['입니다','입니다','[임니다] имнида'],['감사합니다','감사합니다','[감사함니다] камсахамнида'],['옷만','옷만','[온만] онман'],['있나요?','있나요?','[인나요] иннайо']])+
+ blk(['p','Когда в разговоре «глотаешь» окончание 습니다/입니다 — это именно оно: **ㅂ** перед **ㄴ** звучит как **м**.'])+
+ blk(['h','ㄴ + ㄹ → ль-ль'])+blk(['p','**신라** → [실라] силла, **설날** → [설랄] соллаль, **연락** → [열락] ёллак.']) ));
+R.push(S('7. Напряжение (경음화): после 받침 мягкие становятся жёсткими',
+ blk(['rule','После 받침 **ㄱ, ㄷ, ㅂ** (то есть после «к, т, п» на конце слога) следующие **ㄱ ㄷ ㅂ ㅅ ㅈ** читаются **напряжённо**: ㄱ → ㄲ, ㄷ → ㄸ, ㅂ → ㅃ, ㅅ → ㅆ, ㅈ → ㅉ.'])+
+ T([['학교','학교','[학꾜] хаккё'],['식당','식당','[식땅] щиктан'],['학생','학생','[학쌩] хаксэн'],['있다','있다','[읻따] итта'],['없어요','없어요','[업써요] опсоё'],['밥도','밥도','[밥또] папто'],['국밥','국밥','[국빱] кукпап']])+
+ blk(['tip','Если слово на письме выглядит мягко, а звучит «жёстко» (식당 → щиктан, а не щикдан), перед этим звуком, скорее всего, стоит 받침 ㄱ/ㄷ/ㅂ.'])));
+R.push(S('8. Два 받침 в одной букве',
+ blk(['rule','Если под слогом **две** согласные, читается обычно **одна** — первая (чаще) или вторая. Перед гласной на конце — обе: первая остаётся, вторая «перепрыгивает».'])+
+ T([['읽다','읽다','[익따] икта (ㄹ молчит)'],['읽어요','읽어요','[일거요] ильгоё'],['앉다','앉다','[안따] анта'],['앉아요','앉아요','[안자요] анджайо'],['없다','없다','[업따] опта'],['없어요','없어요','[업써요] опсоё'],['많다','많다','[만타] манта']])));
+R.push(S('9. Смягчение: ㅅ перед ㅣ, ㅌ+이 → «чи»',
+ blk(['rule','**ㅅ перед ㅣ** читается мягко: **시** = «щи» (или «ши»). **같이** → [가치] качхи, **굳이** → [구지] куджи: ㅌ/ㄷ + 이 → «чи/джи».'])+
+ T([['시간','시간','щиган'],['시장','시장','щиджан'],['같이','같이','[가치] качхи'],['해돋이','해돋이','[해도지] хэтоджи']])));
+$('readbody').innerHTML=
+ '<div class="card"><h3>Коротко: что запомнить в первую очередь</h3>'+blk(['ex',[['ㄹ перед гласной','р'],['ㄹ в конце','ль'],['между гласными ㄱㄷㅂㅈ','г д б дж'],['받침 ㅅㅈㅊㅌㅎ','т'],['받침 ㅂㅍ','п'],['받침 ㄱㅋ','к'],['받침 + гласная','перескакивает']]])+blk(['tip','Эти правила — разговорное произношение, не орфография. Пишем всё равно по словарю: 사람이, 밥을, 한국어.'])+'</div>'+R.join('')+
+ blk(['warn','Транскрипция по-русски — приблизительная: у корейских звуков нет точных русских аналогов (ㅓ/ㅗ, ㅈ/ㅊ, ㅅ). Если сомневаешься — слушай слово, а не читай буквами.']);
+})();
+</script></body></html>
