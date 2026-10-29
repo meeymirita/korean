@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {RouterLink} from "vue-router";
 import {useMenuStore} from "@/stores/menu.ts";
 
 const menuStore = useMenuStore().menu ?? [];
@@ -10,17 +11,16 @@ const menuStore = useMenuStore().menu ?? [];
       <h1>Магия<br>воспоминаний</h1>
     </div>
     <nav id="nav">
-      <a
+      <component
+          :is="item.to ? RouterLink : 'a'"
           v-for="(item, index) in menuStore"
           :key="item.title"
-          :href="item.href ?? '#'"
-          :target="item.href ? '_blank' : undefined"
-          :rel="item.href ? 'noopener' : undefined"
+          v-bind="item.to ? { to: item.to } : { href: item.href ?? '#', target: '_blank', rel: 'noopener' }"
       >
         <span class="line"></span>
         <span>{{ item.title }}</span>
         <span class="num">{{ String(index+1).padStart(2,'0') }}</span>
-      </a>
+      </component>
     </nav>
   </div>
 </template>
