@@ -23,7 +23,6 @@ watch(() => route.path, visit, { immediate: true })
     <aside class="study-side">
       <RouterLink to="/" class="study-back">← На главную</RouterLink>
       <div class="brand">
-        <div class="jp">韓国語</div>
         <h1>Хлебушек</h1>
         <div class="course">서울대 한국어+ 1A</div>
       </div>

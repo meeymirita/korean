@@ -208,7 +208,6 @@
   padding: 36px 28px 24px; border-right: 1px solid var(--line); background: rgba(248, 247, 244, .55); }
 .study-back { align-self: flex-start; margin-bottom: 24px; font-size: 13px; font-weight: 600; color: var(--gold); }
 .study-back:hover { text-decoration: underline; }
-.study-side .jp { font-family: 'Noto Serif JP', serif; font-size: 13px; letter-spacing: .35em; color: var(--gold); }
 .study-side h1 { margin: 6px 0 0; font-family: var(--serif); font-weight: 600; font-size: 44px; line-height: 1; }
 .study-side .course { margin-top: 6px; font-size: 13px; color: var(--muted); font-family: var(--ko); }
 .study-links { display: flex; flex-direction: column; margin-top: 28px; }

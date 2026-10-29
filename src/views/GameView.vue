@@ -48,7 +48,6 @@ onBeforeUnmount(() => dispose?.())
     <header class="game-top">
       <RouterLink to="/">← На главную</RouterLink>
       <div class="game-title">
-        <span class="jp">言葉遊び</span>
         <h1>Игра на слова</h1>
       </div>
       <span class="game-links"><RouterLink to="/korean/garden">🌸 Сад</RouterLink><RouterLink to="/korean/words">Словарь →</RouterLink></span>
@@ -82,7 +81,6 @@ onBeforeUnmount(() => dispose?.())
 .game .game-links { display: flex; gap: 16px; }
 .game .game-top a:hover { text-decoration: underline; }
 .game .game-title { text-align: center; }
-.game .game-title .jp { font-family: 'Noto Serif JP', serif; font-size: 12px; letter-spacing: .35em; color: var(--gold); }
 .game .game-title h1 { margin: 2px 0 0; font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 34px; line-height: 1; }
 .game h2, .game h3, .game .brand { font-family: 'Cormorant Garamond', serif; font-weight: 600; }
 .game .brand { font-size: 26px; }

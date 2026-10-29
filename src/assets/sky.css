@@ -40,4 +40,4 @@
 .study.sky.game { --panel: rgba(255, 255, 255, .8); --accent-soft: rgba(59, 119, 208, .14); --accent-ink: #fff; }
 .game.sky .over { background: rgba(14, 28, 56, .55); }
 .game.sky h2, .game.sky h3, .game.sky .brand, .game.sky .game-title h1 { font-family: 'Archivo', 'Noto Sans KR', sans-serif; font-weight: 800; }
-.game.sky .game-top a, .game.sky .game-title .jp { color: var(--gold); }
+.game.sky .game-top a { color: var(--gold); }
