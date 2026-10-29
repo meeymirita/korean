@@ -54,6 +54,14 @@ export type WordStatus = 'new' | 'learning' | 'known'
 export type SyncState = 'off' | 'idle' | 'syncing' | 'ok' | 'error'
 export type Role = 'owner' | 'guest'
 
+/** Действие, которое уходит на сервер (POST /api/ops); сервер раскладывает его по таблицам базы. */
+export type Op =
+  | { type: 'answer'; t: number; day: string; word: string | null; ok: boolean; source: string; mode?: string; xp: number }
+  | { type: 'reset' }
+  | { type: 'profile'; name?: string; avatar?: string }
+  | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null }
+  | { type: 'import'; data: ProgressData }
+
 export interface GuestToken {
   id: string
   label: string
@@ -65,6 +73,10 @@ const KEY = 'progress_v1'
 const TOKEN_KEY = 'progress_token'
 const VERIFIED_KEY = 'progress_verified'
 const ROLE_KEY = 'progress_role'
+const OUTBOX_KEY = 'progress_outbox'
+/** Через сколько после последнего действия очередь уходит на сервер, и сколько действий за один запрос. */
+const FLUSH_DELAY = 800
+const BATCH = 200
 const LOG_MAX = 300
 /** Слово считается выученным после трёх верных ответов подряд. */
 export const KNOWN_STREAK = 3
@@ -117,6 +129,15 @@ function load(): ProgressData {
   }
 }
 
+function loadOutbox(): Op[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]')
+    return Array.isArray(raw) ? raw : []
+  } catch {
+    return []
+  }
+}
+
 const read = (k: string) => {
   try {
     return localStorage.getItem(k) || ''
@@ -147,7 +168,10 @@ export const useProgressStore = defineStore('progress', () => {
   const sync = ref<SyncState>(token.value ? 'idle' : 'off')
   const syncMessage = ref('')
   let applying = false
-  let timer: ReturnType<typeof setTimeout> | undefined
+  /** Очередь неотправленных действий: хранится в браузере, поэтому ничего не теряется без сети и после перезагрузки. */
+  const outbox = ref<Op[]>(role.value === 'guest' ? [] : loadOutbox())
+  let flushTimer: ReturnType<typeof setTimeout> | undefined
+  let flushing = false
 
   /* ---------- доступ ---------- */
   const unlocked = computed(() => !!token.value && verified.value)
@@ -168,6 +192,7 @@ export const useProgressStore = defineStore('progress', () => {
       applying = true
       data.value = load()
       applying = false
+      outbox.value = loadOutbox()
     }
     sync.value = message ? 'error' : 'off'
     syncMessage.value = message
@@ -212,7 +237,8 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /* ---------- запись ответа ---------- */
-  function record(o: { word?: string | null; ok: boolean; source: string; xp?: number }) {
+  function record(o: { word?: string | null; ok: boolean; source: string; xp?: number; mode?: string }) {
+    const now = Date.now()
     const d = data.value
     const before = levelOf(d.xp)
     const src = (d.sources[o.source] ??= { ok: 0, bad: 0 })
@@ -225,20 +251,20 @@ export const useProgressStore = defineStore('progress', () => {
         w.ok++
         w.streak++
         if (w.streak >= KNOWN_STREAK && !w.kd) {
-          w.kd = Date.now()
+          w.kd = now
           bloomed = true
         }
       } else {
         w.bad++
         w.streak = 0
       }
-      w.last = Date.now()
+      w.last = now
     }
 
     const k = dayKey()
     d.days[k] ??= 0
     d.all[k] = (d.all[k] ?? 0) + 1
-    d.log.unshift({ t: Date.now(), w: o.word ?? null, ok: o.ok, s: o.source })
+    d.log.unshift({ t: now, w: o.word ?? null, ok: o.ok, s: o.source })
     if (d.log.length > LOG_MAX) d.log.length = LOG_MAX
 
     let goalReached = false
@@ -247,14 +273,16 @@ export const useProgressStore = defineStore('progress', () => {
       d.days[k]!++
       goalReached = d.days[k] === goal.value
     }
-    d.updated = Date.now()
+    d.updated = now
+    queue({ type: 'answer', t: now, day: k, word: o.word ?? null, ok: o.ok, source: o.source, mode: o.mode, xp: o.xp ?? 10 })
     const level = levelOf(d.xp)
     return { level, levelUp: level > before, goalReached, bloomed, title: levelInfo(d.xp).title }
   }
 
   /** Один раз переносит очки старой версии игры. */
   function importXp(xp: number) {
-    if (xp > data.value.xp) {
+    // с сервером очки хранятся в базе: перенос старых очков нужен только без входа
+    if (xp > data.value.xp && !(token.value && role.value !== 'guest')) {
       data.value.xp = xp
       data.value.updated = Date.now()
     }
@@ -265,6 +293,7 @@ export const useProgressStore = defineStore('progress', () => {
     if (p.name !== undefined) data.value.profile.name = p.name.slice(0, 24)
     if (p.avatar) data.value.profile.avatar = p.avatar
     data.value.updated = Date.now()
+    queue({ type: 'profile', ...(p.name !== undefined ? { name: data.value.profile.name } : {}), ...(p.avatar ? { avatar: p.avatar } : {}) })
   }
   function setSettings(s: Partial<Settings>) {
     const cur = data.value.settings
@@ -272,6 +301,12 @@ export const useProgressStore = defineStore('progress', () => {
     if (s.cats) cur.cats = s.cats
     if (s.gameCats !== undefined) cur.gameCats = s.gameCats
     data.value.updated = Date.now()
+    queue({
+      type: 'settings',
+      ...(s.goal !== undefined && GOAL_OPTIONS.includes(s.goal) ? { goal: s.goal } : {}),
+      ...(s.cats ? { cats: s.cats } : {}),
+      ...(s.gameCats !== undefined ? { gameCats: s.gameCats } : {}),
+    })
   }
 
   /* ---------- сохранение и сервер ---------- */
@@ -287,48 +322,72 @@ export const useProgressStore = defineStore('progress', () => {
     }
   }
 
-  async function push() {
+  /** Ставит действие в очередь; через FLUSH_DELAY после последнего действия очередь уходит на сервер. Гостю и без токена не отправляется. */
+  function queue(op: Op) {
     if (!token.value || role.value === 'guest') return
-    sync.value = 'syncing'
+    outbox.value.push(op)
+    write(OUTBOX_KEY, JSON.stringify(outbox.value))
+    clearTimeout(flushTimer)
+    flushTimer = setTimeout(() => void push(), FLUSH_DELAY)
+  }
+
+  /** Отправляет очередь пачками. Не удалось (сеть, ошибка сервера) — действия остаются в браузере и уйдут позже. */
+  async function push() {
+    if (flushing || !token.value || role.value === 'guest' || !outbox.value.length) return
+    flushing = true
+    clearTimeout(flushTimer)
+    let rejected = false
     try {
-      const res = await fetch('/api/progress', { method: 'PUT', headers: headers(), body: JSON.stringify(data.value) })
-      if (res.status === 401) return lock(await deniedMessage(res))
-      if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
-      sync.value = 'ok'
-      syncMessage.value = 'сохранено на сервере'
+      sync.value = 'syncing'
+      while (outbox.value.length) {
+        const batch = outbox.value.slice(0, BATCH)
+        const res = await fetch('/api/ops', { method: 'POST', headers: headers(), body: JSON.stringify({ ops: batch }) })
+        if (res.status === 401) return lock(await deniedMessage(res))
+        // 400: сервер не принял пачку; выбрасываем её, чтобы очередь не застряла навсегда
+        if (!res.ok && res.status !== 400) throw new Error(`ошибка сервера ${res.status}`)
+        outbox.value = outbox.value.slice(batch.length)
+        write(OUTBOX_KEY, JSON.stringify(outbox.value))
+        if (res.status === 400) rejected = true
+      }
+      sync.value = rejected ? 'error' : 'ok'
+      syncMessage.value = rejected ? 'сервер отклонил часть действий' : 'сохранено на сервере'
     } catch (e) {
       sync.value = 'error'
       syncMessage.value = netError(e)
+    } finally {
+      flushing = false
     }
   }
 
-  /** Проверяет токен и подтягивает прогресс: побеждает более свежая версия. */
+  /** Проверяет токен и загружает прогресс: сервер главный. Неотправленные действия сначала уходят на сервер. */
   async function init() {
     if (!token.value) return
     sync.value = 'syncing'
     try {
-      const res = await fetch('/api/progress', { headers: headers() })
+      let res = await fetch('/api/progress', { headers: headers() })
       if (res.status === 401) return lock(await deniedMessage(res))
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       verified.value = true
       write(VERIFIED_KEY, '1')
       if (res.headers?.get('X-Role') === 'guest') return enterGuest(Number(res.headers.get('X-Guest-Expires')) || 0)
       if (role.value === 'guest') leaveGuest()
+      if (outbox.value.length) {
+        await push()
+        if (!token.value) return // сервер ответил 401 и доступ закрыт
+        if (outbox.value.length) return void (syncMessage.value = 'не всё отправлено: изменения сохранены в браузере')
+        res = await fetch('/api/progress', { headers: headers() })
+        if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+      }
       const remote = normalize(await res.json())
-      if (remote && remote.updated > data.value.updated) {
+      if (remote) {
         applying = true
         data.value = remote
         applying = false
-        sync.value = 'ok'
-        syncMessage.value = 'загружено с сервера'
-      } else if (data.value.updated > (remote?.updated ?? 0)) {
-        await push()
-      } else {
-        sync.value = 'ok'
-        syncMessage.value = 'сервер подключён'
       }
+      sync.value = 'ok'
+      syncMessage.value = 'загружено с сервера'
     } catch (e) {
-      // сервер временно недоступен: уже подтверждённый вход не сбрасываем
+      // сервер временно недоступен: уже подтверждённый вход не сбрасываем, данные остаются из браузера
       sync.value = 'error'
       syncMessage.value = netError(e)
     }
@@ -341,6 +400,7 @@ export const useProgressStore = defineStore('progress', () => {
       applying = true
       data.value = empty()
       applying = false
+      outbox.value = [] // очередь владельца остаётся в настоящем хранилище и вернётся после выхода гостя
     }
     role.value = 'guest'
     guestExpires.value = expires
@@ -361,6 +421,7 @@ export const useProgressStore = defineStore('progress', () => {
     applying = true
     data.value = load()
     applying = false
+    outbox.value = loadOutbox()
   }
 
   /** Вход по токену. Возвращает true, если сервер принял токен. */
@@ -371,6 +432,7 @@ export const useProgressStore = defineStore('progress', () => {
     verified.value = false
     write(TOKEN_KEY, value)
     await init()
+    if (unlocked.value) void fetch('/api/session', { method: 'POST', headers: headers() }).catch(() => undefined) // вход попадает в журнал событий
     return unlocked.value
   }
 
@@ -382,9 +444,6 @@ export const useProgressStore = defineStore('progress', () => {
     data,
     () => {
       write(KEY, JSON.stringify(data.value))
-      if (applying || !token.value || role.value === 'guest') return
-      clearTimeout(timer)
-      timer = setTimeout(push, 1500)
     },
     { deep: true },
   )
@@ -408,6 +467,7 @@ export const useProgressStore = defineStore('progress', () => {
       if (!d) return false
       d.updated = Date.now()
       data.value = d
+      queue({ type: 'import', data: d })
       return true
     } catch {
       return false
@@ -417,6 +477,7 @@ export const useProgressStore = defineStore('progress', () => {
   function reset() {
     const keep = data.value
     data.value = { ...empty(), profile: keep.profile, settings: keep.settings, updated: Date.now() }
+    queue({ type: 'reset' })
   }
 
   return {

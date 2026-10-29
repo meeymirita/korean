@@ -545,7 +545,7 @@ function finish(ok,chosen){
   if(ok){B.ok++;A.ok++;B.streak++;if(B.streak>B.best)B.best=B.streak;if(B.streak>A.best)A.best=B.streak;
     const m=S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
-    const pr=hooks.record({word:q.word||null,ok:true,xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
+    const pr=hooks.record({word:q.word||null,ok:true,mode:S.mode,xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
     if(pr.bloomed)msgs.push('🌸 Слово «'+q.word+'» расцвело в саду!');
     if(pr.levelUp)msgs.push('⭐ Новый уровень '+pr.level+': '+pr.title+'!');
     if(pr.goalReached)msgs.push('🎯 Цель дня выполнена!');
@@ -555,7 +555,7 @@ function finish(ok,chosen){
     if(msgs.length)toast(msgs[0]);
     if(S.surv.on)S.surv.ok++;
   }else{B.bad++;A.bad++;B.streak=0;
-    hooks.record({word:q.word||null,ok:false});
+    hooks.record({word:q.word||null,ok:false,mode:S.mode});
     const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}
   if(S.blitz.on){if(ok)S.blitz.ok++;else S.blitz.bad++;}
   if(S.surv.on&&!ok){S.surv.lives--;drawLives();if(S.surv.lives<=0)S.timer=setTimeout(endSurv,1300);}

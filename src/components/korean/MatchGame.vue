@@ -60,12 +60,12 @@ function pick(side: 'l' | 'r', id: number) {
   const word = props.words.find(x => x.n === l)
   if (l === r) {
     // засчитываем слово, если в этом раунде в нём не ошибались
-    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer' })
+    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match' })
     matched.value = new Set(matched.value).add(l)
     if (done.value) finish()
   } else {
     mistakes.value++
-    if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer' })
+    if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match' })
     missed.value = new Set(missed.value).add(l)
     wrong.value = { l, r }
     setTimeout(() => (wrong.value = null), 450)

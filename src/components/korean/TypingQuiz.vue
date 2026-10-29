@@ -37,7 +37,7 @@ function check(known = true) {
   if (!w) return
   const ok = known && isCorrect(input.value, w, props.dir)
   results.value.push({ w, ok, given: input.value })
-  progress.record({ word: statKey(w), ok, source: 'trainer' })
+  progress.record({ word: statKey(w), ok, source: 'trainer', mode: 'typing' })
   state.value = ok ? 'right' : 'wrong'
 }
 function next() {

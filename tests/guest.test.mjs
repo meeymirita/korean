@@ -44,16 +44,18 @@ describe('гостевой режим: ничего не сохраняется'
     const before = real().get('progress_v1')
     assert.ok(before, 'прогресс устройства записан до гостя')
     const calls = []
-    globalThis.fetch = async (url, opt = {}) => (calls.push(opt.method ?? 'GET'), guestReply()())
+    globalThis.fetch = async (url, opt = {}) => (calls.push(`${opt.method ?? 'GET'} ${url}`), guestReply()())
     await store.connect('гость')
     for (let i = 0; i < 5; i++) store.record({ word: '학교', ok: true, source: 'game' })
     localStorage.setItem('hleb_game_v1', '{"гость":1}') // так пишет игра
+    store.setProfile({ name: 'Гость' })
     await store.push()
-    await new Promise(r => setTimeout(r, 5))
+    await new Promise(r => setTimeout(r, 1000))
     assert.equal(real().get('progress_v1'), before, 'прогресс устройства не тронут')
     assert.equal(real().has('hleb_game_v1'), false, 'статистика игры не сохранена')
+    assert.equal(real().has('progress_outbox'), false, 'очередь действий не создана')
     assert.equal(store.data.xp, 50, 'но в самой сессии всё считается')
-    assert.deepEqual(calls, ['GET'], 'на сервер ушёл только вход, записи не было')
+    assert.deepEqual(calls, ['GET /api/progress', 'POST /api/session'], 'на сервер ушли только вход и запись о входе, ни одного действия')
   })
 
   test('вход переживает перезагрузку, прогресс гостя нет', async () => {
@@ -97,16 +99,30 @@ describe('гостевой режим: ничего не сохраняется'
     assert.equal(real().get('progress_role') ?? null, null)
   })
 
-  test('токен владельца после гостевого возвращает обычный режим', async () => {
-    store.record({ word: '사람', ok: true, source: 'game' })
-    await new Promise(r => setTimeout(r, 0))
+  test('токен владельца после гостевого возвращает обычный режим и данные с сервера', async () => {
     globalThis.fetch = guestReply()
     await store.connect('гость')
-    globalThis.fetch = reply(200, { v: 1, updated: 0 }, { 'X-Role': 'owner' })
+    globalThis.fetch = reply(200, { v: 1, updated: 5, xp: 70, words: { 사람: { ok: 1, bad: 0, streak: 1, last: 1 } } }, { 'X-Role': 'owner' })
     await store.connect('владелец')
     assert.equal(store.isGuest, false)
     assert.equal(store.unlocked, true)
-    assert.ok(store.data.words['사람'], 'прогресс устройства вернулся')
+    assert.equal(store.data.xp, 70)
+    assert.ok(store.data.words['사람'], 'прогресс владельца с сервера')
+  })
+
+  test('очередь владельца не теряется и не уходит на сервер, пока вошёл гость', async () => {
+    ls.set('progress_token', 'владелец')
+    ls.set('progress_verified', '1')
+    ls.set('progress_outbox', JSON.stringify([{ type: 'reset' }]))
+    setActivePinia(createPinia())
+    store = useProgressStore()
+    const calls = []
+    globalThis.fetch = async (url, opt = {}) => (calls.push(`${opt.method ?? 'GET'} ${url}`), guestReply()())
+    await store.connect('гость')
+    await new Promise(r => setTimeout(r, 1000))
+    assert.ok(!calls.some(c => c.includes('/api/ops')), 'ни одного действия на сервер')
+    store.disconnect()
+    assert.equal(JSON.parse(ls.get('progress_outbox')).length, 1, 'очередь владельца осталась в настоящем хранилище')
   })
 
   test('владелец создаёт, смотрит и отзывает гостевые токены', async () => {

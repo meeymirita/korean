@@ -10,6 +10,7 @@ const { xpFor } = await load('/src/data/levels.ts')
 after(close)
 
 const realFetch = globalThis.fetch
+const sleep = ms => new Promise(r => setTimeout(r, ms))
 let store
 beforeEach(() => {
   ls.clear()
@@ -225,22 +226,12 @@ describe('вход по токену', () => {
     assert.equal(store.unlocked, false)
   })
 
-  test('более свежий прогресс с сервера побеждает', async () => {
-    store.record({ ok: true, source: 'game' }) // локально 10 очков
-    globalThis.fetch = reply(200, { v: 1, updated: Date.now() + 60_000, xp: 500 })
+  test('сервер главный: прогресс на сайте заменяется тем, что в базе', async () => {
+    store.record({ ok: true, source: 'game' }) // локально 10 очков, но токена ещё нет, на сервер это не уходит
+    globalThis.fetch = reply(200, { v: 1, updated: 5, xp: 500, words: { 사람: { ok: 3, bad: 0, streak: 3, last: 9, kd: 9 } } })
     await store.connect('токен')
     assert.equal(store.data.xp, 500)
-  })
-
-  test('более свежий локальный прогресс уходит на сервер', async () => {
-    store.record({ ok: true, source: 'game' })
-    const calls = []
-    globalThis.fetch = async (url, opt = {}) => {
-      calls.push(opt.method ?? 'GET')
-      return reply(200, { v: 1, updated: 1, xp: 0 })()
-    }
-    await store.connect('токен')
-    assert.deepEqual(calls, ['GET', 'PUT'])
+    assert.equal(store.status('사람'), 'known')
   })
 
   test('выход стирает токен', async () => {
@@ -249,5 +240,145 @@ describe('вход по токену', () => {
     store.disconnect()
     assert.equal(store.unlocked, false)
     assert.equal(ls.get('progress_verified') ?? null, null)
+  })
+})
+
+describe('очередь действий для сервера', () => {
+  const urls = []
+  const bodies = []
+  /** Сервер владельца: запоминает запросы и отвечает 200 на всё. */
+  const serverOk = (remote = { v: 1, updated: 0 }) => async (url, opt = {}) => {
+    urls.push(`${opt.method ?? 'GET'} ${url}`)
+    if (opt.body) bodies.push(JSON.parse(opt.body))
+    return reply(200, remote)()
+  }
+  const owner = () => {
+    ls.set('progress_token', 't')
+    ls.set('progress_verified', '1')
+    setActivePinia(createPinia())
+    store = useProgressStore()
+  }
+  beforeEach(() => {
+    urls.length = 0
+    bodies.length = 0
+  })
+
+  test('ответ превращается в действие: время, день, слово, источник, режим, очки', async () => {
+    owner()
+    globalThis.fetch = serverOk()
+    store.record({ word: '사람', ok: true, source: 'game', mode: 'build', xp: 20 })
+    await store.push()
+    const op = bodies[0].ops[0]
+    assert.deepEqual([op.type, op.word, op.ok, op.source, op.mode, op.xp], ['answer', '사람', true, 'game', 'build', 20])
+    assert.equal(op.day, dayKey())
+    assert.ok(op.t > 0 && op.t === store.data.log[0].t, 'то же время, что в журнале на сайте')
+  })
+
+  test('действия копятся и уходят одним запросом через долю секунды', async () => {
+    owner()
+    globalThis.fetch = serverOk()
+    store.record({ word: 'а', ok: true, source: 'game' })
+    store.record({ word: 'б', ok: false, source: 'game' })
+    store.setProfile({ name: 'mira' })
+    assert.equal(urls.length, 0, 'сразу не отправляется')
+    await sleep(1000)
+    assert.deepEqual(urls, ['POST /api/ops'], 'один запрос')
+    assert.deepEqual(bodies[0].ops.map(o => o.type), ['answer', 'answer', 'profile'])
+    assert.equal(store.sync, 'ok')
+  })
+
+  test('профиль, настройки, сброс и загрузка копии тоже уходят действиями', async () => {
+    owner()
+    globalThis.fetch = serverOk()
+    store.setProfile({ name: 'mira', avatar: '🦊' })
+    store.setSettings({ goal: 50, cats: ['еда'], gameCats: { v: 1 } })
+    store.setSettings({ goal: 7 }) // неверная цель на сервер не уходит
+    store.reset()
+    assert.equal(store.importJson(store.exportJson()), true)
+    await store.push()
+    const ops = bodies[0].ops
+    assert.deepEqual(ops.map(o => o.type), ['profile', 'settings', 'settings', 'reset', 'import'])
+    assert.deepEqual(ops[0], { type: 'profile', name: 'mira', avatar: '🦊' })
+    assert.deepEqual(ops[1], { type: 'settings', goal: 50, cats: ['еда'], gameCats: { v: 1 } })
+    assert.deepEqual(ops[2], { type: 'settings' })
+    assert.equal(ops[4].data.v, 1)
+  })
+
+  test('без токена и у гостя действия никуда не копятся', async () => {
+    globalThis.fetch = serverOk()
+    store.record({ word: 'а', ok: true, source: 'game' }) // без токена
+    await store.push()
+    await sleep(900)
+    assert.deepEqual(urls, [])
+    assert.equal(ls.has('progress_outbox'), false)
+  })
+
+  test('очередь переживает перезагрузку и уходит на сервер раньше загрузки прогресса', async () => {
+    owner()
+    globalThis.fetch = offline
+    store.record({ word: 'а', ok: true, source: 'game', xp: 15 })
+    await sleep(900) // сервер недоступен: действие остаётся в очереди
+    assert.equal(store.sync, 'error')
+    assert.equal(JSON.parse(ls.get('progress_outbox')).length, 1)
+
+    setActivePinia(createPinia()) // «перезагрузка»
+    store = useProgressStore()
+    globalThis.fetch = serverOk({ v: 1, updated: 9, xp: 15, words: { а: { ok: 1, bad: 0, streak: 1, last: 5 } } })
+    await store.init()
+    assert.deepEqual(urls, ['GET /api/progress', 'POST /api/ops', 'GET /api/progress'], 'сначала отправка, потом свежие данные')
+    assert.equal(ls.get('progress_outbox'), '[]')
+    assert.equal(store.data.xp, 15)
+  })
+
+  test('сервер недоступен: очередь и локальные данные остаются, статус — ошибка', async () => {
+    owner()
+    globalThis.fetch = offline
+    store.record({ word: 'а', ok: true, source: 'game' })
+    await store.init()
+    assert.equal(store.unlocked, true, 'подтверждённый вход не сбрасывается')
+    assert.equal(store.sync, 'error')
+    assert.equal(store.data.xp, 10, 'ответ на экране не пропал')
+    assert.equal(JSON.parse(ls.get('progress_outbox')).length, 1)
+  })
+
+  test('при сбое отправки перед загрузкой серверные данные не затирают неотправленное', async () => {
+    owner()
+    store.record({ word: 'а', ok: true, source: 'game' })
+    globalThis.fetch = async (url, opt = {}) => (opt.method === 'POST' ? reply(500)() : reply(200, { v: 1, updated: 1, xp: 0 })())
+    await store.init()
+    assert.equal(store.data.xp, 10, 'локальный ответ не потерян')
+    assert.equal(store.syncMessage, 'не всё отправлено: изменения сохранены в браузере')
+  })
+
+  test('401 при отправке закрывает доступ', async () => {
+    owner()
+    globalThis.fetch = reply(401)
+    store.record({ word: 'а', ok: true, source: 'game' })
+    await store.push()
+    assert.equal(store.unlocked, false)
+  })
+
+  test('сервер отклонил пачку (400): она выбрасывается и очередь не застревает', async () => {
+    owner()
+    globalThis.fetch = reply(400, { error: 'invalid op' })
+    store.record({ word: 'а', ok: true, source: 'game' })
+    await store.push()
+    assert.equal(ls.get('progress_outbox'), '[]')
+    assert.equal(store.syncMessage, 'сервер отклонил часть действий')
+  })
+
+  test('большая очередь уходит пачками по 200', async () => {
+    owner()
+    globalThis.fetch = serverOk()
+    for (let i = 0; i < 450; i++) store.record({ word: null, ok: true, source: 'game' })
+    await store.push()
+    assert.deepEqual(bodies.map(b => b.ops.length), [200, 200, 50])
+  })
+
+  test('вход по токену записывается в журнал событий сервера', async () => {
+    globalThis.fetch = serverOk()
+    await store.connect('токен')
+    await sleep(5)
+    assert.ok(urls.includes('POST /api/session'))
   })
 })
