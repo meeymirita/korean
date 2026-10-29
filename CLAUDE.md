@@ -32,8 +32,8 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 шрифты самохостятся (`src/assets/fonts.css`). Скрипты: `npm run dev`, `npm run build` (type-check + сборка),
 `npm run preview`. Алиас `@/` → `src/`.
 
-**Хостинг:** владелец сам заходит на хостинг, делает `git pull` и `npm run build`; Caddy отдаёт `dist`. Для SPA
-в Caddyfile нужна строка `try_files {path} /index.html`, иначе прямые ссылки на `/korean/...` дают 404.
+**Хостинг:** см. раздел «Хостинг владельца» ниже. Кратко: владелец сам заходит на сервер, делает `git pull` и
+`npm run build`; Caddy отдаёт `dist`; рядом работает сервер прогресса как служба systemd.
 
 ## Маршруты
 
@@ -149,6 +149,27 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 - Тесты, которые делались: юнит-тест хранилища через `ssrLoadModule` (заглушка `localStorage`, `pinia` из
   `node_modules/pinia/dist/pinia.js`), `curl` по серверу (401/200/400/413/405, копии), сквозной тест в браузере
   (ответы → localStorage → страница прогресса → токен → файл на сервере → новая версия с сервера подхватывается).
+
+## Хостинг владельца (настроено 2026-10-29, работает)
+
+- Сервер Ubuntu (`root@se-40678`), проект в `/var/sites/meeymirita_start_page`, сайт `https://meeymirita.ru`.
+  Владелец сам заходит по SSH; мне доступа нет, поэтому команды ему даём текстом.
+- Обновление сайта: `git pull` → `npm run build` (папка `dist`). Сервер прогресса перезапускать только если менялся
+  `server/index.mjs`: `systemctl restart progress`.
+- **Caddy** (`/etc/caddy/Caddyfile`, копия до правки `Caddyfile.bak`), блок сайта:
+  `encode zstd gzip`, `handle /api/* { reverse_proxy 127.0.0.1:3001 }`, `handle { root * …/dist; try_files {path} /index.html; file_server }`.
+  `try_files` обязателен для SPA (иначе прямые ссылки на `/korean/...` дают 404). После правки:
+  `caddy validate --config /etc/caddy/Caddyfile` и `systemctl reload caddy`.
+- **Сервер прогресса** — служба systemd `progress` (`/etc/systemd/system/progress.service`: `WorkingDirectory=` папка
+  проекта, `ExecStart=/usr/bin/node server/index.mjs`, `Restart=always`, автозапуск включён). pm2 на сервере нет
+  (владелец не ставил). Токен лежит в `server/.env` на сервере (не в git, права 600); данные в `server/data/`
+  (`progress.json` и `backups/`). Диагностика: `systemctl status progress`, `journalctl -u progress -n 20`,
+  `curl http://127.0.0.1:3001/api/health`, снаружи `curl https://meeymirita.ru/api/health`. Подключение проверено:
+  на странице «Прогресс» статус «подключён · сохранено на сервере».
+- **Как давать владельцу команды для терминала:** его терминал переносит длинные строки и портит вставку.
+  Давай короткие команды (до ~70 символов), многострочные файлы собирай серией `echo '…' >> $F`, а не `cat <<EOF`
+  (отступы при копировании ломают `EOF`), не вставляй команды с отступами в начале строк. Просить показать вывод
+  (`cat`, `status`), прежде чем править чужой конфиг (в Caddyfile могут быть другие сайты).
 
 ## Как проверять изменения
 
