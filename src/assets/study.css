@@ -282,3 +282,8 @@
 
 /* крупные числа без «старинных» цифр (иначе 1 похожа на I, а 0 на o) */
 .study .pg-v, .study .page-head .big, .study .tq-score, .study .fc .ans b { font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1; }
+
+/* замки и вход по токену */
+.study-links .lock { margin-left: auto; font-size: 12px; opacity: .6; }
+.study-level .lv-who { display: flex; align-items: center; gap: 8px; }
+.study-level .lv-who b { font-size: 14px; }

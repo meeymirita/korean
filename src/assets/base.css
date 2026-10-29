@@ -64,3 +64,4 @@ h1 { margin:6px 0 0; font-family:'Cormorant Garamond',serif; font-weight:600;
   .contact { font-size:13px; gap:12px; }
   .contact img { width:44px; height:44px; }
 }
+.menu-group .lock { font-size: 12px; opacity: .6; }

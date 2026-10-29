@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { DAILY_GOAL } from '@/data/levels'
+import AuthGate from '@/components/AuthGate.vue'
 import { initGame } from '@/game/engine'
 import { useProgressStore } from '@/stores/progress'
 import markup from '@/game/markup.html?raw'
@@ -9,13 +9,32 @@ import '@/game/game.css'
 
 const progress = useProgressStore()
 let dispose: (() => void) | undefined
-onMounted(
-  () =>
-    (dispose = initGame({
-      record: (o: { word: string | null; ok: boolean; xp?: number }) => progress.record({ ...o, source: 'game' }),
-      importXp: (n: number) => progress.importXp(n),
-      state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: DAILY_GOAL }),
-    })),
+
+function start() {
+  dispose = initGame({
+    record: (o: { word: string | null; ok: boolean; xp?: number }) => progress.record({ ...o, source: 'game' }),
+    importXp: (n: number) => progress.importXp(n),
+    state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: progress.goal }),
+    cats: () => progress.data.settings.gameCats,
+    saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
+  })
+}
+
+// игра запускается, когда страница открыта токеном; при выходе останавливается
+onMounted(() => {
+  if (progress.unlocked) start()
+})
+watch(
+  () => progress.unlocked,
+  async open => {
+    if (open) {
+      await nextTick()
+      start()
+    } else {
+      dispose?.()
+      dispose = undefined
+    }
+  },
 )
 onBeforeUnmount(() => dispose?.())
 </script>
@@ -30,7 +49,8 @@ onBeforeUnmount(() => dispose?.())
       </div>
       <RouterLink to="/korean/words">Словарь →</RouterLink>
     </header>
-    <div v-html="markup"></div>
+    <div v-if="progress.unlocked" v-html="markup"></div>
+    <AuthGate v-else />
   </div>
 </template>
 

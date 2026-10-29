@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import Avatar from '@/components/Avatar.vue'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
@@ -22,9 +23,14 @@ const plural = (n: number, forms: [string, string, string]) =>
       <span class="days-num">{{ days }}</span>
       <span class="days-text">{{ plural(days, ['день', 'дня', 'дней']) }} с начала пути</span>
     </div>
-    <RouterLink to="/korean/progress" class="days-level">
-      ⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }} <span>· 🔥 {{ progress.streak }}</span>
+    <RouterLink v-if="progress.unlocked" to="/korean/cabinet" class="days-hello">
+      <Avatar :avatar="progress.data.profile.avatar" :size="34" />
+      <span>
+        <b>Привет{{ progress.data.profile.name ? ', ' + progress.data.profile.name : '' }}!</b>
+        <small>⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }} · 🔥 {{ progress.streak }}</small>
+      </span>
     </RouterLink>
+    <RouterLink v-else to="/korean/cabinet" class="days-level">🔒 Войти по токену <span>· откроются задания и игра</span></RouterLink>
   </div>
 </template>
 
@@ -39,4 +45,8 @@ const plural = (n: number, forms: [string, string, string]) =>
 .days-level { display: inline-block; margin-top: 8px; font-size: 14px; font-weight: 600; transition: color .2s; }
 .days-level span { color: var(--muted); font-weight: 500; }
 .days-level:hover { color: var(--gold); }
+.days-hello { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.days-hello b { display: block; font-size: 15px; }
+.days-hello small { display: block; font-size: 12.5px; color: var(--muted); }
+.days-hello:hover b { color: var(--gold); }
 </style>
