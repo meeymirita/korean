@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { CATN, D, parseQuery, score, type Word } from '@/data/korean/words'
 import { esc, hl } from '@/data/korean/render'
 
 const q = ref('')
 const cat = ref('')
 const picked = ref<Word | null>(null)
+const openN = ref<number | null>(null)
+const toggle = (n: number) => (openN.value = openN.value === n ? null : n)
 const input = ref<HTMLInputElement>()
 
 const qs = computed(() => parseQuery(q.value))
@@ -86,13 +89,18 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
     <div v-if="rows.length" class="tb">
       <div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
-      <div v-for="d in rows" :key="d.n" class="row">
-        <span class="n">{{ d.n }}</span>
-        <span class="k" v-html="h(d.k)"></span>
-        <span class="rd" v-html="h(d.r)"></span>
-        <span class="tr" v-html="h(d.t)"></span>
-        <span class="se" v-html="h(d.s)"></span>
-      </div>
+      <template v-for="d in rows" :key="d.n">
+        <div class="row">
+          <span class="n">{{ d.n }}</span>
+          <span class="k" v-html="h(d.k)"></span>
+          <span class="rd" v-html="h(d.r)"></span>
+          <span class="tr" v-html="h(d.t)"></span>
+          <span class="se">
+            <button class="se-btn" :class="{ open: openN === d.n }" title="Разобрать предложение" @click="toggle(d.n)" v-html="h(d.s)"></button>
+          </span>
+        </div>
+        <div v-if="openN === d.n" class="row-detail"><SentenceBreakdown :sentence="d.s" /></div>
+      </template>
     </div>
     <div v-else class="empty">
       <div class="big">✿</div>
