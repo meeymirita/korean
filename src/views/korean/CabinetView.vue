@@ -2,7 +2,9 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
+import DbTab from '@/components/cabinet/DbTab.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
+import ImagesTab from '@/components/cabinet/ImagesTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
@@ -13,9 +15,11 @@ import { dueWords } from '@/data/review'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'settings'
 const q = useRoute().query.tab
-const tab = ref<Tab>(q === 'repeat' || q === 'week' || q === 'history' || q === 'notes' || q === 'settings' ? q : 'overview')
+const OWNER_ONLY = ['images', 'db']
+const TABS = ['repeat', 'week', 'history', 'notes', 'images', 'db', 'settings']
+const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 const dueCount = computed(() => dueWords(progress.data).length)
 const tabs = computed<[Tab, string][]>(() => [
   ['overview', 'Обзор'],
@@ -23,6 +27,8 @@ const tabs = computed<[Tab, string][]>(() => [
   ['week', 'Неделя'],
   ['history', 'История'],
   ['notes', 'Заметки'],
+  // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
+  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['db', 'База']] as [Tab, string][])),
   ['settings', 'Настройки'],
 ])
 </script>
@@ -52,6 +58,8 @@ const tabs = computed<[Tab, string][]>(() => [
     <WeekTab v-else-if="tab === 'week'" />
     <HistoryTab v-else-if="tab === 'history'" />
     <NotesTab v-else-if="tab === 'notes'" />
+    <ImagesTab v-else-if="tab === 'images'" />
+    <DbTab v-else-if="tab === 'db'" />
     <SettingsTab v-else />
   </div>
 </template>

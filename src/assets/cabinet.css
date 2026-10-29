@@ -170,3 +170,68 @@
 .study .nt-head time { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
 .study .nt-text { margin: 0; flex: 1; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .study .nt-acts { display: flex; gap: 8px; }
+
+/* картинки */
+.study .im-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 18px; padding: 28px 20px; text-align: center; cursor: pointer;
+  background: var(--surface); border: 2px dashed var(--line); border-radius: 16px; transition: border-color .2s, background .2s; }
+.study .im-drop:hover, .study .im-drop.on { border-color: var(--gold); background: var(--gold-soft, var(--surface)); }
+.study .im-drop input { display: none; }
+.study .im-drop b { font-size: 16px; }
+.study .im-drop small, .study .im-usage span { font-size: 13px; color: var(--muted); }
+.study .im-usage { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.study .im-bar { flex: 1 1 160px; max-width: 280px; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.study .im-bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; }
+.study .im-usage .im-ok { color: var(--gold); font-weight: 600; }
+.study .im-err { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13.5px; color: var(--bad, #a4402f); }
+.study .im-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin: 16px 0 0; padding: 0; list-style: none; }
+.study .im-card { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; transition: border-color .2s, transform .2s; }
+.study .im-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.study .im-thumb { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; background: var(--bg); cursor: zoom-in; }
+.study .im-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.study .im-wait { display: grid; place-items: center; height: 100%; color: var(--muted); }
+.study .im-meta { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 12px; }
+.study .im-meta b { font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
+.study .im-meta small { font-size: 12px; color: var(--muted); }
+.study .im-view { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 16px; background: rgba(8, 16, 40, .78); backdrop-filter: blur(6px); }
+.study .im-box { position: relative; display: flex; flex-direction: column; gap: 10px; width: min(1000px, 100%); max-height: 100%; padding: 14px; background: #fff; border-radius: 18px; box-shadow: 0 30px 70px -20px rgba(4, 16, 60, .6); }
+.study .im-stage { display: grid; place-items: center; min-height: 200px; max-height: 70vh; overflow: hidden; background: var(--bg); border-radius: 12px; }
+.study .im-stage img { max-width: 100%; max-height: 70vh; object-fit: contain; }
+.study .im-x, .study .im-nav { position: absolute; z-index: 2; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; font: inherit; font-size: 18px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 50%; cursor: pointer; }
+.study .im-x { top: 22px; right: 22px; }
+.study .im-nav { top: 40%; }
+.study .im-nav.prev { left: 22px; }
+.study .im-nav.next { right: 22px; }
+.study .im-nav:disabled { opacity: .3; cursor: default; }
+.study .im-x:hover, .study .im-nav:not(:disabled):hover { border-color: var(--gold); }
+.study .im-info { display: flex; flex-wrap: wrap; gap: 8px; }
+.study .im-info input { flex: 1 1 220px; min-width: 0; padding: 10px 14px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; outline: none; }
+.study .im-info input:focus { border-color: var(--gold); }
+.study .im-info button, .study .im-dl { padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--gold); border: 1px solid var(--gold); border-radius: 10px; text-decoration: none; cursor: pointer; }
+.study .im-info .plain, .study .im-dl { color: var(--ink); background: transparent; border-color: var(--line); }
+.study .im-info .plain:hover, .study .im-dl:hover { border-color: var(--gold); }
+.study .im-info .danger:hover { border-color: var(--bad, #a4402f); color: var(--bad, #a4402f); }
+.study .im-file { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+
+/* просмотр базы */
+.study .db-note { margin: 16px 0 0; font-size: 13.5px; color: var(--muted); }
+.study .db-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.study .db-tabs .chip small { margin-left: 4px; opacity: .65; }
+.study .db-hint { margin: 10px 0 0; font-size: 14px; }
+.study .db-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.study .db-search { flex: 1 1 240px; max-width: 360px; padding: 10px 14px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; outline: none; }
+.study .db-search:focus { border-color: var(--gold); }
+.study .db-range { margin-left: auto; font-size: 13px; color: var(--muted); }
+.study .db-bar button { padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.study .db-bar button:not(:disabled):hover { border-color: var(--gold); }
+.study .db-bar button:disabled { opacity: .4; cursor: default; }
+.study .db-err { margin-top: 10px; color: var(--bad, #a4402f); font-weight: 600; }
+.study .db-wrap { margin-top: 14px; overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; transition: opacity .15s; }
+.study .db-wrap.loading { opacity: .55; }
+.study .db-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.study .db-table th { position: sticky; top: 0; padding: 10px 12px; text-align: left; white-space: nowrap; background: var(--surface); border-bottom: 1px solid var(--line); }
+.study .db-table th small { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+.study .db-table td { max-width: 360px; padding: 8px 12px; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.study .db-table tr:last-child td { border-bottom: 0; }
+.study .db-table tbody tr:hover td { background: var(--gold-soft, rgba(0, 0, 0, .03)); }
+.study .db-table td.muted { color: var(--muted); }
