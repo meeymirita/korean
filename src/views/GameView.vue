@@ -42,7 +42,7 @@ onBeforeUnmount(() => dispose?.())
   word-break: keep-all;
   padding-bottom: 24px;
 }
-.game .game-top { max-width: 1120px; margin: 0 auto; padding: 22px 16px 0; display: flex; align-items: flex-end;
+.game .game-top { max-width: none; margin: 0; padding: 18px clamp(16px, 2.4vw, 40px) 0; display: flex; align-items: flex-end;
   justify-content: space-between; gap: 16px; font-size: 14px; font-weight: 600; }
 .game .game-top a { color: var(--gold); }
 .game .game-top a:hover { text-decoration: underline; }
