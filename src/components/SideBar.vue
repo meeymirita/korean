@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {RouterLink} from "vue-router";
+import DaysCounter from "@/components/DaysCounter.vue";
 import {useMenuStore} from "@/stores/menu.ts";
 
 const menuStore = useMenuStore().menu ?? [];
@@ -22,5 +23,6 @@ const menuStore = useMenuStore().menu ?? [];
         <span class="num">{{ String(index+1).padStart(2,'0') }}</span>
       </component>
     </nav>
+    <days-counter/>
   </div>
 </template>
