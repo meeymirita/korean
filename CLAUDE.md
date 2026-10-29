@@ -4,7 +4,7 @@
 Выделен из личного сайта «Магия воспоминаний» (`github.com/meeymirita/me`, там осталась только главная с меню и
 цитатами и ссылкой сюда). Репозиторий: `github.com/meeymirita/korean`, ветка `main`, путь
 `/Users/mira/Documents/projects/git_korean`. Общение с владельцем сайта — по-русски.
-Главная здесь (`/`) — заглушка со ссылками на разделы; дизайн ей владелец даст позже.
+Главная здесь (`/`) — по дизайну владельца, см. раздел «Главная `/` и тема «небо»».
 
 ## Владелец и как с ним работать
 
@@ -26,6 +26,25 @@
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Перед пушем проверять, что каждый коммит
   собирается (временный `git worktree` + симлинк на `node_modules` + `vue-tsc --build` + `vite build`).
 
+## Главная `/` и тема «небо»
+
+Главная собрана по дизайну владельца `design/korean-2e.html` (экспорт-бандл, в `.gitignore`, 5 МБ: картинка и шрифты
+внутри в base64, в `<script type="__bundler/manifest">` и `__bundler/template`). Файл `src/views/HomeView.vue`
+(контейнер `position: fixed`, прокручивается на малых экранах), ресурсы в `src/assets/home/`: `bg.jpg` (кадр 1199×674,
+без чёрных полос, выбран владельцем), `dona.jpg` (аватарка в полосе Telegram), `fonts.css` и `fonts/` (Archivo и
+Noto Sans KR, кириллица из Noto Sans KR). Главная тёмная: фон `#201e1d`, hover ссылок `#5b95e8`, число дней `#3b77d0`.
+- Слева: «오늘의 문장» («조금씩, 매일.»), крупные ссылки Словарь / Грамматика / Памятка (`/korean/cheat`, в меню раздела она
+  «Шпаргалка») / Чтение; мелкие: Сегодня, Тренажёры, Игра на слова, Мой кабинет (🔒 без токена); счётчик дней с
+  1 июня; внизу линия и «-아요/어요 · 가요 · 먹어요 · 해요».
+- Справа: вертикальное «한국어»; внизу справа «Войти по токену» текстом без фона (с токеном: «Привет, имя!», уровень,
+  серия); внизу полоса с Telegram (`@meeymirita`) без фона.
+- «Домашка», «Аудирование», «Дорамы» владелец убрал. Цитаты и «Обучающую платформу» со старой главной не возвращали.
+  Старая главная (меню, цитаты, `HelloCard`, `GuideModal`) есть в истории до коммита `f37d3e1`.
+- **Тема «небо»** (`src/assets/sky.css`, класс `.sky` на `KoreanLayout` и на странице игры): светлый голубой фон
+  `#eef3fb`, акцент `#3b77d0`, шрифты Archivo/Noto Sans KR, переопределяет переменные `.study` и `.game`
+  (`--panel`, `--accent-soft`). Применена ко всем страницам раздела, игре и экрану токена (`AuthGate`). Не проверялись
+  вручную: партия в игре, окно грамматики, вкладки кабинета, режимы тренажёров. Владелец смотрит и правит итеративно.
+
 ## Стек и запуск
 
 Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**), Pinia, Vue Router (history mode),
@@ -37,17 +56,17 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 
 ## Маршруты
 
-`/` заглушка со ссылками · `/game` игра «Хлебушек» · `/korean/...`: `today`, `words`, `grammar`, `cheat`, `talk`, `hangul`,
+`/` главная (ссылки на разделы) · `/game` игра «Хлебушек» · `/korean/...`: `today`, `words`, `grammar`, `cheat`, `talk`, `hangul`,
 `alphabet`, `reading`, `sentences`, `numbers`, `trainers`, `cabinet`, `review` (`/korean` → `today`). Неизвестный адрес → `/`.
 Список разделов Korean (номера, названия) — `src/data/korean/sections.ts`; в нём же нумерация пересчитана.
 
 ## Структура
 
 ```
-src/assets/        base.css (токены --bg --ink --muted --gold), study.css (раздел корейского), fonts.css
+src/assets/        base.css (токены --bg --ink --muted --gold), study.css (раздел корейского), sky.css (тема), fonts.css, home/
 src/components/    AuthGate (поле токена), Avatar
 src/components/korean/  SectionHead, GrammarModal, LetterCard, MatchGame, TypingQuiz, SentenceBreakdown
-src/views/         HomeView (заглушка со ссылками), GameView, korean/*View (+ KoreanLayout — боковое меню раздела)
+src/views/         HomeView (главная), GameView, korean/*View (+ KoreanLayout — боковое меню раздела)
 src/composables/   useGrammarModal (общее состояние окна грамматики)
 src/stores/        progress.ts (общий прогресс, профиль, настройки, вход по токену)
 server/            index.mjs — сервер прогресса (Node без зависимостей), data/ в .gitignore
@@ -129,7 +148,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 ### Доступ (решение владельца)
 Без токена сайт — справочник; с токеном открывается весь функционал.
 - **Открыто всем:** `words`, `grammar`, `cheat`, `talk`, `hangul`, `alphabet`, `reading`, `sentences`, `numbers`
-  (в «Словах» и «Примерах» разбор предложений тоже открыт)и главная-заглушка.
+  (в «Словах» и «Примерах» разбор предложений тоже открыт)и главная.
 - **По токену** (`private: true` в `sections.ts` и `meta: { private: true }` в роутере): `today`, `cabinet`,
   `trainers`, `review` и страница `/game`. Без токена вместо страницы показывается `AuthGate.vue` (поле токена);
   в меню рядом замок 🔒.
