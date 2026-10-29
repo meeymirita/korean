@@ -34,9 +34,15 @@ export const DATA_DIR = process.env.DATA_DIR || path.join(HERE, 'data')
 export const FILE = path.join(DATA_DIR, 'progress.json')
 export const BACKUPS = path.join(DATA_DIR, 'backups')
 export const GUESTS_FILE = path.join(DATA_DIR, 'guests.json')
+export const NOTES_FILE = path.join(DATA_DIR, 'notes.json')
 
 export const KEEP_BACKUPS = 30
 export const MAX_BODY = 1024 * 1024
+/** 200 заметок по 5000 символов на кириллице (2 байта на букву) занимают около 2 МБ. */
+export const MAX_NOTES_BODY = 4 * 1024 * 1024
+export const MAX_NOTES = 200
+export const MAX_NOTE_TITLE = 100
+export const MAX_NOTE_TEXT = 5000
 export const MAX_GUESTS = 30
 export const MAX_GUEST_HOURS = 720
 /** Просроченную запись держим сутки: чтобы гость увидел «срок вышел», а не «неверный токен». */

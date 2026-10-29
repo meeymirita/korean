@@ -4,12 +4,14 @@
  * Запуск: npm run server. Переменные окружения (PROGRESS_TOKEN, PORT, DATA_DIR) главнее файла.
  * Слушает только 127.0.0.1: наружу его выставляет Caddy (reverse_proxy /api/* → порт сервера).
  *
- * Модули: config (настройки), http (ответы и тело запроса), storage (запись и копии), guests (гостевые токены).
+ * Модули: config (настройки), http (ответы и тело запроса), storage (запись и копии), guests (гостевые токены),
+ * notes (заметки владельца).
  */
 import http from 'node:http'
 import { DATA_DIR, PORT, TOKEN } from './config.mjs'
 import { guestsApi, roleHeaders, whoIs } from './guests.mjs'
 import { readBody, send } from './http.mjs'
+import { notesApi } from './notes.mjs'
 import { readProgress, saveProgress } from './storage.mjs'
 
 if (!TOKEN) {
@@ -44,12 +46,14 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', 'http://localhost')
     if (url.pathname === '/api/health') return send(res, 200, { ok: true })
     const isGuests = url.pathname === '/api/guests' || url.pathname.startsWith('/api/guests/')
-    if (url.pathname !== '/api/progress' && !isGuests) return send(res, 404, { error: 'not found' })
+    const isNotes = url.pathname === '/api/notes'
+    if (url.pathname !== '/api/progress' && !isGuests && !isNotes) return send(res, 404, { error: 'not found' })
 
     const who = whoIs(req)
     if (!who) return send(res, 401, { error: 'unauthorized' })
     if (who.expired) return send(res, 401, { error: 'expired' })
 
+    if (isNotes) return notesApi(req, res, who)
     return isGuests ? guestsApi(req, res, url, who) : progressApi(req, res, who)
   } catch (e) {
     console.error(e)

@@ -169,3 +169,82 @@ describe('сервер прогресса: срок вышел', () => {
     assert.deepEqual(list, [], 'в списке владельца просроченных нет')
   })
 })
+
+describe('сервер прогресса: заметки', () => {
+  let s
+  before(async () => (s = await start()))
+
+  const note = (id, extra = {}) => ({ id, title: 'Название', text: 'Описание', created: 1, updated: 2, ...extra })
+  const body = (notes, updated = 10) => ({ v: 1, updated, notes })
+
+  test('без токена и с чужим токеном заметки закрыты', async () => {
+    assert.equal((await s.call('GET', '/api/notes')).status, 401)
+    assert.equal((await s.call('PUT', '/api/notes', 'wrong-token', body([]))).status, 401)
+  })
+
+  test('пока заметок нет, сервер отдаёт пустой объект', async () => {
+    const res = await s.call('GET', '/api/notes', OWNER)
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), {})
+  })
+
+  test('владелец сохраняет и читает заметки, лишние поля отбрасываются', async () => {
+    const put = await s.call('PUT', '/api/notes', OWNER, body([note('a', { x: 'лишнее' }), note('b', { title: 'Вторая' })], 77))
+    assert.equal(put.status, 200)
+    const got = await (await s.call('GET', '/api/notes', OWNER)).json()
+    assert.equal(got.updated, 77)
+    assert.deepEqual(got.notes.map(n => n.id), ['a', 'b'])
+    assert.ok(!('x' in got.notes[0]))
+    const file = JSON.parse(await readFile(path.join(s.dir, 'notes.json'), 'utf8'))
+    assert.equal(file.notes.length, 2, 'лежит в notes.json')
+  })
+
+  test('вторая запись создаёт ежедневную копию заметок', async () => {
+    await s.call('PUT', '/api/notes', OWNER, body([note('a')], 78))
+    const files = await (await import('node:fs/promises')).readdir(path.join(s.dir, 'backups'))
+    assert.ok(files.some(f => f.startsWith('notes-')), files.join(', '))
+  })
+
+  test('гость заметок не видит, а его запись игнорируется', async () => {
+    const g = await (await s.call('POST', '/api/guests', OWNER, { hours: 1 })).json()
+    assert.deepEqual(await (await s.call('GET', '/api/notes', g.token)).json(), {})
+    const put = await s.call('PUT', '/api/notes', g.token, body([note('гость')], 999))
+    assert.equal(put.status, 200)
+    assert.equal((await put.json()).guest, true)
+    const got = await (await s.call('GET', '/api/notes', OWNER)).json()
+    assert.deepEqual(got.notes.map(n => n.id), ['a'], 'заметки владельца целы')
+  })
+
+  test('нарушение лимитов и формата — 400, прежние заметки остаются', async () => {
+    const bad = [
+      body(Array.from({ length: 201 }, (_, i) => note('n' + i))),
+      body([note('a', { title: 'я'.repeat(101) })]),
+      body([note('a', { text: 'я'.repeat(5001) })]),
+      body([note('a'), note('a')]),
+      body([note('')]),
+      body([{ id: 'a', title: 'x' }]),
+      body([note('a', { created: 'вчера' })]),
+      { v: 2, notes: [] },
+      { v: 1, notes: 'нет' },
+    ]
+    for (const b of bad) assert.equal((await s.call('PUT', '/api/notes', OWNER, b)).status, 400, JSON.stringify(b).slice(0, 60))
+    assert.equal((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.length, 1)
+  })
+
+  test('границы лимитов проходят: 200 заметок, название 100, описание 5000', async () => {
+    const edge = Array.from({ length: 200 }, (_, i) => note('n' + i, { title: 'я'.repeat(100), text: 'я'.repeat(5000) }))
+    assert.equal((await s.call('PUT', '/api/notes', OWNER, body(edge))).status, 200)
+  })
+
+  test('не JSON — 400, чужой метод — 405', async () => {
+    const raw = await fetch(s.base + '/api/notes', { method: 'PUT', headers: { Authorization: `Bearer ${OWNER}` }, body: 'не json' })
+    assert.equal(raw.status, 400)
+    assert.equal((await s.call('DELETE', '/api/notes', OWNER)).status, 405)
+  })
+
+  test('слишком большое тело — 413 (лимит заметок 4 МБ), заметки целы', async () => {
+    const huge = body([note('big', { text: 'я'.repeat(5 * 1024 * 1024) })])
+    assert.equal((await s.call('PUT', '/api/notes', OWNER, huge)).status, 413)
+    assert.equal((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.length, 200)
+  })
+})

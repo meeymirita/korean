@@ -8,14 +8,14 @@ export const send = (res, status, body, extra = {}) => {
 
 export const bearer = req => (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
 
-export function readBody(req) {
+export function readBody(req, max = MAX_BODY) {
   return new Promise((resolve, reject) => {
     let size = 0
     let tooBig = false
     const chunks = []
     req.on('data', c => {
       size += c.length
-      if (size > MAX_BODY) tooBig = true // остаток читаем и выбрасываем, чтобы ответить 413
+      if (size > max) tooBig = true // остаток читаем и выбрасываем, чтобы ответить 413
       else chunks.push(c)
     })
     req.on('end', () => (tooBig ? reject(Object.assign(new Error('too large'), { status: 413 })) : resolve(Buffer.concat(chunks).toString('utf8'))))
