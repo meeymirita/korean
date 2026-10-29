@@ -1,25 +1,50 @@
 /**
  * Маленький сервер для прогресса: хранит один JSON-файл и копии по дням.
- * Без зависимостей, нужен только Node. Запуск:
- *   PROGRESS_TOKEN=секрет node server/index.mjs
+ * Без зависимостей, нужен только Node. Токен (пароль) берётся из файла server/.env:
+ *   PROGRESS_TOKEN=секрет
+ * Запуск: npm run server. Переменные окружения (PROGRESS_TOKEN, PORT, DATA_DIR) главнее файла.
  * Слушает только 127.0.0.1: наружу его выставляет Caddy (reverse_proxy /api/* → порт сервера).
  */
 import { timingSafeEqual } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { mkdir, readFile, readdir, rename, unlink, writeFile, copyFile } from 'node:fs/promises'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+const HERE = path.dirname(fileURLToPath(import.meta.url))
+
+/** Читает server/.env: строки вида КЛЮЧ=значение, # — комментарий. Уже заданные переменные не трогает. */
+function loadEnv(file) {
+  let text
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    return
+  }
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#')) continue
+    const eq = line.indexOf('=')
+    if (eq < 1) continue
+    const key = line.slice(0, eq).trim()
+    let value = line.slice(eq + 1).trim()
+    if (/^(['"]).*\1$/.test(value)) value = value.slice(1, -1)
+    if (!(key in process.env)) process.env[key] = value
+  }
+}
+loadEnv(path.join(HERE, '.env'))
+
 const PORT = Number(process.env.PORT || 3001)
 const TOKEN = process.env.PROGRESS_TOKEN || ''
-const DATA_DIR = process.env.DATA_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), 'data')
+const DATA_DIR = process.env.DATA_DIR || path.join(HERE, 'data')
 const FILE = path.join(DATA_DIR, 'progress.json')
 const BACKUPS = path.join(DATA_DIR, 'backups')
 const KEEP_BACKUPS = 30
 const MAX_BODY = 1024 * 1024
 
 if (!TOKEN) {
-  console.error('Не задан PROGRESS_TOKEN. Пример: PROGRESS_TOKEN=секрет node server/index.mjs')
+  console.error('Не задан PROGRESS_TOKEN. Создай файл server/.env со строкой PROGRESS_TOKEN=придумай-секрет (образец: server/.env.example).')
   process.exit(1)
 }
 
