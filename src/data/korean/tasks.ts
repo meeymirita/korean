@@ -31,7 +31,13 @@ const SIMPLE = D.filter(d => /^[가-힣]+$/.test(d.k) && d.t.length <= 40)
 /** Короткий перевод для кнопок: без «→ форма» и без скобок. */
 export const short = (t: string) => t.split(/ →| \(/)[0]!.trim()
 
-export const randomWords = (n: number): Word[] => shuffle(SIMPLE).slice(0, n)
+/** Слова для заданий: если выбраны темы, берём из них (когда слов хватает), иначе из всех простых. */
+const focusPool = (n: number, cats: string[]) => {
+  const pool = cats.length ? SIMPLE.filter(d => d.c.some(c => cats.includes(c))) : SIMPLE
+  return pool.length >= n ? pool : SIMPLE
+}
+
+export const randomWords = (n: number, cats: string[] = []): Word[] => shuffle(focusPool(n, cats)).slice(0, n)
 
 function pick(pool: string[], answer: string, n = 3) {
   const others = shuffle([...new Set(pool)].filter(x => x !== answer)).slice(0, n)
@@ -46,7 +52,15 @@ const KINDS: Record<TaskKind, string> = {
   form: '',
 }
 
-function make(kind: TaskKind, d: Word, id: number): Task | null {
+/** Задание нужного вида на слово (для повторения); null, если для слова вид не подходит. */
+export function makeTask(kind: TaskKind, d: Word, id: number): Task | null {
+  return make(kind, d, id)
+}
+
+type FormWord = (typeof VERBS)[number]
+
+/** formPool — глаголы и прилагательные, подходящие под выбранные темы (задание на форму не привязано к слову d). */
+function make(kind: TaskKind, d: Word, id: number, formPool?: FormWord[]): Task | null {
   if (kind === 'tr') {
     const answer = short(d.t)
     const options = pick(SIMPLE.map(x => short(x.t)), answer)
@@ -62,7 +76,9 @@ function make(kind: TaskKind, d: Word, id: number): Task | null {
   }
   if (kind === 'form') {
     const all = [...VERBS, ...ADJECTIVES]
-    const e = shuffle(all)[0]!
+    const candidates = formPool ?? all
+    if (!candidates.length) return null
+    const e = shuffle(candidates)[0]!
     const past = Math.random() < 0.5
     const answer = (past ? e.past : e.form)!
     const other = (past ? e.form : e.past)!
@@ -86,15 +102,17 @@ function make(kind: TaskKind, d: Word, id: number): Task | null {
 }
 
 /** Набор из n разных заданий на разные слова; типы чередуются. */
-export function randomTasks(n = 8): Task[] {
+export function randomTasks(n = 8, cats: string[] = []): Task[] {
   const kinds: TaskKind[] = ['tr', 'back', 'read', 'blank', 'form']
   const tasks: Task[] = []
   const used = new Set<string>()
-  for (const d of shuffle(SIMPLE)) {
+  const focus = focusPool(n, cats)
+  const formPool = cats.length ? [...VERBS, ...ADJECTIVES].filter(e => focus.some(d => d.k === e.k)) : undefined
+  for (const d of shuffle(focus)) {
     if (tasks.length >= n) break
     if (used.has(d.k)) continue
     for (const kind of shuffle(kinds)) {
-      const t = make(kind, d, tasks.length)
+      const t = make(kind, d, tasks.length, formPool)
       if (t) {
         tasks.push(t)
         used.add(d.k)

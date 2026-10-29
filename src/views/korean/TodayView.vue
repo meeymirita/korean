@@ -11,8 +11,8 @@ const progress = useProgressStore()
 const WORDS = 10
 const TASKS = 8
 
-const words = ref(randomWords(WORDS))
-const tasks = ref(randomTasks(TASKS))
+const words = ref(randomWords(WORDS, progress.data.settings.cats))
+const tasks = ref(randomTasks(TASKS, progress.data.settings.cats))
 /** id задания → выбранный вариант */
 const picked = ref<Record<number, string>>({})
 const revealed = ref<Record<number, boolean>>({})
@@ -34,11 +34,11 @@ function answer(id: number, option: string) {
   if (t) progress.record({ word: t.word, ok: option === t.answer, source: 'today' })
 }
 function newTasks() {
-  tasks.value = randomTasks(TASKS)
+  tasks.value = randomTasks(TASKS, progress.data.settings.cats)
   picked.value = {}
 }
 function newAll() {
-  words.value = randomWords(WORDS)
+  words.value = randomWords(WORDS, progress.data.settings.cats)
   gram.value = pickGram()
   revealed.value = {}
   newTasks()
@@ -63,7 +63,7 @@ const toggle = (n: number) => (revealed.value = { ...revealed.value, [n]: !revea
         <span v-else class="hint">?</span>
       </button>
     </div>
-    <div class="fcb"><button class="plain" @click="words = randomWords(WORDS); revealed = {}">Другие слова</button></div>
+    <div class="fcb"><button class="plain" @click="words = randomWords(WORDS, progress.data.settings.cats); revealed = {}">Другие слова</button></div>
 
     <h2 class="today-h">Правило дня</h2>
     <button class="gc today-gram" @click="open(gram.id)">
