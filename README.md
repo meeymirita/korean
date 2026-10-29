@@ -2,13 +2,13 @@
   <img src="public/Vue.png" alt="Vue.js" width="480">
 </p>
 
-# Магия воспоминаний
+# Хлебушек — корейский язык
 ## Стек
 
 - Vue 3 (Composition API, `<script setup>`)
 - TypeScript
 - Vite
-- Pinia — хранилища меню и цитат
+- Pinia — хранилище прогресса
 - Vue Router
 
 ## Запуск
@@ -29,7 +29,7 @@ npm run preview
 
 | Адрес | Что это |
 | --- | --- |
-| `/` | главная: меню, цитаты, счётчик дней с 1 июня |
+| `/` | заглушка со ссылками на разделы и на meeymirita.ru |
 | `/korean/today` | «Сегодня»: случайные слова, правило дня и задания |
 | `/korean/words` | словарь с поиском по переводу, корейскому, чтению и примеру |
 | `/korean/cabinet` | «Мой кабинет» (по токену): профиль, прогресс, повторение, итоги недели, история, настройки |
@@ -43,28 +43,22 @@ npm run preview
 public/                 картинки
 server/index.mjs        сервер прогресса (Node без зависимостей), данные в server/data/ (в git не попадает)
 src/
-  assets/               base.css (главная), study.css (корейский и игра), fonts.css
+  assets/               base.css (общие цвета), study.css (корейский и игра), fonts.css
   components/
-    SideBar.vue         заголовок и меню главной
-    DaysCounter.vue     счётчик дней с 1 июня
-    SideMenu.vue        меню с группами слева на главной
     AuthGate.vue        поле токена вместо закрытой страницы; Avatar.vue — имя и картинка
     cabinet/            вкладки «Моего кабинета»
-    GuideModal.vue      окно «Что здесь есть» со слайдером и быстрыми переходами
     korean/             карточки букв, окно грамматики, шапка раздела
   composables/          состояние окна грамматики
   stores/progress.ts    общий прогресс (очки, дни, слова), хранение в браузере и на сервере
   data/
-    menu.ts, quotes.ts  меню и цитаты главной
     alphabet.ts         буквы и таблица слогов
     korean/             словарь, грамматика, справочники, задания «Сегодня», тренажёры,
                         разбор предложений (parse.ts) и их переводы (translations.ts)
-    guide.ts            слайды и быстрые переходы для окна на главной
     levels.ts           40 уровней, звания, цель дня
     achievements.ts     достижения
   game/                 данные, логика, генератор предложений (build.ts) и разметка игры «Хлебушек»
   views/
-    HomeView.vue        главная
+    HomeView.vue        заглушка со ссылками
     GameView.vue        игра
     korean/             страницы раздела «Корейский»
   router/index.ts       маршруты
@@ -118,12 +112,10 @@ example.ru {
 
 ## Как менять содержимое
 
-- **Пункты меню** — `src/data/menu.ts`: `to` — внутренний адрес, `href` — внешняя ссылка в новой вкладке.
 - **Новые слова** — массив `RAW` в `src/data/korean/dictionary.ts` (поля `n, k, r, t, s`) и категория в `CAT` в том же файле.
 - **Грамматика** — массив `G` в `src/data/korean/grammar.ts`.
-- **Дата отсчёта дней** — константа `START` в `src/components/DaysCounter.vue`.
-- **Цитаты** — `src/data/quotes.ts`.
-- **Автопереключение цитат** — константы `AUTOPLAY` и `INTERVAL` (секунды) в `src/components/QuoteBlock.vue`.
+
+Сайт живёт на `korean.meeymirita.ru`; главная `meeymirita.ru` — отдельный проект (`github.com/meeymirita/me`).
 
 Сайт — одностраничное приложение, поэтому на хостинге все адреса должны отдавать `index.html`.
 
