@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
-import bg from '@/assets/home/bg.jpg'
+import bg from '@/assets/home/bg2.jpg'
 import dona from '@/assets/home/dona.jpg'
 import Avatar from '@/components/Avatar.vue'
 import { useProgressStore } from '@/stores/progress'
