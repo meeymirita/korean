@@ -280,3 +280,5 @@
 .study-side .study-level + .foot { margin-top: 14px; padding-top: 0; }
 @media (max-width: 860px) { .study-level { display: none; } }
 
+/* крупные числа без «старинных» цифр (иначе 1 похожа на I, а 0 на o) */
+.study .pg-v, .study .page-head .big, .study .tq-score, .study .fc .ans b { font-variant-numeric: lining-nums; font-feature-settings: "lnum" 1; }
