@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Avatar from '@/components/Avatar.vue'
+import GuestAccess from '@/components/cabinet/GuestAccess.vue'
 import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
 import { useProgressStore } from '@/stores/progress'
@@ -134,7 +135,7 @@ async function reconnect() {
       </div>
     </div>
 
-    <div class="st-block">
+    <div v-if="!progress.isGuest" class="st-block">
       <h3>Где хранится прогресс</h3>
       <p>Прогресс хранится в браузере и сохраняется на сервере сайта. Токен нужен на каждом устройстве один раз.</p>
       <div class="pg-status" :class="progress.sync" style="margin-top: 12px">
@@ -153,6 +154,11 @@ async function reconnect() {
         <label class="pg-file plain">⬆ Загрузить копию<input type="file" accept="application/json,.json" @change="restore" /></label>
         <button class="plain danger" @click="reset">Сбросить прогресс</button>
       </div>
+    </div>
+    <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
+    <div v-if="progress.isGuest" class="st-block">
+      <h3>Гостевой режим</h3>
+      <p>Вы вошли по временному токену: всё работает, но прогресс нигде не сохраняется и пропадёт, когда вы закроете страницу.</p>
     </div>
     <p v-if="message" class="pg-note">{{ message }}</p>
   </div>
