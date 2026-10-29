@@ -7,6 +7,7 @@ export interface MenuItem {
 export const menu: MenuItem[] = [
     { title: "Главная", to: "/" },
     { title: "Обучающая платформа", href: "https://anitech.meeymirita.ru/" },
+    { title: "Сегодня", to: "/korean/today" },
     { title: "Корейский", to: "/korean/words" },
     { title: "Игра на слова", to: "/game" },
 ];

@@ -8,6 +8,7 @@ export interface Section {
 }
 
 export const sections: Section[] = [
+  { id: 'today', num: '00', menu: 'Сегодня', kicker: 'На сегодня', title: 'Сегодня', sub: 'случайные слова, правило и задания — каждый раз новые' },
   { id: 'words', num: '01', menu: 'Слова', kicker: 'Словарь', title: 'Слова', sub: 'словарь корейского' },
   { id: 'grammar', num: '02', menu: 'Грамматика', kicker: 'Правила', title: 'Грамматика', sub: 'нажми на карточку — откроется объяснение' },
   { id: 'cheat', num: '03', menu: 'Шпаргалка', kicker: 'Формулы', title: 'Шпаргалка', sub: 'частицы, формулы, шаблоны предложений' },

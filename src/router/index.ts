@@ -16,8 +16,9 @@ const router = createRouter({
     {
       path: '/korean',
       component: KoreanLayout,
-      redirect: '/korean/words',
+      redirect: '/korean/today',
       children: [
+        { path: 'today', component: () => import('@/views/korean/TodayView.vue') },
         { path: 'words', component: () => import('@/views/korean/WordsView.vue') },
         { path: 'grammar', component: () => import('@/views/korean/GrammarView.vue') },
         rich('cheat'),
