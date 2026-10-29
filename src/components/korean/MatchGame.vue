@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { shuffle } from '@/data/korean/tasks'
-import { shown, type TWord } from '@/data/korean/trainer'
+import { shown, statKey, type TWord } from '@/data/korean/trainer'
+import { useProgressStore } from '@/stores/progress'
 
 const props = defineProps<{ words: TWord[]; showReading: boolean; bestKey: string }>()
 const emit = defineEmits<{ again: []; retry: [words: TWord[]] }>()
 
+const progress = useProgressStore()
 const left = ref(shuffle(props.words))
 const right = ref(shuffle(props.words))
 const selL = ref<number | null>(null)
@@ -55,11 +57,15 @@ function pick(side: 'l' | 'r', id: number) {
   const l = selL.value
   const r = selR.value
   selL.value = selR.value = null
+  const word = props.words.find(x => x.n === l)
   if (l === r) {
+    // засчитываем слово, если в этом раунде в нём не ошибались
+    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer' })
     matched.value = new Set(matched.value).add(l)
     if (done.value) finish()
   } else {
     mistakes.value++
+    if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer' })
     missed.value = new Set(missed.value).add(l)
     wrong.value = { l, r }
     setTimeout(() => (wrong.value = null), 450)

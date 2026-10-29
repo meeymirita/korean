@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
-import { answerText, isCorrect, labelOf, promptOf, shown, type Direction, type TWord } from '@/data/korean/trainer'
+import { answerText, isCorrect, labelOf, promptOf, shown, statKey, type Direction, type TWord } from '@/data/korean/trainer'
+import { useProgressStore } from '@/stores/progress'
 
 const props = defineProps<{ words: TWord[]; dir: Direction }>()
 const emit = defineEmits<{ again: []; retry: [words: TWord[]] }>()
 
 type Result = { w: TWord; ok: boolean; given: string }
 
+const progress = useProgressStore()
 const index = ref(0)
 const input = ref('')
 const state = ref<'ask' | 'right' | 'wrong'>('ask')
@@ -35,6 +37,7 @@ function check(known = true) {
   if (!w) return
   const ok = known && isCorrect(input.value, w, props.dir)
   results.value.push({ w, ok, given: input.value })
+  progress.record({ word: statKey(w), ok, source: 'trainer' })
   state.value = ok ? 'right' : 'wrong'
 }
 function next() {

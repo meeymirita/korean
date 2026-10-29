@@ -5,7 +5,8 @@ import { makeBuild, parseBuildKey } from './build'
 import { analyze } from '@/data/korean/parse'
 
 /** Запускает игру на уже отрисованной разметке; возвращает функцию очистки. */
-export function initGame() {
+/** hooks: общий прогресс сайта (record, importXp, state) — передаёт GameView. */
+export function initGame(hooks) {
 'use strict';
 /* ---------- данные ---------- */
 const CATS=[
@@ -29,13 +30,6 @@ const MODES=[
   {id:'spot',icon:'🔍',name:'Найди верное'},{id:'type',icon:'⌨️',name:'Напиши'}
 ];
 
-const LEVELS=['Ученица','Подмастерье','Маг-новичок','Маг','Старший маг','Первоклассный маг','Мудрая эльфийка','Великий маг'];
-const DAILY_GOAL=20;
-const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
-/** Уровень по очкам: на уровень L нужно 50·L·(L−1) очков. */
-const levelOf=xp=>Math.floor((1+Math.sqrt(1+4*xp/50))/2);
-const xpFor=L=>50*L*(L-1);
-
 /* ---------- утилиты ---------- */
 const $=(s,r)=>(r||document).querySelector(s);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;};
@@ -47,7 +41,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 const LS='hleb_game_v1';
 const S={
   mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0},reading:true,auto:true,tense:'both',
-  ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,day:{d:'',ok:0}},miss:{},hints:3,
+  ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
   blitz:{on:false,left:60,ok:0,bad:0,iv:null}
@@ -56,10 +50,10 @@ function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,gloss:
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
   ['reading','auto','tense','mode','seenHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
-  if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}
-  if(!S.all.day||S.all.day.d!==today())S.all.day={d:today(),ok:S.all.day&&S.all.day.d===today()?S.all.day.ok:0};}
+  if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
 load();
-if(!S.all.day||S.all.day.d!==today())S.all.day={d:today(),ok:0};
+/* очки старой версии игры переходят в общий прогресс сайта */
+if(S.all.xp>0){hooks.importXp(S.all.xp);S.all.xp=0;save();}
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 if(![1,2,3,'any'].includes(S.level))S.level='any';
 
@@ -115,7 +109,7 @@ function genWord(){
   const lines=[];
   if(w.pres)lines.push(w.ko+' → '+w.pres+' / '+w.past);
   lines.push(w.ko+' · '+w.rd+' — '+w.ru);
-  return {type:'choice',mode:'word',key:'w:'+w.ko,label:'Выбери перевод',prompt:w.ko,promptKo:true,reading:w.rd,
+  return {type:'choice',mode:'word',key:'w:'+w.ko,word:w.ko,label:'Выбери перевод',prompt:w.ko,promptKo:true,reading:w.rd,
     options:opts,correct:opts.findIndex(o=>o.text===w.ru),right:w.ru,explain:lines,
     hp:w.ko,hr:w.ru,icon:'🔤'};
 }
@@ -126,7 +120,7 @@ function genRev(){
   const opts=shuffle([w,...dis]).map(x=>({text:x.ko,ko:true,sub:x.rd}));
   const lines=[w.ko+' · '+w.rd+' — '+w.ru];
   if(w.pres)lines.push(w.pres+' / '+w.past);
-  return {type:'choice',mode:'rev',key:'r:'+w.ko,label:'Выбери слово по-корейски',prompt:w.ru,promptKo:false,
+  return {type:'choice',mode:'rev',key:'r:'+w.ko,word:w.ko,label:'Выбери слово по-корейски',prompt:w.ru,promptKo:false,
     options:opts,correct:opts.findIndex(o=>o.text===w.ko),right:w.ko,explain:lines,hp:w.ru,hr:w.ko,icon:'🔁'};
 }
 function genForm(){
@@ -144,7 +138,7 @@ function genForm(){
   }
   const opts=shuffle(set).map(t=>({text:t,ko:true}));
   const tn=tense==='pres'?'настоящее время (-아요/어요)':'прошедшее время (-았어요/었어요)';
-  return {type:'choice',mode:'form',key:'f:'+e.ko,label:'Поставь в форму: '+tn,prompt:e.ko,promptKo:true,
+  return {type:'choice',mode:'form',key:'f:'+e.ko,word:e.ko,label:'Поставь в форму: '+tn,prompt:e.ko,promptKo:true,
     reading:e.rd,sub:e.ru,options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
     explain:[e.ko+' → '+right,e.note],hp:e.ko+' ('+(tense==='pres'?'наст.':'прош.')+')',hr:right,icon:'🔧'};
 }
@@ -232,13 +226,13 @@ function genType(){
     const tense=S.tense==='both'?rnd(['pres','past']):S.tense;
     const right=tense==='pres'?e.pres:e.past;
     const tn=tense==='pres'?'настоящее время (-아요/어요)':'прошедшее время (-았어요/었어요)';
-    return {type:'type',mode:'type',key:'t:'+e.ko+':'+tense,label:'Напиши форму: '+tn,prompt:e.ko,promptKo:true,
+    return {type:'type',mode:'type',key:'t:'+e.ko+':'+tense,word:e.ko,label:'Напиши форму: '+tn,prompt:e.ko,promptKo:true,
       reading:e.rd,sub:e.ru,answers:[right],squash:true,right:right,placeholder:'한글로…',
       explain:[e.ko+' → '+right,e.note],hp:e.ko+' ('+(tense==='pres'?'наст.':'прош.')+')',hr:right,icon:'⌨️'};
   }
   const pool=activePool();
   const w=pickW(pool,x=>'t:'+x.ko);
-  return {type:'type',mode:'type',key:'t:'+w.ko,label:'Напиши перевод по-русски',prompt:w.ko,promptKo:true,
+  return {type:'type',mode:'type',key:'t:'+w.ko,word:w.ko,label:'Напиши перевод по-русски',prompt:w.ko,promptKo:true,
     reading:w.rd,answers:ruAnswers(w),right:w.ru,placeholder:'перевод…',
     explain:[w.ko+' · '+w.rd+' — '+w.ru],hp:w.ko,hr:w.ru,icon:'⌨️'};
 }
@@ -410,16 +404,16 @@ function finish(ok,chosen){
   if(ok){B.ok++;A.ok++;B.streak++;if(B.streak>B.best)B.best=B.streak;if(B.streak>A.best)A.best=B.streak;
     const m=S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
-    const lvl0=levelOf(A.xp);A.xp+=(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0);
-    if(levelOf(A.xp)>lvl0)msgs.push('⭐ Новый уровень: '+LEVELS[Math.min(levelOf(A.xp)-1,LEVELS.length-1)]+'!');
-    if(A.day.d!==today())A.day={d:today(),ok:0};
-    A.day.ok++;if(A.day.ok===DAILY_GOAL)msgs.push('🎯 Цель дня выполнена!');
+    const pr=hooks.record({word:q.word||null,ok:true,xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
+    if(pr.levelUp)msgs.push('⭐ Новый уровень '+pr.level+': '+pr.title+'!');
+    if(pr.goalReached)msgs.push('🎯 Цель дня выполнена!');
     if([5,10,20,50].includes(B.streak))msgs.push('🔥 Серия из '+B.streak+' верных подряд!');
     if([50,100,250,500,1000].includes(A.ok))msgs.push('🏅 '+A.ok+' верных ответов за всё время!');
     if(A.ok%10===0){msgs.push('🍞 Испёкся ещё один хлебушек!');const l=$('#nLoaf');l.classList.remove('pop');void l.offsetWidth;l.classList.add('pop');}
     if(msgs.length)toast(msgs[0]);
     if(S.surv.on)S.surv.ok++;
   }else{B.bad++;A.bad++;B.streak=0;
+    hooks.record({word:q.word||null,ok:false});
     const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}
   if(S.blitz.on){if(ok)S.blitz.ok++;else S.blitz.bad++;}
   if(S.surv.on&&!ok){S.surv.lives--;drawLives();if(S.surv.lives<=0)S.timer=setTimeout(endSurv,1300);}
@@ -467,12 +461,12 @@ function updateStats(){
   $('#loafTxt').textContent=(A.ok%10)+' / 10';
   $('#loafBar').style.width=((A.ok%10)*10)+'%';
   $('#allTime').textContent='За всё время: '+A.ok+' верно, '+A.bad+' неверно'+(A.bestBlitz?' · лучший блиц: '+A.bestBlitz:'')+(A.bestSurv?' · выживание: '+A.bestSurv:'');
-  const L=levelOf(A.xp),into=A.xp-xpFor(L),span=100*L;
-  $('#lvlN').textContent=L;$('#lvlName').textContent=LEVELS[Math.min(L-1,LEVELS.length-1)];
-  $('#xpTxt').textContent=into+' / '+span;$('#xpBar').style.width=Math.min(100,into/span*100)+'%';
-  const g=A.day&&A.day.d===today()?A.day.ok:0;
-  $('#goalN').textContent=Math.min(g,DAILY_GOAL);$('#goalBar').style.width=Math.min(100,g/DAILY_GOAL*100)+'%';
-  $('#goalTxt').textContent=g>=DAILY_GOAL?'готово 🎉':'ещё '+(DAILY_GOAL-g);
+  const P=hooks.state();
+  $('#lvlN').textContent=P.level;$('#lvlName').textContent=P.title;
+  $('#xpTxt').textContent=P.max?'максимум':P.into+' / '+P.span;$('#xpBar').style.width=P.pct+'%';
+  const g=P.todayOk;
+  $('#goalN').textContent=Math.min(g,P.goal);$('#goalBar').style.width=Math.min(100,g/P.goal*100)+'%';
+  $('#goalTxt').textContent=g>=P.goal?'готово 🎉':'ещё '+(P.goal-g);
 }
 function renderList(){
   const list=$('#list');list.innerHTML='';
@@ -535,8 +529,8 @@ $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
 $('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
 $('#resetBtn').addEventListener('click',()=>{
-  if(!confirm('Сбросить весь прогресс: счёт, уровень, испечённые хлебушки и слабые слова?'))return;
-  S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,day:{d:today(),ok:0}};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
+  if(!confirm('Сбросить статистику игры: счёт, испечённые хлебушки и слабые слова? Уровень и общий прогресс сайта не сбрасываются.'))return;
+  S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
   save();updateStats();renderList();next();
 });
 

@@ -97,3 +97,6 @@ export const labelOf = (dir: Direction) =>
     past: 'Напиши форму: прошедшее время',
     fill: 'Вставь пропущенное слово',
   })[dir]
+
+/** Слово для общего прогресса; целые предложения (вопросительные) как слова не считаем. */
+export const statKey = (w: TWord): string | null => (w.n >= 13000 ? null : w.k)

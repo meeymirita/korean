@@ -5,7 +5,9 @@ import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { randomTasks, randomWords } from '@/data/korean/tasks'
+import { useProgressStore } from '@/stores/progress'
 
+const progress = useProgressStore()
 const WORDS = 10
 const TASKS = 8
 
@@ -28,6 +30,8 @@ const { open } = useGrammarModal()
 function answer(id: number, option: string) {
   if (id in picked.value) return
   picked.value = { ...picked.value, [id]: option }
+  const t = tasks.value.find(x => x.id === id)
+  if (t) progress.record({ word: t.word, ok: option === t.answer, source: 'today' })
 }
 function newTasks() {
   tasks.value = randomTasks(TASKS)

@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { DAILY_GOAL } from '@/data/levels'
 import { initGame } from '@/game/engine'
+import { useProgressStore } from '@/stores/progress'
 import markup from '@/game/markup.html?raw'
 import '@/game/game.css'
 
+const progress = useProgressStore()
 let dispose: (() => void) | undefined
-onMounted(() => (dispose = initGame()))
+onMounted(
+  () =>
+    (dispose = initGame({
+      record: (o: { word: string | null; ok: boolean; xp?: number }) => progress.record({ ...o, source: 'game' }),
+      importXp: (n: number) => progress.importXp(n),
+      state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: DAILY_GOAL }),
+    })),
+)
 onBeforeUnmount(() => dispose?.())
 </script>
 
