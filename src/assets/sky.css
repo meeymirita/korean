@@ -1,0 +1,43 @@
+/* Светлая тема «небо» (цвета с главной, акцент #3b77d0).
+   Включается классом .sky на оболочке раздела и на странице игры. */
+.study.sky {
+  --bg: #eef3fb;
+  --ink: #14233f;
+  --muted: #51638a;
+  --gold: #2f66b8;
+  --accent: #3b77d0;
+  --surface: rgba(255, 255, 255, .75);
+  --line: rgba(59, 119, 208, .3);
+  --line-soft: rgba(20, 35, 63, .1);
+  --gold-soft: rgba(59, 119, 208, .12);
+  --ok: #2f7a52;
+  --ok-bg: rgba(47, 122, 82, .12);
+  --bad: #b44634;
+  --bad-bg: rgba(180, 70, 52, .1);
+  --shadow: 0 30px 60px -34px rgba(20, 35, 63, .35);
+  --serif: 'Archivo', 'Noto Sans KR', sans-serif;
+  --mono: 'Archivo', 'Noto Sans KR', sans-serif;
+  font-family: 'Archivo', 'Noto Sans KR', sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, #e3ecfa, #f4f7fc) fixed;
+}
+.study.sky h1, .study.sky h2, .study.sky h3 { font-weight: 800; letter-spacing: -.01em; }
+.study.sky .kicker, .study.sky .row.h { letter-spacing: .12em; font-weight: 600; }
+.study.sky .study-side { background: rgba(255, 255, 255, .6); }
+.study.sky .searchbar { background: rgba(238, 243, 251, .94); backdrop-filter: blur(8px); }
+.study.sky .sb { box-shadow: none; }
+.study.sky .sb button:hover, .study.sky .chip.on, .study.sky .fcb button,
+.study.sky .today-end button, .study.sky .study-modal .gh button:hover,
+.study.sky .bd-rule:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.study.sky .study-level .lv-bar i { background: var(--accent); }
+.study.sky mark { background: rgba(59, 119, 208, .25); color: inherit; }
+.study.sky .study-links a:hover, .study.sky .study-links a.router-link-active { color: var(--accent); }
+.study.sky .study-links .line { background: var(--accent); }
+.study.sky .row .k { font-weight: 800; }
+@media (max-width: 860px) { .study.sky .study-side { background: rgba(238, 243, 251, .96); } }
+
+/* страница игры: свои переменные .game переопределяем под тему */
+.study.sky.game { --panel: rgba(255, 255, 255, .8); --accent-soft: rgba(59, 119, 208, .14); --accent-ink: #fff; }
+.game.sky .over { background: rgba(14, 28, 56, .55); }
+.game.sky h2, .game.sky h3, .game.sky .brand, .game.sky .game-title h1 { font-family: 'Archivo', 'Noto Sans KR', sans-serif; font-weight: 800; }
+.game.sky .game-top a, .game.sky .game-title .jp { color: var(--gold); }

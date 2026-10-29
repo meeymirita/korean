@@ -5,6 +5,8 @@ import AuthGate from '@/components/AuthGate.vue'
 import { initGame } from '@/game/engine'
 import { useProgressStore } from '@/stores/progress'
 import markup from '@/game/markup.html?raw'
+import '@/assets/home/fonts.css'
+import '@/assets/sky.css'
 import '@/game/game.css'
 
 const progress = useProgressStore()
@@ -40,7 +42,7 @@ onBeforeUnmount(() => dispose?.())
 </script>
 
 <template>
-  <div class="study game">
+  <div class="study game sky">
     <header class="game-top">
       <RouterLink to="/">← На главную</RouterLink>
       <div class="game-title">

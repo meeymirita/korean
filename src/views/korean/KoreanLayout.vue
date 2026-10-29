@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import '@/assets/home/fonts.css'
+import '@/assets/sky.css'
 import Avatar from '@/components/Avatar.vue'
 import AuthGate from '@/components/AuthGate.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
@@ -14,7 +16,7 @@ const route = useRoute()
 </script>
 
 <template>
-  <div class="study study-shell">
+  <div class="study study-shell sky">
     <aside class="study-side">
       <RouterLink to="/" class="study-back">← На главную</RouterLink>
       <div class="brand">

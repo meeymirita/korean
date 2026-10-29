@@ -37,18 +37,18 @@ async function submit() {
 
 <style>
 .gate { display: grid; place-items: center; min-height: 60vh; padding: 36px 20px; }
-.gate-card { width: min(520px, 100%); padding: 32px 30px; text-align: center; background: rgba(248, 247, 244, .92);
-  border: 1px solid rgba(168, 130, 47, .3); border-radius: 22px; box-shadow: 0 30px 60px -34px rgba(40, 38, 34, .45); }
+.gate-card { width: min(520px, 100%); padding: 32px 30px; text-align: center; background: var(--surface, rgba(248, 247, 244, .92));
+  border: 1px solid var(--line, rgba(168, 130, 47, .3)); border-radius: 22px; box-shadow: var(--shadow, 0 30px 60px -34px rgba(40, 38, 34, .45)); }
 .gate-ico { font-size: 40px; line-height: 1; }
-.gate-card h2 { margin: 12px 0 0; font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; line-height: 1.1; }
+.gate-card h2 { margin: 12px 0 0; font-family: var(--serif, 'Cormorant Garamond', serif); font-size: 34px; font-weight: 600; line-height: 1.1; }
 .gate-card p { margin: 12px 0 0; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
 .gate-form { display: flex; gap: 8px; margin-top: 20px; }
-.gate-form input { flex: 1; min-width: 0; padding: 12px 14px; font: inherit; background: var(--bg); border: 1px solid rgba(168, 130, 47, .35);
+.gate-form input { flex: 1; min-width: 0; padding: 12px 14px; font: inherit; background: var(--bg); border: 1px solid var(--line, rgba(168, 130, 47, .35));
   border-radius: 12px; outline: none; color: var(--ink); }
 .gate-form input:focus { border-color: var(--gold); }
-.gate-form button { padding: 0 22px; font: inherit; font-weight: 600; color: #fff; background: var(--gold); border: 0; border-radius: 12px; cursor: pointer; }
+.gate-form button { padding: 0 22px; font: inherit; font-weight: 600; color: #fff; background: var(--accent, var(--gold)); border: 0; border-radius: 12px; cursor: pointer; }
 .gate-form button:disabled { opacity: .6; cursor: default; }
-.gate-card .gate-err { color: #a4402f; font-weight: 600; }
+.gate-card .gate-err { color: var(--bad, #a4402f); font-weight: 600; }
 .gate-back { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 600; color: var(--gold); }
 .gate-back:hover { text-decoration: underline; }
 </style>
