@@ -10,7 +10,9 @@ import ContactBar from "@/components/ContactBar.vue";
     <div class="shade"></div>
 
     <side-bar/>
-    <quote-block/>
+    <div class="right-col">
+      <quote-block/>
+    </div>
   </div>
   <contact-bar/>
 </template>

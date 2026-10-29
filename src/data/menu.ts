@@ -4,11 +4,25 @@ export interface MenuItem {
     to?: string
 }
 
-export const menu: MenuItem[] = [
-    { title: "Главная", to: "/" },
-    { title: "Обучающая платформа", href: "https://anitech.meeymirita.ru/" },
-    { title: "Сегодня", to: "/korean/today" },
-    { title: "Корейский", to: "/korean/words" },
-    { title: "Игра на слова", to: "/game" },
+export interface MenuGroup {
+    title: string
+    items: MenuItem[]
+}
+
+export const menuGroups: MenuGroup[] = [
+    {
+        title: "IT",
+        items: [
+            { title: "Обучающая платформа", href: "https://anitech.meeymirita.ru/" },
+        ],
+    },
+    {
+        title: "Материалы по корейскому",
+        items: [
+            { title: "Сегодня", to: "/korean/today" },
+            { title: "Корейский", to: "/korean/words" },
+            { title: "Игра на слова", to: "/game" },
+        ],
+    },
 ];
 // ,"Эпизоды","Магия","Галерея","Музыка","Мир","Новости","Фан-арт","Контакты"
