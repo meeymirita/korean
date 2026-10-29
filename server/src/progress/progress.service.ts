@@ -1,0 +1,198 @@
+/**
+ * Прогресс владельца в базе. Сайт шлёт короткие «действия» (ответ, профиль, настройки, сброс, импорт) на POST /api/ops,
+ * сервер раскладывает их по таблицам answers / words / days / meta, а GET /api/progress собирает из них тот же объект,
+ * который сайт использовал раньше. Правила (что считается выученным, как растёт серия) повторяют сайт: см. tests/parity.test.mjs.
+ */
+import { BadRequestException, Injectable } from '@nestjs/common'
+import { Db } from '../db/db.service'
+
+/** Слово считается выученным после стольких верных ответов подряд. */
+const KNOWN_STREAK = 3
+const GOALS = [10, 20, 50]
+const LOG_LIMIT = 300
+const MAX_OPS = 500
+const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+export interface Profile {
+  name: string
+  avatar: string
+}
+export interface Settings {
+  goal: number
+  cats: string[]
+  gameCats: Record<string, number> | null
+}
+
+const bad = (msg: string): never => {
+  throw new BadRequestException({ error: msg })
+}
+const str = (v: unknown, max: number) => (typeof v === 'string' && v.length <= max ? v : bad('invalid op'))
+const int = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max ? v : bad('invalid op'))
+
+const DEFAULT_PROFILE: Profile = { name: '', avatar: '🌸' }
+const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null }
+
+@Injectable()
+export class ProgressService {
+  constructor(private readonly db: Db) {}
+
+  private json<T>(key: string, fallback: T): T {
+    try {
+      const raw = this.db.getMeta(key)
+      return raw ? { ...fallback, ...JSON.parse(raw) } : fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  /** Весь прогресс одним объектом, как его ждёт сайт (поле v: 1). */
+  read() {
+    const days: Record<string, number> = {}
+    const all: Record<string, number> = {}
+    for (const r of this.db.all<{ day: string; ok: number; total: number }>('SELECT day, ok, total FROM days')) {
+      days[r.day] = r.ok
+      all[r.day] = r.total
+    }
+    const words: Record<string, { ok: number; bad: number; streak: number; last: number; kd?: number }> = {}
+    for (const r of this.db.all<{ word: string; ok: number; bad: number; streak: number; last: number; kd: number | null }>('SELECT * FROM words')) {
+      words[r.word] = { ok: r.ok, bad: r.bad, streak: r.streak, last: r.last, ...(r.kd ? { kd: r.kd } : {}) }
+    }
+    const sources: Record<string, { ok: number; bad: number }> = {}
+    for (const r of this.db.all<{ source: string; ok: number; bad: number }>(
+      'SELECT source, SUM(ok) AS ok, SUM(1 - ok) AS bad FROM answers GROUP BY source',
+    )) {
+      sources[r.source] = { ok: r.ok, bad: r.bad }
+    }
+    const log = this.db
+      .all<{ t: number; word: string | null; ok: number; source: string }>('SELECT t, word, ok, source FROM answers ORDER BY id DESC LIMIT ?', LOG_LIMIT)
+      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, s: r.source }))
+    return {
+      v: 1,
+      updated: Number(this.db.getMeta('updated') ?? 0),
+      xp: Number(this.db.getMeta('xp') ?? 0),
+      days,
+      all,
+      words,
+      sources,
+      log,
+      profile: this.json<Profile>('profile', DEFAULT_PROFILE),
+      settings: this.json<Settings>('settings', DEFAULT_SETTINGS),
+    }
+  }
+
+  /** Применяет пачку действий по порядку; если хоть одно неверное, не применяется ничего (400). */
+  apply(body: unknown) {
+    const ops = (body as { ops?: unknown })?.ops
+    if (!Array.isArray(ops) || ops.length > MAX_OPS) bad('invalid ops')
+    this.db.tx(() => {
+      for (const op of ops as Record<string, unknown>[]) this.one(op)
+      this.db.setMeta('updated', String(Date.now()))
+    })
+    return { ok: true, applied: (ops as unknown[]).length }
+  }
+
+  private one(op: Record<string, unknown>) {
+    switch (op?.type) {
+      case 'answer':
+        return this.answer(op)
+      case 'reset':
+        return this.reset()
+      case 'profile':
+        return this.profile(op)
+      case 'settings':
+        return this.settings(op)
+      case 'import':
+        return this.import(op.data)
+      default:
+        return bad('unknown op')
+    }
+  }
+
+  /** Один ответ: строка в answers, статистика слова, счётчик дня и очки. */
+  private answer(op: Record<string, unknown>) {
+    const t = int(op.t, 0, Number.MAX_SAFE_INTEGER)
+    const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
+    const word = op.word == null ? null : str(op.word, 100)
+    const ok = typeof op.ok === 'boolean' ? op.ok : bad('invalid op')
+    const source = str(op.source, 20) || bad('invalid op')
+    const mode = op.mode == null ? '' : str(op.mode, 30)
+    const xp = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
+
+    this.db.run('INSERT INTO answers (t, word, ok, source, mode, xp) VALUES (?, ?, ?, ?, ?, ?)', t, word, ok ? 1 : 0, source, mode, xp)
+    if (word) {
+      const w = this.db.get<{ streak: number; kd: number | null }>('SELECT streak, kd FROM words WHERE word = ?', word)
+      if (!w) this.db.run('INSERT INTO words (word, ok, bad, streak, last) VALUES (?, 0, 0, 0, 0)', word)
+      const streak = ok ? (w?.streak ?? 0) + 1 : 0
+      const kd = ok && streak >= KNOWN_STREAK && !w?.kd ? t : (w?.kd ?? null)
+      this.db.run('UPDATE words SET ok = ok + ?, bad = bad + ?, streak = ?, last = ?, kd = ? WHERE word = ?', ok ? 1 : 0, ok ? 0 : 1, streak, t, kd, word)
+    }
+    this.db.run(
+      'INSERT INTO days (day, ok, total) VALUES (?, ?, 1) ON CONFLICT(day) DO UPDATE SET ok = ok + excluded.ok, total = total + 1',
+      day,
+      ok ? 1 : 0,
+    )
+    if (xp) this.db.setMeta('xp', String(Number(this.db.getMeta('xp') ?? 0) + xp))
+  }
+
+  /** Сброс: ответы, слова, дни и очки обнуляются; профиль и настройки остаются. */
+  private reset() {
+    this.db.run('DELETE FROM answers')
+    this.db.run('DELETE FROM words')
+    this.db.run('DELETE FROM days')
+    this.db.setMeta('xp', '0')
+  }
+
+  private profile(op: Record<string, unknown>) {
+    const cur = this.json<Profile>('profile', DEFAULT_PROFILE)
+    if (op.name !== undefined) cur.name = str(op.name, 24)
+    if (op.avatar !== undefined) cur.avatar = str(op.avatar, 60_000) || cur.avatar
+    this.db.setMeta('profile', JSON.stringify(cur))
+  }
+
+  private settings(op: Record<string, unknown>) {
+    const cur = this.json<Settings>('settings', DEFAULT_SETTINGS)
+    if (op.goal !== undefined) cur.goal = GOALS.includes(op.goal as number) ? (op.goal as number) : bad('invalid goal')
+    if (op.cats !== undefined) {
+      if (!Array.isArray(op.cats) || op.cats.length > 30) bad('invalid cats')
+      cur.cats = (op.cats as unknown[]).map(c => str(c, 40))
+    }
+    if (op.gameCats !== undefined) {
+      const g = op.gameCats as Record<string, unknown> | null
+      if (g === null) cur.gameCats = null
+      else if (typeof g === 'object' && !Array.isArray(g) && Object.keys(g).length <= 30) {
+        cur.gameCats = Object.fromEntries(Object.entries(g).map(([k, v]) => [str(k, 10), int(v, 0, 1)]))
+      } else bad('invalid gameCats')
+    }
+    this.db.setMeta('settings', JSON.stringify(cur))
+  }
+
+  /** Загрузка копии: слова, дни, очки, профиль и настройки заменяются. Журнал ответов и источники из копии не восстанавливаются. */
+  private import(data: unknown) {
+    const d = data as Partial<ReturnType<ProgressService['read']>> | null
+    if (!d || typeof d !== 'object' || d.v !== 1) bad('invalid import')
+    const words = Object.entries(d!.words ?? {})
+    const days = Object.entries(d!.days ?? {})
+    if (words.length > 5000 || days.length > 5000) bad('invalid import')
+    this.reset()
+    for (const [word, w] of words) {
+      const s = w as { ok?: number; bad?: number; streak?: number; last?: number; kd?: number }
+      this.db.run(
+        'INSERT INTO words (word, ok, bad, streak, last, kd) VALUES (?, ?, ?, ?, ?, ?)',
+        str(word, 100),
+        int(s.ok ?? 0, 0, 1e9),
+        int(s.bad ?? 0, 0, 1e9),
+        int(s.streak ?? 0, 0, 1e9),
+        int(s.last ?? 0, 0, Number.MAX_SAFE_INTEGER),
+        s.kd ? int(s.kd, 0, Number.MAX_SAFE_INTEGER) : null,
+      )
+    }
+    for (const [day, ok] of days) {
+      if (!DAY.test(day)) bad('invalid import')
+      const total = Math.max(Number(d!.all?.[day] ?? 0), Number(ok))
+      this.db.run('INSERT INTO days (day, ok, total) VALUES (?, ?, ?)', day, int(Number(ok), 0, 1e9), int(total, 0, 1e9))
+    }
+    this.db.setMeta('xp', String(int(Number(d!.xp ?? 0), 0, 1e12)))
+    if (d!.profile) this.profile(d!.profile as unknown as Record<string, unknown>)
+    if (d!.settings) this.settings(d!.settings as unknown as Record<string, unknown>)
+  }
+}

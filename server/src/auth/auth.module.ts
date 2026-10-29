@@ -3,9 +3,11 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
 import { RoleHeadersInterceptor } from './role-headers.interceptor'
+import { SessionController } from './session.controller'
 
 @Global()
 @Module({
+  controllers: [SessionController],
   providers: [
     AuthService,
     { provide: APP_GUARD, useClass: AuthGuard },

@@ -7,9 +7,10 @@ import { EventsModule } from './events/events.module'
 import { GuestsModule } from './guests/guests.module'
 import { HealthController } from './health.controller'
 import { NotesModule } from './notes/notes.module'
+import { ProgressModule } from './progress/progress.module'
 
 @Module({
-  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule],
+  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }],
 })
