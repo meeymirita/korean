@@ -18,7 +18,8 @@ export const sections: Section[] = [
   { id: 'reading', num: '07', menu: 'Чтение', kicker: 'Чтение', title: 'Правила чтения', sub: 'как звучит ㄹ, что происходит между гласными, 받침 и другие случаи' },
   { id: 'sentences', num: '08', menu: 'Примеры', kicker: 'Из словаря', title: 'Примеры предложений', sub: 'все предложения из словаря' },
   { id: 'numbers', num: '09', menu: 'Числа', kicker: 'Счёт', title: 'Числа и счёт', sub: 'цены, количество, счётные слова' },
-  { id: 'review', num: '10', menu: 'Повторение', kicker: 'Карточки', title: 'Повторение', sub: 'случайная карточка — нажми, чтобы увидеть ответ' },
+  { id: 'trainers', num: '10', menu: 'Тренажёры', kicker: 'Игры', title: 'Тренажёры слов', sub: 'найди пару и напиши перевод' },
+  { id: 'review', num: '11', menu: 'Повторение', kicker: 'Карточки', title: 'Повторение', sub: 'случайная карточка — нажми, чтобы увидеть ответ' },
 ]
 
 export const sectionById = (id: string) => sections.find(s => s.id === id)!

@@ -28,6 +28,7 @@ const router = createRouter({
         rich('reading'),
         { path: 'sentences', component: () => import('@/views/korean/SentencesView.vue') },
         rich('numbers'),
+        { path: 'trainers', component: () => import('@/views/korean/TrainersView.vue') },
         { path: 'review', component: () => import('@/views/korean/ReviewView.vue') },
       ],
     },

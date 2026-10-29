@@ -13,7 +13,7 @@ export interface Task {
   answer: string
 }
 
-const shuffle = <T>(a: T[]) => {
+export const shuffle = <T>(a: T[]) => {
   a = a.slice()
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
@@ -26,7 +26,7 @@ const shuffle = <T>(a: T[]) => {
 const SIMPLE = D.filter(d => /^[가-힣]+$/.test(d.k) && d.t.length <= 40)
 
 /** Короткий перевод для кнопок: без «→ форма» и без скобок. */
-const short = (t: string) => t.split(/ →| \(/)[0]!.trim()
+export const short = (t: string) => t.split(/ →| \(/)[0]!.trim()
 
 export const randomWords = (n: number): Word[] => shuffle(SIMPLE).slice(0, n)
 
