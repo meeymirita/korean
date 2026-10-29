@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
+import { useProgressStore } from '@/stores/progress'
+
+const progress = useProgressStore()
 const START = new Date(2026, 5, 1)
 
 const today = new Date()
@@ -18,6 +22,9 @@ const plural = (n: number, forms: [string, string, string]) =>
       <span class="days-num">{{ days }}</span>
       <span class="days-text">{{ plural(days, ['день', 'дня', 'дней']) }} с начала пути</span>
     </div>
+    <RouterLink to="/korean/progress" class="days-level">
+      ⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }} <span>· 🔥 {{ progress.streak }}</span>
+    </RouterLink>
   </div>
 </template>
 
@@ -29,4 +36,7 @@ const plural = (n: number, forms: [string, string, string]) =>
 .days-row { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; }
 .days-num { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 56px; line-height: 1; color: var(--gold); }
 .days-text { font-size: 14px; color: var(--muted); }
+.days-level { display: inline-block; margin-top: 8px; font-size: 14px; font-weight: 600; transition: color .2s; }
+.days-level span { color: var(--muted); font-weight: 500; }
+.days-level:hover { color: var(--gold); }
 </style>

@@ -269,3 +269,14 @@
 .study .today-end { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px;
   padding: 18px 22px; border-radius: 16px; background: var(--gold-soft); border: 1px solid var(--line); }
 .study .today-end button { border: 0; background: var(--gold); color: #fff; border-radius: 12px; padding: 11px 20px; font-weight: 600; }
+
+/* значок уровня в боковом меню раздела */
+.study-level { display: flex; flex-direction: column; gap: 6px; margin-top: auto; padding: 12px 14px; font-size: 13px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; transition: border-color .2s; }
+.study-level:hover { border-color: var(--gold); }
+.study-level .lv-bar { height: 6px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+.study-level .lv-bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; transition: width .4s; }
+.study-level small { font-size: 11.5px; font-weight: 400; color: var(--muted); }
+.study-side .study-level + .foot { margin-top: 14px; padding-top: 0; }
+@media (max-width: 860px) { .study-level { display: none; } }
+

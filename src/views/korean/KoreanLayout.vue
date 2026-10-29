@@ -4,8 +4,11 @@ import GrammarModal from '@/components/korean/GrammarModal.vue'
 import { sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
+import { DAILY_GOAL } from '@/data/levels'
+import { useProgressStore } from '@/stores/progress'
 
 const counts: Record<string, number> = { words: D.length, grammar: G.length }
+const progress = useProgressStore()
 </script>
 
 <template>
@@ -25,6 +28,11 @@ const counts: Record<string, number> = { words: D.length, grammar: G.length }
           <span v-else class="num">{{ s.num }}</span>
         </RouterLink>
       </div>
+      <RouterLink to="/korean/progress" class="study-level">
+        <span>⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }}</span>
+        <span class="lv-bar"><i :style="{ width: progress.info.pct + '%' }"></i></span>
+        <small>🔥 серия {{ progress.streak }} · 🎯 {{ Math.min(progress.todayOk, DAILY_GOAL) }} / {{ DAILY_GOAL }} сегодня</small>
+      </RouterLink>
       <div class="foot">
         <RouterLink to="/game">🍞 Игра на слова</RouterLink>
         <RouterLink to="/">← На главную</RouterLink>
