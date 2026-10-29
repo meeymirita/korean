@@ -13,7 +13,6 @@ export const HOME_MORE = [
   { title: 'Сегодня', to: '/korean/today' },
   { title: 'Тренажёры', to: '/korean/trainers' },
   { title: 'Игра на слова', to: '/game' },
-  { title: 'Мой кабинет', to: '/korean/cabinet' },
 ]
 
 /** Убирает из текста карточки метки цвета {o|…}, {b|…}, {r|…} и т. п., теги и хвостовую точку. */

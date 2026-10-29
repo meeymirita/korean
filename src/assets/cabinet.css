@@ -70,6 +70,8 @@
 .study .cb-who { display: flex; align-items: center; gap: 14px; }
 .study .cb-who b { display: block; font-family: var(--serif); font-size: 28px; font-weight: 600; line-height: 1.1; }
 .study .cb-who small { color: var(--muted); font-size: 13px; }
+.study .cb-play { margin-left: auto; padding: 12px 26px; font-size: 16px; font-weight: 700; color: #fff; background: var(--gold); border-radius: 12px; text-decoration: none; }
+.study .cb-play:hover { filter: brightness(1.08); }
 .study .cb-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 .study .cb-body { margin-top: 6px; }
 .study .cb-empty { margin: 18px 0 0; padding: 22px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; }

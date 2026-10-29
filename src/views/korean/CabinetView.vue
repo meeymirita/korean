@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
@@ -38,6 +38,7 @@ const tabs = computed<[Tab, string][]>(() => [
           <small v-if="!progress.data.profile.name"><br />Имя можно задать в «Настройках».</small>
         </div>
       </div>
+      <RouterLink to="/game" class="cb-play">🎮 Играть</RouterLink>
     </div>
 
     <div class="chips cb-tabs">
