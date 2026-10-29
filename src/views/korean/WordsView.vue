@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { CATN, D, parseQuery, score, type Word } from '@/data/korean/words'
 import { esc, hl } from '@/data/korean/render'
 
-const q = ref('')
+const q = ref(String(useRoute().query.q ?? ''))
 const cat = ref('')
 const picked = ref<Word | null>(null)
 const openN = ref<number | null>(null)
