@@ -54,6 +54,9 @@ function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)r
 load();
 /* очки старой версии игры переходят в общий прогресс сайта */
 if(S.all.xp>0){hooks.importXp(S.all.xp);S.all.xp=0;save();}
+/* группы слов можно выбрать в кабинете: они хранятся в общих настройках */
+const sharedCats=hooks.cats&&hooks.cats();
+if(sharedCats)Object.assign(S.cats,sharedCats);
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 if(![1,2,3,'any'].includes(S.level))S.level='any';
 
@@ -465,7 +468,7 @@ function updateStats(){
   $('#lvlN').textContent=P.level;$('#lvlName').textContent=P.title;
   $('#xpTxt').textContent=P.max?'максимум':P.into+' / '+P.span;$('#xpBar').style.width=P.pct+'%';
   const g=P.todayOk;
-  $('#goalN').textContent=Math.min(g,P.goal);$('#goalBar').style.width=Math.min(100,g/P.goal*100)+'%';
+  $('#goalMax').textContent=P.goal;$('#goalN').textContent=Math.min(g,P.goal);$('#goalBar').style.width=Math.min(100,g/P.goal*100)+'%';
   $('#goalTxt').textContent=g>=P.goal?'готово 🎉':'ещё '+(P.goal-g);
 }
 function renderList(){
@@ -514,7 +517,7 @@ function drawCats(){
     cb.addEventListener('change',()=>{
       S.cats[c.id]=cb.checked?1:0;
       if(!Object.values(S.cats).some(Boolean)){S.cats[c.id]=1;cb.checked=true;}
-      save();drawCats();
+      save();hooks.saveCats(S.cats);drawCats();
     });
     lb.append(cb,' '+c.name+' ('+W[c.id].length+')');box.appendChild(lb);
   });
