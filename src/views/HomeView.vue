@@ -105,8 +105,9 @@ const guide = ref(false)
 .days { display: flex; align-items: baseline; gap: 10px; margin-top: 18px; }
 .days-num { font-variant-numeric: lining-nums; font-size: 44px; font-weight: 500; line-height: 1; color: #3b77d0; }
 .days-text { font-size: 18px; }
-.foot { display: flex; align-items: flex-end; gap: 24px; border-top: 2px solid #fff; padding-top: 12px; width: min(480px, 60vw); font-size: 21px; }
-.rule-link { display: flex; flex-direction: column; gap: 2px; }
+.foot { display: flex; align-items: flex-end; gap: 24px; border-top: 2px solid #fff; padding-top: 12px; width: min(560px, 60vw); font-size: 21px; }
+.rule-link { display: flex; flex-direction: column; gap: 2px; flex: 0 0 200px; }
+.foot-ex { flex: 1; min-width: 0; word-break: keep-all; }
 .rule-link small { font-size: 14px; opacity: .75; }
 .rule { font-weight: 500; }
 

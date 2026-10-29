@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import { G, type Gram } from '@/data/korean/grammar'
 import { useProgressStore } from '@/stores/progress'
 
 export const HOME_LINKS = [
@@ -15,13 +16,31 @@ export const HOME_MORE = [
   { title: 'Мой кабинет', to: '/korean/cabinet' },
 ]
 
-/** Правило на главной: ведёт на карточку грамматики. */
-export const HOME_RULE = {
-  to: { path: '/korean/grammar', query: { g: 'ayo' } },
-  label: 'Грамматика · вежливая форма глагола',
-  rule: '-아요/어요',
-  examples: '가요 · 먹어요 · 해요',
+/** Убирает из текста карточки метки цвета {o|…}, {b|…}, {r|…} и т. п., теги и хвостовую точку. */
+const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^>]+>/g, '').replace(/[.…]+$/, '').trim()
+
+/** Правило для блока на главной из карточки грамматики: название, подпись и до трёх целых примеров. */
+export function ruleOf(card: Gram) {
+  const ex = (card.b.find(b => b[0] === 'ex')?.[1] ?? []) as [string, string][]
+  // примеры набираются, пока строка не станет длиннее 52 символов (но хотя бы один)
+  const examples = ex
+    .filter(([ko]) => !ko.includes('…') && !ko.includes(' — ')) // обрывки вроде «형은 …» и диалоги не показываем
+    .map(([ko]) => plain(ko))
+    .reduce<string[]>((acc, ko) => (acc.length < 3 && (!acc.length || acc.join(' · ').length + ko.length + 3 <= 52) ? [...acc, ko] : acc), [])
+    .join(' · ')
+  return { to: { path: '/korean/grammar', query: { g: card.id } }, label: `Грамматика · ${card.d.length > 52 ? card.d.slice(0, 51).trimEnd() + '…' : card.d}`, rule: card.ko, examples }
 }
+
+/** Карточки, из которых можно собрать правило: пройденные и с примерами. */
+export const ruleCards = () => G.filter(c => c.st === 'ok' && ruleOf(c).examples)
+
+export function randomRule(rand: () => number = Math.random) {
+  const list = ruleCards()
+  return ruleOf(list[Math.floor(rand() * list.length)]!)
+}
+
+/** Правило на главной: другое после каждой перезагрузки (на странице одно, пока её не обновят). Ведёт на карточку грамматики. */
+export const HOME_RULE = randomRule()
 
 const START = new Date(2026, 5, 1)
 const plural = (n: number, forms: [string, string, string]) =>
