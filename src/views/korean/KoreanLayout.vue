@@ -11,6 +11,7 @@ const counts: Record<string, number> = { words: D.length, grammar: G.length }
 <template>
   <div class="study study-shell">
     <aside class="study-side">
+      <RouterLink to="/" class="study-back">← На главную</RouterLink>
       <div class="brand">
         <div class="jp">韓国語</div>
         <h1>Хлебушек</h1>
