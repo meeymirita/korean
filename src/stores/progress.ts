@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf } from '@/data/levels'
+import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
 
 export interface WordStat {
   ok: number
@@ -51,10 +52,19 @@ export interface ProgressData {
 
 export type WordStatus = 'new' | 'learning' | 'known'
 export type SyncState = 'off' | 'idle' | 'syncing' | 'ok' | 'error'
+export type Role = 'owner' | 'guest'
+
+export interface GuestToken {
+  id: string
+  label: string
+  created: number
+  expires: number
+}
 
 const KEY = 'progress_v1'
 const TOKEN_KEY = 'progress_token'
 const VERIFIED_KEY = 'progress_verified'
+const ROLE_KEY = 'progress_role'
 const LOG_MAX = 300
 /** Слово считается выученным после трёх верных ответов подряд. */
 export const KNOWN_STREAK = 3
@@ -123,6 +133,13 @@ const write = (k: string, v: string | null) => {
 }
 
 export const useProgressStore = defineStore('progress', () => {
+  /** гость: прогресс только в памяти, на сервер ничего не уходит (см. lib/guestStorage.ts) */
+  const role = ref<Role>(read(ROLE_KEY) === 'guest' ? 'guest' : 'owner')
+  if (role.value === 'guest') enableGuestStorage()
+  const guestExpires = ref(0)
+  const isGuest = computed(() => role.value === 'guest')
+  let expireTimer: ReturnType<typeof setTimeout> | undefined
+
   const data = ref<ProgressData>(load())
   const token = ref(read(TOKEN_KEY))
   /** токен хотя бы раз подошёл серверу: до этого функции сайта закрыты */
@@ -136,10 +153,22 @@ export const useProgressStore = defineStore('progress', () => {
   const unlocked = computed(() => !!token.value && verified.value)
 
   function lock(message = '') {
+    const wasGuest = role.value === 'guest'
+    clearTimeout(expireTimer)
     token.value = ''
     verified.value = false
+    role.value = 'owner'
+    guestExpires.value = 0
     write(TOKEN_KEY, null)
     write(VERIFIED_KEY, null)
+    write(ROLE_KEY, null)
+    if (wasGuest) {
+      // гостевая память выбрасывается, на экране снова данные этого устройства
+      disableGuestStorage()
+      applying = true
+      data.value = load()
+      applying = false
+    }
     sync.value = message ? 'error' : 'off'
     syncMessage.value = message
   }
@@ -249,12 +278,21 @@ export const useProgressStore = defineStore('progress', () => {
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token.value}` })
   const netError = (e: unknown) => ((e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message)
 
+  /** Почему сервер ответил 401: токен чужой или у гостевого токена вышел срок. */
+  async function deniedMessage(res: Response) {
+    try {
+      return (await res.json()).error === 'expired' ? 'срок гостевого доступа закончился' : 'неверный токен'
+    } catch {
+      return 'неверный токен'
+    }
+  }
+
   async function push() {
-    if (!token.value) return
+    if (!token.value || role.value === 'guest') return
     sync.value = 'syncing'
     try {
       const res = await fetch('/api/progress', { method: 'PUT', headers: headers(), body: JSON.stringify(data.value) })
-      if (res.status === 401) return lock('неверный токен')
+      if (res.status === 401) return lock(await deniedMessage(res))
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       sync.value = 'ok'
       syncMessage.value = 'сохранено на сервере'
@@ -270,10 +308,12 @@ export const useProgressStore = defineStore('progress', () => {
     sync.value = 'syncing'
     try {
       const res = await fetch('/api/progress', { headers: headers() })
-      if (res.status === 401) return lock('неверный токен')
+      if (res.status === 401) return lock(await deniedMessage(res))
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       verified.value = true
       write(VERIFIED_KEY, '1')
+      if (res.headers?.get('X-Role') === 'guest') return enterGuest(Number(res.headers.get('X-Guest-Expires')) || 0)
+      if (role.value === 'guest') leaveGuest()
       const remote = normalize(await res.json())
       if (remote && remote.updated > data.value.updated) {
         applying = true
@@ -292,6 +332,35 @@ export const useProgressStore = defineStore('progress', () => {
       sync.value = 'error'
       syncMessage.value = netError(e)
     }
+  }
+
+  /** Гость: чистый прогресс в памяти, ничего не сохраняется и не уходит на сервер; по истечении срока доступ закрывается. */
+  function enterGuest(expires: number) {
+    if (role.value !== 'guest') {
+      enableGuestStorage()
+      applying = true
+      data.value = empty()
+      applying = false
+    }
+    role.value = 'guest'
+    guestExpires.value = expires
+    write(ROLE_KEY, 'guest')
+    sync.value = 'ok'
+    syncMessage.value = 'гостевой доступ: ничего не сохраняется'
+    clearTimeout(expireTimer)
+    if (expires) expireTimer = setTimeout(() => void init(), Math.min(Math.max(expires - Date.now(), 0) + 500, 2_000_000_000))
+  }
+
+  /** Токен владельца подошёл после гостевого: возвращаем настоящее хранилище. */
+  function leaveGuest() {
+    clearTimeout(expireTimer)
+    role.value = 'owner'
+    guestExpires.value = 0
+    write(ROLE_KEY, null)
+    disableGuestStorage()
+    applying = true
+    data.value = load()
+    applying = false
   }
 
   /** Вход по токену. Возвращает true, если сервер принял токен. */
@@ -313,12 +382,22 @@ export const useProgressStore = defineStore('progress', () => {
     data,
     () => {
       write(KEY, JSON.stringify(data.value))
-      if (applying || !token.value) return
+      if (applying || !token.value || role.value === 'guest') return
       clearTimeout(timer)
       timer = setTimeout(push, 1500)
     },
     { deep: true },
   )
+
+  /* ---------- гостевые токены (только владелец) ---------- */
+  async function guestApi<T>(method: string, url: string, body?: unknown): Promise<T> {
+    const res = await fetch(url, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) })
+    if (!res.ok) throw new Error(res.status === 403 ? 'гостевые токены создаёт только владелец' : `ошибка сервера ${res.status}`)
+    return res.json()
+  }
+  const createGuest = (hours: number, label: string) => guestApi<GuestToken & { token: string }>('POST', '/api/guests', { hours, label })
+  const listGuests = () => guestApi<GuestToken[]>('GET', '/api/guests')
+  const revokeGuest = (id: string) => guestApi<{ ok: true }>('DELETE', `/api/guests/${id}`)
 
   /* ---------- копия и сброс ---------- */
   const exportJson = () => JSON.stringify(data.value, null, 2)
@@ -343,5 +422,6 @@ export const useProgressStore = defineStore('progress', () => {
   return {
     data, goal, info, todayOk, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings,
     token, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset,
+    role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
 })
