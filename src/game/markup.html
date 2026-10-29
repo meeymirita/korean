@@ -1,0 +1,110 @@
+<div class="game-app">
+  <aside class="game-side">
+    <div class="brand"><span>🍞</span> Хлебушек</div>
+    <div class="nums">
+      <div class="num ok"><b id="nOk">0</b><span>верно</span></div>
+      <div class="num bad"><b id="nBad">0</b><span>неверно</span></div>
+      <div class="num"><b id="nAcc">–</b><span>точность</span></div>
+    </div>
+    <div class="row"><span>🔥 Серия: <b id="nStreak">0</b></span><span class="muted">рекорд <span id="nBest">0</span></span></div>
+    <div class="loaf">
+      <div class="row" style="margin:0"><span>🍞 Испечено: <b id="nLoaf">0</b></span><span class="muted" id="loafTxt">0 / 10</span></div>
+      <div class="bar"><i id="loafBar"></i></div>
+    </div>
+    <div class="tabs">
+      <button id="tabHist" class="on" type="button">История</button>
+      <button id="tabWeak" type="button">Слабые слова</button>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="muted" style="font-size:12px;margin-top:8px" id="allTime"></div>
+  </aside>
+
+  <main>
+    <div class="modes" id="modes"></div>
+    <section class="card" id="cardWrap">
+      <div class="timer" id="timer"><i id="timerBar"></i></div>
+      <div id="card"></div>
+    </section>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="ghost" id="blitzBtn" type="button">⏱ Блиц 60 секунд</button>
+      <button class="helpbtn" id="helpBtn" type="button">❔ Как играть</button>
+    </div>
+    <details class="set">
+      <summary>Настройки</summary>
+      <div class="setgrp"><h4>Какие слова брать</h4><div class="chips" id="cats"></div></div>
+      <div class="setgrp"><h4>Формы глаголов</h4>
+        <select id="tense"><option value="both">настоящее и прошедшее</option><option value="pres">только настоящее</option><option value="past">только прошедшее</option></select>
+      </div>
+      <div class="setgrp"><h4>Подсказки и ход игры</h4><div class="chips">
+        <label id="lbRead"><input type="checkbox" id="cbRead"> показывать чтение (кириллицей)</label>
+        <label id="lbAuto"><input type="checkbox" id="cbAuto"> после верного ответа сразу дальше</label>
+      </div></div>
+      <div class="setgrp"><button class="ghost" id="resetBtn" type="button">Сбросить весь прогресс</button></div>
+      <p class="muted" style="font-size:13px">Ошибки возвращаются чаще: слово, в котором ошибся, выпадает с большей вероятностью, пока не ответишь верно. Клавиши 1–4 выбирают ответ, Enter идёт дальше.</p>
+    </details>
+  </main>
+</div>
+
+<div class="over" id="over"><div class="box" role="dialog" aria-modal="true" aria-labelledby="overT">
+  <h2 id="overT">Время вышло!</h2>
+  <div class="big" id="overBig">0</div>
+  <p id="overTxt" class="muted"></p>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+    <button class="primary" id="overAgain" type="button">Ещё раз</button>
+    <button class="ghost" id="overClose" type="button">Закрыть</button>
+  </div>
+</div></div>
+<div class="over help" id="help"><div class="box" role="dialog" aria-modal="true" aria-labelledby="helpT">
+  <div class="top"><h2 id="helpT">Как играть</h2><button class="ghost" id="helpX" type="button" aria-label="Закрыть">✕</button></div>
+  <p class="muted">Игра на слова из твоего Хлебушка. Здесь только твои слова и пройденная грамматика.</p>
+
+  <h3>Что где на экране</h3>
+  <ul>
+    <li><b>Слева</b> — твой счёт и история ответов.</li>
+    <li><b>Сверху</b> — режимы игры. Нажми на любой, чтобы сменить.</li>
+    <li><b>В центре</b> — вопрос и четыре варианта ответа.</li>
+    <li><b>Внизу</b> — кнопки «Блиц», «Как играть» и «Настройки».</li>
+  </ul>
+
+  <h3>Как отвечать</h3>
+  <ul>
+    <li>Нажми на вариант мышкой или клавишей <kbd>1</kbd>–<kbd>4</kbd>.</li>
+    <li>Зелёный — верно, красный — неверно. Под вопросом появится объяснение.</li>
+    <li>Дальше — кнопка «Дальше →» или <kbd>Enter</kbd>. Верный ответ переходит сам (это можно выключить в настройках).</li>
+  </ul>
+
+  <h3>Режимы</h3>
+  <ul>
+    <li>🎲 <b>Микс</b> — вопросы из всех режимов вперемешку.</li>
+    <li>🔤 <b>Слово → перевод</b> — видишь <span class="ex">마시다</span>, выбираешь «пить».</li>
+    <li>🔁 <b>Перевод → слово</b> — видишь «пить», выбираешь <span class="ex">마시다</span>.</li>
+    <li>🔧 <b>Формы</b> — глагол или прилагательное нужно поставить в настоящее или прошедшее: <span class="ex">마시다 → 마셔요 / 마셨어요</span>. Что нужно, написано над словом.</li>
+    <li>❓ <b>Вопросы</b> — вставь <span class="ex">어디, 누구, 뭐, 얼마, 몇</span> в предложение.</li>
+    <li>🧩 <b>Частицы и счёт</b> — вставь пропущенное: частицу (에, 에서, 을/를, 은/는, 하고, 의), счётное слово (잔, 병, 개, 그릇), число или цену.</li>
+    <li>🏗️ <b>Собери предложение</b> — смотри на русский текст и нажимай корейские слова по порядку: время → кто → что → где → глагол. Одно слово лишнее. Нажми на слово в верхней строке, чтобы вернуть его. <kbd>Enter</kbd> — проверить, <kbd>Backspace</kbd> — убрать последнее слово.</li>
+  </ul>
+
+  <h3>Что значит левая панель</h3>
+  <ul>
+    <li><b>Верно / неверно / точность</b> — счёт с момента, как ты открыл страницу.</li>
+    <li>🔥 <b>Серия</b> — сколько верных ответов подряд. Одна ошибка обнуляет её.</li>
+    <li>🍞 <b>Испечено</b> — каждые 10 верных ответов (за всё время) пекут один хлебушек. Шкала показывает, сколько осталось.</li>
+    <li><b>История</b> — все твои ответы: слово и правильный перевод. У ошибок красным написано, что выбрал ты.</li>
+    <li><b>Слабые слова</b> — слова, в которых ты ошибся. Они выпадают чаще, пока не ответишь на них верно. Точки показывают, насколько слово слабое.</li>
+  </ul>
+
+  <h3>Блиц</h3>
+  <p>Кнопка «⏱ Блиц 60 секунд»: минута на то, чтобы ответить на как можно больше вопросов. Ответы идут быстро и сами, в конце видно результат. Лучший блиц запоминается.</p>
+
+  <h3>Настройки (внизу страницы)</h3>
+  <ul>
+    <li><b>Какие слова брать</b> — выбери группы слов. Существительные по умолчанию выключены, чтобы чаще попадались глаголы, прилагательные и вопросительные слова.</li>
+    <li><b>Формы глаголов</b> — только настоящее, только прошедшее или оба.</li>
+    <li><b>Чтение кириллицей</b> — показывается под корейским словом. Можно выключить, чтобы читать самому.</li>
+    <li><b>Сбросить прогресс</b> — обнуляет счёт, хлебушки и слабые слова.</li>
+  </ul>
+
+  <p class="muted" style="margin-top:14px">Прогресс хранится в браузере на этом устройстве. Если откроешь игру в другом браузере, счёт начнётся заново.</p>
+  <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="primary" id="helpOk" type="button">Понятно, играем</button></div>
+</div></div>
+<div class="toast" id="toast"></div>

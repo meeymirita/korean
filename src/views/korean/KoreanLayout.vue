@@ -25,6 +25,7 @@ const counts: Record<string, number> = { words: D.length, grammar: G.length }
         </RouterLink>
       </div>
       <div class="foot">
+        <RouterLink to="/game">🍞 Игра на слова</RouterLink>
         <RouterLink to="/">← На главную</RouterLink>
       </div>
     </aside>

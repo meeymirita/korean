@@ -29,6 +29,7 @@ const router = createRouter({
         { path: 'review', component: () => import('@/views/korean/ReviewView.vue') },
       ],
     },
+    { path: '/game', name: 'game', component: () => import('@/views/GameView.vue') },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })
