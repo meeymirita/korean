@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
 import { initGame } from '@/game/engine'
 import { useProgressStore } from '@/stores/progress'
@@ -10,6 +10,7 @@ import '@/assets/sky.css'
 import '@/game/game.css'
 
 const progress = useProgressStore()
+const route = useRoute()
 let dispose: (() => void) | undefined
 
 function start() {
@@ -18,6 +19,7 @@ function start() {
     importXp: (n: number) => progress.importXp(n),
     state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: progress.goal }),
     cats: () => progress.data.settings.gameCats,
+    mode: () => String(route.query.mode ?? ''),
     saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
   })
 }
@@ -49,7 +51,7 @@ onBeforeUnmount(() => dispose?.())
         <span class="jp">言葉遊び</span>
         <h1>Игра на слова</h1>
       </div>
-      <RouterLink to="/korean/words">Словарь →</RouterLink>
+      <span class="game-links"><RouterLink to="/korean/garden">🌸 Сад</RouterLink><RouterLink to="/korean/words">Словарь →</RouterLink></span>
     </header>
     <div v-if="progress.unlocked" v-html="markup"></div>
     <AuthGate v-else />
@@ -77,6 +79,7 @@ onBeforeUnmount(() => dispose?.())
 .game .game-top { max-width: none; margin: 0; padding: 18px clamp(16px, 2.4vw, 40px) 0; display: flex; align-items: flex-end;
   justify-content: space-between; gap: 16px; font-size: 14px; font-weight: 600; }
 .game .game-top a { color: var(--gold); }
+.game .game-links { display: flex; gap: 16px; }
 .game .game-top a:hover { text-decoration: underline; }
 .game .game-title { text-align: center; }
 .game .game-title .jp { font-family: 'Noto Serif JP', serif; font-size: 12px; letter-spacing: .35em; color: var(--gold); }

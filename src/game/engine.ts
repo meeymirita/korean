@@ -3,6 +3,8 @@
 import { D } from './words'
 import { makeBuild, parseBuildKey } from './build'
 import { analyze } from '@/data/korean/parse'
+import { EXCHANGES } from './dialogs'
+import { syllableRows, syllableVowels } from '@/data/alphabet'
 
 /** Запускает игру на уже отрисованной разметке; возвращает функцию очистки. */
 /** hooks: общий прогресс сайта (record, importXp, state) — передаёт GameView. */
@@ -27,7 +29,10 @@ const MODES=[
   {id:'rev',icon:'🔁',name:'Перевод → слово'},{id:'form',icon:'🔧',name:'Формы'},
   {id:'qw',icon:'❓',name:'Вопросы'},{id:'part',icon:'🧩',name:'Частицы и счёт'},
   {id:'build',icon:'🏗️',name:'Собери предложение'},
-  {id:'spot',icon:'🔍',name:'Найди верное'},{id:'type',icon:'⌨️',name:'Напиши'}
+  {id:'spot',icon:'🔍',name:'Найди верное'},{id:'type',icon:'⌨️',name:'Напиши'},
+  {id:'err',icon:'🕵️',name:'Найди ошибку'},{id:'pair',icon:'⚖️',name:'Пара или нет'},
+  {id:'ord',icon:'↔️',name:'Порядок слов'},{id:'dlg',icon:'💬',name:'Диалог'},
+  {id:'past',icon:'⏳',name:'Прошедшее время'},{id:'han',icon:'ㅎ',name:'Хангыль-блиц'}
 ];
 
 /* ---------- утилиты ---------- */
@@ -57,6 +62,8 @@ if(S.all.xp>0){hooks.importXp(S.all.xp);S.all.xp=0;save();}
 /* группы слов можно выбрать в кабинете: они хранятся в общих настройках */
 const sharedCats=hooks.cats&&hooks.cats();
 if(sharedCats)Object.assign(S.cats,sharedCats);
+const wantMode=hooks.mode&&hooks.mode();
+if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 if(![1,2,3,'any'].includes(S.level))S.level='any';
 
@@ -239,10 +246,141 @@ function genType(){
     reading:w.rd,answers:ruAnswers(w),right:w.ru,placeholder:'перевод…',
     explain:[w.ko+' · '+w.rd+' — '+w.ru],hp:w.ko,hr:w.ru,icon:'⌨️'};
 }
-const GEN={word:genWord,rev:genRev,form:genForm,qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType};
+
+/* ---------- «Найди ошибку»: нажми на слово, где ошибка ---------- */
+function genErr(){
+  let key,wrong,right,ru,note;
+  if(Math.random()<.65){
+    const i=pickW(D.PB.map((x,k)=>k),k=>'e:p'+k);const p=D.PB[i];
+    const bad=rnd(p[3].filter(t=>t!==p[2]));
+    wrong=p[0].replace('___',bad);right=p[0].replace('___',p[2]);ru=p[1];note=p[4];key='e:p'+i;
+  }else{
+    const i=pickW(D.QB.map((x,k)=>k),k=>'e:q'+k);const q=D.QB[i];
+    const bad=rnd(D.QPOOL.filter(x=>x!==q[2]));
+    wrong=q[0].replace('___',bad);right=q[0].replace('___',q[2]);ru=q[1];note='Нужно по смыслу: '+q[2];key='e:q'+i;
+  }
+  const a=wrong.split(' '),b=right.split(' ');
+  const idx=a.findIndex((t,k)=>t!==b[k]);
+  const opts=a.map(t=>({text:t,ko:true}));
+  return {type:'choice',mode:'err',key:key,label:'Найди слово с ошибкой',prompt:wrong,promptKo:true,sub:'Нужно сказать: '+ru,
+    options:opts,correct:idx,right:a[idx]+' → '+b[idx],explain:['Правильно: '+right,note],hp:wrong,hr:right,icon:'🕵️'};
+}
+
+/* ---------- «Пара или нет»: две частицы на выбор ---------- */
+const PAIRS=[
+  {a:'은',b:'는',role:'тема',ex:n=>n+'___ 뭐예요?',exRu:r=>'А что такое «'+r+'»?'},
+  {a:'이',b:'가',role:'подлежащее',ex:n=>n+'___ 있어요.',exRu:r=>'Есть: '+r+'.'},
+  {a:'을',b:'를',role:'объект действия',ex:n=>n+'___',exRu:r=>'«'+r+'» как объект (что?)'},
+  {a:'이에요',b:'예요',role:'«это…»',ex:n=>n+'___.',exRu:r=>'Это «'+r+'».'}
+];
+const hasFinal=ch=>jong(ch)>0;
+function genPair(){
+  if(Math.random()<.35){
+    const PP=D.PB.map((x,k)=>k).filter(k=>['에','에서','을','를','는','은'].includes(D.PB[k][2]));
+    const i=pickW(PP,k=>'pr:p'+k);const p=D.PB[i];
+    const twin={'에':'에서','에서':'에','을':'를','를':'을','는':'은','은':'는'}[p[2]];
+    const opts=shuffle([p[2],twin]).map(t=>({text:t,ko:true}));
+    const parts=p[0].split('___');
+    return {type:'choice',mode:'pair',key:'pr:p'+i,label:'Какая частица? Выбери одну из двух',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
+      options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],
+      hp:p[0].replace('___','…'),hr:p[2],icon:'⚖️'};
+  }
+  const nouns=W.s.filter(e=>/^[가-힣]+$/.test(e.ko));
+  const e=pickW(nouns,x=>'pr:'+x.ko);
+  const pr=rnd(PAIRS);
+  const fin=hasFinal(e.ko[e.ko.length-1]);
+  const right=fin?pr.a:pr.b;
+  const opts=shuffle([pr.a,pr.b]).map(t=>({text:t,ko:true}));
+  const parts=pr.ex(e.ko).split('___');
+  const why=fin?'есть 받침 (согласная внизу) → '+pr.a:'нет 받침 (слог кончается на гласную) → '+pr.b;
+  return {type:'choice',mode:'pair',key:'pr:'+e.ko+':'+pr.a,word:e.ko,label:'Выбери форму: '+pr.a+' или '+pr.b+' ('+pr.role+')',
+    sentence:{pre:parts[0],post:parts[1]},ru:pr.exRu(e.ru),options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+    explain:[pr.ex(e.ko).replace('___',right),e.ko+': '+why],hp:pr.ex(e.ko).replace('___','…'),hr:right,icon:'⚖️'};
+}
+
+/* ---------- «Порядок слов»: куда поставить слово ---------- */
+function genOrd(){
+  for(let t=0;t<30;t++){
+    const level=rnd([2,2,3]);
+    const seed=1+Math.floor(Math.random()*2147483000);
+    const tm=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
+    const b=makeBuild(level,tm,seed);
+    const toks=b.right.split(' ');
+    if(toks.length<3)continue;
+    const k=Math.floor(Math.random()*toks.length);
+    const word=toks[k],rest=toks.filter((x,i)=>i!==k);
+    const seen=new Set(),good=[],bad=[];
+    for(let p=0;p<=rest.length;p++){
+      const arr=rest.slice();arr.splice(p,0,word);
+      const sent=arr.join(' ');
+      if(seen.has(sent))continue;seen.add(sent);
+      (b.accept.includes(sent)?good:bad).push(sent);
+    }
+    if(bad.length<2)continue;
+    const right=good.includes(b.right)?b.right:good[0];
+    const texts=shuffle([right,...shuffle(bad).slice(0,3)]);
+    return {type:'choice',mode:'ord',key:'od:'+b.key+'|'+k,label:'Куда поставить слово «'+word+'»? Выбери верный порядок',
+      prompt:b.ru,promptKo:false,options:texts.map(x=>({text:x,ko:true})),correct:texts.indexOf(right),right:right,
+      explain:[right+'.',b.note],hp:b.ru,hr:right,icon:'↔️'};
+  }
+  return genSpot();
+}
+
+/* ---------- «Диалог»: выбери ответ на реплику ---------- */
+function genDlg(){
+  const i=pickW(EXCHANGES.map((x,k)=>k),k=>'d:'+k);
+  const x=EXCHANGES[i];
+  const dis=shuffle(EXCHANGES.filter(y=>y[4]!==x[4])).slice(0,2);
+  const texts=shuffle([x[2],...dis.map(y=>y[2])]);
+  return {type:'choice',mode:'dlg',key:'d:'+i,label:'Выбери подходящий ответ',prompt:x[0],promptKo:true,sub:x[1],
+    options:texts.map(t=>({text:t,ko:true})),correct:texts.indexOf(x[2]),right:x[2],
+    explain:[x[0]+' → '+x[2],x[3]],hp:x[0],hr:x[2],icon:'💬'};
+}
+
+/* ---------- «Прошедшее время»: вчера или сейчас ---------- */
+const TIME_PAST=[['어제','Вчера']];
+const TIME_PRES=[['지금','Сейчас'],['오늘','Сегодня'],['매일','Каждый день']];
+function genPast(){
+  const e=pickW(FORMS,x=>'ps:'+x.ko);
+  const past=Math.random()<.7;
+  const tw=rnd(past?TIME_PAST:TIME_PRES);
+  const right=past?e.past:e.pres,other=past?e.pres:e.past;
+  const set=[right,other];
+  const nv=naive(e,past?'past':'pres');if(!set.includes(nv))set.push(nv);
+  let guard=0;
+  while(set.length<4&&guard++<80){const x=rnd(FORMS);const f=past?x.past:x.pres;if(x.ko!==e.ko&&!set.includes(f))set.push(f);}
+  const opts=shuffle(set).map(t=>({text:t,ko:true}));
+  const kind=e.cat==='a'?'прилагательное':'глагол';
+  return {type:'choice',mode:'past',key:'ps:'+e.ko+':'+(past?'a':'p'),word:e.ko,label:'Выбери форму: '+tw[0]+' — '+(past?'прошедшее (-았어요/었어요)':'настоящее (-아요/어요)'),
+    sentence:{pre:tw[0]+' ',post:''},ru:tw[1]+': '+e.ru+' ('+kind+' '+e.ko+')',options:opts,correct:opts.findIndex(o=>o.text===right),
+    right:right,explain:[tw[0]+' '+right,e.ko+' → '+right,e.note],hp:tw[0]+' '+e.ko,hr:right,icon:'⏳'};
+}
+
+/* ---------- «Хангыль-блиц»: слог из букв и чтение слога ---------- */
+const HAN_C=[0,2,3,5,6,7,9,11,12,14,15,16,17,18],HAN_V=[0,2,4,6,8,12,13,17,18,20];
+const HAN=[];
+HAN_C.forEach(c=>HAN_V.forEach(v=>{const cell=syllableRows[c].cells[v];HAN.push({ch:cell.char,rd:cell.reading,hint:cell.hint,c:c,v:v});}));
+function genHan(){
+  const h=pickW(HAN,x=>'h:'+x.ch);
+  const near=shuffle(HAN.filter(x=>x.ch!==h.ch&&(x.c===h.c||x.v===h.v)));
+  if(Math.random()<.5){
+    const dis=near.slice(0,3);
+    const opts=shuffle([h,...dis]).map(x=>({text:x.ch,ko:true}));
+    return {type:'choice',mode:'han',key:'h:'+h.ch,label:'Собери слог из букв',prompt:h.hint,promptKo:true,
+      options:opts,correct:opts.findIndex(o=>o.text===h.ch),right:h.ch,explain:[h.hint+' = '+h.ch+' ('+h.rd+')'],
+      hp:h.hint,hr:h.ch,icon:'ㅎ'};
+  }
+  const dis=[];const used=new Set([h.rd]);
+  for(const x of near.concat(shuffle(HAN))){if(dis.length>=3)break;if(used.has(x.rd))continue;used.add(x.rd);dis.push(x);}
+  const opts=shuffle([h,...dis]).map(x=>({text:x.rd}));
+  return {type:'choice',mode:'han',key:'h:'+h.ch,label:'Как читается слог?',prompt:h.ch,promptKo:true,
+    options:opts,correct:opts.findIndex(o=>o.text===h.rd),right:h.rd,explain:[h.ch+' = '+h.hint+' → '+h.rd,
+    (h.v===4||h.v===8)?'ㅓ — среднее «о» (머, 서), ㅗ — глубокое «о» (고, 보)':''],hp:h.ch,hr:h.rd,icon:'ㅎ'};
+}
+const GEN={word:genWord,rev:genRev,form:genForm,qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,past:genPast,han:genHan};
 function genQuestion(){
   let m=S.mode;
-  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type']);
+  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','past']);
   return GEN[m]();
 }
 
@@ -408,6 +546,7 @@ function finish(ok,chosen){
     const m=S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
     const pr=hooks.record({word:q.word||null,ok:true,xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
+    if(pr.bloomed)msgs.push('🌸 Слово «'+q.word+'» расцвело в саду!');
     if(pr.levelUp)msgs.push('⭐ Новый уровень '+pr.level+': '+pr.title+'!');
     if(pr.goalReached)msgs.push('🎯 Цель дня выполнена!');
     if([5,10,20,50].includes(B.streak))msgs.push('🔥 Серия из '+B.streak+' верных подряд!');
@@ -618,7 +757,7 @@ const onKeydown=e=>{
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const t=e.target;if(t&&(t.tagName==='SELECT'||t.tagName==='INPUT'))return;
   if(S.cur&&S.cur.type==='choice'&&!S.answered&&(e.key==='h'||e.key==='р')&&$('#hintBtn')){e.preventDefault();useHint();}
-  else if(S.cur&&S.cur.type==='choice'&&!S.answered&&/^[1-4]$/.test(e.key)){
+  else if(S.cur&&S.cur.type==='choice'&&!S.answered&&/^[1-9]$/.test(e.key)){
     const i=+e.key-1;if(i<S.cur.options.length){e.preventDefault();answerChoice(i);}
   }else if(S.cur&&S.cur.type==='build'&&!S.answered){
     if(e.key==='Enter'){e.preventDefault();checkBuild();}

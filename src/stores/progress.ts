@@ -189,12 +189,16 @@ export const useProgressStore = defineStore('progress', () => {
     const src = (d.sources[o.source] ??= { ok: 0, bad: 0 })
     o.ok ? src.ok++ : src.bad++
 
+    let bloomed = false
     if (o.word) {
       const w = (d.words[o.word] ??= { ok: 0, bad: 0, streak: 0, last: 0 })
       if (o.ok) {
         w.ok++
         w.streak++
-        if (w.streak >= KNOWN_STREAK && !w.kd) w.kd = Date.now()
+        if (w.streak >= KNOWN_STREAK && !w.kd) {
+          w.kd = Date.now()
+          bloomed = true
+        }
       } else {
         w.bad++
         w.streak = 0
@@ -216,7 +220,7 @@ export const useProgressStore = defineStore('progress', () => {
     }
     d.updated = Date.now()
     const level = levelOf(d.xp)
-    return { level, levelUp: level > before, goalReached, title: levelInfo(d.xp).title }
+    return { level, levelUp: level > before, goalReached, bloomed, title: levelInfo(d.xp).title }
   }
 
   /** Один раз переносит очки старой версии игры. */
