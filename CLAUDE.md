@@ -81,7 +81,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 
 ## Как проверять изменения
 
-- Тесты: `npm test` (71 тест, около 3 секунд). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (76 тестов, около 3 секунд). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
