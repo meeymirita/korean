@@ -110,3 +110,41 @@
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .game .shake{animation:shake .25s}
 @media (prefers-reduced-motion:reduce){.game *{animation:none!important;transition:none!important}}
+
+/* новые режимы и элементы */
+.game .tform{display:flex;gap:8px;margin-top:16px}
+.game .tform input{flex:1;min-width:0;padding:13px 16px;font:inherit;font-size:20px;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:12px;outline:none;font-family:var(--ko)}
+.game .tform input:focus{border-color:var(--accent)}
+.game .tform input.ok{border-color:var(--ok);background:var(--ok-bg)}
+.game .tform input.bad{border-color:var(--bad);background:var(--bad-bg)}
+.game .tform .primary{padding:0 20px}
+.game .hintline{margin-top:8px;font-size:14px;color:var(--muted);min-height:1em}
+.game .acts{margin-top:12px}
+.game .opt.dim{opacity:.3}
+.game .hint{padding:7px 14px;font-size:13px}
+.game .lives{display:none;margin:-4px 0 12px;font-size:18px;letter-spacing:.1em}
+.game .lives.on{display:block}
+.game .lvl,.game .goal{margin:0 0 10px;padding:10px;border:1px solid var(--line);border-radius:12px}
+.game .lvl .bar,.game .goal .bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.game .lvl .bar i,.game .goal .bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .35s}
+.game .goal .bar i{background:var(--ok)}
+
+/* собери предложение: уровни, номера плиток, разбор */
+.game .levels{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.game .levels .chip{padding:5px 12px;font-size:13px}
+.game .tile{position:relative}
+.game .tile sup{position:absolute;top:2px;right:6px;font-size:10px;font-weight:600;color:var(--muted);font-family:inherit}
+.game .slot.ok{border-color:var(--ok);background:var(--ok-bg)}
+.game .slot.bad{border-color:var(--bad);background:var(--bad-bg)}
+.game .mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.game .mini .mc{display:inline-flex;flex-direction:column;padding:5px 10px;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.25}
+.game .mini .mc b{font-family:var(--ko);font-size:16px}
+.game .mini .mc i{font-style:normal;color:var(--muted)}
+.game .mini .mc.particle{background:var(--accent-soft);border-color:var(--accent)}
+.game .mini .mc.ending{background:var(--ok-bg);border-color:var(--ok)}
+.game .mini .mc.unknown{border-style:dashed}
+
+.game .tile .tg,.game .slot .tg{display:none;margin-top:2px;font-family:'Manrope',sans-serif;font-size:11px;font-weight:500;color:var(--muted);line-height:1.25;max-width:170px}
+.game .tiles.gloss .tile .tg,.game .slots.gloss .slot .tg{display:block}
+.game .tile,.game .slot{text-align:center}
+.game .ghost.hint{padding:7px 14px;font-size:13px}
