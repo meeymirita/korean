@@ -32,6 +32,7 @@ const router = createRouter({
       ],
     },
     { path: '/game', name: 'game', component: () => import('@/views/GameView.vue') },
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })
