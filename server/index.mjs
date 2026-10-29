@@ -4,12 +4,12 @@
  * Запуск: npm run server. Переменные окружения (PROGRESS_TOKEN, PORT, DATA_DIR) главнее файла.
  * Слушает только 127.0.0.1: наружу его выставляет Caddy (reverse_proxy /api/* → порт сервера).
  *
- * Модули: config (настройки), http (ответы и тело запроса), storage (запись и копии).
+ * Модули: config (настройки), http (ответы и тело запроса), storage (запись и копии), guests (гостевые токены).
  */
-import { timingSafeEqual } from 'node:crypto'
 import http from 'node:http'
 import { DATA_DIR, PORT, TOKEN } from './config.mjs'
-import { bearer, readBody, send } from './http.mjs'
+import { guestsApi, roleHeaders, whoIs } from './guests.mjs'
+import { readBody, send } from './http.mjs'
 import { readProgress, saveProgress } from './storage.mjs'
 
 if (!TOKEN) {
@@ -17,34 +17,40 @@ if (!TOKEN) {
   process.exit(1)
 }
 
-const authorized = req => {
-  const given = Buffer.from(bearer(req))
-  const want = Buffer.from(TOKEN)
-  return given.length === want.length && timingSafeEqual(given, want)
+/** GET и PUT /api/progress: владелец читает и пишет свой прогресс; гость получает пустой и ничего не записывает. */
+async function progressApi(req, res, who) {
+  const hdr = roleHeaders(who)
+
+  if (req.method === 'GET') return send(res, 200, who.role === 'guest' ? {} : await readProgress(), hdr)
+
+  if (req.method === 'PUT') {
+    let data
+    try {
+      data = JSON.parse(await readBody(req))
+    } catch (e) {
+      return send(res, e.status || 400, { error: e.status === 413 ? 'too large' : 'invalid json' })
+    }
+    if (!data || typeof data !== 'object' || data.v !== 1) return send(res, 400, { error: 'invalid progress' })
+    if (who.role === 'guest') return send(res, 200, { ok: true, guest: true }, hdr)
+    await saveProgress(data)
+    return send(res, 200, { ok: true, updated: data.updated ?? null }, hdr)
+  }
+
+  return send(res, 405, { error: 'method not allowed' })
 }
 
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url || '/', 'http://localhost')
     if (url.pathname === '/api/health') return send(res, 200, { ok: true })
-    if (url.pathname !== '/api/progress') return send(res, 404, { error: 'not found' })
-    if (!authorized(req)) return send(res, 401, { error: 'unauthorized' })
+    const isGuests = url.pathname === '/api/guests' || url.pathname.startsWith('/api/guests/')
+    if (url.pathname !== '/api/progress' && !isGuests) return send(res, 404, { error: 'not found' })
 
-    if (req.method === 'GET') return send(res, 200, await readProgress())
+    const who = whoIs(req)
+    if (!who) return send(res, 401, { error: 'unauthorized' })
+    if (who.expired) return send(res, 401, { error: 'expired' })
 
-    if (req.method === 'PUT') {
-      let data
-      try {
-        data = JSON.parse(await readBody(req))
-      } catch (e) {
-        return send(res, e.status || 400, { error: e.status === 413 ? 'too large' : 'invalid json' })
-      }
-      if (!data || typeof data !== 'object' || data.v !== 1) return send(res, 400, { error: 'invalid progress' })
-      await saveProgress(data)
-      return send(res, 200, { ok: true, updated: data.updated ?? null })
-    }
-
-    return send(res, 405, { error: 'method not allowed' })
+    return isGuests ? guestsApi(req, res, url, who) : progressApi(req, res, who)
   } catch (e) {
     console.error(e)
     return send(res, 500, { error: 'server error' })
