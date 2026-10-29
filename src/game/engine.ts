@@ -729,6 +729,8 @@ function endSurv(){
   if(S.cur)S.answered=true;
 }
 $('#survBtn').addEventListener('click',()=>{if(S.surv.on)endSurv();else startSurv();});
+/* «Обновить вопрос»: другой вопрос в том же режиме; ответ не засчитывается ни верным, ни неверным */
+$('#refreshBtn').addEventListener('click',()=>{if($('#over').classList.contains('on'))return;next();});
 $('#overAgain').addEventListener('click',()=>{$('#over').classList.remove('on');if(S.lastOver==='surv')startSurv();else startBlitz();});
 $('#overClose').addEventListener('click',()=>{$('#over').classList.remove('on');next();});
 
