@@ -144,3 +144,29 @@
 .study .st-up input { display: none; }
 .study .st-goals { display: flex; gap: 8px; margin-top: 14px; }
 .study .st-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* заметки */
+.study .nt-form { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.study .nt input, .study .nt textarea { width: 100%; box-sizing: border-box; padding: 11px 14px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; outline: none; }
+.study .nt input:focus, .study .nt textarea:focus { border-color: var(--gold); }
+.study .nt textarea { resize: vertical; line-height: 1.5; min-height: 96px; }
+.study .nt-form input { font-family: var(--serif); font-size: 22px; font-weight: 600; }
+.study .nt-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.study .nt-count, .study .nt-total { font-size: 13px; color: var(--muted); }
+.study .nt-bar button, .study .nt-acts button { padding: 9px 20px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--gold); border: 1px solid var(--gold); border-radius: 10px; cursor: pointer; }
+.study .nt-bar button:disabled { opacity: .45; cursor: default; }
+.study .nt-acts .plain { color: var(--ink); background: transparent; border-color: var(--line); }
+.study .nt-acts .plain:hover { border-color: var(--gold); }
+.study .nt-acts .danger:hover { border-color: var(--bad); color: var(--bad); }
+.study .nt-warn { margin: 0; font-size: 13.5px; color: var(--bad, #a4402f); }
+.study .nt-top { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.study .nt-search { flex: 1; max-width: 320px; }
+.study .nt-status { margin-left: auto; font-size: 13px; color: var(--muted); }
+.study .nt-status.error { color: var(--bad, #a4402f); font-weight: 600; }
+.study .nt-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; margin: 14px 0 0; padding: 0; list-style: none; }
+.study .nt-card { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s, transform .2s; }
+.study .nt-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.study .nt-head h4 { margin: 0; font-family: var(--serif); font-size: 24px; font-weight: 600; line-height: 1.15; overflow-wrap: anywhere; }
+.study .nt-head time { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+.study .nt-text { margin: 0; flex: 1; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.study .nt-acts { display: flex; gap: 8px; }

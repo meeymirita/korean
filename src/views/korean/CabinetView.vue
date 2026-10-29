@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
+import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
@@ -12,15 +13,16 @@ import { dueWords } from '@/data/review'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'settings'
 const q = useRoute().query.tab
-const tab = ref<Tab>(q === 'repeat' || q === 'week' || q === 'history' || q === 'settings' ? q : 'overview')
+const tab = ref<Tab>(q === 'repeat' || q === 'week' || q === 'history' || q === 'notes' || q === 'settings' ? q : 'overview')
 const dueCount = computed(() => dueWords(progress.data).length)
 const tabs = computed<[Tab, string][]>(() => [
   ['overview', 'Обзор'],
   ['repeat', `Повторить${dueCount.value ? ' · ' + dueCount.value : ''}`],
   ['week', 'Неделя'],
   ['history', 'История'],
+  ['notes', 'Заметки'],
   ['settings', 'Настройки'],
 ])
 </script>
@@ -49,6 +51,7 @@ const tabs = computed<[Tab, string][]>(() => [
     <RepeatTab v-else-if="tab === 'repeat'" />
     <WeekTab v-else-if="tab === 'week'" />
     <HistoryTab v-else-if="tab === 'history'" />
+    <NotesTab v-else-if="tab === 'notes'" />
     <SettingsTab v-else />
   </div>
 </template>
