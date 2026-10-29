@@ -42,7 +42,7 @@ const guide = ref(false)
       </div>
       <div class="mid">
         <nav class="links">
-          <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to">{{ l.title }} ↗</RouterLink>
+          <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to">{{ l.title }}<span class="arr">→</span></RouterLink>
         </nav>
         <nav class="more">
           <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to">
@@ -97,8 +97,9 @@ const guide = ref(false)
 .kicker { font-size: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
 .phrase { font-size: clamp(28px, 4.4vh, 40px); font-weight: 500; margin: 6px 0; }
 .tr { font-size: 23px; }
-.links { display: flex; flex-direction: column; gap: 6px; }
-.links a { font-size: clamp(32px, 4.2vh, 38px); font-weight: 500; line-height: 1.15; }
+.links { display: grid; width: max-content; gap: 6px; }
+.links a { display: flex; align-items: center; justify-content: space-between; gap: .7em; font-size: clamp(32px, 4.2vh, 38px); font-weight: 500; line-height: 1.15; }
+.links .arr { font-size: .8em; opacity: .9; line-height: 1; }
 .more { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 18px; max-width: 520px; }
 .more a { font-size: 25px; font-weight: 500; }
 .lock { margin-left: 6px; font-size: 13px; opacity: .8; }
