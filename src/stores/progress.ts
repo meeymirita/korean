@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { DAILY_GOAL, levelInfo, levelOf } from '@/data/levels'
+import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf } from '@/data/levels'
 
 export interface WordStat {
   ok: number
@@ -8,6 +8,29 @@ export interface WordStat {
   /** верных ответов подряд */
   streak: number
   last: number
+  /** когда слово впервые стало выученным */
+  kd?: number
+}
+
+export interface LogEntry {
+  t: number
+  w: string | null
+  ok: boolean
+  s: string
+}
+
+export interface Profile {
+  name: string
+  /** эмодзи или картинка data:image/… */
+  avatar: string
+}
+
+export interface Settings {
+  goal: number
+  /** темы словаря для «Сегодня» (пусто — все) */
+  cats: string[]
+  /** группы слов игры (null — как выбрано в самой игре) */
+  gameCats: Record<string, number> | null
 }
 
 export interface ProgressData {
@@ -16,8 +39,14 @@ export interface ProgressData {
   xp: number
   /** дата → число верных ответов за день (ключ есть, если в этот день отвечала хоть раз) */
   days: Record<string, number>
+  /** дата → все ответы за день */
+  all: Record<string, number>
   words: Record<string, WordStat>
   sources: Record<string, { ok: number; bad: number }>
+  /** последние ответы, новые первыми */
+  log: LogEntry[]
+  profile: Profile
+  settings: Settings
 }
 
 export type WordStatus = 'new' | 'learning' | 'known'
@@ -25,25 +54,48 @@ export type SyncState = 'off' | 'idle' | 'syncing' | 'ok' | 'error'
 
 const KEY = 'progress_v1'
 const TOKEN_KEY = 'progress_token'
+const VERIFIED_KEY = 'progress_verified'
+const LOG_MAX = 300
 /** Слово считается выученным после трёх верных ответов подряд. */
 export const KNOWN_STREAK = 3
 
-const empty = (): ProgressData => ({ v: 1, updated: 0, xp: 0, days: {}, words: {}, sources: {} })
+const emptyProfile = (): Profile => ({ name: '', avatar: '🌸' })
+const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null })
+const empty = (): ProgressData => ({
+  v: 1, updated: 0, xp: 0, days: {}, all: {}, words: {}, sources: {}, log: [],
+  profile: emptyProfile(), settings: emptySettings(),
+})
 
-const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+export const dayKey = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-/** Приводит данные из файла или с сервера к безопасному виду. */
-function normalize(raw: unknown): ProgressData | null {
+const obj = <T extends object>(v: unknown, fallback: T): T => (v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : fallback)
+
+/** Приводит данные из файла или с сервера к безопасному виду; старые версии без новых полей тоже принимаются. */
+export function normalize(raw: unknown): ProgressData | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Partial<ProgressData>
   if (r.v !== 1) return null
+  const profile = obj<Partial<Profile>>(r.profile, {})
+  const settings = obj<Partial<Settings>>(r.settings, {})
   return {
     v: 1,
     updated: Number(r.updated) || 0,
     xp: Number(r.xp) || 0,
-    days: r.days && typeof r.days === 'object' ? r.days : {},
-    words: r.words && typeof r.words === 'object' ? r.words : {},
-    sources: r.sources && typeof r.sources === 'object' ? r.sources : {},
+    days: obj(r.days, {}),
+    all: obj(r.all, {}),
+    words: obj(r.words, {}),
+    sources: obj(r.sources, {}),
+    log: Array.isArray(r.log) ? r.log.slice(0, LOG_MAX) : [],
+    profile: {
+      name: typeof profile.name === 'string' ? profile.name.slice(0, 24) : '',
+      avatar: typeof profile.avatar === 'string' && profile.avatar ? profile.avatar : '🌸',
+    },
+    settings: {
+      goal: GOAL_OPTIONS.includes(Number(settings.goal)) ? Number(settings.goal) : DAILY_GOAL,
+      cats: Array.isArray(settings.cats) ? settings.cats.filter(c => typeof c === 'string') : [],
+      gameCats: settings.gameCats && typeof settings.gameCats === 'object' ? settings.gameCats : null,
+    },
   }
 }
 
@@ -55,25 +107,48 @@ function load(): ProgressData {
   }
 }
 
+const read = (k: string) => {
+  try {
+    return localStorage.getItem(k) || ''
+  } catch {
+    return ''
+  }
+}
+const write = (k: string, v: string | null) => {
+  try {
+    v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v)
+  } catch {
+    /* без запоминания в браузере */
+  }
+}
+
 export const useProgressStore = defineStore('progress', () => {
   const data = ref<ProgressData>(load())
-  const token = ref('')
-  const sync = ref<SyncState>('off')
+  const token = ref(read(TOKEN_KEY))
+  /** токен хотя бы раз подошёл серверу: до этого функции сайта закрыты */
+  const verified = ref(read(VERIFIED_KEY) === '1')
+  const sync = ref<SyncState>(token.value ? 'idle' : 'off')
   const syncMessage = ref('')
   let applying = false
   let timer: ReturnType<typeof setTimeout> | undefined
 
-  try {
-    token.value = localStorage.getItem(TOKEN_KEY) || ''
-  } catch {
-    /* без сервера */
+  /* ---------- доступ ---------- */
+  const unlocked = computed(() => !!token.value && verified.value)
+
+  function lock(message = '') {
+    token.value = ''
+    verified.value = false
+    write(TOKEN_KEY, null)
+    write(VERIFIED_KEY, null)
+    sync.value = message ? 'error' : 'off'
+    syncMessage.value = message
   }
-  if (token.value) sync.value = 'idle'
 
   /* ---------- вычисляемое ---------- */
+  const goal = computed(() => data.value.settings.goal)
   const info = computed(() => levelInfo(data.value.xp))
   const todayOk = computed(() => data.value.days[dayKey()] ?? 0)
-  const goalDone = computed(() => todayOk.value >= DAILY_GOAL)
+  const goalDone = computed(() => todayOk.value >= goal.value)
 
   /** Серия дней подряд: если сегодня ещё не занималась, считается от вчера. */
   const streak = computed(() => {
@@ -119,6 +194,7 @@ export const useProgressStore = defineStore('progress', () => {
       if (o.ok) {
         w.ok++
         w.streak++
+        if (w.streak >= KNOWN_STREAK && !w.kd) w.kd = Date.now()
       } else {
         w.bad++
         w.streak = 0
@@ -128,11 +204,15 @@ export const useProgressStore = defineStore('progress', () => {
 
     const k = dayKey()
     d.days[k] ??= 0
+    d.all[k] = (d.all[k] ?? 0) + 1
+    d.log.unshift({ t: Date.now(), w: o.word ?? null, ok: o.ok, s: o.source })
+    if (d.log.length > LOG_MAX) d.log.length = LOG_MAX
+
     let goalReached = false
     if (o.ok) {
       d.xp += o.xp ?? 10
       d.days[k]!++
-      goalReached = d.days[k] === DAILY_GOAL
+      goalReached = d.days[k] === goal.value
     }
     d.updated = Date.now()
     const level = levelOf(d.xp)
@@ -147,32 +227,49 @@ export const useProgressStore = defineStore('progress', () => {
     }
   }
 
+  /* ---------- профиль и настройки ---------- */
+  function setProfile(p: Partial<Profile>) {
+    if (p.name !== undefined) data.value.profile.name = p.name.slice(0, 24)
+    if (p.avatar) data.value.profile.avatar = p.avatar
+    data.value.updated = Date.now()
+  }
+  function setSettings(s: Partial<Settings>) {
+    const cur = data.value.settings
+    if (s.goal !== undefined && GOAL_OPTIONS.includes(s.goal)) cur.goal = s.goal
+    if (s.cats) cur.cats = s.cats
+    if (s.gameCats !== undefined) cur.gameCats = s.gameCats
+    data.value.updated = Date.now()
+  }
+
   /* ---------- сохранение и сервер ---------- */
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token.value}` })
+  const netError = (e: unknown) => ((e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message)
 
   async function push() {
     if (!token.value) return
     sync.value = 'syncing'
     try {
       const res = await fetch('/api/progress', { method: 'PUT', headers: headers(), body: JSON.stringify(data.value) })
-      if (res.status === 401) throw new Error('неверный токен')
+      if (res.status === 401) return lock('неверный токен')
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       sync.value = 'ok'
       syncMessage.value = 'сохранено на сервере'
     } catch (e) {
       sync.value = 'error'
-      syncMessage.value = (e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message
+      syncMessage.value = netError(e)
     }
   }
 
-  /** Подтягивает прогресс с сервера: побеждает более свежая версия. */
+  /** Проверяет токен и подтягивает прогресс: побеждает более свежая версия. */
   async function init() {
     if (!token.value) return
     sync.value = 'syncing'
     try {
       const res = await fetch('/api/progress', { headers: headers() })
-      if (res.status === 401) throw new Error('неверный токен')
+      if (res.status === 401) return lock('неверный токен')
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+      verified.value = true
+      write(VERIFIED_KEY, '1')
       const remote = normalize(await res.json())
       if (remote && remote.updated > data.value.updated) {
         applying = true
@@ -187,41 +284,31 @@ export const useProgressStore = defineStore('progress', () => {
         syncMessage.value = 'сервер подключён'
       }
     } catch (e) {
+      // сервер временно недоступен: уже подтверждённый вход не сбрасываем
       sync.value = 'error'
-      syncMessage.value = (e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message
+      syncMessage.value = netError(e)
     }
   }
 
+  /** Вход по токену. Возвращает true, если сервер принял токен. */
   async function connect(t: string) {
-    token.value = t.trim()
-    try {
-      localStorage.setItem(TOKEN_KEY, token.value)
-    } catch {
-      /* без запоминания токена */
-    }
-    sync.value = token.value ? 'idle' : 'off'
+    const value = t.trim()
+    if (!value) return false
+    token.value = value
+    verified.value = false
+    write(TOKEN_KEY, value)
     await init()
+    return unlocked.value
   }
 
   function disconnect() {
-    token.value = ''
-    sync.value = 'off'
-    syncMessage.value = ''
-    try {
-      localStorage.removeItem(TOKEN_KEY)
-    } catch {
-      /* ничего */
-    }
+    lock('')
   }
 
   watch(
     data,
     () => {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(data.value))
-      } catch {
-        /* без сохранения в браузере */
-      }
+      write(KEY, JSON.stringify(data.value))
       if (applying || !token.value) return
       clearTimeout(timer)
       timer = setTimeout(push, 1500)
@@ -245,11 +332,12 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   function reset() {
-    data.value = { ...empty(), updated: Date.now() }
+    const keep = data.value
+    data.value = { ...empty(), profile: keep.profile, settings: keep.settings, updated: Date.now() }
   }
 
   return {
-    data, info, todayOk, goalDone, streak, bestStreak, status, record, importXp,
-    token, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset,
+    data, goal, info, todayOk, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings,
+    token, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset,
   }
 })
