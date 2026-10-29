@@ -24,6 +24,7 @@ const router = createRouter({
         rich('cheat'),
         rich('talk'),
         rich('hangul'),
+        { path: 'alphabet', component: () => import('@/views/korean/AlphabetView.vue') },
         rich('reading'),
         { path: 'sentences', component: () => import('@/views/korean/SentencesView.vue') },
         rich('numbers'),
