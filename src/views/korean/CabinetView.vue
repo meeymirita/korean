@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
@@ -12,7 +13,8 @@ import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'settings'
-const tab = ref<Tab>('overview')
+const q = useRoute().query.tab
+const tab = ref<Tab>(q === 'repeat' || q === 'week' || q === 'history' || q === 'settings' ? q : 'overview')
 const dueCount = computed(() => dueWords(progress.data).length)
 const tabs = computed<[Tab, string][]>(() => [
   ['overview', 'Обзор'],
