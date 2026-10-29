@@ -20,14 +20,14 @@ const freePort = () =>
   })
 
 /** Поднимает сервер. dir — папка данных (по умолчанию новая временная), чтобы проверять перезапуск на тех же данных. */
-export async function start({ dir } = {}) {
+export async function start({ dir, env = {} } = {}) {
   if (!dir) {
     dir = await mkdtemp(path.join(tmpdir(), 'server-test-'))
     dirs.push(dir)
   }
   const port = await freePort()
   const child = spawn(process.execPath, [SERVER], {
-    env: { ...process.env, PORT: String(port), DATA_DIR: dir, PROGRESS_TOKEN: OWNER },
+    env: { ...process.env, PORT: String(port), DATA_DIR: dir, PROGRESS_TOKEN: OWNER, ...env },
     stdio: ['ignore', 'pipe', 'inherit'],
   })
   children.push(child)
@@ -36,6 +36,13 @@ export async function start({ dir } = {}) {
     child.once('exit', code => reject(new Error('сервер не запустился, код ' + code)))
   })
   const base = `http://127.0.0.1:${port}`
+  /** Загрузка файла: multipart, поле file (и необязательное caption). */
+  const upload = (token, bytes, name = 'photo.png', caption) => {
+    const form = new FormData()
+    form.append('file', new Blob([bytes]), name)
+    if (caption !== undefined) form.append('caption', caption)
+    return fetch(base + '/api/images', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form })
+  }
   /** call('GET', '/api/notes', токен, тело) */
   const call = (method, url, token, body) =>
     fetch(base + url, {
@@ -48,7 +55,7 @@ export async function start({ dir } = {}) {
       child.once('exit', resolve)
       child.kill()
     })
-  return { dir, base, call, stop }
+  return { dir, base, call, upload, stop }
 }
 
 /** Вызывать в after(): гасит серверы и удаляет временные папки. */
