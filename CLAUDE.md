@@ -35,10 +35,14 @@
 
 Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**), Pinia, Vue Router (history mode),
 шрифты самохостятся (`src/assets/fonts.css`). Скрипты: `npm run dev`, `npm run build` (type-check + сборка),
-`npm run preview`, `npm test` (тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
+`npm run preview`, `npm test` (собирает сервер и запускает все тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
+**Сервер** (`server/`, NestJS + SQLite, свои зависимости): `npm run server:build`, `npm run server`, `npm run server:dev`;
+подробности в `docs/server.md`. Зависимости сервера ставить только внутри `server/` (`npm --prefix server ci`): корневой
+`node_modules` общий с другим проектом.
 
-**Хостинг:** владелец сам заходит на сервер, делает `git pull` и `npm run build`; Caddy отдаёт `dist`; рядом работает
-сервер прогресса как служба systemd. Подробности и команды — `docs/hosting.md`.
+**Хостинг:** владелец сам заходит на сервер, делает `git pull`, `npm run build` и, если менялся `server/`,
+`cd server && npm ci && npm run build` с `systemctl restart progress`; Caddy отдаёт `dist`, сервер работает как служба systemd.
+Подробности и команды — `docs/hosting.md`.
 
 ## Маршруты
 
@@ -65,7 +69,7 @@ src/composables/   useGrammarModal (общее состояние окна гр�
 src/stores/        progress.ts (общий прогресс, профиль, настройки, вход по токену)
 tests/             *.test.mjs (node --test), _load.mjs (загрузчик TS-модулей)
 docs/              подробности по темам (см. таблицу ниже)
-server/            сервер прогресса (Node без зависимостей): index, config, http, storage, guests, notes; data/ в .gitignore
+server/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, admin), свои package.json и node_modules; data/ в .gitignore
 src/lib/           guestStorage.ts (гостевой режим: localStorage в памяти)
 src/data/          alphabet.ts (буквы, слоги),
                    levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели)
@@ -82,12 +86,13 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 | `docs/data.md` | словарь, грамматика, справочники, Notion, переводы предложений, `parse.ts` |
 | `docs/game.md` | игра «Хлебушек»: режимы, `engine.ts`, «собери предложение» |
 | `docs/progress.md` | сад и коллекция, тренажёры, «Сегодня», хранилище прогресса, кабинет, заметки, доступ по токену, гостевые токены, тесты |
-| `docs/hosting.md` | сервер, Caddy, служба `progress`, как давать владельцу команды |
+| `docs/server.md` | сервер NestJS + SQLite: таблицы базы, API, как запускать, смотреть базу и тестировать |
+| `docs/hosting.md` | сервер на хостинге, Caddy, служба `progress`, как давать владельцу команды |
 | `docs/changelog.md` | что и когда сделано, чек-лист обновления сервера |
 
 ## Как проверять изменения
 
-- Тесты: `npm test` (101 тест, около 6 секунд). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (158 тестов, около 6 секунд). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
