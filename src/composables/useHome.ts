@@ -42,20 +42,17 @@ export function useHome() {
           locked: false,
           title: 'Привет, гость!',
           sub: `доступ до ${new Date(progress.guestExpires).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} · прогресс не сохраняется`,
-          help: '',
         }
       : progress.unlocked
       ? {
           locked: false,
           title: 'Привет' + (progress.data.profile.name ? ', ' + progress.data.profile.name : '') + '!',
           sub: `⭐ Уровень ${progress.info.level} · ${progress.info.title} · 🔥 ${progress.streak}`,
-          help: '',
         }
       : {
           locked: true,
           title: '🔒 Войти по токену →',
           sub: 'откроются задания, игра и кабинет',
-          help: 'По вопросам доступа пишите в Telegram: @meeymirita',
         },
   )
   return { progress, days, daysWord, hello }
