@@ -25,29 +25,49 @@ npm run build
 npm run preview
 ```
 
+## Страницы
+
+| Адрес | Что это |
+| --- | --- |
+| `/` | главная: меню, цитаты, счётчик дней с 1 июня |
+| `/korean/today` | «Сегодня»: случайные слова, правило дня и задания |
+| `/korean/words` | словарь с поиском по переводу, корейскому, чтению и примеру |
+| `/korean/grammar`, `cheat`, `talk`, `hangul`, `alphabet`, `reading`, `sentences`, `numbers`, `review` | остальные разделы корейского |
+| `/game` | игра на слова «Хлебушек» |
+
 ## Структура
 
 ```
-public/              картинки (frieren.webp, dona.jpg, Vue.png)
+public/                 картинки
 src/
-  assets/base.css    глобальные стили
+  assets/               base.css (главная), study.css (корейский и игра), fonts.css
   components/
-    SideBar.vue      заголовок и меню
-    QuoteBlock.vue   слайдер цитат с автопереключением
-    QuoteDots.vue    точки-индикаторы слайдера
-    ContactBar.vue   плашка с контактом в Telegram
-    icons/IconArrow.vue
-  data/              данные: menu.ts, quotes.ts
-  stores/            Pinia-хранилища, отдают данные из data/
-  views/HomeView.vue главная страница
-  router/index.ts    маршруты
+    SideBar.vue         заголовок и меню главной
+    DaysCounter.vue     счётчик дней с 1 июня
+    korean/             карточки букв, окно грамматики, шапка раздела
+  composables/          состояние окна грамматики
+  data/
+    menu.ts, quotes.ts  меню и цитаты главной
+    alphabet.ts         буквы и таблица слогов
+    korean/             словарь, грамматика, страницы-справочники, задания «Сегодня»
+  game/                 данные, логика и разметка игры «Хлебушек»
+  views/
+    HomeView.vue        главная
+    GameView.vue        игра
+    korean/             страницы раздела «Корейский»
+  router/index.ts       маршруты
 ```
 
 ## Как менять содержимое
 
-- **Пункты меню** — `src/data/menu.ts`. Пункт без `href` остаётся заглушкой, с `href` открывает внешнюю ссылку в новой вкладке.
-- **Цитаты** — `src/data/quotes.ts`, каждая цитата — пара «текст, пояснение».
+- **Пункты меню** — `src/data/menu.ts`: `to` — внутренний адрес, `href` — внешняя ссылка в новой вкладке.
+- **Новые слова** — массив `RAW` в `src/data/korean/dictionary.ts` (поля `n, k, r, t, s`) и категория в `CAT` в том же файле.
+- **Грамматика** — массив `G` в `src/data/korean/grammar.ts`.
+- **Дата отсчёта дней** — константа `START` в `src/components/DaysCounter.vue`.
+- **Цитаты** — `src/data/quotes.ts`.
 - **Автопереключение цитат** — константы `AUTOPLAY` и `INTERVAL` (секунды) в `src/components/QuoteBlock.vue`.
+
+Сайт — одностраничное приложение, поэтому на хостинге все адреса должны отдавать `index.html`.
 
 ## Контакты
 
