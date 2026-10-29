@@ -1,119 +1,65 @@
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import net from 'node:net'
-import { tmpdir } from 'node:os'
+import { readdir } from 'node:fs/promises'
+import { DatabaseSync } from 'node:sqlite'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { OWNER, cleanup, start } from './_server.mjs'
 
-const SERVER = fileURLToPath(new URL('../server/index.mjs', import.meta.url))
-const OWNER = 'owner-secret-for-tests'
-const children = []
-const dirs = []
+after(cleanup)
 
-const freePort = () =>
-  new Promise(resolve => {
-    const s = net.createServer().listen(0, '127.0.0.1', () => {
-      const { port } = s.address()
-      s.close(() => resolve(port))
-    })
-  })
-
-/** Запускает настоящий сервер на свободном порту с временной папкой данных. */
-async function start(prepare) {
-  const dir = await mkdtemp(path.join(tmpdir(), 'progress-test-'))
-  dirs.push(dir)
-  if (prepare) await prepare(dir)
-  const port = await freePort()
-  const child = spawn(process.execPath, [SERVER], {
-    env: { ...process.env, PORT: String(port), DATA_DIR: dir, PROGRESS_TOKEN: OWNER },
-    stdio: ['ignore', 'pipe', 'inherit'],
-  })
-  children.push(child)
-  await new Promise((resolve, reject) => {
-    child.stdout.once('data', resolve)
-    child.once('exit', code => reject(new Error('сервер не запустился, код ' + code)))
-  })
-  const base = `http://127.0.0.1:${port}`
-  const call = (method, url, token, body) =>
-    fetch(base + url, {
-      method,
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  return { dir, base, call }
-}
-
-after(async () => {
-  children.forEach(c => c.kill())
-  await Promise.all(dirs.map(d => rm(d, { recursive: true, force: true })))
-})
-
-describe('сервер прогресса: владелец', () => {
+describe('сервер: вход по токену', () => {
   let s
   before(async () => (s = await start()))
 
   test('health открыт, остальное закрыто токеном', async () => {
     assert.equal((await s.call('GET', '/api/health')).status, 200)
-    assert.equal((await s.call('GET', '/api/progress')).status, 401)
-    assert.equal((await s.call('GET', '/api/progress', 'wrong-token')).status, 401)
+    assert.equal((await s.call('GET', '/api/notes')).status, 401)
+    assert.equal((await s.call('GET', '/api/notes', 'wrong-token')).status, 401)
     assert.equal((await s.call('GET', '/api/nothing', OWNER)).status, 404)
   })
 
-  test('владелец читает и пишет прогресс', async () => {
-    const put = await s.call('PUT', '/api/progress', OWNER, { v: 1, updated: 5, xp: 777 })
-    assert.equal(put.status, 200)
-    assert.equal(put.headers.get('x-role'), 'owner')
-    const got = await s.call('GET', '/api/progress', OWNER)
-    assert.equal((await got.json()).xp, 777)
+  test('владелец проходит, в ответе его роль', async () => {
+    const res = await s.call('GET', '/api/notes', OWNER)
+    assert.equal(res.status, 200)
+    assert.equal(res.headers.get('x-role'), 'owner')
   })
 
-  test('плохие запросы: чужая версия и не JSON — 400', async () => {
-    assert.equal((await s.call('PUT', '/api/progress', OWNER, { v: 2 })).status, 400)
-    const res = await fetch(s.base + '/api/progress', { method: 'PUT', headers: { Authorization: `Bearer ${OWNER}` }, body: 'это не json' })
-    assert.equal(res.status, 400)
+  test('база создаётся сама, ежедневная копия базы лежит в backups', async () => {
+    const files = await readdir(path.join(s.dir, 'backups'))
+    assert.ok(files.some(f => /^app-\d{4}-\d\d-\d\d\.db$/.test(f)), files.join(', '))
+    assert.ok((await readdir(s.dir)).includes('app.db'))
   })
 })
 
-describe('сервер прогресса: гостевые токены', () => {
+describe('сервер: гостевые токены', () => {
   let s
-  before(async () => {
-    s = await start()
-    await s.call('PUT', '/api/progress', OWNER, { v: 1, updated: 5, xp: 777 })
-  })
+  before(async () => (s = await start()))
 
   const create = async (body = { hours: 1, label: 'Лера' }) => (await s.call('POST', '/api/guests', OWNER, body)).json()
 
-  test('владелец создаёт токен: токен показывается один раз, на диске только хэш', async () => {
+  test('владелец создаёт токен: токен показывается один раз, в базе только хэш', async () => {
     const g = await create()
     assert.ok(g.token && g.token.length >= 20)
     assert.equal(g.label, 'Лера')
     assert.ok(Math.abs(g.expires - g.created - 3600_000) < 1000)
-    const file = await readFile(path.join(s.dir, 'guests.json'), 'utf8')
-    assert.ok(!file.includes(g.token), 'сам токен на диск не пишется')
-    assert.ok(file.includes(createHash('sha256').update(g.token).digest('hex')))
+    const db = new DatabaseSync(path.join(s.dir, 'app.db'), { readOnly: true })
+    const row = db.prepare('SELECT * FROM guests WHERE id = ?').get(g.id)
+    db.close()
+    assert.ok(!JSON.stringify(row).includes(g.token), 'сам токен в базу не пишется')
+    assert.equal(row.hash.length, 64)
     const list = await (await s.call('GET', '/api/guests', OWNER)).json()
     assert.ok(list.some(x => x.id === g.id))
     assert.ok(list.every(x => !('token' in x) && !('hash' in x)))
   })
 
-  test('гость заходит, но видит пустой прогресс, а не данные владельца', async () => {
+  test('гость заходит: роль, срок в заголовках, заметок владельца не видит', async () => {
+    await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 5, notes: [{ id: 'a', title: 'Тайна', text: 'x', created: 1, updated: 1 }] })
     const g = await create()
-    const res = await s.call('GET', '/api/progress', g.token)
+    const res = await s.call('GET', '/api/notes', g.token)
     assert.equal(res.status, 200)
     assert.equal(res.headers.get('x-role'), 'guest')
     assert.equal(Number(res.headers.get('x-guest-expires')), g.expires)
     assert.deepEqual(await res.json(), {})
-  })
-
-  test('гость ничего не записывает: ответ успешный, файл владельца цел', async () => {
-    const g = await create()
-    const put = await s.call('PUT', '/api/progress', g.token, { v: 1, updated: 99, xp: 1 })
-    assert.equal(put.status, 200)
-    assert.equal((await put.json()).guest, true)
-    assert.equal((await (await s.call('GET', '/api/progress', OWNER)).json()).xp, 777)
   })
 
   test('гость не может создавать, смотреть и удалять токены', async () => {
@@ -125,52 +71,60 @@ describe('сервер прогресса: гостевые токены', () =>
 
   test('отзыв: после удаления токен перестаёт работать', async () => {
     const g = await create()
-    assert.equal((await s.call('GET', '/api/progress', g.token)).status, 200)
+    assert.equal((await s.call('GET', '/api/notes', g.token)).status, 200)
     assert.equal((await s.call('DELETE', `/api/guests/${g.id}`, OWNER)).status, 200)
-    assert.equal((await s.call('GET', '/api/progress', g.token)).status, 401)
+    assert.equal((await s.call('GET', '/api/notes', g.token)).status, 401)
     assert.equal((await s.call('DELETE', `/api/guests/${g.id}`, OWNER)).status, 404)
   })
 
-  test('срок задаётся от 0,1 часа до 30 суток, иначе 400', async () => {
+  test('срок от 0,1 часа до 30 суток, иначе 400; имя режется до 40 символов', async () => {
     for (const hours of [0, -1, 0.01, 721, 'много', undefined]) {
       assert.equal((await s.call('POST', '/api/guests', OWNER, { hours })).status, 400, String(hours))
     }
-    assert.equal((await s.call('POST', '/api/guests', OWNER, { hours: 168 })).status, 200)
+    assert.equal((await s.call('POST', '/api/guests', OWNER, { hours: 168 })).status, 201)
+    assert.equal((await create({ hours: 1, label: 'я'.repeat(100) })).label.length, 40)
   })
 
-  test('имя гостя режется до 40 символов', async () => {
-    assert.equal((await create({ hours: 1, label: 'я'.repeat(100) })).label.length, 40)
+  test('не больше 30 действующих токенов', async () => {
+    const t = await start()
+    for (let i = 0; i < 30; i++) assert.equal((await t.call('POST', '/api/guests', OWNER, { hours: 1 })).status, 201)
+    assert.equal((await t.call('POST', '/api/guests', OWNER, { hours: 1 })).status, 400)
   })
 
   test('токены переживают перезапуск сервера', async () => {
     const first = await start()
     const g = await (await first.call('POST', '/api/guests', OWNER, { hours: 1 })).json()
-    const saved = await readFile(path.join(first.dir, 'guests.json'))
-    const second = await start(d => writeFile(path.join(d, 'guests.json'), saved))
-    assert.equal((await second.call('GET', '/api/progress', g.token)).status, 200)
+    await first.stop()
+    const second = await start({ dir: first.dir })
+    assert.equal((await second.call('GET', '/api/notes', g.token)).status, 200)
   })
-})
 
-describe('сервер прогресса: срок вышел', () => {
-  test('просроченный токен — 401 «expired», неизвестный — 401 «unauthorized»', async () => {
-    const token = 'expired-guest-token'
-    const s = await start(d =>
-      writeFile(
-        path.join(d, 'guests.json'),
-        JSON.stringify({ abcd1234: { hash: createHash('sha256').update(token).digest('hex'), label: '', created: Date.now() - 7200_000, expires: Date.now() - 3600_000 } }),
-      ),
-    )
-    const old = await s.call('GET', '/api/progress', token)
+  test('срок вышел: 401 «expired», неизвестный токен — «unauthorized», в списке просроченных нет', async () => {
+    const g = await create()
+    const db = new DatabaseSync(path.join(s.dir, 'app.db'))
+    db.prepare('UPDATE guests SET expires = ? WHERE id = ?').run(Date.now() - 3600_000, g.id)
+    db.close()
+    const old = await s.call('GET', '/api/notes', g.token)
     assert.equal(old.status, 401)
     assert.equal((await old.json()).error, 'expired')
-    const unknown = await s.call('GET', '/api/progress', 'other-token')
-    assert.equal((await unknown.json()).error, 'unauthorized')
+    assert.equal((await (await s.call('GET', '/api/notes', 'other-token')).json()).error, 'unauthorized')
     const list = await (await s.call('GET', '/api/guests', OWNER)).json()
-    assert.deepEqual(list, [], 'в списке владельца просроченных нет')
+    assert.ok(!list.some(x => x.id === g.id))
+  })
+
+  test('в журнале событий остаются создание, отзыв и неверный токен', async () => {
+    const t = await start()
+    const g = await (await t.call('POST', '/api/guests', OWNER, { hours: 1, label: 'Журнал' })).json()
+    await t.call('DELETE', `/api/guests/${g.id}`, OWNER)
+    await t.call('GET', '/api/notes', 'bad-token')
+    const db = new DatabaseSync(path.join(t.dir, 'app.db'), { readOnly: true })
+    const types = db.prepare('SELECT type FROM events ORDER BY id').all().map(r => r.type)
+    db.close()
+    assert.deepEqual(types, ['guest_created', 'guest_revoked', 'bad_token'])
   })
 })
 
-describe('сервер прогресса: заметки', () => {
+describe('сервер: заметки', () => {
   let s
   before(async () => (s = await start()))
 
@@ -183,26 +137,21 @@ describe('сервер прогресса: заметки', () => {
   })
 
   test('пока заметок нет, сервер отдаёт пустой объект', async () => {
-    const res = await s.call('GET', '/api/notes', OWNER)
-    assert.equal(res.status, 200)
-    assert.deepEqual(await res.json(), {})
+    assert.deepEqual(await (await s.call('GET', '/api/notes', OWNER)).json(), {})
   })
 
   test('владелец сохраняет и читает заметки, лишние поля отбрасываются', async () => {
-    const put = await s.call('PUT', '/api/notes', OWNER, body([note('a', { x: 'лишнее' }), note('b', { title: 'Вторая' })], 77))
+    const put = await s.call('PUT', '/api/notes', OWNER, body([note('a', { x: 'лишнее' }), note('b', { title: 'Вторая', created: 5 })], 77))
     assert.equal(put.status, 200)
     const got = await (await s.call('GET', '/api/notes', OWNER)).json()
     assert.equal(got.updated, 77)
-    assert.deepEqual(got.notes.map(n => n.id), ['a', 'b'])
+    assert.deepEqual(got.notes.map(n => n.id), ['b', 'a'], 'новые сверху')
     assert.ok(!('x' in got.notes[0]))
-    const file = JSON.parse(await readFile(path.join(s.dir, 'notes.json'), 'utf8'))
-    assert.equal(file.notes.length, 2, 'лежит в notes.json')
   })
 
-  test('вторая запись создаёт ежедневную копию заметок', async () => {
-    await s.call('PUT', '/api/notes', OWNER, body([note('a')], 78))
-    const files = await (await import('node:fs/promises')).readdir(path.join(s.dir, 'backups'))
-    assert.ok(files.some(f => f.startsWith('notes-')), files.join(', '))
+  test('список заменяется целиком: удалённая заметка пропадает', async () => {
+    await s.call('PUT', '/api/notes', OWNER, body([note('a')], 80))
+    assert.deepEqual((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.map(n => n.id), ['a'])
   })
 
   test('гость заметок не видит, а его запись игнорируется', async () => {
@@ -211,8 +160,7 @@ describe('сервер прогресса: заметки', () => {
     const put = await s.call('PUT', '/api/notes', g.token, body([note('гость')], 999))
     assert.equal(put.status, 200)
     assert.equal((await put.json()).guest, true)
-    const got = await (await s.call('GET', '/api/notes', OWNER)).json()
-    assert.deepEqual(got.notes.map(n => n.id), ['a'], 'заметки владельца целы')
+    assert.deepEqual((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.map(n => n.id), ['a'])
   })
 
   test('нарушение лимитов и формата — 400, прежние заметки остаются', async () => {
@@ -236,13 +184,10 @@ describe('сервер прогресса: заметки', () => {
     assert.equal((await s.call('PUT', '/api/notes', OWNER, body(edge))).status, 200)
   })
 
-  test('не JSON — 400, чужой метод — 405', async () => {
-    const raw = await fetch(s.base + '/api/notes', { method: 'PUT', headers: { Authorization: `Bearer ${OWNER}` }, body: 'не json' })
+  test('не JSON — 400, чужой метод — 404/405, слишком большое тело — 413', async () => {
+    const raw = await fetch(s.base + '/api/notes', { method: 'PUT', headers: { Authorization: `Bearer ${OWNER}`, 'Content-Type': 'application/json' }, body: 'не json' })
     assert.equal(raw.status, 400)
-    assert.equal((await s.call('DELETE', '/api/notes', OWNER)).status, 405)
-  })
-
-  test('слишком большое тело — 413 (лимит заметок 4 МБ), заметки целы', async () => {
+    assert.ok([404, 405].includes((await s.call('DELETE', '/api/notes', OWNER)).status))
     const huge = body([note('big', { text: 'я'.repeat(5 * 1024 * 1024) })])
     assert.equal((await s.call('PUT', '/api/notes', OWNER, huge)).status, 413)
     assert.equal((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.length, 200)

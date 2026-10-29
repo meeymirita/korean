@@ -1,0 +1,29 @@
+{
+  "name": "korean-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сервер сайта «Хлебушек»: NestJS + SQLite (встроенный node:sqlite)",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "dev": "nest start --watch"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.2.8",
+    "@nestjs/core": "^11.2.8",
+    "@nestjs/platform-express": "^11.2.8",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^24.19.2",
+    "typescript": "~5.9"
+  }
+}

@@ -1,0 +1,57 @@
+/** Заметки владельца: название и описание. Список целиком заменяется одним запросом. */
+import { BadRequestException, Injectable } from '@nestjs/common'
+import { MAX_NOTES, MAX_NOTE_TEXT, MAX_NOTE_TITLE } from '../config'
+import { Db } from '../db/db.service'
+
+export interface Note {
+  id: string
+  title: string
+  text: string
+  created: number
+  updated: number
+}
+
+const isStr = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max
+const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+
+@Injectable()
+export class NotesService {
+  constructor(private readonly db: Db) {}
+
+  /** Заметки владельца; пустой объект, пока ничего не сохраняли. */
+  read() {
+    const updated = this.db.getMeta('notes_updated')
+    if (updated === undefined) return {}
+    return { v: 1, updated: Number(updated), notes: this.db.all<Note>('SELECT id, title, text, created, updated FROM notes ORDER BY created DESC') }
+  }
+
+  /** Проверяет тело запроса; при нарушении формата или лимитов — 400. Ничего не сохраняет. */
+  validate(body: unknown) {
+    const data = body as { v?: unknown; updated?: unknown; notes?: unknown }
+    if (!data || typeof data !== 'object' || data.v !== 1 || !Array.isArray(data.notes) || data.notes.length > MAX_NOTES) {
+      throw new BadRequestException({ error: 'invalid notes' })
+    }
+    const ids = new Set<string>()
+    const notes: Note[] = []
+    for (const n of data.notes as Partial<Note>[]) {
+      if (!n || typeof n !== 'object' || !isStr(n.id, 40) || !n.id || ids.has(n.id)) throw new BadRequestException({ error: 'invalid notes' })
+      if (!isStr(n.title, MAX_NOTE_TITLE) || !isStr(n.text, MAX_NOTE_TEXT) || !num(n.created) || !num(n.updated)) {
+        throw new BadRequestException({ error: 'invalid notes' })
+      }
+      ids.add(n.id)
+      notes.push({ id: n.id, title: n.title, text: n.text, created: n.created, updated: n.updated })
+    }
+    return { updated: num(data.updated) ? data.updated : 0, notes }
+  }
+
+  /** Заменяет все заметки; при ошибке проверки старые заметки остаются. */
+  replace(body: unknown) {
+    const { updated, notes } = this.validate(body)
+    this.db.tx(() => {
+      this.db.run('DELETE FROM notes')
+      for (const n of notes) this.db.run('INSERT INTO notes (id, title, text, created, updated) VALUES (?, ?, ?, ?, ?)', n.id, n.title, n.text, n.created, n.updated)
+      this.db.setMeta('notes_updated', String(updated))
+    })
+    return { ok: true, updated }
+  }
+}

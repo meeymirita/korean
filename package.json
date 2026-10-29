@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
-    "server": "node server/index.mjs",
+    "server": "npm --prefix server start",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "test": "node --test \"tests/*.test.mjs\""
+    "test": "npm run server:build && node --test \"tests/*.test.mjs\"",
+    "server:build": "npm --prefix server run build",
+    "server:dev": "npm --prefix server run dev"
   },
   "dependencies": {
     "pinia": "^4.0.3",
