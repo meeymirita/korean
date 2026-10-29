@@ -45,7 +45,10 @@
 .study .chip { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 5px 14px;
   font-size: 13px; font-weight: 600; transition: background .2s, color .2s, border-color .2s; }
 .study .chip:hover { border-color: var(--gold); }
-.study .chip.on { background: var(--gold); border-color: var(--gold); color: #fff; }
+.study .chip.on, .study .chip.router-link-active { background: var(--gold); border-color: var(--gold); color: #fff; }
+
+.study .ref-tabs.wrap { margin: 0 auto; padding-top: 28px; padding-bottom: 0; }
+.study .ref-tabs + .wrap { padding-top: 20px; }
 
 .study mark { background: rgba(168, 130, 47, .28); color: inherit; padding: 0 2px; border-radius: 3px; }
 .study .empty { padding: 36px 0; font-size: 18px; color: var(--muted); }
@@ -287,3 +290,29 @@
 .study-links .lock { margin-left: auto; font-size: 12px; opacity: .6; }
 .study-level .lv-who { display: flex; align-items: center; gap: 8px; }
 .study-level .lv-who b { font-size: 14px; }
+
+/* главная раздела: поиск по всему сайту */
+.study .ov-search { max-width: 720px; margin: 28px auto 0; }
+.study .ov-search .meta { justify-content: space-between; }
+.study .ov-g { margin-top: 8px; display: flex; flex-direction: column; align-items: flex-start; }
+.study .ov-r { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 1fr) minmax(0, 2fr); gap: 4px 16px; width: 100%;
+  align-items: baseline; padding: 10px 8px; border: 0; border-bottom: 1px solid var(--line); border-radius: 6px;
+  background: transparent; text-align: left; color: inherit; font: inherit; cursor: pointer; text-decoration: none; }
+.study .ov-r:hover { background: var(--gold-soft); }
+.study .ov-r.col { display: flex; flex-direction: column; }
+.study .ov-r .k { font-family: var(--ko); font-size: 20px; font-weight: 700; }
+.study .ov-r .k.ko { font-size: 17px; }
+.study .ov-r .rd { color: var(--muted); }
+.study .ov-r .rd.grp { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.study .ov-g > .chip { margin-top: 10px; cursor: pointer; }
+.study .ov-card { text-decoration: none; color: inherit; }
+.study a.ov-card:hover { border-color: var(--gold); }
+.study .ov-lock { display: block; margin-top: 30px; padding: 16px 22px; }
+@media (max-width: 700px) { .study .ov-r:not(.col) { grid-template-columns: 1fr; } }
+
+.study .ov-cont { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 18px; }
+.study .ov-last { font-size: 30px; }
+.study .ov-weak { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.study .ov-weak .chip { text-decoration: none; color: inherit; }
+.study .ov-weak .chip small { color: var(--muted); font-weight: 400; }
+.study .ov-go { display: inline-block; margin-top: 12px; text-decoration: none; color: var(--gold); }

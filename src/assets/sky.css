@@ -26,7 +26,7 @@
 .study.sky .study-side { background: rgba(255, 255, 255, .6); }
 .study.sky .searchbar { background: rgba(238, 243, 251, .94); backdrop-filter: blur(8px); }
 .study.sky .sb { box-shadow: none; }
-.study.sky .sb button:hover, .study.sky .chip.on, .study.sky .fcb button,
+.study.sky .sb button:hover, .study.sky .chip.on, .study.sky .chip.router-link-active, .study.sky .fcb button,
 .study.sky .today-end button, .study.sky .study-modal .gh button:hover,
 .study.sky .bd-rule:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 .study.sky .study-level .lv-bar i { background: var(--accent); }

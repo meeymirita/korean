@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { visit } from '@/composables/useLastVisited'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import Avatar from '@/components/Avatar.vue'
@@ -13,6 +15,7 @@ import { useProgressStore } from '@/stores/progress'
 const counts: Record<string, number> = { words: D.length, grammar: G.length }
 const progress = useProgressStore()
 const route = useRoute()
+watch(() => route.path, visit, { immediate: true })
 </script>
 
 <template>
@@ -25,7 +28,7 @@ const route = useRoute()
         <div class="course">서울대 한국어+ 1A</div>
       </div>
       <div class="study-links" role="navigation">
-        <RouterLink v-for="s in sections" :key="s.id" :to="`/korean/${s.id}`">
+        <RouterLink v-for="s in sections.filter(s => !s.group)" :key="s.id" :to="`/korean/${s.id}`">
           <span class="line"></span>
           <span>{{ s.menu }}</span>
           <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену">🔒</span>
