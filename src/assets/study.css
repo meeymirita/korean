@@ -241,7 +241,7 @@
 .study .today-h small { font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 400; color: var(--muted); }
 .study .fcb button.plain { background: transparent; color: var(--ink); border-color: var(--line); }
 .study .fcb button.plain:hover { border-color: var(--gold); opacity: 1; }
-.study .tw { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-top: 16px; }
+.study .tw { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
 .study .tw-card { display: flex; flex-direction: column; gap: 4px; min-height: 130px; padding: 16px 18px; text-align: left;
   background: var(--surface); border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s, transform .2s; }
 .study .tw-card:hover { border-color: var(--gold); transform: translateY(-2px); }
