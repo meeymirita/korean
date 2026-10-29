@@ -11,9 +11,11 @@ import ContactBar from "@/components/ContactBar.vue";
     <img src="/frieren.webp" alt="">
     <div class="shade"></div>
 
-    <side-bar/>
+    <div class="left-col">
+      <side-bar/>
+      <guide-modal/>
+    </div>
     <hello-card/>
-    <guide-modal/>
     <div class="right-col">
       <quote-block/>
     </div>

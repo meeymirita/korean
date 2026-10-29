@@ -38,7 +38,7 @@ const progress = useProgressStore()
 .hello-arrow { margin-left: auto; color: var(--gold); font-size: 18px; transition: transform .2s; }
 .hello-card:hover .hello-arrow { transform: translateX(4px); }
 .hello-card:hover b { color: var(--gold); }
-@media (max-width: 720px) {
-  .hello-card { position: relative; right: auto; top: auto; max-width: none; margin: 16px 16px 0; }
+@media (max-width: 960px) {
+  .hello-card { position: relative; right: auto; top: auto; order: -1; max-width: none; margin: 16px 16px 0; z-index: 1; }
 }
 </style>

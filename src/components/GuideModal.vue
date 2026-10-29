@@ -92,7 +92,7 @@ const onTouchEnd = (e: TouchEvent) => {
 </template>
 
 <style>
-.guide-card { position:absolute; left:48px; bottom:48px; width:min(380px, calc(100% - 96px));
+.guide-card { position:static; margin:0 0 48px 48px; width:min(380px, calc(100% - 96px));
   padding:14px 16px; border-radius:16px; background:rgba(248,247,244,.9);
   box-shadow:0 30px 60px -30px rgba(40,38,34,.45); display:flex; flex-direction:column; gap:10px; }
 .guide-open { display:flex; align-items:center; gap:12px; width:100%; padding:0; border:0; background:transparent;
@@ -143,9 +143,8 @@ const onTouchEnd = (e: TouchEvent) => {
 .guide-foot { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:12px 24px 18px; border-top:1px solid rgba(168,130,47,.25); }
 .guide-foot span { margin-right:6px; font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); }
 
-@media (min-width:721px) { .hero .side { padding-bottom:170px; } }
-@media (max-width:720px) {
-  .guide-card { position:relative; left:auto; bottom:auto; width:auto; margin:16px 16px 0; }
+@media (max-width:960px) {
+  .guide-card { width:auto; margin:16px 16px 0; }
   .guide-slide { padding:6px 20px 8px; }
   .guide-slide h2 { font-size:32px; }
 }
