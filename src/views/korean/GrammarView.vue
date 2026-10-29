@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, SECS } from '@/data/korean/grammar'
@@ -8,6 +9,12 @@ import { F } from '@/data/korean/render'
 const sec = ref('')
 const list = computed(() => (sec.value ? G.filter(g => g.s === sec.value) : G))
 const { open } = useGrammarModal()
+const route = useRoute()
+/** /korean/grammar?g=ayo сразу открывает карточку */
+onMounted(() => {
+  const g = String(route.query.g ?? '')
+  if (G.some(x => x.id === g)) open(g)
+})
 </script>
 
 <template>
