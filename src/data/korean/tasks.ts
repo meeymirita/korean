@@ -1,6 +1,7 @@
+import { ADJECTIVES, VERBS } from './forms'
 import { D, type Word } from './words'
 
-export type TaskKind = 'tr' | 'back' | 'read' | 'blank'
+export type TaskKind = 'tr' | 'back' | 'read' | 'blank' | 'form'
 
 export interface Task {
   id: number
@@ -40,6 +41,7 @@ const KINDS: Record<TaskKind, string> = {
   back: 'Как это по-корейски?',
   read: 'Как читается?',
   blank: 'Вставь слово в предложение',
+  form: '',
 }
 
 function make(kind: TaskKind, d: Word, id: number): Task | null {
@@ -56,6 +58,24 @@ function make(kind: TaskKind, d: Word, id: number): Task | null {
     const options = pick(SIMPLE.map(x => x.r), d.r)
     return { id, kind, title: KINDS[kind], prompt: d.k, hint: short(d.t), options, answer: d.r }
   }
+  if (kind === 'form') {
+    const all = [...VERBS, ...ADJECTIVES]
+    const e = shuffle(all)[0]!
+    const past = Math.random() < 0.5
+    const answer = (past ? e.past : e.form)!
+    const other = (past ? e.form : e.past)!
+    const rest = shuffle(all.map(x => (past ? x.past : x.form)!).filter(f => f !== answer && f !== other)).slice(0, 2)
+    const options = shuffle([...new Set([answer, other, ...rest])])
+    return {
+      id,
+      kind,
+      title: past ? 'Поставь в прошедшее время' : 'Поставь в настоящее время (вежливо)',
+      prompt: e.k,
+      hint: short(e.t),
+      options,
+      answer,
+    }
+  }
   // blank: слово должно встречаться в примере ровно один раз и быть не короче двух слогов
   if (d.k.length < 2 || d.s.split(d.k).length !== 2) return null
   const options = pick(SIMPLE.filter(x => x.k.length >= 2).map(x => x.k), d.k)
@@ -64,7 +84,7 @@ function make(kind: TaskKind, d: Word, id: number): Task | null {
 
 /** Набор из n разных заданий на разные слова; типы чередуются. */
 export function randomTasks(n = 8): Task[] {
-  const kinds: TaskKind[] = ['tr', 'back', 'read', 'blank']
+  const kinds: TaskKind[] = ['tr', 'back', 'read', 'blank', 'form']
   const tasks: Task[] = []
   const used = new Set<string>()
   for (const d of shuffle(SIMPLE)) {
