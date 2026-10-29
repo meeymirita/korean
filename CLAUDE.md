@@ -65,7 +65,7 @@ src/composables/   useGrammarModal (общее состояние окна гр�
 src/stores/        progress.ts (общий прогресс, профиль, настройки, вход по токену)
 tests/             *.test.mjs (node --test), _load.mjs (загрузчик TS-модулей)
 docs/              подробности по темам (см. таблицу ниже)
-server/            сервер прогресса (Node без зависимостей): index, config, http, storage, guests; data/ в .gitignore
+server/            сервер прогресса (Node без зависимостей): index, config, http, storage, guests, notes; data/ в .gitignore
 src/lib/           guestStorage.ts (гостевой режим: localStorage в памяти)
 src/data/          alphabet.ts (буквы, слоги),
                    levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели)
@@ -81,13 +81,13 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 | `docs/home-and-theme.md` | главная `/`, шторка «Что здесь есть», фото уголком, тема «небо» |
 | `docs/data.md` | словарь, грамматика, справочники, Notion, переводы предложений, `parse.ts` |
 | `docs/game.md` | игра «Хлебушек»: режимы, `engine.ts`, «собери предложение» |
-| `docs/progress.md` | сад и коллекция, тренажёры, «Сегодня», хранилище прогресса, кабинет, доступ по токену, гостевые токены, тесты |
+| `docs/progress.md` | сад и коллекция, тренажёры, «Сегодня», хранилище прогресса, кабинет, заметки, доступ по токену, гостевые токены, тесты |
 | `docs/hosting.md` | сервер, Caddy, служба `progress`, как давать владельцу команды |
 | `docs/changelog.md` | что и когда сделано, чек-лист обновления сервера |
 
 ## Как проверять изменения
 
-- Тесты: `npm test` (76 тестов, около 3 секунд). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (101 тест, около 6 секунд). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
