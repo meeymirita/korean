@@ -71,6 +71,7 @@ const guide = ref(false)
       <span class="hello-txt">
         <b>{{ hello.title }}</b>
         <small>{{ hello.sub }}</small>
+        <small v-if="hello.help" class="hello-help">{{ hello.help }}</small>
       </span>
     </RouterLink>
 
@@ -119,6 +120,7 @@ const guide = ref(false)
 .hello-txt { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; }
 .hello-txt b { font-size: 16px; font-weight: 500; line-height: 1.15; overflow-wrap: anywhere; }
 .hello-txt small { margin-top: 2px; font-size: 13px; opacity: .8; }
+.hello-txt .hello-help { margin-top: 4px; opacity: .95; }
 
 .contact { position: fixed; right: 2.8vw; bottom: 1.2vh; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0;
   font-size: 14px; }

@@ -30,6 +30,10 @@ async function submit() {
         <button type="submit" :disabled="busy">{{ busy ? 'Проверяю…' : 'Открыть' }}</button>
       </form>
       <p v-if="progress.sync === 'error' && progress.syncMessage" class="gate-err">{{ progress.syncMessage }}</p>
+      <p class="gate-help">
+        По вопросам доступа пишите в Telegram:
+        <a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a>
+      </p>
       <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
     </div>
   </div>
@@ -49,6 +53,9 @@ async function submit() {
 .gate-form button { padding: 0 22px; font: inherit; font-weight: 600; color: #fff; background: var(--accent, var(--gold)); border: 0; border-radius: 12px; cursor: pointer; }
 .gate-form button:disabled { opacity: .6; cursor: default; }
 .gate-card .gate-err { color: var(--bad, #a4402f); font-weight: 600; }
+.gate-card .gate-help { margin-top: 16px; font-size: 14px; }
+.gate-help a { color: var(--gold); font-weight: 600; }
+.gate-help a:hover { text-decoration: underline; }
 .gate-back { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 600; color: var(--gold); }
 .gate-back:hover { text-decoration: underline; }
 </style>
