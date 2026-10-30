@@ -25,7 +25,7 @@
   `new_design`; он заменил прежние вес 500, засечки и фото уголком, см. `docs/home-and-theme.md`); название платформы **우리말**
   (в меню, на главной, во вкладке браузера); **никаких смайликов в строке тренажёров** и хлеба 🍞 в меню; картинки заметок и
   раздел «Картинки» это **два разных раздела** (у картинки есть назначение `kind`); вместо встроенных окон `confirm()`/`alert()`
-  только свои модальные окна; **сброс прогресса и создание гостевого токена защищены повторным вводом токена**; фраза дня на главной
+  только свои модальные окна; уведомления остаются своими (`useToastStore`), `vue-toastification` владелец отклонил; **сброс прогресса и создание гостевого токена защищены повторным вводом токена**; фраза дня на главной
   меняется при каждом обновлении; значок вкладки — розовая ✳ (`public/favicon.svg`); после обновления страницы пользователь остаётся на той же странице, вкладке и прокрутке.
 - **Правила кода, которые нельзя нарушать:**
   - запросы к серверу только через `fetchT` (`src/lib/http.ts`, таймаут 15 с, файлы 120 с), не через голый `fetch`; заголовок `Authorization: Bearer ${progress.bearer}` (не `progress.token`):
@@ -98,17 +98,17 @@ src/assets/        base.css (токены --bg --ink --muted --gold), study.css 
                    fonts.css, home/ (Archivo и Noto Sans KR), about/ (скриншоты для «О платформе», webp)
 src/components/    AuthGate (поле токена), Avatar, StudyTimer (таймер занятий), ToastHost (плашки), ConfirmDialog (подтверждение и ввод токена),
                    SearchWindow (окно поиска по платформе, кнопка справа вверху, Ctrl/⌘ + K)
-src/components/korean/   SectionHead, GrammarModal, LetterCard, MatchGame, TypingQuiz, SentenceBreakdown, DashboardHome (главная раздела)
-src/components/cabinet/  вкладки кабинета: Overview, Repeat, Week (+ PlansCalendar), History, Notes (+ NoteModal, NoteImages, TagInput), Images, Db, Logs, Settings (+ BackupBlock, TwoFaBlock, GuestAccess), ReviewSession
+src/components/korean/   Breadcrumbs (хлебные крошки), SectionHead, TaskSession (общая серия заданий), GrammarModal, LetterCard, MatchGame, TypingQuiz, SentenceBreakdown, DashboardHome (главная раздела)
+src/components/cabinet/  вкладки кабинета: Overview, Repeat, Week (+ PlansCalendar), History, Notes (+ NoteModal, NoteImages, TagInput), Images, Db, Logs, Settings (+ KeysBlock «Клавиши», BackupBlock, TwoFaBlock, GuestAccess), ReviewSession
 src/components/charts/   LineChart, ChartTip; src/components/garden/ GardenTab, CollectionTab
 src/components/home/     HomeGuideDrawer (шторка «Что здесь есть»)
 src/views/         HomeView (главная), AboutView («О платформе»), GameView, korean/*View (+ KoreanLayout — боковое меню раздела)
-src/composables/   useGrammarModal, useConfirm (askConfirm, askToken), useSearchWindow, usePersisted (состояние через обновление страницы), useHome, useLastVisited, useTwoFa, usePublicCard, useShareCard, useAllTags, useChartTip
+src/composables/   useQueryParam (состояние страницы в адресе `?имя=`, каждая смена — запись истории), useGrammarModal, useConfirm (askConfirm, askToken), useSearchWindow, usePersisted (состояние через обновление страницы), useHome, useLastVisited, useTwoFa, usePublicCard, useShareCard, useAllTags, useChartTip
 src/stores/        progress.ts (прогресс, профиль, обложка, время занятий, вход по токену), notes.ts, images.ts, plans.ts, todaySets.ts, timer.ts, toast.ts
 tests/             *.test.mjs (node --test), _load.mjs (загрузчик TS-модулей)
 docs/              подробности по темам (см. таблицу ниже)
 server/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, plans, sets, public, logs, mail, admin, events), свои package.json и node_modules; data/ в .gitignore
-src/lib/           guestStorage.ts (гостевой режим: localStorage в памяти), http.ts (fetchT с таймаутом), tags.ts, shareCard.ts
+src/lib/           fx.ts (анимации тренажёров на gsap: cascade, pop, shake, drawLine, burst, follow/springBack; учитывает «уменьшить движение»), shortcuts.ts (свои сочетания клавиш и список занятых), guestStorage.ts (гостевой режим: localStorage в памяти), http.ts (fetchT с таймаутом), tags.ts, shareCard.ts
 src/data/          alphabet.ts (буквы, слоги), phrases.ts (фразы дня), seo.ts (заголовки, описания, индексация страниц), history.ts (история изменений), about.ts (слайды «О платформе»), guide.ts (шторка «Что здесь есть»),
                    levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели), garden.ts, charts.ts, dbView.ts
 src/data/korean/   dictionary.ts, words.ts, grammar.ts, pages.ts, render.ts, sections.ts, tasks.ts, forms.ts,
@@ -152,10 +152,18 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 - Тесты, которым нужен `_load.mjs`, обязаны вызывать `after(close)`, иначе `npm test` зависает. Таймеры в тестах двигай по
   секунде (`mock.timers.tick(1000)` в цикле): за один большой прыжок таймер занятий засчитает не больше 10 секунд.
 
-## Что нового (2026-10-30) и где искать
+## Что нового и где искать
+
+**2026-10-31** (подробно: `docs/changelog.md`, «2026-10-31»):
+- **Хлебные крошки** над страницей (`data/korean/crumbs.ts` + `Breadcrumbs.vue` в `KoreanLayout.vue`); вкладки кабинета `?tab=`, «Сегодня» `?tab=list|history`, режим тренажёров `?mode=type` лежат в адресе (`useQueryParam`). Новая страница или вкладка в разделе: допиши её в `crumbs.ts` (тест `tests/crumbs.test.mjs` следит, что у каждой страницы есть крошки).
+- **Клавиши**: «Настройки → Клавиши», ⌘/Ctrl + клавиша для пунктов меню и вкладок кабинета, в базе `settings.keys` (сервер `progress.service.ts`). Занятое нельзя трогать (правило выше).
+- **Перетаскивание и анимации**: `MatchGame.vue` («Найди пару»: линия за курсором), `SyllablesView.vue` (пакет `vuedraggable`), `TaskSession.vue` (вариант тянется на вопрос: «Частицы», «Похожие», «Перевод», «5 минут», «Мои ошибки»). Не сделано: «Собери предложение» в игре (`src/game/engine.ts`, чистый DOM): нужен `sortablejs` или переписывание игры на Vue, решает владелец. Уведомления остаются свои (`useToastStore`), `vue-toastification` владелец отклонил.
+- **Видео-обзор** `public/demo.webm` (10:15, 24 МБ, единственная копия) открывается на главной само при заходе (`HomeView.vue`, `sessionStorage['demo_auto_shown']`, при запрете звука стартует без звука). Как снималось, если понадобится заново: Playwright `recordVideo` (пакет лежит в кэше npx, `~/.npm/_npx/*/node_modules/playwright`) на **боевой сборке** (`vite build --outDir <tmp>` + `vite preview`, не дев-сервер: у дев-сервера свой значок DevTools), демо-сервер (`DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node server/dist/main.js`, `API_PORT=3002`), переходы через `router.push` без перезагрузок, прокрутка через `requestAnimationFrame` до края страницы, перед каждым нажатием возврат наверх. Глюк захвата Chromium: на «Числах» и «Примерах» кадры с серым слоем и увеличенными карточками (сам сайт ни при чём): такие куски надо снять отдельно в чистом контексте и вклеить через `ffmpeg xfade`; склейка и звук (трек `~/Downloads/na_video.mp3` с 35-й секунды, копии через `acrossfade`) собираются одной командой ffmpeg, кодирование VP9 около 10–20 минут. Кадры проверять контактным листом (`fps=1/N,tile=`).
+
+**2026-10-30:**
 
 Новые страницы: `/korean/quick`, `mistakes`, `marks`, `particles`, `pairs`, `translate`, `syllables`, `forms` (все закрыты токеном, меню `group: 'extra'`). «Сегодня» теперь с вкладками «Сегодня / Чек-лист / История». Кабинет: календарь тепла, рекорды, настроение, прошлые недели, «Мой путь»; «Настройки» вкладками. Тёмная тема (`lib/theme.ts`), режим «только задание» (F), приложение (PWA, `public/sw.js`), письмо-напоминание (сервер `reminders/`), видео-обзор на главной (`public/demo.webm`). Подробный список с файлами: `docs/progress.md` («Что добавлено 2026-10-30»), хронология: `docs/changelog.md`. План и статусы: `ideas/PLAN.md` (из 26 пунктов сделано 18; осталось: приложение для Mac как оболочка, 7, 10, 12, 16, 22, 23, 25, 26).
-Ещё не сделано из этой работы: слайды «О платформе» для новых страниц (пачкой в конце, см. `PLAN.md`, «Не забыть»). Для видео и PWA нужен обычный `ffmpeg` (`brew install ffmpeg`, сборка Playwright без звука). Тест `seo.test.mjs` ограничивает файлы в `public/` 600 КБ, кроме `demo.webm`. Видео переснять с нуля позже (экран дёргается), пункт в `PLAN.md`.
+Ещё не сделано из этой работы: слайды «О платформе» для новых страниц (пачкой в конце, см. `PLAN.md`, «Не забыть»). Для видео и PWA нужен обычный `ffmpeg` (`brew install ffmpeg`, сборка Playwright без звука). Тест `seo.test.mjs` ограничивает файлы в `public/` 600 КБ, кроме `demo.webm`.
 
 ## Что осталось / идеи (ещё не сделаны)
 
@@ -170,4 +178,4 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 - В макете `new_design2.html` есть приветствие с именем («Привет, Никита»), на главную не взято.
 - Хостинг: сайт и сервер выложены и проверены (2026-10-30, см. итог в `docs/changelog.md`). Осталось владельцу: CSP для сайта, служба `progress` не от root
   с ограничениями systemd, брандмауэр, SSH по ключу, fail2ban, копии вне сервера, Яндекс.Вебмастер и Google Search Console (всё в `docs/hosting.md`).
-- Всё сделано до 2026-10-30 закоммичено и отправлено (шесть коммитов `19ebffe…d2467d7`: сервер, инфраструктура сайта, SEO и «О платформе», кабинет, дизайн и поиск, документация).
+- Всё сделано до 2026-10-31 закоммичено и отправлено (последние коммиты: видео-обзор, автооткрытие, журнал; см. `git log`). Слайды «О платформе» ещё не показывают крошки, клавиши и перетаскивание: обновить пачкой (`about.ts`, скриншоты, README).
