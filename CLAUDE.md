@@ -39,6 +39,8 @@
   - окна и просмотрщики (`position: fixed`) выноси в `<Teleport to="body">`: внутри карточки с `transform` они «прилипают» к ней и
     дёргаются при наведении (так уже было с заметками);
   - **изменил страницу или добавил новую → обнови слайд и скриншот в «О платформе»** (`src/data/about.ts`, `src/assets/about/`);
+  - **поменял слайды «О платформе» (`data/about.ts`) → поменяй и галерею в `README.md`** (заголовки, описания, картинки идут один в один, `tests/readme.test.mjs` следит);
+  - **сделал идею из `ideas/`** → статус в `ideas/ROADMAP.md`, обновить `ideas/CURRENT.md`, запись в `docs/changelog.md` (`tests/ideas.test.mjs` следит за шаблоном и номерами);
   - **добавил открытую страницу → допиши её в `src/data/seo.ts` (заголовок до 75 символов, описание 60–190) и в `public/sitemap.xml`**;
     закрытую токеном страницу пометь `noindex` и добавь `Disallow` в `public/robots.txt` (`tests/seo.test.mjs` проверяет совпадение);
     открытую страницу добавь ещё и в `scripts/prerender.mjs` (`NAV`, `H1`, `BODY`): `npm run build` на выходе кладёт готовый HTML в `dist/<адрес>/index.html`
@@ -62,8 +64,9 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 шрифты самохостятся (`src/assets/fonts.css`). Скрипты: `npm run dev`, `npm run build` (type-check + сборка),
 `npm run preview`, `npm test` (собирает сервер и запускает все тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
 **Сервер** (`server/`, NestJS + SQLite, свои зависимости): `npm run server:build`, `npm run server`, `npm run server:dev`;
-подробности в `docs/server.md`. Зависимости сервера ставить только внутри `server/` (`npm --prefix server ci`): корневой
-`node_modules` общий с другим проектом.
+подробности в `docs/server.md`. Зависимости сервера ставить только внутри `server/` (`npm --prefix server ci`). Корневой
+`node_modules` пока ссылка на папку другого проекта: **пакеты в сайт ставить можно (решение владельца 2026-10-30), но сначала один раз отвязать
+ссылку** (`rm node_modules && npm install`, потом `npm test` и `npm run build`), иначе `npm install` испортит соседний проект; см. `ideas/PRINCIPLES.md`.
 
 **Хостинг:** владелец сам заходит на сервер, делает `git pull`, `npm run build` и, если менялся `server/`,
 `cd server && npm ci && npm run build` с `systemctl restart progress` (**сервер обязательно перезапускать**, иначе сайт новый, а сервер старый); Caddy отдаёт `dist`, сервер работает как служба systemd.
@@ -119,10 +122,11 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 | `docs/server.md` | сервер NestJS + SQLite: таблицы базы, API, защита, как запускать, смотреть базу и тестировать |
 | `docs/hosting.md` | сервер на хостинге, Caddy, служба `progress`, усиление защиты (systemd, Caddy, брандмауэр), команды для владельца |
 | `docs/changelog.md` | что и когда сделано, чек-лист обновления сервера |
+| `ideas/` | **идеи на будущее** (160 штук, по темам, с размером и ценностью), `CURRENT.md` (что уже есть), `ROADMAP.md` (порядок работ), `PRINCIPLES.md` (правила) |
 
 ## Как проверять изменения
 
-- Тесты: `npm test` (224 теста, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (232 теста, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
@@ -149,6 +153,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
   не сделана (нужен токен интеграции); удобнее вид «Новые» в Notion.
 - Переводы предложений (`translations.ts`) мои, учитель их не проверял.
 - Идеи по главной: «слово дня» с переворотом карточки, подсказка «пора повторить N слов», быстрое задание прямо на главной.
+- Идеи и порядок работ лежат в `ideas/` (пакеты ставить можно, но сначала отвязать `node_modules`, см. `ideas/PRINCIPLES.md`).
 - В макете `new_design2.html` есть приветствие с именем («Привет, Никита»), на главную не взято.
 - Хостинг: сайт и сервер выложены и проверены (2026-10-30, см. итог в `docs/changelog.md`). Осталось владельцу: CSP для сайта, служба `progress` не от root
   с ограничениями systemd, брандмауэр, SSH по ключу, fail2ban, копии вне сервера, Яндекс.Вебмастер и Google Search Console (всё в `docs/hosting.md`).
