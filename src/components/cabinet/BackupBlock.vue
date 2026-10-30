@@ -84,7 +84,7 @@ const checking = ref(false)
 async function check() {
   checking.value = true
   try {
-    const res = await fetchT('/api/backup/test', { method: 'POST', headers: { Authorization: `Bearer ${progress.bearer}` } })
+    const res = await fetchT('/api/backup/test', { method: 'POST', headers: { Authorization: `Bearer ${progress.bearer}` } }, 60_000)
     if (!res.ok) throw new Error(`сервер ответил ${res.status}`)
     const r = (await res.json()) as { disk: string; mail: string; message: string }
     const ok = [r.disk === 'ok' ? 'Яндекс Диск (файл «проверка.txt» в папке)' : '', r.mail === 'ok' ? 'почта (проверьте ящик)' : ''].filter(Boolean)
@@ -126,8 +126,10 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
         {{ [status.archive.targets.disk ? 'на Яндекс Диск' : '', status.archive.targets.mail ? 'на почту' : ''].filter(Boolean).join(' и ') || 'никуда (не настроено)' }}.
         Сам раз в неделю, а здесь можно запустить в любой день.</p>
       <ul v-if="status.archive.problems.length" class="bk-prob"><li v-for="p in status.archive.problems" :key="p">⚠ {{ p }}</li></ul>
-      <button type="button" class="plain" :disabled="starting || job?.running || !!status.archive.problems.length" @click="run">{{ job?.running ? 'Идёт…' : 'Сделать архив и отправить' }}</button>
-      <button type="button" class="plain" :disabled="checking || job?.running" @click="check">{{ checking ? 'Проверяю…' : 'Проверить отправку' }}</button>
+      <div class="pg-btns">
+        <button type="button" :disabled="starting || job?.running || !!status.archive.problems.length" @click="run">{{ job?.running ? 'Идёт…' : 'Сделать архив и отправить' }}</button>
+        <button type="button" class="plain" :disabled="checking || job?.running" @click="check">{{ checking ? 'Проверяю…' : 'Проверить отправку' }}</button>
+      </div>
       <div v-if="job?.running" class="bk-prog" role="progressbar" :aria-valuenow="job.percent" aria-valuemin="0" aria-valuemax="100">
         <div class="bk-bar"><i :style="{ width: job.percent + '%' }"></i></div>
         <ol class="bk-steps">
@@ -152,7 +154,8 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
 </template>
 
 <style>
-.study .bk-arc button { justify-self: start; }
+.study .bk-arc .pg-btns { margin-top: 0; }
+.study .bk-arc .pg-btns button:disabled { opacity: .5; cursor: default; }
 .study .bk-arc { display: grid; gap: 10px; justify-items: start; margin-bottom: 14px; }
 .study .bk-sub { margin: 4px 0 0; font-size: 14px; }
 .study .bk-prob { margin: 0; padding-left: 18px; color: #b27300; font-weight: 600; }

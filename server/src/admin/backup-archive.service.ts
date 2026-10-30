@@ -283,39 +283,41 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
   /** Проверка каналов без сборки архива: маленький файл на Диск и короткое письмо. Пароль архива не нужен. */
   async test() {
-    const out = { disk: 'off' as 'ok' | 'off' | 'fail', mail: 'off' as 'ok' | 'off' | 'fail', message: '' }
-    const notes: string[] = []
-    if (this.diskOn()) {
-      const tmp = path.join(OUT, 'check.txt')
-      try {
-        mkdirSync(OUT, { recursive: true, mode: 0o700 })
-        const body = `Проверка отправки ${new Date().toISOString()}. Файл можно удалить.\n`
-        writeFileSync(tmp, body)
-        const dir = this.folder()
-        const mk = await fetch(this.dav(dir), { method: 'MKCOL', headers: { Authorization: this.auth() }, signal: AbortSignal.timeout(30_000) })
-        if (mk.status === 401) throw new Error('Яндекс не принял логин или пароль приложения')
-        const res = await fetch(this.dav(`${dir}/проверка.txt`), { method: 'PUT', headers: { Authorization: this.auth() }, body, signal: AbortSignal.timeout(30_000) })
-        if (res.status === 401) throw new Error('Яндекс не принял логин или пароль приложения')
-        if (!res.ok) throw new Error('Диск ответил ' + res.status)
-        out.disk = 'ok'
-      } catch (e) {
-        out.disk = 'fail'
-        notes.push('Диск: ' + (e as Error).message)
-      } finally {
-        rmSync(tmp, { force: true })
-      }
-    }
-    if (this.mailOn()) {
-      try {
-        await this.mail.send(this.mailTo(), '우리말: проверка отправки', 'Это проверочное письмо из «Настроек». Если оно пришло, почта для копий настроена верно.')
-        out.mail = 'ok'
-      } catch (e) {
-        out.mail = 'fail'
-        notes.push('Почта: ' + (e as Error).message.slice(0, 120))
-      }
-    }
-    out.message = notes.join('; ') || (out.disk === 'off' && out.mail === 'off' ? 'некуда отправлять: задайте YADISK_LOGIN и YADISK_PASSWORD или настройте почту' : '')
+    const disk = this.diskOn() ? this.testDisk() : Promise.resolve('off')
+    const mail = this.mailOn() ? this.testMail() : Promise.resolve('off')
+    // каналы проверяются одновременно: зависший Диск не задерживает письмо
+    const [d, m] = await Promise.all([disk, mail])
+    const notes = [d, m].filter(x => x !== 'ok' && x !== 'off')
+    const out = { disk: d === 'ok' || d === 'off' ? d : 'fail', mail: m === 'ok' || m === 'off' ? m : 'fail', message: '' }
+    out.message = notes.join('; ') || (d === 'off' && m === 'off' ? 'некуда отправлять: задайте YADISK_LOGIN и YADISK_PASSWORD или настройте почту' : '')
+    if (notes.length) console.error('проверка отправки копий:', out.message)
     return out
+  }
+
+  /** 'ok' или текст ошибки. */
+  private async testDisk() {
+    try {
+      const dir = this.folder()
+      const body = `Проверка отправки ${new Date().toISOString()}. Файл можно удалить.\n`
+      const mk = await fetch(this.dav(dir), { method: 'MKCOL', headers: { Authorization: this.auth() }, signal: AbortSignal.timeout(20_000) })
+      if (mk.status === 401) return 'Диск: Яндекс не принял логин или пароль приложения'
+      const res = await fetch(this.dav(`${dir}/проверка.txt`), { method: 'PUT', headers: { Authorization: this.auth() }, body, signal: AbortSignal.timeout(20_000) })
+      if (res.status === 401) return 'Диск: Яндекс не принял логин или пароль приложения'
+      if (!res.ok) return 'Диск ответил ' + res.status
+      return 'ok'
+    } catch (e) {
+      const err = e as Error
+      return 'Диск: ' + (err.name === 'TimeoutError' ? 'нет ответа от webdav.yandex.ru за 20 секунд' : err.message.slice(0, 120))
+    }
+  }
+
+  private async testMail() {
+    try {
+      await this.mail.send(this.mailTo(), '우리말: проверка отправки', 'Это проверочное письмо из «Настроек». Если оно пришло, почта для копий настроена верно.')
+      return 'ok'
+    } catch (e) {
+      return 'Почта: ' + (e as Error).message.slice(0, 120)
+    }
   }
 
   /** Оставляет на Диске последние KEEP_DISK архивов. */
