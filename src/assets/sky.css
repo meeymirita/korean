@@ -63,7 +63,7 @@
 .study-shell.sky .study-back { margin: 0 8px 14px; color: var(--muted); font-weight: 600; font-size: 12px; }
 .study-shell.sky .study-back:hover { color: var(--pink); text-decoration: none; }
 .study-shell.sky .study-links { margin-top: 0; gap: 7px; }
-.study-shell.sky .study-links a { gap: 12px; padding: 11px 13px; border-radius: 15px; color: var(--muted); font-weight: 500; transition: .2s; }
+.study-shell.sky .study-links a { gap: 12px; padding: 7px 19px; border-radius: 15px; color: var(--muted); font-weight: 500; transition: all .2s; }
 .study-shell.sky .study-links a:hover, .study-shell.sky .study-links a.router-link-active, .study-shell.sky .study-links a.active {
   padding-left: 13px; color: var(--pink); background: linear-gradient(100deg, #ffe0f5, #ece5ff); }
 .study-shell.sky .study-links .line { display: none; }
