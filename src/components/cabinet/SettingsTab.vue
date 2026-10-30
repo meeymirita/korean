@@ -321,7 +321,7 @@ async function refreshPublic() {
 </template>
 
 <style>
-.study .st-tabs { display: flex; flex-wrap: wrap; gap: 4px; width: fit-content; max-width: 100%; margin: 6px 0 14px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
-.study .st-tabs button { padding: 8px 16px; font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 0; border-radius: 11px; cursor: pointer; }
+.study .st-tabs { display: flex; flex-wrap: wrap; gap: 4px; width: fit-content; max-width: 100%; margin: 21px 0 14px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.study .st-tabs button { padding: 10px 21px; font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 0; border-radius: 11px; cursor: pointer; }
 .study .st-tabs button.on { color: #fff; background: var(--gold); }
 </style>
