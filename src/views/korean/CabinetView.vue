@@ -91,7 +91,6 @@ const tabs = computed<[Tab, string][]>(() => [
           <h1>{{ section.title }}</h1>
           <div class="sub">{{ section.sub }}</div>
         </div>
-        <div class="cb-lvl">{{ progress.info.level }}<small>уровень</small></div>
       </div>
       <div class="cb-head">
         <div class="cb-who">
@@ -104,6 +103,7 @@ const tabs = computed<[Tab, string][]>(() => [
         </div>
         <RouterLink to="/game" class="cb-play">🎮 Играть</RouterLink>
       </div>
+      <div class="cb-lvl">{{ progress.info.level }}<small>уровень</small></div>
     </header>
 
     <p v-if="backupNote" class="cb-note" role="status">

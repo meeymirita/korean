@@ -284,9 +284,11 @@
 .study .cb-cover h1 { margin: 8px 0 0; font-size: clamp(30px, 4.4vw, 44px); line-height: 1.05; }
 .study .cb-cover .sub { margin-top: 8px; font-size: 14px; opacity: .85; }
 .study .cb-cover-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
-.study .cb-lvl { font-size: clamp(36px, 5vw, 56px); font-weight: 800; line-height: 1; text-align: right; font-variant-numeric: lining-nums; }
-.study .cb-lvl small { display: block; font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
-.study .cb-cover .cb-head { margin-top: 0; }
+.study .cb-lvl { position: absolute; right: 22px; bottom: 22px; min-width: 84px; padding: 10px 18px 8px; font-size: clamp(30px, 4vw, 44px); font-weight: 800; line-height: 1; text-align: center; font-variant-numeric: lining-nums;
+  color: var(--ink); background: rgba(255, 255, 255, .86); border: 1px solid #fff; border-radius: 18px; box-shadow: 0 8px 22px rgba(30, 36, 100, .25); backdrop-filter: blur(6px); }
+.study .cb-lvl small { display: block; margin-top: 4px; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 56, .78); border-color: rgba(255, 255, 255, .18); }
+.study .cb-cover .cb-head { margin-top: 0; padding-right: 120px; }
 .study .cb-cover .cb-who b { font-family: var(--serif); font-size: 24px; font-weight: 700; }
 .study .cb-cover .cb-who small { color: rgba(255, 255, 255, .85); }
 .study .cb-cover .avatar { border: 2px solid rgba(255, 255, 255, .8); background: rgba(255, 255, 255, .2); }
@@ -461,3 +463,4 @@
 .study .rs-pace { margin: 0; font-size: 14px; color: var(--muted); }
 /* на телефоне баннер ниже, иначе он занимает весь экран */
 @media (max-width: 860px) { .study .cb-cover { min-height: 250px; } }
+@media (max-width: 560px) { .study .cb-cover .cb-head { padding-right: 0; } .study .cb-lvl { top: 16px; bottom: auto; right: 16px; padding: 6px 12px; min-width: 0; } }
