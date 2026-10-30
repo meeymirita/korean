@@ -111,3 +111,7 @@ html[data-theme='dark'] .study.sky.game {
   --shadow: 0 30px 60px -34px rgba(0, 0, 0, .7);
 }
 html[data-theme='dark'] .game .over { background: rgba(5, 6, 20, .72); }
+html[data-theme='dark'] .study .ht-c.h1 { background: rgba(160, 140, 255, .28); }
+html[data-theme='dark'] .study .ht-c.h2 { background: rgba(160, 140, 255, .5); }
+html[data-theme='dark'] .study .ht-c.h3 { background: rgba(160, 140, 255, .75); }
+html[data-theme='dark'] .study .ht-c.h4 { background: #b8a8ff; }

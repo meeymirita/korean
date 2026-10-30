@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
+import HeatMap from '@/components/cabinet/HeatMap.vue'
 import { answersByDay } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { useShareCard } from '@/composables/useShareCard'
@@ -58,22 +59,6 @@ const weak = computed(() =>
     .slice(0, 12),
 )
 
-/* календарь: последние 8 недель, неделя с понедельника */
-const WEEKS = 8
-const calendar = computed(() => {
-  const end = new Date()
-  const start = new Date(end)
-  start.setDate(start.getDate() - ((end.getDay() + 6) % 7) - (WEEKS - 1) * 7)
-  const cells: { key: string; n: number | null; future: boolean }[] = []
-  for (let i = 0; i < WEEKS * 7; i++) {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    const key = dayKey(d)
-    cells.push({ key, n: progress.data.days[key] ?? null, future: d > end })
-  }
-  return cells
-})
-const heat = (n: number | null) => (n === null ? 0 : n === 0 ? 1 : n < 10 ? 2 : n < goal.value ? 3 : 4)
 
 const achievements = computed(() =>
   ACHIEVEMENTS.map(a => {
@@ -135,14 +120,9 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       </div>
     </div>
 
-    <h2 class="today-h">Дни занятий <small>последние 8 недель</small></h2>
+    <h2 class="today-h">Дни занятий <small>последние полгода</small></h2>
     <div class="pg-days">
-      <div class="pg-cal">
-        <div class="pg-wd"><span>пн</span><span></span><span>ср</span><span></span><span>пт</span><span></span><span>вс</span></div>
-        <div class="pg-grid">
-          <span v-for="c in calendar" :key="c.key" class="pg-day" :class="['h' + heat(c.n), { future: c.future }]" :title="`${c.key}: ${c.n ?? 0} верных`"></span>
-        </div>
-      </div>
+      <HeatMap />
       <LineChart class="pg-days-ch" title="Ответы за 30 дней" :labels="ans.map(a => a.label)" :series="answerSeries" unit="отв." />
     </div>
 

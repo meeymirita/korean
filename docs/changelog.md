@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, календарь тепла
+
+- `data/heat.ts` (`heatWeeks`, `heatLevel`), `HeatMap.vue` вместо календаря на 8 недель в «Обзоре» (26 недель, цель дня задаёт уровни). Тест `tests/heat.test.mjs`.
+
 ## 2026-10-30, закладки
 
 - `settings.marks` (`w:слово`, `g:id`, до 500) в клиенте (`progress.ts`: `isMarked`, `toggleMark`) и на сервере (`progress.service.ts`, операция `settings` с `marks`), `MarkStar.vue`, страница `/korean/marks`. Тесты в `progress.test.mjs` и `progress-server.test.mjs`. **Сервер перезапустить.**
