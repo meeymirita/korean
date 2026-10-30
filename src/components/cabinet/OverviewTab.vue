@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import BarChart from '@/components/charts/BarChart.vue'
 import LineChart from '@/components/charts/LineChart.vue'
-import RadarChart from '@/components/charts/RadarChart.vue'
-import { answersByDay, minutesByDay, reviewForecast, topicShares } from '@/data/charts'
+import { answersByDay } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { useShareCard } from '@/composables/useShareCard'
 import { MAX_LEVEL } from '@/data/levels'
@@ -31,9 +29,6 @@ const answerSeries = computed(() => [
   { name: 'Всего ответов', values: ans.value.map(a => a.all), color: '#1f93cf' },
   { name: 'Верных', values: ans.value.map(a => a.ok), color: '#7a63e8' },
 ])
-const minutes = computed(() => minutesByDay(progress.data, 14, new Date(), timer.today))
-const shares = computed(() => topicShares(progress.data))
-const forecast = computed(() => reviewForecast(progress.data, 7))
 const goal = computed(() => progress.goal)
 
 const knownCount = computed(() => D.filter(d => progress.status(d.k) === 'known').length)
@@ -139,11 +134,14 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     </div>
 
     <h2 class="today-h">Дни занятий <small>последние 8 недель</small></h2>
-    <div class="pg-cal">
-      <div class="pg-wd"><span>пн</span><span></span><span>ср</span><span></span><span>пт</span><span></span><span>вс</span></div>
-      <div class="pg-grid">
-        <span v-for="c in calendar" :key="c.key" class="pg-day" :class="['h' + heat(c.n), { future: c.future }]" :title="`${c.key}: ${c.n ?? 0} верных`"></span>
+    <div class="pg-days">
+      <div class="pg-cal">
+        <div class="pg-wd"><span>пн</span><span></span><span>ср</span><span></span><span>пт</span><span></span><span>вс</span></div>
+        <div class="pg-grid">
+          <span v-for="c in calendar" :key="c.key" class="pg-day" :class="['h' + heat(c.n), { future: c.future }]" :title="`${c.key}: ${c.n ?? 0} верных`"></span>
+        </div>
       </div>
+      <LineChart class="pg-days-ch" title="Ответы за 30 дней" :labels="ans.map(a => a.label)" :series="answerSeries" unit="отв." />
     </div>
 
     <h2 class="today-h">Слова по темам</h2>
@@ -158,14 +156,6 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       </div>
     </div>
     <p class="pg-legend"><i class="known"></i> выучено <i class="learning"></i> в процессе</p>
-
-    <h2 class="today-h">Графики</h2>
-    <div class="ch-grid2">
-      <LineChart title="Ответы за 30 дней" :labels="ans.map(a => a.label)" :series="answerSeries" unit="отв." />
-      <BarChart title="Время занятий за 14 дней" :points="minutes" unit="мин" color="#7a63e8" />
-      <RadarChart title="Где сильнее: выученные слова по темам" :items="shares" />
-      <BarChart title="Что придёт на повторение: ближайшие 7 дней" :points="forecast" unit="слов" color="#1f93cf" />
-    </div>
 
     <h2 class="today-h">Над чем стоит поработать</h2>
     <div v-if="weak.length" class="pg-weak">

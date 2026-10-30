@@ -88,7 +88,8 @@ export class TwoFaService {
     const code = String(randomInt(0, 10_000)).padStart(4, '0')
     try {
       await this.mail.send(email, `Код для входа: ${code}`, `Код подтверждения для 우리말: ${code}\n\nОн действует 10 минут. Если вы не входили на сайт, просто проигнорируйте письмо и не называйте код никому.`)
-    } catch {
+    } catch (e) {
+      console.error(`Письмо с кодом не отправилось (${kind}): ${(e as Error).message}`) // видно во вкладке «Журналы»: чаще всего неверный пароль приложения или не включён SMTP
       this.events.log('2fa_mail_failed', kind)
       throw new ServiceUnavailableException({ error: 'mail failed' })
     }

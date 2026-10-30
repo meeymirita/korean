@@ -158,7 +158,9 @@ export async function renderCard(spec: CardSpec): Promise<Blob> {
 export async function shareBlob(blob: Blob, filename: string, text: string): Promise<'shared' | 'downloaded' | 'cancelled'> {
   const file = new File([blob], filename, { type: 'image/png' })
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
-  if (nav.canShare?.({ files: [file] })) {
+  // меню «Поделиться» осталось для телефона и планшета; на компьютере браузер кладёт файл во временную папку, там проще скачать
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+  if (touch && nav.canShare?.({ files: [file] })) {
     try {
       await nav.share({ files: [file], text })
       return 'shared'
