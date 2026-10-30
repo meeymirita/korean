@@ -87,6 +87,7 @@ const router = createRouter({
       ],
     },
     { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
+    { path: '/history', name: 'history', component: () => import('@/views/HistoryView.vue') },
     { path: '/game', name: 'game', component: () => import('@/views/GameView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

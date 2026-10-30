@@ -27,6 +27,7 @@ const word = D[Math.floor(Math.random() * D.length)]!
         </div>
         <nav class="nav">
           <RouterLink to="/about">О платформе</RouterLink>
+          <RouterLink to="/history" class="hide-sm">История изменений</RouterLink>
           <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="hide-sm">{{ l.title }}</RouterLink>
           <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
         </nav>
@@ -59,6 +60,7 @@ const word = D[Math.floor(Math.random() * D.length)]!
         </div>
 
         <div class="more">
+          <RouterLink to="/history" class="link show-sm">История изменений</RouterLink>
           <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
           <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to" class="link">
             {{ m.title }}<span v-if="!progress.unlocked" class="lock">🔒</span>

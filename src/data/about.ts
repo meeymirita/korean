@@ -19,6 +19,13 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     to: '/',
   },
   {
+    id: 'history',
+    img: 'history',
+    title: 'История изменений',
+    text: 'Что и когда добавляли на платформу: этапы от первой версии на Vue до поиска, защиты, заметок, игры и автоматических проверок. Новое сверху.',
+    to: '/history',
+  },
+  {
     id: 'overview',
     img: 'overview',
     title: 'Главная раздела',

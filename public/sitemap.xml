@@ -13,6 +13,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://korean.meeymirita.ru/history</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://korean.meeymirita.ru/korean/home</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>monthly</changefreq>

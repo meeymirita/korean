@@ -35,6 +35,7 @@ const { blk } = await load('/src/data/korean/render.ts')
 const pages = await load('/src/data/korean/pages.ts')
 const { groups } = await load('/src/data/alphabet.ts')
 const { ABOUT_SLIDES } = await load('/src/data/about.ts')
+const { HISTORY } = await load('/src/data/history.ts')
 const { TRANSLATIONS } = await load('/src/data/korean/translations.ts')
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -44,6 +45,7 @@ const plain = s => String(s ?? '').replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(
 const NAV = [
   ['/', 'Главная'],
   ['/about', 'О платформе'],
+  ['/history', 'История изменений'],
   ['/korean/words', 'Словарь'],
   ['/korean/grammar', 'Грамматика'],
   ['/korean/ref/cheat', 'Шпаргалка'],
@@ -58,6 +60,7 @@ const NAV = [
 const H1 = {
   '/': 'Тихое пространство для корейского',
   '/about': 'О платформе',
+  '/history': 'История изменений',
   '/korean/home': 'Поиск по корейскому',
   '/korean/words': 'Корейский словарь',
   '/korean/grammar': 'Корейская грамматика',
@@ -76,6 +79,7 @@ const BODY = {
     `<p>Слова, грамматика, справочник и игры в одном мягком кабинете. Маленькие шаги каждый день приводят к большой уверенности.</p>
      <ul>${NAV.slice(1).map(([p, t]) => `<li><a href="${p}">${esc(t)}</a></li>`).join('')}</ul>`,
   '/about': () => ABOUT_SLIDES.map(s => `<section><h2>${esc(s.title)}</h2><p>${esc(s.text)}</p></section>`).join(''),
+  '/history': () => HISTORY.map(e => `<section><h2>${esc(e.title)}</h2><p><time datetime="${esc(e.date)}">${esc(e.date)}</time> · ${esc(e.summary)}</p><ul>${e.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join(''),
   '/korean/home': () => `<p>Один поиск по словарю, грамматике, справочнику, примерам и буквам корейского.</p>`,
   '/korean/words': () =>
     Object.entries(CATN).map(([id, name]) => `<span>${esc(name)}</span>`).join(' · ') +

@@ -26,6 +26,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
   <main class="about">
     <header class="top">
       <RouterLink to="/" class="brand"><span class="mark">✳</span><span class="name ko">우리말</span><span class="sub">о платформе</span></RouterLink>
+      <RouterLink to="/history" class="hl">История изменений</RouterLink>
       <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
     </header>
 
@@ -67,6 +68,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .brand .mark { font-size: 26px; color: var(--accent2); line-height: 1; }
 .brand .name { font-size: 18px; letter-spacing: 3px; font-weight: 700; }
 .brand .sub { font-size: 10px; letter-spacing: 1.5px; color: var(--soft); text-transform: uppercase; }
+.hl { margin-left: auto; margin-right: 22px; font-size: 12.5px; color: var(--soft); transition: .2s; }
+.hl:hover { color: var(--ink); }
 .enter { padding: 9px 18px; border: 1px solid var(--ink); border-radius: 22px; font-weight: 600; font-size: 12px; transition: .22s; }
 .enter:hover { background: var(--ink); color: #fff; }
 
