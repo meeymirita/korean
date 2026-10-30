@@ -270,7 +270,7 @@ async function refreshPublic() {
     <div v-if="!progress.isGuest && progress.unlocked" class="st-tabs" role="tablist">
       <button v-for="t in SYS_TABS" :key="t.id" role="tab" type="button" :aria-selected="sysTab === t.id" :class="{ on: sysTab === t.id }" @click="sysTab = t.id">{{ t.label }}</button>
     </div>
-    <template v-if="sysTab === 'data'">
+    <div v-show="sysTab === 'data'">
       <div v-if="!progress.isGuest" class="st-block">
         <h3>Где хранится прогресс</h3>
         <p>Прогресс хранится в браузере и сохраняется на сервере сайта. Токен нужен на каждом устройстве один раз.</p>
@@ -292,12 +292,12 @@ async function refreshPublic() {
         </div>
       </div>
       <BackupBlock v-if="progress.unlocked && !progress.isGuest" />
-    </template>
-    <template v-else-if="sysTab === 'access' && progress.unlocked && !progress.isGuest">
+    </div>
+    <div v-if="progress.unlocked && !progress.isGuest" v-show="sysTab === 'access'">
       <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
       <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
-    </template>
-    <template v-else-if="sysTab === 'card'">
+    </div>
+    <div v-show="sysTab === 'card'">
       <div v-if="progress.unlocked && !progress.isGuest" class="st-block">
         <h3>Публичная визитка</h3>
         <p>Страница <b>/me</b> со счётчиком дней, серией, выученными словами и уровнем. По умолчанию закрыта: ссылка работает, только пока включено.</p>
@@ -311,7 +311,7 @@ async function refreshPublic() {
         <label v-if="profile.cover" class="pub-opt"><input v-model="pubCover" type="checkbox" :disabled="pub.busy.value" @change="pub.settings.value?.enabled && refreshPublic()" /> показывать обложку кабинета (она станет доступна всем по ссылке, остальные картинки остаются закрытыми)</label>
         <p class="st-sub">Наружу уходит только: имя, значок, уровень, серия, число выученных слов, ответов и дней в пути. Данные обновляются кнопкой.</p>
       </div>
-    </template>
+    </div>
     <div v-if="progress.isGuest" class="st-block">
       <h3>Гостевой режим</h3>
       <p>Вы вошли по временному токену: всё работает, но прогресс нигде не сохраняется и пропадёт, когда вы закроете страницу.</p>

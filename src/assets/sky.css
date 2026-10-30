@@ -51,7 +51,9 @@
 .study.sky .gc:hover, .study.sky .tw-card:hover, .study.sky a.ov-card:hover { border-color: var(--accent); }
 
 /* ---- каркас: стеклянное боковое меню ---- */
-.study-shell.sky { gap: 22px; padding: 18px; grid-template-columns: 240px minmax(0, 1fr); max-width: 1640px; margin: 0 auto; }
+.study-shell.sky { grid-template-columns: 300px minmax(0, 1fr); gap: 22px; max-width: 1640px; margin: 0 auto; padding: 18px;
+  transition: grid-template-columns .3s ease, gap .3s ease, max-width .3s ease; }
+.study-shell.sky .study-main .wrap { transition: max-width .3s ease, padding-top .3s ease; }
 .study-shell.sky .study-side { top: 18px; height: calc(100vh - 36px); padding: 22px 16px; border: 1px solid #fff; border-radius: 24px;
   background: rgba(255, 255, 255, .74); box-shadow: var(--shadow); }
 .study-shell.sky .study-side h1 { font-family: var(--serif); font-weight: 700; font-size: 24px; letter-spacing: 1px; }
@@ -98,15 +100,19 @@
 .study.sky .theme-btn { display: inline-flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
 .study.sky .theme-btn:hover { color: var(--pink); border-color: var(--pink); }
 /* режим «только задание»: меню спрятано, страница на всю ширину */
-.study-shell.sky.focus { grid-template-columns: minmax(0, 1fr); max-width: none; }
-.study-shell.sky.focus .study-main { width: 100%; max-width: 1100px; margin: 0 auto; }
-.study-shell.sky.focus .study-side { display: none; }
+.study-shell.sky.focus { grid-template-columns: 0px minmax(0, 1fr); gap: 0; max-width: 2400px; }
+.study-shell.sky.focus .study-main .wrap { max-width: 2000px; padding-top: 70px; } /* сверху место под кнопку «Меню» */
+.study-shell.sky .study-side { transition: opacity .2s ease, visibility .3s; }
+.study-shell.sky.focus .study-side { min-width: 0; overflow: hidden; opacity: 0; visibility: hidden; pointer-events: none; }
 .study.sky .side-show { position: fixed; top: 14px; left: 18px; z-index: 35; padding: 9px 16px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); background: rgba(255, 255, 255, .92);
   border: 1px solid #fff; border-radius: 99px; box-shadow: 0 8px 22px rgba(100, 87, 170, .2); cursor: pointer; }
 .study.sky .side-show:hover { color: var(--pink); }
-@media (max-width: 860px) { .study.sky .side-show { top: auto; bottom: 18px; left: auto; right: 18px; } }
+@media (max-width: 860px) { .study-shell.sky.focus .study-side { display: none; } .study.sky .side-show { top: auto; bottom: 18px; left: auto; right: 18px; } }
 .study.sky .sw-btn .ic { font-size: 17px; line-height: 1; }
 .study.sky .sw-btn kbd { font: inherit; font-size: 11px; font-weight: 500; color: var(--muted); padding: 2px 7px; border-radius: 7px; background: #eee9ff; }
 /* заголовки страниц не залезают под кнопку */
 .study.sky .page-head, .study.sky .greet, .study.sky .cb-cover-top { padding-right: 150px; }
 @media (max-width: 860px) { .study.sky .sw-btn { top: auto; bottom: 18px; right: auto; left: 18px; } .study.sky .sw-btn kbd { display: none; } .study.sky .page-head, .study.sky .greet, .study.sky .cb-cover-top { padding-right: 0; } }
+
+/* полоса прокрутки не появляется и не исчезает при смене вкладок: страница не дёргается */
+html { scrollbar-gutter: stable; }
