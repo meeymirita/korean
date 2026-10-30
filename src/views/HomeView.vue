@@ -5,10 +5,19 @@ import '@/assets/home/fonts.css'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
+import { installApp, isInstalled } from '@/lib/pwa'
+import { useToastStore } from '@/stores/toast'
 import { HOME_LINKS, HOME_MORE, HOME_PHRASE, HOME_RULE, useHome } from '@/composables/useHome'
 
 const { progress, days, daysWord, hello, due, dueText } = useHome()
 const guide = ref(false)
+const toast = useToastStore()
+const installed = isInstalled()
+/** Окно установки браузера; если браузер его не даёт (Safari, iPhone), подсказываем, где искать. */
+async function install() {
+  if (await installApp()) toast.ok('Приложение установлено')
+  else if (!isInstalled()) toast.ok('Chrome и Edge: значок установки в адресной строке. Safari на Mac: «Файл → Добавить в Dock». iPhone: «Поделиться → На экран „Домой“».')
+}
 
 /** Слово дня: другое после каждой перезагрузки страницы. */
 const word = D[Math.floor(Math.random() * D.length)]!
@@ -60,6 +69,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <RouterLink to="/korean/home" class="btn-main">Продолжить <span class="arrow">→</span></RouterLink>
           <button class="link" aria-haspopup="dialog" @click="guide = true">что здесь есть</button>
           <RouterLink to="/korean/cabinet" class="link">{{ hello.title }}</RouterLink>
+          <button v-if="!installed" class="link" @click="install">скачать приложение</button>
         </div>
 
         <RouterLink v-if="due" to="/korean/review" class="due">
