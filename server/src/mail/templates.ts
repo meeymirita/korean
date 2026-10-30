@@ -142,3 +142,44 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
   const text = `${title} (우리말, ${when})\n\n${lead}${textHow}\n\n${alert ? notice : 'Храните пароль архива отдельно от сервера. Подробности: docs/backup.md.'}`
   return { subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
 }
+
+export interface ReminderMailOptions {
+  /** серия дней с верными ответами, оканчивающаяся вчера */
+  streak?: number
+  /** адрес сайта для кнопки */
+  site?: string
+}
+
+/** Письмо-напоминание: сегодня ещё нет ответов, хватит пяти минут. */
+export function reminderMail(o: ReminderMailOptions = {}): Mail {
+  const site = (o.site || 'https://korean.meeymirita.ru').replace(/\/$/, '')
+  const link = `${site}/korean/quick`
+  const streak = o.streak && o.streak > 0 ? o.streak : 0
+  const days = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней')
+  const lead = streak ? `Сегодня ещё не было ни одного ответа. Серия ${streak} ${days(streak)} подряд оборвётся, если не позаниматься. Хватит пяти минут.` : 'Сегодня ещё не было ни одного ответа. Хватит пяти минут: десять заданий вперемешку.'
+  const html = `<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Пора заниматься</title></head>
+<body style="margin:0;padding:0;background:#f1eaff">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(lead)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1eaff"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:24px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#1e2350">
+  <tr><td style="padding:22px 28px;background:#f4e9fd;background-image:linear-gradient(135deg,#f9e8fb,#e7eaff 55%,#fff0f6)">
+    <span style="font-size:24px;color:#6a5cd0;vertical-align:middle">&#10035;</span>
+    <span style="font-size:18px;font-weight:700;letter-spacing:3px;vertical-align:middle;margin-left:8px">우리말</span>
+  </td></tr>
+  <tr><td style="padding:28px 28px 8px">
+    <h1 style="margin:0 0 10px;font-size:24px;line-height:1.2;color:#1e2350">Пора заниматься</h1>
+    <p style="margin:0;font-size:15px;line-height:1.6;color:#6c70a8">${esc(lead)}</p>
+  </td></tr>
+  <tr><td align="center" style="padding:22px 28px 26px">
+    <a href="${esc(link)}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;background:#7863ff;border-radius:14px;text-decoration:none">Пять минут</a>
+  </td></tr>
+  <tr><td style="padding:16px 28px;background:#fbf8ff;border-top:1px solid #eee9ff;font-size:12px;line-height:1.7;color:#8b8fc4">
+    Это напоминание платформы 우리말. Время и включение настраиваются в кабинете, в «Настройках». Отвечать на письмо не нужно.
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`
+  const text = `Пора заниматься (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nВремя и включение: кабинет, «Настройки».`
+  return { subject: '우리말: пора заниматься', text, html }
+}

@@ -27,6 +27,7 @@
 | `plans/` | записи календаря и файлы к ним (`plans`, `plan_files`) |
 | `sets/` | история наборов «Сегодня» (`today_sets`) |
 | `public/` | публичная визитка `/me` и её картинка для соцсетей |
+| `reminders/` | письмо-напоминание заниматься (`meta.reminder`, проверка раз в минуту, `GET/PUT /api/reminder`, `POST /api/reminder/test`) |
 | `logs/` | журналы Node и Caddy для вкладки «Журналы» |
 | `mail/` | отправка писем (`mail.service.ts`, SMTP) и оформление писем (`templates.ts`: код входа, резервная копия) |
 | `tags.ts` | разбор тегов `#тег` в заметках и картинках |
@@ -53,6 +54,7 @@
   и не равны `profile.cover`), удаляются вместе с файлом и миниатюрой при сохранении заметок или профиля, но не раньше чем через сутки.
 - `GET/POST/PATCH/DELETE /api/plans`, `/api/plans/:id/files`, `/api/plans/files/:fid/file|thumb`: записи календаря и файлы к ним; `GET/POST/DELETE /api/sets`: наборы «Сегодня».
 - `GET /api/logs/app|caddy`: журналы (владелец). `GET /api/public/me|og.png|cover` открыты без токена, `GET/PUT /api/public/settings` и `POST /api/public/og` только владельцу.
+- `GET/PUT /api/reminder` (`{enabled, time ЧЧ:ММ}`), `POST /api/reminder/test`: напоминание заниматься (владелец); письмо одно в день, если до выбранного времени нет ответов; адрес `REMINDER_MAIL_TO` или почта защиты кодом.
 - `POST /api/backup/run` (202), `POST /api/backup/test`, `GET /api/backup/status`: полный архив на почту и статус копий (владелец, см. `docs/backup.md`).
 - `GET /api/db/tables`, `GET /api/db/tables/:name?limit&offset&q`: просмотр базы (хэши скрыты, длинные значения обрезаны).
 - Роли: владелец делает всё; гость получает пустые ответы и его записи игнорируются, а картинки, база и токены ему закрыты (403).

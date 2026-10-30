@@ -9,6 +9,7 @@ import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
+import ReminderBlock from '@/components/cabinet/ReminderBlock.vue'
 import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
@@ -273,6 +274,7 @@ async function refreshPublic() {
       <p class="st-sub">Наружу уходит только: имя, значок, уровень, серия, число выученных слов, ответов и дней в пути. Данные обновляются кнопкой.</p>
     </div>
     <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
+    <ReminderBlock v-if="progress.unlocked && !progress.isGuest" />
     <BackupBlock v-if="progress.unlocked && !progress.isGuest" />
     <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
     <div v-if="progress.isGuest" class="st-block">

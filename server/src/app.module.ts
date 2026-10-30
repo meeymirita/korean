@@ -11,11 +11,12 @@ import { ImagesModule } from './images/images.module'
 import { NotesModule } from './notes/notes.module'
 import { PlansModule } from './plans/plans.module'
 import { PublicModule } from './public/public.module'
+import { ReminderModule } from './reminders/reminder.module'
 import { SetsModule } from './sets/sets.module'
 import { ProgressModule } from './progress/progress.module'
 
 @Module({
-  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, SetsModule, PublicModule, AdminModule],
+  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, SetsModule, PublicModule, ReminderModule, AdminModule],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }],
 })

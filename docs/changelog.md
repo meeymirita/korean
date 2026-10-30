@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, напоминание заниматься
+
+- `server/src/reminders/` (`ReminderService.tick` раз в минуту, `REMINDER_TICK_MS` для тестов, `reminderMail` в `templates.ts`), блок `ReminderBlock.vue` в «Настройках». Письмо одно в день и только если нет ответов; время по часам сервера. Тест `tests/reminder-server.test.mjs`. **Сервер перезапустить**, при желании `REMINDER_MAIL_TO` в `server/.env` (иначе почта защиты кодом).
+
 ## 2026-10-30, слово в разных формах
 
 - `data/korean/conjugation.ts` (`CONJUGATIONS`, `negate`), страница `/korean/forms` (`FormsView.vue`, закрыта токеном). Тест `tests/conjugation.test.mjs`.

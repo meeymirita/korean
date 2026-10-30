@@ -436,3 +436,11 @@
 .study .fm-rd { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
 .study .fm-link { padding: 0; font: inherit; color: var(--gold); text-decoration: underline; background: none; border: 0; cursor: pointer; }
 @media (max-width: 760px) { .study .fm-tb { overflow-x: auto; } .study .fm-tb .row { width: max(100%, 640px); } }
+
+/* напоминание заниматься */
+.study .rm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 10px 0; }
+.study .rm-on { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.study .rm-time { display: inline-flex; align-items: center; gap: 8px; }
+.study .rm-time input { padding: 8px 12px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+.study .rm-row .plain { padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.study .rm-row .plain:disabled { opacity: .5; cursor: default; }
