@@ -25,3 +25,12 @@ describe('приложение (PWA)', () => {
     assert.ok(m.icons.some(i => i.sizes === '512x512') && m.icons.some(i => i.sizes === '192x192'))
   })
 })
+
+describe('видео-демонстрация на главной', () => {
+  test('кнопка и окно есть, файл лежит в public', async () => {
+    const { existsSync } = await import('node:fs')
+    const home = file('src/views/HomeView.vue')
+    assert.ok(home.includes('посмотреть видео-демонстрацию') && home.includes("DEMO_SRC = '/demo.webm'") && home.includes('<Teleport to="body">'))
+    assert.ok(existsSync(new URL('../public/demo.webm', import.meta.url)))
+  })
+})

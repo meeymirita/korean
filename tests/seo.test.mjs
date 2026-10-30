@@ -66,6 +66,7 @@ describe('SEO', () => {
 
   test('в public нет тяжёлых лишних файлов (всё из public попадает на сайт)', () => {
     for (const f of readdirSync(new URL('../public/', import.meta.url))) {
+      if (f === 'demo.webm') continue // видео-обзор для окна на главной: грузится только по нажатию, поэтому может быть тяжёлым
       assert.ok(statSync(new URL(`../public/${f}`, import.meta.url)).size < 600 * 1024, `${f} слишком большой`)
     }
   })

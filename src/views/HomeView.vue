@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
@@ -11,6 +11,15 @@ import { HOME_LINKS, HOME_MORE, HOME_PHRASE, HOME_RULE, useHome } from '@/compos
 
 const { progress, days, daysWord, hello, due, dueText } = useHome()
 const guide = ref(false)
+/** Окно с видео-обзором платформы: видео грузится, только когда окно открыто. */
+const demo = ref(false)
+/** Файл лежит в public/: путь строкой, чтобы сборка не пыталась его подключать как модуль. */
+const DEMO_SRC = '/demo.webm'
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') demo.value = false
+}
+onMounted(() => document.addEventListener('keydown', onKey))
+onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 const toast = useToastStore()
 const installed = isInstalled()
 /** Окно установки браузера; если браузер его не даёт (Safari, iPhone), подсказываем, где искать. */
@@ -51,7 +60,10 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
       </aside>
 
       <section class="center">
-        <div class="kicker">личное пространство · с 1 июня</div>
+        <div class="kick-row">
+          <div class="kicker">личное пространство · с 1 июня</div>
+          <button type="button" class="demo-link" aria-haspopup="dialog" @click="demo = true">▶ посмотреть видео-демонстрацию</button>
+        </div>
 
         <h1 class="title">
           <span class="line">Тихое</span>
@@ -127,6 +139,16 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
     </div>
 
     <HomeGuideDrawer v-model="guide" />
+
+    <Teleport to="body">
+      <div v-if="demo" class="demo-back" @click.self="demo = false">
+        <div class="demo-box" role="dialog" aria-modal="true" aria-label="Видео-демонстрация платформы">
+          <button type="button" class="demo-x" aria-label="Закрыть" @click="demo = false">✕</button>
+          <video class="demo-video" :src="DEMO_SRC" controls autoplay playsinline preload="auto"></video>
+          <p class="demo-cap">Короткий обзор: кабинет, «Сегодня», игра, словарь, грамматика, справочник и тренажёры. Данные в видео демонстрационные, со звуком (музыка).</p>
+        </div>
+      </div>
+    </Teleport>
   </main>
 </template>
 
@@ -172,8 +194,10 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 .rail .dots span.on { background: var(--accent); }
 
 .center { display: flex; flex-direction: column; justify-content: center; min-height: 0; padding-left: clamp(10px, 2vw, 30px); }
-.kicker { display: flex; align-items: center; gap: 10px; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--soft);
-  margin-bottom: clamp(14px, 2.4vh, 22px); }
+.kick-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 18px; margin-bottom: clamp(14px, 2.4vh, 22px); }
+.kicker { display: flex; align-items: center; gap: 10px; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--soft); }
+.home .demo-link { padding: 0 0 3px; font: inherit; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); background: none; border: 0; border-bottom: 1px solid currentColor; cursor: pointer; transition: .2s; }
+.home .demo-link:hover { color: var(--accent2); }
 .kicker::before { content: ""; width: 24px; height: 1px; background: var(--accent); }
 .title { font-size: clamp(40px, min(7.4vw, 10.5vh), 104px); line-height: .92; letter-spacing: -.035em; font-weight: 800; margin: 0 0 clamp(14px, 2.2vh, 28px); }
 .title .line { display: block; overflow: hidden; }
@@ -248,4 +272,15 @@ a.note:hover .val { color: var(--accent); }
   .stage { padding: 24px; }
   .notes { grid-template-columns: 1fr; }
 }
+</style>
+
+<style>
+/* окно с видео вынесено в body, поэтому стили без scoped */
+.demo-back { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 20px; background: rgba(32, 38, 92, .55); backdrop-filter: blur(8px); }
+.demo-box { position: relative; width: min(1100px, 100%); padding: 14px; background: #fbf8ff; border: 1px solid #fff; border-radius: 22px; box-shadow: 0 30px 80px rgba(30, 36, 100, .4); }
+.demo-video { display: block; width: 100%; max-height: 74vh; background: #1e2350; border-radius: 14px; }
+.demo-cap { margin: 10px 4px 2px; font-size: 13px; line-height: 1.5; color: #6c70a8; }
+.demo-x { position: absolute; top: -14px; right: -14px; width: 36px; height: 36px; font: inherit; color: #1e2350; background: #fff; border: 1px solid #e3def7; border-radius: 50%; box-shadow: 0 6px 18px rgba(30, 36, 100, .25); cursor: pointer; }
+html[data-theme='dark'] .demo-box { background: #1b1d40; border-color: rgba(255, 255, 255, .12); }
+html[data-theme='dark'] .demo-cap { color: #a9acd8; }
 </style>
