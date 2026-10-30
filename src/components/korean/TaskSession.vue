@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import { MOODS, type Mood } from '@/data/mood'
+import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
 import { useProgressStore } from '@/stores/progress'
 
@@ -25,6 +26,13 @@ function setMood(m: Mood) {
   progress.addMood(m)
 }
 
+/** Секундомер: время на каждое задание, от показа вопроса до ответа. */
+const times = ref<number[]>([])
+const shownAt = ref(Date.now())
+const elapsed = ref(0)
+let tick: ReturnType<typeof setInterval> | undefined
+const pace = computed(() => paceSummary(times.value))
+
 const current = computed(() => props.tasks[idx.value])
 const finished = computed(() => idx.value >= props.tasks.length)
 
@@ -36,6 +44,9 @@ watch(
     missed.value = []
     right.value = 0
     moodSet.value = null
+    times.value = []
+    shownAt.value = Date.now()
+    elapsed.value = 0
   },
 )
 
@@ -43,6 +54,7 @@ function answer(option: string) {
   const t = current.value
   if (!t || picked.value !== null) return
   picked.value = option
+  times.value.push(Math.min((Date.now() - shownAt.value) / 1000, PACE_CAP))
   const ok = option === t.answer
   if (ok) right.value++
   else missed.value.push(t)
@@ -51,6 +63,8 @@ function answer(option: string) {
 function next() {
   idx.value++
   picked.value = null
+  shownAt.value = Date.now()
+  elapsed.value = 0
 }
 
 function onKey(e: KeyboardEvent) {
@@ -65,8 +79,16 @@ function onKey(e: KeyboardEvent) {
     next()
   }
 }
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onMounted(() => {
+  document.addEventListener('keydown', onKey)
+  tick = setInterval(() => {
+    if (picked.value === null && !finished.value) elapsed.value = Math.min(Math.floor((Date.now() - shownAt.value) / 1000), PACE_CAP)
+  }, 1000)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  clearInterval(tick)
+})
 </script>
 
 <template>
@@ -74,6 +96,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     <template v-if="!finished && current">
       <div class="rs-bar">
         <span>{{ idx + 1 }} из {{ tasks.length }}</span>
+        <span class="rs-clock" aria-label="Время на задание">⏱ {{ clock(elapsed) }}</span>
         <span>верно: {{ right }}</span>
       </div>
       <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="tasks.length"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
@@ -97,6 +120,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     </template>
     <div v-else class="rs-end">
       <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
+      <p v-if="pace" class="rs-pace">Время: {{ clock(pace.total) }}, в среднем {{ pace.avg }} с на задание. Дольше всего: задание {{ pace.slowest + 1 }}.</p>
       <p>{{ right === tasks.length ? '🌸 Всё верно!' : 'Слова с ошибками вернутся в повторение. Вот что не получилось:' }}</p>
       <ul v-if="missed.length" class="qk-miss">
         <li v-for="t in missed" :key="t.id"><span class="ko">{{ t.prompt }}</span> → <b class="ko">{{ t.answer }}</b></li>

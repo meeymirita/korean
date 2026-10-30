@@ -458,3 +458,4 @@
 .study .md-d.m3 { background: #f2994a; }
 .study .md-sum { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; font-size: 14px; color: var(--muted); }
 .study .md-hard { margin: 8px 0 0; font-size: 14px; }
+.study .rs-pace { margin: 0; font-size: 14px; color: var(--muted); }
