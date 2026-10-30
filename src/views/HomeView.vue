@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
@@ -18,6 +18,36 @@ const DEMO_SRC = '/demo.webm'
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape') demo.value = false
 }
+const demoVideo = ref<HTMLVideoElement>()
+/** Звук без нажатия браузеры не разрешают: если запуск со звуком отклонён, включаем без звука (звук включается значком в плеере). */
+const mutedStart = ref(false)
+watch(demo, open => {
+  if (!open) return
+  mutedStart.value = false
+  void nextTick(async () => {
+    const v = demoVideo.value
+    if (!v) return
+    try {
+      await v.play()
+    } catch {
+      v.muted = true
+      mutedStart.value = true
+      void v.play().catch(() => undefined)
+    }
+  })
+})
+/** При заходе на главную видео открывается само, один раз за открытое окно браузера (после закрытия и обновления страницы не навязывается). */
+const AUTO_KEY = 'demo_auto_shown'
+function openOnArrival() {
+  try {
+    if (sessionStorage.getItem(AUTO_KEY)) return
+    sessionStorage.setItem(AUTO_KEY, '1')
+  } catch {
+    /* без запоминания: откроем */
+  }
+  demo.value = true
+}
+onMounted(openOnArrival)
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 const toast = useToastStore()
@@ -144,8 +174,8 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
       <div v-if="demo" class="demo-back" @click.self="demo = false">
         <div class="demo-box" role="dialog" aria-modal="true" aria-label="Видео-демонстрация платформы">
           <button type="button" class="demo-x" aria-label="Закрыть" @click="demo = false">✕</button>
-          <video class="demo-video" :src="DEMO_SRC" controls autoplay playsinline preload="auto"></video>
-          <p class="demo-cap">Обзор на три минуты: кабинет и его вкладки, «Сегодня», словарь, грамматика, справочник, тренажёры и игра, с кликами по заданиям. Данные в видео демонстрационные, со звуком (музыка).</p>
+          <video ref="demoVideo" class="demo-video" :src="DEMO_SRC" controls autoplay playsinline preload="auto"></video>
+          <p class="demo-cap">Обзор платформы: все страницы и вкладки (кабинет, «Сегодня», словарь, грамматика, справочник, тренажёры, игра), а в конце тёмная тема и скрытие бокового меню. Данные в видео демонстрационные, со звуком (музыка).<span v-if="mutedStart"> Браузер включил видео без звука: нажми на значок динамика в плеере.</span></p>
         </div>
       </div>
     </Teleport>
