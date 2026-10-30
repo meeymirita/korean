@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
 import Avatar from '@/components/Avatar.vue'
 import GuestAccess from '@/components/cabinet/GuestAccess.vue'
+import StorageBlock from '@/components/cabinet/StorageBlock.vue'
 import BackupBlock from '@/components/cabinet/BackupBlock.vue'
 import TwoFaBlock from '@/components/cabinet/TwoFaBlock.vue'
 import { GOAL_OPTIONS } from '@/data/levels'
@@ -314,6 +315,7 @@ async function refreshPublic() {
           <button class="plain danger" @click="reset">Сбросить прогресс</button>
         </div>
       </div>
+      <StorageBlock v-if="progress.unlocked && !progress.isGuest" />
       <BackupBlock v-if="progress.unlocked && !progress.isGuest" />
     </div>
     <div v-if="progress.unlocked && !progress.isGuest" v-show="sysTab === 'access'">

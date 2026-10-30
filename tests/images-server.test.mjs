@@ -25,7 +25,7 @@ describe('сервер: картинки', () => {
 
   test('пока картинок нет, список пустой и видны лимиты', async () => {
     const l = await (await s.call('GET', '/api/images', OWNER)).json()
-    assert.deepEqual([l.items, l.used, l.limit, l.maxFile], [[], 0, 500 * 1024 * 1024, 50 * 1024 * 1024])
+    assert.deepEqual([l.items, l.used, l.limit, l.maxFile], [[], 0, 1024 * 1024 * 1024, 50 * 1024 * 1024])
   })
 
   let id

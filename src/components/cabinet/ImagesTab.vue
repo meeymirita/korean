@@ -94,7 +94,6 @@ function resetFilter() {
   query.value = from.value = to.value = tagFilter.value = ''
 }
 
-const usedPct = computed(() => Math.min(100, (store.used / store.limit) * 100))
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 /* ---------- просмотр ---------- */
@@ -170,8 +169,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     <TagInput v-model="uploadTags" :suggestions="allTags" label="Теги для новых картинок (необязательно)" />
 
     <div class="im-usage">
-      <div class="im-bar"><i :style="{ width: usedPct + '%' }"></i></div>
-      <span>{{ formatSize(store.used) }} из {{ formatSize(store.limit) }} · {{ store.items.length }} шт.</span>
+      <span>{{ store.items.length }} шт. · занято {{ formatSize(store.used) }} (подробнее в «Настройках»)</span>
       <span v-if="!busy && status" class="im-ok">{{ status }}</span>
     </div>
     <ul v-if="errors.length" class="im-err">
