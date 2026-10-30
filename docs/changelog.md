@@ -2,6 +2,12 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, резервные копии
+
+- `server/src/admin/backup-archive.service.ts`: полный архив (снимок базы `VACUUM INTO`, `uploads docs thumbs public`, `.env`) → `tar.gz` → шифрование `openssl enc -aes-256-cbc -pbkdf2` паролем `BACKUP_PASSPHRASE` →
+  Яндекс Диск по WebDAV (`YADISK_*`, пароль приложения «Файлы WebDAV», на Диске последние 8) и почта (вложение до 18 МБ, до 5 писем, иначе письмо без вложения). `POST /api/backup/run`, ход и итог в `GET /api/backup/status`, раз в неделю сам (`BACKUP_AUTO=0` выключает).
+- `scripts/backup.sh` — ночная копия на сервере с ротацией, `integrity_check` и статусом; `BackupBlock.vue` в «Настройках». Инструкция: `docs/backup.md`. **Сервер перезапустить**, в `server/.env` добавить `BACKUP_PASSPHRASE`, `YADISK_LOGIN`, `YADISK_PASSWORD`.
+
 ## 2026-10-30, письмо с кодом
 
 - `server/src/mail/templates.ts` (`codeMail`): HTML-письмо на таблицах со встроенными стилями и текстовая версия; заголовки `Auto-Submitted`, `X-Auto-Response-Suppress`, `Precedence`. Команда `npm --prefix server run mail:check` проверяет SMTP.

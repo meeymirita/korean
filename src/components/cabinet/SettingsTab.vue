@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import Avatar from '@/components/Avatar.vue'
 import GuestAccess from '@/components/cabinet/GuestAccess.vue'
+import BackupBlock from '@/components/cabinet/BackupBlock.vue'
 import TwoFaBlock from '@/components/cabinet/TwoFaBlock.vue'
 import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
@@ -262,6 +263,7 @@ async function refreshPublic() {
       <p class="st-sub">Наружу уходит только: имя, значок, уровень, серия, число выученных слов, ответов и дней в пути. Данные обновляются кнопкой.</p>
     </div>
     <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
+    <BackupBlock v-if="progress.unlocked && !progress.isGuest" />
     <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
     <div v-if="progress.isGuest" class="st-block">
       <h3>Гостевой режим</h3>

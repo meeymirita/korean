@@ -56,6 +56,11 @@ export class TwoFaService {
     }
   }
 
+  /** Почта владельца для кода входа (пусто, если защита не настраивалась): сюда же по умолчанию уходят копии. */
+  email() {
+    return this.read().email
+  }
+
   /** Требуется ли второй шаг прямо сейчас (с учётом аварийного выключателя). */
   required() {
     return this.read().enabled && process.env.DISABLE_2FA !== '1'
