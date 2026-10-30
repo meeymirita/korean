@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useProgressStore } from '@/stores/progress'
-import { fetchT } from '@/lib/http'
+import { errText, fetchT } from '@/lib/http'
 import { cleanTags } from '@/lib/tags'
 
 export interface Note {
@@ -126,7 +126,7 @@ export const useNotesStore = defineStore('notes', () => {
 
   /* ---------- сервер ---------- */
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${progress.bearer}` })
-  const netError = (e: unknown) => ((e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message)
+  const netError = errText
 
   async function push() {
     if (!synced()) return

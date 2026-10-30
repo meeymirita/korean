@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { G, type Gram } from '@/data/korean/grammar'
 import { nextPhrase, pickOther } from '@/data/phrases'
+import { dueWords } from '@/data/review'
 import { useProgressStore } from '@/stores/progress'
 
 export const HOME_LINKS = [
@@ -48,7 +49,7 @@ export const HOME_PHRASE = nextPhrase()
 export const HOME_PHRASES = [HOME_PHRASE, pickOther([HOME_PHRASE])]
 
 const START = new Date(2026, 5, 1)
-const plural = (n: number, forms: [string, string, string]) =>
+export const plural = (n: number, forms: [string, string, string]) =>
   forms[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : 2]
 
 /** Общие данные главной: дни с начала пути, приветствие, замки. */
@@ -79,5 +80,8 @@ export function useHome() {
           sub: 'откроются задания, игра и кабинет',
         },
   )
-  return { progress, days, daysWord, hello }
+  /** Сколько слов пора повторить (для владельца; гостю и без токена ноль). */
+  const due = computed(() => (progress.unlocked && !progress.isGuest ? dueWords(progress.data).length : 0))
+  const dueText = computed(() => `${due.value} ${plural(due.value, ['слово', 'слова', 'слов'])}`)
+  return { progress, days, daysWord, hello, due, dueText }
 }

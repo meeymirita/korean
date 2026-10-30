@@ -24,7 +24,7 @@ const rows = computed(() =>
     <div class="searchbar">
       <div class="sb">
         <input ref="input" v-model="q" type="text" autocomplete="off" placeholder="поиск по предложению, слову или переводу" />
-        <button title="Очистить" @click="((q = ''), input?.focus())">✕</button>
+        <button title="Очистить" aria-label="Очистить" @click="((q = ''), input?.focus())">✕</button>
       </div>
       <div class="meta"><span>{{ qs.length ? 'Найдено: ' : 'Всего предложений: ' }}{{ rows.length }}</span></div>
     </div>
@@ -38,7 +38,7 @@ const rows = computed(() =>
         </div>
         <div v-if="openN === d.n" class="row-detail"><SentenceBreakdown :sentence="d.s" /></div>
       </template>
-      <div v-if="!rows.length" class="empty"><div class="big">✿</div>Ничего не нашлось</div>
+      <div v-if="!rows.length" class="empty"><div class="big">✿</div>Ничего не нашлось.<br />Попробуй другое слово или сбрось фильтры.</div>
     </div>
   </div>
 </template>

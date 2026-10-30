@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { errText } from '@/lib/http'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
 import NoteModal from '@/components/cabinet/NoteModal.vue'
 import TagInput from '@/components/cabinet/TagInput.vue'
@@ -82,12 +83,12 @@ async function attach(e: Event, target: 'new' | 'edit') {
         list.value = [...list.value, (await images.upload(f, '', 'note')).id]
         toast.ok('Картинка добавлена')
       } catch (err) {
-        imgError.value = `${f.name}: ${(err as Error).message}`
+        imgError.value = `${f.name}: ${errText(err)}`
         toast.error(imgError.value)
       }
     }
   } catch (err) {
-    imgError.value = (err as Error).message
+    imgError.value = errText(err)
   } finally {
     uploading.value = false
   }
@@ -138,12 +139,14 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
     <form class="nt-form" @submit.prevent="add">
       <h3>＋ Новая заметка</h3>
       <label class="nt-field">Название заметки
-        <input v-model="title" :maxlength="MAX_TITLE" placeholder="Например, Частицы места" aria-label="Название заметки" />
+        <input v-model="title" :maxlength="MAX_TITLE" :class="{ at: title.length >= MAX_TITLE }" placeholder="Например, Частицы места" aria-label="Название заметки" />
+        <small class="cb-count" :class="{ at: title.length >= MAX_TITLE }">{{ title.length }} / {{ MAX_TITLE }}</small>
       </label>
       <label class="nt-field">Текст
       <textarea
         v-model="text"
         :maxlength="MAX_TEXT"
+        :class="{ at: text.length >= MAX_TEXT }"
         rows="4"
         placeholder="은/는 — тема предложения… (Ctrl + Enter — добавить)"
         aria-label="Описание заметки"
@@ -155,7 +158,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
       <NoteImages :ids="pending" removable @remove="id => (pending = pending.filter(x => x !== id))" />
       <p v-if="imgError" class="nt-err">{{ imgError }}</p>
       <div class="nt-bar">
-        <span class="nt-count">{{ text.length }} / {{ MAX_TEXT }}</span>
+        <span class="nt-count cb-count" :class="{ at: text.length >= MAX_TEXT }">{{ text.length }} / {{ MAX_TEXT }}</span>
         <label v-if="canImages" class="nt-add">{{ uploading ? 'Загружаю…' : '📎 Картинки' }}<input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp" :disabled="uploading" @change="attach($event, 'new')" /></label>
         <button type="submit" :disabled="(!title.trim() && !text.trim() && !pending.length) || store.full">Добавить заметку</button>
       </div>
@@ -173,13 +176,14 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
     </div>
 
     <p v-if="!store.notes.length" class="cb-empty">Заметок пока нет. Напишите первую выше: название и несколько слов.</p>
-    <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено.</p>
+    <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено. Попробуйте другое слово или уберите тег из поиска.</p>
 
     <ul class="nt-list">
       <li v-for="n in shown" :key="n.id" class="nt-card" :class="{ click: editing !== n.id }" @click="editing !== n.id && (openedId = n.id)">
         <template v-if="editing === n.id">
-          <input v-model="editTitle" :maxlength="MAX_TITLE" aria-label="Название" />
-          <textarea v-model="editText" :maxlength="MAX_TEXT" rows="5" aria-label="Описание"></textarea>
+          <input v-model="editTitle" :maxlength="MAX_TITLE" :class="{ at: editTitle.length >= MAX_TITLE }" aria-label="Название" />
+          <textarea v-model="editText" :maxlength="MAX_TEXT" :class="{ at: editText.length >= MAX_TEXT }" rows="5" aria-label="Описание"></textarea>
+          <small class="cb-count" :class="{ at: editText.length >= MAX_TEXT }">{{ editText.length }} / {{ MAX_TEXT }}</small>
           <TagInput v-model="editTags" :suggestions="allTags" />
           <NoteImages :ids="editImages" removable @remove="id => (editImages = editImages.filter(x => x !== id))" />
           <p v-if="imgError" class="nt-err">{{ imgError }}</p>

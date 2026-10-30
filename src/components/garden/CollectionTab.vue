@@ -87,7 +87,7 @@ const STATES: ['' | CardState, string][] = [
         </template>
       </div>
     </div>
-    <div v-else class="empty"><div class="big">🃏</div>Таких карточек пока нет.</div>
+    <div v-else class="empty"><div class="big">🃏</div>Таких карточек пока нет.<br />Отвечай верно в «Сегодня» и в тренажёрах: карточки появятся сами.</div>
     <button v-if="!more && rows.length > LIMIT" class="chip cl-more" @click="more = true">Показать ещё {{ rows.length - LIMIT }}</button>
   </div>
 </template>

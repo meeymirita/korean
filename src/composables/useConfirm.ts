@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { errText } from '@/lib/http'
 
 export interface ConfirmOptions {
   title: string
@@ -71,7 +72,7 @@ export async function submitToken(raw: string) {
     await action(token)
     answerConfirm(true, 'done')
   } catch (e) {
-    confirmState.error = (e as Error).message || 'Не получилось'
+    confirmState.error = errText(e) || 'Не получилось'
   } finally {
     confirmState.busy = false
   }

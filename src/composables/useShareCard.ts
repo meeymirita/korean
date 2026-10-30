@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { errText } from '@/lib/http'
 import { renderCard, shareBlob, type CardSpec } from '@/lib/shareCard'
 import { useToastStore } from '@/stores/toast'
 
@@ -14,7 +15,7 @@ export function useShareCard() {
       const how = await shareBlob(blob, filename.replace(/[^\p{L}\p{N}-]+/gu, '-') + '.png', `${spec.title}${spec.sub ? ' — ' + spec.sub : ''}`)
       if (how === 'downloaded') toast.ok('Карточка сохранена в загрузках')
     } catch (e) {
-      toast.error((e as Error).message || 'Не получилось сделать карточку')
+      toast.error(errText(e) || 'Не получилось сделать карточку')
     } finally {
       busy.value = false
     }

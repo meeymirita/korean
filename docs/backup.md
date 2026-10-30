@@ -50,7 +50,10 @@ node --no-warnings -e "const {DatabaseSync}=require('node:sqlite');const d=new D
 `scripts/backup.sh`: целостный снимок базы (с проверкой `integrity_check`), файлы жёсткими ссылками (одинаковые за разные дни хранятся один раз), конфиги Caddy и службы.
 Хранит последние 14 копий в `/var/backups/korean`, пишет итог в `server/data/backup-status.json`.
 
-Расписание (systemd-таймер, 03:30):
+Включить одной командой (от root, на сервере): `sudo bash scripts/install-backup-timer.sh --now`. Сначала можно посмотреть, что будет создано: `bash scripts/install-backup-timer.sh --print`.
+Если таймер сломается или скрипт упадёт, сервер сам пришлёт письмо: «ночная копия не удалась» или «давно не делалась» (больше 36 часов; проверка раз в час, одно письмо на случай).
+
+Вручную то же самое выглядит так (systemd-таймер, 03:30):
 
 ```
 # /etc/systemd/system/korean-backup.service
@@ -74,4 +77,5 @@ WantedBy=timers.target
 |---|---|
 | не задан пароль архива / некуда отправлять | вписать `BACKUP_PASSPHRASE` и настроить почту (раздел 1) и перезапустить службу |
 | «Почта ✗: …» | проверить `SMTP_*` командой `npm --prefix server run mail:check` |
-| «Копия сделана более 30 часов назад» | проверить таймер: `systemctl status korean-backup.timer` |
+| «Копия сделана более 30 часов назад» | проверить таймер: `systemctl status korean-backup.timer` (или установить: `sudo bash scripts/install-backup-timer.sh --now`) |
+| «Архив не приходил на почту уже N дн.» (жёлтая плашка вверху кабинета) | архив идёт раз в неделю сам; проверьте почту и спам, нажмите «Проверить отправку», при необходимости «Сделать архив и отправить» |

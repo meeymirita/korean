@@ -177,7 +177,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
           <div class="pg-bar"><i :style="{ width: (a.cur / a.goal) * 100 + '%' }"></i></div>
         </div>
         <span class="pg-an">{{ a.cur }} / {{ a.goal }}</span>
-        <button v-if="a.done" class="pg-share" title="Поделиться достижением" :disabled="sharing" @click="shareAch(a)">🖼</button>
+        <button v-if="a.done" class="pg-share" title="Поделиться достижением" aria-label="Поделиться достижением" :disabled="sharing" @click="shareAch(a)">🖼</button>
       </div>
     </div>
 

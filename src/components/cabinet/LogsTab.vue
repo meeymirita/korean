@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePersisted } from '@/composables/usePersisted'
-import { fetchT } from '@/lib/http'
+import { errText, fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 
 interface Line {
@@ -37,7 +37,7 @@ async function load() {
     reply.value = (await res.json()) as Reply
     failed.value = ''
   } catch (e) {
-    failed.value = (e as Error).message
+    failed.value = errText(e)
   } finally {
     loading.value = false
   }

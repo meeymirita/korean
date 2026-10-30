@@ -70,7 +70,7 @@ watch(() => route.path, visit, { immediate: true })
       <AuthGate v-if="route.meta.private && !progress.unlocked" />
       <RouterView v-else />
     </main>
-    <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K)" @click="openSearch()">
+    <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
       <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
     </button>
     <SearchWindow />

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useProgressStore } from '@/stores/progress'
-import { LONG_TIMEOUT, fetchT } from '@/lib/http'
+import { LONG_TIMEOUT, errText, fetchT } from '@/lib/http'
 import { cleanTags } from '@/lib/tags'
 
 export interface PlanFile {
@@ -125,8 +125,8 @@ export const usePlansStore = defineStore('plans', () => {
     let res: Response
     try {
       res = await fetchT(`/api/plans/${planId}/files`, { method: 'POST', headers: auth(), body: form }, LONG_TIMEOUT)
-    } catch {
-      throw new Error('сервер недоступен')
+    } catch (e) {
+      throw new Error(errText(e))
     }
     if (!res.ok) throw new Error(apiError(res.status))
     const f = (await res.json()) as PlanFile

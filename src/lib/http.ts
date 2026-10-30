@@ -8,7 +8,15 @@ export function fetchT(input: RequestInfo | URL, init: RequestInit = {}, ms = TI
   const timer = setTimeout(() => ctl.abort(), ms)
   return fetch(input, { ...init, signal: init.signal ?? ctl.signal })
     .catch(e => {
-      throw (e as Error)?.name === 'AbortError' ? new Error('сервер отвечает слишком долго') : e
+      throw (e as Error)?.name === 'AbortError' ? new Error('сервер не отвечает, попробуйте позже') : e
     })
     .finally(() => clearTimeout(timer))
+}
+
+/** Понятный текст ошибки запроса: «Failed to fetch» и подобное браузерное превращается в «сервер недоступен» или «нет интернета». */
+export function errText(e: unknown): string {
+  const m = (e as Error)?.message ?? ''
+  if (/^(Failed to fetch|Load failed|NetworkError|Network request failed)/i.test(m))
+    return typeof navigator !== 'undefined' && navigator.onLine === false ? 'нет интернета' : 'сервер недоступен'
+  return m
 }

@@ -50,7 +50,9 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
 }
 
 export interface BackupMailOptions {
-  kind: 'archive' | 'big' | 'test'
+  kind: 'archive' | 'big' | 'test' | 'nightly-fail' | 'stale'
+  /** пояснение для тревожных писем (что сказал скрипт) или число часов без свежей копии */
+  detail?: string
   /** имя файла-вложения (для archive) */
   name?: string
   /** размер полного архива, МБ */
@@ -75,12 +77,18 @@ export function backupMail(o: BackupMailOptions): Mail {
   const listCmd = 'tar -tzf korean.tar.gz | head'
   const unpackCmd = 'mkdir korean-restore && tar -xzf korean.tar.gz -C korean-restore'
 
-  const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки' }
+  const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки', 'nightly-fail': 'Ночная копия не удалась', stale: 'Ночная копия давно не делалась' }
   const leads = {
     archive: `Во вложении полный архив: база, картинки, файлы календаря и настройки${o.mb ? ` (${o.mb} МБ)` : ''}. Он зашифрован вашим паролем, поэтому открыть его без пароля нельзя.`,
     big: `Полный архив${o.mb ? ` (${o.mb} МБ)` : ''} не помещается в письма и остался на сервере в папке server/data/export. Скачайте его оттуда вручную.`,
     test: 'Это проверочное письмо из «Настроек». Если оно пришло, почта для резервных копий настроена верно.',
+    'nightly-fail': `Скрипт scripts/backup.sh завершился с ошибкой${o.detail ? `: ${o.detail}` : ''}. Последняя хорошая копия осталась на месте, но новой нет.`,
+    stale: `Свежей ночной копии нет ${o.detail ?? 'больше суток'}: скрипт не запускался или завис. Проверьте таймер на сервере.`,
   }
+  const alert = o.kind === 'nightly-fail' || o.kind === 'stale'
+  const notice = alert
+    ? 'Что сделать: на сервере выполните «systemctl status korean-backup.timer» и «bash scripts/backup.sh», посмотрите вывод. Подробности: docs/backup.md.'
+    : 'Храните пароль архива отдельно от сервера: без него копию не открыть. Пароль в письме не указан намеренно.'
   const title = titles[o.kind]
   const lead = leads[o.kind]
 
@@ -117,11 +125,11 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
   ${howHtml}
   <tr><td style="padding:0 28px 26px">
     <div style="border-left:4px solid #d64da9;background:#fff5f9;padding:12px 16px;border-radius:0 14px 14px 0;font-size:14px;line-height:1.6;color:#1e2350">
-      Храните пароль архива отдельно от сервера: без него копию не открыть. Пароль в письме не указан намеренно.
+      ${esc(notice)}
     </div>
   </td></tr>
   <tr><td style="padding:16px 28px;background:#fbf8ff;border-top:1px solid #eee9ff;font-size:12px;line-height:1.7;color:#8b8fc4">
-    Это служебное письмо платформы 우리말 (korean.meeymirita.ru). Оно приходит по кнопке в «Настройках» и раз в неделю. Отвечать на него не нужно. Подробности: docs/backup.md.
+    Это служебное письмо платформы 우리말 (korean.meeymirita.ru). Оно приходит по кнопке в «Настройках», раз в неделю и при сбое ночной копии. Отвечать на него не нужно. Подробности: docs/backup.md.
   </td></tr>
 </table>
 </td></tr></table>
@@ -131,6 +139,6 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
     o.kind === 'archive'
       ? `\n\nКак открыть (терминал в папке с файлом):\n${part ? `1. Склейте все части: ${joinCmd}\n2.` : '1.'} Расшифруйте (спросит пароль BACKUP_PASSPHRASE): ${openCmd}\n${part ? '3.' : '2.'} Посмотрите: ${listCmd}\n${part ? '4.' : '3.'} Распакуйте: ${unpackCmd}\nПосле проверки удалите распакованное: в server.env лежат пароли.`
       : ''
-  const text = `${title} (우리말, ${when})\n\n${lead}${textHow}\n\nХраните пароль архива отдельно от сервера. Подробности: docs/backup.md.`
-  return { subject: `우리말: ${o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
+  const text = `${title} (우리말, ${when})\n\n${lead}${textHow}\n\n${alert ? notice : 'Храните пароль архива отдельно от сервера. Подробности: docs/backup.md.'}`
+  return { subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
 }

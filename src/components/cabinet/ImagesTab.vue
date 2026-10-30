@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { errText } from '@/lib/http'
 import TagInput from '@/components/cabinet/TagInput.vue'
 import { useAllTags } from '@/composables/useAllTags'
 import { useToastStore } from '@/stores/toast'
@@ -35,7 +36,7 @@ onMounted(async () => {
     await store.load()
   } catch (e) {
     failed.value = true
-    errors.value = [(e as Error).message]
+    errors.value = [errText(e)]
   }
 })
 onBeforeUnmount(() => store.release())
@@ -58,7 +59,7 @@ async function upload(list: FileList | File[] | null) {
       await store.upload(f, '', 'gallery', uploadTags.value)
       done++
     } catch (e) {
-      errors.value.push(`${f.name}: ${(e as Error).message}`)
+      errors.value.push(`${f.name}: ${errText(e)}`)
     }
   }
   status.value = done ? `Загружено: ${done}` : ''
@@ -133,7 +134,7 @@ async function saveInfo() {
     saved.value = true
     toast.ok('Сохранено')
   } catch (e) {
-    errors.value = [(e as Error).message]
+    errors.value = [errText(e)]
   }
 }
 async function remove(it: ImageItem) {
@@ -145,7 +146,7 @@ async function remove(it: ImageItem) {
     toast.ok('Картинка удалена')
     if (openId.value === it.id) openId.value = null
   } catch (e) {
-    errors.value = [(e as Error).message]
+    errors.value = [errText(e)]
   }
 }
 function onKey(e: KeyboardEvent) {
@@ -189,9 +190,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <button v-for="t in imageTags" :key="t" type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click="tagFilter = tagFilter === t ? '' : t">#{{ t }}</button>
     </div>
 
-    <p v-if="store.loaded && !store.items.length" class="cb-empty">Картинок пока нет. Загрузите первую.</p>
-    <p v-else-if="store.items.length && !filtered.length" class="cb-empty">Ничего не найдено.</p>
-    <p v-else-if="failed" class="cb-empty">Не получилось загрузить список картинок.</p>
+    <p v-if="failed" class="cb-empty">Не получилось загрузить список картинок. Проверьте связь и обновите страницу.</p>
+    <p v-else-if="store.loaded && !store.items.length" class="cb-empty">Картинок пока нет. Загрузите первую.</p>
+    <p v-else-if="store.items.length && !filtered.length" class="cb-empty">Ничего не найдено. Попробуйте другое слово или уберите фильтр.</p>
 
     <ul class="im-grid">
       <li v-for="it in filtered" :key="it.id" class="im-card">
@@ -218,8 +219,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <span v-else class="im-wait">Загружаю…</span>
         </div>
         <form class="im-info" @submit.prevent="saveInfo">
-          <input v-model="caption" :maxlength="MAX_CAPTION" placeholder="Название" aria-label="Название" @input="saved = false" />
-          <textarea v-model="description" :maxlength="MAX_DESCRIPTION" rows="2" placeholder="Описание" aria-label="Описание" @input="saved = false"></textarea>
+          <input v-model="caption" :maxlength="MAX_CAPTION" :class="{ at: caption.length >= MAX_CAPTION }" placeholder="Название" aria-label="Название" @input="saved = false" />
+          <small class="cb-count" :class="{ at: caption.length >= MAX_CAPTION }">{{ caption.length }} / {{ MAX_CAPTION }}</small>
+          <textarea v-model="description" :maxlength="MAX_DESCRIPTION" :class="{ at: description.length >= MAX_DESCRIPTION }" rows="2" placeholder="Описание" aria-label="Описание" @input="saved = false"></textarea>
+          <small class="cb-count" :class="{ at: description.length >= MAX_DESCRIPTION }">{{ description.length }} / {{ MAX_DESCRIPTION }}</small>
           <TagInput v-model="tags" :suggestions="allTags" @update:model-value="saved = false" />
           <button type="submit">{{ saved ? '✓ Сохранено' : 'Сохранить' }}</button>
           <a v-if="full" :href="full" :download="current.name" class="im-dl">Скачать</a>

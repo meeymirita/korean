@@ -94,3 +94,22 @@ describe('резервная копия (scripts/backup.sh)', () => {
     assert.equal(s.ok, false)
   })
 })
+
+describe('установка ночного таймера (scripts/install-backup-timer.sh)', () => {
+  const installer = fileURLToPath(new URL('../scripts/install-backup-timer.sh', import.meta.url))
+
+  test('синтаксис верный, --print показывает службу и таймер и ничего не устанавливает', () => {
+    assert.equal(spawnSync('bash', ['-n', installer]).status, 0)
+    const r = spawnSync('bash', [installer, '--print'], { encoding: 'utf8', env: { ...process.env, ROOT: '/var/sites/korean' } })
+    assert.equal(r.status, 0, r.stderr)
+    assert.match(r.stdout, /ExecStart=\/bin\/bash \/var\/sites\/korean\/scripts\/backup\.sh/)
+    assert.match(r.stdout, /OnCalendar=\*-\*-\* 03:30:00/)
+    assert.match(r.stdout, /Persistent=true/)
+  })
+
+  test('без root ничего не ставит', { skip: process.getuid?.() === 0 }, () => {
+    const r = spawnSync('bash', [installer], { encoding: 'utf8' })
+    assert.notEqual(r.status, 0)
+    assert.match(r.stderr, /root/)
+  })
+})

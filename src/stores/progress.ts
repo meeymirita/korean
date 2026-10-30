@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf } from '@/data/levels'
 import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
-import { fetchT } from '@/lib/http'
+import { errText, fetchT } from '@/lib/http'
 
 export interface WordStat {
   ok: number
@@ -344,7 +344,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   /* ---------- сохранение и сервер ---------- */
   const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${bearer.value}` })
-  const netError = (e: unknown) => ((e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message)
+  const netError = errText
 
   /**
    * Сервер ответил 401. «2fa»: токен верный, но защита просит ещё код из письма: доступ закрывается до ввода кода, очередь действий остаётся.

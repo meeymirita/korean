@@ -11,7 +11,7 @@ import { BackupArchiveService, STEPS } from './backup-archive.service'
 export class BackupStatusController {
   constructor(private readonly archive: BackupArchiveService) {}
 
-  /** POST /api/backup/run: собрать полный архив, зашифровать и отправить на Диск и почту; идёт в фоне, ход виден в status. */
+  /** POST /api/backup/run: собрать полный архив, зашифровать и отправить на почту; идёт в фоне, ход виден в status. */
   @Post('run')
   @HttpCode(202)
   run() {
@@ -20,7 +20,7 @@ export class BackupStatusController {
     return { started: this.archive.start(), message: '' }
   }
 
-  /** POST /api/backup/test: короткая проверка Диска и почты (файл «проверка.txt» и письмо), без архива. */
+  /** POST /api/backup/test: короткая проверка почты (письмо), без архива. */
   @Post('test')
   @HttpCode(200)
   test() {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { errText } from '@/lib/http'
 import { useToastStore } from '@/stores/toast'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { useProgressStore, type GuestToken } from '@/stores/progress'
@@ -24,7 +25,7 @@ async function refresh() {
   try {
     list.value = await progress.listGuests()
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errText(e)
   }
 }
 
@@ -51,7 +52,7 @@ async function create() {
   try {
     await refresh()
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errText(e)
   }
 }
 
@@ -64,7 +65,7 @@ async function revoke(g: GuestToken) {
     if (created.value?.id === g.id) created.value = null
     await refresh()
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errText(e)
   }
 }
 

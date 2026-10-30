@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { errText } from '@/lib/http'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsCheck.vue'
 import { askConfirm } from '@/composables/useConfirm'
@@ -103,7 +104,7 @@ async function checkAndSave() {
     saved.value = true
     toast.ok('Набор проверен и сохранён в истории')
   } catch (e) {
-    toast.error((e as Error).message)
+    toast.error(errText(e))
   } finally {
     saving.value = false
   }
@@ -116,7 +117,7 @@ async function loadHistory() {
   try {
     await sets.load()
   } catch (e) {
-    toast.error((e as Error).message)
+    toast.error(errText(e))
   }
 }
 function showHistory() {
@@ -134,7 +135,7 @@ async function removeSet(s: SavedSet) {
     await sets.remove(s.id)
     toast.ok('Набор удалён')
   } catch (e) {
-    toast.error((e as Error).message)
+    toast.error(errText(e))
   }
 }
 const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.answer ? 'ok' : 'bad')

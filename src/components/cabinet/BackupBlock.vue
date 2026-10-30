@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { fetchT } from '@/lib/http'
+import { archiveReminder } from '@/lib/backupAge'
+import { errText, fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
@@ -73,7 +74,7 @@ async function run() {
     if (!r.started && r.message) toast.error(r.message)
     await load()
   } catch (e) {
-    toast.error('Не получилось запустить архив: ' + (e as Error).message)
+    toast.error('Не получилось запустить архив: ' + errText(e))
   } finally {
     starting.value = false
   }
@@ -89,11 +90,12 @@ async function check() {
     if (r.mail === 'ok') toast.ok('Письмо отправлено, проверьте ящик.')
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
-    toast.error('Не получилось проверить: ' + (e as Error).message)
+    toast.error('Не получилось проверить: ' + errText(e))
   } finally {
     checking.value = false
   }
 }
+const reminder = computed(() => (status.value?.archive ? archiveReminder(status.value.archive.last, status.value.archive.problems) : ''))
 const job = computed(() => status.value?.archive?.job)
 const lastArc = computed(() => status.value?.archive?.last ?? null)
 const arcWhen = computed(() => (lastArc.value ? new Date(lastArc.value.time).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : ''))
@@ -123,6 +125,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
         {{ status.archive.targets.mail ? 'на почту' : 'никуда (почта не настроена)' }}.
         Сам раз в неделю, а здесь можно запустить в любой день.</p>
       <ul v-if="status.archive.problems.length" class="bk-prob"><li v-for="p in status.archive.problems" :key="p">⚠ {{ p }}</li></ul>
+      <p v-if="reminder" class="bk-warn" role="status">⚠ {{ reminder }}</p>
       <div class="pg-btns">
         <button type="button" :disabled="starting || job?.running || !!status.archive.problems.length" @click="run">{{ job?.running ? 'Идёт…' : 'Сделать архив и отправить' }}</button>
         <button type="button" class="plain" :disabled="checking || job?.running" @click="check">{{ checking ? 'Проверяю…' : 'Проверить отправку' }}</button>

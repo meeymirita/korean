@@ -12,6 +12,8 @@ import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
 import WeekTab from '@/components/cabinet/WeekTab.vue'
 import { dueWords } from '@/data/review'
+import { archiveReminder } from '@/lib/backupAge'
+import { fetchT } from '@/lib/http'
 import { sectionById } from '@/data/korean/sections'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
@@ -19,6 +21,25 @@ import { useProgressStore } from '@/stores/progress'
 const progress = useProgressStore()
 const images = useImagesStore()
 const section = sectionById('cabinet')
+
+/** Напоминание владельцу, если полный архив давно не приходил (раз в неделю он идёт сам). Гостям и без связи ничего не показывается. */
+const backupNote = ref('')
+watch(
+  () => progress.unlocked && !progress.isGuest,
+  async owner => {
+    backupNote.value = ''
+    if (!owner) return
+    try {
+      const res = await fetchT('/api/backup/status', { headers: { Authorization: `Bearer ${progress.bearer}` } })
+      if (!res.ok) return
+      const r = (await res.json()) as { archive?: { last: { ok: boolean; time: number } | null; problems: string[] } }
+      if (r.archive) backupNote.value = archiveReminder(r.archive.last, r.archive.problems)
+    } catch {
+      /* без связи напоминания нет */
+    }
+  },
+  { immediate: true },
+)
 
 /** Обложка шапки: картинка с сервера (нужен токен), поэтому подгружается через blob. Без неё шапка — градиент. */
 const coverUrl = ref('')
@@ -84,6 +105,10 @@ const tabs = computed<[Tab, string][]>(() => [
         <RouterLink to="/game" class="cb-play">🎮 Играть</RouterLink>
       </div>
     </header>
+
+    <p v-if="backupNote" class="cb-note" role="status">
+      ⚠ {{ backupNote }} <button type="button" class="plain" @click="tab = 'settings'">Открыть настройки</button>
+    </p>
 
     <div class="chips cb-tabs">
       <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="tab = id">{{ label }}</button>

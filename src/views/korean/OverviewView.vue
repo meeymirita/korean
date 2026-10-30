@@ -57,8 +57,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
     <div class="ov-search">
       <div class="sb">
-        <input ref="input" v-model="q" type="text" autocomplete="off" placeholder="Слово, правило, фраза, буква… по всему сайту" />
-        <button title="Очистить" @click="((q = ''), input?.focus())">✕</button>
+        <input ref="input" data-page-search v-model="q" type="text" autocomplete="off" placeholder="Слово, правило, фраза, буква… по всему сайту" />
+        <button title="Очистить" aria-label="Очистить" @click="((q = ''), input?.focus())">✕</button>
       </div>
       <div class="meta">
         <span v-if="result">Найдено: {{ result.total }}</span>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
+import { errText } from '@/lib/http'
 import { RouterLink } from 'vue-router'
 import { useTwoFa } from '@/composables/useTwoFa'
 import { useProgressStore } from '@/stores/progress'
@@ -39,7 +40,7 @@ async function sendCode() {
   } catch (e) {
     const wait = (e as { wait?: number }).wait
     if (wait) countdown(wait)
-    codeError.value = (e as Error).message // например «код уже отправлен, новый через 40 с»: сам код при этом дошёл
+    codeError.value = errText(e) // например «код уже отправлен, новый через 40 с»: сам код при этом дошёл
   } finally {
     sending.value = false
   }
@@ -52,7 +53,7 @@ async function submitCode() {
     await tf.verifyLogin(code.value.trim())
     code.value = ''
   } catch (e) {
-    codeError.value = (e as Error).message
+    codeError.value = errText(e)
     code.value = ''
   } finally {
     busy.value = false

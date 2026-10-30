@@ -21,6 +21,10 @@ const PART = 18 * 1024 * 1024
 const MAX_PARTS = 5
 const KEEP_LOCAL = 2
 const WEEK = 7 * 86_400_000
+/** Ночная копия считается пропавшей, если новой нет дольше этого. */
+export const STALE_MS = 36 * 3600_000
+const SCRIPT_STATUS = path.join(DATA_DIR, 'backup-status.json')
+const ALERT = path.join(DATA_DIR, 'backup-alert.json')
 export const STEPS = ['Снимок базы', 'Сжатие файлов', 'Шифрование', 'Почта'] as const
 
 export interface Job {
@@ -75,18 +79,58 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     private readonly twofa: TwoFaService,
   ) {}
 
-  /** Раз в неделю сам (после 4 утра по времени сервера), если есть пароль и куда отправлять. */
+  /** Раз в час: раз в неделю собирает архив сам (после 4 утра по времени сервера, если есть пароль и куда отправлять) и следит за ночной копией. */
   onModuleInit() {
-    if (process.env.BACKUP_AUTO === '0') return
     this.timer = setInterval(() => {
       const last = this.last()
-      if (!this.problems().length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > WEEK) void this.start()
-    }, 3600_000)
+      if (process.env.BACKUP_AUTO !== '0' && !this.problems().length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > WEEK) void this.start()
+      void this.watchNightly()
+    }, Number(process.env.BACKUP_WATCH_MS) || 3600_000)
     this.timer.unref()
   }
 
   onModuleDestroy() {
     clearInterval(this.timer)
+  }
+
+  /**
+   * Следит за ночной копией (scripts/backup.sh пишет backup-status.json): если скрипт сообщил об ошибке или новой копии нет дольше
+   * STALE_MS, шлёт одно письмо на каждый случай (метка в backup-alert.json, чтобы не повторять каждый час). Пока скрипт ни разу не запускался, молчит.
+   */
+  async watchNightly(now = Date.now()): Promise<'ok' | 'sent' | 'quiet' | 'off'> {
+    let s: { ok?: unknown; time?: unknown; message?: unknown }
+    try {
+      s = JSON.parse(readFileSync(SCRIPT_STATUS, 'utf8'))
+    } catch {
+      return 'off'
+    }
+    const time = Number(s.time) || 0
+    const failed = s.ok === false
+    const stale = !failed && now - time > STALE_MS
+    if (!failed && !stale) return 'ok'
+    if (!this.mailOn()) return 'quiet'
+    const key = failed ? `fail-${time}` : `stale-${new Date(now).toISOString().slice(0, 10)}`
+    let seen = ''
+    try {
+      seen = (JSON.parse(readFileSync(ALERT, 'utf8')) as { key?: string }).key ?? ''
+    } catch {
+      /* письма ещё не было */
+    }
+    if (seen === key) return 'quiet'
+    try {
+      const hours = Math.floor((now - time) / 3600_000)
+      const m = backupMail(
+        failed
+          ? { kind: 'nightly-fail', detail: typeof s.message === 'string' ? s.message.slice(0, 200) : '' }
+          : { kind: 'stale', detail: time ? `уже ${hours} ч` : undefined },
+      )
+      await this.mail.send(this.mailTo(), m.subject, m.text, m.html)
+      writeFileSync(ALERT, JSON.stringify({ key, time: now }))
+      return 'sent'
+    } catch (e) {
+      console.error('письмо о ночной копии не отправилось:', (e as Error).message)
+      return 'quiet'
+    }
   }
 
   last(): ArchiveResult | null {

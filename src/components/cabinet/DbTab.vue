@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { fetchT } from '@/lib/http'
+import { errText, fetchT } from '@/lib/http'
 import { computed, onMounted, ref, watch } from 'vue'
 import { formatCell, rangeText } from '@/data/dbView'
 import { useProgressStore } from '@/stores/progress'
@@ -53,7 +53,7 @@ async function loadTables() {
     tables.value = await api<Table[]>('/api/db/tables')
     if (!current.value && tables.value.length) current.value = (tables.value.find(t => t.name === 'answers') ?? tables.value[0]!).name
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errText(e)
   }
 }
 
@@ -65,7 +65,7 @@ async function loadRows() {
     const q = new URLSearchParams({ limit: String(LIMIT), offset: String(offset.value), q: query.value })
     data.value = await api<Rows>(`/api/db/tables/${current.value}?${q}`)
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errText(e)
   }
   loading.value = false
 }
@@ -99,7 +99,7 @@ onMounted(loadTables)
       <button v-for="t in tables" :key="t.name" class="chip" :class="{ on: current === t.name }" :title="HINTS[t.name]" @click="pick(t.name)">
         {{ t.name }} <small>{{ t.rows }}</small>
       </button>
-      <button class="chip plain" title="Обновить" @click="loadTables(); loadRows()">↻</button>
+      <button class="chip plain" title="Обновить" aria-label="Обновить" @click="loadTables(); loadRows()">↻</button>
     </div>
     <p v-if="current && HINTS[current]" class="db-hint">{{ HINTS[current] }}</p>
 

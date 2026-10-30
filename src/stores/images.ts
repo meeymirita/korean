@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useProgressStore } from '@/stores/progress'
-import { LONG_TIMEOUT, fetchT } from '@/lib/http'
+import { LONG_TIMEOUT, errText, fetchT } from '@/lib/http'
 import { cleanTags } from '@/lib/tags'
 
 export interface ImageItem {
@@ -84,8 +84,8 @@ export const useImagesStore = defineStore('images', () => {
     let res: Response
     try {
       res = await fetchT('/api/images', { method: 'POST', headers: headers(), body: form }, LONG_TIMEOUT)
-    } catch {
-      throw new Error('сервер недоступен')
+    } catch (e) {
+      throw new Error(errText(e))
     }
     if (!res.ok) throw new Error(uploadError(res.status))
     const item = (await res.json()) as ImageItem & { ext?: string }

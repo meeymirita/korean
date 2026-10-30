@@ -47,10 +47,10 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
             </span>
           </div>
         </div>
-        <button title="Поделиться карточкой" :disabled="busy" @click="shareRule">🖼</button>
-        <button title="Предыдущая" @click="prev">←</button>
-        <button title="Следующая" @click="next">→</button>
-        <button title="Закрыть" @click="close">✕</button>
+        <button title="Поделиться карточкой" aria-label="Поделиться карточкой" :disabled="busy" @click="shareRule">🖼</button>
+        <button title="Предыдущая" aria-label="Предыдущая" @click="prev">←</button>
+        <button title="Следующая" aria-label="Следующая" @click="next">→</button>
+        <button title="Закрыть" aria-label="Закрыть" @click="close">✕</button>
       </div>
       <div :key="current.id" class="gb rich" v-html="current.b.map(blk).join('')"></div>
     </div>

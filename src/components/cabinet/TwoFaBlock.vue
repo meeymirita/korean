@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { errText } from '@/lib/http'
 import { askTokenDo } from '@/composables/useConfirm'
 import { useTwoFa } from '@/composables/useTwoFa'
 import { useToastStore } from '@/stores/toast'
@@ -27,7 +28,7 @@ async function run(fn: () => Promise<unknown>) {
   try {
     await fn()
   } catch (e) {
-    toast.error((e as Error).message)
+    toast.error(errText(e))
   } finally {
     busy.value = false
   }

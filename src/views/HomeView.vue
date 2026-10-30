@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
@@ -7,11 +7,14 @@ import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { HOME_LINKS, HOME_MORE, HOME_PHRASE, HOME_RULE, useHome } from '@/composables/useHome'
 
-const { progress, days, daysWord, hello } = useHome()
+const { progress, days, daysWord, hello, due, dueText } = useHome()
 const guide = ref(false)
 
 /** Слово дня: другое после каждой перезагрузки страницы. */
 const word = D[Math.floor(Math.random() * D.length)]!
+/** Карточка слова переворачивается по нажатию: видно перевод. */
+const flipped = ref(false)
+const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: word.k } } : '/korean/words'))
 </script>
 
 <template>
@@ -59,6 +62,10 @@ const word = D[Math.floor(Math.random() * D.length)]!
           <RouterLink to="/korean/cabinet" class="link">{{ hello.title }}</RouterLink>
         </div>
 
+        <RouterLink v-if="due" to="/korean/review" class="due">
+          <span class="due-dot"></span>Пора повторить {{ dueText }}<span class="arrow">→</span>
+        </RouterLink>
+
         <div class="more">
           <RouterLink to="/history" class="link show-sm">История изменений</RouterLink>
           <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
@@ -75,11 +82,21 @@ const word = D[Math.floor(Math.random() * D.length)]!
           <span class="hint">{{ HOME_PHRASE.ru }}</span>
         </div>
 
-        <RouterLink :to="word.k ? { path: '/korean/words', query: { q: word.k } } : '/korean/words'" class="note">
-          <span class="lbl">▤ Слово</span>
-          <span class="val ko">{{ word.k }}</span>
-          <span class="hint">{{ word.r }} · {{ word.t }}</span>
-        </RouterLink>
+        <div class="note flip" :class="{ on: flipped }">
+          <button type="button" class="flip-btn" :aria-pressed="flipped" aria-label="Слово дня: нажми, чтобы перевернуть карточку" @click="flipped = !flipped">
+            <span class="face front">
+              <span class="lbl">▤ Слово дня · нажми</span>
+              <span class="val ko">{{ word.k }}</span>
+              <span class="hint">{{ word.r }}</span>
+            </span>
+            <span class="face back">
+              <span class="lbl">▤ Перевод</span>
+              <span class="val">{{ word.t }}</span>
+              <span class="hint">{{ word.r }}</span>
+            </span>
+          </button>
+          <RouterLink :to="wordLink" class="flip-more">в словарь →</RouterLink>
+        </div>
 
         <RouterLink :to="HOME_RULE.to" class="note">
           <span class="lbl">◉ {{ HOME_RULE.label }}</span>
@@ -174,6 +191,21 @@ a.note:hover .val { color: var(--accent); }
 .note .val { font-size: clamp(17px, 1.6vw, 21px); font-weight: 700; letter-spacing: -.01em; line-height: 1.15; overflow-wrap: anywhere; transition: color .2s; }
 .note .val.ko { font-weight: 800; color: var(--accent2); }
 .note .hint { font-size: 11.5px; color: var(--soft); line-height: 1.5; }
+.flip { perspective: 800px; }
+.flip-btn { all: unset; display: grid; cursor: pointer; transform-style: preserve-3d; transition: transform .5s; }
+.flip-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.flip.on .flip-btn { transform: rotateY(180deg); }
+.flip .face { grid-area: 1 / 1; display: grid; gap: 6px; align-content: start; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip .back { transform: rotateY(180deg); }
+.flip-more { font-size: 11.5px; color: var(--soft); justify-self: start; }
+.flip-more:hover { color: var(--accent); }
+.due { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 7px 14px; border-radius: 99px; background: rgba(255, 183, 206, .28);
+  color: var(--ink); font-size: 12.5px; font-weight: 600; transition: .2s; }
+.due:hover { background: rgba(255, 183, 206, .5); }
+.due .arrow { transition: .2s; }
+.due:hover .arrow { transform: translateX(3px); }
+.due-dot { width: 8px; height: 8px; border-radius: 50%; background: #e86f95; }
+@media (prefers-reduced-motion: reduce) { .flip-btn { transition: none; } }
 
 .footer { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
   padding-top: clamp(14px, 2vh, 20px); border-top: 1px solid var(--line); font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--soft); }

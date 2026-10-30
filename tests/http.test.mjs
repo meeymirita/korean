@@ -2,7 +2,7 @@ import { after, afterEach, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { fetchT, TIMEOUT, LONG_TIMEOUT } = await load('/src/lib/http.ts')
+const { fetchT, errText, TIMEOUT, LONG_TIMEOUT } = await load('/src/lib/http.ts')
 after(close)
 
 const real = globalThis.fetch
@@ -20,7 +20,7 @@ describe('запросы с таймаутом', () => {
 
   test('зависший запрос прерывается с понятным текстом', async () => {
     globalThis.fetch = hang
-    await assert.rejects(() => fetchT('/api/x', {}, 30), /сервер отвечает слишком долго/)
+    await assert.rejects(() => fetchT('/api/x', {}, 30), /сервер не отвечает/)
   })
 
   test('нормальный ответ возвращается как есть, параметры передаются', async () => {
@@ -44,6 +44,25 @@ describe('запросы с таймаутом', () => {
     const ctl = new AbortController()
     const p = fetchT('/api/w', { signal: ctl.signal }, 5000)
     ctl.abort()
-    await assert.rejects(p, /слишком долго/)
+    await assert.rejects(p, /сервер не отвечает/)
+  })
+})
+
+describe('errText', () => {
+  test('браузерные тексты сети становятся понятными, остальное не меняется', () => {
+    assert.equal(errText(new Error('Failed to fetch')), 'сервер недоступен')
+    assert.equal(errText(new Error('Load failed')), 'сервер недоступен')
+    assert.equal(errText(new Error('неверный токен')), 'неверный токен')
+    assert.equal(errText(undefined), '')
+  })
+
+  test('без интернета говорит об этом', () => {
+    const had = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+    Object.defineProperty(globalThis, 'navigator', { value: { onLine: false }, configurable: true })
+    try {
+      assert.equal(errText(new Error('Failed to fetch')), 'нет интернета')
+    } finally {
+      if (had) Object.defineProperty(globalThis, 'navigator', had)
+    }
   })
 })

@@ -40,6 +40,17 @@ function onKey(e: KeyboardEvent) {
     e.preventDefault()
     toggleSearch()
   } else if (e.key === 'Escape' && searchOpen.value) closeSearch()
+  else if (e.key === '/' && !searchOpen.value && !e.ctrlKey && !e.metaKey && !e.altKey && canOpenByKey(e.target)) {
+    e.preventDefault()
+    toggleSearch()
+  }
+}
+/** «/» открывает окно поиска, если человек не печатает, нет другого окна и на странице нет своего поля поиска (оно ловит «/» само). */
+function canOpenByKey(target: EventTarget | null) {
+  const el = target as HTMLElement | null
+  if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return false
+  if (document.querySelector('[data-page-search], [role="dialog"]') || location.pathname.startsWith('/game')) return false
+  return true
 }
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
@@ -59,11 +70,11 @@ onBeforeUnmount(() => {
           </header>
           <div class="sb">
             <input ref="input" v-model="q" type="text" autocomplete="off" placeholder="Слово, правило, фраза, буква, пример…" />
-            <button title="Очистить" @click="((q = ''), input?.focus())">✕</button>
+            <button title="Очистить" aria-label="Очистить" @click="((q = ''), input?.focus())">✕</button>
           </div>
           <p class="sw-meta">
             <span v-if="result">Найдено: {{ result.total }}</span>
-            <span v-else>ищет в словаре, грамматике, справочнике, примерах и буквах · Ctrl/⌘ + K — открыть и закрыть</span>
+            <span v-else>ищет в словаре, грамматике, справочнике, примерах и буквах · Ctrl/⌘ + K или «/» — открыть и закрыть</span>
           </p>
 
           <div v-if="result" class="sw-res">

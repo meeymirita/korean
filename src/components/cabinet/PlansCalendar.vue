@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { errText } from '@/lib/http'
 import TagInput from '@/components/cabinet/TagInput.vue'
 import { useAllTags } from '@/composables/useAllTags'
 import { askConfirm } from '@/composables/useConfirm'
@@ -129,7 +130,7 @@ async function save() {
           await plans.upload(plan.id, f)
         } catch (err) {
           failed++
-          problems.value.push(`${f.name}: ${(err as Error).message}`)
+          problems.value.push(`${f.name}: ${errText(err)}`)
         }
       }
       if (failed) {
@@ -143,8 +144,8 @@ async function save() {
     }
     closeForm()
   } catch (err) {
-    problems.value = [(err as Error).message]
-    toast.error((err as Error).message)
+    problems.value = [errText(err)]
+    toast.error(errText(err))
   } finally {
     busy.value = false
   }
@@ -157,7 +158,7 @@ async function removePlan(p: Plan) {
     await plans.remove(p.id)
     toast.ok('Запись удалена')
   } catch (err) {
-    toast.error((err as Error).message)
+    toast.error(errText(err))
   }
 }
 
@@ -179,7 +180,7 @@ async function attachList(p: Plan, list: File[]) {
       await plans.upload(p.id, f)
       toast.ok('Файл добавлен')
     } catch (err) {
-      toast.error(`${f.name}: ${(err as Error).message}`)
+      toast.error(`${f.name}: ${errText(err)}`)
     }
   }
   uploading.value = ''
@@ -212,7 +213,7 @@ async function removeFile(p: Plan, f: PlanFile) {
     delete thumbs.value[f.id]
     toast.ok('Файл удалён')
   } catch (err) {
-    toast.error((err as Error).message)
+    toast.error(errText(err))
   }
 }
 /** PDF и картинки открываются в новой вкладке, Word скачивается. */
@@ -255,7 +256,7 @@ onMounted(async () => {
   try {
     await plans.load()
   } catch (err) {
-    toast.error((err as Error).message)
+    toast.error(errText(err))
   }
 })
 onBeforeUnmount(() => {

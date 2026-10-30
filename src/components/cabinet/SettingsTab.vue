@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { errText } from '@/lib/http'
 import Avatar from '@/components/Avatar.vue'
 import GuestAccess from '@/components/cabinet/GuestAccess.vue'
 import BackupBlock from '@/components/cabinet/BackupBlock.vue'
@@ -66,7 +67,7 @@ async function uploadCover(e: Event) {
     progress.setProfile({ cover: item.id })
     message.value = 'Обложка сохранена.'
   } catch (err) {
-    message.value = (err as Error).message
+    message.value = errText(err)
   } finally {
     coverBusy.value = false
   }
@@ -166,7 +167,7 @@ async function togglePublic() {
     await pub.save(on, pubCover.value)
     toast.ok(on ? 'Визитка включена: /me открыта всем' : 'Визитка выключена: /me закрыта')
   } catch (e) {
-    toast.error((e as Error).message)
+    toast.error(errText(e))
   }
 }
 async function refreshPublic() {
@@ -174,7 +175,7 @@ async function refreshPublic() {
     await pub.save(true, pubCover.value)
     toast.ok('Данные визитки обновлены')
   } catch (e) {
-    toast.error((e as Error).message)
+    toast.error(errText(e))
   }
 }
 </script>

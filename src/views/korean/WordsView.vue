@@ -69,14 +69,15 @@ const shareWord = (d: Word) =>
       <div class="sb">
         <input
           ref="input"
+          data-page-search
           v-model="q"
           type="text"
           autocomplete="off"
           placeholder="ем, есть, 먹다, мокта…"
           @input="picked = null"
         />
-        <button title="Очистить" @click="clear">✕</button>
-        <button title="Случайное слово" @click="random">🎲</button>
+        <button title="Очистить" aria-label="Очистить" @click="clear">✕</button>
+        <button title="Случайное слово" aria-label="Случайное слово" @click="random">🎲</button>
       </div>
       <div class="meta">
         <span>{{ counter }}</span>
