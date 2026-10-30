@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, «Мои ошибки»
+
+- `data/mistakes.ts` (`mistakeWords`, `mistakeTasks`), страница `/korean/mistakes` (`MistakesView.vue`), общий компонент `TaskSession.vue` (его же использует «5 минут»: клавиши 1–9 и Enter). Тест `tests/mistakes.test.mjs`.
+
 ## 2026-10-30, «5 минут»
 
 - `data/korean/quick.ts` (`quickTasks`: до 4 слов из `dueWords`, 2 задания на правило, остальное случайные), страница `/korean/quick` (`QuickView.vue`, закрыта токеном, `noindex`, `robots.txt`), ссылка на главной и в «Главной раздела», источник ответов `quick`. Тест `tests/quick.test.mjs`.

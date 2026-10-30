@@ -28,6 +28,7 @@ export const sections: Section[] = [
   { id: 'trainers', num: '06', menu: 'Тренажёры', kicker: 'Игры', title: 'Тренажёры слов', sub: 'найди пару и напиши перевод', private: true },
   { id: 'review', num: '07', menu: 'Повторение', kicker: 'Карточки', title: 'Повторение', sub: 'случайная карточка — нажми, чтобы увидеть ответ', private: true },
   { id: 'quick', num: '09', menu: '5 минут', kicker: 'Быстрый набор', title: '5 минут', sub: 'десять заданий вперемешку: слабые слова, правило и новое', private: true, group: 'extra' },
+  { id: 'mistakes', num: '10', menu: 'Мои ошибки', kicker: 'Слабые места', title: 'Мои ошибки', sub: 'слова, в которых ошибаешься чаще всего, и быстрая тренировка', private: true, group: 'extra' },
   { id: 'garden', num: '08', menu: 'Сад', kicker: 'Прогресс слов', title: 'Сад воспоминаний', sub: 'каждое выученное слово — цветок, а ещё коллекция карточек', private: true },
 ]
 

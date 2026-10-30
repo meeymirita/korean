@@ -368,3 +368,11 @@
 .study .rs-opt kbd { margin-right: 8px; padding: 1px 7px; font: inherit; font-size: 12px; color: var(--muted); background: var(--gold-soft); border-radius: 6px; }
 .study .qk-miss { margin: 0 0 14px; padding-left: 20px; text-align: left; }
 .study .qk-home { display: inline-flex; align-items: center; padding: 10px 18px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); border-radius: 12px; }
+
+/* «Мои ошибки» */
+.study .mk-tb .row { grid-template-columns: 1.1fr 1fr 1.4fr 1.4fr; }
+.study .mk-n small { color: var(--muted); }
+.study .mk-n b { color: var(--bad); }
+.study .mk-ok { color: var(--ok); font-weight: 700; }
+@media (max-width: 640px) { .study .mk-tb .row { grid-template-columns: 1fr 1fr; } .study .mk-tb .row.h span:nth-child(2), .study .mk-tb .row .rd { display: none; } }
+.study .mk-link { margin-left: 10px; font-size: 13px; font-weight: 600; color: var(--gold); }

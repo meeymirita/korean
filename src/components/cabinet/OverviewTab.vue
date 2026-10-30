@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
 import { answersByDay } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
@@ -158,7 +159,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     </div>
     <p class="pg-legend"><i class="known"></i> выучено <i class="learning"></i> в процессе</p>
 
-    <h2 class="today-h">Над чем стоит поработать</h2>
+    <h2 class="today-h">Над чем стоит поработать <RouterLink v-if="weak.length" to="/korean/mistakes" class="mk-link">все ошибки →</RouterLink></h2>
     <div v-if="weak.length" class="pg-weak">
       <div v-for="x in weak" :key="x.d.n" class="pg-w">
         <b class="ko">{{ x.d.k }}</b>
