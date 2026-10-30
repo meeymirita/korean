@@ -81,13 +81,13 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 «Продолжить», статистика; `/korean` → `home`), `today`, `words`, `grammar`, `trainers`, `cabinet`, `review`, `garden`,
 **`ref/...` — «Справочник» с вкладками** `cheat`, `talk`, `hangul`, `alphabet`, `reading`, `sentences`, `numbers`
 (`/korean/ref` → последняя открытая вкладка из `localStorage['ref_last_tab']`; старые `/korean/cheat` и т. п.
-перенаправляют на `ref/...`). Неизвестный адрес → `/`.
+перенаправляют на `ref/...`). Ещё: `/me` (публичная визитка), `/history` (история изменений). Неизвестный адрес → страница 404.
 Список разделов (номера, названия) — `src/data/korean/sections.ts`; вкладки справочника помечены `group: 'ref'` и не
 показываются в меню.
 Поиск главной раздела — `src/data/korean/search.ts` (индекс из слов, карточек грамматики, текста страниц справочника,
 предложений и букв); клик по результату справочника ведёт на `ref/<вкладка>?q=…`, `RichView` подсвечивает совпадения
 и раскрывает `<details>`. «Продолжить»: последний раздел (`useLastVisited`, `localStorage['last_section']`) и слабые
-слова (с токеном); вкладка кабинета записана в адрес: `?tab=repeat|week|history|notes|images|db|settings` (после обновления
+слова (с токеном); вкладка кабинета записана в адрес: `?tab=repeat|week|history|notes|images|db|logs|settings` (после обновления
 страницы остаёмся на ней; без параметра — «Обзор»). Прокрутку после обновления возвращает `scrollBehavior` в `router/index.ts`.
 
 ## Структура
@@ -98,20 +98,21 @@ src/assets/        base.css (токены --bg --ink --muted --gold), study.css 
 src/components/    AuthGate (поле токена), Avatar, StudyTimer (таймер занятий), ToastHost (плашки), ConfirmDialog (подтверждение и ввод токена),
                    SearchWindow (окно поиска по платформе, кнопка справа вверху, Ctrl/⌘ + K)
 src/components/korean/   SectionHead, GrammarModal, LetterCard, MatchGame, TypingQuiz, SentenceBreakdown, DashboardHome (главная раздела)
-src/components/cabinet/  вкладки кабинета: Overview, Repeat, Week, History, Notes (+ NoteModal, NoteImages), Images, Db, Settings, GuestAccess
+src/components/cabinet/  вкладки кабинета: Overview, Repeat, Week (+ PlansCalendar), History, Notes (+ NoteModal, NoteImages, TagInput), Images, Db, Logs, Settings (+ BackupBlock, TwoFaBlock, GuestAccess), ReviewSession
+src/components/charts/   LineChart, ChartTip; src/components/garden/ GardenTab, CollectionTab
 src/components/home/     HomeGuideDrawer (шторка «Что здесь есть»)
 src/views/         HomeView (главная), AboutView («О платформе»), GameView, korean/*View (+ KoreanLayout — боковое меню раздела)
-src/composables/   useGrammarModal, useConfirm (askConfirm, askToken), useSearchWindow, usePersisted (состояние через обновление страницы), useHome, useLastVisited
-src/stores/        progress.ts (прогресс, профиль, обложка, время занятий, вход по токену), notes.ts, images.ts, timer.ts, toast.ts
+src/composables/   useGrammarModal, useConfirm (askConfirm, askToken), useSearchWindow, usePersisted (состояние через обновление страницы), useHome, useLastVisited, useTwoFa, usePublicCard, useShareCard, useAllTags, useChartTip
+src/stores/        progress.ts (прогресс, профиль, обложка, время занятий, вход по токену), notes.ts, images.ts, plans.ts, todaySets.ts, timer.ts, toast.ts
 tests/             *.test.mjs (node --test), _load.mjs (загрузчик TS-модулей)
 docs/              подробности по темам (см. таблицу ниже)
-server/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, admin), свои package.json и node_modules; data/ в .gitignore
-src/lib/           guestStorage.ts (гостевой режим: localStorage в памяти), http.ts (fetchT с таймаутом)
+server/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, plans, sets, public, logs, mail, admin, events), свои package.json и node_modules; data/ в .gitignore
+src/lib/           guestStorage.ts (гостевой режим: localStorage в памяти), http.ts (fetchT с таймаутом), tags.ts, shareCard.ts
 src/data/          alphabet.ts (буквы, слоги), phrases.ts (фразы дня), seo.ts (заголовки, описания, индексация страниц), history.ts (история изменений), about.ts (слайды «О платформе»), guide.ts (шторка «Что здесь есть»),
-                   levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели)
+                   levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели), garden.ts, charts.ts, dbView.ts
 src/data/korean/   dictionary.ts, words.ts, grammar.ts, pages.ts, render.ts, sections.ts, tasks.ts, forms.ts,
-                   trainer.ts, parse.ts, translations.ts
-src/game/          words.ts (данные игры), engine.ts (логика), build.ts (генератор предложений), markup.html, game.css
+                   trainer.ts, parse.ts, translations.ts, rule-tasks.ts, search.ts
+src/game/          words.ts (данные игры), engine.ts (логика), build.ts (генератор предложений), dialogs.ts, markup.html, game.css
 ```
 
 ## Подробности по темам (читай нужный файл перед работой)
@@ -124,14 +125,14 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 | `docs/progress.md` | сад и коллекция, тренажёры, «Сегодня», хранилище прогресса, кабинет, заметки, доступ по токену, гостевые токены, тесты |
 | `docs/server.md` | сервер NestJS + SQLite: таблицы базы, API, защита, как запускать, смотреть базу и тестировать |
 | `docs/hosting.md` | сервер на хостинге, Caddy, служба `progress`, усиление защиты (systemd, Caddy, брандмауэр), команды для владельца |
-| `docs/backup.md` | резервные копии: архив на Яндекс Диск и почту, ночной скрипт, восстановление |
+| `docs/backup.md` | резервные копии: зашифрованный архив на почту, ночной скрипт, проверка и восстановление |
 | `docs/changelog.md` | что и когда сделано, чек-лист обновления сервера |
 | `ideas/` | **идеи на будущее** (161 штука, по темам, с размером и ценностью), `CURRENT.md` (что уже есть), `ROADMAP.md` (порядок работ), `PRINCIPLES.md` (правила) |
 
 ## Как проверять изменения
 
 - Автопроверки на GitHub (`.github/workflows/ci.yml`: типы, сборка, тесты, `npm audit` на Node 22 и 24) идут после каждого push; Dependabot раз в неделю предлагает обновления.
-- Тесты: `npm test` (около 300 тестов, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (около 310 тестов, около 10 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).

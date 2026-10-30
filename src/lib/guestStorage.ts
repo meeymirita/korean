@@ -8,8 +8,6 @@ const KEEP = new Set(['progress_token', 'progress_verified', 'progress_role'])
 let original: PropertyDescriptor | undefined
 let active = false
 
-export const guestStorageOn = () => active
-
 export function enableGuestStorage() {
   if (active) return
   let real: Storage | null = null

@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, уборка
+
+- Убрана неиспользуемая `guestStorageOn`; `CLAUDE.md`, `docs/server.md`, `docs/hosting.md`, README и `ideas/` приведены к текущему коду (модули сервера, вкладки кабинета, копии, `X6` ✅ частично).
+
 ## 2026-10-30, резервные копии
 
 - `server/src/admin/backup-archive.service.ts`: полный архив (снимок базы `VACUUM INTO`, `uploads docs thumbs public`, `.env`) → `tar.gz` → шифрование `openssl enc -aes-256-cbc -pbkdf2` паролем `BACKUP_PASSPHRASE` →
