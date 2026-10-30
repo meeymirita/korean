@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ALLOWED, MAX_CAPTION, formatSize, useImagesStore, type ImageItem } from '@/stores/images'
+import { useToastStore } from '@/stores/toast'
+import { askConfirm } from '@/composables/useConfirm'
+import { ALLOWED, MAX_CAPTION, MAX_DESCRIPTION, formatSize, useImagesStore, type ImageItem } from '@/stores/images'
 
 const store = useImagesStore()
+const toast = useToastStore()
 const errors = ref<string[]>([])
 const status = ref('')
 const busy = ref(false)
@@ -53,6 +56,8 @@ async function upload(list: FileList | File[] | null) {
     }
   }
   status.value = done ? `Загружено: ${done}` : ''
+  if (done) toast.ok(done === 1 ? 'Картинка загружена' : `Загружено картинок: ${done}`)
+  if (errors.value.length) toast.error(errors.value[0]!)
   busy.value = false
 }
 
@@ -66,6 +71,22 @@ function onDrop(e: DragEvent) {
   void upload(e.dataTransfer?.files ?? null)
 }
 
+/* ---------- поиск и фильтр по дате ---------- */
+const query = ref('')
+const from = ref('')
+const to = ref('')
+const startOf = (d: string) => new Date(d + 'T00:00:00').getTime()
+const filtered = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  const a = from.value ? startOf(from.value) : -Infinity
+  const b = to.value ? startOf(to.value) + 86_400_000 : Infinity
+  return store.items.filter(it => it.created >= a && it.created < b && (!q || `${it.caption} ${it.description} ${it.name}`.toLowerCase().includes(q)))
+})
+const filtering = computed(() => !!(query.value.trim() || from.value || to.value))
+function resetFilter() {
+  query.value = from.value = to.value = ''
+}
+
 const usedPct = computed(() => Math.min(100, (store.used / store.limit) * 100))
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
@@ -74,6 +95,7 @@ const openId = ref<string | null>(null)
 const current = computed(() => store.items.find(i => i.id === openId.value) ?? null)
 const full = ref('')
 const caption = ref('')
+const description = ref('')
 const saved = ref(false)
 
 async function show(id: string | null) {
@@ -82,6 +104,7 @@ async function show(id: string | null) {
   saved.value = false
   const it = store.items.find(i => i.id === id)
   caption.value = it?.caption ?? ''
+  description.value = it?.description ?? ''
   if (!it) return
   try {
     const url = await store.blobUrl(it.id, 'file')
@@ -91,24 +114,27 @@ async function show(id: string | null) {
   }
 }
 function step(d: number) {
-  const i = store.items.findIndex(x => x.id === openId.value)
-  const next = store.items[i + d]
+  const i = filtered.value.findIndex(x => x.id === openId.value)
+  const next = filtered.value[i + d]
   if (next) void show(next.id)
 }
-async function saveCaption() {
+async function saveInfo() {
   if (!current.value) return
   try {
-    await store.setCaption(current.value.id, caption.value)
+    await store.update(current.value.id, { caption: caption.value, description: description.value })
     saved.value = true
+    toast.ok('Сохранено')
   } catch (e) {
     errors.value = [(e as Error).message]
   }
 }
 async function remove(it: ImageItem) {
-  if (!confirm(`Удалить картинку «${it.caption || it.name}»? Это нельзя отменить.`)) return
+  const yes = await askConfirm({ title: `Удалить картинку «${it.caption || it.name}»?`, text: 'Это нельзя отменить.', ok: 'Удалить', danger: true })
+  if (!yes) return
   try {
     await store.remove(it.id)
     delete thumbs.value[it.id]
+    toast.ok('Картинка удалена')
     if (openId.value === it.id) openId.value = null
   } catch (e) {
     errors.value = [(e as Error).message]
@@ -141,17 +167,27 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <li v-for="e in errors" :key="e">{{ e }}</li>
     </ul>
 
+    <div v-if="store.items.length" class="im-filter">
+      <input v-model="query" class="im-q" placeholder="Поиск по названию и описанию" aria-label="Поиск по картинкам" />
+      <label>с <input v-model="from" type="date" :max="to || undefined" aria-label="Дата от" /></label>
+      <label>по <input v-model="to" type="date" :min="from || undefined" aria-label="Дата до" /></label>
+      <button v-if="filtering" type="button" class="plain" @click="resetFilter">Сбросить</button>
+      <span class="im-found">{{ filtering ? `Найдено: ${filtered.length} из ${store.items.length}` : '' }}</span>
+    </div>
+
     <p v-if="store.loaded && !store.items.length" class="cb-empty">Картинок пока нет. Загрузите первую.</p>
+    <p v-else-if="store.items.length && !filtered.length" class="cb-empty">Ничего не найдено.</p>
     <p v-else-if="failed" class="cb-empty">Не получилось загрузить список картинок.</p>
 
     <ul class="im-grid">
-      <li v-for="it in store.items" :key="it.id" class="im-card">
+      <li v-for="it in filtered" :key="it.id" class="im-card">
         <button class="im-thumb" :aria-label="`Открыть ${it.caption || it.name}`" @click="show(it.id)">
           <img v-if="thumbs[it.id]" :src="thumbs[it.id]" :alt="it.caption || it.name" loading="lazy" />
           <span v-else class="im-wait">…</span>
         </button>
         <div class="im-meta">
           <b>{{ it.caption || it.name }}</b>
+          <small v-if="it.description" class="im-desc">{{ it.description }}</small>
           <small>{{ when(it.created) }} · {{ formatSize(it.size) }}</small>
         </div>
       </li>
@@ -160,15 +196,16 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     <div v-if="current" class="im-view" @click.self="openId = null">
       <div class="im-box" role="dialog" aria-modal="true" :aria-label="current.caption || current.name">
         <button class="im-x" aria-label="Закрыть" @click="openId = null">✕</button>
-        <button class="im-nav prev" aria-label="Предыдущая" :disabled="store.items[0]?.id === current.id" @click="step(-1)">←</button>
-        <button class="im-nav next" aria-label="Следующая" :disabled="store.items.at(-1)?.id === current.id" @click="step(1)">→</button>
+        <button class="im-nav prev" aria-label="Предыдущая" :disabled="filtered[0]?.id === current.id" @click="step(-1)">←</button>
+        <button class="im-nav next" aria-label="Следующая" :disabled="filtered.at(-1)?.id === current.id" @click="step(1)">→</button>
         <div class="im-stage">
           <img v-if="full" :src="full" :alt="current.caption || current.name" />
           <span v-else class="im-wait">Загружаю…</span>
         </div>
-        <form class="im-info" @submit.prevent="saveCaption">
-          <input v-model="caption" :maxlength="MAX_CAPTION" placeholder="Подпись" aria-label="Подпись" @input="saved = false" />
-          <button type="submit">{{ saved ? '✓ Сохранено' : 'Сохранить подпись' }}</button>
+        <form class="im-info" @submit.prevent="saveInfo">
+          <input v-model="caption" :maxlength="MAX_CAPTION" placeholder="Название" aria-label="Название" @input="saved = false" />
+          <textarea v-model="description" :maxlength="MAX_DESCRIPTION" rows="2" placeholder="Описание" aria-label="Описание" @input="saved = false"></textarea>
+          <button type="submit">{{ saved ? '✓ Сохранено' : 'Сохранить' }}</button>
           <a v-if="full" :href="full" :download="current.name" class="im-dl">Скачать</a>
           <button type="button" class="plain danger" @click="remove(current)">Удалить</button>
         </form>

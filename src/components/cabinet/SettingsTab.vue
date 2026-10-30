@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Avatar from '@/components/Avatar.vue'
 import GuestAccess from '@/components/cabinet/GuestAccess.vue'
 import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
+import { askConfirm, askTokenDo } from '@/composables/useConfirm'
+import { useToastStore } from '@/stores/toast'
+import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 const profile = computed(() => progress.data.profile)
 const settings = computed(() => progress.data.settings)
 const message = ref('')
+const toast = useToastStore()
+/** Любое сообщение настроек дублируется плашкой; ошибки (нужна, не получилось, не файл) показываются красным. */
+watch(message, m => (/^(Нужна|Не получилось|Не удалось)|не файл|слишком|не хватает|неверный|нет доступа|ошибка/.test(m) ? toast.error(m) : m && toast.ok(m)))
 
 /* ---------- профиль ---------- */
-const AVATARS = ['🌸', '✨', '🔮', '📖', '🌙', '⭐', '🍞', '🧝', '🦊', '🐉', '🌿', '☕']
-
 /** Своя картинка: обрезаем по центру до 96×96, чтобы она занимала несколько КБ. */
 async function upload(e: Event) {
   const input = e.target as HTMLInputElement
@@ -34,6 +38,34 @@ async function upload(e: Event) {
     message.value = 'Картинка сохранена.'
   } catch {
     message.value = 'Не получилось открыть картинку.'
+  }
+}
+
+const DEFAULT_AVATAR = '🌸'
+const hasPhoto = computed(() => profile.value.avatar.startsWith('data:image/'))
+const images = useImagesStore()
+const coverBusy = ref(false)
+/** Обложка кабинета: картинка загружается в раздел «Картинки» (там её видно и можно удалить), в профиле хранится её id. */
+async function uploadCover(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || coverBusy.value) return
+  coverBusy.value = true
+  try {
+    if (!images.loaded) await images.load()
+    const problem = images.check(file)
+    if (problem) {
+      message.value = problem
+      return
+    }
+    const item = await images.upload(file, 'Обложка кабинета', 'cover')
+    progress.setProfile({ cover: item.id })
+    message.value = 'Обложка сохранена.'
+  } catch (err) {
+    message.value = (err as Error).message
+  } finally {
+    coverBusy.value = false
   }
 }
 
@@ -78,13 +110,32 @@ async function restore(e: Event) {
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
-  message.value = progress.importJson(await file.text()) ? 'Копия загружена.' : 'Не получилось: это не файл прогресса.'
-}
-function reset() {
-  if (confirm('Сбросить уровень, очки, серию дней, выученные слова и историю? Профиль и настройки останутся. Это нельзя отменить.')) {
-    progress.reset()
-    message.value = 'Прогресс сброшен.'
+  const text = await file.text()
+  // загрузка копии заменяет все данные: на сервере нужен повторный ввод токена (ошибка показывается в окне)
+  if (progress.needsConfirm()) {
+    let ok = false
+    const done = await askTokenDo(
+      { title: 'Загрузить копию?', text: 'Весь прогресс заменится данными из файла. Введите токен, чтобы подтвердить.', ok: 'Загрузить' },
+      async token => {
+        ok = await progress.importJson(text, token)
+      },
+    )
+    if (done) message.value = ok ? 'Копия загружена.' : 'Не получилось: это не файл прогресса.'
+    return
   }
+  message.value = (await progress.importJson(text)) ? 'Копия загружена.' : 'Не получилось: это не файл прогресса.'
+}
+async function reset() {
+  const text = 'Уровень, очки, серия дней, выученные слова, время занятий и история обнулятся. Профиль и настройки останутся. Это нельзя отменить.'
+  if (progress.needsConfirm()) {
+    // с сервером сброс защищён: токен вводится ещё раз, проверяет его сам сервер, ошибка остаётся в окне
+    const done = await askTokenDo({ title: 'Сбросить весь прогресс?', text: text + ' Введите токен, чтобы подтвердить.', ok: 'Сбросить' }, token => progress.reset(token))
+    if (done) message.value = 'Прогресс сброшен.'
+    return
+  }
+  if (!(await askConfirm({ title: 'Сбросить весь прогресс?', text, ok: 'Сбросить', danger: true }))) return
+  await progress.reset()
+  message.value = 'Прогресс сброшен.'
 }
 async function reconnect() {
   if (tokenInput.value.trim()) {
@@ -104,18 +155,23 @@ async function reconnect() {
         <input :value="profile.name" maxlength="24" placeholder="Как тебя называть?" aria-label="Имя" @input="progress.setProfile({ name: ($event.target as HTMLInputElement).value })" />
       </div>
       <div class="st-avatars">
-        <button v-for="a in AVATARS" :key="a" class="st-av" :class="{ on: profile.avatar === a }" :aria-label="`Картинка ${a}`" @click="progress.setProfile({ avatar: a })">
-          <Avatar :avatar="a" :size="40" />
-        </button>
         <label class="st-up">⬆ Своя картинка<input type="file" accept="image/*" @change="upload" /></label>
+        <button v-if="hasPhoto" class="st-up" type="button" @click="progress.setProfile({ avatar: DEFAULT_AVATAR })">Убрать картинку</button>
       </div>
+      <template v-if="!progress.isGuest">
+        <p class="st-sub">Обложка в шапке кабинета.</p>
+        <div class="st-avatars">
+          <label class="st-up">{{ coverBusy ? 'Загружаю…' : '🖼 Загрузить обложку' }}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" :disabled="coverBusy" @change="uploadCover" /></label>
+          <button v-if="profile.cover" class="st-up" type="button" @click="progress.setProfile({ cover: '' })">Убрать обложку</button>
+        </div>
+      </template>
     </div>
 
     <div class="st-block">
       <h3>Цель дня</h3>
       <p>Сколько верных ответов в день считать выполненной целью.</p>
       <div class="st-goals">
-        <button v-for="g in GOAL_OPTIONS" :key="g" class="chip" :class="{ on: settings.goal === g }" @click="progress.setSettings({ goal: g })">{{ g }}</button>
+        <button v-for="g in GOAL_OPTIONS" :key="g" class="chip" :class="{ on: settings.goal === g }" @click="(progress.setSettings({ goal: g }), toast.ok(`Цель дня: ${g}`))">{{ g }}</button>
       </div>
     </div>
 

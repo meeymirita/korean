@@ -5,9 +5,11 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { CATN, D, parseQuery, score, type Word } from '@/data/korean/words'
 import { esc, hl } from '@/data/korean/render'
+import { usePersisted } from '@/composables/usePersisted'
 
-const q = ref(String(useRoute().query.q ?? ''))
-const cat = ref('')
+const q = usePersisted('words_q', '', v => typeof v === 'string')
+if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
+const cat = usePersisted('words_cat', '', v => typeof v === 'string')
 const picked = ref<Word | null>(null)
 const openN = ref<number | null>(null)
 const toggle = (n: number) => (openN.value = openN.value === n ? null : n)

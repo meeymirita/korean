@@ -33,7 +33,8 @@ describe('normalize', () => {
   test('старая версия без профиля и настроек получает значения по умолчанию', () => {
     const d = normalize({ v: 1, xp: 120, words: { 사람: { ok: 1, bad: 0, streak: 1, last: 5 } } })
     assert.equal(d.xp, 120)
-    assert.deepEqual(d.profile, { name: '', avatar: '🌸' })
+    assert.deepEqual(d.profile, { name: '', avatar: '🌸', cover: '' })
+    assert.deepEqual(d.time, {})
     assert.deepEqual(d.settings, { goal: 20, cats: [], gameCats: null })
     assert.deepEqual(d.log, [])
   })
@@ -144,28 +145,45 @@ describe('профиль, настройки, копия', () => {
     assert.equal(store.data.profile.avatar, '🐰')
   })
 
+  test('обложка кабинета: id картинки запоминается и уходит на сервер, мусорный id не принимается', () => {
+    store.setProfile({ cover: '0123456789abcdef' })
+    assert.equal(store.data.profile.cover, '0123456789abcdef')
+    store.setProfile({ cover: '' })
+    assert.equal(store.data.profile.cover, '')
+    assert.equal(normalize({ v: 1, profile: { cover: '../x' } }).profile.cover, '')
+  })
+
+  test('время занятий: секунды прибавляются к сегодняшнему дню, нулевое и дробное не считается лишним', () => {
+    store.addTime(0)
+    store.addTime(0.4)
+    assert.deepEqual(store.data.time, {})
+    store.addTime(30)
+    store.addTime(45.9)
+    assert.equal(store.data.time[dayKey()], 75)
+  })
+
   test('настройки: цель только из списка', () => {
     store.setSettings({ goal: 50 })
     store.setSettings({ goal: 33 })
     assert.equal(store.goal, 50)
   })
 
-  test('экспорт и импорт возвращают те же данные, мусор не принимается', () => {
+  test('экспорт и импорт возвращают те же данные, мусор не принимается', async () => {
     store.record({ word: '사람', ok: true, source: 'game' })
     const json = store.exportJson()
-    store.reset()
+    await store.reset()
     assert.equal(store.data.xp, 0)
-    assert.equal(store.importJson(json), true)
+    assert.equal(await store.importJson(json), true)
     assert.equal(store.data.xp, 10)
-    assert.equal(store.importJson('не json'), false)
-    assert.equal(store.importJson('{"v":2}'), false)
+    assert.equal(await store.importJson('не json'), false)
+    assert.equal(await store.importJson('{"v":2}'), false)
   })
 
-  test('сброс обнуляет прогресс, но оставляет профиль и настройки', () => {
+  test('сброс обнуляет прогресс, но оставляет профиль и настройки', async () => {
     store.setProfile({ name: 'Хлеб' })
     store.setSettings({ goal: 50 })
     store.record({ word: '사람', ok: true, source: 'game' })
-    store.reset()
+    await store.reset()
     assert.equal(store.data.xp, 0)
     assert.deepEqual(store.data.words, {})
     assert.equal(store.data.profile.name, 'Хлеб')
@@ -287,21 +305,59 @@ describe('очередь действий для сервера', () => {
     assert.equal(store.sync, 'ok')
   })
 
-  test('профиль, настройки, сброс и загрузка копии тоже уходят действиями', async () => {
+  test('профиль и настройки уходят действиями (неверная цель на сервер не уходит)', async () => {
     owner()
     globalThis.fetch = serverOk()
     store.setProfile({ name: 'mira', avatar: '🦊' })
     store.setSettings({ goal: 50, cats: ['еда'], gameCats: { v: 1 } })
-    store.setSettings({ goal: 7 }) // неверная цель на сервер не уходит
-    store.reset()
-    assert.equal(store.importJson(store.exportJson()), true)
+    store.setSettings({ goal: 7 })
     await store.push()
     const ops = bodies[0].ops
-    assert.deepEqual(ops.map(o => o.type), ['profile', 'settings', 'settings', 'reset', 'import'])
+    assert.deepEqual(ops.map(o => o.type), ['profile', 'settings', 'settings'])
     assert.deepEqual(ops[0], { type: 'profile', name: 'mira', avatar: '🦊' })
     assert.deepEqual(ops[1], { type: 'settings', goal: 50, cats: ['еда'], gameCats: { v: 1 } })
     assert.deepEqual(ops[2], { type: 'settings' })
-    assert.equal(ops[4].data.v, 1)
+  })
+
+  test('сброс и загрузка копии с сервером: повторный токен уходит заголовком, сначала накопленное, не вышло — ничего не меняется', async () => {
+    owner()
+    const heads = []
+    globalThis.fetch = async (url, opt = {}) => {
+      urls.push(`${opt.method ?? 'GET'} ${url}`)
+      if (opt.body) bodies.push(JSON.parse(opt.body))
+      heads.push(opt.headers?.['X-Confirm-Token'])
+      return reply(200, {})()
+    }
+    store.record({ word: '사람', ok: true, source: 'game' })
+    await store.reset('my-token')
+    assert.equal(store.data.xp, 0, 'локально обнулилось')
+    assert.deepEqual(bodies.map(b => b.ops.map(o => o.type)), [['answer'], ['reset']], 'накопленный ответ ушёл раньше сброса')
+    assert.deepEqual(heads, [undefined, 'my-token'], 'токен только у опасного запроса')
+    store.record({ word: '친구', ok: true, source: 'game' })
+    assert.equal(await store.importJson(store.exportJson(), 'my-token'), true)
+    assert.equal(bodies.at(-1).ops[0].type, 'import')
+    assert.equal(heads.at(-1), 'my-token')
+
+    // сервер не принял токен: данные на сайте остаются
+    store.record({ word: '아이', ok: true, source: 'game' })
+    const xp = store.data.xp
+    globalThis.fetch = reply(403, {})
+    await assert.rejects(() => store.reset('wrong'), /неверный токен подтверждения/)
+    await assert.rejects(() => store.importJson(store.exportJson(), 'wrong'), /неверный токен подтверждения/)
+    assert.equal(store.data.xp, xp, 'ничего не обнулилось')
+    globalThis.fetch = reply(429, {})
+    await assert.rejects(() => store.reset('x'), /слишком много попыток/)
+    await assert.rejects(() => store.reset('русский токен'), /неверный токен подтверждения/, 'русские буквы в заголовок не пускаем')
+    globalThis.fetch = offline
+    await assert.rejects(() => store.reset('x'))
+    assert.equal(store.data.xp, xp)
+  })
+
+  test('без сервера (нет токена) сброс и копия работают на месте без подтверждения', async () => {
+    assert.equal(store.needsConfirm(), false)
+    store.record({ word: '사람', ok: true, source: 'game' })
+    await store.reset()
+    assert.equal(store.data.xp, 0)
   })
 
   test('без токена и у гостя действия никуда не копятся', async () => {

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useToastStore } from '@/stores/toast'
+import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { useProgressStore, type GuestToken } from '@/stores/progress'
 
 const progress = useProgressStore()
+const toast = useToastStore()
 
 const DURATIONS: [number, string][] = [[1, '1 час'], [3, '3 часа'], [24, '1 день'], [168, '7 дней']]
 const hours = ref(24)
@@ -26,23 +29,38 @@ async function refresh() {
 }
 
 async function create() {
-  busy.value = true
+  // гостевой токен открывает доступ ко всему, поэтому нужен повторный ввод токена владельца; проверяет его сервер,
+  // а ошибка («неверный токен») показывается в самом окне
   error.value = ''
   copied.value = false
+  busy.value = true
+  const done = await askTokenDo(
+    {
+      title: 'Создать гостевой доступ?',
+      text: `Гость получит доступ на ${DURATIONS.find(d => d[0] === hours.value)?.[1] ?? 'выбранный срок'}. Введите свой токен, чтобы подтвердить.`,
+      ok: 'Создать',
+    },
+    async token => {
+      created.value = await progress.createGuest(hours.value, label.value, token)
+    },
+  )
+  busy.value = false
+  if (!done) return
+  toast.ok('Гостевой доступ создан')
+  label.value = ''
   try {
-    created.value = await progress.createGuest(hours.value, label.value)
-    label.value = ''
     await refresh()
   } catch (e) {
     error.value = (e as Error).message
   }
-  busy.value = false
 }
 
 async function revoke(g: GuestToken) {
-  if (!confirm(`Отозвать доступ${g.label ? ' «' + g.label + '»' : ''}? Гость сразу потеряет вход.`)) return
+  const yes = await askConfirm({ title: `Отозвать доступ${g.label ? ' «' + g.label + '»' : ''}?`, text: 'Гость сразу потеряет вход.', ok: 'Отозвать', danger: true })
+  if (!yes) return
   try {
     await progress.revokeGuest(g.id)
+    toast.ok('Доступ отозван')
     if (created.value?.id === g.id) created.value = null
     await refresh()
   } catch (e) {

@@ -86,12 +86,14 @@ describe('список, загрузка, подпись, удаление', () 
     assert.equal(store.items.length, 0, 'ничего лишнего в списке')
   })
 
-  test('подпись меняется в списке', async () => {
+  test('название и описание меняются в списке', async () => {
     globalThis.fetch = reply(200, { items: [item('a')], used: 1000, limit: MB, maxFile: MB })
     await store.load()
     globalThis.fetch = reply(200, { ok: true })
-    await store.setCaption('a', '  Мой кот ')
+    await store.update('a', { caption: '  Мой кот ' })
     assert.equal(store.items[0].caption, 'Мой кот')
+    await store.update('a', { description: ' Спит на диване ' })
+    assert.deepEqual([store.items[0].caption, store.items[0].description], ['Мой кот', 'Спит на диване'])
   })
 
   test('удаление: картинка пропадает, место освобождается, повторное удаление не ошибка', async () => {

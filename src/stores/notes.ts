@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useProgressStore } from '@/stores/progress'
+import { fetchT } from '@/lib/http'
 
 export interface Note {
   id: string
   title: string
   text: string
+  /** id картинок из раздела «Картинки» */
+  images: string[]
   created: number
   updated: number
 }
@@ -23,6 +26,9 @@ export type NotesStatus = 'local' | 'saving' | 'saved' | 'error'
 export const MAX_NOTES = 200
 export const MAX_TITLE = 100
 export const MAX_TEXT = 5000
+export const MAX_NOTE_IMAGES = 10
+/** В карточке виден только кусок текста; остальное по кнопке «Показать полностью». */
+export const PREVIEW = 100
 
 const KEY = 'notes_v1'
 const PUSH_DELAY = 1000
@@ -43,6 +49,7 @@ export function normalizeNotes(raw: unknown): NotesData {
       id: n.id,
       title: String(n.title ?? '').slice(0, MAX_TITLE),
       text: String(n.text ?? '').slice(0, MAX_TEXT),
+      images: Array.isArray(n.images) ? n.images.filter((i): i is string => typeof i === 'string' && /^[a-f0-9]{16}$/.test(i)).slice(0, MAX_NOTE_IMAGES) : [],
       created: Number(n.created) || 0,
       updated: Number(n.updated) || 0,
     })
@@ -77,22 +84,23 @@ export const useNotesStore = defineStore('notes', () => {
   const touch = () => (data.value.updated = Date.now())
 
   /** Добавляет заметку. Возвращает её или null, если пусто или достигнут лимит. */
-  function add(title: string, text: string): Note | null {
+  function add(title: string, text: string, images: string[] = []): Note | null {
     const t = title.trim().slice(0, MAX_TITLE)
     const x = text.trim().slice(0, MAX_TEXT)
-    if ((!t && !x) || full.value) return null
+    if ((!t && !x && !images.length) || full.value) return null
     const now = Date.now()
-    const note: Note = { id: newId(), title: t || 'Без названия', text: x, created: now, updated: now }
+    const note: Note = { id: newId(), title: t || 'Без названия', text: x, images: images.slice(0, MAX_NOTE_IMAGES), created: now, updated: now }
     data.value.notes.push(note)
     touch()
     return note
   }
 
-  function update(id: string, patch: { title?: string; text?: string }) {
+  function update(id: string, patch: { title?: string; text?: string; images?: string[] }) {
     const n = data.value.notes.find(x => x.id === id)
     if (!n) return false
     if (patch.title !== undefined) n.title = patch.title.trim().slice(0, MAX_TITLE) || 'Без названия'
     if (patch.text !== undefined) n.text = patch.text.trim().slice(0, MAX_TEXT)
+    if (patch.images !== undefined) n.images = patch.images.slice(0, MAX_NOTE_IMAGES)
     n.updated = Date.now()
     touch()
     return true
@@ -113,7 +121,7 @@ export const useNotesStore = defineStore('notes', () => {
     clearTimeout(timer)
     status.value = 'saving'
     try {
-      const res = await fetch('/api/notes', { method: 'PUT', headers: headers(), body: JSON.stringify(data.value) })
+      const res = await fetchT('/api/notes', { method: 'PUT', headers: headers(), body: JSON.stringify(data.value) })
       if (!res.ok) throw new Error(res.status === 413 ? 'заметки слишком большие' : `ошибка сервера ${res.status}`)
       status.value = 'saved'
       message.value = 'сохранено на сервере'
@@ -132,7 +140,7 @@ export const useNotesStore = defineStore('notes', () => {
     }
     status.value = 'saving'
     try {
-      const res = await fetch('/api/notes', { headers: headers() })
+      const res = await fetchT('/api/notes', { headers: headers() })
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       const remote = normalizeNotes(await res.json())
       if (remote.updated > data.value.updated) {

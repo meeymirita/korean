@@ -5,8 +5,9 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, SECS } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
+import { usePersisted } from '@/composables/usePersisted'
 
-const sec = ref('')
+const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const list = computed(() => (sec.value ? G.filter(g => g.s === sec.value) : G))
 const { open } = useGrammarModal()
 const route = useRoute()

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { usePersisted } from '@/composables/usePersisted'
 import MatchGame from '@/components/korean/MatchGame.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import TypingQuiz from '@/components/korean/TypingQuiz.vue'
@@ -8,11 +9,11 @@ import { DIR_LABEL, type Direction, SETS, dirsFor, pickRound, pool } from '@/dat
 
 type Mode = 'match' | 'type'
 
-const mode = ref<Mode>('match')
-const cat = ref('')
-const size = ref(8)
-const dir = ref<Direction>('ko-ru')
-const showReading = ref(true)
+const mode = usePersisted<Mode>('tr_mode', 'match', v => v === 'match' || v === 'type')
+const cat = usePersisted('tr_cat', '', v => typeof v === 'string')
+const size = usePersisted('tr_size', 8, v => [4, 6, 8, 10, 12, 15, 20].includes(v as number))
+const dir = usePersisted<Direction>('tr_dir', 'ko-ru', v => typeof v === 'string')
+const showReading = usePersisted('tr_reading', true, v => typeof v === 'boolean')
 
 const available = computed(() => pool(cat.value))
 const round = ref(pickRound(available.value, size.value))
@@ -29,7 +30,6 @@ const setCat = (c: string) => {
   start()
 }
 const setMode = (m: Mode) => ((mode.value = m), start())
-const bestKey = computed(() => `match-best-${cat.value || 'all'}-${size.value}`)
 </script>
 
 <template>
@@ -63,7 +63,6 @@ const bestKey = computed(() => `match-best-${cat.value || 'all'}-${size.value}`)
         </select>
       </label>
       <label v-if="mode === 'match'" class="chk"><input v-model="showReading" type="checkbox" /> показывать чтение</label>
-      <button class="tr-new" @click="start()">🔄 Обновить слова</button>
     </div>
     <p v-if="available.length < size" class="tr-note">В этой категории всего {{ available.length }} слов подходящих для раунда.</p>
 
@@ -72,7 +71,6 @@ const bestKey = computed(() => `match-best-${cat.value || 'all'}-${size.value}`)
       :key="roundId"
       :words="round"
       :show-reading="showReading"
-      :best-key="bestKey"
       @again="start()"
       @retry="start"
     />

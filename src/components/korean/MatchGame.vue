@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { shuffle } from '@/data/korean/tasks'
 import { shown, statKey, type TWord } from '@/data/korean/trainer'
 import { useProgressStore } from '@/stores/progress'
+import { formatClock, useTimerStore } from '@/stores/timer'
 
-const props = defineProps<{ words: TWord[]; showReading: boolean; bestKey: string }>()
+const props = defineProps<{ words: TWord[]; showReading: boolean }>()
 const emit = defineEmits<{ again: []; retry: [words: TWord[]] }>()
 
 const progress = useProgressStore()
+const timer = useTimerStore()
 const left = ref(shuffle(props.words))
 const right = ref(shuffle(props.words))
 const selL = ref<number | null>(null)
@@ -16,37 +18,8 @@ const matched = ref(new Set<number>())
 const missed = ref(new Set<number>())
 const wrong = ref<{ l: number; r: number } | null>(null)
 const mistakes = ref(0)
-const seconds = ref(0)
-const best = ref<number | null>(null)
-const newRecord = ref(false)
-
 const done = computed(() => matched.value.size === props.words.length)
-const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
-let timer: ReturnType<typeof setInterval> | undefined
-onMounted(() => {
-  try {
-    const v = localStorage.getItem(props.bestKey)
-    best.value = v ? Number(v) : null
-  } catch {
-    /* без сохранения рекорда */
-  }
-  timer = setInterval(() => seconds.value++, 1000)
-})
-onBeforeUnmount(() => clearInterval(timer))
-
-function finish() {
-  clearInterval(timer)
-  if (mistakes.value === 0 && (best.value === null || seconds.value < best.value)) {
-    best.value = seconds.value
-    newRecord.value = true
-    try {
-      localStorage.setItem(props.bestKey, String(seconds.value))
-    } catch {
-      /* без сохранения рекорда */
-    }
-  }
-}
 
 function pick(side: 'l' | 'r', id: number) {
   if (matched.value.has(id) || wrong.value) return
@@ -62,7 +35,6 @@ function pick(side: 'l' | 'r', id: number) {
     // засчитываем слово, если в этом раунде в нём не ошибались
     if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match' })
     matched.value = new Set(matched.value).add(l)
-    if (done.value) finish()
   } else {
     mistakes.value++
     if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match' })
@@ -79,10 +51,11 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
   <div class="mg">
     <div class="mg-bar">
       <span>{{ matched.size }} из {{ words.length }}</span>
-      <span>⏱ {{ fmt(seconds) }}</span>
       <span :class="{ bad: mistakes }">ошибок: {{ mistakes }}</span>
-      <span v-if="best !== null" class="muted">рекорд {{ fmt(best) }}</span>
-      <button class="mg-refresh" @click="emit('again')">🔄 Обновить слова</button>
+      <button v-if="timer.available" class="mg-clock" :class="{ on: timer.running }" @click="timer.toggle()">
+        {{ timer.running ? 'Пауза' : 'Старт' }} · {{ formatClock(timer.session) }}
+      </button>
+      <button class="mg-refresh" @click="emit('again')">Обновить слова</button>
     </div>
     <div class="mg-progress"><i :style="{ width: (matched.size / words.length) * 100 + '%' }"></i></div>
 
@@ -125,8 +98,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
     <div v-if="done" class="mg-end">
       <div>
         <b>{{ mistakes === 0 ? '🌸 Без ошибок!' : 'Готово!' }}</b>
-        <span>{{ fmt(seconds) }} · ошибок: {{ mistakes }}</span>
-        <span v-if="newRecord" class="rec">новый рекорд!</span>
+        <span>ошибок: {{ mistakes }}</span>
       </div>
       <div class="mg-actions">
         <button v-if="missedWords.length" @click="emit('retry', missedWords)">Повторить ошибки ({{ missedWords.length }})</button>
@@ -137,10 +109,12 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 </template>
 
 <style>
-.study .mg-bar { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 20px; font-family: var(--mono); font-size: 12px;
-  letter-spacing: .08em; color: var(--ink); }
+/* единая строка: счётчики слева, таймер и «Обновить» справа; всё по центру по высоте */
+.study .mg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin-top: 20px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; }
 .study .mg-bar .bad { color: var(--bad); }
 .study .mg-bar .muted { color: var(--muted); }
+.study .mg-clock { margin-left: auto; }
+.study .mg-clock + .mg-refresh { margin-left: 0; }
 .study .mg-refresh { margin-left: auto; padding: 5px 14px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 99px; transition: border-color .2s, background .2s; }
 .study .mg-refresh:hover { border-color: var(--gold); background: var(--gold-soft); }
@@ -163,7 +137,8 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-end > div:first-child { display: flex; flex-direction: column; gap: 2px; }
 .study .mg-end b { font-family: var(--serif); font-size: 26px; font-weight: 600; }
 .study .mg-end span { font-size: 13px; color: var(--muted); }
-.study .mg-end .rec { color: var(--gold); font-weight: 700; }
+.study .mg-clock { padding: 4px 12px; font: inherit; font-size: 13px; font-weight: 600; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; cursor: pointer; }
+.study .mg-clock.on { background: var(--gold-soft); border-color: var(--gold); }
 .study .mg-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .study .mg-actions button { border: 1px solid var(--gold); background: var(--gold); color: #fff; border-radius: 12px; padding: 10px 18px; font-weight: 600; }
 .study .mg-actions button:first-child:not(:last-child) { background: transparent; color: var(--ink); }

@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useProgressStore } from '@/stores/progress'
+import { LONG_TIMEOUT, fetchT } from '@/lib/http'
 
 export interface ImageItem {
   id: string
   name: string
+  /** название */
   caption: string
+  description: string
   mime: string
   size: number
   width: number
@@ -15,7 +18,9 @@ export interface ImageItem {
 
 /** Те же ограничения, что на сервере (server/src/config.ts). */
 export const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+export type ImageKind = 'gallery' | 'note' | 'cover'
 export const MAX_CAPTION = 200
+export const MAX_DESCRIPTION = 1000
 
 const fmtMb = (n: number) => (n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0)
 export const formatSize = (n: number) => (n >= 1024 * 1024 ? `${fmtMb(n)} МБ` : `${Math.max(1, Math.round(n / 1024))} КБ`)
@@ -50,7 +55,7 @@ export const useImagesStore = defineStore('images', () => {
   }
 
   async function load() {
-    const res = await fetch('/api/images', { headers: headers() })
+    const res = await fetchT('/api/images', { headers: headers() })
     if (!res.ok) throw new Error(uploadError(res.status))
     const d = (await res.json()) as { items: ImageItem[]; used: number; limit: number; maxFile: number }
     items.value = d.items
@@ -60,32 +65,38 @@ export const useImagesStore = defineStore('images', () => {
     loaded.value = true
   }
 
-  async function upload(file: File, caption = ''): Promise<ImageItem> {
+  /** kind: «Картинки» (gallery), вложение заметки (note) или обложка кабинета (cover): у каждого назначения свой список. */
+  async function upload(file: File, caption = '', kind: ImageKind = 'gallery'): Promise<ImageItem> {
     const form = new FormData()
     form.append('file', file)
     if (caption) form.append('caption', caption)
+    if (kind !== 'gallery') form.append('kind', kind)
     let res: Response
     try {
-      res = await fetch('/api/images', { method: 'POST', headers: headers(), body: form })
+      res = await fetchT('/api/images', { method: 'POST', headers: headers(), body: form }, LONG_TIMEOUT)
     } catch {
       throw new Error('сервер недоступен')
     }
     if (!res.ok) throw new Error(uploadError(res.status))
     const item = (await res.json()) as ImageItem & { ext?: string }
-    items.value.unshift(item)
+    if (kind === 'gallery') items.value.unshift(item)
     used.value += item.size
     return item
   }
 
-  async function setCaption(id: string, caption: string) {
-    const res = await fetch(`/api/images/${id}`, { method: 'PATCH', headers: headers(true), body: JSON.stringify({ caption }) })
+  /** Меняет название и/или описание картинки. */
+  async function update(id: string, patch: { caption?: string; description?: string }) {
+    const res = await fetchT(`/api/images/${id}`, { method: 'PATCH', headers: headers(true), body: JSON.stringify(patch) })
     if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
     const it = items.value.find(i => i.id === id)
-    if (it) it.caption = caption.trim()
+    if (it) {
+      if (patch.caption !== undefined) it.caption = patch.caption.trim()
+      if (patch.description !== undefined) it.description = patch.description.trim()
+    }
   }
 
   async function remove(id: string) {
-    const res = await fetch(`/api/images/${id}`, { method: 'DELETE', headers: headers() })
+    const res = await fetchT(`/api/images/${id}`, { method: 'DELETE', headers: headers() })
     if (!res.ok && res.status !== 404) throw new Error(`ошибка сервера ${res.status}`)
     const it = items.value.find(i => i.id === id)
     if (it) used.value = Math.max(0, used.value - it.size)
@@ -102,7 +113,7 @@ export const useImagesStore = defineStore('images', () => {
     const key = `${id}/${kind}`
     let p = blobs.get(key)
     if (!p) {
-      p = fetch(`/api/images/${id}/${kind}`, { headers: headers() }).then(async res => {
+      p = fetchT(`/api/images/${id}/${kind}`, { headers: headers() }, LONG_TIMEOUT).then(async res => {
         if (!res.ok) throw new Error(`ошибка ${res.status}`)
         return URL.createObjectURL(await res.blob())
       })
@@ -118,5 +129,5 @@ export const useImagesStore = defineStore('images', () => {
     blobs.clear()
   }
 
-  return { items, used, limit, maxFile, loaded, check, load, upload, setCaption, remove, blobUrl, release }
+  return { items, used, limit, maxFile, loaded, check, load, upload, update, remove, blobUrl, release }
 })

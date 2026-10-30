@@ -91,6 +91,19 @@ describe('заметки: добавить, изменить, удалить', (
     assert.equal(notes.update('нет-такой', { title: 'x' }), false)
   })
 
+  test('картинки: попадают в заметку, лишние id отбрасываются, не больше 10', () => {
+    const id = n => n.toString(16).padStart(16, '0')
+    const many = Array.from({ length: 15 }, (_, i) => id(i))
+    const n = notes.add('С картинками', '', many)
+    assert.equal(n.images.length, 10)
+    assert.equal(notes.add('', '', []), null, 'пустая заметка без картинок не добавляется')
+    assert.ok(notes.add('', '', [id(1)]), 'одни картинки — уже заметка')
+    notes.update(n.id, { images: [id(2)] })
+    assert.deepEqual(notes.notes.find(x => x.id === n.id).images, [id(2)])
+    const d = normalizeNotes({ notes: [sample('a', { images: [id(3), 'не-id', 5, '../x'] }), sample('b')] })
+    assert.deepEqual(d.notes.map(x => x.images), [[id(3)], []])
+  })
+
   test('удаление', () => {
     const a = notes.add('A', '')
     notes.add('B', '')

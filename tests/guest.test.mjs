@@ -139,8 +139,14 @@ describe('гостевой режим: ничего не сохраняется'
     assert.deepEqual(calls, ['POST /api/guests', 'GET /api/guests', 'DELETE /api/guests/a1'])
   })
 
-  test('403 от сервера объясняется человеческими словами', async () => {
+  test('ошибки создания гостя объясняются человеческими словами, токен подтверждения уходит заголовком', async () => {
     globalThis.fetch = reply(403, {})
-    await assert.rejects(() => store.createGuest(1, ''), /только владелец/)
+    await assert.rejects(() => store.createGuest(1, '', 'wrong'), /неверный токен подтверждения/)
+    globalThis.fetch = reply(429, {})
+    await assert.rejects(() => store.createGuest(1, '', 'x'), /слишком много попыток/)
+    let sent
+    globalThis.fetch = async (url, opt) => ((sent = opt.headers), reply(200, { id: 'g', token: 'T', label: '', created: 1, expires: 2 })())
+    await store.createGuest(1, 'Лера', 'my-token')
+    assert.equal(sent['X-Confirm-Token'], 'my-token')
   })
 })

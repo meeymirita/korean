@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { fetchT } from '@/lib/http'
 import { computed, onMounted, ref, watch } from 'vue'
 import { formatCell, rangeText } from '@/data/dbView'
 import { useProgressStore } from '@/stores/progress'
@@ -42,7 +43,7 @@ let timer: ReturnType<typeof setTimeout> | undefined
 const headers = () => ({ Authorization: `Bearer ${progress.token}` })
 
 async function api<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: headers() })
+  const res = await fetchT(url, { headers: headers() })
   if (!res.ok) throw new Error(res.status === 403 ? 'просмотр базы доступен только владельцу' : `ошибка сервера ${res.status}`)
   return res.json()
 }

@@ -73,7 +73,7 @@ const showAnswer = computed(() => (current.value ? answerText(current.value, pro
       <div class="tq-bar">
         <span>{{ index + 1 }} из {{ words.length }}</span>
         <span>верно: {{ right }}</span>
-        <button class="mg-refresh" @click="emit('again')">🔄 Обновить слова</button>
+        <button class="mg-refresh" @click="emit('again')">Обновить слова</button>
       </div>
       <div class="mg-progress"><i :style="{ width: (index / words.length) * 100 + '%' }"></i></div>
 
@@ -136,7 +136,7 @@ const showAnswer = computed(() => (current.value ? answerText(current.value, pro
 </template>
 
 <style>
-.study .tq-bar { display: flex; gap: 22px; margin-top: 20px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; }
+.study .tq-bar { display: flex; align-items: center; gap: 22px; margin-top: 20px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; }
 .study .tq-card { margin-top: 18px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
   box-shadow: var(--shadow); transition: border-color .2s; }
 .study .tq-card.right { border-color: var(--ok); }

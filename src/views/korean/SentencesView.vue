@@ -4,8 +4,9 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { SE, parseQuery } from '@/data/korean/words'
 import { hl } from '@/data/korean/render'
+import { usePersisted } from '@/composables/usePersisted'
 
-const q = ref('')
+const q = usePersisted('sent_q', '', v => typeof v === 'string')
 const input = ref<HTMLInputElement>()
 const openN = ref<number | null>(null)
 const toggle = (n: number) => (openN.value = openN.value === n ? null : n)

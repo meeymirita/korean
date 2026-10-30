@@ -4,9 +4,20 @@ import { ACHIEVEMENTS } from '@/data/achievements'
 import { MAX_LEVEL } from '@/data/levels'
 import { CATN, D } from '@/data/korean/words'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
+import { formatSpent, useTimerStore } from '@/stores/timer'
 
 const progress = useProgressStore()
+const timer = useTimerStore()
 const info = computed(() => progress.info)
+/** Время занятий по таймеру: сегодня, за 7 дней и за всё время. */
+const spent = computed(() => {
+  const t = progress.data.time
+  let week = 0
+  const d = new Date()
+  for (let i = 0; i < 7; i++, d.setDate(d.getDate() - 1)) week += t[dayKey(d)] ?? 0
+  const total = Object.values(t).reduce((n, x) => n + x, 0) + (timer.today - (t[dayKey()] ?? 0))
+  return { today: timer.today, week: week + (timer.today - (t[dayKey()] ?? 0)), total }
+})
 const words = computed(() => progress.data.words)
 const goal = computed(() => progress.goal)
 
@@ -87,6 +98,12 @@ const total = computed(() =>
         <div class="pg-v">🔥 {{ progress.streak }}</div>
         <div class="pg-t">лучшая серия: {{ progress.bestStreak }}</div>
         <div class="pg-s">заниматься нужно хотя бы раз в день</div>
+      </div>
+      <div class="pg-card">
+        <div class="pg-k">Время занятий</div>
+        <div class="pg-v">⏱ {{ formatSpent(spent.today) }}</div>
+        <div class="pg-t">за 7 дней: {{ formatSpent(spent.week) }}</div>
+        <div class="pg-s">всего {{ formatSpent(spent.total) }} · таймер справа внизу, включай его, когда занимаешься</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Цель дня</div>

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf } from '@/data/levels'
 import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
+import { fetchT } from '@/lib/http'
 
 export interface WordStat {
   ok: number
@@ -24,6 +25,8 @@ export interface Profile {
   name: string
   /** эмодзи или картинка data:image/… */
   avatar: string
+  /** id картинки из раздела «Картинки» для шапки кабинета; пусто — без обложки */
+  cover: string
 }
 
 export interface Settings {
@@ -42,6 +45,8 @@ export interface ProgressData {
   days: Record<string, number>
   /** дата → все ответы за день */
   all: Record<string, number>
+  /** дата → секунды занятий по таймеру */
+  time: Record<string, number>
   words: Record<string, WordStat>
   sources: Record<string, { ok: number; bad: number }>
   /** последние ответы, новые первыми */
@@ -58,7 +63,8 @@ export type Role = 'owner' | 'guest'
 export type Op =
   | { type: 'answer'; t: number; day: string; word: string | null; ok: boolean; source: string; mode?: string; xp: number }
   | { type: 'reset' }
-  | { type: 'profile'; name?: string; avatar?: string }
+  | { type: 'profile'; name?: string; avatar?: string; cover?: string }
+  | { type: 'time'; day: string; seconds: number }
   | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null }
   | { type: 'import'; data: ProgressData }
 
@@ -81,10 +87,10 @@ const LOG_MAX = 300
 /** Слово считается выученным после трёх верных ответов подряд. */
 export const KNOWN_STREAK = 3
 
-const emptyProfile = (): Profile => ({ name: '', avatar: '🌸' })
+const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
 const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null })
 const empty = (): ProgressData => ({
-  v: 1, updated: 0, xp: 0, days: {}, all: {}, words: {}, sources: {}, log: [],
+  v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
   profile: emptyProfile(), settings: emptySettings(),
 })
 
@@ -106,12 +112,14 @@ export function normalize(raw: unknown): ProgressData | null {
     xp: Number(r.xp) || 0,
     days: obj(r.days, {}),
     all: obj(r.all, {}),
+    time: obj(r.time, {}),
     words: obj(r.words, {}),
     sources: obj(r.sources, {}),
     log: Array.isArray(r.log) ? r.log.slice(0, LOG_MAX) : [],
     profile: {
       name: typeof profile.name === 'string' ? profile.name.slice(0, 24) : '',
       avatar: typeof profile.avatar === 'string' && profile.avatar ? profile.avatar : '🌸',
+      cover: typeof profile.cover === 'string' && /^[a-f0-9]{16}$/.test(profile.cover) ? profile.cover : '',
     },
     settings: {
       goal: GOAL_OPTIONS.includes(Number(settings.goal)) ? Number(settings.goal) : DAILY_GOAL,
@@ -292,8 +300,23 @@ export const useProgressStore = defineStore('progress', () => {
   function setProfile(p: Partial<Profile>) {
     if (p.name !== undefined) data.value.profile.name = p.name.slice(0, 24)
     if (p.avatar) data.value.profile.avatar = p.avatar
+    if (p.cover !== undefined) data.value.profile.cover = p.cover
     data.value.updated = Date.now()
-    queue({ type: 'profile', ...(p.name !== undefined ? { name: data.value.profile.name } : {}), ...(p.avatar ? { avatar: p.avatar } : {}) })
+    queue({
+      type: 'profile',
+      ...(p.name !== undefined ? { name: data.value.profile.name } : {}),
+      ...(p.avatar ? { avatar: p.avatar } : {}),
+      ...(p.cover !== undefined ? { cover: p.cover } : {}),
+    })
+  }
+  /** Прибавляет секунды занятий к сегодняшнему дню (их считает таймер). */
+  function addTime(seconds: number) {
+    const sec = Math.floor(seconds)
+    if (sec < 1) return
+    const k = dayKey()
+    data.value.time[k] = (data.value.time[k] ?? 0) + sec
+    data.value.updated = Date.now()
+    queue({ type: 'time', day: k, seconds: sec })
   }
   function setSettings(s: Partial<Settings>) {
     const cur = data.value.settings
@@ -341,7 +364,7 @@ export const useProgressStore = defineStore('progress', () => {
       sync.value = 'syncing'
       while (outbox.value.length) {
         const batch = outbox.value.slice(0, BATCH)
-        const res = await fetch('/api/ops', { method: 'POST', headers: headers(), body: JSON.stringify({ ops: batch }) })
+        const res = await fetchT('/api/ops', { method: 'POST', headers: headers(), body: JSON.stringify({ ops: batch }) })
         if (res.status === 401) return lock(await deniedMessage(res))
         // 400: сервер не принял пачку; выбрасываем её, чтобы очередь не застряла навсегда
         if (!res.ok && res.status !== 400) throw new Error(`ошибка сервера ${res.status}`)
@@ -364,7 +387,7 @@ export const useProgressStore = defineStore('progress', () => {
     if (!token.value) return
     sync.value = 'syncing'
     try {
-      let res = await fetch('/api/progress', { headers: headers() })
+      let res = await fetchT('/api/progress', { headers: headers() })
       if (res.status === 401) return lock(await deniedMessage(res))
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       verified.value = true
@@ -375,7 +398,7 @@ export const useProgressStore = defineStore('progress', () => {
         await push()
         if (!token.value) return // сервер ответил 401 и доступ закрыт
         if (outbox.value.length) return void (syncMessage.value = 'не всё отправлено: изменения сохранены в браузере')
-        res = await fetch('/api/progress', { headers: headers() })
+        res = await fetchT('/api/progress', { headers: headers() })
         if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
       }
       const remote = normalize(await res.json())
@@ -432,7 +455,7 @@ export const useProgressStore = defineStore('progress', () => {
     verified.value = false
     write(TOKEN_KEY, value)
     await init()
-    if (unlocked.value) void fetch('/api/session', { method: 'POST', headers: headers() }).catch(() => undefined) // вход попадает в журнал событий
+    if (unlocked.value) void fetchT('/api/session', { method: 'POST', headers: headers() }).catch(() => undefined) // вход попадает в журнал событий
     return unlocked.value
   }
 
@@ -449,40 +472,71 @@ export const useProgressStore = defineStore('progress', () => {
   )
 
   /* ---------- гостевые токены (только владелец) ---------- */
-  async function guestApi<T>(method: string, url: string, body?: unknown): Promise<T> {
-    const res = await fetch(url, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) })
-    if (!res.ok) throw new Error(res.status === 403 ? 'гостевые токены создаёт только владелец' : `ошибка сервера ${res.status}`)
+  /** Тексты ошибок опасных действий: сервер просит повторный токен (403) или блокирует подбор (429). */
+  const confirmError = (status: number) =>
+    status === 403 ? 'неверный токен подтверждения' : status === 429 ? 'слишком много попыток, подождите несколько минут' : `ошибка сервера ${status}`
+
+  /** Заголовок не принимает русские буквы: такой токен заведомо неверный, не отправляем. */
+  const checkConfirm = (confirm?: string) => {
+    if (confirm !== undefined && confirm !== '' && !/^[\x20-\x7e]+$/.test(confirm)) throw new Error(confirmError(403))
+  }
+
+  async function guestApi<T>(method: string, url: string, body?: unknown, confirm?: string): Promise<T> {
+    checkConfirm(confirm)
+    const res = await fetchT(url, {
+      method,
+      headers: { ...headers(), ...(confirm ? { 'X-Confirm-Token': confirm } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error(method === 'POST' ? confirmError(res.status) : res.status === 403 ? 'гостевые токены создаёт только владелец' : `ошибка сервера ${res.status}`)
     return res.json()
   }
-  const createGuest = (hours: number, label: string) => guestApi<GuestToken & { token: string }>('POST', '/api/guests', { hours, label })
+  /** Гостевой токен даёт доступ ко всему, поэтому создаётся только с повторным вводом токена владельца. */
+  const createGuest = (hours: number, label: string, confirm: string) =>
+    guestApi<GuestToken & { token: string }>('POST', '/api/guests', { hours, label }, confirm)
   const listGuests = () => guestApi<GuestToken[]>('GET', '/api/guests')
   const revokeGuest = (id: string) => guestApi<{ ok: true }>('DELETE', `/api/guests/${id}`)
 
   /* ---------- копия и сброс ---------- */
   const exportJson = () => JSON.stringify(data.value, null, 2)
 
-  function importJson(text: string): boolean {
+  /** С сервером опасное действие требует повторного токена и выполняется сразу (без очереди): не удалось — ничего не меняется. */
+  const needsConfirm = () => !!token.value && role.value !== 'guest'
+  async function destructive(op: Op, confirm: string) {
+    checkConfirm(confirm)
+    await push() // накопленные действия уходят раньше
+    const res = await fetchT('/api/ops', { method: 'POST', headers: { ...headers(), 'X-Confirm-Token': confirm }, body: JSON.stringify({ ops: [op] }) })
+    if (res.status === 401) {
+      lock(await deniedMessage(res))
+      throw new Error('нет доступа')
+    }
+    if (!res.ok) throw new Error(confirmError(res.status))
+  }
+
+  async function importJson(text: string, confirm = ''): Promise<boolean> {
+    let d: ProgressData | null
     try {
-      const d = normalize(JSON.parse(text))
-      if (!d) return false
-      d.updated = Date.now()
-      data.value = d
-      queue({ type: 'import', data: d })
-      return true
+      d = normalize(JSON.parse(text))
     } catch {
       return false
     }
+    if (!d) return false
+    d.updated = Date.now()
+    if (needsConfirm()) await destructive({ type: 'import', data: d }, confirm)
+    data.value = d
+    return true
   }
 
-  function reset() {
+  /** Сброс прогресса (профиль и настройки остаются). С сервером нужен повторный токен. */
+  async function reset(confirm = '') {
+    if (needsConfirm()) await destructive({ type: 'reset' }, confirm)
     const keep = data.value
     data.value = { ...empty(), profile: keep.profile, settings: keep.settings, updated: Date.now() }
-    queue({ type: 'reset' })
   }
 
   return {
-    data, goal, info, todayOk, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings,
-    token, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset,
+    data, goal, info, todayOk, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
+    token, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
 })
