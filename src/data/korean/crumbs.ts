@@ -21,6 +21,13 @@ export const CABINET_TABS: Record<string, string> = {
   settings: 'Настройки',
 }
 
+/** Вкладки и режимы страниц, которые переключаются на месте, но записаны в адрес: id страницы → параметр и подписи значений. */
+const PAGE_TABS: Record<string, { param: string; labels: Record<string, string> }> = {
+  cabinet: { param: 'tab', labels: CABINET_TABS },
+  today: { param: 'tab', labels: { list: 'Чек-лист', history: 'История' } },
+  trainers: { param: 'mode', labels: { type: 'Напиши перевод' } },
+}
+
 const byId = (id: string) => sections.find(s => s.id === id)
 const linkOf = (id: string) => (byId(id)?.group === 'ref' ? `/korean/ref/${id}` : `/korean/${id}`)
 
@@ -39,9 +46,10 @@ export function crumbsFor(path: string, query: Record<string, unknown> = {}): Cr
     const p = byId(parentId)!
     trail.push({ label: p.menu, to: linkOf(parentId) })
   }
-  const tab = typeof query.tab === 'string' ? CABINET_TABS[query.tab] : undefined
-  if (id === 'cabinet' && tab) {
-    trail.push({ label: sec.menu, to: '/korean/cabinet' }, { label: tab })
-  } else trail.push({ label: sec.menu })
+  const pt = PAGE_TABS[id]
+  const v = pt ? query[pt.param] : undefined
+  const tab = pt && typeof v === 'string' ? pt.labels[v] : undefined
+  if (tab) trail.push({ label: sec.menu, to: linkOf(id) }, { label: tab })
+  else trail.push({ label: sec.menu })
   return trail
 }

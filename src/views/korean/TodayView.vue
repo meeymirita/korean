@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
 import { checklistFor, snapshot } from '@/data/checklist'
@@ -9,6 +9,7 @@ import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsChec
 import { askConfirm } from '@/composables/useConfirm'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { usePersisted } from '@/composables/usePersisted'
+import { useQueryParam } from '@/composables/useQueryParam'
 import { G } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { ruleTasks } from '@/data/korean/rule-tasks'
@@ -24,7 +25,8 @@ const WORDS = 10
 const TASKS = 15
 
 type Tab = 'today' | 'list' | 'history'
-const tab = usePersisted<Tab>('today_tab', 'today', v => v === 'today' || v === 'list' || v === 'history')
+/** Вкладка в адресе (?tab=list|history), «Сегодня» без параметра. */
+const tab = useQueryParam<Tab>('tab', 'today', ['today', 'list', 'history'])
 
 const words = ref(randomWords(WORDS, progress.data.settings.cats))
 const tasks = ref(randomTasks(TASKS, progress.data.settings.cats))
@@ -155,9 +157,9 @@ async function loadHistory() {
 }
 function showHistory() {
   tab.value = 'history'
-  void loadHistory()
 }
 onMounted(() => tab.value === 'history' && void loadHistory())
+watch(tab, t => t === 'history' && void loadHistory())
 
 const dateLabel = (d: string) => new Intl.DateTimeFormat('ru-RU', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(d + 'T12:00:00'))
 const timeLabel = (t: number) => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })

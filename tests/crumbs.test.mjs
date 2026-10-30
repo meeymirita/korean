@@ -47,6 +47,17 @@ describe('хлебные крошки', () => {
     assert.equal(Object.keys(CABINET_TABS).length, 8)
   })
 
+  test('вкладки «Сегодня» и режим тренажёров берутся из адреса', () => {
+    assert.equal(labels(crumbsFor('/korean/today')), 'Главная › Сегодня')
+    const c = crumbsFor('/korean/today', { tab: 'list' })
+    assert.equal(labels(c), 'Главная › Сегодня › Чек-лист')
+    assert.equal(c[1].to, '/korean/today')
+    assert.equal(labels(crumbsFor('/korean/today', { tab: 'history' })), 'Главная › Сегодня › История')
+    assert.equal(labels(crumbsFor('/korean/trainers', { mode: 'type' })), 'Главная › Тренажёры › Напиши перевод')
+    assert.equal(labels(crumbsFor('/korean/trainers', { mode: 'match' })), 'Главная › Тренажёры')
+    assert.equal(labels(crumbsFor('/korean/words', { tab: 'list' })), 'Главная › Слова')
+  })
+
   test('у каждой страницы раздела есть крошки, все ссылки ведут на существующие страницы', () => {
     const paths = new Set(sections.map(s => (s.group === 'ref' ? `/korean/ref/${s.id}` : `/korean/${s.id}`)))
     paths.add('/korean/ref')

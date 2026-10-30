@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePersisted } from '@/composables/usePersisted'
+import { useQueryParam } from '@/composables/useQueryParam'
 import MatchGame from '@/components/korean/MatchGame.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import TypingQuiz from '@/components/korean/TypingQuiz.vue'
@@ -10,7 +11,8 @@ import { DIR_LABEL, type Direction, SETS, dirsFor, pickRound, pool } from '@/dat
 
 type Mode = 'match' | 'type'
 
-const mode = usePersisted<Mode>('tr_mode', 'match', v => v === 'match' || v === 'type')
+/** Режим в адресе (?mode=type), «Найди пару» без параметра. */
+const mode = useQueryParam<Mode>('mode', 'match', ['match', 'type'])
 const cat = usePersisted('tr_cat', '', v => typeof v === 'string')
 const size = usePersisted('tr_size', 8, v => [4, 6, 8, 10, 12, 15, 20].includes(v as number))
 const dir = usePersisted<Direction>('tr_dir', 'ko-ru', v => typeof v === 'string')
@@ -30,7 +32,9 @@ const setCat = (c: string) => {
   if (!dirs.value.includes(dir.value)) dir.value = dirs.value[0]!
   start()
 }
-const setMode = (m: Mode) => ((mode.value = m), start())
+const setMode = (m: Mode) => (mode.value = m)
+// новый раунд при любой смене режима, в том числе кнопкой «Назад»
+watch(mode, () => start())
 </script>
 
 <template>
