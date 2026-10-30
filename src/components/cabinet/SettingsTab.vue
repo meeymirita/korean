@@ -12,6 +12,7 @@ import { usePublicCard } from '@/composables/usePublicCard'
 import ReminderBlock from '@/components/cabinet/ReminderBlock.vue'
 import { usePersisted } from '@/composables/usePersisted'
 import { canInstall, installApp, isInstalled } from '@/lib/pwa'
+import { studyTime } from '@/data/weeks'
 import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
@@ -48,6 +49,24 @@ async function upload(e: Event) {
     message.value = 'Не получилось открыть картинку.'
   }
 }
+
+/** «Мой путь» под профилем: итоги за всё время, считаются из прогресса. */
+const journey = computed(() => {
+  const d = progress.data
+  const first = Object.keys({ ...d.all, ...d.days }).sort()[0]
+  const dayCount = first ? Math.floor((Date.now() - new Date(first + 'T00:00:00').getTime()) / 86_400_000) + 1 : 0
+  const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0)
+  const answers = sum(d.all)
+  const ok = sum(d.days)
+  return [
+    { n: String(dayCount), t: 'дней в пути' },
+    { n: String(Object.keys(d.words).filter(w => progress.status(w) === 'known').length), t: 'слов выучено' },
+    { n: String(answers), t: `ответов${answers ? `, верных ${Math.round((ok / answers) * 100)}%` : ''}` },
+    { n: studyTime(sum(d.time)), t: 'времени занятий' },
+    { n: `${progress.info.level} · ${progress.info.title}`, t: 'уровень и звание' },
+    { n: String(progress.bestStreak), t: 'лучшая серия дней' },
+  ]
+})
 
 const DEFAULT_AVATAR = '🌸'
 const hasPhoto = computed(() => profile.value.avatar.startsWith('data:image/'))
@@ -222,6 +241,10 @@ async function refreshPublic() {
           </div>
         </div>
       </div>
+      <h4 class="st-path-h">Мой путь</h4>
+      <div class="st-path">
+        <div v-for="j in journey" :key="j.t"><b>{{ j.n }}</b><small>{{ j.t }}</small></div>
+      </div>
     </div>
 
     <div class="st-block">
@@ -324,4 +347,9 @@ async function refreshPublic() {
 .study .st-tabs { display: flex; flex-wrap: wrap; gap: 4px; width: fit-content; max-width: 100%; margin: 21px 0 14px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .study .st-tabs button { padding: 10px 21px; font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 0; border-radius: 11px; cursor: pointer; }
 .study .st-tabs button.on { color: #fff; background: var(--gold); }
+.study .st-path-h { margin: 22px 0 10px; font-size: 14px; color: var(--muted); }
+.study .st-path { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.study .st-path div { padding: 12px 14px; background: var(--gold-soft); border-radius: 14px; }
+.study .st-path b { display: block; font-size: 20px; line-height: 1.2; }
+.study .st-path small { color: var(--muted); font-size: 12px; }
 </style>
