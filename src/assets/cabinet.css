@@ -361,3 +361,10 @@
 .study .wk-side .wk-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 .study .wk-side .wk-stat { padding: 10px 14px; }
 .study .wk-side .wk-stat b { font-size: 26px; }
+
+/* «5 минут»: полоса хода, номер клавиши у варианта, список ошибок */
+.study .qk-prog { height: 6px; margin: 10px 0 4px; overflow: hidden; background: var(--line-soft); border-radius: 99px; }
+.study .qk-prog i { display: block; height: 100%; background: linear-gradient(90deg, #8f7cf0, #d64da9); border-radius: 99px; transition: width .3s; }
+.study .rs-opt kbd { margin-right: 8px; padding: 1px 7px; font: inherit; font-size: 12px; color: var(--muted); background: var(--gold-soft); border-radius: 6px; }
+.study .qk-miss { margin: 0 0 14px; padding-left: 20px; text-align: left; }
+.study .qk-home { display: inline-flex; align-items: center; padding: 10px 18px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); border-radius: 12px; }

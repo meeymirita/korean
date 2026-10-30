@@ -6,7 +6,7 @@ import { useProgressStore } from '@/stores/progress'
 const progress = useProgressStore()
 const shown = ref(50)
 const byK = new Map(D.map(d => [d.k, d]))
-const SRC: Record<string, string> = { game: 'Игра', trainer: 'Тренажёры', today: 'Сегодня', review: 'Повторение' }
+const SRC: Record<string, string> = { game: 'Игра', trainer: 'Тренажёры', today: 'Сегодня', review: 'Повторение', quick: '5 минут' }
 
 const rows = computed(() => progress.data.log.slice(0, shown.value))
 

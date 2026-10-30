@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, «5 минут»
+
+- `data/korean/quick.ts` (`quickTasks`: до 4 слов из `dueWords`, 2 задания на правило, остальное случайные), страница `/korean/quick` (`QuickView.vue`, закрыта токеном, `noindex`, `robots.txt`), ссылка на главной и в «Главной раздела», источник ответов `quick`. Тест `tests/quick.test.mjs`.
+
 ## 2026-10-30, тёмная тема
 
 - `lib/theme.ts` (режимы `auto|light|dark`, `localStorage['theme_mode']`, `data-theme` на `<html>`, значок и `theme-color`), скрипт в `index.html` ставит тему до отрисовки. Цвета: `assets/dark.css` (переопределения переменных `.study.sky`, `.game`, страниц с `--ink/--soft` и окон). Кнопка в боковом меню (`.theme-btn`) и блок «Оформление» в «Настройках». Тест `tests/theme.test.mjs`.

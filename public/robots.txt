@@ -7,6 +7,7 @@ Disallow: /korean/today
 Disallow: /korean/cabinet
 Disallow: /korean/trainers
 Disallow: /korean/review
+Disallow: /korean/quick
 Disallow: /korean/garden
 
 Sitemap: https://korean.meeymirita.ru/sitemap.xml

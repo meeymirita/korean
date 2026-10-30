@@ -87,6 +87,7 @@ const SOURCES: [string, string][] = [
   ['trainer', 'Тренажёры'],
   ['today', 'Сегодня'],
   ['review', 'Повторение в кабинете'],
+  ['quick', '5 минут'],
 ]
 const total = computed(() =>
   Object.values(progress.data.sources).reduce((n, x) => ({ ok: n.ok + x.ok, bad: n.bad + x.bad }), { ok: 0, bad: 0 }),

@@ -12,6 +12,7 @@ export const HOME_LINKS = [
 ]
 
 export const HOME_MORE = [
+  { title: '5 минут', to: '/korean/quick' },
   { title: 'Сегодня', to: '/korean/today' },
   { title: 'Тренажёры', to: '/korean/trainers' },
   { title: 'Игра на слова', to: '/game' },

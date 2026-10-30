@@ -47,6 +47,7 @@ export const PAGES: GuideCard[] = [
   { icon: '📚', title: 'Примеры', text: 'Все предложения из словаря с разбором и переводом.', to: '/korean/ref/sentences' },
   { icon: '🔢', title: 'Числа', text: 'Корейские и китайские числа, цены, счётные слова.', to: '/korean/ref/numbers' },
   { icon: '🎯', title: 'Тренажёры', text: 'Найди пару и напиши перевод. Можно по темам и печатать лист.', to: '/korean/trainers', private: true },
+  { icon: '⏱️', title: '5 минут', text: 'Десять заданий вперемешку без выбора: слова, которые пора повторить, правило и новое. Клавиши 1–4 и Enter.', to: '/korean/quick', private: true },
   { icon: '🔁', title: 'Повторение', text: 'Карточки слов, которые пора повторить.', to: '/korean/review', private: true },
   { icon: '🌸', title: 'Сад воспоминаний', text: 'Каждое выученное слово становится цветком. Не повторяешь — цветок вянет.', to: '/korean/garden', private: true },
   { icon: '🃏', title: 'Коллекция', text: 'Карточки слов открываются по мере выученности. Чем больше ошибок, тем реже карточка.', to: '/korean/garden?tab=cards', private: true },

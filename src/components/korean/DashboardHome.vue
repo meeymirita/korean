@@ -29,6 +29,7 @@ const lessons = computed(() => [
 ])
 
 const quick = [
+  { icon: '⏱', title: '5 минут', sub: 'Десять заданий вперемешку', to: '/korean/quick' },
   { icon: '☀', title: 'Задания на сегодня', sub: 'Слова, правило и задания', to: '/korean/today' },
   { icon: '✧', title: 'Тренажёры слов', sub: 'Найди пару, напиши перевод', to: '/korean/trainers' },
   { icon: '🍞', title: 'Игра на слова', sub: 'Хлебушек', to: '/game' },
