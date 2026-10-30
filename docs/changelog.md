@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, «Собери слово по слогам»
+
+- `data/korean/syllables.ts` (`syllableTask`, `syllableTasks`, `isCorrect`), страница `/korean/syllables` (`SyllablesView.vue`), ответы пишутся с режимом `syllables`. Тест `tests/syllables.test.mjs`.
+
 ## 2026-10-30, «Переведи предложение»
 
 - `data/korean/translate.ts` (`translateTasks`), страница `/korean/translate` (`TranslateView.vue`) на основе `TRANSLATIONS`. Тест `tests/translate.test.mjs`.

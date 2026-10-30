@@ -83,6 +83,7 @@ const router = createRouter({
         { path: 'trainers', meta: { private: true }, component: () => import('@/views/korean/TrainersView.vue') },
         { path: 'garden', meta: { private: true }, component: () => import('@/views/korean/GardenView.vue') },
         { path: 'review', meta: { private: true }, component: () => import('@/views/korean/ReviewView.vue') },
+        { path: 'syllables', meta: { private: true }, component: () => import('@/views/korean/SyllablesView.vue') },
         { path: 'translate', meta: { private: true }, component: () => import('@/views/korean/TranslateView.vue') },
         { path: 'pairs', meta: { private: true }, component: () => import('@/views/korean/PairsView.vue') },
         { path: 'particles', meta: { private: true }, component: () => import('@/views/korean/ParticlesView.vue') },

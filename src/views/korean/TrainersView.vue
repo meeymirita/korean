@@ -43,6 +43,7 @@ const setMode = (m: Mode) => ((mode.value = m), start())
       <RouterLink to="/korean/particles" class="chip">🧩 Частицы и окончания</RouterLink>
       <RouterLink to="/korean/pairs" class="chip">👯 Похожие, но разные</RouterLink>
       <RouterLink to="/korean/translate" class="chip">🔀 Переведи предложение</RouterLink>
+      <RouterLink to="/korean/syllables" class="chip">🧱 Собери по слогам</RouterLink>
     </div>
 
     <div class="chips">

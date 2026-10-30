@@ -418,3 +418,15 @@
 .study .xb-b { padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--gold); background: transparent; border: 1px solid var(--line); border-radius: 99px; cursor: pointer; }
 .study .xb-b:hover { border-color: var(--gold); }
 .study .sub-note { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+
+/* «собери слово по слогам» */
+.study .sy-slots { display: flex; gap: 10px; margin: 18px 0 14px; }
+.study .sy-slot { display: grid; place-items: center; width: 64px; height: 72px; font-size: 34px; font-weight: 700; background: var(--gold-soft); border: 2px dashed var(--line); border-radius: 16px; }
+.study .sy-slots.ok .sy-slot { background: var(--ok-bg); border: 2px solid var(--ok); color: var(--ok); }
+.study .sy-slots.bad .sy-slot { background: var(--bad-bg); border: 2px solid var(--bad); color: var(--bad); }
+.study .sy-tiles { display: flex; flex-wrap: wrap; gap: 10px; }
+.study .sy-tile { min-width: 64px; height: 64px; padding: 0 14px; font-size: 30px; font-weight: 700; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
+.study .sy-tile:hover:not(:disabled) { border-color: var(--gold); background: var(--gold-soft); }
+.study .sy-tile:disabled { opacity: .35; cursor: default; }
+.study .sy-back { min-width: 56px; height: 64px; font-size: 22px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
+.study .sy-back:disabled { opacity: .35; cursor: default; }
