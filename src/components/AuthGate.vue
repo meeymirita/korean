@@ -40,7 +40,7 @@ async function submit() {
 </template>
 
 <style>
-.gate { display: grid; place-items: center; min-height: 60vh; padding: 36px 20px; }
+.gate { display: grid; place-items: center; min-height: calc(100vh - 80px); padding: 36px 20px; }
 .gate-card { width: min(520px, 100%); padding: 32px 30px; text-align: center; background: var(--surface, rgba(248, 247, 244, .92));
   border: 1px solid var(--line, rgba(168, 130, 47, .3)); border-radius: 22px; box-shadow: var(--shadow, 0 30px 60px -34px rgba(40, 38, 34, .45)); }
 .gate-ico { font-size: 40px; line-height: 1; }

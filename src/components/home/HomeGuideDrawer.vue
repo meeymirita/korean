@@ -47,31 +47,31 @@ const n = (i: number) => String(i + 1).padStart(2, '0')
 </template>
 
 <style scoped>
-.dr { position: fixed; inset: 0; z-index: 200; background: rgba(8,26,70,.6); backdrop-filter: blur(10px); }
+.dr { position: fixed; inset: 0; z-index: 200; background: rgba(32, 38, 92, .45); backdrop-filter: blur(8px); }
 .box { position: absolute; top: 0; right: 0; bottom: 0; width: min(520px, 92vw); overflow: auto; display: flex; flex-direction: column; gap: 14px;
-  padding: 26px clamp(18px, 3vw, 32px) 30px; color: #fff; border-left: 2px solid rgba(255,255,255,.6); background: rgba(255,255,255,.04);
-  font-family: 'Cormorant Garamond', 'Gowun Batang', serif; font-size: 17px; text-shadow: 0 1px 8px rgba(0,0,0,.45); scrollbar-width: thin; }
+  padding: 26px clamp(18px, 3vw, 32px) 30px; color: #20265c; border-left: 1px solid #fff; background: linear-gradient(160deg, #fbeefc, #eaedff 60%, #fff3f8);
+  box-shadow: -20px 0 50px rgba(100, 87, 170, .2); font-family: 'Archivo', 'Noto Sans KR', sans-serif; font-size: 15px; scrollbar-width: thin; }
 .box > * { flex: none; }
 .hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.hd h2 { margin: 0; font-size: 38px; font-weight: 500; line-height: 1; }
-.x { flex: none; width: 40px; height: 40px; border: 2px solid rgba(255,255,255,.6); background: transparent; color: #fff; font: inherit; font-size: 18px; cursor: pointer; transition: background .2s, border-color .2s; }
-.x:hover { background: rgba(255,255,255,.16); border-color: #fff; }
+.hd h2 { margin: 0; font-size: 26px; font-weight: 700; line-height: 1; }
+.x { flex: none; width: 40px; height: 40px; border: 1px solid #fff; border-radius: 50%; background: rgba(255, 255, 255, .8); color: #20265c; font: inherit; font-size: 16px; cursor: pointer; transition: .2s; }
+.x:hover { background: #fff; color: #d64da9; }
 .tabs { display: flex; flex-wrap: wrap; gap: 10px; }
-.tabs button { padding: 7px 20px; border: 2px solid rgba(255,255,255,.6); background: transparent; color: #fff; font: inherit; font-size: 19px; cursor: pointer; transition: background .2s, border-color .2s; }
-.tabs button:hover { background: rgba(255,255,255,.1); border-color: #fff; }
-.tabs button.on { background: rgba(255,255,255,.16); border-color: #fff; }
+.tabs button { padding: 8px 18px; border: 1px solid #fff; border-radius: 99px; background: rgba(255, 255, 255, .7); color: #6c70a8; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: .2s; }
+.tabs button:hover { color: #d64da9; }
+.tabs button.on { background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9; }
 .tl { display: flex; flex-direction: column; margin-top: 6px; padding-left: 8px; }
-.step { position: relative; display: block; padding: 0 0 20px 24px; border-left: 2px solid rgba(255,255,255,.6); color: #fff; }
+.step { position: relative; display: block; padding: 0 0 20px 24px; border-left: 2px solid rgba(143, 124, 240, .35); color: #20265c; }
 .step:last-child { padding-bottom: 4px; }
-.step u { position: absolute; left: -8px; top: 6px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; background: #17306b; transition: background .2s; }
-.step:hover u { background: #fff; }
-.step:hover { color: #fff; }
+.step u { position: absolute; left: -8px; top: 6px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #8f7cf0; background: #fff; transition: background .2s; }
+.step:hover u { background: #d64da9; border-color: #d64da9; }
+.step:hover b { color: #d64da9; }
 .step div { display: flex; flex-direction: column; gap: 2px; }
-.step small { font-size: 13px; letter-spacing: .15em; opacity: .75; }
-.step b { font-size: 27px; font-weight: 500; line-height: 1.15; }
-.step b em { margin-left: 8px; font-style: normal; font-size: .6em; opacity: .85; }
-.step span { font-size: 18px; line-height: 1.3; opacity: .9; }
-.note { margin: 0; opacity: .8; }
+.step small { font-size: 11px; letter-spacing: .15em; color: #8f7cf0; }
+.step b { font-size: 18px; font-weight: 700; line-height: 1.2; transition: color .2s; }
+.step b em { margin-left: 8px; font-style: normal; font-size: .7em; opacity: .85; }
+.step span { font-size: 14px; line-height: 1.4; color: #6c70a8; }
+.note { margin: 0; color: #6c70a8; }
 
 .drawer-enter-active, .drawer-leave-active { transition: opacity .25s; }
 .drawer-enter-active .box, .drawer-leave-active .box { transition: transform .3s ease; }

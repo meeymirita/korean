@@ -20,7 +20,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
 </script>
 
 <template>
-  <div v-if="current" class="study study-modal" @click.self="close">
+  <div v-if="current" class="study sky study-modal" @click.self="close">
     <div class="gp" role="dialog" aria-modal="true">
       <div class="gh">
         <div class="tt">

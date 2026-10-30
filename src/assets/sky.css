@@ -1,43 +1,102 @@
-/* Светлая тема «небо» (цвета с главной, акцент #3b77d0).
-   Включается классом .sky на оболочке раздела и на странице игры. */
+/* Светлая пастельная тема (розово-голубой градиент, стеклянные карточки).
+   Включается классом .sky на оболочке раздела и на странице игры. Дизайн — по urimal_landing / urimal_korean_dashboard. */
 .study.sky {
-  --bg: #eef3fb;
-  --ink: #14233f;
-  --muted: #51638a;
-  --gold: #2f66b8;
-  --accent: #3b77d0;
-  --surface: rgba(255, 255, 255, .75);
-  --line: rgba(59, 119, 208, .3);
-  --line-soft: rgba(20, 35, 63, .1);
-  --gold-soft: rgba(59, 119, 208, .12);
+  --bg: #f1eaff;
+  --ink: #20265c;
+  --muted: #6c70a8;
+  --gold: #7863ff;
+  --accent: #8f7cf0;
+  --pink: #d64da9;
+  --surface: rgba(255, 255, 255, .78);
+  --line: rgba(111, 105, 190, .2);
+  --line-soft: rgba(111, 105, 190, .13);
+  --gold-soft: rgba(143, 124, 240, .12);
   --ok: #2f7a52;
   --ok-bg: rgba(47, 122, 82, .12);
   --bad: #b44634;
   --bad-bg: rgba(180, 70, 52, .1);
-  --shadow: 0 30px 60px -34px rgba(20, 35, 63, .35);
+  --shadow: 0 18px 45px rgba(100, 87, 170, .12);
   --serif: 'Archivo', 'Noto Sans KR', sans-serif;
   --mono: 'Archivo', 'Noto Sans KR', sans-serif;
   font-family: 'Archivo', 'Noto Sans KR', sans-serif;
   color: var(--ink);
-  background: linear-gradient(180deg, #e3ecfa, #f4f7fc) fixed;
 }
-.study.sky h1, .study.sky h2, .study.sky h3 { font-weight: 800; letter-spacing: -.01em; }
+.study.sky:not(.study-modal) {
+  background:
+    radial-gradient(ellipse at 85% 5%, rgba(180, 217, 255, .55) 0, transparent 30%),
+    radial-gradient(ellipse at 8% 72%, rgba(255, 201, 233, .55) 0, transparent 28%),
+    radial-gradient(ellipse at 55% 98%, rgba(216, 199, 255, .5) 0, transparent 30%),
+    linear-gradient(130deg, #f9e8fb 0%, #e7eaff 48%, #fff0f6 100%) fixed;
+}
+.study.sky h1, .study.sky h2, .study.sky h3 { font-weight: 700; letter-spacing: -.01em; }
 .study.sky .kicker, .study.sky .row.h { letter-spacing: .12em; font-weight: 600; }
-.study.sky .study-side { background: rgba(255, 255, 255, .6); }
-.study.sky .searchbar { background: rgba(238, 243, 251, .94); backdrop-filter: blur(8px); }
-.study.sky .sb { box-shadow: none; }
+.study.sky .kicker::before { background: var(--pink); }
+.study.sky .kicker { color: var(--pink); }
+.study.sky .searchbar { position: static; background: transparent; padding-top: 14px; }
+.study-modal.sky { background: rgba(32, 38, 92, .45); backdrop-filter: blur(6px); }
+.study-modal.sky .gp { border-color: #fff; background: #f6f1ff; box-shadow: 0 40px 80px -30px rgba(32, 38, 92, .5); }
+.study.sky .rich .tip, .study.sky .rich pre { background: rgba(143, 124, 240, .08); }
+.study.sky .sb { box-shadow: none; border-radius: 28px; border: 1px solid #fff; background: var(--surface); }
 .study.sky .sb button:hover, .study.sky .chip.on, .study.sky .chip.router-link-active, .study.sky .fcb button,
 .study.sky .today-end button, .study.sky .study-modal .gh button:hover,
 .study.sky .bd-rule:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
-.study.sky .study-level .lv-bar i { background: var(--accent); }
-.study.sky mark { background: rgba(59, 119, 208, .25); color: inherit; }
-.study.sky .study-links a:hover, .study.sky .study-links a.router-link-active { color: var(--accent); }
-.study.sky .study-links .line { background: var(--accent); }
-.study.sky .row .k { font-weight: 800; }
-@media (max-width: 860px) { .study.sky .study-side { background: rgba(238, 243, 251, .96); } }
+.study.sky .chip { border-color: #fff; background: rgba(255, 255, 255, .75); }
+.study.sky .chip:hover { border-color: var(--accent); }
+.study.sky mark { background: rgba(214, 77, 169, .18); color: inherit; }
+.study.sky .row .k { font-weight: 700; }
+.study.sky .page-head { border-bottom-color: var(--line); }
+.study.sky .page-head h1 { font-size: clamp(30px, 4.4vw, 44px); }
+.study.sky .gc, .study.sky .tw-card, .study.sky .task, .study.sky .fc, .study.sky .pg-card,
+.study.sky .rich .card { border-color: #fff; border-radius: 21px; }
+.study.sky .gc:hover, .study.sky .tw-card:hover, .study.sky a.ov-card:hover { border-color: var(--accent); }
+
+/* ---- каркас: стеклянное боковое меню ---- */
+.study-shell.sky { gap: 22px; padding: 18px; grid-template-columns: 240px minmax(0, 1fr); max-width: 1640px; margin: 0 auto; }
+.study-shell.sky .study-side { top: 18px; height: calc(100vh - 36px); padding: 22px 16px; border: 1px solid #fff; border-radius: 24px;
+  background: rgba(255, 255, 255, .74); box-shadow: var(--shadow); }
+.study-shell.sky .study-side h1 { font-family: var(--serif); font-weight: 700; font-size: 24px; letter-spacing: 1px; }
+.study-shell.sky .study-side .course { color: var(--muted); font-size: 11px; }
+.study-shell.sky .brand-row { display: flex; align-items: center; gap: 10px; padding: 2px 8px 22px; }
+.study-shell.sky .brand-mark { font-size: 30px; color: var(--gold); line-height: 1; }
+.study-shell.sky .study-back { margin: 0 8px 14px; color: var(--muted); font-weight: 600; font-size: 12px; }
+.study-shell.sky .study-back:hover { color: var(--pink); text-decoration: none; }
+.study-shell.sky .study-links { margin-top: 0; gap: 7px; }
+.study-shell.sky .study-links a { gap: 12px; padding: 11px 13px; border-radius: 15px; color: var(--muted); font-weight: 500; transition: .2s; }
+.study-shell.sky .study-links a:hover, .study-shell.sky .study-links a.router-link-active, .study-shell.sky .study-links a.active {
+  padding-left: 13px; color: var(--pink); background: linear-gradient(100deg, #ffe0f5, #ece5ff); }
+.study-shell.sky .study-links .line { display: none; }
+.study-shell.sky .study-links .ic { width: 20px; text-align: center; font-size: 17px; flex: none; }
+.study-shell.sky .study-links .num, .study-shell.sky .study-links .ct { opacity: .6; font-size: 11px; }
+.study-shell.sky .study-level { border-color: #fff; border-radius: 18px; background: rgba(255, 255, 255, .8); }
+.study-shell.sky .study-level:hover { border-color: var(--accent); }
+.study-shell.sky .study-level .lv-bar i { background: linear-gradient(90deg, #e9a7ed, #88cfff); }
+.study-shell.sky .study-side .foot a { color: var(--gold); }
+.study-shell.sky .study-main .wrap { padding: 18px 8px 64px; }
+@media (max-width: 1100px) { .study-shell.sky { grid-template-columns: 200px minmax(0, 1fr); gap: 14px; padding: 12px; } }
+@media (max-width: 860px) {
+  .study-shell.sky { grid-template-columns: 1fr; gap: 0; padding: 10px; }
+  .study-shell.sky .study-side { position: sticky; top: 0; height: auto; padding: 8px 10px; border-radius: 20px; margin-bottom: 14px;
+    background: rgba(255, 255, 255, .92); z-index: 10; }
+  .study-shell.sky .study-links a { padding: 9px 11px; border-radius: 99px; }
+  .study-shell.sky .study-links .ic { display: none; }
+  .study-shell.sky .study-main .wrap { padding: 8px 4px 64px; }
+}
 
 /* страница игры: свои переменные .game переопределяем под тему */
-.study.sky.game { --panel: rgba(255, 255, 255, .8); --accent-soft: rgba(59, 119, 208, .14); --accent-ink: #fff; }
-.game.sky .over { background: rgba(14, 28, 56, .55); }
-.game.sky h2, .game.sky h3, .game.sky .brand, .game.sky .game-title h1 { font-family: 'Archivo', 'Noto Sans KR', sans-serif; font-weight: 800; }
+.study.sky.game { --panel: rgba(255, 255, 255, .8); --accent-soft: rgba(143, 124, 240, .16); --accent-ink: #fff; }
+.game.sky .over { background: rgba(32, 38, 92, .5); }
+.game.sky h2, .game.sky h3, .game.sky .brand, .game.sky .game-title h1 { font-family: 'Archivo', 'Noto Sans KR', sans-serif; font-weight: 700; }
 .game.sky .game-top a { color: var(--gold); }
+
+/* главная раздела: поиск во всю ширину */
+.study.sky .ov-search { max-width: none; margin: 14px 0 18px; }
+
+/* кнопка поиска справа вверху: открывает окно поиска по всей платформе, не уводя со страницы */
+.study.sky .sw-btn { position: fixed; top: 14px; right: 18px; z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--ink); background: rgba(255, 255, 255, .92); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 8px 22px rgba(100, 87, 170, .2); cursor: pointer; transition: .2s; }
+.study.sky .sw-btn:hover { transform: translateY(-1px); color: var(--pink); }
+.study.sky .sw-btn .ic { font-size: 17px; line-height: 1; }
+.study.sky .sw-btn kbd { font: inherit; font-size: 11px; font-weight: 500; color: var(--muted); padding: 2px 7px; border-radius: 7px; background: #eee9ff; }
+/* заголовки страниц не залезают под кнопку */
+.study.sky .page-head, .study.sky .greet, .study.sky .cb-cover-top { padding-right: 150px; }
+@media (max-width: 860px) { .study.sky .sw-btn { top: auto; bottom: 18px; right: auto; left: 18px; } .study.sky .sw-btn kbd { display: none; } .study.sky .page-head, .study.sky .greet, .study.sky .cb-cover-top { padding-right: 0; } }

@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import SectionHead from '@/components/korean/SectionHead.vue'
+import DashboardHome from '@/components/korean/DashboardHome.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
-import { groups } from '@/data/alphabet'
-import { CATN, D, SE } from '@/data/korean/words'
-import { G } from '@/data/korean/grammar'
 import { hl } from '@/data/korean/render'
-import { index, search, snippet } from '@/data/korean/search'
+import { search, snippet } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
 import { parseQuery } from '@/data/korean/words'
 import { useGrammarModal } from '@/composables/useGrammarModal'
-import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
+import { useProgressStore } from '@/stores/progress'
 import { lastVisited } from '@/composables/useLastVisited'
-import { MAX_LEVEL } from '@/data/levels'
 
 const progress = useProgressStore()
 const { open } = useGrammarModal()
@@ -33,41 +29,6 @@ const openSentence = ref('')
 const tabName = (id: string) => refTabs.find(t => t.id === id)?.menu ?? id
 const chunkTabs = computed(() => refTabs.filter(t => result.value?.chunks[t.id]?.length))
 
-/* статистика сайта */
-const ix = index
-const phrases = computed(() => ix().chunks.filter(c => c.phrase).length)
-const letters = groups.reduce((n, g) => n + g.letters.length, 0)
-const grammarDone = G.filter(g => g.st === 'ok').length
-const site = computed(() => [
-  { k: 'Слов в словаре', v: D.length, to: '/korean/words' },
-  { k: 'Правил грамматики', v: G.length, to: '/korean/grammar', s: `${grammarDone} пройдено` },
-  { k: 'Примеров предложений', v: SE.length, to: '/korean/ref/sentences' },
-  { k: 'Фраз в разговорнике', v: phrases.value, to: '/korean/ref/talk' },
-  { k: 'Букв хангыля', v: letters, to: '/korean/ref/alphabet' },
-  { k: 'Тем словаря', v: Object.keys(CATN).length, to: '/korean/words' },
-])
-
-const known = computed(() => D.filter(d => progress.status(d.k) === 'known').length)
-const learning = computed(() => D.filter(d => progress.status(d.k) === 'learning').length)
-const answers = computed(() =>
-  Object.values(progress.data.sources).reduce((n, x) => ({ ok: n.ok + x.ok, bad: n.bad + x.bad }), { ok: 0, bad: 0 }),
-)
-const accuracy = computed(() => {
-  const t = answers.value.ok + answers.value.bad
-  return t ? Math.round((answers.value.ok / t) * 100) : 0
-})
-
-const weak = computed(() =>
-  D.filter(d => {
-    const w = progress.data.words[d.k]
-    return w && w.streak < KNOWN_STREAK && w.bad > 0
-  })
-    .map(d => ({ d, w: progress.data.words[d.k]! }))
-    .sort((a, b) => b.w.bad - b.w.ok - (a.w.bad - a.w.ok) || b.w.bad - a.w.bad)
-    .slice(0, 8)
-    .map(x => x.d),
-)
-
 function onKey(e: KeyboardEvent) {
   if (e.key === '/' && (e.target as HTMLElement).tagName !== 'INPUT') {
     e.preventDefault()
@@ -83,7 +44,16 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
 <template>
   <div class="wrap ov">
-    <SectionHead id="home" />
+    <header class="greet">
+      <div>
+        <h1>Привет! 안녕 👋</h1>
+        <p>{{ progress.unlocked && progress.data.profile.name ? progress.data.profile.name + ', сегодня' : 'Сегодня' }} ты ближе к своей цели, чем вчера.</p>
+      </div>
+      <div class="greet-r">
+        <RouterLink v-if="lastVisited" :to="lastVisited.path" class="chip">↩ {{ lastVisited.title }}</RouterLink>
+        <span v-if="progress.unlocked" class="streak">🔥 <b>{{ progress.streak }}</b> дн. подряд</span>
+      </div>
+    </header>
 
     <div class="ov-search">
       <div class="sb">
@@ -155,75 +125,16 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       </section>
     </template>
 
-    <template v-else>
-      <template v-if="lastVisited || (progress.unlocked && weak.length)">
-        <h2 class="today-h">Продолжить</h2>
-        <div class="ov-cont">
-          <RouterLink v-if="lastVisited" :to="lastVisited.path" class="pg-card ov-card">
-            <div class="pg-k">Последний раздел</div>
-            <div class="pg-v ov-last">{{ lastVisited.title }}</div>
-            <div class="pg-s">вернуться туда, где остановился</div>
-          </RouterLink>
-          <div v-if="progress.unlocked && weak.length" class="pg-card">
-            <div class="pg-k">Слабые слова</div>
-            <div class="ov-weak">
-              <RouterLink v-for="d in weak" :key="d.n" :to="{ path: '/korean/words', query: { q: d.k } }" class="chip">
-                {{ d.k }} <small>{{ d.t }}</small>
-              </RouterLink>
-            </div>
-            <RouterLink :to="{ path: '/korean/cabinet', query: { tab: 'repeat' } }" class="pg-s ov-go">Повторить в кабинете →</RouterLink>
-          </div>
-        </div>
-      </template>
-
-      <h2 class="today-h">Сайт в цифрах</h2>
-      <div class="pg-cards">
-        <RouterLink v-for="s in site" :key="s.k" :to="s.to" class="pg-card ov-card">
-          <div class="pg-k">{{ s.k }}</div>
-          <div class="pg-v">{{ s.v }}</div>
-          <div v-if="s.s" class="pg-s">{{ s.s }}</div>
-        </RouterLink>
-      </div>
-
-      <h2 class="today-h">Мой прогресс</h2>
-      <div v-if="progress.unlocked" class="pg-cards">
-        <div class="pg-card">
-          <div class="pg-k">Уровень</div>
-          <div class="pg-v">{{ progress.info.level }} <small>из {{ MAX_LEVEL }}</small></div>
-          <div class="pg-t">{{ progress.info.title }}</div>
-          <div class="pg-bar"><i :style="{ width: progress.info.pct + '%' }"></i></div>
-          <div class="pg-s">всего {{ progress.info.xp }} очков</div>
-        </div>
-        <div class="pg-card">
-          <div class="pg-k">Серия дней</div>
-          <div class="pg-v">🔥 {{ progress.streak }}</div>
-          <div class="pg-s">лучшая серия: {{ progress.bestStreak }}</div>
-        </div>
-        <div class="pg-card">
-          <div class="pg-k">Цель дня</div>
-          <div class="pg-v">🎯 {{ Math.min(progress.todayOk, progress.goal) }} <small>из {{ progress.goal }}</small></div>
-          <div class="pg-bar goal"><i :style="{ width: Math.min(100, (progress.todayOk / progress.goal) * 100) + '%' }"></i></div>
-        </div>
-        <div class="pg-card">
-          <div class="pg-k">Выученные слова</div>
-          <div class="pg-v">🌸 {{ known }} <small>из {{ D.length }}</small></div>
-          <div class="pg-bar"><i :style="{ width: (known / D.length) * 100 + '%' }"></i></div>
-          <div class="pg-s">{{ learning }} в процессе · выучено после {{ KNOWN_STREAK }} верных подряд</div>
-        </div>
-        <div class="pg-card">
-          <div class="pg-k">Ответов всего</div>
-          <div class="pg-v">{{ answers.ok + answers.bad }}</div>
-          <div class="pg-s">{{ answers.ok }} верных · {{ accuracy }}%</div>
-        </div>
-        <RouterLink to="/korean/cabinet" class="pg-card ov-card">
-          <div class="pg-k">Подробнее</div>
-          <div class="pg-v">→</div>
-          <div class="pg-s">календарь, неделя, история, достижения — в кабинете</div>
-        </RouterLink>
-      </div>
-      <RouterLink v-else to="/korean/cabinet" class="pg-card ov-card ov-lock">
-        🔒 Личная статистика откроется после входа по токену
-      </RouterLink>
-    </template>
+    <DashboardHome v-else />
   </div>
 </template>
+
+<style scoped>
+.greet { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: 8px 4px 6px; }
+.greet h1 { font-size: 25px; margin: 0 0 6px; }
+.greet p { margin: 0; color: var(--muted); font-size: 14px; }
+.greet-r { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.streak { font-size: 13px; padding: 8px 12px; border-radius: 16px; background: var(--surface); white-space: nowrap; }
+.streak b { font-size: 18px; }
+.ov .chip { text-decoration: none; color: inherit; }
+</style>

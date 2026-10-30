@@ -46,7 +46,7 @@ onBeforeUnmount(() => dispose?.())
 <template>
   <div class="study game sky">
     <header class="game-top">
-      <RouterLink to="/">← На главную</RouterLink>
+      <RouterLink to="/korean/home">← На платформу</RouterLink>
       <div class="game-title">
         <h1>Игра на слова</h1>
       </div>
