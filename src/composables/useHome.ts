@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { G, type Gram } from '@/data/korean/grammar'
+import { nextPhrase, pickOther } from '@/data/phrases'
 import { useProgressStore } from '@/stores/progress'
 
 export const HOME_LINKS = [
@@ -40,6 +41,11 @@ export function randomRule(rand: () => number = Math.random) {
 
 /** Правило на главной: другое после каждой перезагрузки (на странице одно, пока её не обновят). Ведёт на карточку грамматики. */
 export const HOME_RULE = randomRule()
+
+/** Фраза дня: другая после каждого обновления страницы (`data/phrases.ts`). */
+export const HOME_PHRASE = nextPhrase()
+/** Две фразы дня для главной раздела: вторая всегда другая. */
+export const HOME_PHRASES = [HOME_PHRASE, pickOther([HOME_PHRASE])]
 
 const START = new Date(2026, 5, 1)
 const plural = (n: number, forms: [string, string, string]) =>

@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "run-p type-check \"build-only {@}\" --",
+    "build": "run-p type-check \"build-only {@}\" -- && npm run prerender",
     "preview": "vite preview",
     "server": "npm --prefix server start",
     "build-only": "vite build",
+    "prerender": "node scripts/prerender.mjs",
     "type-check": "vue-tsc --build",
     "test": "npm run server:build && node --test \"tests/*.test.mjs\"",
     "server:build": "npm --prefix server run build",

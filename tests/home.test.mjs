@@ -47,3 +47,31 @@ describe('правило на главной', () => {
     assert.ok(HOME_RULE.rule && HOME_RULE.examples && HOME_RULE.to.query.g)
   })
 })
+
+describe('фраза дня', async () => {
+  const { PHRASES, pickPhrase } = await load('/src/data/phrases.ts')
+
+  test('фраз достаточно, у каждой есть перевод, будущего времени нет', () => {
+    assert.ok(PHRASES.length >= 15)
+    assert.equal(new Set(PHRASES.map(p => p.ko)).size, PHRASES.length, 'без повторов')
+    for (const p of PHRASES) {
+      assert.ok(p.ko.trim() && p.ru.trim())
+      assert.ok(!/ㄹ 거|을 거|겠/.test(p.ko), `будущее время не проходили: ${p.ko}`)
+      assert.ok(!/[぀-ヿ一-鿿]/.test(p.ko + p.ru), 'без японских и китайских знаков')
+    }
+  })
+
+  test('следующая фраза никогда не совпадает с прошлой', () => {
+    for (let last = 0; last < PHRASES.length; last++) {
+      for (const r of [0, 0.3, 0.99]) assert.notEqual(pickPhrase(() => r, last).index, last)
+    }
+    assert.equal(pickPhrase(() => 0, -1).index, 0, 'без прошлой берётся как выпало')
+  })
+})
+
+describe('две фразы дня', async () => {
+  const { PHRASES, pickOther } = await load('/src/data/phrases.ts')
+  test('вторая фраза никогда не совпадает с первой, даже при крайних значениях случайности', () => {
+    for (const first of PHRASES) for (const r of [0, 0.5, 0.999]) assert.notEqual(pickOther([first], () => r).ko, first.ko)
+  })
+})
