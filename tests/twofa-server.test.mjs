@@ -11,7 +11,7 @@ let mailFile
 /** Последний код из «отправленных» писем (письма пишутся в файл вместо SMTP). */
 const lastCode = async () => {
   const lines = (await readFile(mailFile, 'utf8')).trim().split('\n')
-  return JSON.parse(lines.at(-1)).text.match(/: (\d{4})\b/)[1]
+  return JSON.parse(lines.at(-1)).text.match(/: (\d{4})\n/)[1]
 }
 const mails = async () => (await readFile(mailFile, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).length
 
@@ -33,6 +33,10 @@ describe('сервер: двухфакторная защита (код на п�
     assert.equal((await s.call('POST', '/api/2fa/enable/start', OWNER, { email: 'не-адрес' })).status, 400)
     assert.equal((await s.call('POST', '/api/2fa/enable/start', OWNER, { email: 'mira@example.com' })).status, 200)
     assert.equal(await mails(), 1)
+    const mail = JSON.parse((await readFile(mailFile, 'utf8')).trim().split('\n').at(-1))
+    assert.match(mail.subject, /^Подтверждение почты: \d{4}$/)
+    assert.ok(mail.html.includes('<!doctype html>') && mail.html.includes(mail.subject.slice(-4)), 'есть HTML-версия с кодом')
+    assert.ok(!mail.html.includes('<script'), 'в письме нет скриптов')
     const code = await lastCode()
     assert.equal((await s.call('POST', '/api/2fa/enable/confirm', OWNER, { code: code === '0000' ? '0001' : '0000' })).status, 401)
     assert.equal((await s.call('GET', '/api/progress', OWNER)).status, 200) // ещё не включена

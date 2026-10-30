@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, письмо с кодом
+
+- `server/src/mail/templates.ts` (`codeMail`): HTML-письмо на таблицах со встроенными стилями и текстовая версия; заголовки `Auto-Submitted`, `X-Auto-Response-Suppress`, `Precedence`. Команда `npm --prefix server run mail:check` проверяет SMTP.
+
 ## 2026-10-30, календарь со шторкой
 
 - `PlansCalendar.vue`: клик по дню открывает правую шторку (`Teleport` в body, обёртка `study sky pc-dr`, z-index 200), в ней список записей дня и форма. У записи поле `kind` (`tutor` или `own`,

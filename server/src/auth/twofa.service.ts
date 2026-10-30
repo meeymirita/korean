@@ -8,6 +8,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { Db } from '../db/db.service'
 import { Events } from '../events/events.service'
 import { MailService } from '../mail/mail.service'
+import { codeMail } from '../mail/templates'
 
 const SESSION_DAYS = 30
 const CODE_TTL = 10 * 60_000
@@ -87,7 +88,8 @@ export class TwoFaService {
     if (old && Date.now() - old.sent < RESEND_AFTER) throw new HttpException({ error: 'too soon', wait: Math.ceil((RESEND_AFTER - (Date.now() - old.sent)) / 1000) }, 429)
     const code = String(randomInt(0, 10_000)).padStart(4, '0')
     try {
-      await this.mail.send(email, `Код для входа: ${code}`, `Код подтверждения для 우리말: ${code}\n\nОн действует 10 минут. Если вы не входили на сайт, просто проигнорируйте письмо и не называйте код никому.`)
+      const mail = codeMail(code, kind, CODE_TTL / 60_000)
+      await this.mail.send(email, mail.subject, mail.text, mail.html)
     } catch (e) {
       console.error(`Письмо с кодом не отправилось (${kind}): ${(e as Error).message}`) // видно во вкладке «Журналы»: чаще всего неверный пароль приложения или не включён SMTP
       this.events.log('2fa_mail_failed', kind)

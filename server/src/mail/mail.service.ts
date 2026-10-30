@@ -15,9 +15,9 @@ export class MailService {
     return !!process.env.MAIL_DUMP_FILE || !!(process.env.SMTP_HOST && process.env.SMTP_FROM)
   }
 
-  async send(to: string, subject: string, text: string) {
+  async send(to: string, subject: string, text: string, html?: string) {
     if (process.env.MAIL_DUMP_FILE) {
-      appendFileSync(process.env.MAIL_DUMP_FILE, JSON.stringify({ to, subject, text }) + '\n')
+      appendFileSync(process.env.MAIL_DUMP_FILE, JSON.stringify({ to, subject, text, html }) + '\n')
       return
     }
     if (!this.configured()) throw new Error('mail not configured')
@@ -30,6 +30,14 @@ export class MailService {
       greetingTimeout: 10_000,
       socketTimeout: 15_000,
     })
-    await this.transport.sendMail({ from: process.env.SMTP_FROM, to, subject, text })
+    await this.transport.sendMail({
+      from: process.env.SMTP_FROM,
+      to,
+      subject,
+      text,
+      html,
+      // служебное письмо: почтовые программы не отвечают на него и не принимают за рассылку
+      headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All', 'Precedence': 'bulk' },
+    })
   }
 }
