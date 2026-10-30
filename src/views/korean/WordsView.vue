@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import MarkStar from '@/components/korean/MarkStar.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { CATN, D, parseQuery, score, similarWords, type Word } from '@/data/korean/words'
 import { esc, hl } from '@/data/korean/render'
 import { usePersisted } from '@/composables/usePersisted'
+import { useProgressStore } from '@/stores/progress'
 import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
 
+const progress = useProgressStore()
+const marked = computed(() => progress.data.settings.marks.length)
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
@@ -95,6 +99,7 @@ const shareWord = (d: Word) =>
       </div>
       <div class="chips">
         <button class="chip" :class="{ on: !cat }" @click="((cat = ''), (picked = null))">Все</button>
+        <RouterLink v-if="marked" to="/korean/marks" class="chip">★ Важное · {{ marked }}</RouterLink>
         <button
           v-for="(name, c) in CATN"
           :key="c"
@@ -111,7 +116,7 @@ const shareWord = (d: Word) =>
       <div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
       <template v-for="d in rows" :key="d.n">
         <div class="row">
-          <span class="n">{{ d.n }}</span>
+          <span class="n"><MarkStar kind="w" :id="d.k" />{{ d.n }}</span>
           <span class="k" v-html="h(d.k)"></span>
           <span class="rd" v-html="h(d.r)"></span>
           <span class="tr" v-html="h(d.t)"></span>

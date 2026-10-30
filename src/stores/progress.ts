@@ -35,6 +35,8 @@ export interface Settings {
   cats: string[]
   /** группы слов игры (null — как выбрано в самой игре) */
   gameCats: Record<string, number> | null
+  /** закладки: «w:слово» и «g:id правила» */
+  marks: string[]
 }
 
 export interface ProgressData {
@@ -65,7 +67,7 @@ export type Op =
   | { type: 'reset' }
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
   | { type: 'time'; day: string; seconds: number }
-  | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null }
+  | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null; marks?: string[] }
   | { type: 'import'; data: ProgressData }
 
 export interface GuestToken {
@@ -89,7 +91,9 @@ const LOG_MAX = 300
 export const KNOWN_STREAK = 3
 
 const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
-const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null })
+const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [] })
+export const MAX_MARKS = 500
+export const markKey = (kind: 'w' | 'g', id: string) => `${kind}:${id}`
 const empty = (): ProgressData => ({
   v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
   profile: emptyProfile(), settings: emptySettings(),
@@ -137,6 +141,7 @@ export function normalize(raw: unknown): ProgressData | null {
       goal: GOAL_OPTIONS.includes(Number(settings.goal)) ? Number(settings.goal) : DAILY_GOAL,
       cats: Array.isArray(settings.cats) ? settings.cats.filter(c => typeof c === 'string') : [],
       gameCats: settings.gameCats && typeof settings.gameCats === 'object' ? settings.gameCats : null,
+      marks: Array.isArray(settings.marks) ? [...new Set(settings.marks.filter((m): m is string => typeof m === 'string' && /^[wg]:.{1,40}$/.test(m)))].slice(0, MAX_MARKS) : [],
     },
   }
 }
@@ -344,13 +349,26 @@ export const useProgressStore = defineStore('progress', () => {
     if (s.goal !== undefined && GOAL_OPTIONS.includes(s.goal)) cur.goal = s.goal
     if (s.cats) cur.cats = s.cats
     if (s.gameCats !== undefined) cur.gameCats = s.gameCats
+    if (s.marks) cur.marks = s.marks
     data.value.updated = Date.now()
     queue({
       type: 'settings',
       ...(s.goal !== undefined && GOAL_OPTIONS.includes(s.goal) ? { goal: s.goal } : {}),
       ...(s.cats ? { cats: s.cats } : {}),
       ...(s.gameCats !== undefined ? { gameCats: s.gameCats } : {}),
+      ...(s.marks ? { marks: s.marks } : {}),
     })
+  }
+
+  /** Звёздочка: закладка есть или нет. Гостю закладки не сохраняются (его записи сервер игнорирует). Возвращает false, если лимит закладок исчерпан. */
+  const isMarked = (kind: 'w' | 'g', id: string) => data.value.settings.marks.includes(markKey(kind, id))
+  function toggleMark(kind: 'w' | 'g', id: string): boolean {
+    const key = markKey(kind, id)
+    const cur = data.value.settings.marks
+    if (cur.includes(key)) setSettings({ marks: cur.filter(m => m !== key) })
+    else if (cur.length >= MAX_MARKS) return false
+    else setSettings({ marks: [...cur, key] })
+    return true
   }
 
   /* ---------- сохранение и сервер ---------- */
@@ -582,7 +600,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   return {
-    data, goal, info, todayOk, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
+    data, goal, info, todayOk, isMarked, toggleMark, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
     token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }

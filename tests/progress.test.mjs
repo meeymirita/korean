@@ -35,7 +35,7 @@ describe('normalize', () => {
     assert.equal(d.xp, 120)
     assert.deepEqual(d.profile, { name: '', avatar: '🌸', cover: '' })
     assert.deepEqual(d.time, {})
-    assert.deepEqual(d.settings, { goal: 20, cats: [], gameCats: null })
+    assert.deepEqual(d.settings, { goal: 20, cats: [], gameCats: null, marks: [] })
     assert.deepEqual(d.log, [])
   })
 
@@ -221,6 +221,25 @@ describe('профиль, настройки, копия', () => {
     const xp = store.data.xp
     for (const bad of ['', '[]', 'null', '5', '"текст"', '{', '{"v":"1"}']) assert.equal(await store.importJson(bad), false, bad)
     assert.equal(store.data.xp, xp)
+  })
+
+  test('закладки: звёздочка ставится и снимается, уходит на сервер, мусор из файла отбрасывается', () => {
+    assert.equal(store.isMarked('w', '사람'), false)
+    assert.equal(store.toggleMark('w', '사람'), true)
+    store.toggleMark('g', 'ayo')
+    assert.deepEqual(store.data.settings.marks, ['w:사람', 'g:ayo'])
+    assert.equal(store.isMarked('g', 'ayo'), true)
+    store.toggleMark('w', '사람')
+    assert.deepEqual(store.data.settings.marks, ['g:ayo'])
+    const d = normalize({ v: 1, settings: { marks: ['w:친구', 'w:친구', 5, 'плохо', 'g:x'] } })
+    assert.deepEqual(d.settings.marks, ['w:친구', 'g:x'])
+  })
+
+  test('закладок не больше лимита', () => {
+    for (let i = 0; i < 500; i++) assert.equal(store.toggleMark('w', 'слово' + i), true)
+    assert.equal(store.toggleMark('w', 'лишнее'), false)
+    assert.equal(store.data.settings.marks.length, 500)
+    assert.equal(store.toggleMark('w', 'слово0'), true, 'снять закладку можно всегда')
   })
 
   test('сброс обнуляет прогресс, но оставляет профиль и настройки', async () => {

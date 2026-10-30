@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, закладки
+
+- `settings.marks` (`w:слово`, `g:id`, до 500) в клиенте (`progress.ts`: `isMarked`, `toggleMark`) и на сервере (`progress.service.ts`, операция `settings` с `marks`), `MarkStar.vue`, страница `/korean/marks`. Тесты в `progress.test.mjs` и `progress-server.test.mjs`. **Сервер перезапустить.**
+
 ## 2026-10-30, «Мои ошибки»
 
 - `data/mistakes.ts` (`mistakeWords`, `mistakeTasks`), страница `/korean/mistakes` (`MistakesView.vue`), общий компонент `TaskSession.vue` (его же использует «5 минут»: клавиши 1–9 и Enter). Тест `tests/mistakes.test.mjs`.

@@ -24,6 +24,8 @@ export interface Settings {
   goal: number
   cats: string[]
   gameCats: Record<string, number> | null
+  /** закладки: «w:слово» и «g:id правила» */
+  marks: string[]
 }
 
 const bad = (msg: string): never => {
@@ -36,7 +38,9 @@ const DEFAULT_PROFILE: Profile = { name: '', avatar: '🌸', cover: '' }
 const IMAGE_ID = /^[a-f0-9]{16}$/
 /** За одно действие таймера можно записать не больше часа. */
 const MAX_TIME_OP = 3600
-const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null }
+const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [] }
+const MARK = /^[wg]:.{1,40}$/
+const MAX_MARKS = 500
 
 @Injectable()
 export class ProgressService {
@@ -85,7 +89,7 @@ export class ProgressService {
       sources,
       log,
       profile: this.json<Profile>('profile', DEFAULT_PROFILE),
-      settings: this.json<Settings>('settings', DEFAULT_SETTINGS),
+      settings: { ...DEFAULT_SETTINGS, ...this.json<Partial<Settings>>('settings', {}) },
     }
   }
 
@@ -186,6 +190,11 @@ export class ProgressService {
       else if (typeof g === 'object' && !Array.isArray(g) && Object.keys(g).length <= 30) {
         cur.gameCats = Object.fromEntries(Object.entries(g).map(([k, v]) => [str(k, 10), int(v, 0, 1)]))
       } else bad('invalid gameCats')
+    }
+    if (op.marks !== undefined) {
+      if (!Array.isArray(op.marks) || op.marks.length > MAX_MARKS) bad('invalid marks')
+      const list = (op.marks as unknown[]).map(m => (typeof m === 'string' && MARK.test(m) ? m : bad('invalid marks')))
+      cur.marks = [...new Set(list)]
     }
     this.db.setMeta('settings', JSON.stringify(cur))
   }

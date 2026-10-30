@@ -19,7 +19,7 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual([p.days, p.all, p.words, p.sources, p.log], [{}, {}, {}, {}, []])
     assert.deepEqual(p.profile, { name: '', avatar: '🌸', cover: '' })
     assert.deepEqual(p.time, {})
-    assert.deepEqual(p.settings, { goal: 20, cats: [], gameCats: null })
+    assert.deepEqual(p.settings, { goal: 20, cats: [], gameCats: null, marks: [] })
   })
 
   test('время занятий суммируется по дням, лишнее отклоняется', async () => {
@@ -90,7 +90,7 @@ describe('сервер: прогресс в базе', () => {
     assert.equal((await ops({ type: 'profile', name: 'mira', avatar: '🦊' }, { type: 'settings', goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 } })).status, 200)
     const p = await read()
     assert.deepEqual(p.profile, { name: 'mira', avatar: '🦊', cover: '' })
-    assert.deepEqual(p.settings, { goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 } })
+    assert.deepEqual(p.settings, { goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 }, marks: [] })
     const bad = [
       [{ type: 'settings', goal: 7 }],
       [{ type: 'profile', name: 'я'.repeat(25) }],
@@ -138,6 +138,17 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual(p.words, { 가다: { ok: 5, bad: 1, streak: 3, last: 123, kd: 100 } })
     assert.deepEqual([p.profile.name, p.settings.goal], ['Копия', 10])
     assert.equal((await ops({ type: 'import', data: { v: 2 } })).status, 400)
+  })
+
+  test('закладки: сохраняются, повторы убираются, неверные ключи и лишнее отклоняются', async () => {
+    assert.equal((await ops({ type: 'settings', marks: ['w:사람', 'g:ayo', 'w:사람'] })).status, 200)
+    assert.deepEqual((await read()).settings.marks, ['w:사람', 'g:ayo'])
+    assert.equal((await ops({ type: 'settings', marks: ['x:что-то'] })).status, 400)
+    assert.equal((await ops({ type: 'settings', marks: 'w:사람' })).status, 400)
+    assert.equal((await ops({ type: 'settings', marks: Array.from({ length: 501 }, (_, i) => `w:${i}`) })).status, 400)
+    assert.deepEqual((await read()).settings.marks, ['w:사람', 'g:ayo'], 'неудачная пачка ничего не меняет')
+    assert.equal((await ops({ type: 'settings', goal: 50 })).status, 200)
+    assert.deepEqual((await read()).settings.marks, ['w:사람', 'g:ayo'], 'другие настройки закладки не трогают')
   })
 
   test('данные переживают перезапуск сервера', async () => {
