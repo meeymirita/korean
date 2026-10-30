@@ -1,15 +1,13 @@
 /**
  * Полный архив платформы по кнопке в кабинете (и раз в неделю сам): база + картинки + файлы календаря + настройки,
- * сжат (tar.gz) и зашифрован паролем BACKUP_PASSPHRASE (openssl, AES-256), потом уходит на Яндекс Диск (WebDAV) и на почту.
- * Переменные в server/.env: BACKUP_PASSPHRASE; YADISK_LOGIN, YADISK_PASSWORD (пароль приложения «Файлы WebDAV»), YADISK_DIR;
- * BACKUP_MAIL_TO (по умолчанию почта из двухфакторной защиты); YADISK_URL нужен только тестам.
+ * сжат (tar.gz) и зашифрован паролем BACKUP_PASSPHRASE (openssl, AES-256), потом уходит на почту (вложением, при большом размере частями).
+ * Переменные в server/.env: BACKUP_PASSPHRASE; BACKUP_MAIL_TO (по умолчанию почта из двухфакторной защиты).
  */
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { spawn } from 'node:child_process'
-import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import path from 'node:path'
-import { Readable } from 'node:stream'
 import { TwoFaService } from '../auth/twofa.service'
 import { DATA_DIR, ROOT } from '../config'
 import { Db } from '../db/db.service'
@@ -21,9 +19,8 @@ const FILE = path.join(DATA_DIR, 'backup-archive.json')
 const PART = 18 * 1024 * 1024
 const MAX_PARTS = 5
 const KEEP_LOCAL = 2
-const KEEP_DISK = 8
 const WEEK = 7 * 86_400_000
-export const STEPS = ['Снимок базы', 'Сжатие файлов', 'Шифрование', 'Яндекс Диск', 'Почта'] as const
+export const STEPS = ['Снимок базы', 'Сжатие файлов', 'Шифрование', 'Почта'] as const
 
 export interface Job {
   running: boolean
@@ -39,7 +36,6 @@ export interface ArchiveResult {
   time: number
   name: string
   sizeKb: number
-  disk: 'ok' | 'off' | 'fail'
   mail: 'ok' | 'off' | 'fail' | 'big'
   parts: number
   message: string
@@ -100,9 +96,6 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private diskOn() {
-    return !!(process.env.YADISK_LOGIN && process.env.YADISK_PASSWORD)
-  }
   private mailTo() {
     return process.env.BACKUP_MAIL_TO || this.twofa.email()
   }
@@ -114,13 +107,13 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   problems(): string[] {
     const p: string[] = []
     if (!process.env.BACKUP_PASSPHRASE) p.push('не задан пароль архива BACKUP_PASSPHRASE в server/.env')
-    if (!this.diskOn() && !this.mailOn()) p.push('некуда отправлять: задайте YADISK_LOGIN и YADISK_PASSWORD или настройте почту')
+    if (!this.mailOn()) p.push('некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес BACKUP_MAIL_TO')
     return p
   }
 
   /** Куда уйдёт архив: показывает кабинет до запуска. */
   targets() {
-    return { disk: this.diskOn(), mail: this.mailOn(), passphrase: !!process.env.BACKUP_PASSPHRASE }
+    return { mail: this.mailOn(), passphrase: !!process.env.BACKUP_PASSPHRASE }
   }
 
   /** Запуск в фоне; false, если уже идёт. */
@@ -129,7 +122,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     this.job = { running: true, step: 0, percent: 0, started: Date.now() }
     void this.build().then(
       r => this.finish(r),
-      e => this.finish({ ok: false, time: Date.now(), name: '', sizeKb: 0, disk: 'off', mail: 'off', parts: 0, message: (e as Error).message.slice(0, 300) }),
+      e => this.finish({ ok: false, time: Date.now(), name: '', sizeKb: 0, mail: 'off', parts: 0, message: (e as Error).message.slice(0, 300) }),
     )
     return true
   }
@@ -190,27 +183,15 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       const size = statSync(enc).size
       this.set(2, 55)
 
-      // 4. Яндекс Диск
-      let disk: ArchiveResult['disk'] = 'off'
       const notes: string[] = []
-      if (this.diskOn()) {
-        this.set(3, 56)
-        try {
-          await this.upload(enc, name, size)
-          disk = 'ok'
-        } catch (e) {
-          disk = 'fail'
-          notes.push('Диск: ' + (e as Error).message)
-        }
-      }
 
-      // 5. почта: одно письмо или несколько частей
+      // 4. почта: одно письмо или несколько частей
       let mail: ArchiveResult['mail'] = 'off'
       let parts = 0
       if (this.mailOn()) {
-        this.set(4, 82)
+        this.set(3, 60)
         try {
-          parts = await this.sendMail(enc, name, size, disk)
+          parts = await this.sendMail(enc, name, size)
           mail = parts ? 'ok' : 'big'
         } catch (e) {
           mail = 'fail'
@@ -219,16 +200,15 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.prune()
-      const sent = disk === 'ok' || mail === 'ok'
+      const sent = mail === 'ok'
       return {
         ok: sent,
         time: Date.now(),
         name,
         sizeKb: Math.round(size / 1024),
-        disk,
         mail,
         parts,
-        message: sent ? notes.join('; ') : notes.join('; ') || 'архив собран, но никуда не отправлен',
+        message: sent ? notes.join('; ') : notes.join('; ') || 'архив собран, но не отправлен',
       }
     } finally {
       rmSync(stage, { recursive: true, force: true })
@@ -236,120 +216,28 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /* ---------- Яндекс Диск (WebDAV) ---------- */
-  private dav(p: string) {
-    const base = (process.env.YADISK_URL || 'https://webdav.yandex.ru').replace(/\/$/, '')
-    return base + '/' + p.split('/').map(encodeURIComponent).join('/')
-  }
-  private auth() {
-    return 'Basic ' + Buffer.from(`${process.env.YADISK_LOGIN}:${process.env.YADISK_PASSWORD}`).toString('base64')
-  }
-  private folder() {
-    return (process.env.YADISK_DIR || 'backup_korean').replace(/^\/+|\/+$/g, '')
-  }
-
-  private async upload(file: string, name: string, size: number) {
-    const dir = this.folder()
-    // папка: 201 — создана, 405 — уже есть
-    const mk = await fetch(this.dav(dir), { method: 'MKCOL', headers: { Authorization: this.auth() }, signal: AbortSignal.timeout(30_000) })
-    if (mk.status === 401) throw new Error('Яндекс не принял логин или пароль приложения')
-    if (![201, 405, 301].includes(mk.status) && !mk.ok) throw new Error('не получилось создать папку на Диске (' + mk.status + ')')
-
-    // тело — поток с диска, чтобы файл в сотни мегабайт не читать в память; ход отправки двигает полосу 56 → 80
-    let sent = 0
-    const stream = Readable.toWeb(createReadStream(file)) as ReadableStream<Uint8Array>
-    const counted = stream.pipeThrough(
-      new TransformStream<Uint8Array, Uint8Array>({
-        transform: (chunk, ctl) => {
-          sent += chunk.length
-          this.set(3, 56 + (sent / size) * 24)
-          ctl.enqueue(chunk)
-        },
-      }),
-    )
-    const res = await fetch(this.dav(`${dir}/${name}`), {
-      method: 'PUT',
-      headers: { Authorization: this.auth(), 'Content-Length': String(size) },
-      body: counted,
-      // @ts-expect-error duplex нужен для потокового тела, в типах fetch его ещё нет
-      duplex: 'half',
-      signal: AbortSignal.timeout(30 * 60_000),
-    })
-    if (res.status === 401) throw new Error('Яндекс не принял логин или пароль приложения')
-    if (res.status === 507) throw new Error('на Диске нет места')
-    if (!res.ok) throw new Error(`Диск ответил ${res.status}${await this.reason(res)}`)
-    await this.pruneDisk(dir).catch(() => undefined) // чистка старых не должна ронять успешную отправку
-  }
-
-  /** Проверка каналов без сборки архива: маленький файл на Диск и короткое письмо. Пароль архива не нужен. */
+  /** Проверка почты без сборки архива: короткое письмо. Пароль архива не нужен. */
   async test() {
-    const disk = this.diskOn() ? this.testDisk() : Promise.resolve('off')
-    const mail = this.mailOn() ? this.testMail() : Promise.resolve('off')
-    // каналы проверяются одновременно: зависший Диск не задерживает письмо
-    const [d, m] = await Promise.all([disk, mail])
-    const notes = [d, m].filter(x => x !== 'ok' && x !== 'off')
-    const out = { disk: d === 'ok' || d === 'off' ? d : 'fail', mail: m === 'ok' || m === 'off' ? m : 'fail', message: '' }
-    out.message = notes.join('; ') || (d === 'off' && m === 'off' ? 'некуда отправлять: задайте YADISK_LOGIN и YADISK_PASSWORD или настройте почту' : '')
-    if (notes.length) console.error('проверка отправки копий:', out.message)
-    return out
-  }
-
-  /** Пояснение, которое Яндекс присылает в теле ответа (без тегов), для сообщения об ошибке. */
-  private async reason(res: Response) {
-    try {
-      const t = (await res.text()).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
-      return t ? `: ${t}` : ''
-    } catch {
-      return ''
-    }
-  }
-
-  /** 'ok' или текст ошибки. */
-  private async testDisk() {
-    try {
-      const dir = this.folder()
-      const body = `Проверка отправки ${new Date().toISOString()}. Файл можно удалить.\n`
-      const mk = await fetch(this.dav(dir), { method: 'MKCOL', headers: { Authorization: this.auth() }, signal: AbortSignal.timeout(20_000) })
-      if (mk.status === 401) return 'Диск: Яндекс не принял логин или пароль приложения'
-      const res = await fetch(this.dav(`${dir}/проверка.txt`), { method: 'PUT', headers: { Authorization: this.auth() }, body, signal: AbortSignal.timeout(20_000) })
-      if (res.status === 401) return 'Диск: Яндекс не принял логин или пароль приложения'
-      if (!res.ok) return `Диск ответил ${res.status}${await this.reason(res)}`
-      return 'ok'
-    } catch (e) {
-      const err = e as Error
-      return 'Диск: ' + (err.name === 'TimeoutError' ? 'нет ответа от webdav.yandex.ru за 20 секунд' : err.message.slice(0, 120))
-    }
-  }
-
-  private async testMail() {
+    if (!this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес BACKUP_MAIL_TO' }
     try {
       await this.mail.send(this.mailTo(), '우리말: проверка отправки', 'Это проверочное письмо из «Настроек». Если оно пришло, почта для копий настроена верно.')
-      return 'ok'
+      return { mail: 'ok' as const, message: '' }
     } catch (e) {
-      return 'Почта: ' + (e as Error).message.slice(0, 120)
-    }
-  }
-
-  /** Оставляет на Диске последние KEEP_DISK архивов. */
-  private async pruneDisk(dir: string) {
-    const res = await fetch(this.dav(dir) + '/', { method: 'PROPFIND', headers: { Authorization: this.auth(), Depth: '1' }, signal: AbortSignal.timeout(30_000) })
-    if (!res.ok) return
-    const names = [...(await res.text()).matchAll(/korean-[0-9-]+\.tar\.gz\.enc/g)].map(m => m[0]).filter((n, i, a) => a.indexOf(n) === i).sort()
-    for (const old of names.slice(0, Math.max(0, names.length - KEEP_DISK))) {
-      await fetch(this.dav(`${dir}/${old}`), { method: 'DELETE', headers: { Authorization: this.auth() }, signal: AbortSignal.timeout(30_000) })
+      const message = 'Почта: ' + (e as Error).message.slice(0, 120)
+      console.error('проверка отправки копий:', message)
+      return { mail: 'fail' as const, message }
     }
   }
 
   /* ---------- почта ---------- */
   /** Возвращает число писем; 0 — архив слишком велик для почты, ушло письмо без вложения. */
-  private async sendMail(enc: string, name: string, size: number, disk: ArchiveResult['disk']) {
+  private async sendMail(enc: string, name: string, size: number) {
     const to = this.mailTo()
     const mb = (size / 1048576).toFixed(1)
-    const where = disk === 'ok' ? `Копия лежит и на Яндекс Диске (папка «${this.folder()}»).` : ''
     const how = 'Открыть: openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in файл.enc -out korean.tar.gz -pass pass:ВАШ_ПАРОЛЬ, потом tar -xzf korean.tar.gz. Подробности в docs/backup.md.'
     const n = Math.ceil(size / PART)
     if (n > MAX_PARTS) {
-      await this.mail.send(to, '우리말: архив слишком большой для почты', `Полный архив (${mb} МБ) не помещается в письма. ${where || 'Он остался только на сервере: настройте Яндекс Диск.'}`)
+      await this.mail.send(to, '우리말: архив слишком большой для почты', `Полный архив (${mb} МБ) не помещается в письма и остался только на сервере (server/data/export). Скачайте его оттуда вручную или подключите облако.`)
       return 0
     }
     const fh = await open(enc, 'r')
@@ -362,8 +250,8 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
           writeFileSync(part, buf)
         }
         const fname = n === 1 ? name : `${name}.part${i + 1}`
-        const text = n === 1 ? `Полный архив платформы, ${mb} МБ, зашифрован паролем BACKUP_PASSPHRASE. ${where}\n\n${how}` : `Часть ${i + 1} из ${n} полного архива (${mb} МБ). Склейте части по порядку: cat ${name}.part* > ${name}\n\n${how}`
-        this.set(4, 82 + ((i + 0.5) / n) * 16)
+        const text = n === 1 ? `Полный архив платформы, ${mb} МБ, зашифрован паролем BACKUP_PASSPHRASE.\n\n${how}` : `Часть ${i + 1} из ${n} полного архива (${mb} МБ). Склейте части по порядку: cat ${name}.part* > ${name}\n\n${how}`
+        this.set(3, 60 + ((i + 0.5) / n) * 38)
         try {
           await this.mail.send(to, `우리말: резервная копия${n > 1 ? ` (часть ${i + 1} из ${n})` : ''}`, text, undefined, [{ filename: fname, path: part }])
         } finally {

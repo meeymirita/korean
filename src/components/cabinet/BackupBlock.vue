@@ -8,7 +8,6 @@ interface ArchiveLast {
   ok: boolean
   time: number
   sizeKb: number
-  disk: 'ok' | 'off' | 'fail'
   mail: 'ok' | 'off' | 'fail' | 'big'
   parts: number
   message: string
@@ -17,7 +16,7 @@ interface Archive {
   steps: string[]
   job: { running: boolean; step: number; percent: number }
   last: ArchiveLast | null
-  targets: { disk: boolean; mail: boolean; passphrase: boolean }
+  targets: { mail: boolean; passphrase: boolean }
   problems: string[]
 }
 interface Status {
@@ -60,7 +59,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 /** Итог плашкой: куда ушёл архив или что пошло не так. */
 function announce(l: ArchiveLast) {
-  const where = [l.disk === 'ok' ? 'на Яндекс Диск' : '', l.mail === 'ok' ? (l.parts > 1 ? `на почту (${l.parts} письма)` : 'на почту') : ''].filter(Boolean).join(' и ')
+  const where = l.parts > 1 ? `на почту (${l.parts} письма)` : 'на почту'
   if (l.ok) toast.ok(`Архив ${(l.sizeKb / 1024).toFixed(1)} МБ отправлен ${where}.${l.message ? ' ' + l.message : ''}`)
   else toast.error(l.message || 'Архив не удалось отправить.')
 }
@@ -80,16 +79,14 @@ async function run() {
   }
 }
 const checking = ref(false)
-/** Проверка каналов: на Диск ложится «проверка.txt», на почту идёт короткое письмо. */
+/** Проверка почты: на неё идёт короткое письмо. */
 async function check() {
   checking.value = true
   try {
     const res = await fetchT('/api/backup/test', { method: 'POST', headers: { Authorization: `Bearer ${progress.bearer}` } }, 60_000)
     if (!res.ok) throw new Error(`сервер ответил ${res.status}`)
-    const r = (await res.json()) as { disk: string; mail: string; message: string }
-    const ok = [r.disk === 'ok' ? 'Яндекс Диск (файл «проверка.txt» в папке)' : '', r.mail === 'ok' ? 'почта (проверьте ящик)' : ''].filter(Boolean)
-    if (ok.length && !r.message) toast.ok('Отправлено: ' + ok.join(' и ') + '.')
-    else if (ok.length) toast.error(`Отправлено: ${ok.join(' и ')}. Но: ${r.message}`)
+    const r = (await res.json()) as { mail: string; message: string }
+    if (r.mail === 'ok') toast.ok('Письмо отправлено, проверьте ящик.')
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
     toast.error('Не получилось проверить: ' + (e as Error).message)
@@ -123,7 +120,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
     <h3>Резервные копии</h3>
     <div v-if="status.archive" class="bk-arc">
       <p class="st-sub">Полный архив (база, картинки, файлы календаря, настройки) шифруется вашим паролем и отправляется
-        {{ [status.archive.targets.disk ? 'на Яндекс Диск' : '', status.archive.targets.mail ? 'на почту' : ''].filter(Boolean).join(' и ') || 'никуда (не настроено)' }}.
+        {{ status.archive.targets.mail ? 'на почту' : 'никуда (почта не настроена)' }}.
         Сам раз в неделю, а здесь можно запустить в любой день.</p>
       <ul v-if="status.archive.problems.length" class="bk-prob"><li v-for="p in status.archive.problems" :key="p">⚠ {{ p }}</li></ul>
       <div class="pg-btns">
@@ -138,7 +135,6 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
         <small>{{ job.percent }}%</small>
       </div>
       <p v-else-if="lastArc?.ok" class="bk-ok">✓ Последний архив: {{ arcWhen }}, {{ (lastArc.sizeKb / 1024).toFixed(1) }} МБ.
-        {{ lastArc.disk === 'ok' ? 'Диск ✓' : lastArc.disk === 'fail' ? 'Диск ✗' : '' }}
         {{ lastArc.mail === 'ok' ? `Почта ✓${lastArc.parts > 1 ? ' (' + lastArc.parts + ' письма)' : ''}` : lastArc.mail === 'fail' ? 'Почта ✗' : lastArc.mail === 'big' ? 'Почта: архив слишком большой, письмо без вложения' : '' }}
         <span v-if="lastArc.message" class="bk-warn"> {{ lastArc.message }}</span></p>
       <p v-else-if="lastArc" class="bk-bad">✗ Последний архив {{ arcWhen }} не удался: {{ lastArc.message }}</p>
