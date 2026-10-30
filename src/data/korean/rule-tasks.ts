@@ -37,12 +37,12 @@ export function ruleTasks(g: Gram, n = 3): Task[] {
       const options = shuffle([answer, ...own1, ...rest])
       if (options.length < 3) continue
       const prompt = plain(ko.replace(marks[0]![0], '＿＿＿'))
-      tasks.push({ id, kind: 'rule', title: 'Вставь нужную форму', prompt, hint: short(ru), options, answer })
+      tasks.push({ id, kind: 'rule', title: 'Вставь нужную форму', prompt, hint: short(ru), options, answer, gram: g.id })
     } else {
       const answer = ru
       const wrong = shuffle([...new Set([...own, ...otherPairs].map(p => p[1]))].filter(t => t !== answer)).slice(0, 3)
       if (wrong.length < 2) continue
-      tasks.push({ id, kind: 'rule', title: 'Что значит предложение?', prompt: plain(ko), options: shuffle([answer, ...wrong]), answer })
+      tasks.push({ id, kind: 'rule', title: 'Что значит предложение?', prompt: plain(ko), options: shuffle([answer, ...wrong]), answer, gram: g.id })
     }
   }
   return tasks

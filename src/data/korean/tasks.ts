@@ -14,6 +14,8 @@ export interface Task {
   answer: string
   /** слово словаря, к которому относится задание (для прогресса) */
   word?: string
+  /** карточка грамматики, на которую задание (для разбора ошибки) */
+  gram?: string
 }
 
 export const shuffle = <T>(a: T[]) => {
@@ -93,6 +95,7 @@ function make(kind: Exclude<TaskKind, 'rule'>, d: Word, id: number, formPool?: F
       options,
       answer,
       word: e.k,
+      ...(!past ? { gram: ADJECTIVES.some(a => a.k === e.k) ? 'adj' : 'ayo' } : {}),
     }
   }
   // blank: слово должно встречаться в примере ровно один раз и быть не короче двух слогов

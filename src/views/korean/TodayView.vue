@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { errText } from '@/lib/http'
+import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsCheck.vue'
 import { askConfirm } from '@/composables/useConfirm'
@@ -170,6 +171,7 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
             <div class="opts">
               <button v-for="o in t.options" :key="o" class="opt" :class="{ ok: t.id in picked && o === t.answer, bad: picked[t.id] === o && o !== t.answer }" :disabled="t.id in picked" @click="answer(t.id, o)">{{ o }}</button>
             </div>
+            <ExplainBox v-if="t.id in picked && picked[t.id] !== t.answer" :task="t" :picked="picked[t.id]!" />
           </li>
         </ol>
       </template>
@@ -205,6 +207,7 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
           <div class="opts">
             <button v-for="o in t.options" :key="o" class="opt" :class="{ ok: t.id in picked && o === t.answer, bad: picked[t.id] === o && o !== t.answer }" :disabled="t.id in picked" @click="answer(t.id, o)">{{ o }}</button>
           </div>
+          <ExplainBox v-if="t.id in picked && picked[t.id] !== t.answer" :task="t" :picked="picked[t.id]!" />
         </li>
       </ol>
 

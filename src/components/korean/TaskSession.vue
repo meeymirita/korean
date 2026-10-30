@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import ExplainBox from '@/components/korean/ExplainBox.vue'
 import type { Task } from '@/data/korean/tasks'
 import { useProgressStore } from '@/stores/progress'
 
@@ -82,6 +83,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <kbd>{{ i + 1 }}</kbd> {{ o }}
         </button>
       </div>
+      <ExplainBox v-if="picked !== null && picked !== current.answer" :task="current" :picked="picked" />
       <button v-if="picked !== null" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">

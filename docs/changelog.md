@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, разбор ошибок
+
+- `data/korean/explain.ts` (`explain`), `ExplainBox.vue`; у заданий поле `gram` (id карточки: у правила и у настоящего времени). Показывается в «Сегодня» и `TaskSession` (5 минут, мои ошибки). Тест `tests/explain.test.mjs`.
+
 ## 2026-10-30, личные рекорды
 
 - `data/records.ts` (`personalRecords`, `longestStreak`), блок «Личные рекорды» в `OverviewTab.vue`. Тест `tests/records.test.mjs`.
