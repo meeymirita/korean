@@ -1,4 +1,4 @@
-# Хостинг владельца (настроено 2026-10-29, работает)
+# Хостинг владельца (настроено 2026-10-29, обновлено 2026-10-30, работает)
 
 - Сервер Ubuntu (`root@se-40678`), проект в `/var/sites/korean` (новый каталог), сайт `https://korean.meeymirita.ru` (отдельный блок в Caddy,
   A-запись `korean` в DNS). Главная `meeymirita.ru` — другой проект (`/var/sites/meeymirita_start_page`).
@@ -6,7 +6,10 @@
 - Обновление сайта: `git pull` → `npm run build` (папка `dist`). Сервер прогресса перезапускать только если менялся
   `server/`: `cd server && npm ci && npm run build`, затем `systemctl restart progress`.
 - **Caddy** (`/etc/caddy/Caddyfile`, копия до правки `Caddyfile.bak`), блок сайта:
-  `encode zstd gzip`, `handle /api/* { reverse_proxy 127.0.0.1:3001 }`, `handle { root * …/dist; try_files {path} /index.html; file_server }`.
+  `encode zstd gzip`, заголовки безопасности (HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, `-Server`), `request_body max_size 60MB`,
+  кэш (`/assets/*` вечный, страницы и карта сайта `no-cache`), `handle /api/* { reverse_proxy 127.0.0.1:3001 }`,
+  `handle { root * …/dist; try_files {path} {path}/index.html /index.html; file_server }` (**`{path}/index.html` нужен для готовых страниц SEO**; применено владельцем 2026-10-30,
+  `Content-Security-Policy` для сайта пока не включён, копия прежнего Caddyfile: `Caddyfile.bak2`).
   `try_files` обязателен для SPA (иначе прямые ссылки на `/korean/...` дают 404). Для предварительной отрисовки (SEO) строка должна быть такой:
   `try_files {path} {path}/index.html /index.html` (ищет сначала файл, потом готовую страницу раздела, потом общий `index.html`). После правки:
   `caddy validate --config /etc/caddy/Caddyfile` и `systemctl reload caddy`.

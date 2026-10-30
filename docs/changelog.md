@@ -2,6 +2,19 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, выкладка на хостинг (итог)
+
+- Владелец обновил сервер: `git pull`, `cd server && npm ci && npm run build`, `npm run build` (с пререндером), `systemctl restart progress`.
+  Что вылезло по пути, чтобы не наступить снова:
+  - `npm ci` на сервере (старее npm 11) падал «Missing: webpack from lock file» → `webpack` закреплён в `server/package.json` (`overrides`), проверка
+    `npx npm@10 ci --dry-run` (коммит `84672a2`);
+  - служба `progress` всё ещё запускала удалённый `server/index.mjs` (`ExecStart`), после `sed` на `ExecStart=/usr/bin/node server/dist/main.js`,
+    `systemctl daemon-reload && systemctl reset-failed progress && systemctl restart progress` заработала; на сервере Node v22.22.1;
+  - в Caddy применены `try_files {path} {path}/index.html /index.html`, заголовки безопасности и кэш; проверено запросами к живому сайту
+    (пререндер `/korean/words` 76 806 байт, заголовки, `/api/health`).
+- Осталось на хостинге (всё в `docs/hosting.md`): CSP для сайта, служба не от root (сейчас от root, без `User=`) с ограничениями systemd, брандмауэр и
+  SSH по ключу, `fail2ban`, копии `server/data` вне сервера, Яндекс.Вебмастер и Google Search Console.
+
 ## 2026-10-30 (правки по замечаниям владельца, шестой заход)
 
 - **Повторный токен для опасных действий**: сброс прогресса, загрузка копии и создание гостевого токена просят токен в окне (`askToken`),
