@@ -12,7 +12,7 @@ import { codeMail } from '../mail/templates'
 
 const SESSION_DAYS = 30
 const CODE_TTL = 10 * 60_000
-const RESEND_AFTER = 60_000
+const RESEND_AFTER = 30_000
 const MAX_TRIES = 5
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
 

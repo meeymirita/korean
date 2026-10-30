@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useTwoFa } from '@/composables/useTwoFa'
 import { useProgressStore } from '@/stores/progress'
@@ -14,14 +14,31 @@ const code = ref('')
 const sentTo = ref('')
 const codeError = ref('')
 const sending = ref(false)
+/** Сколько секунд осталось до новой отправки кода (сервер тоже не шлёт чаще, чем раз в 30 секунд). */
+const RESEND = 30
+const left = ref(0)
+let tick: ReturnType<typeof setInterval> | undefined
+function countdown(seconds: number) {
+  clearInterval(tick)
+  left.value = seconds
+  if (seconds <= 0) return
+  tick = setInterval(() => {
+    left.value -= 1
+    if (left.value <= 0) clearInterval(tick)
+  }, 1000)
+}
+onBeforeUnmount(() => clearInterval(tick))
 
 async function sendCode() {
-  if (sending.value) return
+  if (sending.value || left.value > 0) return
   sending.value = true
   codeError.value = ''
   try {
     sentTo.value = await tf.sendLoginCode()
+    countdown(RESEND)
   } catch (e) {
+    const wait = (e as { wait?: number }).wait
+    if (wait) countdown(wait)
     codeError.value = (e as Error).message // например «код уже отправлен, новый через 40 с»: сам код при этом дошёл
   } finally {
     sending.value = false
@@ -65,7 +82,7 @@ async function submit() {
           <button type="submit" :disabled="busy || code.trim().length !== 4">{{ busy ? 'Проверяю…' : 'Войти' }}</button>
         </form>
         <p v-if="codeError" class="gate-err">{{ codeError }}</p>
-        <p class="gate-help"><a href="#" @click.prevent="sendCode">Отправить код ещё раз</a> · <a href="#" @click.prevent="progress.disconnect()">Другой токен</a></p>
+        <p class="gate-help"><a v-if="left <= 0" href="#" @click.prevent="sendCode">Отправить код ещё раз</a><span v-else class="gate-wait">Отправить ещё раз через {{ left }} с</span> · <a href="#" @click.prevent="progress.disconnect()">Другой токен</a></p>
         <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
       </template>
       <template v-else>
@@ -106,6 +123,7 @@ async function submit() {
 .gate-card .gate-err { color: var(--bad, #a4402f); font-weight: 600; }
 .gate-card .gate-help { margin-top: 16px; font-size: 14px; }
 .gate-help a { color: var(--gold); font-weight: 600; }
+.gate-wait { color: var(--muted); }
 .gate-help a:hover { text-decoration: underline; }
 .gate-back { display: inline-block; margin-top: 18px; font-size: 14px; font-weight: 600; color: var(--gold); }
 .gate-back:hover { text-decoration: underline; }

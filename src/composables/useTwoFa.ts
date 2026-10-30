@@ -29,7 +29,7 @@ export function useTwoFa() {
     } catch {
       /* без тела */
     }
-    if (res.status === 429) return new Error(body.wait ? `Код уже отправлен, новый можно через ${body.wait} с` : 'Слишком много попыток, подождите несколько минут')
+    if (res.status === 429) return Object.assign(new Error(body.wait ? `Код уже отправлен, новый можно через ${body.wait} с` : 'Слишком много попыток, подождите несколько минут'), { wait: body.wait ?? 0 })
     if (res.status === 401) return new Error(body.error === 'wrong code' ? 'Неверный или просроченный код' : 'Нужно войти заново')
     if (res.status === 403) return new Error('Неверный токен подтверждения')
     if (res.status === 503) return new Error(body.error === 'mail not configured' ? 'На сервере не настроена почта (SMTP в server/.env)' : 'Не получилось отправить письмо, попробуйте позже')
