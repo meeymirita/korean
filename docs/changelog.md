@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, личные рекорды
+
+- `data/records.ts` (`personalRecords`, `longestStreak`), блок «Личные рекорды» в `OverviewTab.vue`. Тест `tests/records.test.mjs`.
+
 ## 2026-10-30, календарь тепла
 
 - `data/heat.ts` (`heatWeeks`, `heatLevel`), `HeatMap.vue` вместо календаря на 8 недель в «Обзоре» (26 недель, цель дня задаёт уровни). Тест `tests/heat.test.mjs`.

@@ -405,3 +405,10 @@
 .study .ht-leg .ht-c { width: 12px; height: 12px; }
 .study .ht-leg .ht-c:first-of-type { margin-left: 4px; }
 .study .ht-leg .ht-c:last-of-type { margin-right: 4px; }
+
+/* личные рекорды */
+.study .pg-rec { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 14px; }
+.study .pg-recc { display: grid; gap: 2px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.study .pg-recc .k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.study .pg-recc b { font-size: 30px; line-height: 1.15; }
+.study .pg-recc small { color: var(--muted); font-size: 12.5px; }

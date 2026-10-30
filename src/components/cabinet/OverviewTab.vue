@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
 import HeatMap from '@/components/cabinet/HeatMap.vue'
+import { personalRecords } from '@/data/records'
 import { answersByDay } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { useShareCard } from '@/composables/useShareCard'
@@ -32,6 +33,15 @@ const answerSeries = computed(() => [
   { name: 'Верных', values: ans.value.map(a => a.ok), color: '#7a63e8' },
 ])
 const goal = computed(() => progress.goal)
+const records = computed(() => personalRecords(progress.data))
+const hasRecords = computed(() => !!records.value.bestDay || !!records.value.bestTime)
+const dayLabel = (k: string) => new Date(k + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+const weekLabel = (k: string) => {
+  const a = new Date(k + 'T12:00:00')
+  const b = new Date(a)
+  b.setDate(a.getDate() + 6)
+  return `${a.getDate()}–${b.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}`
+}
 
 const knownCount = computed(() => D.filter(d => progress.status(d.k) === 'known').length)
 const learningCount = computed(() => D.filter(d => progress.status(d.k) === 'learning').length)
@@ -119,6 +129,16 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <div class="pg-s">{{ learningCount }} в процессе · слово считается выученным после {{ KNOWN_STREAK }} верных ответов подряд</div>
       </div>
     </div>
+
+    <template v-if="hasRecords">
+      <h2 class="today-h">Личные рекорды <small v-if="records.todayIsBest">сегодня лучший день! 🎉</small></h2>
+      <div class="pg-rec">
+        <div v-if="records.bestDay" class="pg-recc"><span class="k">Лучший день</span><b>{{ records.bestDay.n }}</b><small>верных · {{ dayLabel(records.bestDay.key) }}</small></div>
+        <div v-if="records.bestWeek" class="pg-recc"><span class="k">Лучшая неделя</span><b>{{ records.bestWeek.n }}</b><small>верных · {{ weekLabel(records.bestWeek.key) }}</small></div>
+        <div v-if="records.longestStreak" class="pg-recc"><span class="k">Самая длинная серия</span><b>{{ records.longestStreak }}</b><small>{{ records.longestStreak === 1 ? 'день' : 'дн.' }} подряд</small></div>
+        <div v-if="records.bestTime" class="pg-recc"><span class="k">Дольше всего занимался</span><b>{{ formatSpent(records.bestTime.n) }}</b><small>{{ dayLabel(records.bestTime.key) }}</small></div>
+      </div>
+    </template>
 
     <h2 class="today-h">Дни занятий <small>последние полгода</small></h2>
     <div class="pg-days">
