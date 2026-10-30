@@ -76,7 +76,7 @@ before(async () => {
   await sh(tmp, `git init -q -b main ${work}`)
   await sh(work, 'git config user.email t@t && git config user.name t')
   copyFileSync(SCRIPT, path.join(work, 'scripts/deploy.sh'))
-  for (const [f, t] of Object.entries({ 'src/a.txt': '1', 'server/a.txt': '1', 'package.json': '{}', 'package-lock.json': '{}' })) {
+  for (const [f, t] of Object.entries({ 'src/a.txt': '1', 'server/a.txt': '1', 'package.json': '{}', 'package-lock.json': '{}', 'server/package-lock.json': '{}' })) {
     mkdirSync(path.dirname(path.join(work, f)), { recursive: true })
     writeFileSync(path.join(work, f), t)
   }
@@ -149,6 +149,18 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.notEqual(r.code, 0)
     assert.match(r.out, /не удалось собрать сайт/)
     assert.equal(await sh(srv, 'git rev-parse HEAD'), before)
+  })
+
+  test('файл блокировки, переписанный npm на сервере, возвращается как в git, и обновление идёт дальше', async () => {
+    writeFileSync(path.join(srv, 'package-lock.json'), '{"переписал":"npm"}')
+    writeFileSync(path.join(srv, 'server/package-lock.json'), '{"переписал":"npm"}')
+    await release({ 'src/c.txt': 'y' })
+    resetCalls()
+    const r = await deploy()
+    assert.equal(r.code, 0, r.out)
+    assert.match(r.out, /Возвращаю package-lock\.json как в git/)
+    assert.ok(calls().includes('site-build'))
+    assert.equal(await sh(srv, 'git status --porcelain'), '', 'рабочая папка снова чистая')
   })
 
   test('в папке проекта несохранённые правки: скрипт отказывается и ничего не делает', async () => {

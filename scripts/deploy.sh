@@ -55,6 +55,14 @@ healthy() {
   return 1
 }
 
+# npm на сервере (особенно старый) любит переписать package-lock.json: это не правки владельца, возвращаем файлы блокировки как в git
+for f in package-lock.json server/package-lock.json; do
+  if git ls-files --error-unmatch "$f" >/dev/null 2>&1 && ! git diff --quiet -- "$f"; then
+    echo "Возвращаю $f как в git (его изменил npm на сервере)"
+    git checkout -- "$f"
+  fi
+done
+
 # рабочая папка должна быть чистой: иначе обновление и откат могут затереть чьи-то правки
 if [ -n "$(git status --porcelain)" ]; then
   git status --short
