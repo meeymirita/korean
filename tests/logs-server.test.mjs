@@ -37,6 +37,19 @@ describe('сервер: журналы', () => {
     assert.deepEqual(none.lines, [])
   })
 
+  test('журнал сервера: запросы и события попадают в него, параметры и опрос журнала нет', async () => {
+    await s.call('GET', '/api/notes?q=секретное-слово', OWNER)
+    await s.call('GET', '/api/notes', 'wrong-token-value')
+    const r = await (await s.call('GET', '/api/logs/app', OWNER)).json()
+    const text = r.lines.map(l => l.msg).join('\n')
+    assert.match(text, /200 GET \/api\/notes · /)
+    assert.match(text, /401 GET \/api\/notes · /)
+    assert.match(text, /событие bad_token/)
+    assert.ok(!text.includes('секретное-слово'), 'параметры запроса не пишутся')
+    assert.ok(!text.includes('/api/logs'), 'опрос журнала не пишется')
+    assert.equal(r.lines.find(l => l.msg.startsWith('401 GET'))?.level, 'warn')
+  })
+
   test('Caddy: запросы читаются, статус задаёт уровень, не-JSON остаётся строкой', async () => {
     const r = await (await s.call('GET', '/api/logs/caddy', OWNER)).json()
     assert.equal(r.configured, true)

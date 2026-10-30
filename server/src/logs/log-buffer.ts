@@ -19,13 +19,25 @@ const levelOf = (text: string, stream: 'out' | 'err'): LogLine['level'] => {
   return stream === 'err' ? 'warn' : 'info'
 }
 
-export function push(text: string, stream: 'out' | 'err' = 'out') {
+export function push(text: string, stream: 'out' | 'err' = 'out', level?: LogLine['level']) {
   for (const raw of text.replace(ANSI, '').split(/\r?\n/)) {
     const msg = raw.trim()
     if (!msg) continue
-    lines.push({ t: Date.now(), level: levelOf(msg, stream), msg: msg.slice(0, 2000) })
+    lines.push({ t: Date.now(), level: level ?? levelOf(msg, stream), msg: msg.slice(0, 2000) })
   }
   if (lines.length > MAX_LINES) lines.splice(0, lines.length - MAX_LINES)
+}
+
+/** Строка о запросе к API: путь без параметров (в них могут быть поисковые слова), статус, адрес и время. Опрос самой вкладки «Журналы» и проверка здоровья не пишутся. */
+export function accessLogger(req: { method: string; originalUrl: string; ip?: string }, res: { statusCode: number; on: (e: 'finish', cb: () => void) => void }, next: () => void) {
+  const t0 = Date.now()
+  res.on('finish', () => {
+    const path = req.originalUrl.split('?')[0]!
+    if (path.startsWith('/api/logs') || path === '/api/health') return
+    const s = res.statusCode
+    push(`${s} ${req.method} ${path} · ${req.ip ?? ''} · ${Date.now() - t0} мс`, 'out', s >= 500 ? 'error' : s >= 400 ? 'warn' : 'info')
+  })
+  next()
 }
 
 /** Включает подслушивание stdout и stderr и перехват необработанных ошибок. Повторный вызов ничего не делает. */

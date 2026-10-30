@@ -8,7 +8,7 @@ import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module'
 import { DATA_DIR, MAX_JSON, PORT, TOKEN } from './config'
-import { startLogCapture } from './logs/log-buffer'
+import { accessLogger, startLogCapture } from './logs/log-buffer'
 import { RateLimiter, requestTimeout, securityHeaders } from './security'
 
 startLogCapture() // журнал для кабинета: копим всё, что пишет сервер
@@ -24,6 +24,7 @@ async function bootstrap() {
   // за Caddy на этом же компьютере: настоящий адрес берётся из X-Forwarded-For только если запрос пришёл с loopback
   app.set('trust proxy', 'loopback')
   app.use(securityHeaders)
+  app.use(accessLogger)
   app.use(app.get(RateLimiter).middleware)
   app.use(requestTimeout)
   app.useBodyParser('json', { limit: MAX_JSON })
