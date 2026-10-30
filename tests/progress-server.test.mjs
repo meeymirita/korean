@@ -151,6 +151,22 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual((await read()).settings.marks, ['w:사람', 'g:ayo'], 'другие настройки закладки не трогают')
   })
 
+  test('настроение занятий: счётчики по дню, неверное отклоняется, сброс очищает, копия возвращает', async () => {
+    const mood = (m, d = day) => ops({ type: 'mood', day: d, mood: m })
+    assert.equal((await mood('easy')).status, 200)
+    await mood('easy')
+    await mood('hard')
+    assert.deepEqual((await read()).moods[day], [2, 0, 1])
+    assert.equal((await mood('great')).status, 400)
+    assert.equal((await ops({ type: 'mood', day: 'вчера', mood: 'ok' })).status, 400)
+    assert.deepEqual((await read()).moods[day], [2, 0, 1], 'неверное ничего не меняет')
+    const copy = JSON.parse(JSON.stringify(await read()))
+    await ops({ type: 'reset' })
+    assert.deepEqual((await read()).moods, {})
+    assert.equal((await ops({ type: 'import', data: copy })).status, 200)
+    assert.deepEqual((await read()).moods[day], [2, 0, 1])
+  })
+
   test('данные переживают перезапуск сервера', async () => {
     const t = await start()
     await t.call('POST', '/api/ops', OWNER, { ops: [answer({ t: 42 })] })

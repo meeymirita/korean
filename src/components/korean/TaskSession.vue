@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
+import { MOODS, type Mood } from '@/data/mood'
 import type { Task } from '@/data/korean/tasks'
 import { useProgressStore } from '@/stores/progress'
 
@@ -16,6 +17,13 @@ const idx = ref(0)
 const picked = ref<string | null>(null)
 const missed = ref<Task[]>([])
 const right = ref(0)
+/** Отметка «как прошло»: одна на серию, после неё кнопки заменяются подтверждением. */
+const moodSet = ref<Mood | null>(null)
+function setMood(m: Mood) {
+  if (moodSet.value) return
+  moodSet.value = m
+  progress.addMood(m)
+}
 
 const current = computed(() => props.tasks[idx.value])
 const finished = computed(() => idx.value >= props.tasks.length)
@@ -27,6 +35,7 @@ watch(
     picked.value = null
     missed.value = []
     right.value = 0
+    moodSet.value = null
   },
 )
 
@@ -92,6 +101,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <ul v-if="missed.length" class="qk-miss">
         <li v-for="t in missed" :key="t.id"><span class="ko">{{ t.prompt }}</span> → <b class="ko">{{ t.answer }}</b></li>
       </ul>
+      <div class="md" role="group" aria-label="Как прошло?">
+        <template v-if="!moodSet">
+          <span class="md-q">Как прошло?</span>
+          <button v-for="m in MOODS" :key="m.id" type="button" class="md-b" @click="setMood(m.id)">{{ m.icon }} {{ m.label }}</button>
+        </template>
+        <span v-else class="md-q">Записано: {{ MOODS.find(m => m.id === moodSet)?.label.toLowerCase() }}</span>
+      </div>
       <div class="pg-btns">
         <button class="rs-start" @click="emit('again')">{{ againLabel ?? 'Ещё раз' }}</button>
         <slot name="after" />

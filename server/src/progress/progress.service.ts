@@ -41,6 +41,8 @@ const MAX_TIME_OP = 3600
 const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [] }
 const MARK = /^[wg]:.{1,40}$/
 const MAX_MARKS = 500
+const MOOD_DAYS = 400
+const MOODS = ['easy', 'ok', 'hard'] as const
 
 @Injectable()
 export class ProgressService {
@@ -88,6 +90,7 @@ export class ProgressService {
       words,
       sources,
       log,
+      moods: this.json<Record<string, number[]>>('moods', {}),
       profile: this.json<Profile>('profile', DEFAULT_PROFILE),
       settings: { ...DEFAULT_SETTINGS, ...this.json<Partial<Settings>>('settings', {}) },
     }
@@ -117,6 +120,8 @@ export class ProgressService {
         return this.settings(op)
       case 'time':
         return this.time(op)
+      case 'mood':
+        return this.mood(op)
       case 'import':
         return this.import(op.data)
       default:
@@ -157,6 +162,7 @@ export class ProgressService {
     this.db.run('DELETE FROM days')
     this.db.run('DELETE FROM study_time')
     this.db.setMeta('xp', '0')
+    this.db.setMeta('moods', '{}')
   }
 
   /** Секунды занятий за день (таймер на сайте): прибавляются к дню. */
@@ -164,6 +170,19 @@ export class ProgressService {
     const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
     const seconds = int(op.seconds, 1, MAX_TIME_OP)
     this.db.run('INSERT INTO study_time (day, seconds) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET seconds = seconds + excluded.seconds', day, seconds)
+  }
+
+  /** Настроение занятия: «легко / нормально / тяжело» прибавляется к счётчикам дня; хранятся последние MOOD_DAYS дней. */
+  private mood(op: Record<string, unknown>) {
+    const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
+    const i = MOODS.indexOf(op.mood as (typeof MOODS)[number])
+    if (i < 0) bad('invalid op')
+    const cur = this.json<Record<string, number[]>>('moods', {})
+    const row = cur[day] ?? [0, 0, 0]
+    row[i] = Math.min(1000, (row[i] ?? 0) + 1)
+    cur[day] = row
+    const keep = Object.keys(cur).sort().slice(-MOOD_DAYS)
+    this.db.setMeta('moods', JSON.stringify(Object.fromEntries(keep.map(k => [k, cur[k]]))))
   }
 
   private profile(op: Record<string, unknown>) {
@@ -229,6 +248,19 @@ export class ProgressService {
       this.db.run('INSERT INTO study_time (day, seconds) VALUES (?, ?)', day, int(Number(sec), 0, 1e9))
     }
     this.db.setMeta('xp', String(int(Number(d!.xp ?? 0), 0, 1e12)))
+    const moods = d!.moods && typeof d!.moods === 'object' && !Array.isArray(d!.moods) ? Object.entries(d!.moods as Record<string, unknown>) : []
+    if (moods.length > MOOD_DAYS) bad('invalid import')
+    this.db.setMeta(
+      'moods',
+      JSON.stringify(
+        Object.fromEntries(
+          moods.map(([day, v]) => {
+            if (!DAY.test(day) || !Array.isArray(v)) bad('invalid import')
+            return [day, [0, 1, 2].map(i => int(Number((v as unknown[])[i] ?? 0), 0, 1000))]
+          }),
+        ),
+      ),
+    )
     if (d!.profile) this.profile(d!.profile as unknown as Record<string, unknown>)
     if (d!.settings) this.settings(d!.settings as unknown as Record<string, unknown>)
   }

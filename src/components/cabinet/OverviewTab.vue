@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
 import HeatMap from '@/components/cabinet/HeatMap.vue'
+import { moodSummary, MOODS } from '@/data/mood'
 import { personalRecords } from '@/data/records'
 import { answersByDay } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
@@ -33,6 +34,8 @@ const answerSeries = computed(() => [
   { name: 'Верных', values: ans.value.map(a => a.ok), color: '#7a63e8' },
 ])
 const goal = computed(() => progress.goal)
+const mood = computed(() => moodSummary(progress.data.moods))
+const moodColor = (s: number | null) => (s === null ? '' : s < 1.67 ? 'm1' : s < 2.34 ? 'm2' : 'm3')
 const records = computed(() => personalRecords(progress.data))
 const hasRecords = computed(() => !!records.value.bestDay || !!records.value.bestTime)
 const dayLabel = (k: string) => new Date(k + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
@@ -137,6 +140,19 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <div v-if="records.bestWeek" class="pg-recc"><span class="k">Лучшая неделя</span><b>{{ records.bestWeek.n }}</b><small>верных · {{ weekLabel(records.bestWeek.key) }}</small></div>
         <div v-if="records.longestStreak" class="pg-recc"><span class="k">Самая длинная серия</span><b>{{ records.longestStreak }}</b><small>{{ records.longestStreak === 1 ? 'день' : 'дн.' }} подряд</small></div>
         <div v-if="records.bestTime" class="pg-recc"><span class="k">Дольше всего занимался</span><b>{{ formatSpent(records.bestTime.n) }}</b><small>{{ dayLabel(records.bestTime.key) }}</small></div>
+      </div>
+    </template>
+
+    <template v-if="mood.total">
+      <h2 class="today-h">Настроение занятий <small>{{ mood.total }} отметок</small></h2>
+      <div class="md-box">
+        <div class="md-days" aria-label="Последние 14 дней">
+          <span v-for="d in mood.recent" :key="d.key" class="md-d" :class="moodColor(d.score)" :title="d.score === null ? `${d.key}: без отметок` : `${d.key}: ${d.score < 1.67 ? 'легко' : d.score < 2.34 ? 'нормально' : 'тяжело'}`"></span>
+        </div>
+        <p class="md-sum">
+          <span v-for="(m, i) in MOODS" :key="m.id">{{ m.icon }} {{ m.label.toLowerCase() }}: <b>{{ mood.counts[i] }}</b></span>
+        </p>
+        <p v-if="mood.hardest" class="md-hard">Тяжелее всего обычно {{ mood.hardest }}: можно взять задания полегче или короче.</p>
       </div>
     </template>
 

@@ -444,3 +444,17 @@
 .study .rm-time input { padding: 8px 12px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
 .study .rm-row .plain { padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
 .study .rm-row .plain:disabled { opacity: .5; cursor: default; }
+
+/* настроение занятий */
+.study .md { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 14px; }
+.study .md-q { font-size: 14px; color: var(--muted); margin-right: 4px; }
+.study .md-b { padding: 7px 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 99px; cursor: pointer; }
+.study .md-b:hover { border-color: var(--gold); }
+.study .md-box { margin-top: 14px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.study .md-days { display: flex; gap: 6px; }
+.study .md-d { width: 20px; height: 20px; border-radius: 6px; background: var(--line-soft); }
+.study .md-d.m1 { background: #6fcf97; }
+.study .md-d.m2 { background: #f2c94c; }
+.study .md-d.m3 { background: #f2994a; }
+.study .md-sum { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; font-size: 14px; color: var(--muted); }
+.study .md-hard { margin: 8px 0 0; font-size: 14px; }

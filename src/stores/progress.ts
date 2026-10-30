@@ -55,6 +55,8 @@ export interface ProgressData {
   log: LogEntry[]
   profile: Profile
   settings: Settings
+  /** настроение занятий: дата → [легко, нормально, тяжело] */
+  moods: Record<string, number[]>
 }
 
 export type WordStatus = 'new' | 'learning' | 'known'
@@ -67,6 +69,7 @@ export type Op =
   | { type: 'reset' }
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
   | { type: 'time'; day: string; seconds: number }
+  | { type: 'mood'; day: string; mood: 'easy' | 'ok' | 'hard' }
   | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null; marks?: string[] }
   | { type: 'import'; data: ProgressData }
 
@@ -96,13 +99,23 @@ export const MAX_MARKS = 500
 export const markKey = (kind: 'w' | 'g', id: string) => `${kind}:${id}`
 const empty = (): ProgressData => ({
   v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
-  profile: emptyProfile(), settings: emptySettings(),
+  profile: emptyProfile(), settings: emptySettings(), moods: {},
 })
 
 export const dayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 const obj = <T extends object>(v: unknown, fallback: T): T => (v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : fallback)
+
+/** Настроение занятий: только даты и три неотрицательных счётчика. */
+function cleanMoods(moods: Record<string, unknown>): Record<string, number[]> {
+  const out: Record<string, number[]> = {}
+  for (const [day, v] of Object.entries(moods)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Array.isArray(v)) continue
+    out[day] = [0, 1, 2].map(i => Math.max(0, Math.min(1000, Math.floor(Number(v[i]) || 0))))
+  }
+  return out
+}
 
 /** Из статистики слова остаются только известные числа: лишние поля из чужого файла не попадают в данные. */
 function cleanWords(words: Record<string, Partial<WordStat>>): Record<string, WordStat> {
@@ -129,6 +142,7 @@ export function normalize(raw: unknown): ProgressData | null {
     days: obj(r.days, {}),
     all: obj(r.all, {}),
     time: obj(r.time, {}),
+    moods: cleanMoods(obj(r.moods, {})),
     words: cleanWords(obj(r.words, {})),
     sources: obj(r.sources, {}),
     log: Array.isArray(r.log) ? r.log.slice(0, LOG_MAX) : [],
@@ -358,6 +372,16 @@ export const useProgressStore = defineStore('progress', () => {
       ...(s.gameCats !== undefined ? { gameCats: s.gameCats } : {}),
       ...(s.marks ? { marks: s.marks } : {}),
     })
+  }
+
+  /** Настроение занятия («легко / нормально / тяжело»): прибавляется к счётчикам сегодняшнего дня. */
+  function addMood(mood: 'easy' | 'ok' | 'hard') {
+    const k = dayKey()
+    const row = (data.value.moods[k] ??= [0, 0, 0])
+    const i = ['easy', 'ok', 'hard'].indexOf(mood)
+    row[i] = Math.min(1000, (row[i] ?? 0) + 1)
+    data.value.updated = Date.now()
+    queue({ type: 'mood', day: k, mood })
   }
 
   /** Звёздочка: закладка есть или нет. Гостю закладки не сохраняются (его записи сервер игнорирует). Возвращает false, если лимит закладок исчерпан. */
@@ -600,7 +624,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   return {
-    data, goal, info, todayOk, isMarked, toggleMark, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
+    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
     token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
