@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { visit } from '@/composables/useLastVisited'
 import '@/assets/home/fonts.css'
@@ -20,10 +20,36 @@ const icons: Record<string, string> = { game: '◈', home: '⌂', today: '☀', 
 const progress = useProgressStore()
 const route = useRoute()
 watch(() => route.path, visit, { immediate: true })
+
+/** Режим «только задание»: боковое меню спрятано, страница на всю ширину. Выбор помнится на устройстве; клавиша F переключает. */
+const FOCUS_KEY = 'focus_mode'
+const focus = ref(false)
+try {
+  focus.value = localStorage.getItem(FOCUS_KEY) === '1'
+} catch {
+  /* без запоминания */
+}
+function setFocus(v: boolean) {
+  focus.value = v
+  try {
+    localStorage.setItem(FOCUS_KEY, v ? '1' : '0')
+  } catch {
+    /* без запоминания */
+  }
+}
+function onKey(e: KeyboardEvent) {
+  const el = e.target as HTMLElement | null
+  if (e.key.toLowerCase() !== 'f' || e.ctrlKey || e.metaKey || e.altKey) return
+  if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return
+  if (document.querySelector('[role="dialog"]')) return
+  setFocus(!focus.value)
+}
+onMounted(() => document.addEventListener('keydown', onKey))
+onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="study study-shell sky">
+  <div class="study study-shell sky" :class="{ focus }">
     <aside class="study-side">
       <RouterLink to="/" class="study-back">← На главную</RouterLink>
       <div class="brand brand-row">
@@ -65,9 +91,11 @@ watch(() => route.path, visit, { immediate: true })
         <small>откроются задания, тренажёры, игра и кабинет</small>
       </RouterLink>
       <div class="foot">
+        <button class="theme-btn" title="Спрятать меню (клавиша F)" aria-label="Спрятать меню" @click="setFocus(true)"><span aria-hidden="true">⇤</span> Спрятать меню</button>
         <button class="theme-btn" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()"><span aria-hidden="true">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая' : 'Тёмная' }}</button>
       </div>
     </aside>
+    <button v-if="focus" class="side-show" title="Показать меню (клавиша F)" aria-label="Показать меню" @click="setFocus(false)">☰ Меню</button>
     <main class="study-main">
       <AuthGate v-if="route.meta.private && !progress.unlocked" />
       <RouterView v-else />

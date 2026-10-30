@@ -6,6 +6,8 @@
 
 - `lib/theme.ts` (режимы `auto|light|dark`, `localStorage['theme_mode']`, `data-theme` на `<html>`, значок и `theme-color`), скрипт в `index.html` ставит тему до отрисовки. Цвета: `assets/dark.css` (переопределения переменных `.study.sky`, `.game`, страниц с `--ink/--soft` и окон). Кнопка в боковом меню (`.theme-btn`) и блок «Оформление» в «Настройках». Тест `tests/theme.test.mjs`.
 
+- Режим «только задание»: `KoreanLayout.vue` (`.focus`, `localStorage['focus_mode']`, клавиша F), кнопки «Спрятать меню» и «☰ Меню», стили в `sky.css`.
+
 ## 2026-10-30, мелочи и забота о копиях
 
 - `lib/http.ts` `errText`: «Failed to fetch» → «сервер недоступен» / «нет интернета»; таймаут → «сервер не отвечает». Подключён во всех сторах и вкладках кабинета.

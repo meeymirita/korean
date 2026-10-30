@@ -41,6 +41,7 @@ html[data-theme='dark'] .study .im-box { background: rgba(37, 39, 78, .82); bord
 html[data-theme='dark'] .study-shell.sky .study-side { background: rgba(30, 32, 66, .82); border-color: var(--line); }
 @media (max-width: 860px) { html[data-theme='dark'] .study-shell.sky .study-side { background: rgba(26, 28, 58, .95); } }
 html[data-theme='dark'] .study.sky .chip.on, html[data-theme='dark'] .study.sky .chip.router-link-active { background: var(--gold); border-color: var(--gold); color: #fff; }
+html[data-theme='dark'] .study.sky .side-show { background: rgba(37, 39, 78, .92); border-color: var(--line); }
 html[data-theme='dark'] .study.sky .sw-btn kbd,
 html[data-theme='dark'] .study .nt-add,
 html[data-theme='dark'] .study .nt-acts button,
