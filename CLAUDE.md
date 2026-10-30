@@ -38,6 +38,7 @@
   - состояние страницы, которое должно переживать обновление, делай через `usePersisted` (sessionStorage) или `?параметр` в адресе;
   - окна и просмотрщики (`position: fixed`) выноси в `<Teleport to="body">`: внутри карточки с `transform` они «прилипают» к ней и
     дёргаются при наведении (так уже было с заметками);
+  - **сделал заметное изменение → допиши запись в начало `HISTORY` в `src/data/history.ts`** (страница `/history`, тест следит за форматом);
   - **изменил страницу или добавил новую → обнови слайд и скриншот в «О платформе»** (`src/data/about.ts`, `src/assets/about/`);
   - **поменял слайды «О платформе» (`data/about.ts`) → поменяй и галерею в `README.md`** (заголовки, описания, картинки идут один в один, `tests/readme.test.mjs` следит);
   - **сделал идею из `ideas/`** → статус в `ideas/ROADMAP.md`, обновить `ideas/CURRENT.md`, запись в `docs/changelog.md` (`tests/ideas.test.mjs` следит за шаблоном и номерами);
@@ -105,7 +106,7 @@ tests/             *.test.mjs (node --test), _load.mjs (загрузчик TS-м
 docs/              подробности по темам (см. таблицу ниже)
 server/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, admin), свои package.json и node_modules; data/ в .gitignore
 src/lib/           guestStorage.ts (гостевой режим: localStorage в памяти), http.ts (fetchT с таймаутом)
-src/data/          alphabet.ts (буквы, слоги), phrases.ts (фразы дня), seo.ts (заголовки, описания, индексация страниц), about.ts (слайды «О платформе»), guide.ts (шторка «Что здесь есть»),
+src/data/          alphabet.ts (буквы, слоги), phrases.ts (фразы дня), seo.ts (заголовки, описания, индексация страниц), history.ts (история изменений), about.ts (слайды «О платформе»), guide.ts (шторка «Что здесь есть»),
                    levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели)
 src/data/korean/   dictionary.ts, words.ts, grammar.ts, pages.ts, render.ts, sections.ts, tasks.ts, forms.ts,
                    trainer.ts, parse.ts, translations.ts
@@ -128,7 +129,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 ## Как проверять изменения
 
 - Автопроверки на GitHub (`.github/workflows/ci.yml`: типы, сборка, тесты, `npm audit` на Node 22 и 24) идут после каждого push; Dependabot раз в неделю предлагает обновления.
-- Тесты: `npm test` (241 тест, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (246 тестов, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
