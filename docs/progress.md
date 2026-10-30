@@ -126,6 +126,15 @@
 Вход (`connect`) записывается в журнал событий (`POST /api/session`). Данные с чистого листа: старые JSON-файлы на сервере не
 переносились. Владелец занимается в основном с домашнего ПК, на новом устройстве или после очистки браузера токен вводится один раз.
 
+## Что добавлено 2026-10-30 (одним списком, подробности по дням в `docs/changelog.md`)
+
+Закрытые страницы раздела (`group: 'extra'`, `private: true` в `sections.ts`, `noindex`): `/korean/quick` («5 минут», `data/korean/quick.ts`), `mistakes` («Мои ошибки», `data/mistakes.ts`), `marks` («Важное», закладки `settings.marks`, `MarkStar.vue`), `particles`, `pairs`, `translate`, `syllables`, `forms`.
+Серии заданий идут через общий `components/korean/TaskSession.vue` (источник ответов `source`: `quick`, `trainer`, `review`; секундомер на задание `data/pace.ts`; кнопки «Как прошло?» пишут `moods`, операция `mood` на сервере, `data/mood.ts`). Разбор ошибки: `data/korean/explain.ts`, `ExplainBox.vue`, у заданий поле `gram`.
+Кабинет: календарь тепла (`data/heat.ts`, `HeatMap.vue`), личные рекорды (`data/records.ts`), настроение занятий, баннер 400 px с уровнем в углу, «Прошлые недели» в «Неделе» (`data/weeks.ts`, картинка через `useShareCard`), «Настройки» разложены на вкладки (`SYS_TABS`, блоки на `v-show`, чтобы не дёргались), блок «Мой путь» и «Место для картинок» (`StorageBlock.vue`, квота 1 ГБ).
+«Сегодня»: третья вкладка «Чек-лист» (`data/checklist.ts`, 5 целей на день, 4 считаются сами по `log` и источнику, 1 ручная; сохраняется в те же `sets` как `{ list }`, `isChecklist` в `stores/todaySets.ts`, в «Истории» рядом с наборами).
+Привычка: письмо-напоминание (`server/src/reminders/`, блок `ReminderBlock.vue`), письма-тревоги о ночной копии (`watchNightly`), тёмная тема (`lib/theme.ts`, `assets/dark.css`), режим «только задание» (клавиша F, `focus_mode`, меню сворачивается плавно, контент на всю ширину).
+Приложение: `public/sw.js` (сеть, потом копия; `/api` не трогает; `VERSION` поднимать при смене логики), `lib/pwa.ts`, ссылка «скачать приложение» на главной и блок «Приложение» в «Настройках». Видео-обзор: `public/demo.webm` (5:25, музыка), окно по ссылке на главной.
+
 ## Тесты
 
 `npm test` (собирает сервер и запускает встроенный `node --test` по `tests/*.test.mjs`): `tests/progress.test.mjs` (хранилище: `normalize`,
