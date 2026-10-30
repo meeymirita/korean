@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 import type { WordsCheckResult } from '@/components/korean/WordsCheck.vue'
+import type { CheckSnap } from '@/data/checklist'
 
 /** Задание в снимке набора: вопрос, варианты, верный ответ и что выбрано (null, если не отвечено). */
 export interface SnapTask {
@@ -24,13 +25,19 @@ export interface SetData {
   check: WordsCheckResult | null
 }
 
+/** Снимок чек-листа дня: в истории лежит рядом с наборами заданий. */
+export interface ChecklistData {
+  list: CheckSnap[]
+}
+export const isChecklist = (d: SetData | ChecklistData | null): d is ChecklistData => !!d && 'list' in d
+
 export interface SavedSet {
   id: string
   day: string
   right: number
   total: number
   created: number
-  data: SetData | null
+  data: SetData | ChecklistData | null
 }
 
 /** Сохранённые наборы страницы «Сегодня»: хранятся на сервере, видны только владельцу. */
@@ -49,7 +56,7 @@ export const useTodaySetsStore = defineStore('todaySets', () => {
     loaded.value = true
   }
 
-  async function save(day: string, right: number, total: number, data: SetData): Promise<SavedSet> {
+  async function save(day: string, right: number, total: number, data: SetData | ChecklistData): Promise<SavedSet> {
     const res = await fetchT('/api/sets', { method: 'POST', headers: headers(true), body: JSON.stringify({ day, right, total, data }) })
     if (!res.ok) throw fail(res.status)
     const set = (await res.json()) as SavedSet

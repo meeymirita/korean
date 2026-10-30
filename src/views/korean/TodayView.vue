@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
+import { checklistFor, snapshot } from '@/data/checklist'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsCheck.vue'
@@ -12,7 +14,7 @@ import { F } from '@/data/korean/render'
 import { ruleTasks } from '@/data/korean/rule-tasks'
 import { randomTasks, randomWords, type Task } from '@/data/korean/tasks'
 import { dayKey, useProgressStore } from '@/stores/progress'
-import { useTodaySetsStore, type SavedSet, type SnapTask } from '@/stores/todaySets'
+import { isChecklist, useTodaySetsStore, type SavedSet, type SetData, type SnapTask } from '@/stores/todaySets'
 import { useToastStore } from '@/stores/toast'
 
 const progress = useProgressStore()
@@ -21,8 +23,8 @@ const toast = useToastStore()
 const WORDS = 10
 const TASKS = 15
 
-type Tab = 'today' | 'history'
-const tab = usePersisted<Tab>('today_tab', 'today', v => v === 'today' || v === 'history')
+type Tab = 'today' | 'list' | 'history'
+const tab = usePersisted<Tab>('today_tab', 'today', v => v === 'today' || v === 'list' || v === 'history')
 
 const words = ref(randomWords(WORDS, progress.data.settings.cats))
 const tasks = ref(randomTasks(TASKS, progress.data.settings.cats))
@@ -111,6 +113,36 @@ async function checkAndSave() {
   }
 }
 
+/* ---------- чек-лист на день ---------- */
+const today = dayKey()
+const items = checklistFor(today)
+/** Вручную отмеченные пункты: помним до закрытия вкладки браузера; чужой день не берём. */
+const ticks = usePersisted<{ day: string; ids: string[] }>('check_ticks', { day: today, ids: [] }, v => (v as { day?: string })?.day === today)
+const ticked = (id: string) => ticks.value.ids.includes(id)
+function tick(id: string) {
+  ticks.value = { day: today, ids: ticked(id) ? ticks.value.ids.filter(x => x !== id) : [...ticks.value.ids, id] }
+  listSaved.value = false
+}
+const snaps = computed(() => snapshot(items, progress.data.log, today, ticks.value.ids))
+const listDone = computed(() => snaps.value.filter(s => s.done).length)
+const listSaved = ref(false)
+const listSaving = ref(false)
+async function saveList() {
+  listSaving.value = true
+  try {
+    if (!sets.loaded) await sets.load()
+    // за один день храним один чек-лист: старый заменяем новым
+    for (const old of sets.items.filter(s => s.day === today && isChecklist(s.data))) await sets.remove(old.id)
+    await sets.save(today, listDone.value, items.length, { list: snaps.value })
+    listSaved.value = true
+    toast.ok('Чек-лист сохранён в истории')
+  } catch (e) {
+    toast.error(errText(e))
+  } finally {
+    listSaving.value = false
+  }
+}
+
 /* ---------- история ---------- */
 const openId = ref<string | null>(null)
 async function loadHistory() {
@@ -139,6 +171,8 @@ async function removeSet(s: SavedSet) {
     toast.error(errText(e))
   }
 }
+/** Снимок набора заданий (запись не чек-лист). */
+const tasksOf = (s: SavedSet) => s.data as SetData
 const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.answer ? 'ok' : 'bad')
 </script>
 
@@ -149,6 +183,7 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
       <button @click="tab = 'today'; newAll()">🎲 Новый набор на сегодня</button>
       <span class="td-tabs" role="tablist">
         <button role="tab" :aria-selected="tab === 'today'" :class="{ on: tab === 'today' }" @click="tab = 'today'">Сегодня</button>
+        <button role="tab" :aria-selected="tab === 'list'" :class="{ on: tab === 'list' }" @click="tab = 'list'">Чек-лист</button>
         <button role="tab" :aria-selected="tab === 'history'" :class="{ on: tab === 'history' }" @click="showHistory">История</button>
       </span>
     </div>
@@ -221,23 +256,53 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
       <p v-else-if="saved" class="td-res">Набор лежит во вкладке <a href="#" @click.prevent="showHistory">«История»</a>.</p>
     </template>
 
+    <template v-else-if="tab === 'list'">
+      <h2 class="today-h">Чек-лист на сегодня <small>{{ listDone }} из {{ items.length }}</small></h2>
+      <p class="td-res">Набор меняется каждый день. Ответы считаются сами, пункт без счётчика отметь галочкой.</p>
+      <ul class="cl">
+        <li v-for="(it, i) in items" :key="it.id" :class="{ ok: snaps[i]!.done }">
+          <input v-if="!it.source" type="checkbox" :checked="ticked(it.id)" :aria-label="it.text" @change="tick(it.id)" />
+          <span v-else class="cl-mark">{{ snaps[i]!.done ? '✓' : '○' }}</span>
+          <RouterLink :to="it.to">{{ it.text }}</RouterLink>
+          <small v-if="it.source">{{ snaps[i]!.have }} из {{ it.goal }}</small>
+        </li>
+      </ul>
+      <div class="today-end">
+        <b v-if="listDone === items.length">Всё сделано!</b>
+        <b v-else>Сделано {{ listDone }} из {{ items.length }}.</b>
+        <button v-if="owner" :disabled="listSaving || listSaved" @click="saveList">{{ listSaving ? 'Сохраняю…' : listSaved ? '✓ Сохранено в историю' : 'Сохранить в историю' }}</button>
+      </div>
+      <p v-if="!owner" class="td-res">Сохранять в историю может только владелец.</p>
+    </template>
+
     <template v-else>
       <p v-if="!owner" class="cb-empty">История наборов доступна владельцу после входа по токену.</p>
-      <p v-else-if="sets.loaded && !sets.items.length" class="cb-empty">Сохранённых наборов пока нет. Выполни задания и нажми «Проверить и сохранить».</p>
+      <p v-else-if="sets.loaded && !sets.items.length" class="cb-empty">Пока ничего не сохранено. Выполни задания или чек-лист и нажми «Сохранить».</p>
       <ul class="td-hist">
         <li v-for="s in sets.items" :key="s.id" class="td-set">
           <button class="td-sh" :aria-expanded="openId === s.id" @click="openId = openId === s.id ? null : s.id">
             <b>{{ dateLabel(s.day) }}</b>
             <span class="td-time">{{ timeLabel(s.created) }}</span>
             <span class="td-score" :class="{ full: s.right === s.total }">{{ s.right }} из {{ s.total }}</span>
-            <span v-if="s.data?.rule" class="td-rule ko">{{ s.data.rule.ko }}</span>
+            <span v-if="s.data && isChecklist(s.data)" class="td-rule">чек-лист</span>
+            <span v-else-if="s.data?.rule" class="td-rule ko">{{ s.data.rule.ko }}</span>
           </button>
-          <div v-if="openId === s.id && s.data" class="td-body">
-            <p v-if="s.data.words.length" class="td-words"><span v-for="w in s.data.words" :key="w.k" :title="w.t" class="ko">{{ w.k }}</span></p>
-            <p v-if="s.data.check" class="td-res">Слова закрыты: пары {{ s.data.check.pairs.right }}/{{ s.data.check.pairs.total }} · перевод {{ s.data.check.quiz.right }}/{{ s.data.check.quiz.total }}<template v-if="s.data.check.build.total"> · предложения {{ s.data.check.build.right }}/{{ s.data.check.build.total }}</template></p>
+          <div v-if="openId === s.id && s.data && isChecklist(s.data)" class="td-body">
+            <ul class="cl">
+              <li v-for="(c, i) in s.data.list" :key="i" :class="{ ok: c.done }">
+                <span class="cl-mark">{{ c.done ? '✓' : '○' }}</span>
+                <RouterLink :to="c.to">{{ c.text }}</RouterLink>
+                <small>{{ c.manual ? (c.done ? 'отмечено' : 'не отмечено') : `${c.have} из ${c.goal}` }}</small>
+              </li>
+            </ul>
+            <button class="plain danger td-del" @click="removeSet(s)">Удалить запись</button>
+          </div>
+          <div v-else-if="openId === s.id && s.data" class="td-body">
+            <p v-if="tasksOf(s).words.length" class="td-words"><span v-for="w in tasksOf(s).words" :key="w.k" :title="w.t" class="ko">{{ w.k }}</span></p>
+            <p v-if="tasksOf(s).check" class="td-res">Слова закрыты: пары {{ tasksOf(s).check!.pairs.right }}/{{ tasksOf(s).check!.pairs.total }} · перевод {{ tasksOf(s).check!.quiz.right }}/{{ tasksOf(s).check!.quiz.total }}<template v-if="tasksOf(s).check!.build.total"> · предложения {{ tasksOf(s).check!.build.right }}/{{ tasksOf(s).check!.build.total }}</template></p>
             <p v-else class="td-res">Слова в этот раз не закрывали.</p>
             <ol class="td-tasks">
-              <li v-for="(t, i) in [...s.data.ruleTasks, ...s.data.tasks]" :key="i" :class="markOf(t)">
+              <li v-for="(t, i) in [...tasksOf(s).ruleTasks, ...tasksOf(s).tasks]" :key="i" :class="markOf(t)">
                 <span class="ko">{{ t.prompt }}</span>
                 <small v-if="t.hint">{{ t.hint }}</small>
                 <span class="td-ans">
@@ -282,4 +347,11 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
 .study .td-tasks small { display: block; color: var(--muted); }
 .study .td-ans { display: block; }
 .study .td-del { padding: 8px 16px; font: inherit; font-size: 13px; color: #b44634; background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.study .cl { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.study .cl li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.study .cl li.ok { border-color: var(--ok, #3d8b5f); }
+.study .cl a { font-weight: 600; color: var(--ink); }
+.study .cl small { margin-left: auto; color: var(--muted); }
+.study .cl-mark { width: 16px; text-align: center; color: var(--muted); }
+.study .cl li.ok .cl-mark { color: var(--ok, #3d8b5f); }
 </style>
