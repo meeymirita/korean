@@ -25,7 +25,7 @@ jobs:
         # серверу нужен Node 22.18 или новее (встроенная база node:sqlite); на хостинге сейчас 22.x, локально 24
         node: [22, 24]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
