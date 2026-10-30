@@ -30,6 +30,17 @@ openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in korean-ДАТА.tar.gz.enc 
 tar -xzf korean.tar.gz
 ```
 
+**Проверено 2026-10-30:** архив с почты открылся этим способом, внутри были `app.db`, `server.env`, `manifest.txt`, `uploads`, `docs`, `thumbs`, `public`; `PRAGMA integrity_check` базы вернул `ok`.
+Дважды щёлкнуть по `.enc` бесполезно: файл зашифрован, нужен терминал и пароль. При неверном пароле будет `bad decrypt`.
+
+Проверить базу из архива, не трогая сайт (нужен Node 22+):
+
+```
+node --no-warnings -e "const {DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('app.db',{readOnly:true});console.log(d.prepare('PRAGMA integrity_check').get())"
+```
+
+После проверки **удалите распакованное**: в `server.env` лежат токен и пароли (`rm -rf korean-restore korean.tar.gz`).
+
 Если архив пришёл частями: `cat korean-ДАТА.tar.gz.enc.part* > korean-ДАТА.tar.gz.enc`. Внутри `app.db`, `server.env`, папки `uploads`, `docs`, `thumbs`, `public`.
 
 **Восстановление:** остановить службу, положить `app.db`, `uploads`, `docs`, `thumbs`, `public` в `server/data/`, вернуть `server.env` как `server/.env`, запустить службу.
