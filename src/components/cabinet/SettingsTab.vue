@@ -9,6 +9,7 @@ import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
+import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
@@ -203,6 +204,14 @@ async function refreshPublic() {
             <button v-if="profile.cover" class="st-up" type="button" @click="progress.setProfile({ cover: '' })">Убрать обложку</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="st-block">
+      <h3>Оформление</h3>
+      <p>Светлая или тёмная тема; «как в системе» сама переключается вечером, если так настроен компьютер или телефон. Выбор помнится на этом устройстве.</p>
+      <div class="st-goals">
+        <button v-for="m in MODES" :key="m.id" class="chip" :class="{ on: themeMode === m.id }" :aria-pressed="themeMode === m.id" @click="setTheme(m.id)">{{ m.label }}</button>
       </div>
     </div>
 

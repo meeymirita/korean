@@ -1,0 +1,112 @@
+/* Тёмное оформление: включается атрибутом data-theme="dark" на <html> (src/lib/theme.ts). Светлые правила не трогаем: здесь только переопределения. */
+html[data-theme='dark'] { color-scheme: dark; --bg: #14152b; --ink: #e8e9ff; --muted: #a2a6d6; }
+html[data-theme='dark'] body { background: #14152b; color: #e8e9ff; }
+
+/* раздел корейского, игра, кабинет */
+html[data-theme='dark'] .study.sky {
+  --bg: #14152b;
+  --ink: #e8e9ff;
+  --muted: #a2a6d6;
+  --gold: #7f6bf5;
+  --accent: #a898ff;
+  --pink: #f07fc6;
+  --surface: rgba(37, 39, 78, .78);
+  --line: rgba(165, 160, 255, .24);
+  --line-soft: rgba(165, 160, 255, .14);
+  --gold-soft: rgba(143, 124, 240, .2);
+  --ok: #6fcf97;
+  --ok-bg: rgba(111, 207, 151, .14);
+  --bad: #ff8f7e;
+  --bad-bg: rgba(255, 143, 126, .14);
+  --shadow: 0 18px 45px rgba(0, 0, 0, .35);
+}
+html[data-theme='dark'] .study.sky:not(.study-modal) {
+  background:
+    radial-gradient(ellipse at 85% 5%, rgba(70, 90, 190, .35) 0, transparent 32%),
+    radial-gradient(ellipse at 8% 72%, rgba(150, 60, 130, .28) 0, transparent 30%),
+    radial-gradient(ellipse at 55% 98%, rgba(90, 70, 190, .3) 0, transparent 32%),
+    linear-gradient(130deg, #1a1633 0%, #14152b 50%, #1d1530 100%) fixed;
+}
+html[data-theme='dark'] .study-modal.sky { background: rgba(5, 6, 20, .66); }
+html[data-theme='dark'] .study-modal.sky .gp { border-color: var(--line); background: #1d1f42; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .7); }
+html[data-theme='dark'] .study.sky .rich .tip, html[data-theme='dark'] .study.sky .rich pre { background: rgba(143, 124, 240, .14); }
+/* стеклянные панели и пилюли, которые были белыми */
+html[data-theme='dark'] .study.sky .sb,
+html[data-theme='dark'] .study.sky .chip,
+html[data-theme='dark'] .study-shell.sky .study-level,
+html[data-theme='dark'] .study.sky .sw-btn,
+html[data-theme='dark'] .study .nt-form,
+html[data-theme='dark'] .study .nt-card,
+html[data-theme='dark'] .study .im-box { background: rgba(37, 39, 78, .82); border-color: var(--line); }
+html[data-theme='dark'] .study-shell.sky .study-side { background: rgba(30, 32, 66, .82); border-color: var(--line); }
+@media (max-width: 860px) { html[data-theme='dark'] .study-shell.sky .study-side { background: rgba(26, 28, 58, .95); } }
+html[data-theme='dark'] .study.sky .chip.on, html[data-theme='dark'] .study.sky .chip.router-link-active { background: var(--gold); border-color: var(--gold); color: #fff; }
+html[data-theme='dark'] .study.sky .sw-btn kbd,
+html[data-theme='dark'] .study .nt-add,
+html[data-theme='dark'] .study .nt-acts button,
+html[data-theme='dark'] .study .nt-acts .plain { background: rgba(143, 124, 240, .22); color: #d9d3ff; }
+html[data-theme='dark'] .study .nt-acts .danger:hover { color: #ff9d8f; background: rgba(255, 143, 126, .2); }
+html[data-theme='dark'] .study .nt input, html[data-theme='dark'] .study .nt textarea { background: rgba(20, 21, 43, .7); border-color: var(--line); color: var(--ink); }
+html[data-theme='dark'] .study input, html[data-theme='dark'] .study textarea, html[data-theme='dark'] .study select { color: var(--ink); }
+html[data-theme='dark'] .study input::placeholder, html[data-theme='dark'] .study textarea::placeholder { color: #7f83b8; }
+html[data-theme='dark'] .study .cb-note { background: rgba(240, 170, 60, .14); border-color: rgba(240, 170, 60, .4); color: #f2cf8e; }
+html[data-theme='dark'] .study .bk-warn { color: #f2cf8e; }
+html[data-theme='dark'] .study .pc-empty { color: var(--muted); }
+html[data-theme='dark'] .study .share-btn { color: #cbbfff; }
+
+/* общие стили отдельных страниц: главная, «О платформе», история, визитка, 404 */
+html[data-theme='dark'] :is(.home, .hist, .about, .nf, .me) { --ink: #e8e9ff; --soft: #a2a6d6; --line: rgba(165, 160, 255, .22); --accent: #f07fc6; --accent2: #a898ff; --cream: #14152b; }
+html[data-theme='dark'] .home::before {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(70, 90, 190, .35) 0, transparent 30%),
+    radial-gradient(circle at 4% 96%, rgba(150, 60, 130, .28) 0, transparent 28%),
+    radial-gradient(circle at 50% 50%, rgba(90, 70, 190, .2) 0, transparent 60%);
+}
+html[data-theme='dark'] :is(.btn-main, .open, .nav .enter:hover, .btn:hover) { color: #14152b !important; }
+
+/* окна, плашки, шторка */
+html[data-theme='dark'] :is(.cf-box, .sw-box, .nm-box) { background: #1d1f42; border-color: var(--line); color: #e8e9ff; }
+html[data-theme='dark'] :is(.cf-box h2, .cf-box p, .sw-head h2, .nm-box h2, .nm-text) { color: #e8e9ff; }
+html[data-theme='dark'] .cf-token input { background: #14152b; color: #e8e9ff; border-color: var(--line); }
+html[data-theme='dark'] .cf-token input.bad { background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'] :is(.cf-cancel, .nm-acts button, .sw-x, .nm-x) { background: rgba(143, 124, 240, .22); color: #d9d3ff; }
+html[data-theme='dark'] .cf-ok { background: #8f7cf0; color: #14152b; }
+html[data-theme='dark'] .nm-tags li { background: rgba(143, 124, 240, .22); color: #d9d3ff; }
+html[data-theme='dark'] .tst-item.info { background: #23264f; color: #e8e9ff; }
+html[data-theme='dark'] .tst-item.error { background: rgba(255, 143, 126, .2); color: #ffb3a6; border-color: rgba(255, 143, 126, .45); }
+html[data-theme='dark'] .stm-btn, html[data-theme='dark'] .stm-note { background: rgba(37, 39, 78, .95); border-color: var(--line); color: #e8e9ff; }
+html[data-theme='dark'] .ch-tip { background: #23264f; color: #e8e9ff; }
+html[data-theme='dark'] :is(.pc-x, .pc-btn) { background: rgba(37, 39, 78, .9); border-color: var(--line); color: #e8e9ff; }
+html[data-theme='dark'] .pc-f :is(input, textarea) { background: #14152b; color: #e8e9ff; border-color: var(--line); }
+
+/* страницы «О платформе», история, визитка, 404, шторка на главной */
+html[data-theme='dark'] :is(.about, .hist) { background: #14152b; }
+html[data-theme='dark'] .shot { background: #1d1f42; border-color: var(--line); }
+html[data-theme='dark'] .arrow { background: rgba(37, 39, 78, .92); color: #e8e9ff; }
+html[data-theme='dark'] .dots button { background: #3a3c72; }
+html[data-theme='dark'] .dot { background: #14152b; }
+html[data-theme='dark'] :is(.hist .card, .me .card) { background: rgba(37, 39, 78, .82); border-color: var(--line); }
+html[data-theme='dark'] .me .stats div { background: rgba(143, 124, 240, .18); }
+html[data-theme='dark'] .nf .btn { background: transparent; }
+
+/* пастельные плитки и кружки календаря на главной раздела: текст остаётся тёмным, а сами плитки приглушены */
+html[data-theme='dark'] .lesson { filter: brightness(.78) saturate(.9); }
+html[data-theme='dark'] .lesson strong { color: #20265c; }
+html[data-theme='dark'] .lesson small { color: #4d5290; }
+html[data-theme='dark'] .cal i { background: rgba(143, 124, 240, .16); color: #b8b3ec; }
+html[data-theme='dark'] .cal i.done { background: linear-gradient(135deg, #5f7fd6, #8c6fe0); color: #fff; }
+
+/* страница игры: своя палитра в .game */
+html[data-theme='dark'] .study.sky.game {
+  --panel: rgba(32, 34, 72, .94);
+  --line: rgba(165, 160, 255, .28);
+  --accent: #a898ff;
+  --accent-ink: #14152b;
+  --accent-soft: rgba(143, 124, 240, .2);
+  --ok: #6fcf97;
+  --ok-bg: rgba(111, 207, 151, .14);
+  --bad: #ff8f7e;
+  --bad-bg: rgba(255, 143, 126, .14);
+  --shadow: 0 30px 60px -34px rgba(0, 0, 0, .7);
+}
+html[data-theme='dark'] .game .over { background: rgba(5, 6, 20, .72); }

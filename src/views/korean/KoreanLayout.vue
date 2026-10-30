@@ -12,6 +12,7 @@ import GrammarModal from '@/components/korean/GrammarModal.vue'
 import { sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
+import { themeDark, toggleTheme } from '@/lib/theme'
 import { useProgressStore } from '@/stores/progress'
 
 const counts: Record<string, number> = { words: D.length, grammar: G.length }
@@ -64,6 +65,7 @@ watch(() => route.path, visit, { immediate: true })
         <small>откроются задания, тренажёры, игра и кабинет</small>
       </RouterLink>
       <div class="foot">
+        <button class="theme-btn" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()"><span aria-hidden="true">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая' : 'Тёмная' }}</button>
       </div>
     </aside>
     <main class="study-main">

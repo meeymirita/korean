@@ -6,6 +6,9 @@ import { useProgressStore } from './stores/progress'
 
 import App from './App.vue'
 import router from './router'
+import { initTheme } from './lib/theme'
+
+initTheme()
 
 /** Ссылка вида /?guest=токен входит сразу как гость; сам токен после входа убирается из адреса. */
 const guest = new URLSearchParams(location.search).get('guest')
