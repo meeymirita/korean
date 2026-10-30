@@ -29,6 +29,7 @@ onBeforeUnmount(() => {
         <button class="nm-x" aria-label="Закрыть" @click="emit('close')">✕</button>
         <h2>{{ note.title }}</h2>
         <time>{{ when(note.created) }}<span v-if="note.updated - note.created > 60_000"> · изменена {{ when(note.updated) }}</span></time>
+        <ul v-if="note.tags.length" class="nm-tags"><li v-for="t in note.tags" :key="t">#{{ t }}</li></ul>
         <p v-if="note.text" class="nm-text">{{ note.text }}</p>
         <NoteImages v-if="images && note.images.length" :ids="note.images" big />
         <div class="nm-acts">
@@ -48,6 +49,8 @@ onBeforeUnmount(() => {
 .nm-box h2 { margin: 0 40px 4px 0; font-size: 26px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
 .nm-box time { display: block; font-size: 12.5px; color: #6c70a8; }
 .nm-text { margin: 16px 0 0; font-size: 15.5px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nm-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.nm-tags li { padding: 2px 10px; font-size: 13px; font-weight: 600; color: #8f7cf0; background: #fff; border-radius: 99px; }
 .nm-x { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; padding: 0; font: inherit; font-size: 15px; color: #20265c; background: #fff; border: 0; border-radius: 50%; cursor: pointer; }
 .nm-x:hover { color: #d64da9; }
 .nm-acts { display: flex; gap: 8px; margin-top: 20px; }

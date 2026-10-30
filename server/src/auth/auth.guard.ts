@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Unauthor
 import { Reflector } from '@nestjs/core'
 import { Events } from '../events/events.service'
 import { RateLimiter, clientIp } from '../security'
-import { OWNER, PUBLIC } from './auth'
+import { ALLOW_PENDING, OWNER, PUBLIC } from './auth'
 import { AuthService } from './auth.service'
 
 /** Проверяет токен на каждом запросе (кроме помеченных @Public) и кладёт в запрос `who`. */
@@ -31,6 +31,7 @@ export class AuthGuard implements CanActivate {
       }
       throw new UnauthorizedException({ error: 'unauthorized' })
     }
+    if (who.role === 'owner' && who.pending && !this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING, targets)) throw new UnauthorizedException({ error: '2fa' })
     this.limiter.ok(ip)
     if (who.role !== 'owner' && this.reflector.getAllAndOverride<boolean>(OWNER, targets)) throw new ForbiddenException({ error: 'forbidden' })
     req.who = who

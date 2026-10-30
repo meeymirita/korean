@@ -6,6 +6,8 @@ import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { CATN, D, parseQuery, score, type Word } from '@/data/korean/words'
 import { esc, hl } from '@/data/korean/render'
 import { usePersisted } from '@/composables/usePersisted'
+import { useShareCard } from '@/composables/useShareCard'
+import { TRANSLATIONS } from '@/data/korean/translations'
 
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
@@ -54,6 +56,10 @@ function onKey(e: KeyboardEvent) {
 }
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+
+const { share, busy: sharing } = useShareCard()
+const shareWord = (d: Word) =>
+  share({ kicker: 'слово', title: d.k, sub: d.t, lines: [d.r, d.s, TRANSLATIONS[d.s] ?? ''].filter(Boolean), icon: '🌸' }, `слово-${d.k}`)
 </script>
 
 <template>
@@ -102,7 +108,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             <button class="se-btn" :class="{ open: openN === d.n }" title="Разобрать предложение" @click="toggle(d.n)" v-html="h(d.s)"></button>
           </span>
         </div>
-        <div v-if="openN === d.n" class="row-detail"><SentenceBreakdown :sentence="d.s" /></div>
+        <div v-if="openN === d.n" class="row-detail">
+          <SentenceBreakdown :sentence="d.s" />
+          <button class="share-btn" :disabled="sharing" @click="shareWord(d)">🖼 Поделиться словом</button>
+        </div>
       </template>
     </div>
     <div v-else class="empty">

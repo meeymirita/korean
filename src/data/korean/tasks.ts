@@ -1,7 +1,7 @@
 import { ADJECTIVES, VERBS } from './forms'
 import { D, type Word } from './words'
 
-export type TaskKind = 'tr' | 'back' | 'read' | 'blank' | 'form'
+export type TaskKind = 'tr' | 'back' | 'read' | 'blank' | 'form' | 'rule'
 
 export interface Task {
   id: number
@@ -44,7 +44,7 @@ function pick(pool: string[], answer: string, n = 3) {
   return shuffle([answer, ...others])
 }
 
-const KINDS: Record<TaskKind, string> = {
+const KINDS: Record<Exclude<TaskKind, 'rule'>, string> = {
   tr: 'Что значит слово?',
   back: 'Как это по-корейски?',
   read: 'Как читается?',
@@ -53,14 +53,14 @@ const KINDS: Record<TaskKind, string> = {
 }
 
 /** Задание нужного вида на слово (для повторения); null, если для слова вид не подходит. */
-export function makeTask(kind: TaskKind, d: Word, id: number): Task | null {
+export function makeTask(kind: Exclude<TaskKind, 'rule'>, d: Word, id: number): Task | null {
   return make(kind, d, id)
 }
 
 type FormWord = (typeof VERBS)[number]
 
 /** formPool — глаголы и прилагательные, подходящие под выбранные темы (задание на форму не привязано к слову d). */
-function make(kind: TaskKind, d: Word, id: number, formPool?: FormWord[]): Task | null {
+function make(kind: Exclude<TaskKind, 'rule'>, d: Word, id: number, formPool?: FormWord[]): Task | null {
   if (kind === 'tr') {
     const answer = short(d.t)
     const options = pick(SIMPLE.map(x => short(x.t)), answer)
@@ -103,7 +103,7 @@ function make(kind: TaskKind, d: Word, id: number, formPool?: FormWord[]): Task 
 
 /** Набор из n разных заданий на разные слова; типы чередуются. */
 export function randomTasks(n = 8, cats: string[] = []): Task[] {
-  const kinds: TaskKind[] = ['tr', 'back', 'read', 'blank', 'form']
+  const kinds: Exclude<TaskKind, 'rule'>[] = ['tr', 'back', 'read', 'blank', 'form']
   const tasks: Task[] = []
   const used = new Set<string>()
   const focus = focusPool(n, cats)

@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import BarChart from '@/components/charts/BarChart.vue'
+import LineChart from '@/components/charts/LineChart.vue'
+import RadarChart from '@/components/charts/RadarChart.vue'
+import { answersByDay, minutesByDay, reviewForecast, topicShares } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
+import { useShareCard } from '@/composables/useShareCard'
 import { MAX_LEVEL } from '@/data/levels'
 import { CATN, D } from '@/data/korean/words'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
@@ -19,6 +24,16 @@ const spent = computed(() => {
   return { today: timer.today, week: week + (timer.today - (t[dayKey()] ?? 0)), total }
 })
 const words = computed(() => progress.data.words)
+
+/* графики: ответы за 30 дней, минуты за 14, радар по темам, прогноз повторений */
+const ans = computed(() => answersByDay(progress.data, 30))
+const answerSeries = computed(() => [
+  { name: 'Всего ответов', values: ans.value.map(a => a.all), color: '#1f93cf' },
+  { name: 'Верных', values: ans.value.map(a => a.ok), color: '#7a63e8' },
+])
+const minutes = computed(() => minutesByDay(progress.data, 14, new Date(), timer.today))
+const shares = computed(() => topicShares(progress.data))
+const forecast = computed(() => reviewForecast(progress.data, 7))
 const goal = computed(() => progress.goal)
 
 const knownCount = computed(() => D.filter(d => progress.status(d.k) === 'known').length)
@@ -81,6 +96,10 @@ const SOURCES: [string, string][] = [
 const total = computed(() =>
   Object.values(progress.data.sources).reduce((n, x) => ({ ok: n.ok + x.ok, bad: n.bad + x.bad }), { ok: 0, bad: 0 }),
 )
+
+const { share, busy: sharing } = useShareCard()
+const shareAch = (a: (typeof achievements.value)[number]) =>
+  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Серия: ${progress.streak}`], icon: a.icon }, `достижение-${a.id}`)
 </script>
 
 <template>
@@ -140,6 +159,14 @@ const total = computed(() =>
     </div>
     <p class="pg-legend"><i class="known"></i> выучено <i class="learning"></i> в процессе</p>
 
+    <h2 class="today-h">Графики</h2>
+    <div class="ch-grid2">
+      <LineChart title="Ответы за 30 дней" :labels="ans.map(a => a.label)" :series="answerSeries" unit="отв." />
+      <BarChart title="Время занятий за 14 дней" :points="minutes" unit="мин" color="#7a63e8" />
+      <RadarChart title="Где сильнее: выученные слова по темам" :items="shares" />
+      <BarChart title="Что придёт на повторение: ближайшие 7 дней" :points="forecast" unit="слов" color="#1f93cf" />
+    </div>
+
     <h2 class="today-h">Над чем стоит поработать</h2>
     <div v-if="weak.length" class="pg-weak">
       <div v-for="x in weak" :key="x.d.n" class="pg-w">
@@ -160,6 +187,7 @@ const total = computed(() =>
           <div class="pg-bar"><i :style="{ width: (a.cur / a.goal) * 100 + '%' }"></i></div>
         </div>
         <span class="pg-an">{{ a.cur }} / {{ a.goal }}</span>
+        <button v-if="a.done" class="pg-share" title="Поделиться достижением" :disabled="sharing" @click="shareAch(a)">🖼</button>
       </div>
     </div>
 

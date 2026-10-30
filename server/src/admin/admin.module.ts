@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
 import { DbViewerController } from './db-viewer.controller'
 import { DbViewerService } from './db-viewer.service'
+import { LogsController } from '../logs/logs.controller'
+import { LogsService } from '../logs/logs.service'
 
-@Module({ controllers: [DbViewerController], providers: [DbViewerService] })
+@Module({ controllers: [DbViewerController, LogsController], providers: [DbViewerService, LogsService] })
 export class AdminModule {}

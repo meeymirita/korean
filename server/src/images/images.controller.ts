@@ -20,9 +20,9 @@ export class ImagesController {
 
   /** Загрузка: multipart/form-data, поле file (до 50 МБ) и необязательные поля caption, description и kind (gallery / note / cover). */
   @Post()
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE, files: 1, fields: 4, fieldSize: 4096, parts: 6, headerPairs: 30 } }))
-  add(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { caption?: unknown; description?: unknown; kind?: unknown }) {
-    return this.images.add(file, body?.caption, body?.description, body?.kind)
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE, files: 1, fields: 5, fieldSize: 4096, parts: 7, headerPairs: 30 } }))
+  add(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { caption?: unknown; description?: unknown; kind?: unknown; tags?: unknown }) {
+    return this.images.add(file, body?.caption, body?.description, body?.kind, body?.tags)
   }
 
   @Get(':id/file')
@@ -42,7 +42,7 @@ export class ImagesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: { caption?: unknown; description?: unknown }) {
+  update(@Param('id') id: string, @Body() body: { caption?: unknown; description?: unknown; tags?: unknown }) {
     return this.images.update(id, body)
   }
 

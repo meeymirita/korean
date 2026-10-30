@@ -61,6 +61,7 @@ const H1 = {
   '/': 'Тихое пространство для корейского',
   '/about': 'О платформе',
   '/history': 'История изменений',
+  '/me': 'Моя страница прогресса',
   '/korean/home': 'Поиск по корейскому',
   '/korean/words': 'Корейский словарь',
   '/korean/grammar': 'Корейская грамматика',
@@ -80,6 +81,7 @@ const BODY = {
      <ul>${NAV.slice(1).map(([p, t]) => `<li><a href="${p}">${esc(t)}</a></li>`).join('')}</ul>`,
   '/about': () => ABOUT_SLIDES.map(s => `<section><h2>${esc(s.title)}</h2><p>${esc(s.text)}</p></section>`).join(''),
   '/history': () => HISTORY.map(e => `<section><h2>${esc(e.title)}</h2><p><time datetime="${esc(e.date)}">${esc(e.date)}</time> · ${esc(e.summary)}</p><ul>${e.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join(''),
+  '/me': () => `<p>Здесь владелец может показать свой путь в изучении корейского: дни в пути, серию, выученные слова и уровень. Пока страница закрыта, показывается только это описание.</p>`,
   '/korean/home': () => `<p>Один поиск по словарю, грамматике, справочнику, примерам и буквам корейского.</p>`,
   '/korean/words': () =>
     Object.entries(CATN).map(([id, name]) => `<span>${esc(name)}</span>`).join(' · ') +
@@ -125,6 +127,10 @@ function render(p) {
   sub(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${esc(s.description)}">`)
   sub(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(s.title)}">`)
   sub(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(s.description)}">`)
+  if (s.image) {
+    sub(/<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${s.image}">`)
+    sub(/<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${s.image}">`)
+  }
   sub(/<div id="app"><\/div>/, `<div id="app">${shell(p)}</div>`)
   return html
 }

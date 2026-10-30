@@ -11,6 +11,7 @@ import sharp, { type Metadata } from 'sharp'
 import { MAX_CAPTION, MAX_DESCRIPTION, MAX_IMAGE, MAX_IMAGES_TOTAL, THUMBS, UPLOADS } from '../config'
 import { Db } from '../db/db.service'
 import { Events } from '../events/events.service'
+import { parseTags, readTags } from '../tags'
 
 /** Назначение картинки: «Картинки» в кабинете (gallery), вложение заметки (note), обложка кабинета (cover). Списки у каждого свои. */
 export const KINDS = ['gallery', 'note', 'cover'] as const
@@ -24,6 +25,8 @@ export interface ImageRow {
   name: string
   caption: string
   description: string
+  /** теги без «#» */
+  tags: string[]
   mime: string
   ext: string
   size: number
@@ -65,12 +68,22 @@ export function pruneImages(db: Db) {
 }
 
 /** Определяет тип по первым байтам: jpeg, png, gif, webp. */
-function sniff(b: Buffer): { mime: string; ext: string } | null {
+export function sniff(b: Buffer): { mime: string; ext: string } | null {
   if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { mime: 'image/jpeg', ext: 'jpg' }
   if (b.length > 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { mime: 'image/png', ext: 'png' }
   if (b.length > 6 && b.subarray(0, 4).toString('latin1') === 'GIF8') return { mime: 'image/gif', ext: 'gif' }
   if (b.length > 12 && b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP') return { mime: 'image/webp', ext: 'webp' }
   return null
+}
+
+/** Теги при загрузке приходят строкой JSON (multipart); кривое значение даёт пустой список. */
+function parseTagsField(v: unknown): string[] {
+  if (typeof v !== 'string') return []
+  try {
+    return parseTags(JSON.parse(v)) ?? []
+  } catch {
+    return []
+  }
 }
 
 @Injectable()
@@ -89,10 +102,12 @@ export class ImagesService {
   /** Занятое место считается по всем картинкам, а в списке только выбранного назначения (по умолчанию «Картинки»). */
   list(kind: unknown = 'gallery') {
     const k: Kind = KINDS.includes(kind as Kind) ? (kind as Kind) : 'gallery'
-    const items = this.db.all<ImageRow>(
-      'SELECT id, kind, name, caption, description, mime, ext, size, width, height, created FROM images WHERE kind = ? ORDER BY created DESC, id DESC',
-      k,
-    )
+    const items = this.db
+      .all<Omit<ImageRow, 'tags'> & { tags: string }>(
+        'SELECT id, kind, name, caption, description, tags, mime, ext, size, width, height, created FROM images WHERE kind = ? ORDER BY created DESC, id DESC',
+        k,
+      )
+      .map(r => ({ ...r, tags: readTags(r.tags) }))
     return { items, used: this.usedBytes(), limit: MAX_IMAGES_TOTAL, maxFile: MAX_IMAGE }
   }
 
@@ -101,7 +116,7 @@ export class ImagesService {
   }
 
   /** Сохраняет загруженный файл: проверка типа и целостности, миниатюра, запись в базу. */
-  async add(file: { buffer: Buffer; originalname: string; size: number } | undefined, caption: unknown, description?: unknown, kind?: unknown) {
+  async add(file: { buffer: Buffer; originalname: string; size: number } | undefined, caption: unknown, description?: unknown, kind?: unknown, tags?: unknown) {
     if (!file?.buffer?.length) throw new BadRequestException({ error: 'no file' })
     const type = sniff(file.buffer)
     if (!type) throw new BadRequestException({ error: 'unsupported type' })
@@ -126,6 +141,7 @@ export class ImagesService {
       name,
       caption: typeof caption === 'string' ? caption.trim().slice(0, MAX_CAPTION) : '',
       description: typeof description === 'string' ? description.trim().slice(0, MAX_DESCRIPTION) : '',
+      tags: parseTagsField(tags),
       mime: type.mime,
       ext: type.ext,
       size: file.size,
@@ -136,8 +152,8 @@ export class ImagesService {
     await writeFile(this.file(row), file.buffer)
     await writeFile(this.thumb(id), thumb)
     this.db.run(
-      'INSERT INTO images (id, kind, name, caption, description, mime, ext, size, width, height, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      row.id, row.kind, row.name, row.caption, row.description, row.mime, row.ext, row.size, row.width, row.height, row.created,
+      'INSERT INTO images (id, kind, name, caption, description, tags, mime, ext, size, width, height, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      row.id, row.kind, row.name, row.caption, row.description, JSON.stringify(row.tags), row.mime, row.ext, row.size, row.width, row.height, row.created,
     )
     this.events.log('image_added', `${name}, ${Math.round(file.size / 1024)} КБ`)
     return row
@@ -157,11 +173,11 @@ export class ImagesService {
     return { path: p, mime: kind === 'file' ? row.mime : 'image/webp', name: row.name }
   }
 
-  /** Меняет название (caption) и/или описание; передавать можно одно из полей. */
-  update(id: string, body: { caption?: unknown; description?: unknown }) {
+  /** Меняет название (caption), описание и/или теги; передавать можно любое из полей. */
+  update(id: string, body: { caption?: unknown; description?: unknown; tags?: unknown }) {
     this.find(id)
-    const { caption, description } = body ?? {}
-    if (caption === undefined && description === undefined) throw new BadRequestException({ error: 'invalid caption' })
+    const { caption, description, tags } = body ?? {}
+    if (caption === undefined && description === undefined && tags === undefined) throw new BadRequestException({ error: 'invalid caption' })
     if (caption !== undefined) {
       if (typeof caption !== 'string' || caption.length > MAX_CAPTION) throw new BadRequestException({ error: 'invalid caption' })
       this.db.run('UPDATE images SET caption = ? WHERE id = ?', caption.trim(), id)
@@ -169,6 +185,11 @@ export class ImagesService {
     if (description !== undefined) {
       if (typeof description !== 'string' || description.length > MAX_DESCRIPTION) throw new BadRequestException({ error: 'invalid description' })
       this.db.run('UPDATE images SET description = ? WHERE id = ?', description.trim(), id)
+    }
+    if (tags !== undefined) {
+      const list = parseTags(tags)
+      if (!list) throw new BadRequestException({ error: 'invalid tags' })
+      this.db.run('UPDATE images SET tags = ? WHERE id = ?', JSON.stringify(list), id)
     }
     return { ok: true }
   }

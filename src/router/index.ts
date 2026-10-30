@@ -1,6 +1,5 @@
 import { START_LOCATION, createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
-import KoreanLayout from '@/views/korean/KoreanLayout.vue'
 import { applySeo } from '@/data/seo'
 import { lastRefTab } from '@/data/korean/sections'
 import RichView from '@/views/korean/RichView.vue'
@@ -54,7 +53,7 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     {
       path: '/korean',
-      component: KoreanLayout,
+      component: () => import('@/views/korean/KoreanLayout.vue'),
       redirect: '/korean/home',
       children: [
         { path: 'home', component: () => import('@/views/korean/OverviewView.vue') },
@@ -87,9 +86,10 @@ const router = createRouter({
       ],
     },
     { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
+    { path: '/me', name: 'me', component: () => import('@/views/PublicMeView.vue') },
     { path: '/history', name: 'history', component: () => import('@/views/HistoryView.vue') },
     { path: '/game', name: 'game', component: () => import('@/views/GameView.vue') },
-    { path: '/:pathMatch(.*)*', redirect: '/' },
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (from === START_LOCATION) {

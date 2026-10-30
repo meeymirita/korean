@@ -40,7 +40,7 @@ const error = ref('')
 const loading = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
 
-const headers = () => ({ Authorization: `Bearer ${progress.token}` })
+const headers = () => ({ Authorization: `Bearer ${progress.bearer}` })
 
 async function api<T>(url: string): Promise<T> {
   const res = await fetchT(url, { headers: headers() })

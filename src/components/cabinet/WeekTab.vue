@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import PlansCalendar from '@/components/cabinet/PlansCalendar.vue'
 import { weekSummary } from '@/data/review'
 import { useProgressStore } from '@/stores/progress'
 
@@ -10,6 +11,7 @@ const max = computed(() => Math.max(1, ...week.value.days.map(d => d.all)))
 
 <template>
   <div class="cb-body">
+    <PlansCalendar />
     <h2 class="today-h">Последние 7 дней</h2>
     <div class="wk-chart">
       <div v-for="(d, i) in week.days" :key="d.key" class="wk-col">

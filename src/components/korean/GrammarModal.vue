@@ -2,8 +2,21 @@
 import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { F, blk } from '@/data/korean/render'
+import { useShareCard } from '@/composables/useShareCard'
 
 const { current, close, prev, next } = useGrammarModal()
+const { share, busy } = useShareCard()
+
+/** Метки цвета ({o|…}) и теги — в простой текст для карточки. */
+const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^>]+>/g, '')
+function shareRule() {
+  const g = current.value
+  if (!g) return
+  const formula = g.b.find(b => b[0] === 'formula')?.[1] as string | undefined
+  const ex = g.b.find(b => b[0] === 'ex')?.[1] as [string, string][] | undefined
+  const lines = [formula ? plain(formula) : '', ...(ex ?? []).slice(0, 2).map(([k, r]) => `${plain(k)}  ${r}`)].filter(Boolean)
+  void share({ kicker: g.l ? `правило · ${g.l}` : 'правило', title: plain(g.ko), sub: plain(g.ru), lines, icon: '📘' }, `правило-${g.id}`)
+}
 
 function onKey(e: KeyboardEvent) {
   if (!current.value) return
@@ -34,6 +47,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
             </span>
           </div>
         </div>
+        <button title="Поделиться карточкой" :disabled="busy" @click="shareRule">🖼</button>
         <button title="Предыдущая" @click="prev">←</button>
         <button title="Следующая" @click="next">→</button>
         <button title="Закрыть" @click="close">✕</button>

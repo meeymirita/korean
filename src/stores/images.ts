@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useProgressStore } from '@/stores/progress'
 import { LONG_TIMEOUT, fetchT } from '@/lib/http'
+import { cleanTags } from '@/lib/tags'
 
 export interface ImageItem {
   id: string
@@ -9,6 +10,8 @@ export interface ImageItem {
   /** название */
   caption: string
   description: string
+  /** теги без «#» */
+  tags: string[]
   mime: string
   size: number
   width: number
@@ -41,10 +44,16 @@ export const useImagesStore = defineStore('images', () => {
   const limit = ref(500 * 1024 * 1024)
   const maxFile = ref(50 * 1024 * 1024)
   const loaded = ref(false)
+  /** Все теги картинок «Картинки» с числом картинок. */
+  const tagCounts = computed(() => {
+    const m = new Map<string, number>()
+    for (const it of items.value) for (const t of it.tags) m.set(t, (m.get(t) ?? 0) + 1)
+    return m
+  })
   /** blob-адреса картинок: <img> не умеет слать токен, поэтому файлы запрашиваются с заголовком и показываются через blob */
   const blobs = new Map<string, Promise<string>>()
 
-  const headers = (json = false) => ({ Authorization: `Bearer ${progress.token}`, ...(json ? { 'Content-Type': 'application/json' } : {}) })
+  const headers = (json = false) => ({ Authorization: `Bearer ${progress.bearer}`, ...(json ? { 'Content-Type': 'application/json' } : {}) })
 
   /** Проверка файла до отправки; текст ошибки или null. */
   function check(file: { type: string; size: number; name: string }): string | null {
@@ -58,7 +67,7 @@ export const useImagesStore = defineStore('images', () => {
     const res = await fetchT('/api/images', { headers: headers() })
     if (!res.ok) throw new Error(uploadError(res.status))
     const d = (await res.json()) as { items: ImageItem[]; used: number; limit: number; maxFile: number }
-    items.value = d.items
+    items.value = d.items.map(i => ({ ...i, tags: i.tags ?? [] }))
     used.value = d.used
     limit.value = d.limit
     maxFile.value = d.maxFile
@@ -66,11 +75,12 @@ export const useImagesStore = defineStore('images', () => {
   }
 
   /** kind: «Картинки» (gallery), вложение заметки (note) или обложка кабинета (cover): у каждого назначения свой список. */
-  async function upload(file: File, caption = '', kind: ImageKind = 'gallery'): Promise<ImageItem> {
+  async function upload(file: File, caption = '', kind: ImageKind = 'gallery', tags: string[] = []): Promise<ImageItem> {
     const form = new FormData()
     form.append('file', file)
     if (caption) form.append('caption', caption)
     if (kind !== 'gallery') form.append('kind', kind)
+    if (tags.length) form.append('tags', JSON.stringify(tags))
     let res: Response
     try {
       res = await fetchT('/api/images', { method: 'POST', headers: headers(), body: form }, LONG_TIMEOUT)
@@ -79,19 +89,21 @@ export const useImagesStore = defineStore('images', () => {
     }
     if (!res.ok) throw new Error(uploadError(res.status))
     const item = (await res.json()) as ImageItem & { ext?: string }
+    item.tags ??= []
     if (kind === 'gallery') items.value.unshift(item)
     used.value += item.size
     return item
   }
 
   /** Меняет название и/или описание картинки. */
-  async function update(id: string, patch: { caption?: string; description?: string }) {
+  async function update(id: string, patch: { caption?: string; description?: string; tags?: string[] }) {
     const res = await fetchT(`/api/images/${id}`, { method: 'PATCH', headers: headers(true), body: JSON.stringify(patch) })
     if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
     const it = items.value.find(i => i.id === id)
     if (it) {
       if (patch.caption !== undefined) it.caption = patch.caption.trim()
       if (patch.description !== undefined) it.description = patch.description.trim()
+      if (patch.tags !== undefined) it.tags = cleanTags(patch.tags)
     }
   }
 
@@ -129,5 +141,5 @@ export const useImagesStore = defineStore('images', () => {
     blobs.clear()
   }
 
-  return { items, used, limit, maxFile, loaded, check, load, upload, update, remove, blobUrl, release }
+  return { items, tagCounts, used, limit, maxFile, loaded, check, load, upload, update, remove, blobUrl, release }
 })

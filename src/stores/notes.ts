@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useProgressStore } from '@/stores/progress'
 import { fetchT } from '@/lib/http'
+import { cleanTags } from '@/lib/tags'
 
 export interface Note {
   id: string
@@ -9,6 +10,8 @@ export interface Note {
   text: string
   /** id картинок из раздела «Картинки» */
   images: string[]
+  /** теги без «#» */
+  tags: string[]
   created: number
   updated: number
 }
@@ -50,6 +53,7 @@ export function normalizeNotes(raw: unknown): NotesData {
       title: String(n.title ?? '').slice(0, MAX_TITLE),
       text: String(n.text ?? '').slice(0, MAX_TEXT),
       images: Array.isArray(n.images) ? n.images.filter((i): i is string => typeof i === 'string' && /^[a-f0-9]{16}$/.test(i)).slice(0, MAX_NOTE_IMAGES) : [],
+      tags: cleanTags(n.tags),
       created: Number(n.created) || 0,
       updated: Number(n.updated) || 0,
     })
@@ -75,6 +79,13 @@ export const useNotesStore = defineStore('notes', () => {
   let applying = false
   let timer: ReturnType<typeof setTimeout> | undefined
 
+  /** Все теги заметок с числом заметок, частые сверху. */
+  const tagCounts = computed(() => {
+    const m = new Map<string, number>()
+    for (const n of data.value.notes) for (const t of n.tags) m.set(t, (m.get(t) ?? 0) + 1)
+    return m
+  })
+
   /** Новые сверху. */
   const notes = computed(() => [...data.value.notes].sort((a, b) => b.created - a.created))
   const full = computed(() => data.value.notes.length >= MAX_NOTES)
@@ -84,23 +95,24 @@ export const useNotesStore = defineStore('notes', () => {
   const touch = () => (data.value.updated = Date.now())
 
   /** Добавляет заметку. Возвращает её или null, если пусто или достигнут лимит. */
-  function add(title: string, text: string, images: string[] = []): Note | null {
+  function add(title: string, text: string, images: string[] = [], tags: string[] = []): Note | null {
     const t = title.trim().slice(0, MAX_TITLE)
     const x = text.trim().slice(0, MAX_TEXT)
     if ((!t && !x && !images.length) || full.value) return null
     const now = Date.now()
-    const note: Note = { id: newId(), title: t || 'Без названия', text: x, images: images.slice(0, MAX_NOTE_IMAGES), created: now, updated: now }
+    const note: Note = { id: newId(), title: t || 'Без названия', text: x, images: images.slice(0, MAX_NOTE_IMAGES), tags: cleanTags(tags), created: now, updated: now }
     data.value.notes.push(note)
     touch()
     return note
   }
 
-  function update(id: string, patch: { title?: string; text?: string; images?: string[] }) {
+  function update(id: string, patch: { title?: string; text?: string; images?: string[]; tags?: string[] }) {
     const n = data.value.notes.find(x => x.id === id)
     if (!n) return false
     if (patch.title !== undefined) n.title = patch.title.trim().slice(0, MAX_TITLE) || 'Без названия'
     if (patch.text !== undefined) n.text = patch.text.trim().slice(0, MAX_TEXT)
     if (patch.images !== undefined) n.images = patch.images.slice(0, MAX_NOTE_IMAGES)
+    if (patch.tags !== undefined) n.tags = cleanTags(patch.tags)
     n.updated = Date.now()
     touch()
     return true
@@ -113,7 +125,7 @@ export const useNotesStore = defineStore('notes', () => {
   }
 
   /* ---------- сервер ---------- */
-  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${progress.token}` })
+  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${progress.bearer}` })
   const netError = (e: unknown) => ((e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message)
 
   async function push() {
@@ -178,5 +190,5 @@ export const useNotesStore = defineStore('notes', () => {
     { deep: true, flush: 'sync' },
   )
 
-  return { data, notes, full, status, message, add, update, remove, init, push }
+  return { data, notes, tagCounts, full, status, message, add, update, remove, init, push }
 })

@@ -35,6 +35,8 @@ export const DB_FILE = path.join(DATA_DIR, 'app.db')
 export const BACKUPS = path.join(DATA_DIR, 'backups')
 export const UPLOADS = path.join(DATA_DIR, 'uploads')
 export const THUMBS = path.join(DATA_DIR, 'thumbs')
+export const DOCS = path.join(DATA_DIR, 'docs')
+export const PUBLIC_DIR = path.join(DATA_DIR, 'public')
 
 export const KEEP_BACKUPS = 30
 /** Тела запросов (JSON): заметки до 200 × 5000 символов на кириллице занимают около 2 МБ. */
@@ -59,3 +61,18 @@ export const MAX_DESCRIPTION = 1000
 export const MAX_NOTE_IMAGES = 10
 
 export const MAX_EVENTS = 2000
+
+/** Записи календаря: до 2000, в каждой до 20 файлов (PDF, Word, картинки) по 25 МБ, всего до 1 ГБ. */
+export const MAX_PLANS = 2000
+export const MAX_PLAN_TITLE = 100
+export const MAX_PLAN_TEXT = 5000
+export const MAX_PLAN_FILES = 20
+export const MAX_DOC = 25 * 1024 * 1024
+export const MAX_DOCS_TOTAL = Number(process.env.DOCS_QUOTA_MB || 1024) * 1024 * 1024
+
+/** Сохранённые наборы «Сегодня»: до 500, снимок не больше 200 тысяч знаков. */
+export const MAX_SETS = 500
+export const MAX_SET_DATA = 200_000
+
+/** Публичная визитка: картинка для превью ссылки (1200×630) не тяжелее 1 МБ. */
+export const MAX_OG = 1024 * 1024

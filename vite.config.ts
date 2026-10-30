@@ -15,6 +15,19 @@ export default defineConfig({
     // другой порт можно задать переменной API_PORT (например, для демо-сервера со скриншотами)
     proxy: { '/api': `http://127.0.0.1:${process.env.API_PORT || 3001}` },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // библиотеки меняются редко: в отдельных файлах браузер не перекачивает их после каждой выкладки сайта
+        advancedChunks: {
+          groups: [
+            { name: 'vendor', test: /node_modules[\\/](vue|@vue|pinia|vue-router)[\\/]/ },
+            { name: 'gsap', test: /node_modules[\\/]gsap[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

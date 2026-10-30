@@ -44,7 +44,7 @@ describe('SEO', () => {
 
   test('неизвестный адрес и адрес со слешем на конце получают нормальные данные', () => {
     assert.equal(seoFor('/korean/words/').title, seoFor('/korean/words').title)
-    assert.equal(seoFor('/нет-такой').title, seoFor('/').title)
+    assert.equal(seoFor('/нет-такой').noindex, true)
   })
 
   test('index.html: описание, canonical, Open Graph, Twitter, манифест, JSON-LD и запасной текст без JS', () => {

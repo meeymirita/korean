@@ -5,6 +5,7 @@ import Avatar from '@/components/Avatar.vue'
 import DbTab from '@/components/cabinet/DbTab.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
+import LogsTab from '@/components/cabinet/LogsTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
@@ -35,12 +36,12 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'logs' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const q = route.query.tab
-const OWNER_ONLY = ['images', 'db']
-const TABS = ['repeat', 'week', 'history', 'notes', 'images', 'db', 'settings']
+const OWNER_ONLY = ['images', 'db', 'logs']
+const TABS = ['repeat', 'week', 'history', 'notes', 'images', 'db', 'logs', 'settings']
 const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -55,7 +56,7 @@ const tabs = computed<[Tab, string][]>(() => [
   ['history', 'История'],
   ['notes', 'Заметки'],
   // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
-  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['db', 'База']] as [Tab, string][])),
+  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['db', 'База'], ['logs', 'Журналы']] as [Tab, string][])),
   ['settings', 'Настройки'],
 ])
 </script>
@@ -95,6 +96,7 @@ const tabs = computed<[Tab, string][]>(() => [
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <DbTab v-else-if="tab === 'db'" />
+    <LogsTab v-else-if="tab === 'logs'" />
     <SettingsTab v-else />
   </div>
 </template>

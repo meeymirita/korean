@@ -1,11 +1,48 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useTwoFa } from '@/composables/useTwoFa'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 const token = ref('')
 const busy = ref(false)
+
+/* ---------- второй шаг: код из письма ---------- */
+const tf = useTwoFa()
+const code = ref('')
+const sentTo = ref('')
+const codeError = ref('')
+const sending = ref(false)
+
+async function sendCode() {
+  if (sending.value) return
+  sending.value = true
+  codeError.value = ''
+  try {
+    sentTo.value = await tf.sendLoginCode()
+  } catch (e) {
+    codeError.value = (e as Error).message // например «код уже отправлен, новый через 40 с»: сам код при этом дошёл
+  } finally {
+    sending.value = false
+  }
+}
+async function submitCode() {
+  if (code.value.trim().length !== 4 || busy.value) return
+  busy.value = true
+  codeError.value = ''
+  try {
+    await tf.verifyLogin(code.value.trim())
+    code.value = ''
+  } catch (e) {
+    codeError.value = (e as Error).message
+    code.value = ''
+  } finally {
+    busy.value = false
+  }
+}
+// как только сервер попросил код, письмо уходит само; повторный заход на страницу не засыпает почту (у сервера пауза между письмами)
+watch(() => progress.needs2fa, on => on && void sendCode(), { immediate: true })
 
 async function submit() {
   if (!token.value.trim() || busy.value) return
@@ -19,6 +56,19 @@ async function submit() {
 <template>
   <div class="gate">
     <div class="gate-card">
+      <template v-if="progress.needs2fa">
+        <div class="gate-ico">✉️</div>
+        <h2>Код из письма</h2>
+        <p>Токен подошёл. Мы отправили код из 4 цифр на {{ sentTo || 'вашу почту' }}. Он действует 10 минут.</p>
+        <form class="gate-form" @submit.prevent="submitCode">
+          <input v-model="code" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="0000" autocomplete="one-time-code" aria-label="Код из письма" autofocus @input="code.length === 4 && submitCode()" />
+          <button type="submit" :disabled="busy || code.trim().length !== 4">{{ busy ? 'Проверяю…' : 'Войти' }}</button>
+        </form>
+        <p v-if="codeError" class="gate-err">{{ codeError }}</p>
+        <p class="gate-help"><a href="#" @click.prevent="sendCode">Отправить код ещё раз</a> · <a href="#" @click.prevent="progress.disconnect()">Другой токен</a></p>
+        <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
+      </template>
+      <template v-else>
       <div class="gate-ico">🔒</div>
       <h2>Этот раздел открывается по токену</h2>
       <p>
@@ -35,6 +85,7 @@ async function submit() {
         <a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a>
       </p>
       <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
+      </template>
     </div>
   </div>
 </template>

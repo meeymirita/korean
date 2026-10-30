@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
 import NoteModal from '@/components/cabinet/NoteModal.vue'
+import TagInput from '@/components/cabinet/TagInput.vue'
+import { useAllTags } from '@/composables/useAllTags'
 import { MAX_NOTE_IMAGES, MAX_NOTES, MAX_TEXT, MAX_TITLE, PREVIEW, useNotesStore, type Note } from '@/stores/notes'
 import { askConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/stores/toast'
@@ -14,6 +16,11 @@ const progress = useProgressStore()
 const toast = useToastStore()
 /** Картинки лежат на сервере и доступны только владельцу. */
 const canImages = computed(() => progress.unlocked && !progress.isGuest)
+const allTags = useAllTags()
+const newTags = ref<string[]>([])
+const editTags = ref<string[]>([])
+/** Выбранный тег-фильтр (без «#»). */
+const tagFilter = ref('')
 const pending = ref<string[]>([])
 const editImages = ref<string[]>([])
 const imgError = ref('')
@@ -25,12 +32,20 @@ const editing = ref<string | null>(null)
 const editTitle = ref('')
 const editText = ref('')
 
-onMounted(() => void store.init())
+onMounted(() => {
+  void store.init()
+  // картинки нужны только для подсказок тегов: ошибку не показываем
+  if (canImages.value && !images.loaded) void images.load().catch(() => undefined)
+})
 
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return q ? store.notes.filter(n => (n.title + ' ' + n.text).toLowerCase().includes(q)) : store.notes
+  const byTag = tagFilter.value ? store.notes.filter(n => n.tags.includes(tagFilter.value)) : store.notes
+  return q ? byTag.filter(n => (n.title + ' ' + n.text + ' ' + n.tags.join(' ')).toLowerCase().includes(q)) : byTag
 })
+
+const noteTags = computed(() => [...store.tagCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).map(([t]) => t))
+const toggleTag = (t: string) => (tagFilter.value = tagFilter.value === t ? '' : t)
 
 const statusText = computed(
   () =>
@@ -79,11 +94,12 @@ async function attach(e: Event, target: 'new' | 'edit') {
 }
 
 function add() {
-  if (store.add(title.value, text.value, pending.value)) {
+  if (store.add(title.value, text.value, pending.value, newTags.value)) {
     toast.ok('Заметка добавлена')
     title.value = ''
     text.value = ''
     pending.value = []
+    newTags.value = []
   }
 }
 
@@ -98,10 +114,11 @@ function startEdit(n: Note) {
   editTitle.value = n.title
   editText.value = n.text
   editImages.value = [...n.images]
+  editTags.value = [...n.tags]
   imgError.value = ''
 }
 function saveEdit() {
-  if (editing.value && store.update(editing.value, { title: editTitle.value, text: editText.value, images: editImages.value })) toast.ok('Заметка сохранена')
+  if (editing.value && store.update(editing.value, { title: editTitle.value, text: editText.value, images: editImages.value, tags: editTags.value })) toast.ok('Заметка сохранена')
   editing.value = null
 }
 async function remove(n: Note) {
@@ -134,6 +151,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
         @keydown.meta.enter.prevent="add"
       ></textarea>
       </label>
+      <TagInput v-model="newTags" :suggestions="allTags" />
       <NoteImages :ids="pending" removable @remove="id => (pending = pending.filter(x => x !== id))" />
       <p v-if="imgError" class="nt-err">{{ imgError }}</p>
       <div class="nt-bar">
@@ -150,6 +168,10 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
       <span class="nt-total">{{ store.notes.length }} / {{ MAX_NOTES }}</span>
     </div>
 
+    <div v-if="noteTags.length" class="tg-filter">
+      <button v-for="t in noteTags" :key="t" type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click="toggleTag(t)">#{{ t }}</button>
+    </div>
+
     <p v-if="!store.notes.length" class="cb-empty">Заметок пока нет. Напишите первую выше: название и несколько слов.</p>
     <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено.</p>
 
@@ -158,6 +180,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
         <template v-if="editing === n.id">
           <input v-model="editTitle" :maxlength="MAX_TITLE" aria-label="Название" />
           <textarea v-model="editText" :maxlength="MAX_TEXT" rows="5" aria-label="Описание"></textarea>
+          <TagInput v-model="editTags" :suggestions="allTags" />
           <NoteImages :ids="editImages" removable @remove="id => (editImages = editImages.filter(x => x !== id))" />
           <p v-if="imgError" class="nt-err">{{ imgError }}</p>
           <div class="nt-acts">
@@ -172,6 +195,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
             <time>{{ when(n.created) }}<span v-if="n.updated - n.created > 60_000"> · изм. {{ when(n.updated) }}</span></time>
           </div>
           <p v-if="n.text" class="nt-text">{{ preview(n) }}</p>
+          <ul v-if="n.tags.length" class="tg-tags"><li v-for="t in n.tags" :key="t"><button type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click.stop="toggleTag(t)">#{{ t }}</button></li></ul>
           <NoteImages v-if="canImages" :ids="n.images" />
           <div class="nt-acts">
             <button class="plain" @click.stop="startEdit(n)">Изменить</button>

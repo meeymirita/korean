@@ -78,6 +78,7 @@ export interface GuestToken {
 const KEY = 'progress_v1'
 const TOKEN_KEY = 'progress_token'
 const VERIFIED_KEY = 'progress_verified'
+const SESSION_KEY = 'progress_session'
 const ROLE_KEY = 'progress_role'
 const OUTBOX_KEY = 'progress_outbox'
 /** Через сколько после последнего действия очередь уходит на сервер, и сколько действий за один запрос. */
@@ -171,6 +172,12 @@ export const useProgressStore = defineStore('progress', () => {
 
   const data = ref<ProgressData>(load())
   const token = ref(read(TOKEN_KEY))
+  /** Сеанс двухфакторного входа (выдаётся за код из письма); без включённой защиты пуст. */
+  const session = ref(read(SESSION_KEY))
+  /** Токен подошёл, но сервер просит ещё код из письма. */
+  const needs2fa = ref(false)
+  /** Что идёт в заголовке Authorization после «Bearer»: токен, а после двухфакторного входа «токен сеанс». */
+  const bearer = computed(() => (session.value ? `${token.value} ${session.value}` : token.value))
   /** токен хотя бы раз подошёл серверу: до этого функции сайта закрыты */
   const verified = ref(read(VERIFIED_KEY) === '1')
   const sync = ref<SyncState>(token.value ? 'idle' : 'off')
@@ -188,10 +195,13 @@ export const useProgressStore = defineStore('progress', () => {
     const wasGuest = role.value === 'guest'
     clearTimeout(expireTimer)
     token.value = ''
+    session.value = ''
+    needs2fa.value = false
     verified.value = false
     role.value = 'owner'
     guestExpires.value = 0
     write(TOKEN_KEY, null)
+    write(SESSION_KEY, null)
     write(VERIFIED_KEY, null)
     write(ROLE_KEY, null)
     if (wasGuest) {
@@ -333,16 +343,35 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /* ---------- сохранение и сервер ---------- */
-  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token.value}` })
+  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${bearer.value}` })
   const netError = (e: unknown) => ((e as Error).message === 'Failed to fetch' ? 'сервер недоступен' : (e as Error).message)
 
-  /** Почему сервер ответил 401: токен чужой или у гостевого токена вышел срок. */
-  async function deniedMessage(res: Response) {
+  /**
+   * Сервер ответил 401. «2fa»: токен верный, но защита просит ещё код из письма: доступ закрывается до ввода кода, очередь действий остаётся.
+   * Иначе токен чужой или у гостевого токена вышел срок: доступ закрывается с объяснением.
+   */
+  async function denied(res: Response) {
+    let error = ''
     try {
-      return (await res.json()).error === 'expired' ? 'срок гостевого доступа закончился' : 'неверный токен'
+      error = (await res.json()).error
     } catch {
-      return 'неверный токен'
+      /* без тела */
     }
+    if (error !== '2fa') return lock(error === 'expired' ? 'срок гостевого доступа закончился' : 'неверный токен')
+    session.value = ''
+    write(SESSION_KEY, null)
+    needs2fa.value = true
+    verified.value = false
+    write(VERIFIED_KEY, null)
+    sync.value = 'idle'
+    syncMessage.value = ''
+  }
+
+  /** Сеанс после верного кода: запоминается в браузере, второй шаг закрыт. */
+  function setSession(id: string) {
+    session.value = id
+    needs2fa.value = false
+    write(SESSION_KEY, id)
   }
 
   /** Ставит действие в очередь; через FLUSH_DELAY после последнего действия очередь уходит на сервер. Гостю и без токена не отправляется. */
@@ -365,7 +394,7 @@ export const useProgressStore = defineStore('progress', () => {
       while (outbox.value.length) {
         const batch = outbox.value.slice(0, BATCH)
         const res = await fetchT('/api/ops', { method: 'POST', headers: headers(), body: JSON.stringify({ ops: batch }) })
-        if (res.status === 401) return lock(await deniedMessage(res))
+        if (res.status === 401) return denied(res)
         // 400: сервер не принял пачку; выбрасываем её, чтобы очередь не застряла навсегда
         if (!res.ok && res.status !== 400) throw new Error(`ошибка сервера ${res.status}`)
         outbox.value = outbox.value.slice(batch.length)
@@ -388,8 +417,9 @@ export const useProgressStore = defineStore('progress', () => {
     sync.value = 'syncing'
     try {
       let res = await fetchT('/api/progress', { headers: headers() })
-      if (res.status === 401) return lock(await deniedMessage(res))
+      if (res.status === 401) return denied(res)
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+      needs2fa.value = false
       verified.value = true
       write(VERIFIED_KEY, '1')
       if (res.headers?.get('X-Role') === 'guest') return enterGuest(Number(res.headers.get('X-Guest-Expires')) || 0)
@@ -451,6 +481,12 @@ export const useProgressStore = defineStore('progress', () => {
   async function connect(t: string) {
     const value = t.trim()
     if (!value) return false
+    if (value !== token.value) {
+      // другой токен (например, гостевой): сеанс прежнего токена к нему не подходит
+      session.value = ''
+      write(SESSION_KEY, null)
+    }
+    needs2fa.value = false
     token.value = value
     verified.value = false
     write(TOKEN_KEY, value)
@@ -507,7 +543,7 @@ export const useProgressStore = defineStore('progress', () => {
     await push() // накопленные действия уходят раньше
     const res = await fetchT('/api/ops', { method: 'POST', headers: { ...headers(), 'X-Confirm-Token': confirm }, body: JSON.stringify({ ops: [op] }) })
     if (res.status === 401) {
-      lock(await deniedMessage(res))
+      await denied(res)
       throw new Error('нет доступа')
     }
     if (!res.ok) throw new Error(confirmError(res.status))
@@ -536,7 +572,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   return {
     data, goal, info, todayOk, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
-    token, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
+    token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
 })

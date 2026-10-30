@@ -8,7 +8,10 @@ import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module'
 import { DATA_DIR, MAX_JSON, PORT, TOKEN } from './config'
+import { startLogCapture } from './logs/log-buffer'
 import { RateLimiter, requestTimeout, securityHeaders } from './security'
+
+startLogCapture() // журнал для кабинета: копим всё, что пишет сервер
 
 async function bootstrap() {
   if (!TOKEN) {

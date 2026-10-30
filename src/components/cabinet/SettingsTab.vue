@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import Avatar from '@/components/Avatar.vue'
 import GuestAccess from '@/components/cabinet/GuestAccess.vue'
+import TwoFaBlock from '@/components/cabinet/TwoFaBlock.vue'
 import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
+import { usePublicCard } from '@/composables/usePublicCard'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
@@ -143,28 +145,63 @@ async function reconnect() {
     tokenInput.value = ''
   }
 }
+
+/* ---------- публичная визитка ---------- */
+const pub = usePublicCard()
+const pubCover = ref(false)
+onMounted(async () => {
+  if (!progress.unlocked || progress.isGuest) return
+  try {
+    await pub.load()
+    pubCover.value = !!pub.settings.value?.cover
+    if (pub.settings.value?.enabled) await pub.save(true, pubCover.value) // данные визитки обновляются при заходе в настройки
+  } catch {
+    /* сервер недоступен: блок останется неактивным */
+  }
+})
+async function togglePublic() {
+  const on = !pub.settings.value?.enabled
+  try {
+    await pub.save(on, pubCover.value)
+    toast.ok(on ? 'Визитка включена: /me открыта всем' : 'Визитка выключена: /me закрыта')
+  } catch (e) {
+    toast.error((e as Error).message)
+  }
+}
+async function refreshPublic() {
+  try {
+    await pub.save(true, pubCover.value)
+    toast.ok('Данные визитки обновлены')
+  } catch (e) {
+    toast.error((e as Error).message)
+  }
+}
 </script>
 
 <template>
   <div class="cb-body">
     <div class="st-block">
       <h3>Профиль</h3>
-      <p>Имя и картинка показываются на главной и в боковом меню.</p>
-      <div class="st-name">
-        <Avatar :avatar="profile.avatar" :size="56" />
-        <input :value="profile.name" maxlength="24" placeholder="Как тебя называть?" aria-label="Имя" @input="progress.setProfile({ name: ($event.target as HTMLInputElement).value })" />
-      </div>
-      <div class="st-avatars">
-        <label class="st-up">⬆ Своя картинка<input type="file" accept="image/*" @change="upload" /></label>
-        <button v-if="hasPhoto" class="st-up" type="button" @click="progress.setProfile({ avatar: DEFAULT_AVATAR })">Убрать картинку</button>
-      </div>
-      <template v-if="!progress.isGuest">
-        <p class="st-sub">Обложка в шапке кабинета.</p>
-        <div class="st-avatars">
-          <label class="st-up">{{ coverBusy ? 'Загружаю…' : '🖼 Загрузить обложку' }}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" :disabled="coverBusy" @change="uploadCover" /></label>
-          <button v-if="profile.cover" class="st-up" type="button" @click="progress.setProfile({ cover: '' })">Убрать обложку</button>
+      <div class="st-cols" :class="{ one: progress.isGuest }">
+        <div class="st-col">
+          <p>Имя и картинка показываются на главной и в боковом меню.</p>
+          <div class="st-name">
+            <Avatar :avatar="profile.avatar" :size="56" />
+            <input :value="profile.name" maxlength="24" placeholder="Как тебя называть?" aria-label="Имя" @input="progress.setProfile({ name: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="st-avatars">
+            <label class="st-up">⬆ Своя картинка<input type="file" accept="image/*" @change="upload" /></label>
+            <button v-if="hasPhoto" class="st-up" type="button" @click="progress.setProfile({ avatar: DEFAULT_AVATAR })">Убрать картинку</button>
+          </div>
         </div>
-      </template>
+        <div v-if="!progress.isGuest" class="st-col">
+          <p>Обложка в шапке кабинета.</p>
+          <div class="st-avatars">
+            <label class="st-up">{{ coverBusy ? 'Загружаю…' : '🖼 Загрузить обложку' }}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" :disabled="coverBusy" @change="uploadCover" /></label>
+            <button v-if="profile.cover" class="st-up" type="button" @click="progress.setProfile({ cover: '' })">Убрать обложку</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="st-block">
@@ -211,6 +248,20 @@ async function reconnect() {
         <button class="plain danger" @click="reset">Сбросить прогресс</button>
       </div>
     </div>
+    <div v-if="progress.unlocked && !progress.isGuest" class="st-block">
+      <h3>Публичная визитка</h3>
+      <p>Страница <b>/me</b> со счётчиком дней, серией, выученными словами и уровнем. По умолчанию закрыта: ссылка работает, только пока включено.</p>
+      <div class="pg-btns">
+        <button :disabled="pub.busy.value || !pub.settings.value" @click="togglePublic">{{ pub.settings.value?.enabled ? 'Выключить визитку' : 'Включить визитку' }}</button>
+        <template v-if="pub.settings.value?.enabled">
+          <button class="plain" :disabled="pub.busy.value" @click="refreshPublic">↻ Обновить данные</button>
+          <a class="plain pub-link" href="/me" target="_blank" rel="noopener">Открыть /me ↗</a>
+        </template>
+      </div>
+      <label v-if="profile.cover" class="pub-opt"><input v-model="pubCover" type="checkbox" :disabled="pub.busy.value" @change="pub.settings.value?.enabled && refreshPublic()" /> показывать обложку кабинета (она станет доступна всем по ссылке, остальные картинки остаются закрытыми)</label>
+      <p class="st-sub">Наружу уходит только: имя, значок, уровень, серия, число выученных слов, ответов и дней в пути. Данные обновляются кнопкой.</p>
+    </div>
+    <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
     <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
     <div v-if="progress.isGuest" class="st-block">
       <h3>Гостевой режим</h3>

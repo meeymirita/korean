@@ -9,12 +9,17 @@ export interface Seo {
   title: string
   description: string
   noindex?: boolean
+  /** картинка для превью ссылки (по умолчанию общая картинка сайта) */
+  image?: string
 }
 
 const DEFAULT: Seo = {
   title: `${BRAND} — корейский язык с нуля: слова, грамматика, игры`,
   description: 'Личная платформа для изучения корейского с нуля: словарь с чтением и примерами, грамматика по урокам, справочник, тренажёры и игра на слова.',
 }
+
+/** Неизвестный адрес: страница «такого нет», в поиск не попадает. */
+const NOT_FOUND: Seo = { title: `Такой страницы нет · ${BRAND}`, description: DEFAULT.description, noindex: true }
 
 const PAGES: Record<string, Seo> = {
   '/': DEFAULT,
@@ -25,6 +30,11 @@ const PAGES: Record<string, Seo> = {
   '/history': {
     title: `История изменений платформы ${BRAND}: что и когда добавили`,
     description: 'Как росла платформа для изучения корейского: от первой версии на Vue до поиска, защиты, заметок, игры и автоматических проверок. Что и когда добавляли.',
+  },
+  '/me': {
+    title: `Моя страница прогресса · ${BRAND}`,
+    description: 'Визитка ученика корейского: сколько дней в пути, серия занятий, выученные слова и уровень. Владелец включает страницу сам и может закрыть в любой момент.',
+    image: SITE + '/api/public/og.png',
   },
   '/korean/home': {
     title: `Поиск по корейскому: слова, правила, фразы · ${BRAND}`,
@@ -75,7 +85,7 @@ const PAGES: Record<string, Seo> = {
 }
 
 /** SEO страницы по адресу; неизвестный адрес получает общие данные. */
-export const seoFor = (path: string): Seo => PAGES[path.replace(/\/+$/, '') || '/'] ?? DEFAULT
+export const seoFor = (path: string): Seo => PAGES[path.replace(/\/+$/, '') || '/'] ?? NOT_FOUND
 
 /** Публичные адреса для карты сайта (то, что не помечено noindex). */
 export const indexablePaths = () => Object.entries(PAGES).filter(([, s]) => !s.noindex).map(([p]) => p)
@@ -109,4 +119,8 @@ export function applySeo(path: string) {
     document.head.appendChild(link)
   }
   link.href = url
+  if (s.image) {
+    set('meta[property="og:image"]', 'property', 'og:image', s.image)
+    set('meta[name="twitter:image"]', 'name', 'twitter:image', s.image)
+  }
 }

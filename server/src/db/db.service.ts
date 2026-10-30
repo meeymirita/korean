@@ -79,6 +79,50 @@ CREATE TABLE IF NOT EXISTS images (
   created INTEGER NOT NULL
 );
 
+-- записи календаря: занятие, созвон, домашка; к записи прикрепляются файлы
+CREATE TABLE IF NOT EXISTS plans (
+  id TEXT PRIMARY KEY,
+  day TEXT NOT NULL,           -- ГГГГ-ММ-ДД
+  time TEXT NOT NULL DEFAULT '',  -- ЧЧ:ММ или пусто
+  title TEXT NOT NULL,
+  text TEXT NOT NULL DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '[]',
+  created INTEGER NOT NULL,
+  updated INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS plans_day ON plans (day);
+
+-- файлы записей лежат в DATA_DIR/docs, здесь описание
+CREATE TABLE IF NOT EXISTS plan_files (
+  id TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  ext TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  thumb INTEGER NOT NULL DEFAULT 0,   -- 1, если у картинки есть миниатюра
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS plan_files_plan ON plan_files (plan_id);
+
+-- сохранённые наборы «Сегодня»: слова, правило, задания и ответы одним снимком
+CREATE TABLE IF NOT EXISTS today_sets (
+  id TEXT PRIMARY KEY,
+  day TEXT NOT NULL,           -- ГГГГ-ММ-ДД
+  right_n INTEGER NOT NULL,    -- верных ответов
+  total_n INTEGER NOT NULL,    -- всего заданий
+  data TEXT NOT NULL,          -- снимок набора (JSON)
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS today_sets_created ON today_sets (created);
+
+-- сеансы после двухфакторного входа: хранится только хэш
+CREATE TABLE IF NOT EXISTS sessions (
+  hash TEXT PRIMARY KEY,
+  created INTEGER NOT NULL,
+  expires INTEGER NOT NULL
+);
+
 -- журнал событий: входы, создание и отзыв гостевых токенов, неверные токены
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,6 +151,8 @@ export class Db implements OnModuleDestroy {
     const has = (table: string, column: string) => this.all<{ name: string }>(`PRAGMA table_info(${table})`).some(c => c.name === column)
     if (!has('images', 'description')) this.sql.exec("ALTER TABLE images ADD COLUMN description TEXT NOT NULL DEFAULT ''")
     if (!has('notes', 'images')) this.sql.exec("ALTER TABLE notes ADD COLUMN images TEXT NOT NULL DEFAULT '[]'")
+    if (!has('notes', 'tags')) this.sql.exec("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
+    if (!has('images', 'tags')) this.sql.exec("ALTER TABLE images ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
     if (!has('images', 'kind')) {
       // картинки заметок и обложка кабинета раньше лежали в общем списке: разносим по назначению
       this.sql.exec("ALTER TABLE images ADD COLUMN kind TEXT NOT NULL DEFAULT 'gallery'")

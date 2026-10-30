@@ -84,6 +84,16 @@ korean.meeymirita.ru {
     request_body {
         max_size 60MB
     }
+    # сжатие (текст и данные ужимаются в 3–4 раза: самая дешёвая прибавка к скорости)
+    encode zstd gzip
+    # журнал доступа в файл (формат JSON): его читает вкладка «Журналы» кабинета, путь пропиши в server/.env как CADDY_LOG_FILE
+    log {
+        output file /var/log/caddy/korean.log {
+            roll_size 20MiB
+            roll_keep 5
+        }
+        format json
+    }
     # кэш для скорости (и для SEO): файлы с хэшем в имени вечные, значки сутки, страница и карта сайта проверяются каждый раз
     @assets path /assets/*
     header @assets Cache-Control "public, max-age=31536000, immutable"
@@ -109,3 +119,14 @@ korean.meeymirita.ru {
 
 **6. Обновления системы**: `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades` для автоматических
 обновлений безопасности.
+
+## Журналы во вкладке «Журналы» кабинета
+
+Вкладка видна только владельцу и показывает две вещи: журнал сервера (Node: всё, что служба пишет с последнего запуска, в памяти до 2000 строк; полный журнал по-прежнему `journalctl -u progress`)
+и журнал доступа Caddy (последние строки файла). Сервер подключается сам; для Caddy нужны три шага:
+
+1. В блок сайта Caddyfile добавь `log { output file /var/log/caddy/korean.log … format json }` (готовый блок есть выше), `caddy validate` и `systemctl reload caddy`.
+2. Дай службе `progress` право читать файл: `chmod 640 /var/log/caddy/korean.log` и добавь её пользователя в группу `caddy` (`usermod -aG caddy <пользователь службы>`), в `ReadOnlyPaths` юнита добавь `/var/log/caddy`, если включена изоляция.
+3. В `server/.env` впиши `CADDY_LOG_FILE=/var/log/caddy/korean.log` и перезапусти службу.
+
+Если файл не читается, вкладка пишет, что именно не так (не задан путь, файла нет, нет прав).

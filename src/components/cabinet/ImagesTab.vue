@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import TagInput from '@/components/cabinet/TagInput.vue'
+import { useAllTags } from '@/composables/useAllTags'
 import { useToastStore } from '@/stores/toast'
 import { askConfirm } from '@/composables/useConfirm'
 import { ALLOWED, MAX_CAPTION, MAX_DESCRIPTION, formatSize, useImagesStore, type ImageItem } from '@/stores/images'
 
 const store = useImagesStore()
 const toast = useToastStore()
+const allTags = useAllTags()
+const uploadTags = ref<string[]>([])
+const tagFilter = ref('')
+const imageTags = computed(() => [...store.tagCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).map(([t]) => t))
 const errors = ref<string[]>([])
 const status = ref('')
 const busy = ref(false)
@@ -49,7 +55,7 @@ async function upload(list: FileList | File[] | null) {
       continue
     }
     try {
-      await store.upload(f)
+      await store.upload(f, '', 'gallery', uploadTags.value)
       done++
     } catch (e) {
       errors.value.push(`${f.name}: ${(e as Error).message}`)
@@ -80,11 +86,11 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   const a = from.value ? startOf(from.value) : -Infinity
   const b = to.value ? startOf(to.value) + 86_400_000 : Infinity
-  return store.items.filter(it => it.created >= a && it.created < b && (!q || `${it.caption} ${it.description} ${it.name}`.toLowerCase().includes(q)))
+  return store.items.filter(it => it.created >= a && it.created < b && (!tagFilter.value || it.tags.includes(tagFilter.value)) && (!q || `${it.caption} ${it.description} ${it.name} ${it.tags.join(' ')}`.toLowerCase().includes(q)))
 })
-const filtering = computed(() => !!(query.value.trim() || from.value || to.value))
+const filtering = computed(() => !!(query.value.trim() || from.value || to.value || tagFilter.value))
 function resetFilter() {
-  query.value = from.value = to.value = ''
+  query.value = from.value = to.value = tagFilter.value = ''
 }
 
 const usedPct = computed(() => Math.min(100, (store.used / store.limit) * 100))
@@ -97,6 +103,7 @@ const full = ref('')
 const caption = ref('')
 const description = ref('')
 const saved = ref(false)
+const tags = ref<string[]>([])
 
 async function show(id: string | null) {
   openId.value = id
@@ -105,6 +112,7 @@ async function show(id: string | null) {
   const it = store.items.find(i => i.id === id)
   caption.value = it?.caption ?? ''
   description.value = it?.description ?? ''
+  tags.value = [...(it?.tags ?? [])]
   if (!it) return
   try {
     const url = await store.blobUrl(it.id, 'file')
@@ -121,7 +129,7 @@ function step(d: number) {
 async function saveInfo() {
   if (!current.value) return
   try {
-    await store.update(current.value.id, { caption: caption.value, description: description.value })
+    await store.update(current.value.id, { caption: caption.value, description: description.value, tags: tags.value })
     saved.value = true
     toast.ok('Сохранено')
   } catch (e) {
@@ -158,6 +166,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <small>JPEG, PNG, GIF, WebP · до {{ formatSize(store.maxFile) }} каждая</small>
     </label>
 
+    <TagInput v-model="uploadTags" :suggestions="allTags" label="Теги для новых картинок (необязательно)" />
+
     <div class="im-usage">
       <div class="im-bar"><i :style="{ width: usedPct + '%' }"></i></div>
       <span>{{ formatSize(store.used) }} из {{ formatSize(store.limit) }} · {{ store.items.length }} шт.</span>
@@ -175,6 +185,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <span class="im-found">{{ filtering ? `Найдено: ${filtered.length} из ${store.items.length}` : '' }}</span>
     </div>
 
+    <div v-if="imageTags.length" class="tg-filter">
+      <button v-for="t in imageTags" :key="t" type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click="tagFilter = tagFilter === t ? '' : t">#{{ t }}</button>
+    </div>
+
     <p v-if="store.loaded && !store.items.length" class="cb-empty">Картинок пока нет. Загрузите первую.</p>
     <p v-else-if="store.items.length && !filtered.length" class="cb-empty">Ничего не найдено.</p>
     <p v-else-if="failed" class="cb-empty">Не получилось загрузить список картинок.</p>
@@ -188,6 +202,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <div class="im-meta">
           <b>{{ it.caption || it.name }}</b>
           <small v-if="it.description" class="im-desc">{{ it.description }}</small>
+          <small v-if="it.tags.length" class="im-tags">{{ it.tags.map(t => '#' + t).join(' ') }}</small>
           <small>{{ when(it.created) }} · {{ formatSize(it.size) }}</small>
         </div>
       </li>
@@ -205,6 +220,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <form class="im-info" @submit.prevent="saveInfo">
           <input v-model="caption" :maxlength="MAX_CAPTION" placeholder="Название" aria-label="Название" @input="saved = false" />
           <textarea v-model="description" :maxlength="MAX_DESCRIPTION" rows="2" placeholder="Описание" aria-label="Описание" @input="saved = false"></textarea>
+          <TagInput v-model="tags" :suggestions="allTags" @update:model-value="saved = false" />
           <button type="submit">{{ saved ? '✓ Сохранено' : 'Сохранить' }}</button>
           <a v-if="full" :href="full" :download="current.name" class="im-dl">Скачать</a>
           <button type="button" class="plain danger" @click="remove(current)">Удалить</button>
