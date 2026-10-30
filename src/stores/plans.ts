@@ -22,6 +22,8 @@ export interface Plan {
   time: string
   title: string
   text: string
+  /** tutor — материал от репетитора, own — моё личное */
+  kind: 'tutor' | 'own'
   tags: string[]
   created: number
   updated: number
@@ -90,7 +92,7 @@ export const usePlansStore = defineStore('plans', () => {
     loaded.value = true
   }
 
-  async function add(fields: { day: string; time: string; title: string; text: string; tags: string[] }): Promise<Plan> {
+  async function add(fields: { day: string; time: string; title: string; text: string; kind: 'tutor' | 'own'; tags: string[] }): Promise<Plan> {
     const res = await fetchT('/api/plans', { method: 'POST', headers: auth(true), body: JSON.stringify({ ...fields, tags: cleanTags(fields.tags) }) })
     if (!res.ok) throw new Error(apiError(res.status))
     const plan = (await res.json()) as Plan
@@ -98,7 +100,7 @@ export const usePlansStore = defineStore('plans', () => {
     return plan
   }
 
-  async function update(id: string, patch: Partial<Pick<Plan, 'day' | 'time' | 'title' | 'text' | 'tags'>>) {
+  async function update(id: string, patch: Partial<Pick<Plan, 'day' | 'time' | 'title' | 'text' | 'kind' | 'tags'>>) {
     const res = await fetchT(`/api/plans/${id}`, { method: 'PATCH', headers: auth(true), body: JSON.stringify(patch.tags ? { ...patch, tags: cleanTags(patch.tags) } : patch) })
     if (!res.ok) throw new Error(apiError(res.status))
     const fresh = (await res.json()) as Plan

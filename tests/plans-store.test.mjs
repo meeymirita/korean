@@ -23,7 +23,7 @@ afterEach(() => {
 
 /** Ответ сервера: тело и статус. */
 const reply = (body, status = 200) => ({ status, ok: status < 300, json: async () => body })
-const plan = (id, day, o = {}) => ({ id, day, time: '', title: id, text: '', tags: [], created: 1, updated: 1, files: [], ...o })
+const plan = (id, day, o = {}) => ({ id, day, time: '', title: id, text: '', kind: 'own', tags: [], created: 1, updated: 1, files: [], ...o })
 
 describe('записи календаря (магазин)', () => {
   test('проверка файла: PDF, Word, картинки; другое, большое и сверх места нельзя', () => {
@@ -50,7 +50,7 @@ describe('записи календаря (магазин)', () => {
       if (init?.method === 'POST') return reply({ id: 'f1', name: 'дз.pdf', mime: 'application/pdf', size: 40, thumb: 0, created: 1 }, 201)
       return reply({ ok: true })
     }
-    const p = await store.add({ day: '2026-11-07', time: '', title: 'Урок', text: '', tags: ['#Урок'] })
+    const p = await store.add({ day: '2026-11-07', time: '', title: 'Урок', text: '', kind: 'tutor', tags: ['#Урок'] })
     await store.upload(p.id, new File(['x'], 'дз.pdf'))
     assert.equal(store.used, 40)
     assert.equal(store.items[0].files.length, 1)

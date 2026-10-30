@@ -32,6 +32,8 @@ export interface Plan {
   time: string
   title: string
   text: string
+  /** tutor — материал от репетитора, own — моё личное */
+  kind: 'tutor' | 'own'
   tags: string[]
   created: number
   updated: number
@@ -71,7 +73,7 @@ export class PlansService {
     const byPlan = new Map<string, Plan['files']>()
     for (const { plan_id, ...f } of files) byPlan.set(plan_id, [...(byPlan.get(plan_id) ?? []), f])
     const items = this.db
-      .all<Omit<Plan, 'tags' | 'files'> & { tags: string }>('SELECT id, day, time, title, text, tags, created, updated FROM plans ORDER BY day DESC, time DESC, created DESC')
+      .all<Omit<Plan, 'tags' | 'files'> & { tags: string }>('SELECT id, day, time, title, text, kind, tags, created, updated FROM plans ORDER BY day DESC, time DESC, created DESC')
       .map(p => ({ ...p, tags: readTags(p.tags), files: byPlan.get(p.id) ?? [] }))
     return { items, used: this.usedBytes(), limit: MAX_DOCS_TOTAL }
   }
@@ -82,7 +84,7 @@ export class PlansService {
 
   private fields(body: Record<string, unknown> | undefined, partial: boolean) {
     const b = body ?? {}
-    const out: { day?: string; time?: string; title?: string; text?: string; tags?: string[] } = {}
+    const out: { day?: string; time?: string; title?: string; text?: string; kind?: string; tags?: string[] } = {}
     if (!partial || b.day !== undefined) {
       if (typeof b.day !== 'string' || !DAY.test(b.day) || Number.isNaN(Date.parse(b.day))) throw new BadRequestException({ error: 'invalid day' })
       out.day = b.day
@@ -99,6 +101,10 @@ export class PlansService {
       if (typeof b.text !== 'string' || b.text.length > MAX_PLAN_TEXT) throw new BadRequestException({ error: 'invalid text' })
       out.text = b.text.trim()
     }
+    if (b.kind !== undefined) {
+      if (b.kind !== 'tutor' && b.kind !== 'own') throw new BadRequestException({ error: 'invalid kind' })
+      out.kind = b.kind
+    }
     if (b.tags !== undefined) {
       const tags = parseTags(b.tags)
       if (!tags) throw new BadRequestException({ error: 'invalid tags' })
@@ -112,12 +118,12 @@ export class PlansService {
     if (this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM plans')!.n >= MAX_PLANS) throw new BadRequestException({ error: 'too many plans' })
     const now = Date.now()
     const id = randomBytes(8).toString('hex')
-    this.db.run('INSERT INTO plans (id, day, time, title, text, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', id, f.day!, f.time ?? '', f.title!, f.text ?? '', JSON.stringify(f.tags ?? []), now, now)
+    this.db.run('INSERT INTO plans (id, day, time, title, text, kind, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', id, f.day!, f.time ?? '', f.title!, f.text ?? '', f.kind ?? 'own', JSON.stringify(f.tags ?? []), now, now)
     return this.get(id)
   }
 
   private get(id: string): Plan {
-    const row = ID.test(id) ? this.db.get<Omit<Plan, 'tags' | 'files'> & { tags: string }>('SELECT id, day, time, title, text, tags, created, updated FROM plans WHERE id = ?', id) : undefined
+    const row = ID.test(id) ? this.db.get<Omit<Plan, 'tags' | 'files'> & { tags: string }>('SELECT id, day, time, title, text, kind, tags, created, updated FROM plans WHERE id = ?', id) : undefined
     if (!row) throw new NotFoundException({ error: 'not found' })
     const files = this.db.all<PlanFile>('SELECT * FROM plan_files WHERE plan_id = ? ORDER BY created', id).map(({ plan_id: _p, ...f }) => f)
     return { ...row, tags: readTags(row.tags), files }

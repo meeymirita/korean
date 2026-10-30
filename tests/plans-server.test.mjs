@@ -36,7 +36,12 @@ describe('сервер: записи календаря и файлы', () => {
     const res = await s.call('POST', '/api/plans', OWNER, { day: '2026-11-07', time: '19:30', title: ' Урок с Лерой ', text: 'домашка', tags: ['#Урок', 'лера'] })
     assert.equal(res.status, 201)
     plan = await res.json()
-    assert.deepEqual([plan.day, plan.time, plan.title, plan.tags, plan.files], ['2026-11-07', '19:30', 'Урок с Лерой', ['урок', 'лера'], []])
+    assert.deepEqual([plan.day, plan.time, plan.title, plan.tags, plan.files, plan.kind], ['2026-11-07', '19:30', 'Урок с Лерой', ['урок', 'лера'], [], 'own'])
+    assert.equal((await s.call('POST', '/api/plans', OWNER, { day: '2026-11-07', title: 'x', kind: 'чужое' })).status, 400)
+    const tutor = await (await s.call('POST', '/api/plans', OWNER, { day: '2026-11-07', title: 'От репетитора', kind: 'tutor' })).json()
+    assert.equal(tutor.kind, 'tutor')
+    assert.equal((await s.call('PATCH', `/api/plans/${tutor.id}`, OWNER, { kind: 'own' })).status, 200)
+    assert.equal((await s.call('DELETE', `/api/plans/${tutor.id}`, OWNER)).status, 200)
   })
 
   test('файлы: PDF, docx, doc и картинка принимаются, остальное нет', async () => {

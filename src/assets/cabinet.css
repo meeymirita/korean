@@ -343,3 +343,12 @@
 .study .ch-table table { margin-top: 6px; border-collapse: collapse; }
 .study .ch-table td, .study .ch-table th { padding: 2px 14px 2px 0; text-align: left; font-weight: 400; }
 
+
+/* вкладка «Неделя»: календарь слева, статистика за 7 дней справа */
+.study .wk-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 28px; }
+.study .wk-cal { flex: 0 0 340px; max-width: 100%; }
+.study .wk-side { flex: 1; min-width: 300px; }
+.study .wk-side .wk-chart { height: 150px; margin-top: 12px; padding: 12px 12px 6px; gap: 6px; }
+.study .wk-side .wk-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.study .wk-side .wk-stat { padding: 10px 14px; }
+.study .wk-side .wk-stat b { font-size: 26px; }

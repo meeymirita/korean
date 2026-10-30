@@ -152,6 +152,7 @@ export class Db implements OnModuleDestroy {
     if (!has('images', 'description')) this.sql.exec("ALTER TABLE images ADD COLUMN description TEXT NOT NULL DEFAULT ''")
     if (!has('notes', 'images')) this.sql.exec("ALTER TABLE notes ADD COLUMN images TEXT NOT NULL DEFAULT '[]'")
     if (!has('notes', 'tags')) this.sql.exec("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
+    if (!has('plans', 'kind')) this.sql.exec("ALTER TABLE plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'own'")
     if (!has('images', 'tags')) this.sql.exec("ALTER TABLE images ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
     if (!has('images', 'kind')) {
       // картинки заметок и обложка кабинета раньше лежали в общем списке: разносим по назначению
