@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, «Переведи предложение»
+
+- `data/korean/translate.ts` (`translateTasks`), страница `/korean/translate` (`TranslateView.vue`) на основе `TRANSLATIONS`. Тест `tests/translate.test.mjs`.
+
 ## 2026-10-30, «Похожие, но разные»
 
 - `data/korean/pairs.ts` (`pairTask`, `pairTasks` на основе `similarWords` и `mistakeWords`), страница `/korean/pairs` (`PairsView.vue`). Тест `tests/pairs.test.mjs`.
