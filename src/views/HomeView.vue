@@ -146,6 +146,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <button type="button" class="demo-x" aria-label="Закрыть" @click="demo = false">✕</button>
           <video class="demo-video" :src="DEMO_SRC" controls autoplay playsinline preload="auto"></video>
           <p class="demo-cap">Короткий обзор: кабинет, «Сегодня», игра, словарь, грамматика, справочник и тренажёры. Данные в видео демонстрационные, со звуком (музыка).</p>
+          <p class="demo-cap demo-note">Это демо-версия: в записи возможны подёргивания и резкие переходы между страницами. Позже видео заменим на более плавное.</p>
         </div>
       </div>
     </Teleport>
@@ -280,6 +281,7 @@ a.note:hover .val { color: var(--accent); }
 .demo-box { position: relative; width: min(1100px, 100%); padding: 14px; background: #fbf8ff; border: 1px solid #fff; border-radius: 22px; box-shadow: 0 30px 80px rgba(30, 36, 100, .4); }
 .demo-video { display: block; width: 100%; max-height: 74vh; background: #1e2350; border-radius: 14px; }
 .demo-cap { margin: 10px 4px 2px; font-size: 13px; line-height: 1.5; color: #6c70a8; }
+.demo-note { margin-top: 4px; font-size: 12px; opacity: .85; }
 .demo-x { position: absolute; top: -14px; right: -14px; width: 36px; height: 36px; font: inherit; color: #1e2350; background: #fff; border: 1px solid #e3def7; border-radius: 50%; box-shadow: 0 6px 18px rgba(30, 36, 100, .25); cursor: pointer; }
 html[data-theme='dark'] .demo-box { background: #1b1d40; border-color: rgba(255, 255, 255, .12); }
 html[data-theme='dark'] .demo-cap { color: #a9acd8; }
