@@ -163,7 +163,7 @@
 .study .cb-count { display: block; text-align: right; font-size: 12px; color: var(--muted); }
 .study .cb-count.at { color: #c0364f; font-weight: 600; }
 .study input.at, .study textarea.at { border-color: #d6455d; box-shadow: 0 0 0 2px rgba(214, 69, 93, 0.15); }
-.study .nt-bar button, .study .nt-acts button { padding: 9px 20px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--gold); border: 1px solid var(--gold); border-radius: 10px; cursor: pointer; }
+.study .nt-bar button, .study .nt-acts button { padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--gold); border: 1px solid var(--gold); border-radius: 12px; cursor: pointer; }
 .study .nt-bar button:disabled { opacity: .45; cursor: default; }
 .study .nt-acts .plain { color: var(--ink); background: transparent; border-color: var(--line); }
 .study .nt-acts .plain:hover { border-color: var(--gold); }
@@ -218,7 +218,7 @@
 .study .im-info { display: flex; flex-wrap: wrap; gap: 8px; }
 .study .im-info input { flex: 1 1 220px; min-width: 0; padding: 10px 14px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; outline: none; }
 .study .im-info input:focus { border-color: var(--gold); }
-.study .im-info button, .study .im-dl { padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--gold); border: 1px solid var(--gold); border-radius: 10px; text-decoration: none; cursor: pointer; }
+.study .im-info button, .study .im-dl { padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: var(--gold); border: 1px solid var(--gold); border-radius: 12px; text-decoration: none; cursor: pointer; }
 .study .im-info .plain, .study .im-dl { color: var(--ink); background: transparent; border-color: var(--line); }
 .study .im-info .plain:hover, .study .im-dl:hover { border-color: var(--gold); }
 .study .im-info .danger:hover { border-color: var(--bad, #a4402f); color: var(--bad, #a4402f); }
@@ -268,7 +268,7 @@
 .ni .ni-wait { display: grid; place-items: center; width: 100%; height: 100%; color: #6c70a8; }
 .ni-view { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: rgba(32, 38, 92, .7); backdrop-filter: blur(6px); cursor: zoom-out; }
 .ni-view img { max-width: min(92vw, 1100px); max-height: 88vh; border-radius: 16px; box-shadow: 0 30px 80px rgba(0, 0, 0, .4); }
-.study .nt-add { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
+.study .nt-add { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; font-size: 14px; font-weight: 600; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
 .study .nt-add:hover { border-color: var(--gold); }
 .study .nt-add input { display: none; }
 .study .nt-more { padding: 0; font: inherit; font-size: 13px; font-weight: 600; color: var(--gold); background: none; border: 0; cursor: pointer; }
@@ -323,6 +323,9 @@
 
 .study .share-btn { margin-top: 10px; padding: 7px 16px; font: inherit; font-size: 13px; font-weight: 600; color: var(--gold); background: transparent; border: 1px solid var(--line); border-radius: 99px; cursor: pointer; }
 .study .share-btn:hover { background: var(--gold-soft); }
+.study .share-btn + .share-btn { margin-left: 8px; }
+.study .sim { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.study .sim-none { font-size: 13px; color: var(--muted); }
 .study .pg-share { padding: 4px 8px; font-size: 14px; background: transparent; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 
 .study .pub-opt { display: block; margin-top: 12px; font-size: 13.5px; color: var(--muted); }
@@ -331,7 +334,7 @@
 /* графики кабинета */
 .study .pg-days { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 18px; margin-top: 16px; }
 .study .pg-days .pg-cal { margin-top: 0; }
-.study .pg-days-ch { flex: 1; min-width: 320px; }
+.study .pg-days-ch { flex: 1; min-width: min(320px, 100%); }
 .study .ch { position: relative; margin: 0; padding: 14px 16px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
 .study .ch figcaption { font-size: 15px; font-weight: 600; }
 .study .ch svg { display: block; width: 100%; height: auto; margin-top: 6px; overflow: visible; }

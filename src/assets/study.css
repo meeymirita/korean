@@ -136,6 +136,8 @@
 .study .rich .exl div > span { color: var(--muted); text-align: right; font-size: 14px; }
 .study .rich table.t { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; background: var(--surface);
   border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+/* на узком экране широкая таблица листается вбок внутри себя, а не растягивает страницу */
+@media (max-width: 640px) { .study .rich table.t { display: block; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; } }
 .study .rich table.t th { background: var(--gold-soft); text-align: left; padding: 8px 10px; font-family: var(--mono);
   font-size: 10.5px; font-weight: 400; text-transform: uppercase; letter-spacing: .1em; border-bottom: 1px solid var(--line); }
 .study .rich table.t td { padding: 8px 10px; border-top: 1px solid var(--line-soft); vertical-align: top; }

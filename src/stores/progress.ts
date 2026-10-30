@@ -100,6 +100,17 @@ export const dayKey = (d = new Date()) =>
 
 const obj = <T extends object>(v: unknown, fallback: T): T => (v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : fallback)
 
+/** Из статистики слова остаются только известные числа: лишние поля из чужого файла не попадают в данные. */
+function cleanWords(words: Record<string, Partial<WordStat>>): Record<string, WordStat> {
+  const out: Record<string, WordStat> = {}
+  for (const [k, w] of Object.entries(words)) {
+    if (!w || typeof w !== 'object') continue
+    const n = (v: unknown) => (Number.isFinite(Number(v)) ? Math.max(0, Number(v)) : 0)
+    out[k] = { ok: n(w.ok), bad: n(w.bad), streak: n(w.streak), last: n(w.last), ...(w.kd ? { kd: n(w.kd) } : {}) }
+  }
+  return out
+}
+
 /** Приводит данные из файла или с сервера к безопасному виду; старые версии без новых полей тоже принимаются. */
 export function normalize(raw: unknown): ProgressData | null {
   if (!raw || typeof raw !== 'object') return null
@@ -114,7 +125,7 @@ export function normalize(raw: unknown): ProgressData | null {
     days: obj(r.days, {}),
     all: obj(r.all, {}),
     time: obj(r.time, {}),
-    words: obj(r.words, {}),
+    words: cleanWords(obj(r.words, {})),
     sources: obj(r.sources, {}),
     log: Array.isArray(r.log) ? r.log.slice(0, LOG_MAX) : [],
     profile: {

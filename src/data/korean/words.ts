@@ -68,3 +68,26 @@ export const SE: Word[] = (() => {
   })
   return out
 })()
+
+const tokens = (t: string) => t.split(/[^а-яa-z0-9ё]+/).filter(w => w.length > 2)
+
+/**
+ * Похожие слова для подсказки в словаре: из той же темы, с общими слогами (например, 학생 и 학교) или общим словом в переводе
+ * («старший брат» и «старший»). Самые похожие первыми, при равенстве меньший номер; само слово в список не попадает.
+ */
+export function similarWords(w: Word, limit = 6): Word[] {
+  const syl = new Set([...w.k])
+  const tr = new Set(tokens(w.ft))
+  return D.filter(d => d.n !== w.n)
+    .map(d => {
+      let s = 0
+      s += 2 * d.c.filter(c => w.c.includes(c)).length
+      s += 3 * [...new Set([...d.k])].filter(ch => syl.has(ch)).length
+      s += 3 * tokens(d.ft).filter(t => tr.has(t)).length
+      return [s, d] as const
+    })
+    .filter(([s]) => s >= 3)
+    .sort((a, b) => b[0] - a[0] || a[1].n - b[1].n)
+    .slice(0, limit)
+    .map(([, d]) => d)
+}

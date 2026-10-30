@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
-import { CATN, D, parseQuery, score, type Word } from '@/data/korean/words'
+import { CATN, D, parseQuery, score, similarWords, type Word } from '@/data/korean/words'
 import { esc, hl } from '@/data/korean/render'
 import { usePersisted } from '@/composables/usePersisted'
 import { useShareCard } from '@/composables/useShareCard'
@@ -14,7 +14,17 @@ if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с 
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
 const picked = ref<Word | null>(null)
 const openN = ref<number | null>(null)
-const toggle = (n: number) => (openN.value = openN.value === n ? null : n)
+const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null))
+/** Для какого слова показаны «похожие» */
+const simN = ref<number | null>(null)
+const similar = computed(() => { const w = D.find(d => d.n === simN.value); return w ? similarWords(w) : [] })
+function openWord(d: Word) {
+  q.value = d.k
+  picked.value = null
+  openN.value = null
+  simN.value = null
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 const input = ref<HTMLInputElement>()
 
 const qs = computed(() => parseQuery(q.value))
@@ -112,6 +122,13 @@ const shareWord = (d: Word) =>
         <div v-if="openN === d.n" class="row-detail">
           <SentenceBreakdown :sentence="d.s" />
           <button class="share-btn" :disabled="sharing" @click="shareWord(d)">🖼 Поделиться словом</button>
+          <button class="share-btn" :aria-pressed="simN === d.n" @click="simN = simN === d.n ? null : d.n">≈ Похожие слова</button>
+          <div v-if="simN === d.n" class="sim">
+            <template v-if="similar.length">
+              <button v-for="s in similar" :key="s.n" class="chip" :title="s.r" @click="openWord(s)"><span class="ko">{{ s.k }}</span> · {{ s.t }}</button>
+            </template>
+            <span v-else class="sim-none">Похожих слов пока не нашлось.</span>
+          </div>
         </div>
       </template>
     </div>

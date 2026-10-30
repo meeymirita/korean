@@ -151,6 +151,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 .nav { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); font-size: 12.5px; color: var(--soft); }
 .nav a { position: relative; transition: .2s; }
 .nav a:hover { color: var(--ink); }
+.nav a { white-space: nowrap; }
 .nav .enter { padding: 9px 18px; border: 1px solid var(--ink); border-radius: 22px; color: var(--ink); font-weight: 600; font-size: 12px; transition: .22s; }
 .nav .enter:hover { background: var(--ink); color: #fff; }
 
@@ -230,6 +231,8 @@ a.note:hover .val { color: var(--accent); }
 @media (max-width: 1100px) { .footer .foot-note { white-space: normal; flex-basis: 100%; order: 3; } }
 @media (max-width: 640px) {
   .hide-sm { display: none; }
+  .brand .sub { display: none; }
+  .nav { gap: 14px; }
   .show-sm { display: inline; }
   .frame { display: none; }
   .stage { padding: 24px; }

@@ -78,7 +78,7 @@ onBeforeUnmount(() => dispose?.())
 .game .game-top { max-width: none; margin: 0; padding: 18px clamp(16px, 2.4vw, 40px) 0; display: flex; align-items: flex-end;
   justify-content: space-between; gap: 16px; font-size: 14px; font-weight: 600; }
 .game .game-top a { color: var(--gold); }
-.game .game-links { display: flex; gap: 16px; }
+.game .game-links { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .game .game-top a:hover { text-decoration: underline; }
 .game .game-title { text-align: center; }
 .game .game-title h1 { margin: 2px 0 0; font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 34px; line-height: 1; }

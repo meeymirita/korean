@@ -12,7 +12,7 @@ export interface ArchiveStamp {
  */
 export function archiveReminder(last: ArchiveStamp | null, problems: string[], now = Date.now()): string {
   if (problems.length) return ''
-  if (!last) return 'Полный архив ещё ни разу не отправлялся. Нажмите «Сделать архив и отправить» в «Настройках».'
+  if (!last) return 'Полный архив ещё ни разу не отправлялся. Нажмите «Сделать архив и отправить».'
   const okTime = last.ok ? last.time : 0
   if (okTime && now - okTime <= ARCHIVE_STALE_MS) return ''
   const days = okTime ? Math.floor((now - okTime) / 86_400_000) : 0

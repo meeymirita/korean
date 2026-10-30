@@ -28,7 +28,7 @@
 
 ## Как выглядит платформа
 
-Ниже те же 19 страниц и описания, что на странице «О платформе» (`/about`). Скриншоты сняты на демонстрационных данных.
+Ниже те же 20 страниц и описания, что на странице «О платформе» (`/about`). Скриншоты сняты на демонстрационных данных.
 
 ### 01. Главная страница
 
@@ -70,7 +70,15 @@
 
 Адрес: `/korean/cabinet` · открывается по токену
 
-### 06. Слова
+### 06. Настройки и защита
+
+<p align="center"><img src="src/assets/about/settings.webp" alt="Страница «Настройки и защита»" width="860"></p>
+
+Профиль, цель дня, темы слов и группы игры; защита кодом из письма (после токена приходит 4 цифры на почту); резервные копии: кнопка «Сделать архив и отправить» шифрует всё паролем и шлёт на почту, а раз в неделю делает это сама; ночная копия на сервере и гостевые токены.
+
+Адрес: `/korean/cabinet?tab=settings` · открывается по токену
+
+### 07. Слова
 
 <p align="center"><img src="src/assets/about/words.webp" alt="Страница «Слова»" width="860"></p>
 
@@ -78,7 +86,7 @@
 
 Адрес: `/korean/words`
 
-### 07. Грамматика
+### 08. Грамматика
 
 <p align="center"><img src="src/assets/about/grammar.webp" alt="Страница «Грамматика»" width="860"></p>
 
@@ -86,7 +94,7 @@
 
 Адрес: `/korean/grammar`
 
-### 08. Шпаргалка
+### 09. Шпаргалка
 
 <p align="center"><img src="src/assets/about/cheat.webp" alt="Страница «Шпаргалка»" width="860"></p>
 
@@ -94,7 +102,7 @@
 
 Адрес: `/korean/ref/cheat`
 
-### 09. Разговорник
+### 10. Разговорник
 
 <p align="center"><img src="src/assets/about/talk.webp" alt="Страница «Разговорник»" width="860"></p>
 
@@ -102,7 +110,7 @@
 
 Адрес: `/korean/ref/talk`
 
-### 10. Хангыль
+### 11. Хангыль
 
 <p align="center"><img src="src/assets/about/hangul.webp" alt="Страница «Хангыль»" width="860"></p>
 
@@ -110,7 +118,7 @@
 
 Адрес: `/korean/ref/hangul`
 
-### 11. Алфавит
+### 12. Алфавит
 
 <p align="center"><img src="src/assets/about/alphabet.webp" alt="Страница «Алфавит»" width="860"></p>
 
@@ -118,7 +126,7 @@
 
 Адрес: `/korean/ref/alphabet`
 
-### 12. Правила чтения
+### 13. Правила чтения
 
 <p align="center"><img src="src/assets/about/reading.webp" alt="Страница «Правила чтения»" width="860"></p>
 
@@ -126,7 +134,7 @@
 
 Адрес: `/korean/ref/reading`
 
-### 13. Примеры предложений
+### 14. Примеры предложений
 
 <p align="center"><img src="src/assets/about/sentences.webp" alt="Страница «Примеры предложений»" width="860"></p>
 
@@ -134,7 +142,7 @@
 
 Адрес: `/korean/ref/sentences`
 
-### 14. Числа и счёт
+### 15. Числа и счёт
 
 <p align="center"><img src="src/assets/about/numbers.webp" alt="Страница «Числа и счёт»" width="860"></p>
 
@@ -142,7 +150,7 @@
 
 Адрес: `/korean/ref/numbers`
 
-### 15. Тренажёры
+### 16. Тренажёры
 
 <p align="center"><img src="src/assets/about/trainers.webp" alt="Страница «Тренажёры»" width="860"></p>
 
@@ -150,7 +158,7 @@
 
 Адрес: `/korean/trainers` · открывается по токену
 
-### 16. Повторение
+### 17. Повторение
 
 <p align="center"><img src="src/assets/about/review.webp" alt="Страница «Повторение»" width="860"></p>
 
@@ -158,7 +166,7 @@
 
 Адрес: `/korean/review` · открывается по токену
 
-### 17. Сад воспоминаний
+### 18. Сад воспоминаний
 
 <p align="center"><img src="src/assets/about/garden.webp" alt="Страница «Сад воспоминаний»" width="860"></p>
 
@@ -166,7 +174,7 @@
 
 Адрес: `/korean/garden` · открывается по токену
 
-### 18. Игра на слова
+### 19. Игра на слова
 
 <p align="center"><img src="src/assets/about/game.webp" alt="Страница «Игра на слова»" width="860"></p>
 
@@ -176,7 +184,7 @@
 
 ---
 
-### 19. Моя визитка
+### 20. Моя визитка
 
 <p align="center"><img src="src/assets/about/me.webp" alt="Страница «Моя визитка»" width="860"></p>
 

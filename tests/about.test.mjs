@@ -23,13 +23,13 @@ describe('«О платформе»: слайды', () => {
     for (const s of ABOUT_SLIDES) {
       assert.ok(s.to.startsWith('/'), s.id)
       if (s.to === '/' || s.to === '/game') continue
-      const id = s.to.split('/').pop()
+      const id = s.to.split('?')[0].split('/').pop() // ?tab=… в адресе вкладки не считается
       assert.ok(routerSrc.includes(`'${id}'`) || sectionsSrc.includes(`id: '${id}'`), `страницы ${s.to} нет в роутере`)
     }
   })
 
   test('закрытые токеном страницы помечены, открытые нет', () => {
     const priv = ABOUT_SLIDES.filter(s => s.private).map(s => s.id)
-    assert.deepEqual(priv.sort(), ['cabinet', 'game', 'garden', 'review', 'today', 'trainers'])
+    assert.deepEqual(priv.sort(), ['cabinet', 'game', 'garden', 'review', 'settings', 'today', 'trainers'])
   })
 })

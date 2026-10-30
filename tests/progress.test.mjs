@@ -179,6 +179,50 @@ describe('профиль, настройки, копия', () => {
     assert.equal(await store.importJson('{"v":2}'), false)
   })
 
+  test('круг «экспорт → сброс → импорт» возвращает слова, дни, время, журнал, профиль и настройки', async () => {
+    store.record({ word: '사람', ok: true, source: 'game' })
+    store.record({ word: '사람', ok: false, source: 'today' })
+    store.record({ word: '친구', ok: true, source: 'trainer' })
+    store.setProfile({ name: 'Хлеб', avatar: '🌿' })
+    store.setSettings({ goal: 50 })
+    store.addTime(120)
+    const before = JSON.parse(store.exportJson())
+    assert.equal(before.v, 1)
+    await store.reset()
+    assert.deepEqual(store.data.words, {})
+    assert.equal(await store.importJson(JSON.stringify(before)), true)
+    const after = JSON.parse(store.exportJson())
+    after.updated = before.updated = 0 // метка времени импорта меняется
+    assert.deepEqual(after, before)
+    assert.equal(store.data.profile.name, 'Хлеб')
+    assert.equal(store.goal, 50)
+  })
+
+  test('импорт принимает копию старой версии без времени, профиля и настроек', async () => {
+    const old = JSON.stringify({ v: 1, xp: 40, days: { '2026-10-01': 3 }, all: { '2026-10-01': 4 }, words: { 사람: { ok: 2, bad: 0, streak: 2, last: 5 } } })
+    assert.equal(await store.importJson(old), true)
+    assert.equal(store.data.xp, 40)
+    assert.deepEqual(store.data.time, {})
+    assert.equal(store.goal, 20)
+    assert.equal(store.data.profile.avatar, '🌸')
+  })
+
+  test('импорт отбрасывает лишние поля и не доверяет странным числам', async () => {
+    const evil = { v: 1, xp: 5, hack: '<script>alert(1)</script>', words: { 사람: { ok: 1, bad: 0, streak: 1, last: 1, extra: 'x' } }, profile: { name: 'x'.repeat(500) } }
+    assert.equal(await store.importJson(JSON.stringify(evil)), true)
+    const out = JSON.parse(store.exportJson())
+    assert.ok(!('hack' in out))
+    assert.ok(!('extra' in out.words['사람']))
+    assert.ok(out.profile.name.length < 100, 'имя не бесконечное')
+  })
+
+  test('файл с пустым содержимым, массивом, null и числом не принимается и данные не трогает', async () => {
+    store.record({ word: '사람', ok: true, source: 'game' })
+    const xp = store.data.xp
+    for (const bad of ['', '[]', 'null', '5', '"текст"', '{', '{"v":"1"}']) assert.equal(await store.importJson(bad), false, bad)
+    assert.equal(store.data.xp, xp)
+  })
+
   test('сброс обнуляет прогресс, но оставляет профиль и настройки', async () => {
     store.setProfile({ name: 'Хлеб' })
     store.setSettings({ goal: 50 })
