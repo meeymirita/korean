@@ -31,6 +31,7 @@ export const sections: Section[] = [
   { id: 'mistakes', num: '10', menu: 'Мои ошибки', kicker: 'Слабые места', title: 'Мои ошибки', sub: 'слова, в которых ошибаешься чаще всего, и быстрая тренировка', private: true, group: 'extra' },
   { id: 'marks', num: '11', menu: 'Важное', kicker: 'Закладки', title: 'Важное', sub: 'слова и правила, отмеченные звёздочкой', private: true, group: 'extra' },
   { id: 'particles', num: '12', menu: 'Частицы', kicker: 'Тренажёр', title: 'Частицы и окончания', sub: 'вставь нужную форму в предложение: для каждого правила свой набор', private: true, group: 'extra' },
+  { id: 'pairs', num: '13', menu: 'Похожие слова', kicker: 'Тренажёр', title: 'Похожие, но разные', sub: 'выбери верное слово среди похожих', private: true, group: 'extra' },
   { id: 'garden', num: '08', menu: 'Сад', kicker: 'Прогресс слов', title: 'Сад воспоминаний', sub: 'каждое выученное слово — цветок, а ещё коллекция карточек', private: true },
 ]
 

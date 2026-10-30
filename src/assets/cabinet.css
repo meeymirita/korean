@@ -417,3 +417,4 @@
 .study .xb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--ink); background: var(--bad-bg); border-left: 4px solid var(--bad); border-radius: 0 12px 12px 0; }
 .study .xb-b { padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--gold); background: transparent; border: 1px solid var(--line); border-radius: 99px; cursor: pointer; }
 .study .xb-b:hover { border-color: var(--gold); }
+.study .sub-note { margin: 12px 0 0; color: var(--muted); font-size: 14px; }

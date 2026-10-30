@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, «Похожие, но разные»
+
+- `data/korean/pairs.ts` (`pairTask`, `pairTasks` на основе `similarWords` и `mistakeWords`), страница `/korean/pairs` (`PairsView.vue`). Тест `tests/pairs.test.mjs`.
+
 ## 2026-10-30, тренажёр частиц
 
 - `data/korean/particles.ts` (`particleSets`, `particleTasks` на основе `ruleTasks`), страница `/korean/particles` (`ParticlesView.vue`, `TaskSession`), ссылка в «Тренажёрах». Тест `tests/particles.test.mjs`.
