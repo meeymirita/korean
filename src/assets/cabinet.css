@@ -189,7 +189,8 @@
 .study .im-drop input { display: none; }
 .study .im-drop b { font-size: 16px; }
 .study .im-drop small, .study .im-usage span { font-size: 13px; color: var(--muted); }
-.study .im-usage { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.study .im > .tg-in { margin-top: 14px; }
+.study .im-usage { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .study .im-bar { flex: 1 1 160px; max-width: 280px; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
 .study .im-bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; }
 .study .im-usage .im-ok { color: var(--gold); font-weight: 600; }
