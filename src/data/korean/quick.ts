@@ -36,8 +36,14 @@ export function quickTasks(p: ProgressData, n = QUICK_SIZE, now = Date.now()): T
     }
   }
 
-  const grams = G.filter(g => g.st === 'ok')
-  if (grams.length) for (const t of ruleTasks(shuffle(grams)[0]!, RULE)) add(t)
+  // у части правил заданий нет: берём первое случайное правило, для которого они есть
+  for (const g of shuffle(G.filter(g => g.st === 'ok'))) {
+    const list = ruleTasks(g, RULE)
+    if (list.length) {
+      list.forEach(add)
+      break
+    }
+  }
 
   for (const t of randomTasks(n * 2, p.settings.cats)) add(t)
 

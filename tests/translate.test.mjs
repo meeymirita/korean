@@ -27,7 +27,7 @@ describe('перевод предложений', () => {
   test('русский → корейский: верный ответ — предложение с этим переводом', () => {
     for (const t of translateTasks('ru-ko', 10)) {
       assert.equal(t.title, 'Переведи на корейский')
-      assert.equal(t.answer, koOf.get(t.prompt))
+      assert.equal(ruOf.get(t.answer), t.prompt) // у двух предложений может быть один русский перевод, поэтому сверяем в эту сторону
       assert.ok(t.options.includes(t.answer))
     }
   })
