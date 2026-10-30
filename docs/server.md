@@ -42,7 +42,7 @@
 ## API (все запросы с заголовком `Authorization: Bearer токен`, кроме `/api/health`)
 - `GET /api/progress`: весь прогресс одним объектом (как раньше ждал сайт: `xp, days, all, time, words, sources, log, profile, settings`),
   собирается из таблиц.
-- `POST /api/ops` `{ ops: [...] }` (с `reset` и `import` нужен заголовок `X-Confirm-Token`): пачка действий (до 500): `answer`, `reset`, `profile` (имя, картинка, `cover` — id обложки кабинета), `settings`, `time` (секунды занятий за день, 1–3600), `import`. Если хоть одно неверное,
+- `POST /api/ops` `{ ops: [...] }` (с `reset` и `import` нужен заголовок `X-Confirm-Token`): пачка действий (до 500): `answer`, `reset`, `profile` (имя, картинка, `cover` — id обложки кабинета), `settings` (цель, темы, группы игры, закладки `marks`, свои сочетания клавиш `keys`: id пункта → `mod+alt+shift+KeyG`, не больше 40, без повторов), `time` (секунды занятий за день, 1–3600), `import`. Если хоть одно неверное,
   не применяется ничего (400). Правила (что выучено, как растёт серия) те же, что на сайте: `tests/parity.test.mjs` сравнивает.
 - `POST /api/session`: запись входа в журнал. `GET/PUT /api/notes`: заметки целиком (у каждой `images` — до 10 id картинок).
 - `GET/POST /api/guests`, `DELETE /api/guests/:id`: гостевые токены (создание возвращает токен один раз и требует `X-Confirm-Token`).

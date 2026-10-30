@@ -465,3 +465,25 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 /* на телефоне баннер ниже, иначе он занимает весь экран */
 @media (max-width: 860px) { .study .cb-cover { min-height: 250px; } }
 @media (max-width: 560px) { .study .cb-cover .cb-head { padding-right: 0; } .study .cb-lvl { top: 16px; bottom: auto; right: 16px; padding: 6px 12px; min-width: 0; } }
+
+/* настройки: блок «Клавиши» */
+.study .kb-group { margin-top: 18px; }
+.study .kb-group h4 { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.study .kb-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.study .kb-list li { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+.study .kb-list li.rec { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(139, 124, 240, .18); }
+.study .kb-list.locked li { opacity: .75; }
+.study .kb-name { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.study .kb-combo { padding: 3px 9px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; white-space: nowrap; }
+.study .kb-none { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.study .kb-wait { font-size: 13px; font-weight: 600; color: var(--gold); white-space: nowrap; }
+.study .kb-wait small { font-weight: 400; color: var(--muted); }
+.study .kb-acts { display: flex; gap: 6px; }
+.study .kb-acts .plain, .study .kb-foot .plain { padding: 6px 12px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.study .kb-acts .plain:hover, .study .kb-foot .plain:hover { border-color: var(--gold); }
+.study .kb-hint { margin-top: 12px; color: var(--bad, #a4402f); }
+.study .kb-foot { margin-top: 18px; }
+/* подсказка сочетания рядом с пунктом меню и вкладкой кабинета */
+.study kbd.kb { margin-left: 8px; padding: 1px 6px; font: inherit; font-size: 11px; font-weight: 600; color: var(--muted); background: rgba(255, 255, 255, .7); border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
+.study .chip kbd.kb { margin-left: 6px; }
+@media (max-width: 860px) { .study .kb-list { grid-template-columns: 1fr; } .study .kb-list li { flex-wrap: wrap; } }

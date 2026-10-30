@@ -35,7 +35,7 @@ describe('normalize', () => {
     assert.equal(d.xp, 120)
     assert.deepEqual(d.profile, { name: '', avatar: '🌸', cover: '' })
     assert.deepEqual(d.time, {})
-    assert.deepEqual(d.settings, { goal: 20, cats: [], gameCats: null, marks: [] })
+    assert.deepEqual(d.settings, { goal: 20, cats: [], gameCats: null, marks: [], keys: {} })
     assert.deepEqual(d.log, [])
   })
 
@@ -233,6 +233,15 @@ describe('профиль, настройки, копия', () => {
     assert.deepEqual(store.data.settings.marks, ['g:ayo'])
     const d = normalize({ v: 1, settings: { marks: ['w:친구', 'w:친구', 5, 'плохо', 'g:x'] } })
     assert.deepEqual(d.settings.marks, ['w:친구', 'g:x'])
+  })
+
+  test('сочетания клавиш: попадают в настройки и на сервер, мусор из файла отбрасывается', () => {
+    store.setSettings({ keys: { 'nav:grammar': 'mod+shift+KeyG' } })
+    assert.deepEqual(store.data.settings.keys, { 'nav:grammar': 'mod+shift+KeyG' })
+    const d = normalize({ v: 1, settings: { keys: { 'nav:grammar': 'mod+KeyG', 'nav:words': 'mod+KeyG', 'cab:notes': 'KeyN', 'nav:zzz': 'mod+KeyJ', 'nav:today': 'mod+KeyK' } } })
+    // повтор сочетания: остаётся пункт, который раньше в меню (Слова)
+    assert.deepEqual(d.settings.keys, { 'nav:words': 'mod+KeyG' })
+    assert.deepEqual(normalize({ v: 1 }).settings.keys, {})
   })
 
   test('закладок не больше лимита', () => {

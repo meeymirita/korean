@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { visit } from '@/composables/useLastVisited'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
@@ -14,12 +14,16 @@ import { sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { themeDark, toggleTheme } from '@/lib/theme'
+import { comboFromEvent } from '@/lib/shortcuts'
 import { useProgressStore } from '@/stores/progress'
+import { useShortcutsStore } from '@/stores/shortcuts'
 
 const counts: Record<string, number> = { words: D.length, grammar: G.length }
 const icons: Record<string, string> = { game: '◈', home: '⌂', today: '☀', cabinet: '♡', words: '▤', grammar: '◉', ref: '▣', trainers: '✧', review: '↻', garden: '🌸' }
 const progress = useProgressStore()
 const route = useRoute()
+const router = useRouter()
+const shortcuts = useShortcutsStore()
 watch(() => route.path, visit, { immediate: true })
 
 /** Режим «только задание»: боковое меню спрятано, страница на всю ширину. Выбор помнится на устройстве; клавиша F переключает. */
@@ -39,6 +43,16 @@ function setFocus(v: boolean) {
   }
 }
 function onKey(e: KeyboardEvent) {
+  // свои сочетания пунктов меню и вкладок кабинета (⌘/Ctrl + клавиша); во время записи в «Настройках» не срабатывают
+  const combo = comboFromEvent(e)
+  if (combo) {
+    const to = shortcuts.capturing ? null : shortcuts.targetFor(combo)
+    if (to) {
+      e.preventDefault()
+      void router.push(to)
+    }
+    return
+  }
   const el = e.target as HTMLElement | null
   if (e.key.toLowerCase() !== 'f' || e.ctrlKey || e.metaKey || e.altKey) return
   if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return
@@ -66,6 +80,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <span class="line"></span>
           <span class="ic">{{ icons[s.id] }}</span>
           <span>{{ s.menu }}</span>
+          <kbd v-if="shortcuts.labelOf('nav:' + s.id)" class="kb">{{ shortcuts.labelOf('nav:' + s.id) }}</kbd>
           <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену">🔒</span>
           <span v-else-if="counts[s.id]" class="ct">{{ counts[s.id] }}</span>
           <span v-else class="num">{{ s.num }}</span>
@@ -74,6 +89,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <span class="line"></span>
           <span class="ic">{{ icons.game }}</span>
           <span>Игра на слова</span>
+          <kbd v-if="shortcuts.labelOf('nav:game')" class="kb">{{ shortcuts.labelOf('nav:game') }}</kbd>
           <span v-if="!progress.unlocked" class="lock" title="Откроется после входа по токену">🔒</span>
         </RouterLink>
         </template>

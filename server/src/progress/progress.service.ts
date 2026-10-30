@@ -26,6 +26,8 @@ export interface Settings {
   gameCats: Record<string, number> | null
   /** закладки: «w:слово» и «g:id правила» */
   marks: string[]
+  /** свои сочетания клавиш: id пункта меню или вкладки кабинета → «mod+alt+shift+KeyG» */
+  keys: Record<string, string>
 }
 
 const bad = (msg: string): never => {
@@ -38,9 +40,12 @@ const DEFAULT_PROFILE: Profile = { name: '', avatar: '🌸', cover: '' }
 const IMAGE_ID = /^[a-f0-9]{16}$/
 /** За одно действие таймера можно записать не больше часа. */
 const MAX_TIME_OP = 3600
-const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [] }
+const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [], keys: {} }
 const MARK = /^[wg]:.{1,40}$/
 const MAX_MARKS = 500
+const KEY_ID = /^(nav|cab):[a-z]{1,20}$/
+const KEY_COMBO = /^mod(\+alt)?(\+shift)?\+[A-Za-z0-9]{1,20}$/
+const MAX_KEYS = 40
 const MOOD_DAYS = 400
 const MOODS = ['easy', 'ok', 'hard'] as const
 
@@ -214,6 +219,13 @@ export class ProgressService {
       if (!Array.isArray(op.marks) || op.marks.length > MAX_MARKS) bad('invalid marks')
       const list = (op.marks as unknown[]).map(m => (typeof m === 'string' && MARK.test(m) ? m : bad('invalid marks')))
       cur.marks = [...new Set(list)]
+    }
+    if (op.keys !== undefined) {
+      const k = op.keys as Record<string, unknown> | null
+      if (!k || typeof k !== 'object' || Array.isArray(k) || Object.keys(k).length > MAX_KEYS) return bad('invalid keys')
+      const entries = Object.entries(k).map(([id, c]) => (KEY_ID.test(id) && typeof c === 'string' && KEY_COMBO.test(c) ? ([id, c] as const) : bad('invalid keys')))
+      if (new Set(entries.map(e => e[1])).size !== entries.length) bad('invalid keys')
+      cur.keys = Object.fromEntries(entries)
     }
     this.db.setMeta('settings', JSON.stringify(cur))
   }

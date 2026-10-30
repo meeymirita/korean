@@ -1,3 +1,5 @@
+import { SHORTCUT_IDS } from '@/data/shortcuts'
+import { cleanBindings } from '@/lib/shortcuts'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf } from '@/data/levels'
@@ -37,6 +39,8 @@ export interface Settings {
   gameCats: Record<string, number> | null
   /** закладки: «w:слово» и «g:id правила» */
   marks: string[]
+  /** свои сочетания клавиш: id пункта меню или вкладки кабинета → «mod+alt+shift+KeyG» */
+  keys: Record<string, string>
 }
 
 export interface ProgressData {
@@ -70,7 +74,7 @@ export type Op =
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
   | { type: 'time'; day: string; seconds: number }
   | { type: 'mood'; day: string; mood: 'easy' | 'ok' | 'hard' }
-  | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null; marks?: string[] }
+  | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null; marks?: string[]; keys?: Record<string, string> }
   | { type: 'import'; data: ProgressData }
 
 export interface GuestToken {
@@ -94,7 +98,7 @@ const LOG_MAX = 300
 export const KNOWN_STREAK = 3
 
 const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
-const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [] })
+const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [], keys: {} })
 export const MAX_MARKS = 500
 export const markKey = (kind: 'w' | 'g', id: string) => `${kind}:${id}`
 const empty = (): ProgressData => ({
@@ -156,6 +160,7 @@ export function normalize(raw: unknown): ProgressData | null {
       cats: Array.isArray(settings.cats) ? settings.cats.filter(c => typeof c === 'string') : [],
       gameCats: settings.gameCats && typeof settings.gameCats === 'object' ? settings.gameCats : null,
       marks: Array.isArray(settings.marks) ? [...new Set(settings.marks.filter((m): m is string => typeof m === 'string' && /^[wg]:.{1,40}$/.test(m)))].slice(0, MAX_MARKS) : [],
+      keys: cleanBindings(settings.keys, SHORTCUT_IDS),
     },
   }
 }
@@ -364,6 +369,7 @@ export const useProgressStore = defineStore('progress', () => {
     if (s.cats) cur.cats = s.cats
     if (s.gameCats !== undefined) cur.gameCats = s.gameCats
     if (s.marks) cur.marks = s.marks
+    if (s.keys) cur.keys = s.keys
     data.value.updated = Date.now()
     queue({
       type: 'settings',
@@ -371,6 +377,7 @@ export const useProgressStore = defineStore('progress', () => {
       ...(s.cats ? { cats: s.cats } : {}),
       ...(s.gameCats !== undefined ? { gameCats: s.gameCats } : {}),
       ...(s.marks ? { marks: s.marks } : {}),
+      ...(s.keys ? { keys: s.keys } : {}),
     })
   }
 

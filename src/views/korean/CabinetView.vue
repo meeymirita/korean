@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
@@ -60,6 +61,7 @@ watch(
 type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'logs' | 'settings'
 const route = useRoute()
 const router = useRouter()
+const shortcuts = useShortcutsStore()
 const q = route.query.tab
 const OWNER_ONLY = ['images', 'db', 'logs']
 const TABS = ['repeat', 'week', 'history', 'notes', 'images', 'db', 'logs', 'settings']
@@ -119,7 +121,7 @@ const tabs = computed<[Tab, string][]>(() => [
     </p>
 
     <div class="chips cb-tabs">
-      <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="tab = id">{{ label }}</button>
+      <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="tab = id">{{ label }}<kbd v-if="shortcuts.labelOf('cab:' + id)" class="kb">{{ shortcuts.labelOf('cab:' + id) }}</kbd></button>
     </div>
 
     <OverviewTab v-if="tab === 'overview'" />

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KeysBlock from '@/components/cabinet/KeysBlock.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
 import Avatar from '@/components/Avatar.vue'
@@ -289,6 +290,8 @@ async function refreshPublic() {
         <button v-for="[id, name] in GAME_GROUPS" :key="id" class="chip" :class="{ on: gameCats[id] }" @click="toggleGame(id)">{{ name }}</button>
       </div>
     </div>
+
+    <KeysBlock />
 
     <ReminderBlock v-if="progress.unlocked && !progress.isGuest" />
     <div v-if="!progress.isGuest && progress.unlocked" class="st-tabs" role="tablist">

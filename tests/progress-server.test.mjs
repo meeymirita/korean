@@ -19,7 +19,7 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual([p.days, p.all, p.words, p.sources, p.log], [{}, {}, {}, {}, []])
     assert.deepEqual(p.profile, { name: '', avatar: '🌸', cover: '' })
     assert.deepEqual(p.time, {})
-    assert.deepEqual(p.settings, { goal: 20, cats: [], gameCats: null, marks: [] })
+    assert.deepEqual(p.settings, { goal: 20, cats: [], gameCats: null, marks: [], keys: {} })
   })
 
   test('время занятий суммируется по дням, лишнее отклоняется', async () => {
@@ -90,7 +90,7 @@ describe('сервер: прогресс в базе', () => {
     assert.equal((await ops({ type: 'profile', name: 'mira', avatar: '🦊' }, { type: 'settings', goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 } })).status, 200)
     const p = await read()
     assert.deepEqual(p.profile, { name: 'mira', avatar: '🦊', cover: '' })
-    assert.deepEqual(p.settings, { goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 }, marks: [] })
+    assert.deepEqual(p.settings, { goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 }, marks: [], keys: {} })
     const bad = [
       [{ type: 'settings', goal: 7 }],
       [{ type: 'profile', name: 'я'.repeat(25) }],
@@ -138,6 +138,20 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual(p.words, { 가다: { ok: 5, bad: 1, streak: 3, last: 123, kd: 100 } })
     assert.deepEqual([p.profile.name, p.settings.goal], ['Копия', 10])
     assert.equal((await ops({ type: 'import', data: { v: 2 } })).status, 400)
+  })
+
+  test('сочетания клавиш: сохраняются на сервере, мусор, повторы и лишнее отклоняются', async () => {
+    const keys = { 'nav:grammar': 'mod+shift+KeyG', 'cab:notes': 'mod+alt+KeyN' }
+    assert.equal((await ops({ type: 'settings', keys })).status, 200)
+    assert.deepEqual((await read()).settings.keys, keys)
+    for (const bad of [{ 'nav:grammar': 'KeyG' }, { 'x:y': 'mod+KeyG' }, { 'nav:a': 'mod+KeyG', 'nav:b': 'mod+KeyG' }, [], 'mod+KeyG', null, Object.fromEntries(Array.from({ length: 41 }, (_, i) => [`nav:${String.fromCharCode(97 + (i % 26))}${String.fromCharCode(97 + Math.floor(i / 26))}`, `mod+Key${i}`]))]) {
+      assert.equal((await ops({ type: 'settings', keys: bad })).status, 400, JSON.stringify(bad).slice(0, 40))
+    }
+    assert.deepEqual((await read()).settings.keys, keys, 'неудачная пачка ничего не меняет')
+    assert.equal((await ops({ type: 'settings', goal: 50 })).status, 200)
+    assert.deepEqual((await read()).settings.keys, keys, 'другие настройки сочетания не трогают')
+    assert.equal((await ops({ type: 'settings', keys: {} })).status, 200)
+    assert.deepEqual((await read()).settings.keys, {})
   })
 
   test('закладки: сохраняются, повторы убираются, неверные ключи и лишнее отклоняются', async () => {
