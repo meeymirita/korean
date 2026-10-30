@@ -10,6 +10,7 @@ import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
 import ReminderBlock from '@/components/cabinet/ReminderBlock.vue'
+import { usePersisted } from '@/composables/usePersisted'
 import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
@@ -150,6 +151,14 @@ async function reconnect() {
   }
 }
 
+/* ---------- вкладки нижней части ---------- */
+const SYS_TABS = [
+  { id: 'data', label: 'Прогресс и копии' },
+  { id: 'access', label: 'Защита и доступ' },
+  { id: 'card', label: 'Визитка' },
+] as const
+const sysTab = usePersisted<string>('settings_sys_tab', 'data', v => SYS_TABS.some(t => t.id === v))
+
 /* ---------- публичная визитка ---------- */
 const pub = usePublicCard()
 const pubCover = ref(false)
@@ -240,43 +249,52 @@ async function refreshPublic() {
       </div>
     </div>
 
-    <div v-if="!progress.isGuest" class="st-block">
-      <h3>Где хранится прогресс</h3>
-      <p>Прогресс хранится в браузере и сохраняется на сервере сайта. Токен нужен на каждом устройстве один раз.</p>
-      <div class="pg-status" :class="progress.sync" style="margin-top: 12px">
-        Сервер: <b>{{ syncText }}</b><span v-if="progress.syncMessage"> · {{ progress.syncMessage }}</span>
-      </div>
-      <div class="pg-btns">
-        <button @click="progress.push()">Сохранить сейчас</button>
-        <button class="plain" @click="progress.disconnect()">Выйти (закрыть кабинет на этом устройстве)</button>
-      </div>
-      <form class="pg-form" @submit.prevent="reconnect">
-        <input v-model="tokenInput" type="password" placeholder="сменить токен" autocomplete="off" />
-        <button type="submit">Подключить</button>
-      </form>
-      <div class="pg-btns">
-        <button class="plain" @click="download">⬇ Скачать копию</button>
-        <label class="pg-file plain">⬆ Загрузить копию<input type="file" accept="application/json,.json" @change="restore" /></label>
-        <button class="plain danger" @click="reset">Сбросить прогресс</button>
-      </div>
-    </div>
-    <div v-if="progress.unlocked && !progress.isGuest" class="st-block">
-      <h3>Публичная визитка</h3>
-      <p>Страница <b>/me</b> со счётчиком дней, серией, выученными словами и уровнем. По умолчанию закрыта: ссылка работает, только пока включено.</p>
-      <div class="pg-btns">
-        <button :disabled="pub.busy.value || !pub.settings.value" @click="togglePublic">{{ pub.settings.value?.enabled ? 'Выключить визитку' : 'Включить визитку' }}</button>
-        <template v-if="pub.settings.value?.enabled">
-          <button class="plain" :disabled="pub.busy.value" @click="refreshPublic">↻ Обновить данные</button>
-          <a class="plain pub-link" href="/me" target="_blank" rel="noopener">Открыть /me ↗</a>
-        </template>
-      </div>
-      <label v-if="profile.cover" class="pub-opt"><input v-model="pubCover" type="checkbox" :disabled="pub.busy.value" @change="pub.settings.value?.enabled && refreshPublic()" /> показывать обложку кабинета (она станет доступна всем по ссылке, остальные картинки остаются закрытыми)</label>
-      <p class="st-sub">Наружу уходит только: имя, значок, уровень, серия, число выученных слов, ответов и дней в пути. Данные обновляются кнопкой.</p>
-    </div>
-    <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
     <ReminderBlock v-if="progress.unlocked && !progress.isGuest" />
-    <BackupBlock v-if="progress.unlocked && !progress.isGuest" />
-    <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
+    <div v-if="!progress.isGuest && progress.unlocked" class="st-tabs" role="tablist">
+      <button v-for="t in SYS_TABS" :key="t.id" role="tab" type="button" :aria-selected="sysTab === t.id" :class="{ on: sysTab === t.id }" @click="sysTab = t.id">{{ t.label }}</button>
+    </div>
+    <template v-if="sysTab === 'data'">
+      <div v-if="!progress.isGuest" class="st-block">
+        <h3>Где хранится прогресс</h3>
+        <p>Прогресс хранится в браузере и сохраняется на сервере сайта. Токен нужен на каждом устройстве один раз.</p>
+        <div class="pg-status" :class="progress.sync" style="margin-top: 12px">
+          Сервер: <b>{{ syncText }}</b><span v-if="progress.syncMessage"> · {{ progress.syncMessage }}</span>
+        </div>
+        <div class="pg-btns">
+          <button @click="progress.push()">Сохранить сейчас</button>
+          <button class="plain" @click="progress.disconnect()">Выйти (закрыть кабинет на этом устройстве)</button>
+        </div>
+        <form class="pg-form" @submit.prevent="reconnect">
+          <input v-model="tokenInput" type="password" placeholder="сменить токен" autocomplete="off" />
+          <button type="submit">Подключить</button>
+        </form>
+        <div class="pg-btns">
+          <button class="plain" @click="download">⬇ Скачать копию</button>
+          <label class="pg-file plain">⬆ Загрузить копию<input type="file" accept="application/json,.json" @change="restore" /></label>
+          <button class="plain danger" @click="reset">Сбросить прогресс</button>
+        </div>
+      </div>
+      <BackupBlock v-if="progress.unlocked && !progress.isGuest" />
+    </template>
+    <template v-else-if="sysTab === 'access' && progress.unlocked && !progress.isGuest">
+      <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
+      <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
+    </template>
+    <template v-else-if="sysTab === 'card'">
+      <div v-if="progress.unlocked && !progress.isGuest" class="st-block">
+        <h3>Публичная визитка</h3>
+        <p>Страница <b>/me</b> со счётчиком дней, серией, выученными словами и уровнем. По умолчанию закрыта: ссылка работает, только пока включено.</p>
+        <div class="pg-btns">
+          <button :disabled="pub.busy.value || !pub.settings.value" @click="togglePublic">{{ pub.settings.value?.enabled ? 'Выключить визитку' : 'Включить визитку' }}</button>
+          <template v-if="pub.settings.value?.enabled">
+            <button class="plain" :disabled="pub.busy.value" @click="refreshPublic">↻ Обновить данные</button>
+            <a class="plain pub-link" href="/me" target="_blank" rel="noopener">Открыть /me ↗</a>
+          </template>
+        </div>
+        <label v-if="profile.cover" class="pub-opt"><input v-model="pubCover" type="checkbox" :disabled="pub.busy.value" @change="pub.settings.value?.enabled && refreshPublic()" /> показывать обложку кабинета (она станет доступна всем по ссылке, остальные картинки остаются закрытыми)</label>
+        <p class="st-sub">Наружу уходит только: имя, значок, уровень, серия, число выученных слов, ответов и дней в пути. Данные обновляются кнопкой.</p>
+      </div>
+    </template>
     <div v-if="progress.isGuest" class="st-block">
       <h3>Гостевой режим</h3>
       <p>Вы вошли по временному токену: всё работает, но прогресс нигде не сохраняется и пропадёт, когда вы закроете страницу.</p>
@@ -284,3 +302,9 @@ async function refreshPublic() {
     <p v-if="message" class="pg-note">{{ message }}</p>
   </div>
 </template>
+
+<style>
+.study .st-tabs { display: flex; flex-wrap: wrap; gap: 4px; width: fit-content; max-width: 100%; margin: 6px 0 14px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.study .st-tabs button { padding: 8px 16px; font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 0; border-radius: 11px; cursor: pointer; }
+.study .st-tabs button.on { color: #fff; background: var(--gold); }
+</style>
