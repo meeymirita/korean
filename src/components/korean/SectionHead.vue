@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { sectionById } from '@/data/korean/sections'
 
 const props = defineProps<{ id: string; sub?: string; big?: string | number }>()
-const s = sectionById(props.id)
+const s = computed(() => sectionById(props.id))
 </script>
 
 <template>
