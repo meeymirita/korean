@@ -27,6 +27,7 @@
     "typescript": "~5.9"
   },
   "overrides": {
-    "multer": "^2.5.0"
+    "multer": "^2.5.0",
+    "webpack": "5.112.2"
   }
 }
