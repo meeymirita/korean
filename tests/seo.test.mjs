@@ -25,7 +25,7 @@ describe('SEO', () => {
   })
 
   test('закрытые токеном страницы не индексируются, а в карту сайта и robots они не попадают как разрешённые', () => {
-    assert.deepEqual(privatePaths().sort(), ['/game', '/korean/cabinet', '/korean/garden', '/korean/marks', '/korean/mistakes', '/korean/pairs', '/korean/particles', '/korean/quick', '/korean/review', '/korean/syllables', '/korean/today', '/korean/trainers', '/korean/translate'])
+    assert.deepEqual(privatePaths().sort(), ['/game', '/korean/cabinet', '/korean/forms', '/korean/garden', '/korean/marks', '/korean/mistakes', '/korean/pairs', '/korean/particles', '/korean/quick', '/korean/review', '/korean/syllables', '/korean/today', '/korean/trainers', '/korean/translate'])
     for (const p of privatePaths()) {
       assert.equal(seoFor(p).noindex, true)
       assert.ok(!sitemap.includes(`${SITE}${p}<`), `${p} в карте сайта`)

@@ -34,6 +34,7 @@ export const sections: Section[] = [
   { id: 'pairs', num: '13', menu: 'Похожие слова', kicker: 'Тренажёр', title: 'Похожие, но разные', sub: 'выбери верное слово среди похожих', private: true, group: 'extra' },
   { id: 'translate', num: '14', menu: 'Перевод', kicker: 'Тренажёр', title: 'Переведи предложение', sub: 'целое предложение: на русский, на корейский или вперемешку', private: true, group: 'extra' },
   { id: 'syllables', num: '15', menu: 'Слоги', kicker: 'Тренажёр', title: 'Собери слово по слогам', sub: 'по переводу собери корейское слово из слогов', private: true, group: 'extra' },
+  { id: 'forms', num: '16', menu: 'Формы', kicker: 'Глаголы и прилагательные', title: 'Слово в разных формах', sub: 'настоящее, прошедшее и отрицание у глаголов и прилагательных', private: true, group: 'extra' },
   { id: 'garden', num: '08', menu: 'Сад', kicker: 'Прогресс слов', title: 'Сад воспоминаний', sub: 'каждое выученное слово — цветок, а ещё коллекция карточек', private: true },
 ]
 

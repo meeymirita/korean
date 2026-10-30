@@ -14,6 +14,7 @@ Disallow: /korean/particles
 Disallow: /korean/pairs
 Disallow: /korean/translate
 Disallow: /korean/syllables
+Disallow: /korean/forms
 Disallow: /korean/garden
 
 Sitemap: https://korean.meeymirita.ru/sitemap.xml

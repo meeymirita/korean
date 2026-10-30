@@ -100,6 +100,7 @@ const shareWord = (d: Word) =>
       <div class="chips">
         <button class="chip" :class="{ on: !cat }" @click="((cat = ''), (picked = null))">Все</button>
         <RouterLink v-if="marked" to="/korean/marks" class="chip">★ Важное · {{ marked }}</RouterLink>
+        <RouterLink v-if="progress.unlocked" to="/korean/forms" class="chip">🔧 Формы глаголов</RouterLink>
         <button
           v-for="(name, c) in CATN"
           :key="c"

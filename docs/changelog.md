@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, слово в разных формах
+
+- `data/korean/conjugation.ts` (`CONJUGATIONS`, `negate`), страница `/korean/forms` (`FormsView.vue`, закрыта токеном). Тест `tests/conjugation.test.mjs`.
+
 ## 2026-10-30, «Собери слово по слогам»
 
 - `data/korean/syllables.ts` (`syllableTask`, `syllableTasks`, `isCorrect`), страница `/korean/syllables` (`SyllablesView.vue`), ответы пишутся с режимом `syllables`. Тест `tests/syllables.test.mjs`.

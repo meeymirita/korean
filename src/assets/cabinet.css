@@ -430,3 +430,9 @@
 .study .sy-tile:disabled { opacity: .35; cursor: default; }
 .study .sy-back { min-width: 56px; height: 64px; font-size: 22px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
 .study .sy-back:disabled { opacity: .35; cursor: default; }
+
+/* «слово в разных формах» */
+.study .fm-tb .row { grid-template-columns: 1.3fr 1.4fr 1fr 1fr 1.2fr; align-items: center; }
+.study .fm-rd { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+.study .fm-link { padding: 0; font: inherit; color: var(--gold); text-decoration: underline; background: none; border: 0; cursor: pointer; }
+@media (max-width: 760px) { .study .fm-tb { overflow-x: auto; } .study .fm-tb .row { width: max(100%, 640px); } }
