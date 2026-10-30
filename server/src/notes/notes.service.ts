@@ -1,17 +1,21 @@
 /** Заметки владельца: название и описание. Список целиком заменяется одним запросом. */
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { MAX_NOTES, MAX_NOTE_TEXT, MAX_NOTE_TITLE } from '../config'
+import { MAX_NOTES, MAX_NOTE_IMAGES, MAX_NOTE_TEXT, MAX_NOTE_TITLE } from '../config'
 import { Db } from '../db/db.service'
+import { pruneImages } from '../images/images.service'
 
 export interface Note {
   id: string
   title: string
   text: string
+  /** id картинок из раздела «Картинки» */
+  images: string[]
   created: number
   updated: number
 }
 
 const isStr = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max
+const IMAGE_ID = /^[a-f0-9]{16}$/
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 
 @Injectable()
@@ -22,7 +26,17 @@ export class NotesService {
   read() {
     const updated = this.db.getMeta('notes_updated')
     if (updated === undefined) return {}
-    return { v: 1, updated: Number(updated), notes: this.db.all<Note>('SELECT id, title, text, created, updated FROM notes ORDER BY created DESC') }
+    const rows = this.db.all<Omit<Note, 'images'> & { images: string }>('SELECT id, title, text, images, created, updated FROM notes ORDER BY created DESC')
+    return { v: 1, updated: Number(updated), notes: rows.map(r => ({ ...r, images: this.parseImages(r.images) })) }
+  }
+
+  private parseImages(raw: string): string[] {
+    try {
+      const v = JSON.parse(raw)
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && IMAGE_ID.test(x)).slice(0, MAX_NOTE_IMAGES) : []
+    } catch {
+      return []
+    }
   }
 
   /** Проверяет тело запроса; при нарушении формата или лимитов — 400. Ничего не сохраняет. */
@@ -38,8 +52,12 @@ export class NotesService {
       if (!isStr(n.title, MAX_NOTE_TITLE) || !isStr(n.text, MAX_NOTE_TEXT) || !num(n.created) || !num(n.updated)) {
         throw new BadRequestException({ error: 'invalid notes' })
       }
+      const images = n.images === undefined ? [] : n.images
+      if (!Array.isArray(images) || images.length > MAX_NOTE_IMAGES || !images.every(i => typeof i === 'string' && IMAGE_ID.test(i))) {
+        throw new BadRequestException({ error: 'invalid notes' })
+      }
       ids.add(n.id)
-      notes.push({ id: n.id, title: n.title, text: n.text, created: n.created, updated: n.updated })
+      notes.push({ id: n.id, title: n.title, text: n.text, images, created: n.created, updated: n.updated })
     }
     return { updated: num(data.updated) ? data.updated : 0, notes }
   }
@@ -49,9 +67,10 @@ export class NotesService {
     const { updated, notes } = this.validate(body)
     this.db.tx(() => {
       this.db.run('DELETE FROM notes')
-      for (const n of notes) this.db.run('INSERT INTO notes (id, title, text, created, updated) VALUES (?, ?, ?, ?, ?)', n.id, n.title, n.text, n.created, n.updated)
+      for (const n of notes) this.db.run('INSERT INTO notes (id, title, text, images, created, updated) VALUES (?, ?, ?, ?, ?, ?)', n.id, n.title, n.text, JSON.stringify(n.images), n.created, n.updated)
       this.db.setMeta('notes_updated', String(updated))
     })
+    pruneImages(this.db) // картинки, убранные из заметок, удаляются через час
     return { ok: true, updated }
   }
 }

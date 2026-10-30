@@ -154,6 +154,18 @@ describe('сервер: заметки', () => {
     assert.deepEqual((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.map(n => n.id), ['a'])
   })
 
+  test('картинки заметки сохраняются; мусорные id и больше 10 штук — 400', async () => {
+    const id = n => n.toString(16).padStart(16, '0')
+    await s.call('PUT', '/api/notes', OWNER, body([note('p', { images: [id(1), id(2)] }), note('q')], 90))
+    const got = (await (await s.call('GET', '/api/notes', OWNER)).json()).notes
+    assert.deepEqual(got.find(n => n.id === 'p').images, [id(1), id(2)])
+    assert.deepEqual(got.find(n => n.id === 'q').images, [], 'у старой заметки без поля список пустой')
+    for (const images of [['../../x'], [5], 'строка', Array.from({ length: 11 }, (_, i) => id(i))]) {
+      assert.equal((await s.call('PUT', '/api/notes', OWNER, body([note('p', { images })], 91))).status, 400, JSON.stringify(images))
+    }
+    await s.call('PUT', '/api/notes', OWNER, body([note('a')], 92))
+  })
+
   test('гость заметок не видит, а его запись игнорируется', async () => {
     const g = await (await s.call('POST', '/api/guests', OWNER, { hours: 1 })).json()
     assert.deepEqual(await (await s.call('GET', '/api/notes', g.token)).json(), {})
@@ -191,5 +203,69 @@ describe('сервер: заметки', () => {
     const huge = body([note('big', { text: 'я'.repeat(5 * 1024 * 1024) })])
     assert.equal((await s.call('PUT', '/api/notes', OWNER, huge)).status, 413)
     assert.equal((await (await s.call('GET', '/api/notes', OWNER)).json()).notes.length, 200)
+  })
+})
+
+describe('сервер: база старой версии обновляется сама', () => {
+  test('в старой базе нет новых столбцов: после запуска заметки с картинками и описания картинок работают, старые данные целы', async () => {
+    const { mkdtemp, rm } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const dir = await mkdtemp(path.join(tmpdir(), 'server-old-'))
+    try {
+      const old = new DatabaseSync(path.join(dir, 'app.db'))
+      old.exec(`
+        CREATE TABLE notes (id TEXT PRIMARY KEY, title TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL);
+        CREATE TABLE images (id TEXT PRIMARY KEY, name TEXT NOT NULL, caption TEXT NOT NULL DEFAULT '', mime TEXT NOT NULL, ext TEXT NOT NULL,
+          size INTEGER NOT NULL, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL);
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        INSERT INTO notes VALUES ('old', 'Старая', 'текст', 1, 1);
+        INSERT INTO meta VALUES ('notes_updated', '5');
+        INSERT INTO images VALUES ('0123456789abcdef', 'a.png', 'Кот', 'image/png', 'png', 10, 1, 1, 1);
+      `)
+      old.close()
+      const s = await start({ dir })
+      const notes = (await (await s.call('GET', '/api/notes', OWNER)).json()).notes
+      assert.deepEqual(notes.map(n => [n.id, n.images]), [['old', []]])
+      const imgs = (await (await s.call('GET', '/api/images', OWNER)).json()).items
+      assert.deepEqual([imgs[0].caption, imgs[0].description], ['Кот', ''])
+      assert.equal((await s.call('PATCH', '/api/images/0123456789abcdef', OWNER, { description: 'новое' })).status, 200)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('сервер: разнос старых картинок по назначению', () => {
+  test('картинки из заметок и обложка кабинета уходят из общего списка при первом запуске новой версии', async () => {
+    const { mkdtemp, rm } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const dir = await mkdtemp(path.join(tmpdir(), 'server-kind-'))
+    try {
+      const old = new DatabaseSync(path.join(dir, 'app.db'))
+      old.exec(`
+        CREATE TABLE notes (id TEXT PRIMARY KEY, title TEXT NOT NULL, text TEXT NOT NULL, images TEXT NOT NULL DEFAULT '[]', created INTEGER NOT NULL, updated INTEGER NOT NULL);
+        CREATE TABLE images (id TEXT PRIMARY KEY, name TEXT NOT NULL, caption TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', mime TEXT NOT NULL, ext TEXT NOT NULL,
+          size INTEGER NOT NULL, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL);
+        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        INSERT INTO notes VALUES ('n1', 'С картинкой', '', '["aaaaaaaaaaaaaaaa"]', 1, 1);
+        INSERT INTO notes VALUES ('n2', 'Битая', '', 'не json', 1, 1);
+        INSERT INTO meta VALUES ('notes_updated', '5');
+        INSERT INTO meta VALUES ('profile', '{"name":"","avatar":"🌸","cover":"cccccccccccccccc"}');
+        INSERT INTO images VALUES ('aaaaaaaaaaaaaaaa', 'в-заметке.png', '', '', 'image/png', 'png', 10, 1, 1, 1);
+        INSERT INTO images VALUES ('bbbbbbbbbbbbbbbb', 'в-галерее.png', 'Кот', '', 'image/png', 'png', 10, 1, 1, 2);
+        INSERT INTO images VALUES ('cccccccccccccccc', 'обложка.png', '', '', 'image/png', 'png', 10, 1, 1, 3);
+      `)
+      old.close()
+      const s = await start({ dir })
+      const list = async kind => (await (await s.call('GET', '/api/images' + (kind ? `?kind=${kind}` : ''), OWNER)).json()).items.map(i => i.id)
+      assert.deepEqual(await list(), ['bbbbbbbbbbbbbbbb'], 'в «Картинках» осталась только своя')
+      assert.deepEqual(await list('note'), ['aaaaaaaaaaaaaaaa'])
+      assert.deepEqual(await list('cover'), ['cccccccccccccccc'])
+      await s.stop()
+      const again = await start({ dir }) // повторный запуск ничего не двигает
+      assert.deepEqual(await (await again.call('GET', '/api/images', OWNER)).json().then(d => d.items.map(i => i.id)), ['bbbbbbbbbbbbbbbb'])
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 })

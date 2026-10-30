@@ -5,6 +5,7 @@
  */
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { Db } from '../db/db.service'
+import { pruneImages } from '../images/images.service'
 
 /** Слово считается выученным после стольких верных ответов подряд. */
 const KNOWN_STREAK = 3
@@ -16,6 +17,8 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/
 export interface Profile {
   name: string
   avatar: string
+  /** id картинки из раздела «Картинки» для шапки кабинета; пусто — без обложки */
+  cover: string
 }
 export interface Settings {
   goal: number
@@ -29,7 +32,10 @@ const bad = (msg: string): never => {
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.length <= max ? v : bad('invalid op'))
 const int = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max ? v : bad('invalid op'))
 
-const DEFAULT_PROFILE: Profile = { name: '', avatar: '🌸' }
+const DEFAULT_PROFILE: Profile = { name: '', avatar: '🌸', cover: '' }
+const IMAGE_ID = /^[a-f0-9]{16}$/
+/** За одно действие таймера можно записать не больше часа. */
+const MAX_TIME_OP = 3600
 const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null }
 
 @Injectable()
@@ -53,6 +59,8 @@ export class ProgressService {
       days[r.day] = r.ok
       all[r.day] = r.total
     }
+    const time: Record<string, number> = {}
+    for (const r of this.db.all<{ day: string; seconds: number }>('SELECT day, seconds FROM study_time')) time[r.day] = r.seconds
     const words: Record<string, { ok: number; bad: number; streak: number; last: number; kd?: number }> = {}
     for (const r of this.db.all<{ word: string; ok: number; bad: number; streak: number; last: number; kd: number | null }>('SELECT * FROM words')) {
       words[r.word] = { ok: r.ok, bad: r.bad, streak: r.streak, last: r.last, ...(r.kd ? { kd: r.kd } : {}) }
@@ -72,6 +80,7 @@ export class ProgressService {
       xp: Number(this.db.getMeta('xp') ?? 0),
       days,
       all,
+      time,
       words,
       sources,
       log,
@@ -88,6 +97,7 @@ export class ProgressService {
       for (const op of ops as Record<string, unknown>[]) this.one(op)
       this.db.setMeta('updated', String(Date.now()))
     })
+    pruneImages(this.db) // старая обложка удаляется через час после замены
     return { ok: true, applied: (ops as unknown[]).length }
   }
 
@@ -101,6 +111,8 @@ export class ProgressService {
         return this.profile(op)
       case 'settings':
         return this.settings(op)
+      case 'time':
+        return this.time(op)
       case 'import':
         return this.import(op.data)
       default:
@@ -139,13 +151,25 @@ export class ProgressService {
     this.db.run('DELETE FROM answers')
     this.db.run('DELETE FROM words')
     this.db.run('DELETE FROM days')
+    this.db.run('DELETE FROM study_time')
     this.db.setMeta('xp', '0')
+  }
+
+  /** Секунды занятий за день (таймер на сайте): прибавляются к дню. */
+  private time(op: Record<string, unknown>) {
+    const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
+    const seconds = int(op.seconds, 1, MAX_TIME_OP)
+    this.db.run('INSERT INTO study_time (day, seconds) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET seconds = seconds + excluded.seconds', day, seconds)
   }
 
   private profile(op: Record<string, unknown>) {
     const cur = this.json<Profile>('profile', DEFAULT_PROFILE)
     if (op.name !== undefined) cur.name = str(op.name, 24)
     if (op.avatar !== undefined) cur.avatar = str(op.avatar, 60_000) || cur.avatar
+    if (op.cover !== undefined) {
+      const cover = str(op.cover, 40)
+      cur.cover = cover === '' || IMAGE_ID.test(cover) ? cover : bad('invalid op')
+    }
     this.db.setMeta('profile', JSON.stringify(cur))
   }
 
@@ -190,6 +214,10 @@ export class ProgressService {
       if (!DAY.test(day)) bad('invalid import')
       const total = Math.max(Number(d!.all?.[day] ?? 0), Number(ok))
       this.db.run('INSERT INTO days (day, ok, total) VALUES (?, ?, ?)', day, int(Number(ok), 0, 1e9), int(total, 0, 1e9))
+    }
+    for (const [day, sec] of Object.entries(d!.time ?? {})) {
+      if (!DAY.test(day)) bad('invalid import')
+      this.db.run('INSERT INTO study_time (day, seconds) VALUES (?, ?)', day, int(Number(sec), 0, 1e9))
     }
     this.db.setMeta('xp', String(int(Number(d!.xp ?? 0), 0, 1e12)))
     if (d!.profile) this.profile(d!.profile as unknown as Record<string, unknown>)

@@ -37,17 +37,26 @@ export async function start({ dir, env = {} } = {}) {
   })
   const base = `http://127.0.0.1:${port}`
   /** Загрузка файла: multipart, поле file (и необязательное caption). */
-  const upload = (token, bytes, name = 'photo.png', caption) => {
+  const upload = (token, bytes, name = 'photo.png', caption, extra = {}) => {
     const form = new FormData()
     form.append('file', new Blob([bytes]), name)
     if (caption !== undefined) form.append('caption', caption)
+    for (const [k, v] of Object.entries(extra)) form.append(k, v)
     return fetch(base + '/api/images', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form })
   }
-  /** call('GET', '/api/notes', токен, тело) */
-  const call = (method, url, token, body) =>
+  /** Опасные запросы владельца (создание гостя, сброс и загрузка копии) сайт шлёт с повторным токеном: хелпер делает так же, если не задан свой заголовок. */
+  const dangerous = (method, url, body) =>
+    method === 'POST' && (url === '/api/guests' || (url === '/api/ops' && Array.isArray(body?.ops) && body.ops.some(o => o?.type === 'reset' || o?.type === 'import')))
+  /** call('GET', '/api/notes', токен, тело, свои заголовки) */
+  const call = (method, url, token, body, extra = {}) =>
     fetch(base + url, {
       method,
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(token === OWNER && dangerous(method, url, body) && !Object.keys(extra).some(k => k.toLowerCase() === 'x-confirm-token') ? { 'X-Confirm-Token': OWNER } : {}),
+        ...extra,
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   const stop = () =>

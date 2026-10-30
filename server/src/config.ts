@@ -54,5 +54,8 @@ export const MAX_IMAGE = 50 * 1024 * 1024
 /** IMAGES_QUOTA_MB нужна только тестам, чтобы не заливать полгигабайта. */
 export const MAX_IMAGES_TOTAL = Number(process.env.IMAGES_QUOTA_MB || 500) * 1024 * 1024
 export const MAX_CAPTION = 200
+export const MAX_DESCRIPTION = 1000
+/** Картинок в одной заметке. */
+export const MAX_NOTE_IMAGES = 10
 
 export const MAX_EVENTS = 2000

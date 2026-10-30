@@ -4,18 +4,26 @@
  */
 import { BadRequestException, Injectable, NotFoundException, PayloadTooLargeException } from '@nestjs/common'
 import { randomBytes } from 'node:crypto'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp, { type Metadata } from 'sharp'
-import { MAX_CAPTION, MAX_IMAGE, MAX_IMAGES_TOTAL, THUMBS, UPLOADS } from '../config'
+import { MAX_CAPTION, MAX_DESCRIPTION, MAX_IMAGE, MAX_IMAGES_TOTAL, THUMBS, UPLOADS } from '../config'
 import { Db } from '../db/db.service'
 import { Events } from '../events/events.service'
 
+/** Назначение картинки: «Картинки» в кабинете (gallery), вложение заметки (note), обложка кабинета (cover). Списки у каждого свои. */
+export const KINDS = ['gallery', 'note', 'cover'] as const
+export type Kind = (typeof KINDS)[number]
+/** Неиспользуемую картинку заметки или обложки удаляем не раньше, чем через сутки: она могла быть загружена, но ещё не сохранена (например, заметка не ушла на сервер без связи). */
+const ORPHAN_AFTER = 24 * 3600 * 1000
+
 export interface ImageRow {
+  kind: Kind
   id: string
   name: string
   caption: string
+  description: string
   mime: string
   ext: string
   size: number
@@ -25,6 +33,36 @@ export interface ImageRow {
 }
 
 const ID = /^[a-f0-9]{16}$/
+
+/** Удаляет картинки заметок и обложки, которыми никто не пользуется (файлы и миниатюры тоже). */
+export function pruneImages(db: Db) {
+  const used = new Set<string>()
+  for (const n of db.all<{ images: string }>('SELECT images FROM notes')) {
+    try {
+      for (const id of JSON.parse(n.images) as string[]) used.add(id)
+    } catch {
+      /* битый список */
+    }
+  }
+  try {
+    const cover = (JSON.parse(db.getMeta('profile') ?? '{}') as { cover?: string }).cover
+    if (cover) used.add(cover)
+  } catch {
+    /* нет профиля */
+  }
+  const old = db.all<{ id: string; ext: string }>("SELECT id, ext FROM images WHERE kind != 'gallery' AND created < ?", Date.now() - ORPHAN_AFTER)
+  for (const r of old) {
+    if (used.has(r.id)) continue
+    db.run('DELETE FROM images WHERE id = ?', r.id)
+    for (const p of [path.join(UPLOADS, `${r.id}.${r.ext}`), path.join(THUMBS, `${r.id}.webp`)]) {
+      try {
+        unlinkSync(p)
+      } catch {
+        /* файла уже нет */
+      }
+    }
+  }
+}
 
 /** Определяет тип по первым байтам: jpeg, png, gif, webp. */
 function sniff(b: Buffer): { mime: string; ext: string } | null {
@@ -48,24 +86,32 @@ export class ImagesService {
   private file = (r: Pick<ImageRow, 'id' | 'ext'>) => path.join(UPLOADS, `${r.id}.${r.ext}`)
   private thumb = (id: string) => path.join(THUMBS, `${id}.webp`)
 
-  list() {
-    const items = this.db.all<ImageRow>('SELECT id, name, caption, mime, ext, size, width, height, created FROM images ORDER BY created DESC, id DESC')
-    const used = items.reduce((n, i) => n + i.size, 0)
-    return { items, used, limit: MAX_IMAGES_TOTAL, maxFile: MAX_IMAGE }
+  /** Занятое место считается по всем картинкам, а в списке только выбранного назначения (по умолчанию «Картинки»). */
+  list(kind: unknown = 'gallery') {
+    const k: Kind = KINDS.includes(kind as Kind) ? (kind as Kind) : 'gallery'
+    const items = this.db.all<ImageRow>(
+      'SELECT id, kind, name, caption, description, mime, ext, size, width, height, created FROM images WHERE kind = ? ORDER BY created DESC, id DESC',
+      k,
+    )
+    return { items, used: this.usedBytes(), limit: MAX_IMAGES_TOTAL, maxFile: MAX_IMAGE }
+  }
+
+  private usedBytes() {
+    return this.db.get<{ n: number | null }>('SELECT SUM(size) AS n FROM images')?.n ?? 0
   }
 
   /** Сохраняет загруженный файл: проверка типа и целостности, миниатюра, запись в базу. */
-  async add(file: { buffer: Buffer; originalname: string; size: number } | undefined, caption: unknown) {
+  async add(file: { buffer: Buffer; originalname: string; size: number } | undefined, caption: unknown, description?: unknown, kind?: unknown) {
     if (!file?.buffer?.length) throw new BadRequestException({ error: 'no file' })
     const type = sniff(file.buffer)
     if (!type) throw new BadRequestException({ error: 'unsupported type' })
-    const { used } = this.list()
+    const used = this.usedBytes()
     if (used + file.size > MAX_IMAGES_TOTAL) throw new PayloadTooLargeException({ error: 'quota exceeded' })
 
     let meta: Metadata
     let thumb: Buffer
     try {
-      const img = sharp(file.buffer, { failOn: 'error' })
+      const img = sharp(file.buffer, { failOn: 'error', limitInputPixels: 80_000_000 }) // защита от «бомб» (маленький файл с огромным разрешением)
       meta = await img.metadata()
       thumb = await img.rotate().resize({ width: 480, withoutEnlargement: true }).webp({ quality: 78 }).toBuffer()
     } catch {
@@ -76,8 +122,10 @@ export class ImagesService {
     const name = Buffer.from(file.originalname || 'image', 'latin1').toString('utf8').replace(/[\\/\0]/g, '_').slice(0, 200) // multer отдаёт имя в latin1
     const row: ImageRow = {
       id,
+      kind: KINDS.includes(kind as Kind) ? (kind as Kind) : 'gallery',
       name,
       caption: typeof caption === 'string' ? caption.trim().slice(0, MAX_CAPTION) : '',
+      description: typeof description === 'string' ? description.trim().slice(0, MAX_DESCRIPTION) : '',
       mime: type.mime,
       ext: type.ext,
       size: file.size,
@@ -88,8 +136,8 @@ export class ImagesService {
     await writeFile(this.file(row), file.buffer)
     await writeFile(this.thumb(id), thumb)
     this.db.run(
-      'INSERT INTO images (id, name, caption, mime, ext, size, width, height, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      row.id, row.name, row.caption, row.mime, row.ext, row.size, row.width, row.height, row.created,
+      'INSERT INTO images (id, kind, name, caption, description, mime, ext, size, width, height, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      row.id, row.kind, row.name, row.caption, row.description, row.mime, row.ext, row.size, row.width, row.height, row.created,
     )
     this.events.log('image_added', `${name}, ${Math.round(file.size / 1024)} КБ`)
     return row
@@ -109,10 +157,19 @@ export class ImagesService {
     return { path: p, mime: kind === 'file' ? row.mime : 'image/webp', name: row.name }
   }
 
-  caption(id: string, caption: unknown) {
+  /** Меняет название (caption) и/или описание; передавать можно одно из полей. */
+  update(id: string, body: { caption?: unknown; description?: unknown }) {
     this.find(id)
-    if (typeof caption !== 'string' || caption.length > MAX_CAPTION) throw new BadRequestException({ error: 'invalid caption' })
-    this.db.run('UPDATE images SET caption = ? WHERE id = ?', caption.trim(), id)
+    const { caption, description } = body ?? {}
+    if (caption === undefined && description === undefined) throw new BadRequestException({ error: 'invalid caption' })
+    if (caption !== undefined) {
+      if (typeof caption !== 'string' || caption.length > MAX_CAPTION) throw new BadRequestException({ error: 'invalid caption' })
+      this.db.run('UPDATE images SET caption = ? WHERE id = ?', caption.trim(), id)
+    }
+    if (description !== undefined) {
+      if (typeof description !== 'string' || description.length > MAX_DESCRIPTION) throw new BadRequestException({ error: 'invalid description' })
+      this.db.run('UPDATE images SET description = ? WHERE id = ?', description.trim(), id)
+    }
     return { ok: true }
   }
 

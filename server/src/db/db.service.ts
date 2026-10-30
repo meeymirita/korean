@@ -40,6 +40,12 @@ CREATE TABLE IF NOT EXISTS days (
   total INTEGER NOT NULL DEFAULT 0
 );
 
+-- время занятий по дням (секунды): его считает таймер на сайте
+CREATE TABLE IF NOT EXISTS study_time (
+  day TEXT PRIMARY KEY,        -- ГГГГ-ММ-ДД
+  seconds INTEGER NOT NULL DEFAULT 0
+);
+
 -- гостевые токены: сам токен не хранится, только хэш
 CREATE TABLE IF NOT EXISTS guests (
   id TEXT PRIMARY KEY,
@@ -53,6 +59,7 @@ CREATE TABLE IF NOT EXISTS notes (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   text TEXT NOT NULL,
+  images TEXT NOT NULL DEFAULT '[]',   -- id картинок заметки (JSON-список)
   created INTEGER NOT NULL,
   updated INTEGER NOT NULL
 );
@@ -61,7 +68,9 @@ CREATE TABLE IF NOT EXISTS notes (
 CREATE TABLE IF NOT EXISTS images (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,          -- исходное имя файла
-  caption TEXT NOT NULL DEFAULT '',
+  caption TEXT NOT NULL DEFAULT '',     -- название
+  description TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL DEFAULT 'gallery', -- gallery / note / cover
   mime TEXT NOT NULL,
   ext TEXT NOT NULL,
   size INTEGER NOT NULL,
@@ -90,6 +99,32 @@ export class Db implements OnModuleDestroy {
     this.sql = new DatabaseSync(DB_FILE)
     this.sql.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 3000;')
     this.sql.exec(SCHEMA)
+    this.migrate()
+  }
+
+  /** Столбцы, добавленные после первой версии базы: у старого файла их ещё нет. */
+  private migrate() {
+    const has = (table: string, column: string) => this.all<{ name: string }>(`PRAGMA table_info(${table})`).some(c => c.name === column)
+    if (!has('images', 'description')) this.sql.exec("ALTER TABLE images ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+    if (!has('notes', 'images')) this.sql.exec("ALTER TABLE notes ADD COLUMN images TEXT NOT NULL DEFAULT '[]'")
+    if (!has('images', 'kind')) {
+      // картинки заметок и обложка кабинета раньше лежали в общем списке: разносим по назначению
+      this.sql.exec("ALTER TABLE images ADD COLUMN kind TEXT NOT NULL DEFAULT 'gallery'")
+      const used = (sql: string) => this.all<{ images?: string; value?: string }>(sql)
+      for (const n of used('SELECT images FROM notes WHERE images IS NOT NULL')) {
+        try {
+          for (const id of JSON.parse(n.images ?? '[]') as string[]) this.run("UPDATE images SET kind = 'note' WHERE id = ?", id)
+        } catch {
+          /* битый список: пропускаем */
+        }
+      }
+      try {
+        const profile = JSON.parse(used("SELECT value FROM meta WHERE key = 'profile'")[0]?.value ?? '{}') as { cover?: string }
+        if (profile.cover) this.run("UPDATE images SET kind = 'cover' WHERE id = ?", profile.cover)
+      } catch {
+        /* нет профиля */
+      }
+    }
   }
 
   all<T = Record<string, unknown>>(query: string, ...params: Param[]): T[] {

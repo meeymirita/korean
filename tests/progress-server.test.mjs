@@ -17,8 +17,28 @@ describe('сервер: прогресс в базе', () => {
     const p = await read()
     assert.deepEqual([p.v, p.xp, p.updated], [1, 0, 0])
     assert.deepEqual([p.days, p.all, p.words, p.sources, p.log], [{}, {}, {}, {}, []])
-    assert.deepEqual(p.profile, { name: '', avatar: '🌸' })
+    assert.deepEqual(p.profile, { name: '', avatar: '🌸', cover: '' })
+    assert.deepEqual(p.time, {})
     assert.deepEqual(p.settings, { goal: 20, cats: [], gameCats: null })
+  })
+
+  test('время занятий суммируется по дням, лишнее отклоняется', async () => {
+    assert.equal((await ops({ type: 'time', day, seconds: 30 }, { type: 'time', day, seconds: 45 }, { type: 'time', day: '2026-10-29', seconds: 60 })).status, 200)
+    const p = await read()
+    assert.deepEqual(p.time, { [day]: 75, '2026-10-29': 60 })
+    for (const bad of [{ seconds: 0 }, { seconds: 3601 }, { seconds: 1.5 }, { seconds: '5' }, { day: 'вчера' }]) {
+      assert.equal((await ops({ type: 'time', day, seconds: 5, ...bad })).status, 400, JSON.stringify(bad))
+    }
+    assert.deepEqual((await read()).time, { [day]: 75, '2026-10-29': 60 }, 'неверная пачка не применяется')
+  })
+
+  test('обложка кабинета: id картинки или пусто, остальное отклоняется', async () => {
+    assert.equal((await ops({ type: 'profile', cover: '0123456789abcdef' })).status, 200)
+    assert.equal((await read()).profile.cover, '0123456789abcdef')
+    assert.equal((await ops({ type: 'profile', cover: '../../etc/passwd' })).status, 400)
+    assert.equal((await read()).profile.cover, '0123456789abcdef')
+    assert.equal((await ops({ type: 'profile', cover: '' })).status, 200)
+    assert.equal((await read()).profile.cover, '')
   })
 
   test('без токена и с чужим токеном закрыто', async () => {
@@ -69,7 +89,7 @@ describe('сервер: прогресс в базе', () => {
   test('профиль и настройки сохраняются, неверные значения — 400 и ничего не меняют', async () => {
     assert.equal((await ops({ type: 'profile', name: 'mira', avatar: '🦊' }, { type: 'settings', goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 } })).status, 200)
     const p = await read()
-    assert.deepEqual(p.profile, { name: 'mira', avatar: '🦊' })
+    assert.deepEqual(p.profile, { name: 'mira', avatar: '🦊', cover: '' })
     assert.deepEqual(p.settings, { goal: 50, cats: ['еда'], gameCats: { v: 1, a: 0 } })
     const bad = [
       [{ type: 'settings', goal: 7 }],

@@ -2,6 +2,7 @@ import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { access, readdir } from 'node:fs/promises'
 import path from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { OWNER, cleanup, start } from './_server.mjs'
 
 after(cleanup)
@@ -51,6 +52,52 @@ describe('сервер: картинки', () => {
     const thumb = await s.call('GET', `/api/images/${id}/thumb`, OWNER)
     assert.equal(thumb.headers.get('content-type'), 'image/webp')
     assert.equal((await s.call('GET', `/api/images/${id}/file`)).status, 401)
+  })
+
+  test('картинки заметок и обложка не попадают в «Картинки», но файл открывается и место считается', async () => {
+    const note = await (await s.upload(OWNER, PNG, 'в-заметку.png', '', { kind: 'note' })).json()
+    const cover = await (await s.upload(OWNER, PNG, 'обложка.png', '', { kind: 'cover' })).json()
+    assert.deepEqual([note.kind, cover.kind], ['note', 'cover'])
+    const gallery = await (await s.call('GET', '/api/images', OWNER)).json()
+    assert.ok(!gallery.items.some(i => [note.id, cover.id].includes(i.id)), 'в общем списке их нет')
+    assert.deepEqual((await (await s.call('GET', '/api/images?kind=note', OWNER)).json()).items.map(i => i.id), [note.id])
+    assert.deepEqual((await (await s.call('GET', '/api/images?kind=cover', OWNER)).json()).items.map(i => i.id), [cover.id])
+    assert.equal(gallery.used, PNG.length * (gallery.items.length + 2), 'место считается по всем картинкам')
+    assert.equal((await s.call('GET', `/api/images/${note.id}/file`, OWNER)).status, 200)
+    const junk = await (await s.upload(OWNER, PNG, 'x.png', '', { kind: 'что-то' })).json()
+    assert.equal(junk.kind, 'gallery', 'неизвестное назначение — обычная картинка')
+    await s.call('DELETE', `/api/images/${junk.id}`, OWNER)
+    // убранные из заметок картинки удаляются, но не раньше чем через час: свежая остаётся
+    await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 1, notes: [] })
+    assert.equal((await s.call('GET', `/api/images/${note.id}/file`, OWNER)).status, 200, 'свежая ещё не удаляется')
+    for (const id of [note.id, cover.id]) await s.call('DELETE', `/api/images/${id}`, OWNER)
+  })
+
+  test('старая картинка заметки без заметки удаляется вместе с файлами, а используемая остаётся', async () => {
+    const kept = await (await s.upload(OWNER, PNG, 'a.png', '', { kind: 'note' })).json()
+    const gone = await (await s.upload(OWNER, PNG, 'b.png', '', { kind: 'note' })).json()
+    const db = new DatabaseSync(path.join(s.dir, 'app.db'))
+    db.prepare('UPDATE images SET created = 1 WHERE id IN (?, ?)').run(kept.id, gone.id)
+    db.close()
+    const note = { id: 'n', title: 'T', text: '', images: [kept.id], created: 1, updated: 1 }
+    assert.equal((await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 2, notes: [note] })).status, 200)
+    assert.equal((await s.call('GET', `/api/images/${kept.id}/file`, OWNER)).status, 200)
+    assert.equal((await s.call('GET', `/api/images/${gone.id}/file`, OWNER)).status, 404)
+    assert.ok(!(await files(s.dir, 'uploads')).some(f => f.startsWith(gone.id)), 'файл удалён')
+    assert.ok(!(await files(s.dir, 'thumbs')).some(f => f.startsWith(gone.id)), 'миниатюра удалена')
+    await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 3, notes: [] })
+    assert.equal((await s.call('GET', `/api/images/${kept.id}/file`, OWNER)).status, 404, 'после удаления заметки и её картинка уходит')
+  })
+
+  test('описание: меняется отдельно от названия, лишнее — 400, пустой запрос — 400', async () => {
+    assert.equal((await s.call('PATCH', `/api/images/${id}`, OWNER, { description: '  Спит на диване  ' })).status, 200)
+    let it = (await (await s.call('GET', '/api/images', OWNER)).json()).items[0]
+    assert.deepEqual([it.caption, it.description], ['Мой кот', 'Спит на диване'], 'название не тронуто')
+    assert.equal((await s.call('PATCH', `/api/images/${id}`, OWNER, { description: 'я'.repeat(1001) })).status, 400)
+    assert.equal((await s.call('PATCH', `/api/images/${id}`, OWNER, {})).status, 400)
+    assert.equal((await s.call('PATCH', `/api/images/${id}`, OWNER, { description: '' })).status, 200)
+    it = (await (await s.call('GET', '/api/images', OWNER)).json()).items[0]
+    assert.equal(it.description, '')
   })
 
   test('подпись можно изменить; слишком длинная — 400', async () => {
