@@ -6,7 +6,8 @@
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
-    "dev": "nest start --watch"
+    "dev": "nest start --watch",
+    "mail:check": "node scripts/mail-check.cjs"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"

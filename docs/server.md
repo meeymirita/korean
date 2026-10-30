@@ -106,6 +106,7 @@
 - **Включение без риска потерять доступ.** `POST /api/2fa/enable/start {email}` шлёт код на новый адрес, защита включается только после `POST /api/2fa/enable/confirm {code}`, то есть когда письмо дошло. Без настроенной почты включить нельзя.
 - **Выключение и выход везде:** `DELETE /api/2fa` и `DELETE /api/2fa/sessions` просят токен ещё раз (`X-Confirm-Token`).
 - **Почта.** Доступы в `server/.env`: `SMTP_HOST`, `SMTP_PORT` (465 или 587), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. Пароль в чат и в git не попадает.
+- **Проверка почты:** `npm --prefix server run mail:check` проверяет вход в SMTP, а `npm --prefix server run mail:check -- адрес@почта` ещё и шлёт тестовое письмо (нужен собранный сервер).
 - **Аварийный выход:** `DISABLE_2FA=1` в `server/.env` и перезапуск службы: вход снова по одному токену, настройки защиты сохраняются; после починки почты строку убрать.
 - Таблицы: `sessions` (хэш, срок), настройки в `meta` (`twofa`). События в журнале: `2fa_sent`, `2fa_login`, `2fa_bad_code`, `2fa_on`, `2fa_off`, `2fa_mail_failed`.
 - Код: `server/src/auth/twofa.service.ts`, `twofa.controller.ts`, `server/src/mail/mail.service.ts`; сайт: `composables/useTwoFa.ts`, `AuthGate.vue`, `cabinet/TwoFaBlock.vue`. Тесты `twofa-server`, `twofa-store`
