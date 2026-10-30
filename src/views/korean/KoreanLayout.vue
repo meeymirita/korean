@@ -8,6 +8,7 @@ import Avatar from '@/components/Avatar.vue'
 import AuthGate from '@/components/AuthGate.vue'
 import SearchWindow from '@/components/SearchWindow.vue'
 import { openSearch } from '@/composables/useSearchWindow'
+import Breadcrumbs from '@/components/korean/Breadcrumbs.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
 import { sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
@@ -97,6 +98,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     </aside>
     <button v-if="focus" class="side-show" title="Показать меню (клавиша F)" aria-label="Показать меню" @click="setFocus(false)">☰ Меню</button>
     <main class="study-main">
+      <Breadcrumbs />
       <AuthGate v-if="route.meta.private && !progress.unlocked" />
       <RouterView v-else />
     </main>

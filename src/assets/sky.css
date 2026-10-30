@@ -116,3 +116,14 @@
 
 /* полоса прокрутки не появляется и не исчезает при смене вкладок: страница не дёргается */
 html { scrollbar-gutter: stable; }
+
+/* хлебные крошки над заголовком страницы (отступы как у .wrap в этой теме) */
+.study-main .crumbs { max-width: 1100px; margin: 0 auto; padding: 22px 158px 0 8px; }
+.study-shell.sky .study-main .crumbs + .wrap, .study-shell.sky .study-main .crumbs + .ref-tabs { padding-top: 14px; }
+.study-shell.sky.focus .study-main .crumbs { padding-top: 62px; }
+.study-main .crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; padding: 0; list-style: none; font-size: 13px; font-weight: 600; color: var(--muted); }
+.study-main .crumbs li + li::before { content: '›'; margin-right: 8px; opacity: .55; }
+.study-main .crumbs a { color: var(--muted); text-decoration: none; padding: 2px 4px; margin: -2px -4px; border-radius: 6px; }
+.study-main .crumbs a:hover { color: var(--pink); background: rgba(255, 255, 255, .6); }
+.study-main .crumbs [aria-current] { color: var(--ink); }
+@media (max-width: 860px) { .study-main .crumbs { padding: 14px 4px 0; } .study-shell.sky.focus .study-main .crumbs { padding-top: 14px; } }

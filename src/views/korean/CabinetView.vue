@@ -69,6 +69,14 @@ watch(tab, t => {
   const { tab: _old, ...rest } = route.query
   void router.replace({ query: t === 'overview' ? rest : { ...rest, tab: t } })
 })
+/** Крошка «Кабинет» (и кнопка «назад») меняют ?tab=… извне: вкладка следует за адресом. */
+watch(
+  () => route.query.tab,
+  v => {
+    const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as Tab
+    if (next !== tab.value) tab.value = next
+  },
+)
 const dueCount = computed(() => dueWords(progress.data).length)
 const tabs = computed<[Tab, string][]>(() => [
   ['overview', 'Обзор'],
