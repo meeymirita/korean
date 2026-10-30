@@ -277,7 +277,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     })
     if (res.status === 401) throw new Error('Яндекс не принял логин или пароль приложения')
     if (res.status === 507) throw new Error('на Диске нет места')
-    if (!res.ok) throw new Error('Диск ответил ' + res.status)
+    if (!res.ok) throw new Error(`Диск ответил ${res.status}${await this.reason(res)}`)
     await this.pruneDisk(dir).catch(() => undefined) // чистка старых не должна ронять успешную отправку
   }
 
@@ -294,6 +294,16 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     return out
   }
 
+  /** Пояснение, которое Яндекс присылает в теле ответа (без тегов), для сообщения об ошибке. */
+  private async reason(res: Response) {
+    try {
+      const t = (await res.text()).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
+      return t ? `: ${t}` : ''
+    } catch {
+      return ''
+    }
+  }
+
   /** 'ok' или текст ошибки. */
   private async testDisk() {
     try {
@@ -303,7 +313,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       if (mk.status === 401) return 'Диск: Яндекс не принял логин или пароль приложения'
       const res = await fetch(this.dav(`${dir}/проверка.txt`), { method: 'PUT', headers: { Authorization: this.auth() }, body, signal: AbortSignal.timeout(20_000) })
       if (res.status === 401) return 'Диск: Яндекс не принял логин или пароль приложения'
-      if (!res.ok) return 'Диск ответил ' + res.status
+      if (!res.ok) return `Диск ответил ${res.status}${await this.reason(res)}`
       return 'ok'
     } catch (e) {
       const err = e as Error
