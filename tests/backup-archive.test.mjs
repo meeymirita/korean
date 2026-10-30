@@ -77,3 +77,19 @@ describe('сервер: проверка отправки', () => {
     assert.match(await readFile(path.join(dir, 'm.jsonl'), 'utf8'), /x@example\.org/)
   })
 })
+
+describe('письмо с копией', async () => {
+  test('шаги открытия, части и экранирование; пароля в письме нет', async () => {
+    const { backupMail } = await import('../server/dist/mail/templates.js')
+    const one = backupMail({ kind: 'archive', name: 'korean-1.tar.gz.enc', mb: '1.3' })
+    assert.match(one.html, /openssl enc -d -aes-256-cbc/)
+    assert.ok(!one.html.includes('-pass') && !one.text.includes('-pass'), 'пароль в командной строке не светим')
+    assert.match(one.text, /1\. Расшифруйте/)
+    const part = backupMail({ kind: 'archive', name: 'korean-1.tar.gz.enc', mb: '40', part: { i: 2, n: 3 } })
+    assert.match(part.subject, /часть 2 из 3/)
+    assert.match(part.html, /cat korean-1\.tar\.gz\.enc\.part\*/)
+    assert.match(backupMail({ kind: 'archive', name: '<b>x</b>' }).html, /&lt;b&gt;x&lt;\/b&gt;/)
+    assert.match(backupMail({ kind: 'big', mb: '200' }).text, /server\/data\/export/)
+    assert.match(backupMail({ kind: 'test' }).subject, /проверка/)
+  })
+})

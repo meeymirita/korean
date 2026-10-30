@@ -12,6 +12,7 @@ import { TwoFaService } from '../auth/twofa.service'
 import { DATA_DIR, ROOT } from '../config'
 import { Db } from '../db/db.service'
 import { MailService } from '../mail/mail.service'
+import { backupMail } from '../mail/templates'
 
 const OUT = path.join(DATA_DIR, 'export')
 const FILE = path.join(DATA_DIR, 'backup-archive.json')
@@ -220,7 +221,8 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   async test() {
     if (!this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес BACKUP_MAIL_TO' }
     try {
-      await this.mail.send(this.mailTo(), '우리말: проверка отправки', 'Это проверочное письмо из «Настроек». Если оно пришло, почта для копий настроена верно.')
+      const m = backupMail({ kind: 'test' })
+      await this.mail.send(this.mailTo(), m.subject, m.text, m.html)
       return { mail: 'ok' as const, message: '' }
     } catch (e) {
       const message = 'Почта: ' + (e as Error).message.slice(0, 120)
@@ -234,10 +236,10 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   private async sendMail(enc: string, name: string, size: number) {
     const to = this.mailTo()
     const mb = (size / 1048576).toFixed(1)
-    const how = 'Открыть: openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in файл.enc -out korean.tar.gz -pass pass:ВАШ_ПАРОЛЬ, потом tar -xzf korean.tar.gz. Подробности в docs/backup.md.'
     const n = Math.ceil(size / PART)
     if (n > MAX_PARTS) {
-      await this.mail.send(to, '우리말: архив слишком большой для почты', `Полный архив (${mb} МБ) не помещается в письма и остался только на сервере (server/data/export). Скачайте его оттуда вручную или подключите облако.`)
+      const m = backupMail({ kind: 'big', mb })
+      await this.mail.send(to, m.subject, m.text, m.html)
       return 0
     }
     const fh = await open(enc, 'r')
@@ -250,10 +252,10 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
           writeFileSync(part, buf)
         }
         const fname = n === 1 ? name : `${name}.part${i + 1}`
-        const text = n === 1 ? `Полный архив платформы, ${mb} МБ, зашифрован паролем BACKUP_PASSPHRASE.\n\n${how}` : `Часть ${i + 1} из ${n} полного архива (${mb} МБ). Склейте части по порядку: cat ${name}.part* > ${name}\n\n${how}`
+        const m = backupMail({ kind: 'archive', name, mb, part: n > 1 ? { i: i + 1, n } : undefined })
         this.set(3, 60 + ((i + 0.5) / n) * 38)
         try {
-          await this.mail.send(to, `우리말: резервная копия${n > 1 ? ` (часть ${i + 1} из ${n})` : ''}`, text, undefined, [{ filename: fname, path: part }])
+          await this.mail.send(to, m.subject, m.text, m.html, [{ filename: fname, path: part }])
         } finally {
           if (n > 1) rmSync(part, { force: true })
         }
