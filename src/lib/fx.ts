@@ -54,3 +54,19 @@ export function burst(x: number, y: number, count = 18) {
     })
   }
 }
+
+/** Карточка следует за курсором при перетаскивании. */
+export function follow(el: Element, dx: number, dy: number) {
+  gsap.set(el, { x: dx, y: dy })
+}
+
+/** Карточка возвращается на место пружинкой (отпустили не там). */
+export function springBack(el: Element) {
+  if (calm()) return void gsap.set(el, { clearProps: 'transform' })
+  gsap.to(el, { x: 0, y: 0, duration: 0.45, ease: 'back.out(1.8)', clearProps: 'transform' })
+}
+
+/** Убирает смещение карточки без анимации. */
+export function drop(el: Element) {
+  gsap.set(el, { clearProps: 'transform' })
+}

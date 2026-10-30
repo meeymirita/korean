@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import { MOODS, type Mood } from '@/data/mood'
 import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
+import { burst, cascade, drop, follow, pop, shake, springBack } from '@/lib/fx'
 import { useProgressStore } from '@/stores/progress'
 
 /**
@@ -36,6 +37,88 @@ const pace = computed(() => paceSummary(times.value))
 const current = computed(() => props.tasks[idx.value])
 const finished = computed(() => idx.value >= props.tasks.length)
 
+/* ---------- перетаскивание варианта на вопрос, анимации ---------- */
+const zone = ref<HTMLElement>()
+const optsBox = ref<HTMLElement>()
+const over = ref(false)
+let dragEl: HTMLElement | null = null
+let dragOpt = ''
+let dragFrom = { x: 0, y: 0 }
+let moved = false
+let suppressClick = false
+
+const hitZone = (x: number, y: number) => {
+  const r = zone.value?.getBoundingClientRect()
+  return !!r && x >= r.left - 12 && x <= r.right + 12 && y >= r.top - 12 && y <= r.bottom + 12
+}
+function optDown(e: PointerEvent, o: string) {
+  if (e.button !== 0 || picked.value !== null) return
+  dragEl = e.currentTarget as HTMLElement
+  dragOpt = o
+  dragFrom = { x: e.clientX, y: e.clientY }
+  moved = false
+  window.addEventListener('pointermove', optMove)
+  window.addEventListener('pointerup', optUp)
+  window.addEventListener('pointercancel', optCancel)
+}
+function optMove(e: PointerEvent) {
+  if (!dragEl) return
+  const dx = e.clientX - dragFrom.x
+  const dy = e.clientY - dragFrom.y
+  if (!moved && Math.hypot(dx, dy) > 8) {
+    moved = true
+    dragEl.classList.add('dragging')
+  }
+  if (!moved) return
+  follow(dragEl, dx, dy)
+  over.value = hitZone(e.clientX, e.clientY)
+}
+function endDrag() {
+  window.removeEventListener('pointermove', optMove)
+  window.removeEventListener('pointerup', optUp)
+  window.removeEventListener('pointercancel', optCancel)
+  over.value = false
+}
+function optCancel() {
+  const el = dragEl
+  endDrag()
+  dragEl = null
+  if (el && moved) {
+    el.classList.remove('dragging')
+    springBack(el)
+  }
+}
+function optUp(e: PointerEvent) {
+  const el = dragEl
+  const o = dragOpt
+  const wasMoved = moved
+  const hit = hitZone(e.clientX, e.clientY)
+  endDrag()
+  dragEl = null
+  if (!el || !wasMoved) return
+  // после перетаскивания браузер ещё пришлёт click: его не считаем
+  suppressClick = true
+  setTimeout(() => (suppressClick = false), 0)
+  el.classList.remove('dragging')
+  if (hit && picked.value === null) {
+    drop(el)
+    answer(o)
+  } else springBack(el)
+}
+const onPick = (o: string) => !suppressClick && answer(o)
+function enter() {
+  void nextTick(() => cascade(optsBox.value?.querySelectorAll('.rs-opt') ?? []))
+}
+watch([idx, () => props.tasks], enter)
+onMounted(enter)
+watch(finished, v => {
+  if (!v) return
+  void nextTick(() => {
+    const r = document.querySelector('.rs-end')?.getBoundingClientRect()
+    if (r && right.value >= props.tasks.length / 2) burst(r.left + r.width / 2, r.top + 40)
+  })
+})
+
 watch(
   () => props.tasks,
   () => {
@@ -59,6 +142,7 @@ function answer(option: string) {
   if (ok) right.value++
   else missed.value.push(t)
   progress.record({ word: t.word, ok, source: props.source })
+  ;(ok ? pop : shake)(zone.value)
 }
 function next() {
   idx.value++
@@ -86,6 +170,7 @@ onMounted(() => {
   }, 1000)
 })
 onBeforeUnmount(() => {
+  endDrag()
   document.removeEventListener('keydown', onKey)
   clearInterval(tick)
 })
@@ -101,16 +186,17 @@ onBeforeUnmount(() => {
       </div>
       <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="tasks.length"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
       <div class="rs-sub">{{ current.title }}</div>
-      <div class="rs-q" :class="{ ru: current.kind === 'back' }">{{ current.prompt }}</div>
+      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back', over }" title="Перетащи сюда вариант ответа">{{ current.prompt }}</div>
       <div v-if="current.hint" class="rs-sub">{{ current.hint }}</div>
-      <div class="rs-opts">
+      <div ref="optsBox" class="rs-opts">
         <button
           v-for="(o, i) in current.options"
           :key="o"
           class="rs-opt"
           :class="{ ok: picked !== null && o === current.answer, bad: picked === o && o !== current.answer }"
           :disabled="picked !== null"
-          @click="answer(o)"
+          @pointerdown="optDown($event, o)"
+          @click="onPick(o)"
         >
           <kbd>{{ i + 1 }}</kbd> {{ o }}
         </button>

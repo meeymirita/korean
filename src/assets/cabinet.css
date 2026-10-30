@@ -96,6 +96,11 @@
 .study .rs-opt { padding: 13px 16px; font-size: 16px; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
 .study .rs-opt:not(:disabled):hover { border-color: var(--gold); background: var(--gold-soft); }
 .study .rs-opt:disabled { cursor: default; }
+/* вариант можно утащить на вопрос: пока тянем, вопрос обводится */
+.study .rs-opt:not(:disabled) { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.study .rs-opt.dragging { position: relative; z-index: 20; cursor: grabbing; background: var(--surface); border-color: var(--gold); box-shadow: 0 10px 24px rgba(48, 56, 120, .22); }
+.study .rs-q.drop { border-radius: 16px; outline: 3px dashed transparent; outline-offset: 10px; transition: outline-color .15s, background .15s; }
+.study .rs-q.drop.over { outline-color: var(--gold); background: var(--gold-soft); }
 .study .rs-opt.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); font-weight: 700; }
 .study .rs-opt.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
 .study .rs-next { margin-top: 16px; padding: 11px 22px; font-weight: 600; color: #fff; background: var(--gold); border: 0; border-radius: 12px; cursor: pointer; }
