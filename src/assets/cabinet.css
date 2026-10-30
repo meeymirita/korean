@@ -275,7 +275,7 @@
 .study .nt-err { margin: 6px 0 0; font-size: 13px; color: var(--bad); }
 
 /* шапка кабинета с обложкой */
-.study .cb-cover { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; min-height: 250px; padding: 26px 28px;
+.study .cb-cover { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; min-height: 400px; padding: 26px 28px;
   border: 1px solid #fff; border-radius: 24px; box-shadow: var(--shadow);
   background: linear-gradient(115deg, rgba(33, 43, 105, .92), rgba(53, 72, 142, .7) 55%, rgba(214, 77, 169, .35)), radial-gradient(ellipse at 80% 80%, #f7b9df, #7ea9eb 45%, #303d81 80%); color: #fff; }
 .study .cb-cover.photo { background: linear-gradient(180deg, rgba(20, 24, 70, .25), rgba(20, 24, 70, .72)), var(--cover) center / cover no-repeat; }
@@ -459,3 +459,5 @@
 .study .md-sum { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; font-size: 14px; color: var(--muted); }
 .study .md-hard { margin: 8px 0 0; font-size: 14px; }
 .study .rs-pace { margin: 0; font-size: 14px; color: var(--muted); }
+/* на телефоне баннер ниже, иначе он занимает весь экран */
+@media (max-width: 860px) { .study .cb-cover { min-height: 250px; } }
