@@ -1,0 +1,55 @@
+# Автопроверки: на каждый push в main и на каждый pull request GitHub сам ставит пакеты, проверяет типы, собирает сайт (с пререндером),
+# запускает все тесты и смотрит боевые зависимости на известные уязвимости. Результат виден у коммита (зелёная галочка или красный крестик).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Проверка (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # серверу нужен Node 22.18 или новее (встроенная база node:sqlite); на хостинге сейчас 22.x, локально 24
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Пакеты сайта и сервера
+        run: |
+          npm ci
+          npm --prefix server ci
+
+      - name: Типы
+        run: npx vue-tsc --build
+
+      - name: Сборка сайта и пререндер
+        run: npm run build
+
+      - name: Тесты (собирают сервер и запускают все проверки)
+        run: npm test
+
+      - name: Уязвимости в боевых зависимостях
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm --prefix server audit --omit=dev --audit-level=high
