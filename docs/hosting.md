@@ -3,7 +3,12 @@
 - Сервер Ubuntu (`root@se-40678`), проект в `/var/sites/korean` (новый каталог), сайт `https://korean.meeymirita.ru` (отдельный блок в Caddy,
   A-запись `korean` в DNS). Главная `meeymirita.ru` — другой проект (`/var/sites/meeymirita_start_page`).
   Владелец сам заходит по SSH; мне доступа нет, поэтому команды ему даём текстом.
-- Обновление сайта: `git pull` → `npm run build` (папка `dist`). Сервер прогресса перезапускать только если менялся
+- **Обновление одной командой:** `cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт: отказывается работать при несохранённых правках в папке; `git pull --ff-only`; ставит пакеты, если менялись
+  `package*.json`; при изменениях в `server/` ставит пакеты сервера, собирает его и перезапускает службу `progress`; собирает сайт (с пререндером); проверяет `/api/health` до 20 секунд;
+  **если сервер не ответил или сборка упала, сам возвращает прежнюю версию**, пересобирает и перезапускает. Параметры: `--force` (собрать всё и перезапустить, даже если изменений нет),
+  `--no-restart`. Уведомление в Telegram по желанию: файл `/etc/korean-deploy.env` со строками `NOTIFY_TELEGRAM_TOKEN=…` и `NOTIFY_TELEGRAM_CHAT=…` (права `chmod 600`). Тесты: `tests/deploy.test.mjs`.
+  Вручную то же самое выглядит так (так делали раньше):
+- Обновление сайта вручную: `git pull` → `npm run build` (папка `dist`). Сервер прогресса перезапускать только если менялся
   `server/`: `cd server && npm ci && npm run build`, затем `systemctl restart progress`.
 - **Caddy** (`/etc/caddy/Caddyfile`, копия до правки `Caddyfile.bak`), блок сайта:
   `encode zstd gzip`, заголовки безопасности (HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, `-Server`), `request_body max_size 60MB`,

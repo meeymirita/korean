@@ -56,7 +56,7 @@
 - Коммиты и пуш делать только когда просят («закоммить и запушь»), отдельными коммитами по каждому действию.
   Сообщения на английском, повелительное наклонение, в конце строка
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Перед пушем проверять, что каждый коммит
-  собирается (временный `git worktree` + симлинк на `node_modules` + `vue-tsc --build` + `vite build`).
+  собирается (временный `git worktree` + симлинки на `node_modules` проекта и `server/node_modules` + `vue-tsc --build` + `npm run build` + `npm test`).
 
 ## Стек и запуск
 
@@ -65,10 +65,11 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 `npm run preview`, `npm test` (собирает сервер и запускает все тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
 **Сервер** (`server/`, NestJS + SQLite, свои зависимости): `npm run server:build`, `npm run server`, `npm run server:dev`;
 подробности в `docs/server.md`. Зависимости сервера ставить только внутри `server/` (`npm --prefix server ci`). Корневой
-`node_modules` пока ссылка на папку другого проекта: **пакеты в сайт ставить можно (решение владельца 2026-10-30), но сначала один раз отвязать
-ссылку** (`rm node_modules && npm install`, потом `npm test` и `npm run build`), иначе `npm install` испортит соседний проект; см. `ideas/PRINCIPLES.md`.
+`node_modules` у проекта **свой** (раньше был ссылкой на соседний проект, отвязан 2026-10-30), пакеты в сайт ставить можно: `npm install <пакет>`,
+после этого `npm test` и `npm run build`. Серверные пакеты внутри `server/`. Для временной проверки коммитов в `git worktree` в нём делай симлинк на
+`/Users/mira/Documents/projects/git_korean/node_modules` и `server/node_modules`.
 
-**Хостинг:** владелец сам заходит на сервер, делает `git pull`, `npm run build` и, если менялся `server/`,
+**Хостинг:** владелец сам заходит на сервер и запускает одну команду `bash scripts/deploy.sh` (делает всё ниже сам, проверяет `/api/health`, при ошибке откатывает; `--force`, `--no-restart`). Вручную то же: `git pull`, `npm run build` и, если менялся `server/`,
 `cd server && npm ci && npm run build` с `systemctl restart progress` (**сервер обязательно перезапускать**, иначе сайт новый, а сервер старый); Caddy отдаёт `dist`, сервер работает как служба systemd.
 Подробности и команды — `docs/hosting.md`.
 
@@ -126,7 +127,8 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 
 ## Как проверять изменения
 
-- Тесты: `npm test` (232 теста, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Автопроверки на GitHub (`.github/workflows/ci.yml`: типы, сборка, тесты, `npm audit` на Node 22 и 24) идут после каждого push; Dependabot раз в неделю предлагает обновления.
+- Тесты: `npm test` (241 тест, около 8 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
