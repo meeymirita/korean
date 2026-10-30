@@ -2,6 +2,10 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-10-30, тренажёр частиц
+
+- `data/korean/particles.ts` (`particleSets`, `particleTasks` на основе `ruleTasks`), страница `/korean/particles` (`ParticlesView.vue`, `TaskSession`), ссылка в «Тренажёрах». Тест `tests/particles.test.mjs`.
+
 ## 2026-10-30, разбор ошибок
 
 - `data/korean/explain.ts` (`explain`), `ExplainBox.vue`; у заданий поле `gram` (id карточки: у правила и у настоящего времени). Показывается в «Сегодня» и `TaskSession` (5 минут, мои ошибки). Тест `tests/explain.test.mjs`.

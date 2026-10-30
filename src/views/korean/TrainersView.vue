@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { usePersisted } from '@/composables/usePersisted'
 import MatchGame from '@/components/korean/MatchGame.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
@@ -39,6 +40,7 @@ const setMode = (m: Mode) => ((mode.value = m), start())
     <div class="chips">
       <button class="chip" :class="{ on: mode === 'match' }" @click="setMode('match')">🔗 Найди пару</button>
       <button class="chip" :class="{ on: mode === 'type' }" @click="setMode('type')">⌨️ Напиши перевод</button>
+      <RouterLink to="/korean/particles" class="chip">🧩 Частицы и окончания</RouterLink>
     </div>
 
     <div class="chips">
