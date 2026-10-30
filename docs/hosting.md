@@ -29,7 +29,7 @@
   (отступы при копировании ломают `EOF`), не вставляй команды с отступами в начале строк. Просить показать вывод
   (`cat`, `status`), прежде чем править чужой конфиг (в Caddyfile могут быть другие сайты).
 - **Сервер** — NestJS + SQLite, подробно в `docs/server.md`. Нужен Node 22.18+ или 24.12+ (`node -v`): база встроенная (`node:sqlite`),
-  но у сервера свои пакеты. После `git pull`, который меняет что-то в `server/`: `cd server && npm ci && npm run build`, затем
+  но у сервера свои пакеты. **На сервере сейчас Node 24 (пакет NodeSource, `/usr/bin/node`, обновлён 2026-10-30 командой `curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && apt install -y nodejs`; вместе с ним apt убрал системные `node-*` и старый npm, это нормально, npm теперь свой от NodeSource); после смены Node нужен `bash scripts/deploy.sh --force`.** После `git pull`, который меняет что-то в `server/`: `cd server && npm ci && npm run build`, затем
   `systemctl restart progress`. Картинки обрабатывает пакет `sharp` (ставится вместе с остальными, готовые сборки для Linux есть).
 - **Переход со старого сервера** (один раз): в `/etc/systemd/system/progress.service` заменить `ExecStart` на
   `/usr/bin/node server/dist/main.js`, затем `systemctl daemon-reload && systemctl restart progress`. Старые файлы
