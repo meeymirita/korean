@@ -5,6 +5,7 @@
 ## 2026-10-30, видео-обзор
 
 - `public/demo.webm` (запись демо-данных через headless Chromium, кадры в ffmpeg из кэша Playwright, VP9 + Opus, музыка с 35-й секунды трека), ссылка и окно в `HomeView.vue`. Тест в `tests/pwa.test.mjs`. Музыку можно наложить обычным ffmpeg (`brew install ffmpeg`).
+- Видео переснято (Playwright `recordVideo`, 2:53, 7 МБ): `public/demo.webm`, пересъёмка больше не нужна.
 
 ## 2026-10-30, место для картинок
 

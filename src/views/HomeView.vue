@@ -145,8 +145,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
         <div class="demo-box" role="dialog" aria-modal="true" aria-label="Видео-демонстрация платформы">
           <button type="button" class="demo-x" aria-label="Закрыть" @click="demo = false">✕</button>
           <video class="demo-video" :src="DEMO_SRC" controls autoplay playsinline preload="auto"></video>
-          <p class="demo-cap">Короткий обзор: кабинет, «Сегодня», игра, словарь, грамматика, справочник и тренажёры. Данные в видео демонстрационные, со звуком (музыка).</p>
-          <p class="demo-cap demo-note">Это демо-версия: в записи возможны подёргивания и резкие переходы между страницами. Позже видео заменим на более плавное.</p>
+          <p class="demo-cap">Обзор на три минуты: кабинет и его вкладки, «Сегодня», словарь, грамматика, справочник, тренажёры и игра, с кликами по заданиям. Данные в видео демонстрационные, со звуком (музыка).</p>
         </div>
       </div>
     </Teleport>
