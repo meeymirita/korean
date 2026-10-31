@@ -111,7 +111,7 @@ onBeforeUnmount(() => dispose?.())
           <div class="gx-sub">Учим корейский вместе ♡</div>
         </div>
       </RouterLink>
-      <button type="button" class="gx-find" title="Поиск по платформе" @click="openSearch()"><span aria-hidden="true">⌕</span> Поиск игр… <kbd>⌘K</kbd></button>
+      <label class="gx-find"><span aria-hidden="true">⌕</span><input id="gameFind" type="search" autocomplete="off" placeholder="Поиск игр…" aria-label="Поиск по списку игр" /></label>
       <div class="gx-navbox">
         <img class="gx-cat gx-cat-nav" :src="catWow" alt="" aria-hidden="true" />
         <nav id="sideModes" class="gx-modes" aria-label="Режимы игры"></nav>

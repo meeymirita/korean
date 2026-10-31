@@ -696,7 +696,10 @@ function drawModes(){
   const side=$('#sideModes');
   if(side){
     side.innerHTML='';
-    MODES.forEach(m=>{
+    const fq=(($('#gameFind')||{}).value||'').trim().toLowerCase();
+    const found=MODES.filter(m=>!fq||m.name.toLowerCase().includes(fq));
+    if(!found.length)side.appendChild(el('div','empty','Такой игры нет'));
+    found.forEach(m=>{
       const b=el('button','sm'+(S.mode===m.id?' on':''));b.type='button';
       b.append(el('span','si',m.icon),el('span','st',m.name));
       if(S.mode===m.id)b.appendChild(el('span','sa','›'));
@@ -722,6 +725,9 @@ function syncToggles(){
   $('#cbRead').checked=S.reading;$('#tense').value=S.tense;
   $('#lbRead').classList.toggle('on',S.reading);
 }
+const findBox=$('#gameFind');
+const onFind=()=>drawModes();
+findBox?.addEventListener('input',onFind);
 $('#cbRead').addEventListener('change',e=>{S.reading=e.target.checked;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);});
 $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
@@ -836,6 +842,7 @@ renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();
 return ()=>{
   document.removeEventListener('keydown',onKeydown);
+  findBox?.removeEventListener('input',onFind);
   clearInterval(S.blitz.iv);
   clearTimeout(S.timer);
   clearTimeout(toast.t);
