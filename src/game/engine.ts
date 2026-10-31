@@ -46,16 +46,16 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0},reading:true,auto:true,tense:'both',
+  mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
   blitz:{on:false,left:60,ok:0,bad:0,iv:null}
 };
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,gloss:S.gloss,cats:S.cats,reading:S.reading,auto:S.auto,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
-  ['reading','auto','tense','mode','seenHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  ['reading','tense','mode','seenHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
   if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
 load();
 /* очки старой версии игры переходят в общий прогресс сайта */
@@ -583,10 +583,8 @@ function showFeedback(q,ok){
   nb.focus({preventScroll:true});
   const inB=S.blitz.on;
   if(S.surv.on&&S.surv.lives<=0)return;
-  if(ok&&(S.auto||inB)){
-    const len=q.explain.join(' ').length;
-    S.timer=setTimeout(next,inB?450:Math.min(3200,1000+len*22));
-  }else if(!ok&&inB){S.timer=setTimeout(next,1100);}
+  // сам переходит дальше только режим на время; в остальных результат висит, пока не нажмёшь «Дальше»
+  if(inB)S.timer=setTimeout(next,ok?450:1100);
 }
 function next(){
   clearTimeout(S.timer);
@@ -663,11 +661,10 @@ function drawCats(){
   });
 }
 function syncToggles(){
-  $('#cbRead').checked=S.reading;$('#cbAuto').checked=S.auto;$('#tense').value=S.tense;
-  $('#lbRead').classList.toggle('on',S.reading);$('#lbAuto').classList.toggle('on',S.auto);
+  $('#cbRead').checked=S.reading;$('#tense').value=S.tense;
+  $('#lbRead').classList.toggle('on',S.reading);
 }
 $('#cbRead').addEventListener('change',e=>{S.reading=e.target.checked;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);});
-$('#cbAuto').addEventListener('change',e=>{S.auto=e.target.checked;save();syncToggles();});
 $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
 $('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
