@@ -14,16 +14,26 @@ type Mode = 'match' | 'type'
 /** Режим в адресе (?mode=type), «Найди пару» без параметра. */
 const mode = useQueryParam<Mode>('mode', 'match', ['match', 'type'])
 const cat = usePersisted('tr_cat', '', v => typeof v === 'string')
-const size = usePersisted('tr_size', 8, v => [4, 6, 8, 10, 12, 15, 20].includes(v as number))
+const size = usePersisted('tr_size', 8, v => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 20)
 const dir = usePersisted<Direction>('tr_dir', 'ko-ru', v => typeof v === 'string')
 const showReading = usePersisted('tr_reading', true, v => typeof v === 'boolean')
 
 const available = computed(() => pool(cat.value))
-const round = ref(pickRound(available.value, size.value))
+const SIZES = [4, 6, 8, 10, 12, 15, 20]
+/** Различных слов в теме: больше, чем их есть, в раунд не набрать (иначе раунд всегда одинаковый и «новых» нет). */
+const poolSize = computed(() => pickRound(available.value, 1000).length)
+/** Варианты размера: те, что меньше числа слов, и «все» (если слов не больше 20). */
+const sizes = computed(() => {
+  const m = poolSize.value
+  return [...SIZES.filter(n => n < m), ...(m <= 20 ? [m] : [])]
+})
+/** Размер раунда не больше числа слов в теме */
+const roundSize = computed(() => Math.max(1, Math.min(size.value, poolSize.value)))
+const round = ref(pickRound(available.value, roundSize.value))
 const roundId = ref(0)
 
 function start(words?: typeof round.value) {
-  round.value = words ?? pickRound(pool(cat.value), size.value)
+  round.value = words ?? pickRound(pool(cat.value), roundSize.value)
   roundId.value++
 }
 const dirs = computed(() => dirsFor(cat.value))
@@ -62,8 +72,8 @@ watch(mode, () => start())
 
     <div class="tr-set">
       <label>Слов в раунде
-        <select v-model.number="size" @change="start()">
-          <option v-for="n in [4, 6, 8, 10, 12, 15, 20]" :key="n" :value="n">{{ n }}</option>
+        <select :value="roundSize" @change="size = Number(($event.target as HTMLSelectElement).value); start()">
+          <option v-for="n in sizes" :key="n" :value="n">{{ n === poolSize ? `${n} (все)` : n }}</option>
         </select>
       </label>
       <label v-if="mode === 'type' && dirs.length > 1">Задание
@@ -73,7 +83,7 @@ watch(mode, () => start())
       </label>
       <label v-if="mode === 'match'" class="chk"><input v-model="showReading" type="checkbox" /> показывать чтение</label>
     </div>
-    <p v-if="available.length < size" class="tr-note">В этой категории всего {{ available.length }} слов подходящих для раунда.</p>
+    <p v-if="poolSize < size" class="tr-note">В этой теме всего {{ poolSize }} слов, поэтому в раунде их {{ roundSize }}. Другие слова выбери в «Все слова».</p>
 
     <MatchGame
       v-if="mode === 'match'"
