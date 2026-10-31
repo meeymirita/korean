@@ -65,10 +65,13 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual(p.sources.game, { ok: 1, bad: 1 })
   })
 
-  test('слово выучено после трёх верных подряд: kd запоминается один раз', async () => {
-    await ops(answer({ t: 7000, word: '학교' }), answer({ t: 8000, word: '학교' }), answer({ t: 9000, word: '학교' }), answer({ t: 9500, word: '학교' }))
-    const w = (await read()).words['학교']
-    assert.deepEqual([w.streak, w.kd], [4, 9000])
+  test('слово выучено на пяти очках: kd запоминается один раз, ошибка снимает одно очко', async () => {
+    await ops(...[7000, 8000, 9000, 9100, 9200, 9500].map(t => answer({ t, word: '학교' })))
+    let w = (await read()).words['학교']
+    assert.deepEqual([w.streak, w.kd], [6, 9200])
+    await ops(answer({ t: 9600, word: '학교', ok: false }))
+    w = (await read()).words['학교']
+    assert.deepEqual([w.streak, w.kd], [5, 9200])
   })
 
   test('свои очки ответа и ответ без слова', async () => {

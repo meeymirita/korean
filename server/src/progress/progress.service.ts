@@ -8,7 +8,8 @@ import { Db } from '../db/db.service'
 import { pruneImages } from '../images/images.service'
 
 /** Слово считается выученным после стольких верных ответов подряд. */
-const KNOWN_STREAK = 3
+/** очков слова, с которых оно выучено (верный ответ +1, ошибка −1) */
+const KNOWN_STREAK = 5
 const GOALS = [10, 20, 50]
 const LOG_LIMIT = 300
 const MAX_OPS = 500
@@ -167,7 +168,7 @@ export class ProgressService {
     if (word) {
       const w = this.db.get<{ streak: number; kd: number | null }>('SELECT streak, kd FROM words WHERE word = ?', word)
       if (!w) this.db.run('INSERT INTO words (word, ok, bad, streak, last) VALUES (?, 0, 0, 0, 0)', word)
-      const streak = ok ? (w?.streak ?? 0) + 1 : 0
+      const streak = Math.max(0, (w?.streak ?? 0) + (ok ? 1 : -1))
       const kd = ok && streak >= KNOWN_STREAK && !w?.kd ? t : (w?.kd ?? null)
       this.db.run('UPDATE words SET ok = ok + ?, bad = bad + ?, streak = ?, last = ?, kd = ? WHERE word = ?', ok ? 1 : 0, ok ? 0 : 1, streak, t, kd, word)
     }

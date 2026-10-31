@@ -111,7 +111,8 @@ function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
   return Object.keys(out).length ? out : undefined
 }
 /** Слово считается выученным после трёх верных ответов подряд. */
-export const KNOWN_STREAK = 3
+/** Очков у слова, с которых оно считается выученным: верный ответ +1, ошибка −1 (не ниже 0). */
+export const KNOWN_STREAK = 5
 
 const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
 const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [], keys: {} })
@@ -327,7 +328,7 @@ export const useProgressStore = defineStore('progress', () => {
         }
       } else {
         w.bad++
-        w.streak = 0
+        w.streak = Math.max(0, w.streak - 1)
       }
       w.last = now
     }

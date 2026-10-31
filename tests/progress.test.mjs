@@ -75,11 +75,19 @@ describe('record', () => {
     assert.equal(store.data.days[dayKey()], 1)
   })
 
-  test('слово выучено после трёх верных подряд: bloomed один раз, kd запоминается', () => {
+  test('слово выучено на пяти очках: bloomed один раз, kd запоминается', () => {
     const results = Array.from({ length: KNOWN_STREAK + 2 }, () => store.record({ word: '사람', ok: true, source: 'game' }))
-    assert.deepEqual(results.map(r => r.bloomed), [false, false, true, false, false])
+    assert.deepEqual(results.map(r => r.bloomed), [false, false, false, false, true, false, false])
     assert.ok(store.data.words['사람'].kd)
     assert.equal(store.status('사람'), 'known')
+  })
+
+  test('ошибка снимает одно очко слова, ниже нуля не уходит', () => {
+    for (let i = 0; i < 3; i++) store.record({ word: '사람', ok: true, source: 'game' })
+    store.record({ word: '사람', ok: false, source: 'game' })
+    assert.equal(store.data.words['사람'].streak, 2)
+    for (let i = 0; i < 5; i++) store.record({ word: '사람', ok: false, source: 'game' })
+    assert.equal(store.data.words['사람'].streak, 0)
   })
 
   test('ошибка после выученного сбрасывает статус, но kd остаётся', () => {
@@ -318,7 +326,7 @@ describe('вход по токену', () => {
 
   test('сервер главный: прогресс на сайте заменяется тем, что в базе', async () => {
     store.record({ ok: true, source: 'game' }) // локально 10 очков, но токена ещё нет, на сервер это не уходит
-    globalThis.fetch = reply(200, { v: 1, updated: 5, xp: 500, words: { 사람: { ok: 3, bad: 0, streak: 3, last: 9, kd: 9 } } })
+    globalThis.fetch = reply(200, { v: 1, updated: 5, xp: 500, words: { 사람: { ok: 3, bad: 0, streak: 5, last: 9, kd: 9 } } })
     await store.connect('токен')
     assert.equal(store.data.xp, 500)
     assert.equal(store.status('사람'), 'known')

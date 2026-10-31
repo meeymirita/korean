@@ -120,7 +120,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
             <div><strong>{{ grammarDone }}</strong><small>правил</small></div>
             <div><strong>{{ answers }}</strong><small>ответов</small></div>
           </div>
-          <p class="note">слово считается выученным после {{ KNOWN_STREAK }} верных ответов подряд</p>
+          <p class="note">слово выучено, когда набрал {{ KNOWN_STREAK }} очков: верный ответ +1, ошибка −1</p>
         </template>
         <RouterLink v-else to="/korean/cabinet" class="locked">
           <div class="sh"><h3>Твой прогресс</h3></div>

@@ -34,7 +34,7 @@ export function stageOf(stat: WordStat, now = Date.now()): Stage {
     if (age >= wait) return 'thirsty'
     return 'bloom'
   }
-  return stat.streak >= 2 ? 'bud' : stat.streak === 1 ? 'sprout' : 'seed'
+  return stat.streak >= 3 ? 'bud' : stat.streak >= 1 ? 'sprout' : 'seed'
 }
 
 /** Все посаженные слова (те, на которые хоть раз отвечали). */

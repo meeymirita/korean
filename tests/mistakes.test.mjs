@@ -28,7 +28,7 @@ describe('мои ошибки', () => {
   })
 
   test('выученное слово с ошибками в прошлом помечено, лимит работает', () => {
-    const p = data({ [a]: stat(6, 2, 3), [b]: stat(0, 1) })
+    const p = data({ [a]: stat(6, 2, 5), [b]: stat(0, 1) })
     const m = mistakeWords(p)
     assert.equal(m.find(x => x.word.k === a).learned, true)
     assert.equal(m.find(x => x.word.k === b).learned, false)

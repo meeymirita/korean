@@ -32,7 +32,7 @@ const start = () => (session.value = due.value.slice(0, SESSION_SIZE).map(d => d
         <div v-for="x in due.slice(0, 40)" :key="x.word.n" class="rp-w" :class="{ wrong: x.reason === 'wrong' }">
           <b class="ko">{{ x.word.k }}</b>
           <span>{{ x.word.t }}</span>
-          <small>{{ x.reason === 'wrong' ? 'были ошибки' : 'давно не повторялось' }} · {{ ago(x.stat.last) }} · подряд верно {{ x.stat.streak }}</small>
+          <small>{{ x.reason === 'wrong' ? 'были ошибки' : 'давно не повторялось' }} · {{ ago(x.stat.last) }} · очков {{ x.stat.streak }}</small>
         </div>
       </div>
       <p v-else class="cb-empty">

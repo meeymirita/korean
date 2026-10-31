@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { STAGE_NAME, emojiOf, plants, type Plant } from '@/data/garden'
 import { CATN } from '@/data/korean/words'
-import { useProgressStore } from '@/stores/progress'
+import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 const all = computed(() => plants(progress.data))
@@ -29,12 +29,12 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
       <div class="pg-card">
         <div class="pg-k">Цветёт</div>
         <div class="pg-v">🌸 {{ blooming }}</div>
-        <div class="pg-s">выученные слова — каждое вырастает после 3 верных ответов подряд</div>
+        <div class="pg-s">слово расцветает на {{ KNOWN_STREAK }} очках: верный ответ +1, ошибка −1</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Растёт</div>
         <div class="pg-v">🌱 {{ sprouts }}</div>
-        <div class="pg-s">слова, которые ещё учатся: нужно больше верных ответов подряд</div>
+        <div class="pg-s">слова, которые ещё учатся: не хватает очков до {{ KNOWN_STREAK }}</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Полито сегодня</div>
@@ -81,7 +81,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
         <div class="gd-ko">{{ picked.word.k }} <small>{{ picked.word.r }}</small></div>
         <div class="gd-tr">{{ picked.word.t }}</div>
         <div class="pg-s">
-          {{ STAGE_NAME[picked.stage] }} · верных подряд {{ picked.stat.streak }} · всего {{ picked.stat.ok }}/{{ picked.stat.ok + picked.stat.bad }} ·
+          {{ STAGE_NAME[picked.stage] }} · очков {{ picked.stat.streak }} · всего {{ picked.stat.ok }}/{{ picked.stat.ok + picked.stat.bad }} ·
           отвечал {{ ago(picked.stat.last) }}<span v-if="cats(picked)"> · {{ cats(picked) }}</span>
         </div>
       </div>

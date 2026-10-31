@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { RARITY, cards, type Card, type CardState, type Rarity } from '@/data/garden'
 import { CATN } from '@/data/korean/words'
-import { useProgressStore } from '@/stores/progress'
+import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 const all = computed(() => cards(progress.data))
@@ -41,9 +41,9 @@ const STATES: ['' | CardState, string][] = [
     <div class="pg-cards">
       <div class="pg-card">
         <div class="pg-k">Открыто карточек</div>
-        <div class="pg-v">🃏 {{ opened.length }} <small>из {{ all.length }}</small></div>
+        <div class="pg-v">🇰🇷 {{ opened.length }} <small>из {{ all.length }}</small></div>
         <div class="pg-bar"><i :style="{ width: (opened.length / all.length) * 100 + '%' }"></i></div>
-        <div class="pg-s">карточка открывается, когда слово выучено (3 верных ответа подряд)</div>
+        <div class="pg-s">карточка открывается, когда слово выучено ({{ KNOWN_STREAK }} очков: верный +1, ошибка −1)</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Редкость</div>
@@ -79,7 +79,7 @@ const STATES: ['' | CardState, string][] = [
           <div class="cl-ko">{{ c.word.k }}</div>
           <div class="cl-rd">{{ c.word.r }}</div>
           <div class="cl-tr cl-hid">перевод откроется…</div>
-          <div class="cl-st">🌱 {{ c.stat!.streak }} / 3 подряд</div>
+          <div class="cl-st">🌱 {{ c.stat!.streak }} / {{ KNOWN_STREAK }} очков</div>
         </template>
         <template v-else>
           <div class="cl-ko">?</div>

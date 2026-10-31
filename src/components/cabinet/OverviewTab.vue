@@ -129,7 +129,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <div class="pg-k">Выученные слова</div>
         <div class="pg-v">🌸 {{ knownCount }} <small>из {{ D.length }}</small></div>
         <div class="pg-bar"><i :style="{ width: (knownCount / D.length) * 100 + '%' }"></i></div>
-        <div class="pg-s">{{ learningCount }} в процессе · слово считается выученным после {{ KNOWN_STREAK }} верных ответов подряд</div>
+        <div class="pg-s">{{ learningCount }} в процессе · слово выучено, когда набрал {{ KNOWN_STREAK }} очков: верный ответ +1, ошибка −1</div>
       </div>
     </div>
 
