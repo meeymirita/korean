@@ -36,7 +36,12 @@
 .game .timer{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin:-6px 0 14px;display:none}
 .game .timer.on{display:block}
 .game .timer i{display:block;height:100%;width:100%;background:var(--accent);transition:width 1s linear}
-.game .label{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.game .label{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.game .labelrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.game .qhelp{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:700;line-height:1;cursor:pointer}
+.game .qhelp:hover,.game .qhelp.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.game .mhelp{flex-basis:100%;margin-top:2px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(120,110,200,.08);font-size:14px;line-height:1.5}
+.game .mhelp .mex{margin-top:6px;color:var(--muted)}
 .game .prompt{font-size:clamp(28px,6vw,46px);font-weight:700;line-height:1.2;margin:4px 0 6px;overflow-wrap:anywhere}
 .game .prompt.ko,.game .sentence,.game .opt .t.ko,.game .slot,.game .tile,.game .fbh .ko{font-family:var(--ko)}
 .game .sentence{font-size:clamp(24px,5vw,36px);font-weight:600;line-height:1.5;margin:4px 0 4px;overflow-wrap:anywhere}

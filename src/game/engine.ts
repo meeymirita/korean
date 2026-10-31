@@ -36,6 +36,39 @@ const MODES=[
   {id:'past',icon:'⏳',name:'Прошедшее время'},{id:'han',icon:'ㅎ',name:'Хангыль-блиц'}
 ];
 
+/* ---------- подсказки по режимам: кнопка «?» рядом с заданием раскрывает, что делать, и пример ---------- */
+const MODE_HELP={
+  word:['Видишь корейское слово — выбери его перевод на русский.','Пример: 마시다 → «пить».'],
+  rev:['Видишь русское слово — выбери его по-корейски.','Пример: «пить» → 마시다.'],
+  form:['Поставь глагол или прилагательное в форму, названную над словом: настоящее или прошедшее время, вежливый стиль.','Пример: 마시다 → настоящее 마셔요, прошедшее 마셨어요.'],
+  qw:['В предложении пропущено вопросительное слово: 어디 (где), 누구 (кто), 뭐 (что), 얼마 (сколько стоит), 몇 (сколько штук). Выбери подходящее по смыслу, ориентируйся на русский перевод.','Пример: 카페가 ___예요? «Где кафе?» → 어디.'],
+  part:['Вставь пропущенную частицу (에, 에서, 을/를, 은/는…) или счётное слово. Смотри на русский перевод и на последнюю букву слова перед пропуском.','Пример: 저는 학교 ___ 가요. «Иду в школу» → 에.'],
+  build:['Собери предложение из плиток: нажимай слова по порядку (или клавишами 1–9). Среди плиток есть лишние: с неверной частицей, временем или местом. Enter — проверить, Backspace — убрать последнее слово.','Пример: «Иду в парк» → 공원에 가요.'],
+  spot:['Перед тобой несколько корейских предложений, верное только одно. Выбери его по русскому переводу.','Пример: «Иду в школу» → 학교에 가요 (верно), 학교에서 가요 (неверно).'],
+  type:['Напиши ответ с клавиатуры и нажми «Проверить» (или Enter). Не знаешь — «Подсказка» открывает ответ по одной букве.','Пример: «Напиши форму: 마시다» → 마셔요.'],
+  err:['В предложении одно слово стоит неверно: не та частица или не то вопросительное слово. Нажми на это слово (оно подписано кнопкой с цифрой). Сравнивай с русским переводом под предложением.','Пример: 이름이 몇예요? — «Как тебя зовут?». Ошибка в слове «몇예요?», по смыслу нужно «뭐예요?». Значит, нажимаешь на 2 몇예요?.'],
+  pair:['Из двух вариантов выбери верный: частицу, которая подходит к слову, или нужную форму.','Пример: 책 ___ → 을 (после согласной), а 커피 ___ → 를 (после гласной).'],
+  ord:['Слово нужно поставить на своё место в предложении: выбери вариант, где порядок слов правильный. В корейском глагол стоит в конце.','Пример: «Я иду в школу» → 저는 학교에 가요, а не 가요 저는 학교에.'],
+  dlg:['Прочитай реплику собеседника и выбери подходящий ответ.','Пример: «이름이 뭐예요?» → «저는 나나예요.»'],
+  past:['Выбери нужную форму прошедшего времени (았어요 / 었어요 / 했어요) для данного глагола.','Пример: 먹다 → 먹었어요, 가다 → 갔어요, 하다 → 했어요.'],
+  han:['Хангыль-блиц: собери слог из букв или выбери, как слог читается.','Пример: ㅂ + ㅏ → 바 [па/ба]; 가 читается «ка/га».']
+};
+function labelWithHelp(q){
+  const wrap=el('div','labelrow');
+  const lb=el('div','label',q.label);wrap.appendChild(lb);
+  const h=MODE_HELP[q.mode];
+  if(h){
+    const b=el('button','qhelp','?');b.type='button';b.title='Что делать в этом задании';b.setAttribute('aria-label','Что делать в этом задании');b.setAttribute('aria-expanded','false');
+    // первый раз в каждом режиме подсказка раскрыта сама, дальше только по «?»
+    const first=!S.modeHelp[q.mode];if(first){S.modeHelp[q.mode]=1;save();}
+    const box=el('div','mhelp');box.hidden=!first;if(first){b.classList.add('on');b.setAttribute('aria-expanded','true');}
+    box.appendChild(el('div','',h[0]));box.appendChild(el('div','mex',h[1]));
+    b.addEventListener('click',()=>{box.hidden=!box.hidden;b.setAttribute('aria-expanded',String(!box.hidden));b.classList.toggle('on',!box.hidden);});
+    wrap.appendChild(b);wrap.appendChild(box);
+  }
+  return wrap;
+}
+
 /* ---------- утилиты ---------- */
 const $=(s,r)=>(r||document).querySelector(s);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;};
@@ -49,13 +82,13 @@ const S={
   mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
-  seenHelp:false,hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
+  seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
   blitz:{on:false,left:60,ok:0,bad:0,iv:null}
 };
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
-  ['reading','tense','mode','seenHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  ['reading','tense','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
   if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
 load();
 /* очки старой версии игры переходят в общий прогресс сайта */
@@ -391,7 +424,7 @@ function renderQuestion(q){
   S.cur=q;S.answered=false;S.lastKey=q.key;
   clearTimeout(S.timer);
   const card=$('#card');card.innerHTML='';
-  card.appendChild(el('div','label',q.label));
+  card.appendChild(labelWithHelp(q));
   if(q.type==='choice'){
     if(q.sentence){
       const p=el('div','sentence');
