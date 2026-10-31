@@ -175,7 +175,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
     </div>
     <div class="mg-progress"><i :style="{ width: (matched.size / words.length) * 100 + '%' }"></i></div>
 
-    <div ref="board" class="mg-board">
+    <div ref="board" class="mg-board" @dragstart.prevent @contextmenu.prevent>
       <svg class="mg-lines" aria-hidden="true">
         <path v-if="dragPath" :d="dragPath" class="drag" />
         <path v-if="flash" ref="flashEl" :d="flash" class="done" />
@@ -252,7 +252,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-progress i { display: block; height: 100%; background: var(--gold); transition: width .3s; }
 .study .mg-board { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
 .study .mg-col { display: flex; flex-direction: column; gap: 8px; }
-.study .mg-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
+.study .mg-card { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
   min-height: 56px; padding: 10px 14px; font-size: 16px; text-align: left; background: var(--surface); border: 1px solid var(--line);
   border-radius: 12px; transition: border-color .15s, background .15s, opacity .3s, transform .15s; }
 .study .mg-card.ko b { font-family: var(--ko); font-size: 22px; font-weight: 700; }
