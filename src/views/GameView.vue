@@ -111,9 +111,9 @@ onBeforeUnmount(() => dispose?.())
           <div class="gx-sub">Учим корейский вместе ♡</div>
         </div>
       </RouterLink>
+      <img class="gx-cat gx-cat-nav" :src="catWow" alt="" aria-hidden="true" />
       <label class="gx-find"><span aria-hidden="true">⌕</span><input id="gameFind" type="search" autocomplete="off" placeholder="Поиск игр…" aria-label="Поиск по списку игр" /></label>
       <div class="gx-navbox">
-        <img class="gx-cat gx-cat-nav" :src="catWow" alt="" aria-hidden="true" />
         <nav id="sideModes" class="gx-modes" aria-label="Режимы игры"></nav>
       </div>
       <RouterLink to="/korean/cabinet" class="gx-level">
