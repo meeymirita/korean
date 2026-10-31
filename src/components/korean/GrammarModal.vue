@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { F, blk } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
+import { CHANNEL } from '@/data/korean/course'
 
 const { current, close, prev, next } = useGrammarModal()
 const { share, busy } = useShareCard()
@@ -35,7 +36,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
 
 <template>
   <div v-if="current" class="study sky study-modal" @click.self="close">
-    <div class="gp" role="dialog" aria-modal="true">
+    <div class="gp wide" role="dialog" aria-modal="true">
       <div class="gh">
         <div class="tt">
           <h2 v-html="F(current.ko)"></h2>
@@ -54,7 +55,18 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
         <button title="Следующая" aria-label="Следующая" @click="next">→</button>
         <button title="Закрыть" aria-label="Закрыть" @click="close">✕</button>
       </div>
-      <div :key="current.id" class="gb rich" v-html="current.b.map(blk).join('')"></div>
+      <div class="gm">
+        <div :key="current.id" class="gb rich" v-html="current.b.map(blk).join('')"></div>
+        <aside class="gv">
+          <video v-if="current.video" :key="current.video" class="gvp" :src="current.video" controls preload="metadata"></video>
+          <div v-else class="gvp stub">
+            <span class="play" aria-hidden="true">▶</span>
+            <b>{{ current.l ? `Видео · ${current.l}` : 'Видео' }}</b>
+            <small>появится, когда скачаю урок</small>
+          </div>
+          <p class="src">Видеоуроки: <a :href="CHANNEL" target="_blank" rel="noopener">양쌤의 한국어 교실</a></p>
+        </aside>
+      </div>
     </div>
   </div>
 </template>

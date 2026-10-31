@@ -8,6 +8,8 @@ export interface Gram {
   l?: string
   st: string
   d: string
+  /** файл видеоурока (пока нет — в окне заглушка) */
+  video?: string
   b: Block[]
 }
 

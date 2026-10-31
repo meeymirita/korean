@@ -114,6 +114,24 @@
 .study-modal .gh button:hover { background: var(--gold); color: #fff; }
 .study-modal .gb { overflow-y: auto; padding: 8px 26px 28px; }
 
+/* окно грамматики на весь экран: описание слева, видеоурок справа */
+.study-modal .gp.wide { width: 100%; height: 100%; max-height: none; border-radius: 16px; }
+.study-modal:has(.gp.wide) { padding: 12px; }
+.study-modal .gm { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 46%); }
+.study-modal .gm .gb { padding: 8px 32px 36px; }
+.study-modal .gv { padding: 20px 26px; border-left: 1px solid var(--line); overflow-y: auto; }
+.study-modal .gvp { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #20265c; display: block; }
+.study-modal .gvp.stub { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #fff; text-align: center; }
+.study-modal .gvp.stub .play { font-size: 40px; opacity: .8; }
+.study-modal .gvp.stub small { opacity: .7; font-size: 13px; }
+.study-modal .gv .src { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.study-modal .gv .src a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 900px) {
+  .study-modal .gm { display: flex; flex-direction: column-reverse; overflow-y: auto; }
+  .study-modal .gm .gb { overflow: visible; padding: 8px 18px 28px; }
+  .study-modal .gv { border-left: 0; border-bottom: 1px solid var(--line); padding: 16px 18px; overflow: visible; }
+}
+
 /* ---- содержимое грамматики / шпаргалок (HTML из данных) ---- */
 .study .rich p { margin: 10px 0; }
 .study .rich .rule, .study .rich .warn, .study .rich .tip, .study .rich .ok {
