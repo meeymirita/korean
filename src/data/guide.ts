@@ -57,5 +57,5 @@ export const PAGES: GuideCard[] = [
   { icon: '⏱️', title: '5 минут', text: 'Десять заданий вперемешку без выбора: слова, которые пора повторить, правило и новое. Клавиши 1–4 и Enter.', to: '/korean/quick', private: true },
   { icon: '🔁', title: 'Повторение', text: 'Карточки слов, которые пора повторить.', to: '/korean/review', private: true },
   { icon: '🌸', title: 'Сад воспоминаний', text: 'Каждое выученное слово становится цветком. Не повторяешь — цветок вянет.', to: '/korean/garden', private: true },
-  { icon: '🃏', title: 'Коллекция', text: 'Карточки слов открываются по мере выученности. Чем больше ошибок, тем реже карточка.', to: '/korean/garden?tab=cards', private: true },
+  { icon: '🇰🇷', title: 'Коллекция', text: 'Карточки слов открываются по мере выученности. Чем больше ошибок, тем реже карточка.', to: '/korean/garden?tab=cards', private: true },
 ]

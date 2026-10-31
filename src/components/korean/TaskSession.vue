@@ -204,10 +204,18 @@ onBeforeUnmount(() => {
       </div>
       <ExplainBox v-if="picked !== null && picked !== current.answer" :task="current" :picked="picked" />
       <div v-if="picked !== null && current.sentence" class="rs-why">
-        <p v-if="picked !== current.answer && current.pairOf?.[picked]" class="rs-sub">
-          Твой вариант «{{ picked }}» значит «{{ current.pairOf[picked] }}», а в задании другое предложение.
-        </p>
-        <p v-else-if="picked === current.answer" class="rs-sub">Верно. Почему так, смотри в разборе:</p>
+        <p class="rs-sub">Разбор вариантов:</p>
+        <ul v-if="current.pairOf" class="rs-wl">
+          <li v-for="o in current.options" :key="o" :class="o === current.answer ? 'ok' : 'bad'">
+            <b>{{ o === current.answer ? '✓' : '✗' }}</b>
+            <span><span class="ko-or-ru">«{{ o }}»</span>
+              <template v-if="o === current.answer"> — верно: это и есть перевод «{{ current.prompt }}».</template>
+              <template v-else> — это про «{{ current.pairOf[o] ?? '?' }}», а в задании «{{ current.prompt }}».</template>
+              <em v-if="o === picked"> Ты выбрал его.</em>
+            </span>
+          </li>
+        </ul>
+        <p class="rs-sub">Как устроено верное предложение:</p>
         <SentenceBreakdown :sentence="current.sentence" />
       </div>
       <button v-if="picked !== null" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>

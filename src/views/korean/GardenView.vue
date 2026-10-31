@@ -13,7 +13,7 @@ const tab = ref<'garden' | 'cards'>(useRoute().query.tab === 'cards' ? 'cards' :
     <SectionHead id="garden" />
     <div class="chips cb-tabs">
       <button class="chip" :class="{ on: tab === 'garden' }" @click="tab = 'garden'">🌸 Сад</button>
-      <button class="chip" :class="{ on: tab === 'cards' }" @click="tab = 'cards'">🃏 Коллекция</button>
+      <button class="chip" :class="{ on: tab === 'cards' }" @click="tab = 'cards'">🇰🇷 Коллекция</button>
     </div>
     <GardenTab v-if="tab === 'garden'" />
     <CollectionTab v-else />

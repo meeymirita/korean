@@ -353,3 +353,10 @@
 /* значок ✳ всегда текстом (цвет задаётся CSS), а не цветной эмодзи, как это делает iOS */
 .mark, .brand-mark, .brand > span, .big.ko { font-variant-emoji: text; }
 .study .brand-home { color: inherit; text-decoration: none; }
+
+.study .rs-wl { list-style: none; margin: 6px 0 12px; padding: 0; display: grid; gap: 6px; }
+.study .rs-wl li { display: flex; gap: 8px; align-items: baseline; padding: 8px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; background: var(--surface); border: 1px solid var(--line); }
+.study .rs-wl li.ok { border-color: var(--ok); }
+.study .rs-wl li.bad b { color: var(--bad); }
+.study .rs-wl li.ok b { color: var(--ok); }
+.study .rs-wl em { color: var(--muted); font-style: normal; }
