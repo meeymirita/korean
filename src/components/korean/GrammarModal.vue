@@ -96,7 +96,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
             <span class="pill" :class="current.st === 'ok' ? 's' : 'n'">
               {{ current.st === 'ok' ? 'пройдено' : 'ещё рано' }}
             </span>
-            <button v-if="owner && current" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
+            <button v-if="owner && current && current.st !== 'ok'" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
               {{ passed ? `✓ ${current.l || 'Тема'} пройдено` : `Отметить пройденным${current.l ? ': ' + current.l.toLowerCase() : ''}` }}
             </button>
           </div>
