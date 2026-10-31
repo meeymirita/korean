@@ -696,7 +696,7 @@ function drawModes(){
   const side=$('#sideModes');
   if(side){
     side.innerHTML='';
-    MODES.forEach(m=>{
+    MODES.filter(m=>m.id==='mix').forEach(m=>{
       const b=el('button','sm'+(S.mode===m.id?' on':''));b.type='button';
       b.append(el('span','si',m.icon),el('span','st',m.name));
       if(S.mode===m.id)b.appendChild(el('span','sa','›'));

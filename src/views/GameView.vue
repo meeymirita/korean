@@ -105,7 +105,7 @@ onBeforeUnmount(() => dispose?.())
   <div class="study game sky gx" :style="bgStyle">
     <aside class="gx-nav">
       <RouterLink to="/korean/home" class="gx-brand" title="На платформу">
-        <span class="gx-flower">🌸</span>
+        <span class="gx-flower">✳︎</span>
         <div>
           <div class="gx-logo ko">우리말</div>
           <div class="gx-sub">Учим корейский вместе ♡</div>
