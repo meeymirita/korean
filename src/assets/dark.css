@@ -20,12 +20,11 @@ html[data-theme='dark'] .study.sky {
   --bad-bg: rgba(255, 143, 126, .14);
   --shadow: 0 18px 45px rgba(0, 0, 0, .35);
 }
-html[data-theme='dark'] .study.sky:not(.study-modal) {
-  background:
-    radial-gradient(ellipse at 85% 5%, rgba(70, 90, 190, .35) 0, transparent 32%),
-    radial-gradient(ellipse at 8% 72%, rgba(150, 60, 130, .28) 0, transparent 30%),
-    radial-gradient(ellipse at 55% 98%, rgba(90, 70, 190, .3) 0, transparent 32%),
-    linear-gradient(130deg, #1a1633 0%, #14152b 50%, #1d1530 100%) fixed;
+html[data-theme='dark'] .study.sky:not(.study-modal), html[data-theme='dark'] body:has(.study-shell.sky) {
+  background-color: #14152b;
+  background-image: linear-gradient(rgba(14, 15, 40, .72), rgba(14, 15, 40, .72)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), url('./game/bg.webp');
+  background-position: 0 0, 0 0, center top -230px;
+  background-size: 100% 100%, 100% 100%, 100% auto;
 }
 html[data-theme='dark'] .study-modal.sky { background: rgba(5, 6, 20, .66); }
 html[data-theme='dark'] .study-modal.sky .gp { border-color: var(--line); background: #1d1f42; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .7); }

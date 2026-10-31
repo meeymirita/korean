@@ -21,12 +21,14 @@
   font-family: 'Archivo', 'Noto Sans KR', sans-serif;
   color: var(--ink);
 }
-.study.sky:not(.study-modal) {
-  background:
-    radial-gradient(ellipse at 85% 5%, rgba(180, 217, 255, .55) 0, transparent 30%),
-    radial-gradient(ellipse at 8% 72%, rgba(255, 201, 233, .55) 0, transparent 28%),
-    radial-gradient(ellipse at 55% 98%, rgba(216, 199, 255, .5) 0, transparent 30%),
-    linear-gradient(130deg, #f9e8fb 0%, #e7eaff 48%, #fff0f6 100%) fixed;
+.study.sky:not(.study-modal), body:has(.study-shell.sky) {
+  /* фон как на странице игры: храм среди облаков и сакуры (src/assets/game/bg.webp) */
+  background-color: #f1dff7;
+  background-image: linear-gradient(rgba(255, 255, 255, .26), rgba(255, 255, 255, .26)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), url('./game/bg.webp');
+  background-position: 0 0, 0 0, center top -230px;
+  background-size: 100% 100%, 100% 100%, 100% auto;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 .study.sky h1, .study.sky h2, .study.sky h3 { font-weight: 700; letter-spacing: -.01em; }
 .study.sky .kicker, .study.sky .row.h { letter-spacing: .12em; font-weight: 600; }
