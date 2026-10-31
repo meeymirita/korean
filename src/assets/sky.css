@@ -139,3 +139,8 @@ html { scrollbar-gutter: stable; }
 .study-main .crumbs a:hover { color: var(--pink); background: rgba(214, 77, 169, .1); }
 .study-main .crumbs [aria-current] { color: var(--ink); }
 @media (max-width: 860px) { .study-main .crumbs { margin: 0; padding: 14px 4px 0; } .study-shell.sky.focus .study-main .crumbs { margin: 0; padding: 14px 4px 0; } }
+
+/* подложка под содержимое страниц раздела: текст не теряется на фоне с храмом */
+.study-shell.sky .study-main .wrap { background: rgba(255, 255, 255, .6); border: 1px solid #fff; border-radius: 28px; backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); padding: 26px 30px 56px; margin-top: 12px; margin-bottom: 18px; }
+@media (max-width: 860px) { .study-shell.sky .study-main .wrap { padding: 18px 14px 44px; border-radius: 22px; } }
