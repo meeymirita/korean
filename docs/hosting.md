@@ -152,4 +152,4 @@ Caddy, в блок сайта **до** общего `handle { … dist … }`:
     }
 ```
 Потом `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. Перемотка (Range) работает у `file_server` сама.
-Заливка с Mac одной командой: `rsync -avP ~/Movies/YouTube-site/ root@<сервер>:/var/sites/korean-video/`.
+Заливка с Mac одной командой: `rsync -avP ~/Movies/Korean-videos/upload/ root@<сервер>:/var/sites/korean-video/` (у владельца папка `~/Movies/Korean-videos/` с README и таблицей «файл ↔ грамматика»; в git видео не лежат).
