@@ -123,3 +123,11 @@
 - Таблицы: `sessions` (хэш, срок), настройки в `meta` (`twofa`). События в журнале: `2fa_sent`, `2fa_login`, `2fa_bad_code`, `2fa_on`, `2fa_off`, `2fa_mail_failed`.
 - Код: `server/src/auth/twofa.service.ts`, `twofa.controller.ts`, `server/src/mail/mail.service.ts`; сайт: `composables/useTwoFa.ts`, `AuthGate.vue`, `cabinet/TwoFaBlock.vue`. Тесты `twofa-server`, `twofa-store`
   (в тестах письма пишутся в файл `MAIL_DUMP_FILE` вместо SMTP).
+
+## Что менялось 2026-10-31 (вечер)
+
+- `answers.detail` (миграция `ALTER TABLE` в `db.service.ts`): JSON `{q, a, y}`, строки ≤ 300 знаков, лишние ключи отбрасываются; `GET /api/progress` отдаёт в `log` поля `m` (режим) и `d` (подробности). Тест в `tests/progress-server.test.mjs`.
+- `settings.marks`: допустимые ключи `^[wgd]:.{1,40}$` (`w` слово, `g` правило, `d` урок отмечен пройденным); лимит 500 общий.
+- Очки слова: `streak = max(0, streak ± 1)`, выучено при `KNOWN_STREAK = 5` (константа есть и в `progress.service.ts`, и в `stores/progress.ts`, менять в обоих).
+- Резервный архив на почту каждый день: `BACKUP_EVERY_DAYS` (по умолчанию 1; `7` — раз в неделю), проверка раз в час после 4 утра, запас 4 часа; `BACKUP_AUTO=0` выключает. Плашка «архив не приходил» в кабинете через 3 дня (`lib/backupAge.ts`).
+- После любых серверных правок: `bash scripts/deploy.sh` (он сам перезапускает службу `progress`).
