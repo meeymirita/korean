@@ -32,13 +32,17 @@ export function translateTasks(dir: TranslateDir = 'mix', n = 10): Task[] {
     const wrong = distractors(idx, toRu ? 1 : 0)
     if (wrong.length < 3) continue
     const answer = toRu ? ru : ko
+    const other = (s: string) => PAIRS.find(p => p[toRu ? 1 : 0] === s)?.[toRu ? 0 : 1]
+    const options = shuffle([answer, ...wrong])
     out.push({
       id: out.length,
       kind: toRu ? 'tr' : 'back',
       title: toRu ? 'Переведи на русский' : 'Переведи на корейский',
       prompt: toRu ? ko : ru,
-      options: shuffle([answer, ...wrong]),
+      options,
       answer,
+      sentence: ko,
+      pairOf: Object.fromEntries(options.flatMap(o => { const v = other(o); return v ? [[o, v]] : [] })),
     })
   }
   return out

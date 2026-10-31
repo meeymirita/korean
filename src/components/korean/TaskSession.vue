@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
+import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { MOODS, type Mood } from '@/data/mood'
 import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
@@ -202,6 +203,13 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <ExplainBox v-if="picked !== null && picked !== current.answer" :task="current" :picked="picked" />
+      <div v-if="picked !== null && current.sentence" class="rs-why">
+        <p v-if="picked !== current.answer && current.pairOf?.[picked]" class="rs-sub">
+          Твой вариант «{{ picked }}» значит «{{ current.pairOf[picked] }}», а в задании другое предложение.
+        </p>
+        <p v-else-if="picked === current.answer" class="rs-sub">Верно. Почему так, смотри в разборе:</p>
+        <SentenceBreakdown :sentence="current.sentence" />
+      </div>
       <button v-if="picked !== null" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">

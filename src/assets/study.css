@@ -341,3 +341,6 @@
 .study .ov-weak .chip { text-decoration: none; color: inherit; }
 .study .ov-weak .chip small { color: var(--muted); font-weight: 400; }
 .study .ov-go { display: inline-block; margin-top: 12px; text-decoration: none; color: var(--gold); }
+
+/* разбор предложения под ответом в «Переведи предложение» */
+.study .rs-why { margin: 14px 0 4px; }
