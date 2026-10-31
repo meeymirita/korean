@@ -9,6 +9,7 @@ import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsChec
 import { askConfirm } from '@/composables/useConfirm'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { usePersisted } from '@/composables/usePersisted'
+import { withSeed } from '@/lib/seeded'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { G } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
@@ -51,15 +52,25 @@ function loadState(): DayState | null {
   }
 }
 const restored = loadState()
+/** Набор дня задаётся датой: сколько ни обновляй страницу (и на другом устройстве), он тот же; в полночь меняется. «Новый набор» берёт настоящую случайность. */
+const daily = restored ? null : withSeed(`today:${dayKey()}`, () => {
+  const gram = pickGram()
+  return {
+    words: randomWords(WORDS, progress.data.settings.cats),
+    tasks: randomTasks(TASKS, progress.data.settings.cats),
+    gram,
+    ruleItems: ruleTasks(gram),
+  }
+})
 
-const words = ref(restored?.words ?? randomWords(WORDS, progress.data.settings.cats))
-const tasks = ref(restored?.tasks ?? randomTasks(TASKS, progress.data.settings.cats))
+const words = ref(restored?.words ?? daily!.words)
+const tasks = ref(restored?.tasks ?? daily!.tasks)
 /** id задания → выбранный вариант (общий для заданий на правило и обычных) */
 const picked = ref<Record<number, string>>(restored?.picked ?? {})
 const revealed = ref<Record<number, boolean>>(restored?.revealed ?? {})
 
-const gram = ref(restored ? G.find(g => g.id === restored.gramId)! : pickGram())
-const ruleItems = ref<Task[]>(restored?.ruleItems ?? ruleTasks(gram.value))
+const gram = ref(restored ? G.find(g => g.id === restored.gramId)! : daily!.gram)
+const ruleItems = ref<Task[]>(restored?.ruleItems ?? daily!.ruleItems)
 function pickGram() {
   const list = G.filter(g => g.st === 'ok')
   return list[Math.floor(Math.random() * list.length)]!
@@ -112,7 +123,7 @@ watch([words, tasks, picked, revealed, ruleItems, gram, checkResult, saved], () 
   } catch {
     /* без хранилища набор просто не переживёт обновление */
   }
-}, { deep: true })
+}, { deep: true, immediate: true })
 /** Все задания дня выполнены: страница говорит «на сегодня всё», а «Новый набор» появляется для повторного прохода. */
 const finished = computed(() => all.value.length > 0 && done.value === all.value.length)
 const toggle = (n: number) => (revealed.value = { ...revealed.value, [n]: !revealed.value[n] })
