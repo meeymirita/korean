@@ -20,6 +20,7 @@
 .game .tabs button{flex:1;border:1px solid var(--line);background:transparent;border-radius:10px;padding:6px 8px;font-size:14px}
 .game .tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .game .list{overflow:auto;min-height:120px;flex:1;margin:0 -6px;padding:0 6px}
+.game .wq{width:100%;box-sizing:border-box;margin:0 0 8px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px}
 .game .item{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
 .game .item:last-child{border-bottom:0}
 .game .item .mk{font-weight:700}

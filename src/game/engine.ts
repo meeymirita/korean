@@ -611,7 +611,20 @@ function updateStats(){
 }
 function renderList(){
   const list=$('#list');list.innerHTML='';
-  $('#tabHist').classList.toggle('on',S.tab==='hist');$('#tabWeak').classList.toggle('on',S.tab==='weak');
+  $('#tabHist').classList.toggle('on',S.tab==='hist');$('#tabWeak').classList.toggle('on',S.tab==='weak');$('#tabWords').classList.toggle('on',S.tab==='words');
+  $('#wq').hidden=S.tab!=='words';
+  if(S.tab==='words'){
+    const w=$('#wq').value.trim().toLowerCase();
+    const hit=w?ALLW.filter(x=>[x.ko,x.rd,x.ru].some(s=>s.toLowerCase().includes(w))):ALLW;
+    list.appendChild(el('div','empty',w?('Найдено: '+hit.length):('Всего слов в игре: '+hit.length+'. Начни вводить, чтобы найти нужное.')));
+    hit.slice(0,60).forEach(x=>{
+      const it=el('div','item');it.style.gridTemplateColumns='1fr';
+      const row=el('div');row.appendChild(el('span','ko',x.ko));row.append(' · '+x.rd+' — '+x.ru);
+      it.appendChild(row);list.appendChild(it);
+    });
+    if(hit.length>60)list.appendChild(el('div','empty','Показаны первые 60, уточни запрос.'));
+    return;
+  }
   if(S.tab==='hist'){
     if(!S.hist.length){list.appendChild(el('div','empty','Здесь появятся твои ответы: слово, перевод и что выбрал.'));return;}
     S.hist.forEach(h=>{
@@ -668,6 +681,8 @@ $('#cbRead').addEventListener('change',e=>{S.reading=e.target.checked;save();syn
 $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
 $('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
+$('#tabWords').addEventListener('click',()=>{S.tab='words';renderList();$('#wq').focus({preventScroll:true});});
+$('#wq').addEventListener('input',renderList);
 $('#resetBtn').addEventListener('click',async()=>{
   const yes=await askConfirm({title:'Сбросить статистику игры?',text:'Счёт, испечённые хлебушки и слабые слова обнулятся. Уровень и общий прогресс сайта не сбрасываются.',ok:'Сбросить',danger:true});
   if(!yes)return;
