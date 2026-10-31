@@ -12,24 +12,25 @@ import { themeDark, toggleTheme } from '@/lib/theme'
 import catSleep from '@/assets/game/cat-sleep.webp'
 import catWow from '@/assets/game/cat-wow.webp'
 import bg from '@/assets/game/bg.webp'
+import { ICON, iconImg } from '@/game/icons'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import '@/game/game.css'
 import '@/game/redesign.css'
 
 const progress = useProgressStore()
-const markup = markupRaw.replace('CAT_SLEEP', catSleep)
+const markup = markupRaw.replace('CAT_SLEEP', catSleep).replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 const bgStyle = { '--gx-bg': `url(${bg})` }
 
 /** Меню профиля справа вверху (аватар): открывается по нажатию, закрывается по Esc и нажатию мимо. */
 const userOpen = ref(false)
 const userLinks = [
-  { to: '/korean/cabinet', t: 'Мой кабинет', i: '♡' },
-  { to: '/korean/today', t: 'Сегодня', i: '☀' },
-  { to: '/korean/garden', t: 'Сад', i: '🌸' },
-  { to: '/korean/words', t: 'Словарь', i: '▤' },
-  { to: '/korean/grammar', t: 'Грамматика', i: '◉' },
-  { to: '/korean/home', t: 'На платформу', i: '←' },
+  { to: '/korean/cabinet', t: 'Мой кабинет', i: 'heart' },
+  { to: '/korean/today', t: 'Сегодня', i: 'sun' },
+  { to: '/korean/garden', t: 'Сад', i: 'sakura' },
+  { to: '/korean/words', t: 'Словарь', i: 'dict' },
+  { to: '/korean/grammar', t: 'Грамматика', i: 'grammar' },
+  { to: '/korean/home', t: 'На платформу', i: 'home' },
 ]
 const searchFromUser = () => {
   userOpen.value = false
@@ -117,7 +118,7 @@ onBeforeUnmount(() => dispose?.())
       </div>
       <RouterLink to="/korean/cabinet" class="gx-level">
         <template v-if="progress.unlocked">
-          <span class="gx-lv-t"><span>⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }}</span><b>{{ progress.info.into }} / {{ progress.info.span }}</b></span>
+          <span class="gx-lv-t"><span><img class="gi-img" :src="ICON.star" alt="" aria-hidden="true" /> Уровень {{ progress.info.level }} · {{ progress.info.title }}</span><b>{{ progress.info.into }} / {{ progress.info.span }}</b></span>
           <span class="lv-bar"><i :style="{ width: progress.info.pct + '%' }"></i></span>
         </template>
         <span v-else>🔒 Войти по токену</span>
@@ -127,7 +128,7 @@ onBeforeUnmount(() => dispose?.())
     <div class="gx-main">
       <header class="game-top gx-top">
         <div class="game-title">
-          <h1><span class="gx-star">✦</span> Игры на слова</h1>
+          <h1><img class="gi-img gx-hstar" :src="ICON.star" alt="" aria-hidden="true" /> Игры на слова</h1>
         </div>
         <div class="gx-tools">
           <div class="game-menu" @mouseenter="menuIn" @mouseleave="menuOut">
@@ -162,7 +163,7 @@ onBeforeUnmount(() => dispose?.())
               <button type="button" class="gx-di" @click="searchFromUser"><span class="gi">⌕</span> Поиск <kbd>⌘K</kbd></button>
               <button type="button" class="gx-di" @click="toggleTheme()"><span class="gi">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая тема' : 'Тёмная тема' }}</button>
               <div class="gx-sep"></div>
-              <RouterLink v-for="l in userLinks" :key="l.to" :to="l.to" class="gx-di" @click="userOpen = false"><span class="gi">{{ l.i }}</span> {{ l.t }}</RouterLink>
+              <RouterLink v-for="l in userLinks" :key="l.to" :to="l.to" class="gx-di" @click="userOpen = false"><img class="gi-img gi" :src="ICON[l.i]" alt="" aria-hidden="true" /> {{ l.t }}</RouterLink>
             </div>
           </div>
         </div>

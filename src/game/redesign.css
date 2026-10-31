@@ -114,3 +114,17 @@ html[data-theme='dark'] .game .gx-drop .gx-me, html[data-theme='dark'] .game .gx
 html[data-theme='dark'] .gx-di kbd { background: rgba(255, 255, 255, .1); }
 .game .gi.gq { display: grid; place-items: center; width: 22px; height: 22px; font-size: 14px; border: 1.5px solid currentColor; border-radius: 50%; }
 
+
+/* иконки из стикерпака */
+.game .gi-img { display: inline-block; width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: -.3em; flex: none; }
+.game .gx-modes .sm .si { display: grid; place-items: center; width: 28px; }
+.game .gx-modes .sm .si .gi-img { width: 26px; height: 26px; }
+.game .gx-body .chip { display: inline-flex; align-items: center; gap: 8px; }
+.game .gx-body .chip .gi-img { width: 22px; height: 22px; }
+.game .gx-actions .gi-img { width: 26px; height: 26px; }
+.game .gx-hstar { width: 40px; height: 40px; filter: drop-shadow(0 2px 6px rgba(246, 196, 83, .5)); }
+.game .gx-stats-h .gi-img { width: 30px; height: 30px; }
+.game .gx-drop .gx-di .gi-img { width: 24px; height: 24px; }
+.game .gx-level .gi-img { width: 20px; height: 20px; }
+.game .gx-stats .row .gi-img { width: 22px; height: 22px; }
+.game .hint .gi-img, .game .ghost .gi-img { width: 18px; height: 18px; }

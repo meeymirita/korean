@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Логика игры «Хлебушек», перенесена из Hlebushek_Game.html. Работает с разметкой GameView.vue.
 import { D } from './words'
+import { iconImg, MODE_ICON } from './icons'
 import { makeBuild, parseBuildKey } from './build'
 import { analyze } from '@/data/korean/parse'
 import { EXCHANGES } from './dialogs'
@@ -447,7 +448,7 @@ function renderQuestion(q){
     card.appendChild(opts);
     if(q.options.length>2&&!S.blitz.on){
       const acts=el('div','acts');
-      const hb=el('button','ghost hint','💡 50/50 · '+S.hints);hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0;
+      const hb=el('button','ghost hint');hb.innerHTML=iconImg('sparkle')+' 50/50 · '+S.hints;hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0;
       hb.addEventListener('click',useHint);acts.appendChild(hb);card.appendChild(acts);
     }
   }else if(q.type==='type'){
@@ -461,7 +462,7 @@ function renderQuestion(q){
     form.append(inp,go);form.addEventListener('submit',e=>{e.preventDefault();checkType(false);});
     card.appendChild(form);
     const acts=el('div','acts');
-    const hb=el('button','ghost','💡 Подсказка');hb.type='button';
+    const hb=el('button','ghost');hb.innerHTML=iconImg('sparkle')+' Подсказка';hb.type='button';
     hb.addEventListener('click',()=>{q.hintN=(q.hintN||0)+1;$('#thint').textContent='подсказка: '+q.right.slice(0,q.hintN)+'…';});
     const sk=el('button','ghost','Не знаю');sk.type='button';sk.addEventListener('click',()=>checkType(true));
     acts.append(hb,sk);card.appendChild(acts);
@@ -489,7 +490,7 @@ function renderQuestion(q){
     const acts=el('div','acts');
     const chk=el('button','primary','Проверить');chk.type='button';chk.id='chk';chk.addEventListener('click',checkBuild);
     const clr=el('button','ghost','Очистить');clr.type='button';clr.id='clr';clr.addEventListener('click',()=>{q.sel=[];drawBuild();});
-    const hb=el('button','ghost hint','💡 Подсказка · '+S.hints);hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0||S.blitz.on;
+    const hb=el('button','ghost hint');hb.innerHTML=iconImg('sparkle')+' Подсказка · '+S.hints;hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0||S.blitz.on;
     hb.addEventListener('click',buildHint);
     const gb=el('button','ghost hint','🔤 '+(S.gloss?'Скрыть переводы':'Показать переводы'));gb.type='button';gb.id='glossBtn';
     gb.addEventListener('click',toggleGloss);
@@ -505,7 +506,7 @@ function useHint(){
   const wrong=shuffle(btns.map((b,i)=>i).filter(i=>i!==q.correct&&!btns[i].disabled)).slice(0,2);
   if(wrong.length<2)return;
   wrong.forEach(i=>{btns[i].disabled=true;btns[i].classList.add('dim');});
-  S.hints--;const hb=$('#hintBtn');hb.textContent='💡 50/50 · '+S.hints;hb.disabled=true;
+  S.hints--;const hb=$('#hintBtn');hb.innerHTML=iconImg('sparkle')+' 50/50 · '+S.hints;hb.disabled=true;
 }
 function checkType(skip){
   if(S.answered)return;const q=S.cur;
@@ -543,7 +544,7 @@ function buildHint(){
   const ti=q.tiles.findIndex((t,i)=>t===need&&!q.sel.includes(i));
   if(ti<0)return;
   q.sel.push(ti);drawBuild();S.hints--;
-  const hb=$('#hintBtn');hb.textContent='💡 Подсказка · '+S.hints;hb.disabled=S.hints<=0;
+  const hb=$('#hintBtn');hb.innerHTML=iconImg('sparkle')+' Подсказка · '+S.hints;hb.disabled=S.hints<=0;
 }
 function checkBuild(){
   if(S.answered)return;const q=S.cur;
@@ -689,7 +690,7 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
 function drawModes(){
   const box=$('#modes');box.innerHTML='';
   MODES.filter(m=>m.id==='mix').forEach(m=>{
-    const b=el('button','chip'+(S.mode===m.id?' on':''),m.icon+' '+m.name);b.type='button';
+    const b=el('button','chip'+(S.mode===m.id?' on':''));b.innerHTML=iconImg(MODE_ICON[m.id])+'<span>'+m.name+'</span>';b.type='button';
     b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
     box.appendChild(b);
   });
@@ -701,7 +702,7 @@ function drawModes(){
     if(!found.length)side.appendChild(el('div','empty','Такой игры нет'));
     found.forEach(m=>{
       const b=el('button','sm'+(S.mode===m.id?' on':''));b.type='button';
-      b.append(el('span','si',m.icon),el('span','st',m.name));
+      {const si=el('span','si');si.innerHTML=iconImg(MODE_ICON[m.id]);b.append(si,el('span','st',m.name));}
       if(S.mode===m.id)b.appendChild(el('span','sa','›'));
       b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
       side.appendChild(b);
@@ -747,7 +748,7 @@ function startBlitz(){
   clearInterval(S.blitz.iv);
   S.blitz={on:true,left:60,ok:0,bad:0,iv:null};
   $('#timer').classList.add('on');$('#timerBar').style.width='100%';
-  $('#blitzBtn').textContent='⏹ Остановить блиц';
+  $('#blitzBtn').innerHTML='<span class="gi">⏹</span> Остановить блиц';
   S.blitz.iv=setInterval(()=>{
     S.blitz.left--;$('#timerBar').style.width=Math.max(0,S.blitz.left/60*100)+'%';
     if(S.blitz.left<=0)endBlitz();
@@ -757,7 +758,7 @@ function startBlitz(){
 function endBlitz(){
   clearInterval(S.blitz.iv);clearTimeout(S.timer);
   const b=S.blitz;b.on=false;
-  $('#timer').classList.remove('on');$('#blitzBtn').textContent='⏱ Блиц 60 секунд';
+  $('#timer').classList.remove('on');$('#blitzBtn').innerHTML=iconImg('rocket')+' Блиц 60 секунд';
   const tot=b.ok+b.bad;
   let rec='';
   if(b.ok>S.all.bestBlitz){S.all.bestBlitz=b.ok;rec=' Новый рекорд!';save();updateStats();}
@@ -779,12 +780,12 @@ function drawLives(){
 function startSurv(){
   if(S.blitz.on){toast('Сначала закончи блиц');return;}
   S.surv={on:true,lives:3,ok:0};
-  $('#survBtn').textContent='⏹ Остановить выживание';drawLives();next();
+  $('#survBtn').innerHTML='<span class="gi">⏹</span> Остановить выживание';drawLives();next();
 }
 function endSurv(){
   clearTimeout(S.timer);
   const sv=S.surv;sv.on=false;
-  $('#survBtn').textContent='❤️ На выживание';drawLives();
+  $('#survBtn').innerHTML=iconImg('heart')+' На выживание';drawLives();
   let rec='';
   if(sv.ok>S.all.bestSurv){S.all.bestSurv=sv.ok;rec=' Новый рекорд!';save();updateStats();}
   S.lastOver='surv';$('#overT').textContent='Жизни закончились';
