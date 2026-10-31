@@ -117,3 +117,4 @@ html[data-theme='dark'] .study .ht-c.h3 { background: rgba(160, 140, 255, .75); 
 html[data-theme='dark'] .study .ht-c.h4 { background: #b8a8ff; }
 
 @media (min-width: 861px) { html[data-theme='dark'] .study-shell.sky.focus.peek .study-side { background: rgba(28, 30, 62, .99); } }
+html[data-theme='dark'] .study-main .crumbs ol { background: rgba(37, 39, 78, .82); border-color: var(--line); }
