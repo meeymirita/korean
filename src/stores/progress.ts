@@ -110,7 +110,6 @@ function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
   for (const k of ['q', 'a', 'y'] as const) if (typeof d[k] === 'string' && d[k]) out[k] = d[k]!.slice(0, 300)
   return Object.keys(out).length ? out : undefined
 }
-/** Слово считается выученным после трёх верных ответов подряд. */
 /** Очков у слова, с которых оно считается выученным: верный ответ +1, ошибка −1 (не ниже 0). */
 export const KNOWN_STREAK = 5
 

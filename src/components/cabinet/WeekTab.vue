@@ -61,7 +61,7 @@ const max = computed(() => Math.max(1, ...week.value.days.map(d => d.all)))
 
     <h2 class="today-h">Выучено за неделю <small>{{ week.learned.length }}</small></h2>
     <div v-if="week.learned.length" class="wk-learned"><span v-for="w in week.learned" :key="w.k">{{ w.k }}</span></div>
-    <p v-else class="pg-empty">Слово становится выученным после трёх верных ответов подряд. Новые появятся здесь.</p>
+    <p v-else class="pg-empty">Слово становится выученным, когда наберёт 5 очков (верный ответ +1, ошибка −1). Новые появятся здесь.</p>
 
     <h2 class="today-h">Прошлые недели <small>{{ archive.length }}</small></h2>
     <ul v-if="archive.length" class="wk-arc">
@@ -79,5 +79,7 @@ const max = computed(() => Math.max(1, ...week.value.days.map(d => d.all)))
 .study .wk-arc { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .study .wk-arc li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .study .wk-arc span { font-size: 14px; color: var(--muted); }
-.study .wk-arc button { margin-left: auto; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+.study .wk-arc button { margin-left: auto; padding: 7px 16px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; transition: border-color .2s, background .2s; }
+.study .wk-arc button:hover:not(:disabled) { border-color: var(--gold); background: var(--gold-soft); }
+.study .wk-arc button:disabled { opacity: .5; cursor: default; }
 </style>
