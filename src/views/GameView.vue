@@ -49,6 +49,7 @@ const menuOut = () => {
   menuTimer = setTimeout(() => (menuOpen.value = false), 250)
 }
 const menuItems = sections.filter(s => !s.group)
+const menuIcon: Record<string, string> = { cabinet: 'heart', today: 'sun', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'pencil', review: 'clock', garden: 'sakura' }
 const onDocDown = (e: Event) => {
   const t = e.target as HTMLElement
   if (menuOpen.value && !t.closest?.('.game-menu')) menuOpen.value = false
@@ -134,13 +135,13 @@ onBeforeUnmount(() => dispose?.())
           <div class="game-menu" @mouseenter="menuIn" @mouseleave="menuOut">
             <button type="button" class="game-pill" :aria-expanded="menuOpen" aria-haspopup="true" @click="menuOpen = !menuOpen">≡ Меню</button>
             <nav v-show="menuOpen" class="game-menu-list" aria-label="Разделы платформы">
-              <RouterLink to="/korean/home" class="gm-item">← На платформу</RouterLink>
+              <RouterLink to="/korean/home" class="gm-item"><span class="gm-t"><img class="gi-img" :src="ICON.home" alt="" aria-hidden="true" /> На платформу</span></RouterLink>
               <template v-for="s in menuItems" :key="s.id">
                 <RouterLink v-if="s.id !== 'home'" :to="`/korean/${s.id}`" class="gm-item">
-                  <span>{{ s.menu }}</span>
+                  <span class="gm-t"><img class="gi-img" :src="ICON[menuIcon[s.id] ?? 'star']" alt="" aria-hidden="true" /> {{ s.menu }}</span>
                   <span v-if="s.private && !progress.unlocked" title="Откроется после входа по токену">🔒</span>
                 </RouterLink>
-                <RouterLink v-if="s.id === 'today'" to="/game" class="gm-item on" aria-current="page"><span>Игра на слова</span></RouterLink>
+                <RouterLink v-if="s.id === 'today'" to="/game" class="gm-item on" aria-current="page"><span class="gm-t"><img class="gi-img" :src="ICON.dice" alt="" aria-hidden="true" /> Игра на слова</span></RouterLink>
               </template>
             </nav>
           </div>

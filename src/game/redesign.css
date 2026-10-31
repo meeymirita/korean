@@ -139,3 +139,5 @@ html[data-theme='dark'] .gx-di kbd { background: rgba(255, 255, 255, .1); }
 /* кнопка «Меню» той же высоты, что круглые кнопки рядом */
 .game .gx-top .gx-tools .game-pill { height: 46px; padding: 0 22px; font-size: 14px; gap: 8px; box-shadow: 0 8px 22px rgba(100, 87, 170, .2); }
 .game .gx-round { font-size: 24px; }
+.game .game-menu-list .gm-t { display: inline-flex; align-items: center; gap: 12px; }
+.game .game-menu-list .gi-img { width: 26px; height: 26px; }
