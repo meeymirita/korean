@@ -688,7 +688,7 @@ function renderList(){
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800);}
 function drawModes(){
   const box=$('#modes');box.innerHTML='';
-  MODES.forEach(m=>{
+  MODES.filter(m=>m.id==='mix').forEach(m=>{
     const b=el('button','chip'+(S.mode===m.id?' on':''),m.icon+' '+m.name);b.type='button';
     b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
     box.appendChild(b);
@@ -696,7 +696,7 @@ function drawModes(){
   const side=$('#sideModes');
   if(side){
     side.innerHTML='';
-    MODES.filter(m=>m.id==='mix').forEach(m=>{
+    MODES.forEach(m=>{
       const b=el('button','sm'+(S.mode===m.id?' on':''));b.type='button';
       b.append(el('span','si',m.icon),el('span','st',m.name));
       if(S.mode===m.id)b.appendChild(el('span','sa','›'));
