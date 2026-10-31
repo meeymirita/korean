@@ -693,6 +693,17 @@ function drawModes(){
     b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
     box.appendChild(b);
   });
+  const side=$('#sideModes');
+  if(side){
+    side.innerHTML='';
+    MODES.forEach(m=>{
+      const b=el('button','sm'+(S.mode===m.id?' on':''));b.type='button';
+      b.append(el('span','si',m.icon),el('span','st',m.name));
+      if(S.mode===m.id)b.appendChild(el('span','sa','›'));
+      b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
+      side.appendChild(b);
+    });
+  }
 }
 function drawCats(){
   const box=$('#cats');box.innerHTML='';

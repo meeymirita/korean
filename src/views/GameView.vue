@@ -6,12 +6,36 @@ import { openSearch } from '@/composables/useSearchWindow'
 import { sections } from '@/data/korean/sections'
 import { initGame } from '@/game/engine'
 import { useProgressStore } from '@/stores/progress'
-import markup from '@/game/markup.html?raw'
+import markupRaw from '@/game/markup.html?raw'
+import Avatar from '@/components/Avatar.vue'
+import { themeDark, toggleTheme } from '@/lib/theme'
+import catSleep from '@/assets/game/cat-sleep.webp'
+import catWow from '@/assets/game/cat-wow.webp'
+import catCheer from '@/assets/game/cat-cheer.webp'
+import bg from '@/assets/game/bg.webp'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import '@/game/game.css'
+import '@/game/redesign.css'
 
 const progress = useProgressStore()
+const markup = markupRaw.replace('CAT_BOOK', catCheer).replace('CAT_SLEEP', catSleep)
+const bgStyle = { '--gx-bg': `url(${bg})` }
+
+/** Меню профиля справа вверху (аватар): открывается по нажатию, закрывается по Esc и нажатию мимо. */
+const userOpen = ref(false)
+const userLinks = [
+  { to: '/korean/cabinet', t: 'Мой кабинет', i: '♡' },
+  { to: '/korean/today', t: 'Сегодня', i: '☀' },
+  { to: '/korean/garden', t: 'Сад', i: '🌸' },
+  { to: '/korean/words', t: 'Словарь', i: '▤' },
+  { to: '/korean/grammar', t: 'Грамматика', i: '◉' },
+  { to: '/korean/home', t: 'На платформу', i: '←' },
+]
+const searchFromUser = () => {
+  userOpen.value = false
+  openSearch()
+}
 
 /** Меню слева вверху: открывается при наведении (на планшете и телефоне по нажатию), закрывается, когда курсор ушёл, по Esc или по нажатию мимо. */
 const menuOpen = ref(false)
@@ -26,14 +50,20 @@ const menuOut = () => {
 }
 const menuItems = sections.filter(s => !s.group)
 const onDocDown = (e: Event) => {
-  if (menuOpen.value && !(e.target as HTMLElement).closest?.('.game-menu')) menuOpen.value = false
+  const t = e.target as HTMLElement
+  if (menuOpen.value && !t.closest?.('.game-menu')) menuOpen.value = false
+  if (userOpen.value && !t.closest?.('.gx-user')) userOpen.value = false
 }
-const onMenuKey = (e: KeyboardEvent) => e.key === 'Escape' && (menuOpen.value = false)
+const onMenuKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') menuOpen.value = userOpen.value = false
+}
 onMounted(() => {
+  document.body.classList.add('on-game')
   document.addEventListener('pointerdown', onDocDown)
   document.addEventListener('keydown', onMenuKey)
 })
 onBeforeUnmount(() => {
+  document.body.classList.remove('on-game')
   document.removeEventListener('pointerdown', onDocDown)
   document.removeEventListener('keydown', onMenuKey)
   clearTimeout(menuTimer)
@@ -72,42 +102,85 @@ onBeforeUnmount(() => dispose?.())
 </script>
 
 <template>
-  <div class="study game sky">
-    <header class="game-top">
-      <div class="game-menu" @mouseenter="menuIn" @mouseleave="menuOut">
-        <button type="button" class="game-pill" :aria-expanded="menuOpen" aria-haspopup="true" @click="menuOpen = !menuOpen">☰ Меню</button>
-        <nav v-show="menuOpen" class="game-menu-list" aria-label="Разделы платформы">
-          <RouterLink to="/korean/home" class="gm-item">← На платформу</RouterLink>
-          <template v-for="s in menuItems" :key="s.id">
-            <RouterLink v-if="s.id !== 'home'" :to="`/korean/${s.id}`" class="gm-item">
-              <span>{{ s.menu }}</span>
-              <span v-if="s.private && !progress.unlocked" title="Откроется после входа по токену">🔒</span>
-            </RouterLink>
-            <RouterLink v-if="s.id === 'today'" to="/game" class="gm-item on" aria-current="page"><span>Игра на слова</span></RouterLink>
-          </template>
-        </nav>
+  <div class="study game sky gx" :style="bgStyle">
+    <aside class="gx-nav">
+      <RouterLink to="/korean/home" class="gx-brand" title="На платформу">
+        <span class="gx-flower">🌸</span>
+        <div>
+          <div class="gx-logo ko">우리말</div>
+          <div class="gx-sub">Учим корейский вместе ♡</div>
+        </div>
+      </RouterLink>
+      <button type="button" class="gx-find" title="Поиск по платформе" @click="openSearch()"><span aria-hidden="true">⌕</span> Поиск игр… <kbd>⌘K</kbd></button>
+      <div class="gx-navbox">
+        <img class="gx-cat gx-cat-nav" :src="catWow" alt="" aria-hidden="true" />
+        <nav id="sideModes" class="gx-modes" aria-label="Режимы игры"></nav>
       </div>
-      <div class="game-title">
-        <h1>Игра на слова</h1>
-      </div>
-      <span class="game-links">
-        <button type="button" class="game-pill" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()"><span aria-hidden="true">⌕</span> Поиск <kbd>⌘K</kbd></button>
-        <RouterLink to="/korean/garden" class="game-pill">🌸 Сад</RouterLink>
-        <RouterLink to="/korean/words" class="game-pill">Словарь →</RouterLink>
-      </span>
-    </header>
-    <div v-if="progress.unlocked" v-html="markup"></div>
-    <AuthGate v-else />
+      <RouterLink to="/korean/cabinet" class="gx-level">
+        <template v-if="progress.unlocked">
+          <span class="gx-lv-t"><span>⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }}</span><b>{{ progress.info.into }} / {{ progress.info.span }}</b></span>
+          <span class="lv-bar"><i :style="{ width: progress.info.pct + '%' }"></i></span>
+        </template>
+        <span v-else>🔒 Войти по токену</span>
+      </RouterLink>
+    </aside>
+
+    <div class="gx-main">
+      <header class="game-top gx-top">
+        <div class="game-title">
+          <h1><span class="gx-star">✦</span> Игры на слова</h1>
+        </div>
+        <div class="gx-tools">
+          <div class="game-menu" @mouseenter="menuIn" @mouseleave="menuOut">
+            <button type="button" class="game-pill" :aria-expanded="menuOpen" aria-haspopup="true" @click="menuOpen = !menuOpen">≡ Меню</button>
+            <nav v-show="menuOpen" class="game-menu-list" aria-label="Разделы платформы">
+              <RouterLink to="/korean/home" class="gm-item">← На платформу</RouterLink>
+              <template v-for="s in menuItems" :key="s.id">
+                <RouterLink v-if="s.id !== 'home'" :to="`/korean/${s.id}`" class="gm-item">
+                  <span>{{ s.menu }}</span>
+                  <span v-if="s.private && !progress.unlocked" title="Откроется после входа по токену">🔒</span>
+                </RouterLink>
+                <RouterLink v-if="s.id === 'today'" to="/game" class="gm-item on" aria-current="page"><span>Игра на слова</span></RouterLink>
+              </template>
+            </nav>
+          </div>
+          <button type="button" class="gx-round" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" aria-label="Поиск" @click="openSearch()">⌕</button>
+          <button type="button" class="gx-round" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()">{{ themeDark ? '☀' : '☾' }}</button>
+          <div class="gx-user">
+            <button type="button" class="gx-ava" :aria-expanded="userOpen" aria-haspopup="true" aria-label="Профиль" @click="userOpen = !userOpen">
+              <Avatar :avatar="progress.data.profile.avatar" :size="40" />
+              <span class="gx-chev" aria-hidden="true">⌄</span>
+            </button>
+            <div v-show="userOpen" class="gx-drop" role="menu">
+              <RouterLink to="/korean/cabinet" class="gx-me" @click="userOpen = false">
+                <Avatar :avatar="progress.data.profile.avatar" :size="44" />
+                <span>
+                  <b>{{ progress.unlocked ? progress.data.profile.name || 'Мой кабинет' : 'Гость' }}</b>
+                  <small v-if="progress.unlocked">Уровень {{ progress.info.level }} · {{ progress.info.title }}</small>
+                  <small v-else>Войти по токену</small>
+                </span>
+              </RouterLink>
+              <button type="button" class="gx-di" @click="searchFromUser"><span class="gi">⌕</span> Поиск <kbd>⌘K</kbd></button>
+              <button type="button" class="gx-di" @click="toggleTheme()"><span class="gi">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая тема' : 'Тёмная тема' }}</button>
+              <div class="gx-sep"></div>
+              <RouterLink v-for="l in userLinks" :key="l.to" :to="l.to" class="gx-di" @click="userOpen = false"><span class="gi">{{ l.i }}</span> {{ l.t }}</RouterLink>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div v-if="progress.unlocked" v-html="markup"></div>
+      <AuthGate v-else />
+    </div>
   </div>
 </template>
 
 <style>
 .game {
   --panel: rgba(248, 247, 244, .92);
-  --line: rgba(168, 130, 47, .3);
-  --accent: #a8822f;
+  --line: rgba(111, 105, 190, .22);
+  --accent: #7863ff;
   --accent-ink: #fff;
-  --accent-soft: rgba(168, 130, 47, .14);
+  --accent-soft: rgba(143, 124, 240, .14);
   --ok: #3f6b4f;
   --ok-bg: rgba(63, 107, 79, .12);
   --bad: #a4402f;

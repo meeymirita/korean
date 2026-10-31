@@ -1,6 +1,35 @@
-<div class="game-app">
-  <aside class="game-side">
-    <div class="brand"><span>✳︎</span> 우리말</div>
+<div class="gx-body">
+  <div class="modes" id="modes"></div>
+
+  <div class="gx-center">
+    <section class="card" id="cardWrap">
+      <img class="gx-cat gx-cat-card" src="CAT_BOOK" alt="" aria-hidden="true">
+      <div class="timer" id="timer"><i id="timerBar"></i></div>
+      <div class="lives" id="lives"></div>
+      <div id="card"></div>
+    </section>
+    <div class="gx-actions">
+      <button class="ghost" id="refreshBtn" type="button"><span class="gi">🔄</span> Обновить вопрос</button>
+      <button class="ghost" id="blitzBtn" type="button"><span class="gi">⏱</span> Блиц 60 секунд</button>
+      <button class="ghost" id="survBtn" type="button"><span class="gi">❤️</span> На выживание</button>
+      <button class="helpbtn" id="helpBtn" type="button"><span class="gi gq">?</span> Как играть</button>
+    </div>
+    <details class="set">
+      <summary>Настройки</summary>
+      <div class="setgrp"><h4>Какие слова брать</h4><div class="chips" id="cats"></div></div>
+      <div class="setgrp"><h4>Формы глаголов</h4>
+        <select id="tense"><option value="both">настоящее и прошедшее</option><option value="pres">только настоящее</option><option value="past">только прошедшее</option></select>
+      </div>
+      <div class="setgrp"><h4>Подсказки и ход игры</h4><div class="chips">
+        <label id="lbRead"><input type="checkbox" id="cbRead"> показывать чтение (кириллицей)</label>
+      </div></div>
+      <div class="setgrp"><button class="ghost" id="resetBtn" type="button">Сбросить весь прогресс</button></div>
+      <p class="muted" style="font-size:13px">Ошибки возвращаются чаще: слово, в котором ошибся, выпадает с большей вероятностью, пока не ответишь верно. Клавиши 1–4 выбирают ответ, Enter идёт дальше.</p>
+    </details>
+  </div>
+
+  <aside class="game-side gx-stats">
+    <div class="gx-stats-h"><span class="gx-star">✦</span> 우리말</div>
     <div class="nums">
       <div class="num ok"><b id="nOk">0</b><span>верно</span></div>
       <div class="num bad"><b id="nBad">0</b><span>неверно</span></div>
@@ -28,33 +57,7 @@
     <div class="list" id="list"></div>
     <div class="muted" style="font-size:12px;margin-top:8px" id="allTime"></div>
   </aside>
-
-  <main>
-    <div class="modes" id="modes"></div>
-    <section class="card" id="cardWrap">
-      <div class="timer" id="timer"><i id="timerBar"></i></div>
-      <div class="lives" id="lives"></div>
-      <div id="card"></div>
-    </section>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-      <button class="ghost" id="refreshBtn" type="button">🔄 Обновить вопрос</button>
-      <button class="ghost" id="blitzBtn" type="button">⏱ Блиц 60 секунд</button>
-      <button class="ghost" id="survBtn" type="button">❤️ На выживание</button>
-      <button class="helpbtn" id="helpBtn" type="button">❔ Как играть</button>
-    </div>
-    <details class="set">
-      <summary>Настройки</summary>
-      <div class="setgrp"><h4>Какие слова брать</h4><div class="chips" id="cats"></div></div>
-      <div class="setgrp"><h4>Формы глаголов</h4>
-        <select id="tense"><option value="both">настоящее и прошедшее</option><option value="pres">только настоящее</option><option value="past">только прошедшее</option></select>
-      </div>
-      <div class="setgrp"><h4>Подсказки и ход игры</h4><div class="chips">
-        <label id="lbRead"><input type="checkbox" id="cbRead"> показывать чтение (кириллицей)</label>
-      </div></div>
-      <div class="setgrp"><button class="ghost" id="resetBtn" type="button">Сбросить весь прогресс</button></div>
-      <p class="muted" style="font-size:13px">Ошибки возвращаются чаще: слово, в котором ошибся, выпадает с большей вероятностью, пока не ответишь верно. Клавиши 1–4 выбирают ответ, Enter идёт дальше.</p>
-    </details>
-  </main>
+  <img class="gx-cat gx-cat-sleep" src="CAT_SLEEP" alt="" aria-hidden="true">
 </div>
 
 <div class="over" id="over"><div class="box" role="dialog" aria-modal="true" aria-labelledby="overT">
@@ -72,7 +75,8 @@
 
   <h3>Что где на экране</h3>
   <ul>
-    <li><b>Слева</b> — твой счёт и история ответов.</li>
+    <li><b>Справа</b> — твой счёт и история ответов.</li>
+    <li><b>Слева</b> — список режимов и твой уровень на платформе.</li>
     <li><b>Сверху</b> — режимы игры. Нажми на любой, чтобы сменить.</li>
     <li><b>В центре</b> — вопрос и четыре варианта ответа.</li>
     <li><b>Внизу</b> — кнопки «Блиц», «Как играть» и «Настройки».</li>
@@ -104,7 +108,7 @@
     <li>🏗️ <b>Собери предложение</b> — смотри на русский текст и нажимай корейские слова по порядку (или клавишами <kbd>1</kbd>–<kbd>9</kbd>). Есть три уровня: <b>простой</b> (<span class="ex">공원에 가요</span> — «Иду в парк»), <b>средний</b> (<span class="ex">내일 공원에 가요</span> — «Завтра иду в парк») и <b>сложный</b> (время, кто, где, «А и Б», отрицание, заказ в кафе). Среди плиток есть лишние: с неверной частицей, временем или местом. После ответа показывается разбор предложения. <kbd>Enter</kbd> — проверить, <kbd>Backspace</kbd> — убрать последнее слово, <kbd>H</kbd> — подсказка. Не знаешь слово — кнопка «🔤 Показать переводы» (клавиша <kbd>T</kbd>) подписывает каждую плитку: слово, частицу и их значение.</li>
   </ul>
 
-  <h3>Что значит левая панель</h3>
+  <h3>Что значит правая панель</h3>
   <ul>
     <li><b>Верно / неверно / точность</b> — счёт с момента, как ты открыл страницу.</li>
     <li>🔥 <b>Серия</b> — сколько верных ответов подряд. Одна ошибка обнуляет её.</li>
