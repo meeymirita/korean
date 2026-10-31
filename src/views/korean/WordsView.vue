@@ -12,7 +12,7 @@ import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
 
 const progress = useProgressStore()
-const marked = computed(() => progress.data.settings.marks.length)
+const marked = computed(() => progress.data.settings.marks.filter(m => !m.startsWith('d:')).length)
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')

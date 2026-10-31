@@ -6,16 +6,19 @@ import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, SECS } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { COURSE } from '@/data/korean/course'
+import { useProgressStore } from '@/stores/progress'
 import { usePersisted } from '@/composables/usePersisted'
 
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
+const progress = useProgressStore()
+const passed = (id: string) => progress.isMarked('d', id)
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
 const list = computed(() => {
   const w = q.value.trim().toLowerCase()
   return G.filter(g =>
     (!sec.value || g.s === sec.value) &&
-    (!onlyDone.value || g.st === 'ok') &&
+    (!onlyDone.value || g.st === 'ok' || passed(g.id)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
 })
 const { open } = useGrammarModal()
@@ -58,6 +61,7 @@ onMounted(() => {
           <span class="pill">{{ g.s }}</span>
           <span v-if="g.l" class="pill l">{{ g.l }}</span>
           <span class="pill" :class="g.st === 'ok' ? 's' : 'n'">{{ g.st === 'ok' ? 'пройдено' : 'ещё рано' }}</span>
+          <span v-if="passed(g.id)" class="pill s">✓ {{ g.l || 'отмечено' }}</span>
         </div>
       </button>
     </div>

@@ -4,10 +4,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { F, blk } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
+import { useProgressStore } from '@/stores/progress'
 import { CHANNEL, videoOf } from '@/data/korean/course'
 
 const { current, close, prev, next } = useGrammarModal()
 const { share, busy } = useShareCard()
+const progress = useProgressStore()
+/** Отметка «урок пройден» ведёт сам владелец (у гостя записи не сохраняются). */
+const owner = computed(() => progress.unlocked && !progress.isGuest)
+const passed = computed(() => !!current.value && progress.isMarked('d', current.value.id))
 /** Видео урока; если файла на сервере нет (или локально), показываем заглушку. */
 const broken = ref('')
 const video = computed(() => {
@@ -54,6 +59,9 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
               {{ current.st === 'ok' ? 'пройдено' : 'ещё рано' }}
             </span>
           </div>
+          <button v-if="owner && current" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
+            {{ passed ? `✓ ${current.l || 'Тема'} пройдено` : `Отметить пройденным${current.l ? ': ' + current.l.toLowerCase() : ''}` }}
+          </button>
         </div>
         <MarkStar kind="g" :id="current.id" />
         <button title="Поделиться карточкой" aria-label="Поделиться карточкой" :disabled="busy" @click="shareRule">🖼</button>

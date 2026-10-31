@@ -158,6 +158,8 @@ describe('сервер: прогресс в базе', () => {
     assert.equal((await ops({ type: 'settings', marks: ['w:사람', 'g:ayo', 'w:사람'] })).status, 200)
     assert.deepEqual((await read()).settings.marks, ['w:사람', 'g:ayo'])
     assert.equal((await ops({ type: 'settings', marks: ['x:что-то'] })).status, 400)
+    assert.equal((await ops({ type: 'settings', marks: ['w:사람', 'g:ayo', 'd:iyo'] })).status, 200, 'отметка «урок пройден»')
+    assert.equal((await ops({ type: 'settings', marks: ['w:사람', 'g:ayo'] })).status, 200)
     assert.equal((await ops({ type: 'settings', marks: 'w:사람' })).status, 400)
     assert.equal((await ops({ type: 'settings', marks: Array.from({ length: 501 }, (_, i) => `w:${i}`) })).status, 400)
     assert.deepEqual((await read()).settings.marks, ['w:사람', 'g:ayo'], 'неудачная пачка ничего не меняет')

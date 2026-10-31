@@ -41,7 +41,7 @@ const IMAGE_ID = /^[a-f0-9]{16}$/
 /** За одно действие таймера можно записать не больше часа. */
 const MAX_TIME_OP = 3600
 const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [], keys: {} }
-const MARK = /^[wg]:.{1,40}$/
+const MARK = /^[wgd]:.{1,40}$/
 const MAX_MARKS = 500
 const KEY_ID = /^(nav|cab):[a-z]{1,20}$/
 const KEY_COMBO = /^mod(\+alt)?(\+shift)?\+[A-Za-z0-9]{1,20}$/

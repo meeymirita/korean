@@ -100,7 +100,9 @@ export const KNOWN_STREAK = 3
 const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
 const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [], keys: {} })
 export const MAX_MARKS = 500
-export const markKey = (kind: 'w' | 'g', id: string) => `${kind}:${id}`
+/** w — слово, g — правило (звёздочка «Важное»), d — урок грамматики отмечен пройденным */
+export type MarkKind = 'w' | 'g' | 'd'
+export const markKey = (kind: MarkKind, id: string) => `${kind}:${id}`
 const empty = (): ProgressData => ({
   v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
   profile: emptyProfile(), settings: emptySettings(), moods: {},
@@ -159,7 +161,7 @@ export function normalize(raw: unknown): ProgressData | null {
       goal: GOAL_OPTIONS.includes(Number(settings.goal)) ? Number(settings.goal) : DAILY_GOAL,
       cats: Array.isArray(settings.cats) ? settings.cats.filter(c => typeof c === 'string') : [],
       gameCats: settings.gameCats && typeof settings.gameCats === 'object' ? settings.gameCats : null,
-      marks: Array.isArray(settings.marks) ? [...new Set(settings.marks.filter((m): m is string => typeof m === 'string' && /^[wg]:.{1,40}$/.test(m)))].slice(0, MAX_MARKS) : [],
+      marks: Array.isArray(settings.marks) ? [...new Set(settings.marks.filter((m): m is string => typeof m === 'string' && /^[wgd]:.{1,40}$/.test(m)))].slice(0, MAX_MARKS) : [],
       keys: cleanBindings(settings.keys, SHORTCUT_IDS),
     },
   }
@@ -392,8 +394,8 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /** Звёздочка: закладка есть или нет. Гостю закладки не сохраняются (его записи сервер игнорирует). Возвращает false, если лимит закладок исчерпан. */
-  const isMarked = (kind: 'w' | 'g', id: string) => data.value.settings.marks.includes(markKey(kind, id))
-  function toggleMark(kind: 'w' | 'g', id: string): boolean {
+  const isMarked = (kind: MarkKind, id: string) => data.value.settings.marks.includes(markKey(kind, id))
+  function toggleMark(kind: MarkKind, id: string): boolean {
     const key = markKey(kind, id)
     const cur = data.value.settings.marks
     if (cur.includes(key)) setSettings({ marks: cur.filter(m => m !== key) })
