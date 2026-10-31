@@ -26,7 +26,6 @@ const take = <T,>(key: string, list: T[]) => (more[key] ? list : list.slice(0, L
 const rest = (key: string, n: number) => (!more[key] && n > LIMIT ? n - LIMIT : 0)
 const openSentence = ref('')
 
-const tabName = (id: string) => refTabs.find(t => t.id === id)?.menu ?? id
 const chunkTabs = computed(() => refTabs.filter(t => result.value?.chunks[t.id]?.length))
 
 function onKey(e: KeyboardEvent) {

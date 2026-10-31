@@ -235,7 +235,6 @@ export const useProgressStore = defineStore('progress', () => {
   const verified = ref(read(VERIFIED_KEY) === '1')
   const sync = ref<SyncState>(token.value ? 'idle' : 'off')
   const syncMessage = ref('')
-  let applying = false
   /** Очередь неотправленных действий: хранится в браузере, поэтому ничего не теряется без сети и после перезагрузки. */
   const outbox = ref<Op[]>(role.value === 'guest' ? [] : loadOutbox())
   let flushTimer: ReturnType<typeof setTimeout> | undefined
@@ -260,9 +259,7 @@ export const useProgressStore = defineStore('progress', () => {
     if (wasGuest) {
       // гостевая память выбрасывается, на экране снова данные этого устройства
       disableGuestStorage()
-      applying = true
       data.value = load()
-      applying = false
       outbox.value = loadOutbox()
     }
     sync.value = message ? 'error' : 'off'
@@ -512,9 +509,7 @@ export const useProgressStore = defineStore('progress', () => {
       }
       const remote = normalize(await res.json())
       if (remote) {
-        applying = true
         data.value = remote
-        applying = false
       }
       sync.value = 'ok'
       syncMessage.value = 'загружено с сервера'
@@ -529,9 +524,7 @@ export const useProgressStore = defineStore('progress', () => {
   function enterGuest(expires: number) {
     if (role.value !== 'guest') {
       enableGuestStorage()
-      applying = true
       data.value = empty()
-      applying = false
       outbox.value = [] // очередь владельца остаётся в настоящем хранилище и вернётся после выхода гостя
     }
     role.value = 'guest'
@@ -550,9 +543,7 @@ export const useProgressStore = defineStore('progress', () => {
     guestExpires.value = 0
     write(ROLE_KEY, null)
     disableGuestStorage()
-    applying = true
     data.value = load()
-    applying = false
     outbox.value = loadOutbox()
   }
 

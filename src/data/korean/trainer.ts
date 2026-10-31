@@ -1,6 +1,6 @@
 import { ADJECTIVES, QSENT, QWORDS, VERBS, type TWord } from './forms'
 import { shuffle, short } from './tasks'
-import { D, type Word } from './words'
+import { D } from './words'
 
 export type { TWord }
 export type Direction = 'ko-ru' | 'ru-ko' | 'form' | 'past' | 'fill'
