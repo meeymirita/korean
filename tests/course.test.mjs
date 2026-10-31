@@ -26,3 +26,13 @@ describe('видеоуроки', () => {
     }
   })
 })
+
+describe('карточки уроков и видео', () => {
+  test('одна карточка на один видеоурок: 31 из первого шага и 13 из второго', () => {
+    const lessons = G.filter(g => g.l)
+    const urls = lessons.map(g => videoOf(g.l))
+    assert.equal(new Set(urls).size, urls.length, 'у двух карточек один и тот же урок')
+    assert.equal(urls.length, 44)
+    assert.equal(lessons.filter(g => (g.part ?? 1) === 2).length, 13)
+  })
+})
