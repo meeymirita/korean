@@ -25,6 +25,7 @@ const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
 watch(() => route.path, visit, { immediate: true })
+watch(() => route.fullPath, () => (peek.value = false))
 
 /** Режим «только задание»: боковое меню спрятано, страница на всю ширину. Выбор помнится на устройстве; клавиша F переключает. */
 const FOCUS_KEY = 'focus_mode'
@@ -34,7 +35,19 @@ try {
 } catch {
   /* без запоминания */
 }
+/** Меню спрятано: при наведении на «☰ Меню» оно выезжает поверх страницы и прячется, когда курсор уходит. */
+const peek = ref(false)
+let peekTimer: ReturnType<typeof setTimeout> | undefined
+function peekOpen() {
+  clearTimeout(peekTimer)
+  if (focus.value) peek.value = true
+}
+function peekClose(delay = 250) {
+  clearTimeout(peekTimer)
+  peekTimer = setTimeout(() => (peek.value = false), delay)
+}
 function setFocus(v: boolean) {
+  peek.value = false
   focus.value = v
   try {
     localStorage.setItem(FOCUS_KEY, v ? '1' : '0')
@@ -60,12 +73,15 @@ function onKey(e: KeyboardEvent) {
   setFocus(!focus.value)
 }
 onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  clearTimeout(peekTimer)
+})
 </script>
 
 <template>
-  <div class="study study-shell sky" :class="{ focus }">
-    <aside class="study-side">
+  <div class="study study-shell sky" :class="{ focus, peek }">
+    <aside class="study-side" @mouseenter="peekOpen" @mouseleave="peekClose()">
       <RouterLink to="/" class="study-back">← На главную</RouterLink>
       <div class="brand brand-row">
         <span class="brand-mark">✳</span>
@@ -112,7 +128,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <button class="theme-btn" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()"><span aria-hidden="true">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая' : 'Тёмная' }}</button>
       </div>
     </aside>
-    <button v-if="focus" class="side-show" title="Показать меню (клавиша F)" aria-label="Показать меню" @click="setFocus(false)">☰ Меню</button>
+    <button v-if="focus" class="side-show" title="Наведи, чтобы открыть меню; нажми, чтобы закрепить (клавиша F)" aria-label="Показать меню" @mouseenter="peekOpen" @mouseleave="peekClose()" @focus="peekOpen" @click="setFocus(false)">☰ Меню</button>
     <main class="study-main">
       <Breadcrumbs />
       <AuthGate v-if="route.meta.private && !progress.unlocked" />
