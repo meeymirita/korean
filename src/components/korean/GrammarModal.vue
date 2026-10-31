@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import MarkStar from '@/components/korean/MarkStar.vue'
-import { onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { F, blk } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
-import { CHANNEL } from '@/data/korean/course'
+import { CHANNEL, videoOf } from '@/data/korean/course'
 
 const { current, close, prev, next } = useGrammarModal()
 const { share, busy } = useShareCard()
+/** Видео урока; если файла на сервере нет (или локально), показываем заглушку. */
+const broken = ref('')
+const video = computed(() => {
+  const v = current.value?.video ?? videoOf(current.value?.l)
+  return v && v !== broken.value ? v : undefined
+})
 
 /** Метки цвета ({o|…}) и теги — в простой текст для карточки. */
 const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^>]+>/g, '')
@@ -58,7 +64,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
       <div class="gm">
         <div :key="current.id" class="gb rich" v-html="current.b.map(blk).join('')"></div>
         <aside class="gv">
-          <video v-if="current.video" :key="current.video" class="gvp" :src="current.video" controls preload="metadata"></video>
+          <video v-if="video" :key="video" class="gvp" :src="video" controls preload="metadata" @error="broken = video!"></video>
           <div v-else class="gvp stub">
             <span class="play" aria-hidden="true">▶</span>
             <b>{{ current.l ? `Видео · ${current.l}` : 'Видео' }}</b>

@@ -135,3 +135,21 @@ korean.meeymirita.ru {
 
 - `public/sw.js` работает как обычный файл сайта: Caddy отдаёт его вместе с `dist`. Браузер сам проверяет его раз в сутки; поменял логику, подними `VERSION` в файле.
 - `public/demo.webm` (10 МБ, видео-обзор на главной) грузится только по нажатию на «посмотреть видео-демонстрацию». Caddy отдаёт файл с поддержкой перемотки сам; если по адресу `/demo.webm` приходит главная страница, правило `try_files` перехватывает путь.
+
+## Видеоуроки (`/video/…`)
+
+Видео (31 файл, уроки 1–30 курса 양쌤의 한국어 교실, 1080p H.264, около 2–4 ГБ) в git не лежат: они на сервере в `/var/sites/korean-video/`
+(рядом с проектом, `deploy.sh` их не трогает). Файлы: `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`.
+Сайт сам берёт файл по подписи карточки («Урок N»), см. `videoOf` в `src/data/korean/course.ts`; нет файла — в окне заглушка.
+Токеном видео не закрыты (решение владельца). Service worker `.mp4` не кэширует.
+
+Caddy, в блок сайта **до** общего `handle { … dist … }`:
+```
+    handle_path /video/* {
+        root * /var/sites/korean-video
+        header Cache-Control "public, max-age=86400"
+        file_server
+    }
+```
+Потом `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. Перемотка (Range) работает у `file_server` сама.
+Заливка с Mac одной командой: `rsync -avP ~/Movies/YouTube-web/ root@<сервер>:/var/sites/korean-video/`.
