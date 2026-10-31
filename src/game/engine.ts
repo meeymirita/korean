@@ -252,8 +252,9 @@ function genType(){
 function genErr(){
   let key,wrong,right,ru,note;
   if(Math.random()<.65){
-    const i=pickW(D.PB.map((x,k)=>k),k=>'e:p'+k);const p=D.PB[i];
-    const bad=rnd(p[3].filter(t=>t!==p[2]));
+    // варианты из двух слов («삼만 오천») не годятся: сломалась бы разбивка предложения на слова
+    const i=pickW(D.PB.map((x,k)=>k).filter(k=>!/\s/.test(D.PB[k][2])),k=>'e:p'+k);const p=D.PB[i];
+    const bad=rnd(p[3].filter(t=>t!==p[2]&&!/\s/.test(t)));
     wrong=p[0].replace('___',bad);right=p[0].replace('___',p[2]);ru=p[1];note=p[4];key='e:p'+i;
   }else{
     const i=pickW(D.QB.map((x,k)=>k),k=>'e:q'+k);const q=D.QB[i];
@@ -263,7 +264,7 @@ function genErr(){
   const a=wrong.split(' '),b=right.split(' ');
   const idx=a.findIndex((t,k)=>t!==b[k]);
   const opts=a.map(t=>({text:t,ko:true}));
-  return {type:'choice',mode:'err',key:key,label:'Найди слово с ошибкой',prompt:wrong,promptKo:true,sub:'Нужно сказать: '+ru,
+  return {type:'choice',mode:'err',key:key,label:'Найди слово с ошибкой: нажми на него',prompt:wrong,promptKo:true,sub:'Нужно сказать: '+ru,
     options:opts,correct:idx,right:a[idx]+' → '+b[idx],explain:['Правильно: '+right,note],hp:wrong,hr:right,icon:'🕵️'};
 }
 
