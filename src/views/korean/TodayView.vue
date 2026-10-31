@@ -28,14 +28,38 @@ type Tab = 'today' | 'list' | 'history'
 /** Вкладка в адресе (?tab=list|history), «Сегодня» без параметра. */
 const tab = useQueryParam<Tab>('tab', 'today', ['today', 'list', 'history'])
 
-const words = ref(randomWords(WORDS, progress.data.settings.cats))
-const tasks = ref(randomTasks(TASKS, progress.data.settings.cats))
-/** id задания → выбранный вариант (общий для заданий на правило и обычных) */
-const picked = ref<Record<number, string>>({})
-const revealed = ref<Record<number, boolean>>({})
+/** Набор на сегодня помним до конца дня (на этом устройстве): после обновления страницы он тот же, с теми же ответами. */
+const STATE_KEY = 'today_state'
+interface DayState {
+  day: string
+  words: ReturnType<typeof randomWords>
+  gramId: string
+  ruleItems: Task[]
+  tasks: Task[]
+  picked: Record<number, string>
+  revealed: Record<number, boolean>
+  checkResult: WordsCheckResult | null
+  saved: boolean
+}
+function loadState(): DayState | null {
+  try {
+    const s = JSON.parse(localStorage.getItem(STATE_KEY) ?? 'null') as DayState | null
+    const ok = s && s.day === dayKey() && Array.isArray(s.words) && Array.isArray(s.tasks) && Array.isArray(s.ruleItems) && G.some(g => g.id === s.gramId)
+    return ok ? s : null
+  } catch {
+    return null
+  }
+}
+const restored = loadState()
 
-const gram = ref(pickGram())
-const ruleItems = ref<Task[]>(ruleTasks(gram.value))
+const words = ref(restored?.words ?? randomWords(WORDS, progress.data.settings.cats))
+const tasks = ref(restored?.tasks ?? randomTasks(TASKS, progress.data.settings.cats))
+/** id задания → выбранный вариант (общий для заданий на правило и обычных) */
+const picked = ref<Record<number, string>>(restored?.picked ?? {})
+const revealed = ref<Record<number, boolean>>(restored?.revealed ?? {})
+
+const gram = ref(restored ? G.find(g => g.id === restored.gramId)! : pickGram())
+const ruleItems = ref<Task[]>(restored?.ruleItems ?? ruleTasks(gram.value))
 function pickGram() {
   const list = G.filter(g => g.st === 'ok')
   return list[Math.floor(Math.random() * list.length)]!
@@ -50,14 +74,14 @@ const tasksRight = computed(() => tasks.value.filter(t => picked.value[t.id] ===
 
 /* ---------- проверка слов ---------- */
 const checking = ref(false)
-const checkResult = ref<WordsCheckResult | null>(null)
+const checkResult = ref<WordsCheckResult | null>(restored?.checkResult ?? null)
 function onChecked(r: WordsCheckResult) {
   checkResult.value = r
   checking.value = false
 }
 
 /* ---------- ответы и новый набор ---------- */
-const saved = ref(false)
+const saved = ref(restored?.saved ?? false)
 function answer(id: number, option: string) {
   if (id in picked.value) return
   picked.value = { ...picked.value, [id]: option }
@@ -81,6 +105,16 @@ function newAll() {
   saved.value = false
   tasks.value = randomTasks(TASKS, progress.data.settings.cats)
 }
+watch([words, tasks, picked, revealed, ruleItems, gram, checkResult, saved], () => {
+  const s: DayState = { day: dayKey(), words: words.value, gramId: gram.value.id, ruleItems: ruleItems.value, tasks: tasks.value, picked: picked.value, revealed: revealed.value, checkResult: checkResult.value, saved: saved.value }
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(s))
+  } catch {
+    /* без хранилища набор просто не переживёт обновление */
+  }
+}, { deep: true })
+/** Все задания дня выполнены: страница говорит «на сегодня всё», а «Новый набор» появляется для повторного прохода. */
+const finished = computed(() => all.value.length > 0 && done.value === all.value.length)
 const toggle = (n: number) => (revealed.value = { ...revealed.value, [n]: !revealed.value[n] })
 
 /* ---------- проверить и сохранить ---------- */
@@ -182,7 +216,7 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
   <div class="wrap">
     <SectionHead id="today" />
     <div class="fcb td-bar">
-      <button @click="tab = 'today'; newAll()">🎲 Новый набор на сегодня</button>
+      <button v-if="finished" @click="tab = 'today'; newAll()">🎲 Новый набор на сегодня</button>
       <span class="td-tabs" role="tablist">
         <button role="tab" :aria-selected="tab === 'today'" :class="{ on: tab === 'today' }" @click="tab = 'today'">Сегодня</button>
         <button role="tab" :aria-selected="tab === 'list'" :class="{ on: tab === 'list' }" @click="tab = 'list'">Чек-лист</button>
@@ -191,6 +225,9 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
     </div>
 
     <template v-if="tab === 'today'">
+      <div v-if="finished" class="td-fin" role="status">
+        <b>На сегодня всё закончено.</b> Верно {{ right }} из {{ all.length }}. Хочешь ещё раз — нажми «Новый набор на сегодня» сверху.
+      </div>
       <h2 class="today-h">Правило дня</h2>
       <button class="gc today-gram" @click="open(gram.id)">
         <h3 v-html="F(gram.ko)"></h3>
@@ -260,6 +297,7 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
 
     <template v-else-if="tab === 'list'">
       <h2 class="today-h">Чек-лист на сегодня <small>{{ listDone }} из {{ items.length }}</small></h2>
+      <div v-if="listDone === items.length" class="td-fin" role="status"><b>Чек-лист на сегодня закончен.</b> Завтра будет новый.</div>
       <p class="td-res">Набор меняется каждый день. Ответы считаются сами, пункт без счётчика отметь галочкой.</p>
       <ul class="cl">
         <li v-for="(it, i) in items" :key="it.id" :class="{ ok: snaps[i]!.done }">

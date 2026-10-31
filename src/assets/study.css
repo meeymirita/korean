@@ -344,3 +344,5 @@
 
 /* разбор предложения под ответом в «Переведи предложение» */
 .study .rs-why { margin: 14px 0 4px; }
+
+.study .td-fin { margin: 16px 0 0; padding: 12px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-size: 15px; }
