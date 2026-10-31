@@ -7,7 +7,7 @@ import MatchGame from '@/components/korean/MatchGame.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import TypingQuiz from '@/components/korean/TypingQuiz.vue'
 import { CATN } from '@/data/korean/words'
-import { DIR_LABEL, type Direction, SETS, dirsFor, pickRound, pool } from '@/data/korean/trainer'
+import { DIR_LABEL, type Direction, SETS, dirsFor, pickRound, pool, shown } from '@/data/korean/trainer'
 
 type Mode = 'match' | 'type'
 
@@ -19,21 +19,28 @@ const dir = usePersisted<Direction>('tr_dir', 'ko-ru', v => typeof v === 'string
 const showReading = usePersisted('tr_reading', true, v => typeof v === 'boolean')
 
 const available = computed(() => pool(cat.value))
-const SIZES = [4, 6, 8, 10, 12, 15, 20]
-/** Различных слов в теме: больше, чем их есть, в раунд не набрать (иначе раунд всегда одинаковый и «новых» нет). */
+/** Различных слов в теме (переводы не повторяются, как и в раунде). */
 const poolSize = computed(() => pickRound(available.value, 1000).length)
-/** Варианты размера: те, что меньше числа слов, и «все» (если слов не больше 20). */
-const sizes = computed(() => {
-  const m = poolSize.value
-  return [...SIZES.filter(n => n < m), ...(m <= 20 ? [m] : [])]
-})
-/** Размер раунда не больше числа слов в теме */
-const roundSize = computed(() => Math.max(1, Math.min(size.value, poolSize.value)))
-const round = ref(pickRound(available.value, roundSize.value))
+/** В теме мало слов: недостающие добираются из всего словаря (там, где задания только «слово ↔ перевод»); у предложений и форм глаголов этого нет. */
+const canFill = computed(() => !['qsent', 'verbs', 'adjectives'].includes(cat.value))
+const roundSize = computed(() => (canFill.value ? size.value : Math.max(1, Math.min(size.value, poolSize.value))))
+/** Раунд: слова темы, а если их меньше нужного, добавка из остального словаря (без повторов перевода). */
+function makeRound() {
+  const own = pickRound(available.value, roundSize.value)
+  if (own.length >= roundSize.value || !canFill.value) return own
+  const taken = new Set(own.map(w => shown(w).toLowerCase()))
+  const rest = pool('').filter(w => !taken.has(shown(w).toLowerCase()))
+  return [...own, ...pickRound(rest, roundSize.value - own.length)]
+}
+const filled = computed(() => canFill.value && poolSize.value < size.value)
+const SIZES = [4, 6, 8, 10, 12, 15, 20]
+/** Варианты размера: без добавки из словаря — не больше слов в теме (и «все»), с добавкой — любые. */
+const sizes = computed(() => (canFill.value ? SIZES : [...SIZES.filter(n => n < poolSize.value), ...(poolSize.value <= 20 ? [poolSize.value] : [])]))
+const round = ref(makeRound())
 const roundId = ref(0)
 
 function start(words?: typeof round.value) {
-  round.value = words ?? pickRound(pool(cat.value), roundSize.value)
+  round.value = words ?? makeRound()
   roundId.value++
 }
 const dirs = computed(() => dirsFor(cat.value))
@@ -73,7 +80,7 @@ watch(mode, () => start())
     <div class="tr-set">
       <label>Слов в раунде
         <select :value="roundSize" @change="size = Number(($event.target as HTMLSelectElement).value); start()">
-          <option v-for="n in sizes" :key="n" :value="n">{{ n === poolSize ? `${n} (все)` : n }}</option>
+          <option v-for="n in sizes" :key="n" :value="n">{{ !canFill && n === poolSize ? `${n} (все)` : n }}</option>
         </select>
       </label>
       <label v-if="mode === 'type' && dirs.length > 1">Задание
@@ -83,7 +90,8 @@ watch(mode, () => start())
       </label>
       <label v-if="mode === 'match'" class="chk"><input v-model="showReading" type="checkbox" /> показывать чтение</label>
     </div>
-    <p v-if="poolSize < size" class="tr-note">В этой теме всего {{ poolSize }} слов, поэтому в раунде их {{ roundSize }}. Другие слова выбери в «Все слова».</p>
+    <p v-if="filled" class="tr-note">В этой теме всего {{ poolSize }} слов, остальные в раунде добраны из всего словаря.</p>
+    <p v-else-if="!canFill && poolSize < size" class="tr-note">В этой теме всего {{ poolSize }}, поэтому в раунде их {{ roundSize }}.</p>
 
     <MatchGame
       v-if="mode === 'match'"
