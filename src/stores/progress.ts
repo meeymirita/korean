@@ -16,11 +16,20 @@ export interface WordStat {
   kd?: number
 }
 
+/** Подробности ответа для истории: что спрашивали, верный ответ, что выбрал. */
+export interface AnswerDetail {
+  q?: string
+  a?: string
+  y?: string
+}
 export interface LogEntry {
   t: number
   w: string | null
   ok: boolean
   s: string
+  /** режим (например, build, match) */
+  m?: string
+  d?: AnswerDetail
 }
 
 export interface Profile {
@@ -94,6 +103,13 @@ const OUTBOX_KEY = 'progress_outbox'
 const FLUSH_DELAY = 800
 const BATCH = 200
 const LOG_MAX = 300
+/** Оставляет только q / a / y, строки не длиннее 300 знаков (так же режет сервер). */
+function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
+  if (!d) return undefined
+  const out: AnswerDetail = {}
+  for (const k of ['q', 'a', 'y'] as const) if (typeof d[k] === 'string' && d[k]) out[k] = d[k]!.slice(0, 300)
+  return Object.keys(out).length ? out : undefined
+}
 /** Слово считается выученным после трёх верных ответов подряд. */
 export const KNOWN_STREAK = 3
 
@@ -292,7 +308,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /* ---------- запись ответа ---------- */
-  function record(o: { word?: string | null; ok: boolean; source: string; xp?: number; mode?: string }) {
+  function record(o: { word?: string | null; ok: boolean; source: string; xp?: number; mode?: string; detail?: AnswerDetail }) {
     const now = Date.now()
     const d = data.value
     const before = levelOf(d.xp)
@@ -319,7 +335,8 @@ export const useProgressStore = defineStore('progress', () => {
     const k = dayKey()
     d.days[k] ??= 0
     d.all[k] = (d.all[k] ?? 0) + 1
-    d.log.unshift({ t: now, w: o.word ?? null, ok: o.ok, s: o.source })
+    const det = cleanDetail(o.detail)
+    d.log.unshift({ t: now, w: o.word ?? null, ok: o.ok, s: o.source, ...(o.mode ? { m: o.mode } : {}), ...(det ? { d: det } : {}) })
     if (d.log.length > LOG_MAX) d.log.length = LOG_MAX
 
     let goalReached = false
@@ -329,7 +346,7 @@ export const useProgressStore = defineStore('progress', () => {
       goalReached = d.days[k] === goal.value
     }
     d.updated = now
-    queue({ type: 'answer', t: now, day: k, word: o.word ?? null, ok: o.ok, source: o.source, mode: o.mode, xp: o.xp ?? 10 })
+    queue({ type: 'answer', t: now, day: k, word: o.word ?? null, ok: o.ok, source: o.source, mode: o.mode, xp: o.xp ?? 10, ...(det ? { detail: det } : {}) })
     const level = levelOf(d.xp)
     return { level, levelUp: level > before, goalReached, bloomed, title: levelInfo(d.xp).title }
   }

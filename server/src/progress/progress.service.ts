@@ -36,6 +36,14 @@ const bad = (msg: string): never => {
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.length <= max ? v : bad('invalid op'))
 const int = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max ? v : bad('invalid op'))
 
+function parseDetail(s: string): Record<string, string> {
+  try {
+    return JSON.parse(s) as Record<string, string>
+  } catch {
+    return {}
+  }
+}
+
 const DEFAULT_PROFILE: Profile = { name: '', avatar: '🌸', cover: '' }
 const IMAGE_ID = /^[a-f0-9]{16}$/
 /** За одно действие таймера можно записать не больше часа. */
@@ -83,8 +91,8 @@ export class ProgressService {
       sources[r.source] = { ok: r.ok, bad: r.bad }
     }
     const log = this.db
-      .all<{ t: number; word: string | null; ok: number; source: string }>('SELECT t, word, ok, source FROM answers ORDER BY id DESC LIMIT ?', LOG_LIMIT)
-      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, s: r.source }))
+      .all<{ t: number; word: string | null; ok: number; source: string; mode: string; detail: string }>('SELECT t, word, ok, source, mode, detail FROM answers ORDER BY id DESC LIMIT ?', LOG_LIMIT)
+      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, s: r.source, ...(r.mode ? { m: r.mode } : {}), ...(r.detail ? { d: parseDetail(r.detail) } : {}) }))
     return {
       v: 1,
       updated: Number(this.db.getMeta('updated') ?? 0),
@@ -134,6 +142,16 @@ export class ProgressService {
     }
   }
 
+  /** Подробности ответа для истории: q — вопрос, a — верный ответ, y — что выбрал; всё необязательно, строки короткие. */
+  private detail(v: unknown): string {
+    if (v == null) return ''
+    if (typeof v !== 'object' || Array.isArray(v)) return bad('invalid op')
+    const o = v as Record<string, unknown>
+    const out: Record<string, string> = {}
+    for (const k of ['q', 'a', 'y']) if (o[k] != null) out[k] = str(o[k], 300)
+    return Object.keys(out).length ? JSON.stringify(out) : ''
+  }
+
   /** Один ответ: строка в answers, статистика слова, счётчик дня и очки. */
   private answer(op: Record<string, unknown>) {
     const t = int(op.t, 0, Number.MAX_SAFE_INTEGER)
@@ -144,7 +162,8 @@ export class ProgressService {
     const mode = op.mode == null ? '' : str(op.mode, 30)
     const xp = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
 
-    this.db.run('INSERT INTO answers (t, word, ok, source, mode, xp) VALUES (?, ?, ?, ?, ?, ?)', t, word, ok ? 1 : 0, source, mode, xp)
+    const detail = this.detail(op.detail)
+    this.db.run('INSERT INTO answers (t, word, ok, source, mode, xp, detail) VALUES (?, ?, ?, ?, ?, ?, ?)', t, word, ok ? 1 : 0, source, mode, xp, detail)
     if (word) {
       const w = this.db.get<{ streak: number; kd: number | null }>('SELECT streak, kd FROM words WHERE word = ?', word)
       if (!w) this.db.run('INSERT INTO words (word, ok, bad, streak, last) VALUES (?, 0, 0, 0, 0)', word)

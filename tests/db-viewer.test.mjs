@@ -35,7 +35,7 @@ describe('сервер: просмотр базы', () => {
 
   test('строки таблицы: колонки, новые сверху, общее число', async () => {
     const r = await (await rows('answers')).json()
-    assert.deepEqual(r.columns.map(c => c.name), ['id', 't', 'word', 'ok', 'source', 'mode', 'xp'])
+    assert.deepEqual(r.columns.map(c => c.name), ['id', 't', 'word', 'ok', 'source', 'mode', 'xp', 'detail'])
     assert.equal(r.total, 3)
     assert.deepEqual(r.rows.map(x => x.word), ['гора', 'море', 'сад'])
   })

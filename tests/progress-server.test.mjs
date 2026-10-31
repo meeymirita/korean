@@ -53,7 +53,7 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual(p.words['사람'], { ok: 1, bad: 0, streak: 1, last: 5000 })
     assert.deepEqual([p.days[day], p.all[day]], [1, 1])
     assert.deepEqual(p.sources.game, { ok: 1, bad: 0 })
-    assert.deepEqual(p.log[0], { t: 5000, w: '사람', ok: true, s: 'game' })
+    assert.deepEqual(p.log[0], { t: 5000, w: '사람', ok: true, s: 'game', m: 'mix' })
     assert.ok(p.updated > 0)
   })
 
@@ -114,6 +114,13 @@ describe('сервер: прогресс в базе', () => {
     assert.equal((await ops(...Array.from({ length: 501 }, () => answer()))).status, 400)
     assert.equal((await s.call('POST', '/api/ops', OWNER, { ops: 'нет' })).status, 400)
     assert.equal((await s.call('POST', '/api/ops', OWNER, {})).status, 400)
+  })
+
+  test('подробности ответа попадают в журнал; лишнее отвергается', async () => {
+    assert.equal((await ops(answer({ t: 5100, word: null, xp: 0, detail: { q: 'Переведи: 사람', a: 'человек', y: 'друг', junk: 'x' } }))).status, 200)
+    assert.deepEqual((await read()).log[0].d, { q: 'Переведи: 사람', a: 'человек', y: 'друг' })
+    assert.equal((await ops(answer({ t: 5200, detail: 'строка' }))).status, 400)
+    assert.equal((await ops(answer({ t: 5300, detail: { q: 'я'.repeat(301) } }))).status, 400)
   })
 
   test('сброс обнуляет прогресс, но оставляет профиль и настройки', async () => {

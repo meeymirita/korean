@@ -25,7 +25,7 @@ function answer(option: string) {
   picked.value = option
   const ok = option === t.answer
   results.value.push(ok)
-  progress.record({ word: t.word, ok, source: 'review' })
+  progress.record({ word: t.word, ok, source: 'review', detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
 }
 function next() {
   idx.value++

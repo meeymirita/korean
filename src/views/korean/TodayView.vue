@@ -87,7 +87,7 @@ function answer(id: number, option: string) {
   picked.value = { ...picked.value, [id]: option }
   saved.value = false
   const t = all.value.find(x => x.id === id)
-  if (t) progress.record({ word: t.word, ok: option === t.answer, source: 'today' })
+  if (t) progress.record({ word: t.word, ok: option === t.answer, source: 'today', detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: option === t.answer ? undefined : option } })
 }
 function newTasks() {
   tasks.value = randomTasks(TASKS, progress.data.settings.cats)

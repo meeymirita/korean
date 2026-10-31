@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS answers (
   ok INTEGER NOT NULL,         -- 1 верно, 0 неверно
   source TEXT NOT NULL,        -- game / trainer / today / review
   mode TEXT NOT NULL DEFAULT '', -- режим игры, например build
-  xp INTEGER NOT NULL DEFAULT 0
+  xp INTEGER NOT NULL DEFAULT 0,
+  detail TEXT NOT NULL DEFAULT '' -- JSON {q, a, y}: что спрашивали, верный ответ, что выбрано
 );
 CREATE INDEX IF NOT EXISTS answers_t ON answers (t);
 
@@ -153,6 +154,7 @@ export class Db implements OnModuleDestroy {
     if (!has('notes', 'images')) this.sql.exec("ALTER TABLE notes ADD COLUMN images TEXT NOT NULL DEFAULT '[]'")
     if (!has('notes', 'tags')) this.sql.exec("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
     if (!has('plans', 'kind')) this.sql.exec("ALTER TABLE plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'own'")
+    if (!has('answers', 'detail')) this.sql.exec("ALTER TABLE answers ADD COLUMN detail TEXT NOT NULL DEFAULT ''")
     if (!has('images', 'tags')) this.sql.exec("ALTER TABLE images ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
     if (!has('images', 'kind')) {
       // картинки заметок и обложка кабинета раньше лежали в общем списке: разносим по назначению

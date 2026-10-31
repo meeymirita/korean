@@ -15,7 +15,7 @@ let dispose: (() => void) | undefined
 
 function start() {
   dispose = initGame({
-    record: (o: { word: string | null; ok: boolean; xp?: number; mode?: string }) => progress.record({ ...o, source: 'game' }),
+    record: (o: { word: string | null; ok: boolean; xp?: number; mode?: string; detail?: { q?: string; a?: string; y?: string } }) => progress.record({ ...o, source: 'game' }),
     importXp: (n: number) => progress.importXp(n),
     state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: progress.goal }),
     cats: () => progress.data.settings.gameCats,

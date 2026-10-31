@@ -142,7 +142,7 @@ function answer(option: string) {
   const ok = option === t.answer
   if (ok) right.value++
   else missed.value.push(t)
-  progress.record({ word: t.word, ok, source: props.source })
+  progress.record({ word: t.word, ok, source: props.source, detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
   ;(ok ? pop : shake)(zone.value)
 }
 function next() {

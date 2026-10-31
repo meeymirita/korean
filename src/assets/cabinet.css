@@ -501,3 +501,11 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study kbd.kb { margin-left: 8px; padding: 1px 6px; font: inherit; font-size: 11px; font-weight: 600; color: var(--muted); background: rgba(255, 255, 255, .7); border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
 .study .chip kbd.kb { margin-left: 6px; }
 @media (max-width: 860px) { .study .kb-list { grid-template-columns: 1fr; } .study .kb-list li { flex-wrap: wrap; } }
+
+.study .hs-click { width: 100%; border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.study .hs-click:hover { background: var(--surface); }
+.study-modal .hs-modal { width: min(560px, 100%); }
+.study-modal .hs-det { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px 14px; margin: 16px 0 0; }
+.study-modal .hs-det dt { color: var(--muted); font-size: 13px; }
+.study-modal .hs-det dd { margin: 0; overflow-wrap: anywhere; }
+.study-modal .hs-det dd.bad { color: var(--bad); }
