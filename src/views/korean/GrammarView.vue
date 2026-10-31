@@ -12,11 +12,18 @@ import { usePersisted } from '@/composables/usePersisted'
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const progress = useProgressStore()
 const passed = (id: string) => progress.isMarked('d', id)
+const PARTS = [
+  { id: 1, label: 'Часть 1', sub: 'Первый шаг · уроки 1–30' },
+  { id: 2, label: 'Часть 2', sub: 'Второй шаг · 13 уроков' },
+] as const
+const part = usePersisted<1 | 2>('grammar_part', 1, v => v === 1 || v === 2)
+const partCount = (n: number) => G.filter(g => (g.part ?? 1) === n).length
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
 const list = computed(() => {
   const w = q.value.trim().toLowerCase()
   return G.filter(g =>
+    (g.part ?? 1) === part.value &&
     (!sec.value || g.s === sec.value) &&
     (!onlyDone.value || g.st === 'ok' || passed(g.id)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
@@ -51,6 +58,11 @@ onMounted(() => {
       </div>
       <label class="gdone"><input v-model="onlyDone" type="checkbox" /> показывать только пройденное</label>
     </div>
+    <div class="gparts" role="tablist">
+      <button v-for="p in PARTS" :key="p.id" role="tab" :aria-selected="part === p.id" class="gpart" :class="{ on: part === p.id }" @click="part = p.id">
+        <b>{{ p.label }}</b><small>{{ p.sub }} · {{ partCount(p.id) }} карточек</small>
+      </button>
+    </div>
     <p v-if="!list.length" class="gempty">Ничего не найдено.</p>
     <div class="gg">
       <button v-for="g in list" :key="g.id" class="gc" @click="open(g.id)">
@@ -74,5 +86,9 @@ onMounted(() => {
 .gdone { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .gcourse { margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
 .gcourse a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.gparts { display: flex; gap: 10px; margin: 14px 0 0; flex-wrap: wrap; }
+.gpart { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.gpart small { color: var(--muted); font-size: 12.5px; }
+.gpart.on { border-color: var(--gold); background: var(--gold-soft); }
 .gempty { color: var(--muted); margin: 20px 0 0; }
 </style>
