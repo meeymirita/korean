@@ -123,7 +123,8 @@ onBeforeUnmount(() => {
         <small>откроются задания, тренажёры, игра и кабинет</small>
       </RouterLink>
       <div class="foot">
-        <button class="theme-btn" title="Спрятать меню (клавиша F)" aria-label="Спрятать меню" @click="setFocus(true)"><span aria-hidden="true">⇤</span> Спрятать меню</button>
+        <button v-if="focus" class="theme-btn" title="Вернуть меню на место (клавиша F)" aria-label="Закрепить меню" @click="setFocus(false)"><span aria-hidden="true">⇥</span> Закрепить меню</button>
+        <button v-else class="theme-btn" title="Спрятать меню (клавиша F)" aria-label="Спрятать меню" @click="setFocus(true)"><span aria-hidden="true">⇤</span> Спрятать меню</button>
         <button class="theme-btn" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()"><span aria-hidden="true">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая' : 'Тёмная' }}</button>
       </div>
     </aside>

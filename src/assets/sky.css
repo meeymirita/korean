@@ -109,7 +109,7 @@
 }
 /* спрятанное меню выезжает при наведении на «Меню» (на телефоне наведения нет) */
 @media (min-width: 861px) {
-  .study-shell.sky.focus.peek .study-side { position: fixed; left: 18px; top: 18px; width: 300px; z-index: 40; opacity: 1; visibility: visible; pointer-events: auto; overflow-y: auto; background: rgba(250, 247, 255, .99); backdrop-filter: blur(14px); box-shadow: 0 24px 60px rgba(60, 50, 130, .28); }
+  .study-shell.sky.focus.peek .study-side { position: fixed; left: 18px; top: 62px; height: calc(100vh - 80px); width: 300px; z-index: 40; opacity: 1; visibility: visible; pointer-events: auto; overflow-y: auto; background: rgba(250, 247, 255, .99); backdrop-filter: blur(14px); box-shadow: 0 24px 60px rgba(60, 50, 130, .28); }
 }
 .study.sky .side-show { position: fixed; top: 14px; left: 18px; z-index: 35; padding: 9px 16px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); background: rgba(255, 255, 255, .92);
   border: 1px solid #fff; border-radius: 99px; box-shadow: 0 8px 22px rgba(100, 87, 170, .2); cursor: pointer; }
