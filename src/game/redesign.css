@@ -72,7 +72,7 @@
 .game .gx-body .chip.on { color: #fff; background: linear-gradient(90deg, #7d6bf0, #9a86f5); }
 .gx-center { min-width: 0; grid-column: 1; }
 .game .card { background: var(--panel); border: 1px solid #fff; border-radius: 28px; box-shadow: var(--shadow); overflow: visible; }
-.gx-cat-card { position: absolute; top: -26px; right: 26px; width: clamp(110px, 10vw, 150px); }
+.gx-cat-card { position: absolute; bottom: calc(100% - 12px); right: 34px; width: clamp(110px, 8.5vw, 140px); z-index: 2; }
 .gx-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px !important; }
 .game .gx-actions .ghost, .game .gx-actions .helpbtn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; font-weight: 600; color: var(--ink);
   background: var(--glass); border: 1px solid #fff; border-radius: 16px; box-shadow: 0 8px 22px rgba(100, 87, 170, .14); }
@@ -88,7 +88,6 @@
 .game .gx-stats .loaf { border: 0; padding: 0; margin: 12px 0; }
 .game .gx-stats .lvl, .game .gx-stats .goal { border: 0; padding: 0; margin: 12px 0; }
 .game .gx-stats .goal .bar i { background: linear-gradient(90deg, #3aa86c, #2f9a5f); }
-.game .gx-cat-sleep { position: fixed; right: 10px; bottom: -8px; width: clamp(110px, 8.5vw, 140px); z-index: 5; }
 
 @media (max-width: 1100px) {
   .game.gx { grid-template-columns: 1fr; }
@@ -102,8 +101,6 @@
 }
 @media (max-width: 560px) { .gx-tools { gap: 8px; } .game .gx-tools .game-menu { margin-right: 0; } .game .game-top.gx-top { flex-wrap: wrap; } }
 
-/* таймер занятий на этой странице уходит левее котика */
-body.on-game .stm { right: clamp(150px, 12vw, 200px); bottom: 14px; }
 
 /* тёмная тема */
 html[data-theme='dark'] .game.gx { --glass: rgba(30, 32, 70, .72); --panel: rgba(32, 34, 72, .9);
@@ -117,6 +114,3 @@ html[data-theme='dark'] .game .gx-drop .gx-me, html[data-theme='dark'] .game .gx
 html[data-theme='dark'] .gx-di kbd { background: rgba(255, 255, 255, .1); }
 .game .gi.gq { display: grid; place-items: center; width: 22px; height: 22px; font-size: 14px; border: 1.5px solid currentColor; border-radius: 50%; }
 
-/* подсказка режима не залезает под котика на карточке */
-.game .gx-body .card .mhelp { max-width: calc(100% - clamp(120px, 11vw, 170px)); }
-@media (max-width: 700px) { .game .gx-cat-card { width: 84px; top: -34px; right: 12px; } .game .gx-body .card .mhelp { max-width: none; } }

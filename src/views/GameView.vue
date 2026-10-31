@@ -11,7 +11,6 @@ import Avatar from '@/components/Avatar.vue'
 import { themeDark, toggleTheme } from '@/lib/theme'
 import catSleep from '@/assets/game/cat-sleep.webp'
 import catWow from '@/assets/game/cat-wow.webp'
-import catCheer from '@/assets/game/cat-cheer.webp'
 import bg from '@/assets/game/bg.webp'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
@@ -19,7 +18,7 @@ import '@/game/game.css'
 import '@/game/redesign.css'
 
 const progress = useProgressStore()
-const markup = markupRaw.replace('CAT_BOOK', catCheer).replace('CAT_SLEEP', catSleep)
+const markup = markupRaw.replace('CAT_SLEEP', catSleep)
 const bgStyle = { '--gx-bg': `url(${bg})` }
 
 /** Меню профиля справа вверху (аватар): открывается по нажатию, закрывается по Esc и нажатию мимо. */
