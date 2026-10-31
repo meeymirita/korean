@@ -8,7 +8,15 @@ import { F } from '@/data/korean/render'
 import { usePersisted } from '@/composables/usePersisted'
 
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
-const list = computed(() => (sec.value ? G.filter(g => g.s === sec.value) : G))
+const q = ref('')
+const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
+const list = computed(() => {
+  const w = q.value.trim().toLowerCase()
+  return G.filter(g =>
+    (!sec.value || g.s === sec.value) &&
+    (!onlyDone.value || g.st === 'ok') &&
+    (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
+})
 const { open } = useGrammarModal()
 const route = useRoute()
 /** /korean/grammar?g=ayo сразу открывает карточку */
@@ -25,6 +33,14 @@ onMounted(() => {
       <button class="chip" :class="{ on: !sec }" @click="sec = ''">Все</button>
       <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s">{{ s }}</button>
     </div>
+    <div class="gsearch">
+      <div class="sb">
+        <input data-page-search v-model="q" type="text" autocomplete="off" placeholder="Найти правило: 은/는, прошедшее, урок 12…" />
+        <button v-if="q" title="Очистить" aria-label="Очистить" @click="q = ''">✕</button>
+      </div>
+      <label class="gdone"><input v-model="onlyDone" type="checkbox" /> показывать только пройденное</label>
+    </div>
+    <p v-if="!list.length" class="gempty">Ничего не найдено.</p>
     <div class="gg">
       <button v-for="g in list" :key="g.id" class="gc" @click="open(g.id)">
         <h3 v-html="F(g.ko)"></h3>
@@ -39,3 +55,10 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.gsearch { display: flex; align-items: center; gap: 16px; margin: 16px 0 0; flex-wrap: wrap; }
+.gsearch .sb { flex: 1 1 260px; }
+.gdone { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.gempty { color: var(--muted); margin: 20px 0 0; }
+</style>
