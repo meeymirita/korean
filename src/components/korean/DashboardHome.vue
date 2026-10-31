@@ -103,7 +103,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
     <div class="dcol">
       <section class="panel phrase">
-        <div class="label">✳ &nbsp; Фразы дня</div>
+        <div class="label">✳︎ &nbsp; Фразы дня</div>
         <div v-for="p in HOME_PHRASES" :key="p.ko" class="ph">
           <div class="kr ko">{{ p.ko }}</div>
           <div class="tr">{{ p.ru }}</div>

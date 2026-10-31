@@ -51,12 +51,12 @@ onMounted(async () => {
 <template>
   <main class="me">
     <header class="top">
-      <RouterLink to="/" class="brand"><span class="mark">✳</span><span class="name ko">우리말</span></RouterLink>
+      <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span></RouterLink>
     </header>
 
     <p v-if="state === 'loading'" class="msg">Загружаю…</p>
     <section v-else-if="state === 'closed'" class="closed">
-      <div class="big ko">✳</div>
+      <div class="big ko">✳︎</div>
       <h1>Эта страница закрыта</h1>
       <p>Владелец пока не показывает свою визитку. Загляни позже.</p>
       <RouterLink to="/" class="btn">На главную</RouterLink>

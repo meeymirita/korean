@@ -82,14 +82,13 @@ onBeforeUnmount(() => {
 <template>
   <div class="study study-shell sky" :class="{ focus, peek }">
     <aside class="study-side" @mouseenter="peekOpen" @mouseleave="peekClose()">
-      <RouterLink to="/" class="study-back">← На главную</RouterLink>
-      <div class="brand brand-row">
-        <span class="brand-mark">✳</span>
+      <RouterLink to="/" class="brand brand-row brand-home" title="На главную страницу">
+        <span class="brand-mark">✳︎</span>
         <div>
           <h1 class="ko">우리말</h1>
           <div class="course">서울대 한국어+ 1A</div>
         </div>
-      </div>
+      </RouterLink>
       <div class="study-links" role="navigation">
         <template v-for="s in sections.filter(s => !s.group)" :key="s.id">
         <RouterLink :to="`/korean/${s.id}`">

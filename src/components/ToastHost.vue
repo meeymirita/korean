@@ -21,7 +21,7 @@ watch(() => notes.status, (now, was) => {
   if (now === 'error' && was !== 'error') toast.error(`Заметки не сохранились: ${notes.message}`)
 })
 
-const icon = { ok: '✓', info: '✳', error: '!' } as const
+const icon = { ok: '✓', info: '✳︎', error: '!' } as const
 </script>
 
 <template>

@@ -25,7 +25,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 <template>
   <main class="about">
     <header class="top">
-      <RouterLink to="/" class="brand"><span class="mark">✳</span><span class="name ko">우리말</span><span class="sub">о платформе</span></RouterLink>
+      <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span><span class="sub">о платформе</span></RouterLink>
       <RouterLink to="/history" class="hl">История изменений</RouterLink>
       <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
     </header>

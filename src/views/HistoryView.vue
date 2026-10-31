@@ -12,7 +12,7 @@ const when = (d: string) => fmt.format(new Date(d + 'T12:00:00'))
 <template>
   <main class="hist">
     <header class="top">
-      <RouterLink to="/" class="brand"><span class="mark">✳</span><span class="name ko">우리말</span><span class="sub">история изменений</span></RouterLink>
+      <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span><span class="sub">история изменений</span></RouterLink>
       <nav class="nav">
         <RouterLink to="/about">О платформе</RouterLink>
         <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>

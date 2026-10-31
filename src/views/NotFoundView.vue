@@ -15,7 +15,7 @@ const LINKS = [
 
 <template>
   <main class="nf">
-    <div class="mark ko">✳</div>
+    <div class="mark ko">✳︎</div>
     <h1 class="ko">404</h1>
     <p class="lead">Такой страницы нет</p>
     <p class="path">{{ route.fullPath }}</p>

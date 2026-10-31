@@ -72,7 +72,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
     <div class="stage">
       <header class="topbar">
         <div class="brand">
-          <span class="mark">✳</span>
+          <span class="mark">✳︎</span>
           <span class="name ko">우리말</span>
           <span class="sub">korean space</span>
         </div>
@@ -129,7 +129,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 
       <aside class="notes">
         <div class="note">
-          <span class="lbl">✳ Фраза дня</span>
+          <span class="lbl">✳︎ Фраза дня</span>
           <span class="val ko">{{ HOME_PHRASE.ko }}</span>
           <span class="hint">{{ HOME_PHRASE.ru }}</span>
         </div>

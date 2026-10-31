@@ -148,7 +148,7 @@ export async function renderCard(spec: CardSpec): Promise<Blob> {
   c.fillStyle = '#6a5cd0'
   c.font = `700 30px ${KO}`
   c.textAlign = 'right'
-  c.fillText('✳ 우리말', CARD_W - left, CARD_H - pad - 34)
+  c.fillText('✳︎ 우리말', CARD_W - left, CARD_H - pad - 34)
   c.textAlign = 'left'
 
   return new Promise((resolve, reject) => canvas.toBlob(b => (b ? resolve(b) : reject(new Error('не получилось нарисовать карточку'))), 'image/png'))
