@@ -6,7 +6,7 @@
   --glass: rgba(255, 255, 255, .72);
   display: grid; grid-template-columns: clamp(250px, 19vw, 310px) minmax(0, 1fr); gap: 20px; align-items: start;
   min-height: 100vh; padding: 14px clamp(12px, 1.6vw, 28px) 24px; position: relative; background-color: #f1dff7;
-  background: linear-gradient(to bottom, transparent 68%, #f1dff7 93%), var(--gx-bg) right top -190px / auto 112% fixed no-repeat !important;
+  background: linear-gradient(to bottom, transparent 68%, #f1dff7 93%), var(--gx-bg) center top -230px / 100% auto fixed no-repeat !important;
 }
 .game .gx-cat { display: block; pointer-events: none; user-select: none; filter: drop-shadow(0 6px 10px rgba(120, 99, 255, .18)); }
 
@@ -104,7 +104,7 @@ body.on-game .stm { right: clamp(150px, 12vw, 200px); bottom: 14px; }
 
 /* тёмная тема */
 html[data-theme='dark'] .game.gx { --glass: rgba(30, 32, 70, .72); --panel: rgba(32, 34, 72, .9);
-  background: linear-gradient(rgba(14, 15, 40, .72), rgba(14, 15, 40, .72)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), var(--gx-bg) right top -190px / auto 112% fixed no-repeat !important; }
+  background: linear-gradient(rgba(14, 15, 40, .72), rgba(14, 15, 40, .72)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), var(--gx-bg) center top -230px / 100% auto fixed no-repeat !important; }
 html[data-theme='dark'] .gx-nav, html[data-theme='dark'] .game .card, html[data-theme='dark'] .game .gx-stats { border-color: var(--line); }
 html[data-theme='dark'] .gx-find, html[data-theme='dark'] .game .gx-round, html[data-theme='dark'] .game .gx-ava, html[data-theme='dark'] .gx-level,
 html[data-theme='dark'] .game .gx-body .chip, html[data-theme='dark'] .game .gx-actions .ghost { background: rgba(37, 39, 78, .82); border-color: var(--line); }
