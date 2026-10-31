@@ -736,7 +736,7 @@ $('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
 $('#tabWords').addEventListener('click',()=>{S.tab='words';renderList();$('#wq').focus({preventScroll:true});});
 $('#wq').addEventListener('input',renderList);
 $('#resetBtn').addEventListener('click',async()=>{
-  const yes=await askConfirm({title:'Сбросить статистику игры?',text:'Счёт, испечённые хлебушки и слабые слова обнулятся. Уровень и общий прогресс сайта не сбрасываются.',ok:'Сбросить',danger:true});
+  const yes=await askConfirm({title:'Сбросить статистику игры?',text:'Сбросится только прогресс этой игры: счёт, рекорды, испечённые хлебушки, слабые слова и история ответов. Уровень, цель дня, слова и остальной прогресс сайта останутся как есть.',ok:'Сбросить статистику игры',danger:true});
   if(!yes)return;
   S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
   save();updateStats();renderList();next();
