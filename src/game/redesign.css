@@ -135,3 +135,7 @@ html[data-theme='dark'] .gx-di kbd { background: rgba(255, 255, 255, .1); }
 /* без жирного шрифта на этой странице */
 .study.game.sky b, .study.game.sky strong, .study.game.sky h1, .study.game.sky h2, .study.game.sky h3, .study.game.sky h4, .study.game.sky summary,
 .study.game.sky .fbh, .study.game.sky .primary, .study.game.sky .gx-logo, .study.game.sky .gx-stats-h { font-weight: 500; }
+
+/* кнопка «Меню» той же высоты, что круглые кнопки рядом */
+.game .gx-top .gx-tools .game-pill { height: 46px; padding: 0 22px; font-size: 14px; gap: 8px; box-shadow: 0 8px 22px rgba(100, 87, 170, .2); }
+.game .gx-round { font-size: 24px; }
