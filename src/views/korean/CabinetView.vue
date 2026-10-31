@@ -23,7 +23,7 @@ const progress = useProgressStore()
 const images = useImagesStore()
 const section = sectionById('cabinet')
 
-/** Напоминание владельцу, если полный архив давно не приходил (раз в неделю он идёт сам). Гостям и без связи ничего не показывается. */
+/** Напоминание владельцу, если полный архив давно не приходил (каждый день он идёт сам). Гостям и без связи ничего не показывается. */
 const backupNote = ref('')
 watch(
   () => progress.unlocked && !progress.isGuest,

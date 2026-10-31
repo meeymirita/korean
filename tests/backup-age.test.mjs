@@ -10,12 +10,12 @@ const now = Date.UTC(2026, 9, 30, 12)
 
 describe('напоминание про архив', () => {
   test('свежий архив: тихо', () => {
-    assert.equal(archiveReminder({ ok: true, time: now - 3 * DAY }, [], now), '')
-    assert.equal(archiveReminder({ ok: true, time: now - ARCHIVE_STALE_MS }, [], now), '', 'ровно 8 дней ещё можно')
+    assert.equal(archiveReminder({ ok: true, time: now - 2 * DAY }, [], now), '')
+    assert.equal(archiveReminder({ ok: true, time: now - ARCHIVE_STALE_MS }, [], now), '', 'ровно 3 дня ещё можно')
   })
 
-  test('больше 8 дней: говорит, сколько дней', () => {
-    assert.match(archiveReminder({ ok: true, time: now - 9 * DAY }, [], now), /9 дн/)
+  test('больше 3 дней: говорит, сколько дней', () => {
+    assert.match(archiveReminder({ ok: true, time: now - 5 * DAY }, [], now), /5 дн/)
   })
 
   test('архива не было вовсе или последний не удался: подсказка', () => {

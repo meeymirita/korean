@@ -1,5 +1,5 @@
-/** Архив приходит раз в неделю сам; если последнего нет дольше этого срока (8 дней), кабинет напоминает. */
-export const ARCHIVE_STALE_MS = 8 * 86_400_000
+/** Архив приходит каждый день сам; если последнего нет дольше этого срока (3 дня), кабинет напоминает. */
+export const ARCHIVE_STALE_MS = 3 * 86_400_000
 
 export interface ArchiveStamp {
   ok: boolean
@@ -17,6 +17,6 @@ export function archiveReminder(last: ArchiveStamp | null, problems: string[], n
   if (okTime && now - okTime <= ARCHIVE_STALE_MS) return ''
   const days = okTime ? Math.floor((now - okTime) / 86_400_000) : 0
   return okTime
-    ? `Архив не приходил на почту уже ${days} дн. Сервер собирает его раз в неделю сам: проверьте почту и «Настройки».`
+    ? `Архив не приходил на почту уже ${days} дн. Сервер собирает его каждый день сам: проверьте почту и «Настройки».`
     : 'Последний архив не удалось отправить. Посмотрите причину в «Настройках».'
 }

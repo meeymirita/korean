@@ -20,7 +20,10 @@ const FILE = path.join(DATA_DIR, 'backup-archive.json')
 const PART = 18 * 1024 * 1024
 const MAX_PARTS = 5
 const KEEP_LOCAL = 2
-const WEEK = 7 * 86_400_000
+/** Как часто собирать архив сам: по умолчанию каждый день (`BACKUP_EVERY_DAYS=7` вернёт раз в неделю). */
+const everyMs = () => (Number(process.env.BACKUP_EVERY_DAYS) > 0 ? Number(process.env.BACKUP_EVERY_DAYS) : 1) * 86_400_000
+/** запас на разброс по часам: вчерашний архив в 4:05 не должен мешать сегодняшнему в 4:00 */
+const SLACK = 4 * 3_600_000
 /** Ночная копия считается пропавшей, если новой нет дольше этого. */
 export const STALE_MS = 36 * 3600_000
 const SCRIPT_STATUS = path.join(DATA_DIR, 'backup-status.json')
@@ -79,11 +82,11 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     private readonly twofa: TwoFaService,
   ) {}
 
-  /** Раз в час: раз в неделю собирает архив сам (после 4 утра по времени сервера, если есть пароль и куда отправлять) и следит за ночной копией. */
+  /** Раз в час: раз в сутки собирает архив сам (после 4 утра по времени сервера, если есть пароль и куда отправлять) и следит за ночной копией. */
   onModuleInit() {
     this.timer = setInterval(() => {
       const last = this.last()
-      if (process.env.BACKUP_AUTO !== '0' && !this.problems().length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > WEEK) void this.start()
+      if (process.env.BACKUP_AUTO !== '0' && !this.problems().length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > everyMs() - SLACK) void this.start()
       void this.watchNightly()
     }, Number(process.env.BACKUP_WATCH_MS) || 3600_000)
     this.timer.unref()

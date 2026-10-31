@@ -123,7 +123,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
     <div v-if="status.archive" class="bk-arc">
       <p class="st-sub">Полный архив (база, картинки, файлы календаря, настройки) шифруется вашим паролем и отправляется
         {{ status.archive.targets.mail ? 'на почту' : 'никуда (почта не настроена)' }}.
-        Сам раз в неделю, а здесь можно запустить в любой день.</p>
+        Сам каждый день, а здесь можно запустить в любой момент.</p>
       <ul v-if="status.archive.problems.length" class="bk-prob"><li v-for="p in status.archive.problems" :key="p">⚠ {{ p }}</li></ul>
       <p v-if="reminder" class="bk-warn" role="status">⚠ {{ reminder }}</p>
       <div class="pg-btns">
