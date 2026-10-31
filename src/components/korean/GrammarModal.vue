@@ -119,7 +119,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           </div>
           <p v-if="video && titleOfVideo(video)" class="vt">{{ titleOfVideo(video) }}</p>
           <p v-if="video" class="src">Видео в формате AV1: в Яндекс Браузере, Chrome и Firefox играет, в Safari и на части iPad может не открываться.</p>
-          <p class="src">Видеоуроки: <a :href="CHANNEL" target="_blank" rel="noopener">양쌤의 한국어 교실</a></p>
+          <p class="src">Автор видеоурока: <a :href="CHANNEL" target="_blank" rel="noopener">Учитель Ян · 양쌤의 한국어 교실</a></p>
         </aside>
       </div>
     </div>

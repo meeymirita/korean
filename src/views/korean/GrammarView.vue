@@ -45,7 +45,7 @@ onMounted(() => {
       <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s">{{ s }}</button>
     </div>
     <p class="gcourse">
-      Уроки 1–30 принадлежат каналу
+      Видеоуроки части 1 (уроки 1–30) и части 2 принадлежат каналу
       <a :href="COURSE.channel" target="_blank" rel="noopener">{{ COURSE.teacher }} · {{ COURSE.name }}</a>:
       корейский с носителем языка, к каждому уроку есть материалы, их можно скачать бесплатно.
       <a :href="COURSE.telegram" target="_blank" rel="noopener">Telegram</a> ·
