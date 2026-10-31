@@ -76,8 +76,9 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           <div v-else class="gvp stub">
             <span class="play" aria-hidden="true">▶</span>
             <b>{{ current.l ? `Видео · ${current.l}` : 'Видео' }}</b>
-            <small>появится, когда скачаю урок</small>
+            <small>{{ broken ? 'Не проигралось в этом браузере: смотри в Яндекс Браузере или Chrome' : 'появится, когда скачаю урок' }}</small>
           </div>
+          <p v-if="video" class="src">Видео в формате AV1: в Яндекс Браузере, Chrome и Firefox играет, в Safari и на части iPad может не открываться.</p>
           <p class="src">Видеоуроки: <a :href="CHANNEL" target="_blank" rel="noopener">양쌤의 한국어 교실</a></p>
         </aside>
       </div>

@@ -138,10 +138,10 @@ korean.meeymirita.ru {
 
 ## Видеоуроки (`/video/…`)
 
-Видео (31 файл, уроки 1–30 курса 양쌤의 한국어 교실, 1080p H.264, около 2–4 ГБ) в git не лежат: они на сервере в `/var/sites/korean-video/`
+Видео (31 файл, уроки 1–30 курса 양쌤의 한국어 교실, оригиналы 1080p AV1 + Opus без перекодирования, 7,8 ГБ) в git не лежат: они на сервере в `/var/sites/korean-video/`
 (рядом с проектом, `deploy.sh` их не трогает). Файлы: `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`.
 Сайт сам берёт файл по подписи карточки («Урок N»), см. `videoOf` в `src/data/korean/course.ts`; нет файла — в окне заглушка.
-Токеном видео не закрыты (решение владельца). Service worker `.mp4` не кэширует.
+Токеном видео не закрыты (решение владельца). AV1/Opus не везде играет (Safari, часть iPad): в окне карточки есть пометка, владелец смотрит в Яндекс Браузере; на этот случай перекодировать так: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`. Service worker `.mp4` не кэширует.
 
 Caddy, в блок сайта **до** общего `handle { … dist … }`:
 ```
@@ -152,4 +152,4 @@ Caddy, в блок сайта **до** общего `handle { … dist … }`:
     }
 ```
 Потом `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. Перемотка (Range) работает у `file_server` сама.
-Заливка с Mac одной командой: `rsync -avP ~/Movies/YouTube-web/ root@<сервер>:/var/sites/korean-video/`.
+Заливка с Mac одной командой: `rsync -avP ~/Movies/YouTube-site/ root@<сервер>:/var/sites/korean-video/`.
