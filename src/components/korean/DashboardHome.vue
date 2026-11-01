@@ -5,6 +5,14 @@ import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { HOME_PHRASES, HOME_RULE } from '@/composables/useHome'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
+import catSleep from '@/assets/home/dash/cat-sleep.webp'
+import catWave from '@/assets/home/dash/cat-wave.webp'
+import qFire from '@/assets/home/dash/q-fire.webp'
+import qNotes from '@/assets/home/dash/q-notes.webp'
+import qBread from '@/assets/home/dash/q-bread.webp'
+import qArrows from '@/assets/home/dash/q-arrows.webp'
+import qSprout from '@/assets/home/dash/q-sprout.webp'
+import qPuzzle from '@/assets/home/dash/q-puzzle.webp'
 
 const progress = useProgressStore()
 
@@ -28,28 +36,25 @@ const lessons = computed(() => [
   { n: '04', title: 'Тренажёры', sub: 'найди пару и напиши', foot: progress.unlocked ? 'Играть →' : '🔒 Нужен токен', to: '/korean/trainers' },
 ])
 
+/** Быстрый доступ: стикеры из набора «Пастельный набор кавайных стикеров» (src/assets/home/dash/q-*.webp) */
 const quick = [
-  { icon: '⏱', title: '5 минут', sub: 'Десять заданий вперемешку', to: '/korean/quick' },
-  { icon: '☀', title: 'Задания на сегодня', sub: 'Слова, правило и задания', to: '/korean/today' },
-  { icon: '✧', title: 'Тренажёры слов', sub: 'Найди пару, напиши перевод', to: '/korean/trainers' },
-  { icon: '🍞', title: 'Игра на слова', sub: 'Хлебушек', to: '/game' },
+  { img: qFire, title: '5 минут', to: '/korean/quick' },
+  { img: qNotes, title: 'Задания дня', to: '/korean/today' },
+  { img: qBread, title: 'Игра на слова', to: '/game' },
+  { img: qArrows, title: 'Повторение', to: '/korean/review' },
+  { img: qSprout, title: 'Сад', to: '/korean/garden' },
+  { img: qPuzzle, title: 'Тренажёры', to: '/korean/trainers' },
 ]
 
-/* календарь месяца: дни с верными ответами закрашены */
+/* календарь: только текущая неделя (Пн–Вс), дни с верными ответами закрашены */
 const now = new Date()
 const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(now)
-const calendar = computed(() => {
-  const y = now.getFullYear()
-  const m = now.getMonth()
-  const lead = (new Date(y, m, 1).getDay() + 6) % 7
-  const count = new Date(y, m + 1, 0).getDate()
-  return {
-    lead,
-    days: Array.from({ length: count }, (_, i) => {
-      const key = dayKey(new Date(y, m, i + 1))
-      return { d: i + 1, done: (progress.data.days[key] ?? 0) > 0, today: i + 1 === now.getDate() }
-    }),
-  }
+const week = computed(() => {
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
+    return { d: d.getDate(), done: (progress.data.days[dayKey(d)] ?? 0) > 0, today: d.toDateString() === now.toDateString() }
+  })
 })
 const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 </script>
@@ -65,6 +70,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
           <p class="ko">{{ rule.examples }}</p>
           <RouterLink class="primary" :to="rule.to">Открыть правило&nbsp; →</RouterLink>
         </div>
+        <img class="hero-cat" :src="catSleep" alt="" aria-hidden="true" draggable="false" />
       </section>
 
       <section class="panel">
@@ -94,8 +100,8 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         <div class="sh"><h3>✧ Быстрый доступ</h3></div>
         <div class="quick">
           <RouterLink v-for="q in quick" :key="q.to + q.title" :to="q.to">
-            <span class="qi">{{ q.icon }}</span>
-            <span><b>{{ q.title }}</b><br><small>{{ q.sub }}</small></span>
+            <img class="qi" :src="q.img" alt="" aria-hidden="true" draggable="false" />
+            <b>{{ q.title }}</b>
           </RouterLink>
         </div>
       </section>
@@ -103,6 +109,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
     <div class="dcol">
       <section class="panel phrase">
+        <img class="phrase-cat" :src="catWave" alt="" aria-hidden="true" draggable="false" />
         <div class="label">✳︎ &nbsp; Фразы дня</div>
         <div v-for="p in HOME_PHRASES" :key="p.ko" class="ph">
           <div class="kr ko">{{ p.ko }}</div>
@@ -133,8 +140,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         <div class="month">{{ monthLabel }}</div>
         <div class="cal">
           <span v-for="d in WD" :key="d">{{ d }}</span>
-          <span v-for="i in calendar.lead" :key="'e' + i"></span>
-          <i v-for="c in calendar.days" :key="c.d" :class="{ done: c.done, today: c.today }">{{ c.d }}</i>
+          <i v-for="c in week" :key="c.d" :class="{ done: c.done, today: c.today }">{{ c.d }}</i>
         </div>
       </section>
 
@@ -156,22 +162,22 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .tbtn { color: #7371ed; font-size: 12px; padding: 4px; }
 .tbtn:hover { color: var(--pink); }
 
-.hero { min-height: 290px; position: relative; overflow: hidden; border-radius: 22px; color: #fff; padding: 28px;
-  background: linear-gradient(115deg, rgba(33, 43, 105, .97), rgba(53, 72, 142, .76) 48%, rgba(100, 93, 170, .18)),
-    radial-gradient(ellipse at 80% 80%, #f7b9df, #7ea9eb 45%, #303d81 80%);
+/* ===== «Сейчас изучаем»: котик (двигай здесь) ===== */
+.hero { --cat-w: 150px; --cat-right: 28px; --cat-bottom: 16px;
+  min-height: 290px; position: relative; overflow: hidden; border-radius: 22px; color: #fff; padding: 28px;
+  background: radial-gradient(circle at 78% 30%, rgba(255, 214, 244, .55), transparent 45%),
+    linear-gradient(115deg, #6a5bc0, #8c78da 55%, #b7a2ee);
   box-shadow: var(--shadow); }
-.hero::before { content: "✦  ·  ✧     🌸       ✦     ·     🌸"; position: absolute; right: 12px; top: 18px; color: #ffd6f1;
-  font-size: 22px; letter-spacing: 9px; opacity: .85; }
-.hero::after { content: "서울  Seoul"; position: absolute; right: 22px; bottom: 18px; font-size: 36px; font-weight: 700;
-  letter-spacing: 2px; color: rgba(255, 255, 255, .15); }
-.hero-in { position: relative; z-index: 1; }
-.eyebrow { display: inline-block; background: rgba(255, 255, 255, .2); border: 1px solid rgba(255, 255, 255, .18);
-  border-radius: 30px; padding: 7px 12px; font-size: 12px; }
+.hero::before { content: "✦      ✧         ✦"; position: absolute; right: 20px; top: 16px; color: #ffe3f6;
+  font-size: 22px; letter-spacing: 14px; opacity: .85; }
+.hero-in { position: relative; z-index: 2; max-width: 52%; }
+.hero-cat { position: absolute; z-index: 3; right: var(--cat-right); bottom: var(--cat-bottom); width: var(--cat-w); height: auto; pointer-events: none; user-select: none; }
+.eyebrow { display: inline-block; background: rgba(255, 255, 255, .88); color: #5b4fb3; border-radius: 30px; padding: 7px 12px; font-size: 12px; font-weight: 600; }
 .hero h2 { font-size: 34px; margin: 17px 0 2px; }
-.hero h3 { font-size: 17px; font-weight: 500; margin: 0 0 12px; }
-.hero p { max-width: 340px; line-height: 1.55; font-size: 14px; color: #f0edff; margin: 0 0 14px; }
-.primary { display: inline-block; padding: 13px 19px; border-radius: 28px; background: linear-gradient(100deg, #f8b9e9, #9de4ff);
-  color: #37378f; font-weight: 600; transition: .2s; }
+.hero h3 { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
+.hero p { max-width: 300px; line-height: 1.55; font-size: 14px; color: #f0edff; margin: 0 0 14px; }
+.primary { display: inline-block; padding: 13px 19px; border-radius: 28px; background: #fff;
+  color: #5b4fb3; font-weight: 700; transition: .2s; }
 .primary:hover { filter: brightness(1.04); transform: translateY(-1px); }
 
 .lessons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
@@ -192,15 +198,17 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .word strong { display: block; font-size: 18px; margin-bottom: 5px; overflow-wrap: anywhere; }
 .word small { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; }
 
-.quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.quick a { border-radius: 30px; padding: 14px 12px; background: linear-gradient(110deg, #ffe0f5, #f0e5ff); font-size: 12px;
-  display: flex; align-items: center; gap: 9px; transition: .2s; }
-.quick a:nth-child(2) { background: linear-gradient(110deg, #e9e2ff, #e1e8ff); }
-.quick a:nth-child(3) { background: linear-gradient(110deg, #d8f8f2, #e4f8ff); }
-.quick .qi { font-size: 22px; }
-.quick small { color: var(--muted); font-size: 11px; }
+/* ===== Быстрый доступ: стикеры ===== */
+.quick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.quick a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px 6px 12px; border-radius: 22px;
+  background: rgba(255, 255, 255, .6); border: 1px solid #fff; font-size: 12px; text-align: center; transition: .2s; }
+.quick a:hover { background: rgba(255, 255, 255, .95); }
+.quick .qi { width: 54px; height: 54px; object-fit: contain; }
+.quick b { font-weight: 600; line-height: 1.25; }
 
 .phrase { position: relative; overflow: hidden; }
+.phrase-cat { position: absolute; right: 8px; top: 6px; width: 104px; height: auto; pointer-events: none; user-select: none; }
+.phrase .label, .phrase .ph { padding-right: 96px; }
 .phrase .label { font-size: 12px; color: #7771d4; }
 .phrase .ph { margin-top: 16px; }
 .phrase .ph + .ph { padding-top: 14px; border-top: 1px solid var(--line-soft); }
@@ -217,16 +225,16 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .locked { display: block; font-size: 13px; color: var(--muted); }
 
 .month { font-size: 11px; color: var(--muted); margin-bottom: 10px; text-transform: capitalize; }
-.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; text-align: center; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 9px 7px; text-align: center; }
 .cal span { font-size: 10px; color: var(--muted); padding: 4px 0; }
 .cal i { display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; background: #f3efff; color: #8a83c8; font-size: 11px; font-style: normal; }
 .cal i.done { background: linear-gradient(135deg, #a8c7ff, #c3a7ff); color: #fff; }
 .cal i.today { outline: 2px solid #ed9fe1; outline-offset: 2px; }
 
-.quote { min-height: 150px; background: linear-gradient(120deg, #648ee0, #a8b9f6 55%, #f0bde4); color: #fff; position: relative; overflow: hidden; }
-.quote::after { content: "🌸  ✦  서울"; position: absolute; right: 6px; bottom: 0; font-size: 28px; opacity: .55; }
-.quote p { max-width: 245px; line-height: 1.65; font-size: 13px; position: relative; z-index: 1; margin: 0 0 14px; }
-.quote a { display: inline-block; background: #fff; color: #5c60b5; border-radius: 25px; padding: 10px 15px; font-size: 12px; position: relative; z-index: 1; }
+/* ===== «Корея — это не только язык…» ===== */
+.quote { min-height: 150px; background: linear-gradient(120deg, #7f78d8, #a8a0ee 55%, #e3b4ea); color: #fff; position: relative; overflow: hidden; }
+.quote p { max-width: 90%; line-height: 1.65; font-size: 14px; position: relative; z-index: 1; margin: 0 0 14px; }
+.quote a { display: inline-block; background: #fff; color: #5c60b5; border-radius: 25px; padding: 10px 15px; font-size: 12px; position: relative; z-index: 1; font-weight: 600; }
 
 @media (max-width: 1100px) {
   .dash { grid-template-columns: 1fr; }
@@ -234,7 +242,10 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 }
 @media (max-width: 760px) {
   .lessons, .words { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .quick, .dcol:last-child { grid-template-columns: 1fr; }
+  .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dcol:last-child { grid-template-columns: 1fr; }
+  .hero-in { max-width: 100%; }
+    .hero-cat { display: none; }
   .hero { min-height: 280px; padding: 23px; }
   .hero h2 { font-size: 30px; }
 }
