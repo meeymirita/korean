@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
           <span v-else-if="counts[s.id]" class="ct">{{ counts[s.id] }}</span>
           <span v-else class="num">{{ s.num }}</span>
         </RouterLink>
-        <RouterLink v-if="s.id === 'today'" to="/game">
+        <RouterLink v-if="s.id === 'today'" to="/game/home">
           <span class="line"></span>
           <span class="ic">{{ icons.game }}</span>
           <span>Игра на слова</span>

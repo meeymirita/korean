@@ -111,7 +111,7 @@ const tabs = computed<[Tab, string][]>(() => [
             <small v-if="!progress.data.profile.name"><br />Имя можно задать в «Настройках».</small>
           </div>
         </div>
-        <RouterLink to="/game" class="cb-play">🎮 Играть</RouterLink>
+        <RouterLink to="/game/home" class="cb-play">🎮 Играть</RouterLink>
       </div>
       <div class="cb-lvl">{{ progress.info.level }}<small>уровень</small></div>
     </header>

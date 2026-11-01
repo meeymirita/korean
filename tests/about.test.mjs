@@ -22,7 +22,7 @@ describe('«О платформе»: слайды', () => {
   test('каждый слайд ведёт на существующую страницу', () => {
     for (const s of ABOUT_SLIDES) {
       assert.ok(s.to.startsWith('/'), s.id)
-      if (s.to === '/' || s.to === '/game') continue
+      if (s.to === '/' || s.to === '/game/home') continue
       const id = s.to.split('?')[0].split('/').pop() // ?tab=… в адресе вкладки не считается
       assert.ok(routerSrc.includes(`'${id}'`) || sectionsSrc.includes(`id: '${id}'`), `страницы ${s.to} нет в роутере`)
     }

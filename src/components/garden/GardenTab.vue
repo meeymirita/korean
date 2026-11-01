@@ -72,7 +72,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
     <div v-else class="empty">
       <div class="big">🌱</div>
       Сад пока пуст. Ответь на любое слово в игре, тренажёре или «Сегодня» — оно прорастёт.<br />
-      <RouterLink to="/game">Идти играть →</RouterLink>
+      <RouterLink to="/game/home">Идти играть →</RouterLink>
     </div>
 
     <div v-if="picked" class="pg-card gd-info">

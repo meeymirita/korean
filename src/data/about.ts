@@ -124,7 +124,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     img: 'trainers',
     title: 'Тренажёры',
     text: 'Найди пару и напиши перевод: короткие раунды по темам словаря и по грамматике. Таймер занятий включается кнопкой справа внизу.',
-    to: '/korean/trainers',
+    to: '/game/home',
     private: true,
   },
   {
@@ -148,7 +148,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     img: 'game',
     title: 'Игра на слова',
     text: 'Режимы игры: выбери перевод, собери предложение, блиц на 60 секунд, выживание. Печёшь хлебушки, растёшь в уровне и видишь слабые слова.',
-    to: '/game',
+    to: '/game/home',
     private: true,
   },
   {

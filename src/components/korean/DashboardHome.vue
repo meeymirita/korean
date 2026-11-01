@@ -33,17 +33,17 @@ const lessons = computed(() => [
   { n: '01', title: 'Слова', sub: `${D.length} слов в словаре`, foot: 'Открыть →', to: '/korean/words' },
   { n: '02', title: 'Грамматика', sub: `${G.length} правил`, foot: `✓ ${grammarDone} пройдено`, to: '/korean/grammar' },
   { n: '03', title: 'Справочник', sub: 'памятка, чтение, примеры', foot: 'Изучить →', to: '/korean/ref' },
-  { n: '04', title: 'Тренажёры', sub: 'найди пару и напиши', foot: progress.unlocked ? 'Играть →' : '🔒 Нужен токен', to: '/korean/trainers' },
+  { n: '04', title: 'Игры', sub: 'тренажёры, диалоги и миксы', foot: progress.unlocked ? 'Играть →' : '🔒 Нужен токен', to: '/game/home' },
 ])
 
 /** Быстрый доступ: стикеры из набора «Пастельный набор кавайных стикеров» (src/assets/home/dash/q-*.webp) */
 const quick = [
-  { img: qFire, title: '5 минут', to: '/korean/quick' },
+  { img: qFire, title: '5 минут', to: '/game/home?game=quick' },
   { img: qNotes, title: 'Задания дня', to: '/korean/today' },
-  { img: qBread, title: 'Игра на слова', to: '/game' },
+  { img: qBread, title: 'Игра на слова', to: '/game/home' },
   { img: qArrows, title: 'Повторение', to: '/korean/review' },
   { img: qSprout, title: 'Сад', to: '/korean/garden' },
-  { img: qPuzzle, title: 'Тренажёры', to: '/korean/trainers' },
+  { img: qPuzzle, title: 'Тренажёры', to: '/game/home' },
 ]
 
 /* календарь: только текущая неделя (Пн–Вс), дни с верными ответами закрашены */

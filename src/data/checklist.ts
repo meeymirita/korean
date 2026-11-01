@@ -21,14 +21,14 @@ export interface CheckSnap {
 
 /** Из одной группы в день берём не больше одного пункта: так ответы одного источника не считаются дважды. */
 const POOL: { group: string; make: (n: number) => Omit<CheckItem, 'id'>; goals: number[] }[] = [
-  { group: 'game', goals: [10, 15, 20], make: n => ({ text: `Пройди ${n} раз любой режим в игре`, to: '/game', goal: n, source: 'game' }) },
-  { group: 'game', goals: [10, 15], make: n => ({ text: `Собери ${n} предложений в игре`, to: '/game?mode=build', goal: n, source: 'game' }) },
-  { group: 'game', goals: [10, 15], make: n => ({ text: `Ответь ${n} раз в режиме «Прошедшее время»`, to: '/game?mode=past', goal: n, source: 'game' }) },
-  { group: 'trainer', goals: [10, 20], make: n => ({ text: `Ответь ${n} раз в тренажёрах`, to: '/korean/trainers', goal: n, source: 'trainer' }) },
-  { group: 'trainer', goals: [10, 15], make: n => ({ text: `Реши ${n} заданий на частицы`, to: '/korean/particles', goal: n, source: 'trainer' }) },
-  { group: 'trainer', goals: [10, 15], make: n => ({ text: `Переведи ${n} предложений`, to: '/korean/translate', goal: n, source: 'trainer' }) },
-  { group: 'trainer', goals: [10, 15], make: n => ({ text: `Реши ${n} заданий «Похожие, но разные»`, to: '/korean/pairs', goal: n, source: 'trainer' }) },
-  { group: 'quick', goals: [5, 10], make: n => ({ text: `Пройди «5 минут»: ${n} ответов`, to: '/korean/quick', goal: n, source: 'quick' }) },
+  { group: 'game', goals: [10, 15, 20], make: n => ({ text: `Пройди ${n} раз любой режим в игре`, to: '/game/home', goal: n, source: 'game' }) },
+  { group: 'game', goals: [10, 15], make: n => ({ text: `Собери ${n} предложений в игре`, to: '/game/home?game=build', goal: n, source: 'game' }) },
+  { group: 'game', goals: [10, 15], make: n => ({ text: `Ответь ${n} раз в режиме «Прошедшее время»`, to: '/game/home?game=past', goal: n, source: 'game' }) },
+  { group: 'trainer', goals: [10, 20], make: n => ({ text: `Ответь ${n} раз в тренажёрах`, to: '/game/home?game=match', goal: n, source: 'trainer' }) },
+  { group: 'trainer', goals: [10, 15], make: n => ({ text: `Реши ${n} заданий на частицы`, to: '/game/home?game=particles', goal: n, source: 'trainer' }) },
+  { group: 'trainer', goals: [10, 15], make: n => ({ text: `Переведи ${n} предложений`, to: '/game/home?game=translate', goal: n, source: 'trainer' }) },
+  { group: 'trainer', goals: [10, 15], make: n => ({ text: `Реши ${n} заданий «Похожие, но разные»`, to: '/game/home?game=pairs', goal: n, source: 'trainer' }) },
+  { group: 'quick', goals: [5, 10], make: n => ({ text: `Пройди «5 минут»: ${n} ответов`, to: '/game/home?game=quick', goal: n, source: 'quick' }) },
   { group: 'review', goals: [10, 15], make: n => ({ text: `Повтори ${n} слов, в которых были ошибки`, to: '/korean/mistakes', goal: n, source: 'review' }) },
   { group: 'today', goals: [10, 15], make: n => ({ text: `Выполни ${n} заданий на странице «Сегодня»`, to: '/korean/today', goal: n, source: 'today' }) },
   { group: 'hand', goals: [5, 10], make: n => ({ text: `Придумай ${n} своих предложений и запиши в тетрадь`, to: '/korean/words', goal: n }) },

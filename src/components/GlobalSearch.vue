@@ -9,7 +9,7 @@ const route = useRoute()
 
 <template>
   <!-- вне раздела корейского («О платформе», история, визитка): та же кнопка поиска справа вверху и то же окно (в игре кнопка стоит в её шапке рядом с «Сад» и «Словарь»); стили кнопки берутся от .study.sky -->
-  <div v-if="route.path !== '/game'" class="study sky" :class="{ 'sw-home': route.path === '/about' }" style="display: contents">
+  <div v-if="route.path !== '/game/home'" class="study sky" :class="{ 'sw-home': route.path === '/about' }" style="display: contents">
     <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
       <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
     </button>
