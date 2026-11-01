@@ -181,11 +181,11 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 @media (max-width: 980px) { .study .shx { grid-template-columns: 1fr; } .study .shx-side { position: static; grid-template-columns: 130px 1fr; align-items: center; } .study .shx-grid.three, .study .shx-two { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .study .shx { padding: 12px; } .study .shx-grid { grid-template-columns: 1fr; } .study .shx-side { grid-template-columns: 1fr; } .study .shx-log li { grid-template-columns: 1fr auto; } .study .shx-log .when { grid-column: 1 / -1; } }
 
-.study .shx-head .shx-titlerow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+.study .shx-head .shx-titlerow { position: relative; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
 .study .shx-head h1 { margin: 0; }
 .study .shx-sub { font-size: 15px; color: var(--muted); }
-.study .shx-help { position: relative; display: inline-flex; align-items: center; justify-content: center; align-self: center; width: 28px; height: 28px; font-size: 16px; font-weight: 700; color: #5b2f9a; background: rgba(154, 108, 240, .16); border: 1px solid rgba(154, 108, 240, .4); border-radius: 50%; cursor: help; outline: none; }
-.study .shx-tip { position: absolute; z-index: 40; left: 0; top: calc(100% + 10px); display: none; flex-direction: column; gap: 8px; width: min(440px, 86vw); padding: 14px 16px; font-size: 13px; font-weight: 400; line-height: 1.5; text-align: left; color: #2d1559; background: #fff; border: 1px solid rgba(154, 108, 240, .35); border-radius: 16px; box-shadow: 0 16px 40px rgba(91, 47, 154, .28); }
+.study .shx-help { position: static; display: inline-flex; align-items: center; justify-content: center; align-self: center; width: 28px; height: 28px; font-size: 16px; font-weight: 700; color: #5b2f9a; background: rgba(154, 108, 240, .16); border: 1px solid rgba(154, 108, 240, .4); border-radius: 50%; cursor: help; outline: none; }
+.study .shx-tip { position: absolute; z-index: 40; left: 0; top: calc(100% + 10px); display: none; flex-direction: column; gap: 8px; width: min(460px, 100%); box-sizing: border-box; padding: 14px 16px; font-size: 13px; font-weight: 400; line-height: 1.5; text-align: left; color: #2d1559; background: #fff; border: 1px solid rgba(154, 108, 240, .35); border-radius: 16px; box-shadow: 0 16px 40px rgba(91, 47, 154, .28); }
 .study .shx-tip b { font-size: 15px; font-weight: 600; }
 .study .shx-tip i { font-style: normal; font-weight: 600; color: #5b2f9a; }
 .study .shx-help:hover .shx-tip, .study .shx-help:focus .shx-tip, .study .shx-help:focus-within .shx-tip { display: flex; }
