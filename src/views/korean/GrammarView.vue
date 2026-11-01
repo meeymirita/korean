@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
@@ -22,6 +23,11 @@ const PARTS = [
   { id: 2, label: 'Часть 2', sub: 'Второй шаг · 13 уроков' },
 ] as const
 const photo = ref<string | null>(null)
+/** Иконки вкладок-тем (имена из src/lib/icons.ts) */
+const SEC_ICON: Record<string, string> = {
+  'Быть и отрицание': 'check', 'Частицы': 'puzzle', 'Место и направление': 'target', 'Глаголы и просьбы': 'pencil', 'Указатели и вопросы': 'question',
+  'Вежливость': 'heart', 'Произношение': 'speech', 'Числительные': 'chart', 'Время': 'clock', 'Желание и предложение': 'star', 'Связки': 'arrows',
+}
 const part = usePersisted<1 | 2>('grammar_part', 1, v => v === 1 || v === 2)
 const partCount = (n: number) => G.filter(g => (g.part ?? 1) === n).length
 const q = ref('')
@@ -48,8 +54,8 @@ onMounted(() => {
     <SectionHead id="grammar" :big="G.length" />
     <img class="gr-banner" :src="yunaGrammar" alt="" aria-hidden="true" draggable="false" />
     <div class="chips">
-      <button class="chip" :class="{ on: !sec }" @click="sec = ''">Все</button>
-      <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s">{{ s }}</button>
+      <button class="chip" :class="{ on: !sec }" @click="sec = ''"><Icon name="grammar" /> Все</button>
+      <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s"><Icon :name="SEC_ICON[s] ?? 'star'" /> {{ s }}</button>
     </div>
     <p class="gcourse">
       Видеоуроки части 1 (уроки 1–30) и части 2 принадлежат каналу
