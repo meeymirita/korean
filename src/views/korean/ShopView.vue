@@ -142,7 +142,7 @@ const s = sectionById('shop')
 .study .shx-panel h2 { margin: 0 0 14px; font-size: 26px; font-weight: 600; color: var(--pur); }
 .study .shx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .study .shx-grid.three { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-.study .shx-card { display: grid; grid-template-columns: 76px 1fr; gap: 6px 12px; align-items: start; padding: 14px; background: rgba(255, 255, 255, .85); border-radius: 20px; box-shadow: 0 4px 14px rgba(91, 47, 154, .1); }
+.study .shx-card { display: grid; grid-template-columns: 76px 1fr; grid-template-rows: 1fr auto; gap: 6px 12px; align-items: start; padding: 14px; background: rgba(255, 255, 255, .85); border-radius: 20px; box-shadow: 0 4px 14px rgba(91, 47, 154, .1); }
 .study .shx-card > img { width: 76px; height: 76px; object-fit: contain; }
 .study .shx-card h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; color: #2d1559; }
 .study .shx-card p { margin: 0; font-size: 12.5px; line-height: 1.45; color: #4a3a6a; }
@@ -150,6 +150,7 @@ const s = sectionById('shop')
 .study .shx-price { display: inline-flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 700; color: var(--pur); }
 .study .shx-price img { width: 24px; height: 24px; object-fit: contain; }
 .study .shx-card footer small { margin-right: auto; font-size: 12px; color: #7d5ab5; }
+.study .shx-card footer .shx-btn:last-child { margin-left: auto; }
 .study .shx-btn { padding: 6px 20px; font: inherit; font-size: 14px; font-weight: 600; color: #fff; background: linear-gradient(180deg, #9a6cf0, #7b4fd6); border: 0; border-radius: 12px; box-shadow: 0 3px 8px rgba(91, 47, 154, .35); cursor: pointer; }
 .study .shx-btn.ghost { color: var(--pur); background: rgba(154, 108, 240, .18); box-shadow: none; }
 .study .shx-btn:disabled { opacity: .45; cursor: default; }
