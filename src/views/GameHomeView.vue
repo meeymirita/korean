@@ -3,6 +3,7 @@ import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
+import GrammarModal from '@/components/korean/GrammarModal.vue'
 import Avatar from '@/components/Avatar.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
@@ -134,6 +135,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 
 <template>
   <div class="study game sky gx gh" :style="bgStyle">
+    <GrammarModal />
     <aside class="gx-nav">
       <RouterLink to="/korean/home" class="gx-brand" title="На платформу">
         <span class="gx-flower">✳︎</span>
