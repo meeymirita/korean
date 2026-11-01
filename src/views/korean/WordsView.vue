@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -150,7 +151,7 @@ const shareWord = (d: Word) =>
       </template>
     </div>
     <div v-else class="empty">
-      <div class="big">✿</div>
+      <Cat :name="fav && !q ? 'read' : 'think'" />
       <template v-if="fav && !q">Звёздочек пока нет: нажми ☆ рядом со словом, и оно появится здесь.</template>
       <template v-else>Ничего не нашлось по «<span v-html="esc(q)"></span>».<br />Попробуй другое слово или русскую форму («ем» → «есть»).</template>
     </div>

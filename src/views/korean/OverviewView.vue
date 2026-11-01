@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -69,7 +70,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
     <template v-if="result">
       <div v-if="!result.total" class="empty">
-        <div class="big">✿</div>
+        <Cat name="think" />
         Ничего не нашлось. Попробуй другое слово или русскую форму («ем» → «есть»).
       </div>
 

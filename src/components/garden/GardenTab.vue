@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -72,7 +73,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
       <p v-if="!shown.length" class="gd-empty">Все слова напоены <Icon name="sprout" /></p>
     </div>
     <div v-else class="empty">
-      <div class="big"><Icon name="sprout" /></div>
+      <Cat name="water" />
       Сад пока пуст. Ответь на любое слово в игре, тренажёре или «Сегодня» — оно прорастёт.<br />
       <RouterLink to="/game/home">Идти играть →</RouterLink>
     </div>

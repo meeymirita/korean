@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
@@ -222,6 +223,7 @@ onBeforeUnmount(() => {
       <button v-if="picked !== null" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">
+      <Cat :name="right === tasks.length ? 'cheer' : right * 2 >= tasks.length ? 'happy' : 'sad'" />
       <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
       <p v-if="pace" class="rs-pace">Время: {{ clock(pace.total) }}, в среднем {{ pace.avg }} с на задание. Дольше всего: задание {{ pace.slowest + 1 }}.</p>
       <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Слова с ошибками вернутся в повторение. Вот что не получилось:</template></p>
