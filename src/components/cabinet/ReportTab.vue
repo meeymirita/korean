@@ -83,7 +83,7 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 </template>
 
 <style>
-.rp-per { margin-bottom: 14px; }
+.study .rp-per { margin: 18px 0 22px; }
 .rp-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .rp-sum > div { background: rgba(255, 255, 255, .6); border: 1px solid rgba(143, 124, 240, .25); border-radius: 14px; padding: 12px 14px; }
 .rp-sum b { display: block; font-size: 24px; color: var(--pink, #d64da9); }
