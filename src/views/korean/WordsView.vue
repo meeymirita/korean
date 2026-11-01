@@ -17,6 +17,8 @@ const progress = useProgressStore()
 /** Слова со звёздочкой: фильтр «★ Важное» показывает только их прямо в списке. */
 const markedWords = computed(() => new Set(progress.data.settings.marks.filter(m => m.startsWith('w:')).map(m => m.slice(2))))
 const marked = computed(() => markedWords.value.size)
+/** Иконки вкладок-тем (имена из src/lib/icons.ts) */
+const CAT_ICON: Record<string, string> = { Люди: 'user', природа: 'sprout', окружение: 'home', еда: 'bread', место: 'target', животные: 'cat-q', одежда: 'sparkle', событие: 'party', тело: 'heart', наречие: 'comet', эмоции: 'hearts' }
 const fav = usePersisted('words_fav', false, v => typeof v === 'boolean')
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
@@ -107,8 +109,8 @@ const shareWord = (d: Word) =>
         <span>ищет по переводу, корейскому, чтению, примеру · <b>/</b> — фокус на поиск</span>
       </div>
       <div class="chips">
-        <button class="chip" :class="{ on: !cat }" @click="((cat = ''), (picked = null))">Все</button>
-        <button v-if="marked || fav" class="chip" :class="{ on: fav }" :aria-pressed="fav" title="Показать только слова со звёздочкой" @click="((fav = !fav), (picked = null))">★ Важное · {{ marked }}</button>
+        <button class="chip" :class="{ on: !cat }" @click="((cat = ''), (picked = null))"><Icon name="dict" /> Все</button>
+        <button v-if="marked || fav" class="chip" :class="{ on: fav }" :aria-pressed="fav" title="Показать только слова со звёздочкой" @click="((fav = !fav), (picked = null))"><Icon name="goldstar" /> Важное · {{ marked }}</button>
         <RouterLink v-if="progress.unlocked" to="/korean/forms" class="chip"><Icon name="wrench" /> Формы глаголов</RouterLink>
         <button
           v-for="(name, c) in CATN"
@@ -117,7 +119,7 @@ const shareWord = (d: Word) =>
           :class="{ on: cat === c }"
           @click="((cat = c), (picked = null))"
         >
-          {{ name }}
+          <Icon :name="CAT_ICON[c] ?? 'star'" /> {{ name }}
         </button>
       </div>
     </div>
