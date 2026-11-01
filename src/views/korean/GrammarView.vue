@@ -39,6 +39,10 @@ const list = computed(() => {
     (!sec.value || g.s === sec.value) &&
     (!onlyDone.value || isOk(g) || passed(g.id)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
+    // сначала свои карточки (без подписи урока), потом карточки уроков; внутри групп порядок прежний
+    .map((g, i) => ({ g, i }))
+    .sort((a, b) => Number(!!a.g.l) - Number(!!b.g.l) || a.i - b.i)
+    .map(x => x.g)
 })
 const { open } = useGrammarModal()
 const route = useRoute()

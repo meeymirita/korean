@@ -49,11 +49,30 @@ const engineOn = computed(() => !!game.value && !tool.value && ALL_GAMES.some(g 
 const current = computed(() => ALL_GAMES.find(g => g.id === game.value))
 
 const router = useRouter()
+/** Откуда пришли: страница игры (например «Найди пару»), если мы перешли с неё на другую; иначе «К списку игр» ведёт в каталог. */
+const cameFrom = ref('')
+watch(
+  () => route.fullPath,
+  (now, old) => {
+    const g = (path?: string) => new URL(path ?? '', 'http://x').searchParams.get('game')
+    // смена режима внутри одной игры («Найди пару» → «Напиши перевод») не считается переходом
+    if (old?.startsWith('/game/home?game=') && g(old) !== g(now)) cameFrom.value = old
+    else if (g(now) === null || g(old) === g(now)) cameFrom.value = g(now) === null ? '' : cameFrom.value
+    else cameFrom.value = ''
+  },
+)
+const backTo = computed(() => (cameFrom.value && cameFrom.value !== route.fullPath ? cameFrom.value : '/game/home'))
+const backLabel = computed(() => (backTo.value === '/game/home' ? '← К списку игр' : '← Назад'))
+function goBack() {
+  const to = backTo.value
+  cameFrom.value = ''
+  void router.push(to)
+}
 /** «К списку игр» внутри разметки движка: обычная ссылка, переход без перезагрузки страницы. */
 function onMarkupClick(e: MouseEvent) {
   if ((e.target as HTMLElement).closest?.('[data-back]')) {
     e.preventDefault()
-    void router.push('/game/home')
+    goBack()
   }
 }
 let dispose: (() => void) | undefined
@@ -182,7 +201,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 
       <AuthGate v-if="!progress.unlocked" />
       <template v-else-if="game && (tool || engineOn)">
-        <div v-if="tool" class="gh-back"><RouterLink :to="{ path: '/game/home' }" class="gh-backlink">← К списку игр</RouterLink><b v-if="tool && current">{{ current.name }}</b></div>
+        <div v-if="tool" class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="tool && current">{{ current.name }}</b></div>
         <section v-if="tool" class="gh-panel gh-tool"><component :is="tool" :key="game" /></section>
         <div v-else v-html="markup" @click="onMarkupClick"></div>
       </template>
@@ -223,7 +242,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gx-tools { flex: none; }
 .gh .game-title { flex: 1; min-width: 0; }
 .gh .gh-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
-.gh .gh-groups { display: grid; gap: 6px; }
+.gh .gh-groups { display: grid; gap: 6px; align-content: start; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .gh .gh-grp { border-radius: 16px; background: rgba(255, 255, 255, .6); }
 .gh .gh-grp.on { background: linear-gradient(90deg, #f7d9f0, #e6e4ff); }
 .gh .gh-gbtn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; cursor: pointer; font-weight: 700; font-size: 13px; }
