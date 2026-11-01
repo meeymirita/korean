@@ -28,6 +28,7 @@ const s = sectionById('shop')
               <span><i>Сюрпризы.</i> Открываются сразу после покупки: набор из 3–5 предметов, сундук с 60–110 монетками или пять подсказок.</span>
             </span>
           </span>
+          <span class="shx-hbal" title="Твой баланс"><img :src="coinImg" alt="" />{{ coins }}</span>
         </div>
       </div>
     </header>
@@ -196,4 +197,6 @@ html[data-theme='dark'] .study .shx-tip i { color: #cdb4ff; }
 .study .shx-claim:disabled { opacity: .5; animation: none; }
 @keyframes shx-pulse { 50% { box-shadow: 0 0 0 5px rgba(154, 108, 240, .28); } }
 @media (prefers-reduced-motion: reduce) { .study .shx-claim { animation: none; } }
+.study .shx-hbal { align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 3px 14px 3px 6px; font-size: 18px; font-weight: 700; color: #5b2f9a; font-variant-numeric: lining-nums; background: rgba(255, 255, 255, .8); border: 1px solid rgba(154, 108, 240, .35); border-radius: 99px; }
+.study .shx-hbal img { width: 28px; height: 28px; object-fit: contain; }
 </style>
