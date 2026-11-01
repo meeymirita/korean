@@ -12,7 +12,7 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 </script>
 
 <template>
-  <div class="wrap">
+  <div class="wrap shx-wrap">
     <header class="page-head shx-head">
       <div>
         <div class="kicker">{{ s.num }} — {{ s.kicker }}</div>
@@ -191,4 +191,6 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 .study .shx-help:hover .shx-tip, .study .shx-help:focus .shx-tip, .study .shx-help:focus-within .shx-tip { display: flex; }
 html[data-theme='dark'] .study .shx-tip { color: #efe6ff; background: #25214a; }
 html[data-theme='dark'] .study .shx-tip i { color: #cdb4ff; }
+/* на этой странице общие отступы и скругление обёртки не нужны: как было до правки */
+.study-shell.sky .study-main .wrap.shx-wrap { border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 18px 8px 64px; margin: 0 auto; max-width: 1100px; }
 </style>
