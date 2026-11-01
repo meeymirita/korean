@@ -152,13 +152,13 @@ const stats = computed(() => {
 .rc-x:hover { background: rgba(214, 77, 169, .18); color: var(--pink); }
 .rc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 38px 14px 0; }
 .rc-kick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.rc .rc-box h2 { margin: 4px 0 0; font-family: inherit; font-size: 24px; font-weight: 700; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
+.rc .rc-box h2 { margin: 4px 0 0; font-size: 24px; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
 .rc .rc-cat { flex: none; height: 84px; margin: -4px 0 -6px; }
 .rc .rc-chart.ch { background: rgba(255, 255, 255, .85); border: 1px solid rgba(143, 124, 240, .22); border-radius: 20px; box-shadow: 0 10px 26px -18px rgba(80, 70, 160, .5); }
 .rc-sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 10px; }
 .rc-sum > div { border-radius: 16px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, .9); }
 .rc-sum .a { background: #e6f1ff; } .rc-sum .b { background: #f1e9ff; } .rc-sum .c { background: #ffe9f5; } .rc-sum .d { background: #e9f8ee; }
-.rc-sum b { display: block; font-size: 24px; font-weight: 700; line-height: 1.1; color: var(--ink); }
+.rc-sum b { display: block; font-size: 24px; font-weight: 600; line-height: 1.1; color: var(--ink); }
 .rc-sum .b b { color: var(--pink); }
 .rc-sum small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.3; color: var(--muted); }
 .rc-best { display: flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 8px 14px; border-radius: 999px; background: rgba(255, 244, 214, .7); font-size: 13.5px; color: var(--ink); }
@@ -167,7 +167,7 @@ const stats = computed(() => {
 .rc-tip p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .rc-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
 .rc-right { display: flex; flex-direction: column; min-height: 0; max-height: calc(100vh - 170px); padding: 14px 14px 10px; border-radius: 20px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(143, 124, 240, .22); }
-.rc-rh h3 { margin: 0 0 8px; font-family: inherit; font-size: 16px; font-weight: 700; color: var(--ink); }
+.rc-rh h3 { margin: 0 0 8px; font-size: 18px; color: var(--ink); }
 .rc-seg { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(143, 124, 240, .1); margin-bottom: 10px; }
 .study .rc-seg button { flex: 1; padding: 4px 8px; border: 0; border-radius: 999px; background: none; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .study .rc-seg button.on { background: #fff; color: var(--pink); box-shadow: 0 2px 8px -3px rgba(80, 70, 160, .4); }
