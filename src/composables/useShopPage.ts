@@ -18,6 +18,8 @@ export function useShopPage() {
     void loadLog()
   })
   watch(kind, loadLog)
+  // страницу обновили, а вход по токену ещё проверяется: загрузить магазин, как только доступ откроется
+  watch(() => progress.unlocked, u => u && void shop.load())
 
   const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   const pct = (g: { now: number; goal: number }) => Math.min(100, Math.round((g.now / g.goal) * 100))
