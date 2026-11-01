@@ -25,6 +25,13 @@ export class ProgressController {
     return this.progress.report(Number(days) > 0 ? Math.min(Number(days), 3650) : 0)
   }
 
+  /** GET /api/report/series?source=game&mode=build&days=30: ответы по дням для графика; mode не задан — весь раздел, mode=- — ответы без режима. */
+  @Get('report/series')
+  @Owner()
+  series(@Query('source') source?: string, @Query('mode') mode?: string, @Query('days') days?: string) {
+    return this.progress.series(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 365) : 0)
+  }
+
   /** POST /api/ops: пачка действий { ops: [{ type: 'answer' | 'reset' | 'profile' | 'settings' | 'import', … }] }. */
   @Post('ops')
   @HttpCode(200)

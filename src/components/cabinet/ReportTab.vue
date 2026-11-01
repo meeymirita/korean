@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import ReportChartModal from '@/components/cabinet/ReportChartModal.vue'
 import { usePersisted } from '@/composables/usePersisted'
 import { groupReport, percent, spent, type ReportRow } from '@/data/report'
 import { errText, fetchT } from '@/lib/http'
@@ -34,6 +35,8 @@ async function load() {
 onMounted(load)
 watch(days, load)
 
+/** Какой график открыт: раздел целиком (mode не задан) или один режим. */
+const chart = ref<{ source: string; mode?: string; title: string } | null>(null)
 const groups = computed(() => groupReport(reply.value?.rows ?? []))
 const t = computed(() => reply.value?.totals)
 const answers = computed(() => (t.value ? t.value.ok + t.value.bad : 0))
@@ -58,10 +61,10 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 
       <p v-if="!groups.length" class="empty">За этот период ответов нет. Поиграй или пройди «Сегодня»: отчёт появится сам.</p>
       <section v-for="g in groups" :key="g.source" class="rp-g">
-        <h3>{{ g.name }} <small>{{ g.ok + g.bad }} отв. · верно {{ percent(g.ok, g.bad) }}% · около {{ spent(g.seconds) }}</small></h3>
+        <h3>{{ g.name }} <small>{{ g.ok + g.bad }} отв. · верно {{ percent(g.ok, g.bad) }}% · около {{ spent(g.seconds) }}</small> <button type="button" class="rp-gbtn" @click="chart = { source: g.source, title: g.name }">график</button></h3>
         <table class="pg-tbl rp-tbl">
           <thead>
-            <tr><th>Режим</th><th>Ответов</th><th>Верно</th><th>Ошибок</th><th class="rp-bar-h">Доля верных</th><th>Дней</th><th>Время</th><th>Последний раз</th></tr>
+            <tr><th>Режим</th><th>Ответов</th><th>Верно</th><th>Ошибок</th><th class="rp-bar-h">Доля верных</th><th>Дней</th><th>Время</th><th>Последний раз</th><th></th></tr>
           </thead>
           <tbody>
             <tr v-for="r in g.rows" :key="r.mode">
@@ -73,12 +76,14 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
               <td>{{ r.days }}</td>
               <td>{{ spent(r.seconds) }}</td>
               <td>{{ date(r.last) }}</td>
+              <td><button type="button" class="rp-gbtn" @click="chart = { source: g.source, mode: r.mode, title: `${g.name}: ${r.name}` }">график</button></td>
             </tr>
           </tbody>
         </table>
       </section>
       <p class="rp-note">Время по режимам примерное: считается по промежуткам между ответами. Время «по таймеру» точное, но общее.</p>
     </template>
+    <ReportChartModal v-if="chart" :source="chart.source" :mode="chart.mode" :title="chart.title" :days="days" @close="chart = null" />
   </div>
 </template>
 
@@ -95,5 +100,7 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 .rp-tbl td { padding: 5px 10px 5px 0; white-space: nowrap; }
 .rp-bar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: rgba(143, 124, 240, .18); vertical-align: middle; overflow: hidden; margin-right: 6px; }
 .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f7a8d4, #9ec8ff); }
+.rp-gbtn { border: 1px solid var(--pink, #d64da9); color: var(--pink, #d64da9); background: #fff; border-radius: 12px; padding: 1px 10px; font: inherit; font-size: 12px; cursor: pointer; margin-left: 6px; }
+.rp-gbtn:hover { background: rgba(214, 77, 169, .08); }
 .rp-note { color: var(--muted); font-size: 13px; }
 </style>

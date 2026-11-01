@@ -111,6 +111,34 @@ export class ProgressService {
     }
   }
 
+  /** Ответы по дням для графика отчёта: от `days` дней назад до сегодня (0 — с первого ответа, не больше 120 дней), пустые дни с нулями. */
+  series(source: string, mode: string | undefined, days: number) {
+    const where = mode === undefined ? 'source = ?' : 'source = ? AND mode = ?'
+    const args = mode === undefined ? [source] : [source, mode]
+    const first = this.db.get<{ t: number | null }>(`SELECT MIN(t) AS t FROM answers WHERE ${where}`, ...args)?.t ?? null
+    const span = days || (first ? Math.min(120, Math.max(7, Math.ceil((Date.now() - first) / 86_400_000) + 1)) : 30)
+    const from = new Date()
+    from.setHours(0, 0, 0, 0)
+    from.setDate(from.getDate() - (span - 1))
+    const rows = this.db.all<{ t: number; ok: number }>(`SELECT t, ok FROM answers WHERE ${where} AND t >= ?`, ...args, from.getTime())
+    const byDay = new Map<string, { ok: number; bad: number }>()
+    for (const r of rows) {
+      const k = new Date(r.t).toLocaleDateString('sv-SE')
+      const d = byDay.get(k) ?? { ok: 0, bad: 0 }
+      if (r.ok) d.ok++
+      else d.bad++
+      byDay.set(k, d)
+    }
+    const out: { day: string; ok: number; bad: number }[] = []
+    for (let i = 0; i < span; i++) {
+      const d = new Date(from)
+      d.setDate(from.getDate() + i)
+      const k = d.toLocaleDateString('sv-SE')
+      out.push({ day: k, ...(byDay.get(k) ?? { ok: 0, bad: 0 }) })
+    }
+    return { source, mode: mode ?? null, days: out }
+  }
+
   read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}
