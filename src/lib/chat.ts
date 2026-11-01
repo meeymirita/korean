@@ -54,7 +54,7 @@ export function parseReply(raw: string): Line[] {
     .replace(/\r/g, '')
     .split('\n')
     .map(l => l.trim())
-    .filter(l => l && !(l.includes('|') && /^[\s:|-]+$/.test(l)))
+    .filter(l => l && !(l.includes('|') && /^[\s:|-]+$/.test(l)) && !/^[-–—_=*]{3,}$/.test(l))
     .map(l => {
       let t = l.replace(/^#{1,6}\s+/, '')
       const bullet = /^[-*•]\s+/.test(t)

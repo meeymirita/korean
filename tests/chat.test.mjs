@@ -26,6 +26,7 @@ describe('помощник-чат: тексты ошибок', () => {
     assert.ok(!JSON.stringify(l).includes('*'))
     assert.ok(!JSON.stringify(l).includes('---'))
     assert.equal(l[4].pieces.map(p => p.text).join(''), '사과 · яблоко')
+    assert.equal(parseReply('раз\n---\nдва').length, 2)
   })
 
   test('корейские фразы для разбора: куски хангыля, без повторов и мусора', () => {
