@@ -30,11 +30,41 @@ export async function askChat(bearer: string, messages: ChatMsg[]): Promise<{ re
   return (await res.json()) as { reply: string; left: number }
 }
 
-export async function chatStatus(bearer: string): Promise<{ configured: boolean; model: string; limit: number } | null> {
+export async function chatStatus(bearer: string): Promise<{ configured: boolean; model: string; limit: number; left: number } | null> {
   try {
     const res = await fetchT('/api/chat', { headers: { Authorization: `Bearer ${bearer}` } })
     return res.ok ? await res.json() : null
   } catch {
     return null
   }
+}
+
+export interface Piece {
+  text: string
+  bold: boolean
+}
+export interface Line {
+  bullet: boolean
+  pieces: Piece[]
+}
+
+/** Ответ помощника для показа: строки, пункты «- …» и жирное **слово**. Остальная разметка (таблицы, #, лишние звёздочки) убирается, HTML не используется. */
+export function parseReply(raw: string): Line[] {
+  return raw
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l && !(l.includes('|') && /^[\s:|-]+$/.test(l)))
+    .map(l => {
+      let t = l.replace(/^#{1,6}\s+/, '')
+      const bullet = /^[-*•]\s+/.test(t)
+      if (bullet) t = t.replace(/^[-*•]\s+/, '')
+      if (t.startsWith('|')) t = t.replace(/^\||\|$/g, '').replace(/\s*\|\s*/g, ' · ').trim()
+      const pieces: Piece[] = []
+      t.split('**').forEach((part, i) => {
+        const text = part.replace(/\*+/g, '')
+        if (text) pieces.push({ text, bold: i % 2 === 1 })
+      })
+      return { bullet, pieces }
+    })
 }

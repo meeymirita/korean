@@ -35,25 +35,42 @@ export class ChatService {
   private used = 0
 
   /** Счётчик вопросов за сутки: хранится в памяти, после перезапуска службы начинается заново. */
-  private take(): number {
+  private roll() {
     const today = new Date().toISOString().slice(0, 10)
     if (today !== this.day) {
       this.day = today
       this.used = 0
     }
+  }
+
+  private take(): number {
+    this.roll()
     if (this.used >= CHAT_DAILY_LIMIT) throw new HttpException({ error: 'daily limit', limit: CHAT_DAILY_LIMIT }, 429)
     this.used++
     return CHAT_DAILY_LIMIT - this.used
   }
 
   status() {
-    return { configured: !!CHAT_KEY, model: CHAT_MODEL, limit: CHAT_DAILY_LIMIT }
+    this.roll()
+    return { configured: !!CHAT_KEY, model: CHAT_MODEL, limit: CHAT_DAILY_LIMIT, left: CHAT_DAILY_LIMIT - this.used }
   }
 
   async ask(body: Record<string, unknown>) {
     const messages = cleanMessages(body?.messages)
     if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
     const left = this.take()
+    // бесплатный маршрутизатор иногда отдаёт пустой ответ: пробуем ещё раз (вопрос в счётчике один раз)
+    let reply = ''
+    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages)
+    if (!reply) {
+      this.used--
+      throw new BadGatewayException({ error: 'empty answer' })
+    }
+    return { reply, left }
+  }
+
+  /** Один запрос к модели; пустая строка, если модель ничего не написала. */
+  private async once(messages: ChatMsg[]): Promise<string> {
     let res: Response
     try {
       res = await fetch(`${CHAT_BASE}/chat/completions`, {
@@ -79,7 +96,6 @@ export class ChatService {
     const data = (await res.json().catch(() => null)) as { choices?: { message?: { content?: unknown } }[] } | null
     const c = data?.choices?.[0]?.message?.content
     const reply = typeof c === 'string' ? c.trim() : ''
-    if (!reply) throw new BadGatewayException({ error: 'empty answer' })
-    return { reply, left }
+    return reply
   }
 }

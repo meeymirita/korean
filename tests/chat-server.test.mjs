@@ -30,7 +30,8 @@ describe('сервер: помощник-чат', () => {
   before(async () => {
     g = await fakeмодель()
     s = await start({ env: { OPENROUTER_API_KEY: 'test-key', CHAT_BASE: g.base, CHAT_MODEL: 'test-model', CHAT_DAILY_LIMIT: '4' } })
-    off = await start()
+    // пустой ключ в окружении главнее server/.env: тест не должен подхватить настоящий ключ владельца
+    off = await start({ env: { OPENROUTER_API_KEY: '' } })
   })
   after(() => g.close())
 
@@ -43,7 +44,7 @@ describe('сервер: помощник-чат', () => {
 
   test('статус показывает, что ключ задан, но сам ключ не отдаёт', async () => {
     const st = await (await s.call('GET', '/api/chat', OWNER)).json()
-    assert.deepEqual(st, { configured: true, model: 'test-model', limit: 4 })
+    assert.deepEqual(st, { configured: true, model: 'test-model', limit: 4, left: 4 })
     assert.equal((await (await off.call('GET', '/api/chat', OWNER)).json()).configured, false)
   })
 
@@ -99,6 +100,7 @@ describe('сервер: помощник-чат', () => {
   })
 
   test('суточный лимит: после четырёх вопросов 429 и в модель больше не ходим', async () => {
+    assert.equal((await ask(q('последний из четырёх'))).status, 200)
     const before = g.seen.length
     const r = await ask(q('сверх'))
     assert.equal(r.status, 429)
