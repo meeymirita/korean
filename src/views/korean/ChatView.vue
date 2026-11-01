@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
+import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
 import { usePersisted } from '@/composables/usePersisted'
-import { askChat, CHAT_MAX_TEXT, chatStatus, parseReply, type ChatMsg } from '@/lib/chat'
+import { askChat, CHAT_MAX_TEXT, chatStatus, koreanParts, parseReply, type ChatMsg } from '@/lib/chat'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
@@ -16,6 +17,13 @@ const left = ref<number | null>(null)
 const limit = ref(0)
 const configured = ref(true)
 const box = ref<HTMLElement | null>(null)
+/** номера ответов, у которых открыт разбор */
+const opened = ref(new Set<number>())
+function toggle(i: number) {
+  const s = new Set(opened.value)
+  if (!s.delete(i)) s.add(i)
+  opened.value = s
+}
 
 const HINTS = ['Как сказать «я ем хлеб»?', 'Чем отличаются 은/는 и 이/가?', 'Проверь: 저는 학생이에요', 'Объясни 받침 на примере']
 
@@ -73,7 +81,7 @@ async function clear() {
   <div class="wrap chat">
     <SectionHead id="chat" />
     <p v-if="!configured" class="cb-empty">Помощник пока не подключён: на сервере нет ключа. Как подключить — в <code>server/.env.example</code>.</p>
-    <p class="chat-note">Вопросы уходят в сторонний сервис (OpenRouter), бесплатные модели могут сохранять тексты. Личного не пиши. Бесплатная модель может ошибаться (особенно в чтении и переводе): сверяй с грамматикой и учителем.</p>
+    <p class="chat-note">Вопросы уходят в сторонний сервис (OpenRouter), бесплатные модели могут сохранять тексты. Личного не пиши. Бесплатная модель может ошибаться в переводе и примерах. Чтение и разбор корейского считает сайт по своему словарю (кнопка «Разобрать»), сверяй с грамматикой и учителем.</p>
 
     <div ref="box" class="chat-box" aria-live="polite">
       <div v-if="!msgs.length" class="chat-hints">
@@ -86,6 +94,12 @@ async function clear() {
           <p v-for="(l, j) in parseReply(m.text)" :key="j" class="chat-line" :class="{ li: l.bullet }">
             <template v-for="(p, k) in l.pieces" :key="k"><b v-if="p.bold">{{ p.text }}</b><template v-else>{{ p.text }}</template></template>
           </p>
+          <template v-if="koreanParts(m.text).length">
+            <button type="button" class="chat-parse" @click="toggle(i)">{{ opened.has(i) ? 'Скрыть разбор' : 'Разобрать' }}</button>
+            <div v-if="opened.has(i)" class="chat-bd">
+              <SentenceBreakdown v-for="k in koreanParts(m.text)" :key="k" :sentence="k" />
+            </div>
+          </template>
         </template>
       </div>
       <div v-if="busy" class="chat-msg assistant chat-wait">Думаю…</div>
@@ -113,6 +127,8 @@ async function clear() {
 .chat-line:last-child { margin-bottom: 0; }
 .chat-line.li { position: relative; padding-left: 16px; }
 .chat-line.li::before { content: '•'; position: absolute; left: 3px; color: var(--accent); }
+.chat-parse { margin-top: 8px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--accent); padding: 4px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+.chat-bd { margin-top: 10px; display: grid; gap: 14px; white-space: normal; }
 .chat-wait { color: var(--muted); }
 .chat-hints { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); }
 .chat-hints p { flex-basis: 100%; margin: 0 0 4px; }

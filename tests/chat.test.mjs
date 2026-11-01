@@ -2,7 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { chatErrorText, parseReply } = await load('/src/lib/chat.ts')
+const { chatErrorText, koreanParts, parseReply } = await load('/src/lib/chat.ts')
 after(close)
 
 describe('помощник-чат: тексты ошибок', () => {
@@ -25,5 +25,13 @@ describe('помощник-чат: тексты ошибок', () => {
     assert.ok(!JSON.stringify(l).includes('*'))
     assert.ok(!JSON.stringify(l).includes('---'))
     assert.equal(l[4].pieces.map(p => p.text).join(''), '사과 · яблоко')
+  })
+
+  test('корейские фразы для разбора: куски хангыля, без повторов и мусора', () => {
+    const t = '**저는** — тема.\n저는 학생이에요 (чонын)\nПеревод: 저는 어제 카페에서 빵을 먹었어요.\n저는 학생이에요\n은/는, 쇼, ма쇼'
+    assert.deepEqual(koreanParts(t), ['저는', '저는 학생이에요', '저는 어제 카페에서 빵을 먹었어요'])
+    assert.deepEqual(koreanParts('только по-русски'), [])
+    assert.equal(koreanParts('가나 다라 마바 사아 자차 카타 파하 거너', 6).length, 1)
+    assert.equal(koreanParts(Array.from({ length: 9 }, (_, i) => '빵' + '을'.repeat(i + 1) + ' 먹어요.').join('\n')).length, 6)
   })
 })

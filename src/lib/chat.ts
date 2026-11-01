@@ -68,3 +68,13 @@ export function parseReply(raw: string): Line[] {
       return { bullet, pieces }
     })
 }
+
+/** Корейские фразы из ответа для разбора: куски хангыля между любыми другими знаками, без повторов, не больше шести. */
+export function koreanParts(text: string, max = 6): string[] {
+  const seen = new Set<string>()
+  for (const raw of text.replace(/[^가-힣 \t]+/g, '|').split('|')) {
+    const t = raw.replace(/\s+/g, ' ').trim()
+    if (/[가-힣]{2,}/.test(t)) seen.add(t)
+  }
+  return [...seen].slice(0, max)
+}
