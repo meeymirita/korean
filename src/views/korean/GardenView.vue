@@ -6,6 +6,7 @@ import CollectionTab from '@/components/garden/CollectionTab.vue'
 import GardenTab from '@/components/garden/GardenTab.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import yunaGarden from '@/assets/home/yuna-garden.webp'
+import yunaFlag from '@/assets/home/yuna-flag.webp'
 
 const tab = ref<'garden' | 'cards'>(useRoute().query.tab === 'cards' ? 'cards' : 'garden')
 </script>
@@ -13,7 +14,7 @@ const tab = ref<'garden' | 'cards'>(useRoute().query.tab === 'cards' ? 'cards' :
 <template>
   <div class="wrap garden-page">
     <SectionHead id="garden" />
-    <img class="gd-banner" :src="yunaGarden" alt="" aria-hidden="true" draggable="false" />
+    <img class="gd-banner" :src="tab === 'cards' ? yunaFlag : yunaGarden" alt="" aria-hidden="true" draggable="false" />
     <div class="chips cb-tabs">
       <button class="chip" :class="{ on: tab === 'garden' }" @click="tab = 'garden'"><Icon name="sakura" /> Сад</button>
       <button class="chip" :class="{ on: tab === 'cards' }" @click="tab = 'cards'">🇰🇷 Коллекция</button>
