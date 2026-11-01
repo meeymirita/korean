@@ -139,6 +139,27 @@ export class ProgressService {
     return { source, mode: mode ?? null, days: out }
   }
 
+  /** Сами ответы раздела или режима за период: слово, верно ли, вопрос / верный ответ / что выбрано. Новые сверху, не больше 300. */
+  answersOf(source: string, mode: string | undefined, days: number, only?: 'ok' | 'bad') {
+    const conds = ['source = ?']
+    const args: (string | number)[] = [source]
+    if (mode !== undefined) {
+      conds.push('mode = ?')
+      args.push(mode)
+    }
+    if (days) {
+      conds.push('t >= ?')
+      args.push(Date.now() - days * 86_400_000)
+    }
+    const base = conds.join(' AND ')
+    const count = (extra: string) => this.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM answers WHERE ${base}${extra}`, ...args)!.n
+    const where = base + (only === 'ok' ? ' AND ok = 1' : only === 'bad' ? ' AND ok = 0' : '')
+    const items = this.db
+      .all<{ t: number; word: string | null; ok: number; detail: string }>(`SELECT t, word, ok, detail FROM answers WHERE ${where} ORDER BY t DESC, id DESC LIMIT 300`, ...args)
+      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, ...(r.detail ? { d: parseDetail(r.detail) } : {}) }))
+    return { items, ok: count(' AND ok = 1'), bad: count(' AND ok = 0') }
+  }
+
   read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}

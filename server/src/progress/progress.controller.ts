@@ -32,6 +32,13 @@ export class ProgressController {
     return this.progress.series(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 365) : 0)
   }
 
+  /** GET /api/report/answers?source=game&mode=type&days=30&only=bad|ok: сами ответы (новые сверху, не больше 300) для окна графика. */
+  @Get('report/answers')
+  @Owner()
+  answers(@Query('source') source?: string, @Query('mode') mode?: string, @Query('days') days?: string, @Query('only') only?: string) {
+    return this.progress.answersOf(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 3650) : 0, only === 'bad' || only === 'ok' ? only : undefined)
+  }
+
   /** POST /api/ops: пачка действий { ops: [{ type: 'answer' | 'reset' | 'profile' | 'settings' | 'import', … }] }. */
   @Post('ops')
   @HttpCode(200)

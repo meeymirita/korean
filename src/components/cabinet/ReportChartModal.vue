@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
 import LineChart from '@/components/charts/LineChart.vue'
@@ -36,6 +36,33 @@ function onKey(e: KeyboardEvent) {
 }
 
 const period = computed(() => (props.days === 7 ? 'за неделю' : props.days === 30 ? 'за месяц' : 'за всё время'))
+/* ---------- список самих ответов справа ---------- */
+interface Item {
+  t: number
+  w: string | null
+  ok: boolean
+  d?: { q?: string; a?: string; y?: string }
+}
+const only = ref<'' | 'bad' | 'ok'>('bad')
+const list = ref<{ items: Item[]; ok: number; bad: number } | null>(null)
+const listFailed = ref('')
+async function loadList() {
+  try {
+    const q = new URLSearchParams({ source: props.source, days: String(props.days) })
+    if (props.mode !== undefined) q.set('mode', props.mode || '-')
+    if (only.value) q.set('only', only.value)
+    const res = await fetchT(`/api/report/answers?${q}`, { headers: { Authorization: `Bearer ${progress.bearer}` } })
+    if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+    list.value = (await res.json()) as { items: Item[]; ok: number; bad: number }
+    listFailed.value = ''
+  } catch (e) {
+    listFailed.value = errText(e)
+  }
+}
+onMounted(loadList)
+watch(only, loadList)
+const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
 const label = (d: string) => `${Number(d.slice(8))}.${d.slice(5, 7)}`
 const labels = computed(() => (data.value ?? []).map(d => label(d.day)))
 const series = computed(() => [
@@ -67,7 +94,8 @@ const stats = computed(() => {
 
         <p v-if="failed" class="empty" role="alert">Не получилось загрузить: {{ failed }}</p>
         <p v-else-if="!data" class="empty">Загружаю…</p>
-        <template v-else>
+        <div v-else class="rc-cols">
+         <div class="rc-left">
           <LineChart class="rc-chart" :title="`Ответы по дням, последние ${data.length} дн.`" :labels="labels" :series="series" unit="отв." />
 
           <div class="rc-sum">
@@ -83,7 +111,34 @@ const stats = computed(() => {
             <Icon name="bulb" />
             <p>Голубая линия с заливкой показывает все ответы за день, фиолетовая только верные. Чем ближе фиолетовая к голубой, тем меньше ошибок. Наведи курсор на график, чтобы увидеть цифры за день. Дни без занятий дают ноль.</p>
           </div>
-        </template>
+         </div>
+
+         <aside class="rc-right" aria-label="Ответы">
+          <div class="rc-rh">
+            <h3>Ответы</h3>
+            <div class="rc-seg" role="group" aria-label="Какие показать">
+              <button type="button" :class="{ on: only === 'bad' }" @click="only = 'bad'">Ошибки{{ list ? ` · ${list.bad}` : '' }}</button>
+              <button type="button" :class="{ on: only === 'ok' }" @click="only = 'ok'">Верные{{ list ? ` · ${list.ok}` : '' }}</button>
+              <button type="button" :class="{ on: only === '' }" @click="only = ''">Все</button>
+            </div>
+          </div>
+          <p v-if="listFailed" class="empty" role="alert">Не получилось загрузить: {{ listFailed }}</p>
+          <p v-else-if="!list" class="empty">Загружаю…</p>
+          <p v-else-if="!list.items.length" class="rc-none">{{ only === 'bad' ? 'Ошибок за этот период нет.' : only === 'ok' ? 'Верных ответов за этот период нет.' : 'Ответов за этот период нет.' }}</p>
+          <ul v-else class="rc-list">
+            <li v-for="(a, i) in list.items" :key="i" :class="a.ok ? 'ok' : 'bad'">
+              <span class="rc-mark" aria-hidden="true">{{ a.ok ? '✓' : '✕' }}</span>
+              <div>
+                <b class="ko">{{ a.d?.q ?? a.w ?? 'без слова' }}</b>
+                <span v-if="a.d?.a" class="rc-ans">верно: <i class="ko">{{ a.d.a }}</i></span>
+                <span v-if="!a.ok && a.d?.y" class="rc-ans wrong">ты ответил: <i class="ko">{{ a.d.y }}</i></span>
+                <time>{{ when(a.t) }}</time>
+              </div>
+            </li>
+          </ul>
+          <p v-if="list && list.items.length >= 300" class="rc-more">Показаны последние 300.</p>
+         </aside>
+        </div>
       </article>
     </div>
   </Teleport>
@@ -91,7 +146,7 @@ const stats = computed(() => {
 
 <style>
 .rc { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(32, 38, 92, .45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.rc .rc-box.study { position: relative; min-height: 0; width: min(720px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
+.rc .rc-box.study { position: relative; min-height: 0; width: min(1080px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
   background: linear-gradient(160deg, #fff 0%, #fdf3fb 55%, #eef4ff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 30px 70px -20px rgba(80, 70, 160, .55); }
 .rc-x { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(143, 124, 240, .12); color: var(--muted); font-size: 14px; cursor: pointer; transition: background .15s; }
 .rc-x:hover { background: rgba(214, 77, 169, .18); color: var(--pink); }
@@ -110,5 +165,24 @@ const stats = computed(() => {
 .rc-tip { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: rgba(143, 124, 240, .08); border: 1px dashed rgba(143, 124, 240, .35); }
 .rc-tip .ic-img { margin-top: 1px; }
 .rc-tip p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.rc-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
+.rc-right { display: flex; flex-direction: column; min-height: 0; max-height: calc(100vh - 170px); padding: 14px 14px 10px; border-radius: 20px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(143, 124, 240, .22); }
+.rc-rh h3 { margin: 0 0 8px; font-family: inherit; font-size: 16px; font-weight: 700; color: var(--ink); }
+.rc-seg { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(143, 124, 240, .1); margin-bottom: 10px; }
+.study .rc-seg button { flex: 1; padding: 4px 8px; border: 0; border-radius: 999px; background: none; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.study .rc-seg button.on { background: #fff; color: var(--pink); box-shadow: 0 2px 8px -3px rgba(80, 70, 160, .4); }
+.rc-list { list-style: none; margin: 0; padding: 0 4px 0 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.rc-list li { display: flex; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #fff; border: 1px solid rgba(143, 124, 240, .14); }
+.rc-list li.bad { background: #fff6fa; border-color: rgba(214, 77, 169, .22); }
+.rc-mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; margin-top: 1px; }
+.rc-list .ok .rc-mark { background: #dff5e7; color: #2c7a4b; }
+.rc-list .bad .rc-mark { background: #ffe0ee; color: #c23b86; }
+.rc-list b { display: block; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.rc-ans { display: block; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.rc-ans i { font-style: normal; color: var(--ink); }
+.rc-ans.wrong i { color: #c23b86; }
+.rc-list time { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); opacity: .8; }
+.rc-none, .rc-more { margin: 6px 2px; font-size: 13px; color: var(--muted); }
+@media (max-width: 860px) { .rc-cols { grid-template-columns: 1fr; } .rc-right { max-height: 420px; } }
 @media (max-width: 640px) { .rc-sum { grid-template-columns: repeat(2, 1fr); } .rc .rc-cat { height: 60px; } .rc .rc-box h2 { font-size: 20px; } }
 </style>
