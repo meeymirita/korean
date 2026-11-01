@@ -11,6 +11,19 @@ import { pruneImages } from '../images/images.service'
 /** очков слова, с которых оно выучено (верный ответ +1, ошибка −1) */
 const KNOWN_STREAK = 5
 const GOALS = [10, 20, 50]
+
+/** Монетки Юны: цены и награды живут тут и в src/data/coins.ts (менять в обоих). */
+export const COINS = {
+  answer: 2, // за верный ответ
+  dayCap: 300, // потолок монеток за ответы в день
+  combo: { 5: 3, 10: 7 } as Record<number, number>, // за 5 и 10 верных подряд (один раз за серию)
+  round: 5, // за завершённую серию заданий
+  gift: 100, // подарок при первом запуске
+  wrongXp: 3, // ошибка отнимает очки, но не ниже начала текущего уровня
+}
+/** Очки, с которых начинается уровень L (как xpFor в src/data/levels.ts). */
+const xpFor = (L: number) => 30 * L * (L - 1)
+const levelOf = (xp: number) => Math.min(40, Math.floor((1 + Math.sqrt(1 + (4 * xp) / 30)) / 2))
 const LOG_LIMIT = 300
 const MAX_OPS = 500
 const DAY = /^\d{4}-\d{2}-\d{2}$/
@@ -166,6 +179,12 @@ export class ProgressService {
     return { items, ok: count(' AND ok = 1'), bad: count(' AND ok = 0') }
   }
 
+  /** Баланс монеток и текущая серия верных ответов подряд. */
+  coinState() {
+    this.gift()
+    return { coins: Number(this.db.getMeta('coins') ?? 0), combo: Number(this.db.getMeta('combo') ?? 0) }
+  }
+
   read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}
@@ -192,6 +211,7 @@ export class ProgressService {
       v: 1,
       updated: Number(this.db.getMeta('updated') ?? 0),
       xp: Number(this.db.getMeta('xp') ?? 0),
+      ...this.coinState(),
       days,
       all,
       time,
@@ -213,13 +233,15 @@ export class ProgressService {
       this.db.setMeta('updated', String(Date.now()))
     })
     pruneImages(this.db) // старая обложка удаляется через час после замены
-    return { ok: true, applied: (ops as unknown[]).length }
+    return { ok: true, applied: (ops as unknown[]).length, ...this.coinState() }
   }
 
   private one(op: Record<string, unknown>) {
     switch (op?.type) {
       case 'answer':
         return this.answer(op)
+      case 'round':
+        return this.round(op)
       case 'reset':
         return this.reset()
       case 'profile':
@@ -255,10 +277,14 @@ export class ProgressService {
     const ok = typeof op.ok === 'boolean' ? op.ok : bad('invalid op')
     const source = str(op.source, 20) || bad('invalid op')
     const mode = op.mode == null ? '' : str(op.mode, 30)
-    const xp = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
+    const gain = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
 
     const detail = this.detail(op.detail)
+    const had = Number(this.db.getMeta('xp') ?? 0)
+    // ошибка отнимает очки, но уровень не падает: ниже начала текущего уровня очки не опускаются
+    const xp = ok ? gain : -Math.min(COINS.wrongXp, had - xpFor(levelOf(had)))
     this.db.run('INSERT INTO answers (t, word, ok, source, mode, xp, detail) VALUES (?, ?, ?, ?, ?, ?, ?)', t, word, ok ? 1 : 0, source, mode, xp, detail)
+    this.coinsForAnswer(t, day, ok)
     if (word) {
       const w = this.db.get<{ streak: number; kd: number | null }>('SELECT streak, kd FROM words WHERE word = ?', word)
       if (!w) this.db.run('INSERT INTO words (word, ok, bad, streak, last) VALUES (?, 0, 0, 0, 0)', word)
@@ -271,7 +297,44 @@ export class ProgressService {
       day,
       ok ? 1 : 0,
     )
-    if (xp) this.db.setMeta('xp', String(Number(this.db.getMeta('xp') ?? 0) + xp))
+    if (xp) this.db.setMeta('xp', String(had + xp))
+  }
+
+  /** Записывает в журнал монеток и меняет баланс (ref не даёт начислить дважды). Возвращает false, если такая запись уже была. */
+  private coin(t: number, day: string, kind: string, amount: number, reason: string, ref?: string): boolean {
+    if (!amount) return false
+    if (ref && this.db.get('SELECT 1 FROM coin_log WHERE ref = ?', ref)) return false
+    this.db.run('INSERT INTO coin_log (t, day, kind, amount, reason, ref) VALUES (?, ?, ?, ?, ?, ?)', t, day, kind, amount, reason, ref ?? null)
+    this.db.setMeta('coins', String(Number(this.db.getMeta('coins') ?? 0) + amount))
+    return true
+  }
+
+  /** Верный ответ: +монетки (до потолка за день) и бонус за серию подряд; ошибка обрывает серию, монетки не отнимает. */
+  private coinsForAnswer(t: number, day: string, ok: boolean) {
+    if (!ok) return this.db.setMeta('combo', '0')
+    const combo = Number(this.db.getMeta('combo') ?? 0) + 1
+    this.db.setMeta('combo', String(combo))
+    const today = this.db.get<{ n: number | null }>("SELECT SUM(amount) AS n FROM coin_log WHERE day = ? AND kind = 'answer'", day)?.n ?? 0
+    this.coin(t, day, 'answer', Math.max(0, Math.min(COINS.answer, COINS.dayCap - today)), 'Верный ответ')
+    const bonus = COINS.combo[combo]
+    if (bonus) this.coin(t, day, 'combo', bonus, `${combo} верных подряд`)
+  }
+
+  /** Серия заданий закончена: +монетки один раз (id придумывает сайт, повторная отправка не платит). */
+  private round(op: Record<string, unknown>) {
+    const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
+    const id = str(op.id, 40) || bad('invalid op')
+    const size = int(op.size, 0, 1000)
+    if (size >= 3) this.coin(int(op.t, 0, Number.MAX_SAFE_INTEGER), day, 'round', COINS.round, 'Серия заданий пройдена', `round:${id}`)
+  }
+
+  /** Подарок при первом запуске: один раз за всё время. */
+  private gift() {
+    if (this.db.getMeta('coin_gift')) return
+    this.db.setMeta('coin_gift', '1')
+    const now = new Date()
+    const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    this.coin(now.getTime(), day, 'gift', COINS.gift, 'Подарок от Юны', 'gift')
   }
 
   /** Сброс: ответы, слова, дни и очки обнуляются; профиль и настройки остаются. */
@@ -281,6 +344,7 @@ export class ProgressService {
     this.db.run('DELETE FROM days')
     this.db.run('DELETE FROM study_time')
     this.db.setMeta('xp', '0')
+    this.db.setMeta('combo', '0')
     this.db.setMeta('moods', '{}')
   }
 

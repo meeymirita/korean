@@ -2,7 +2,8 @@ import { SHORTCUT_IDS } from '@/data/shortcuts'
 import { cleanBindings } from '@/lib/shortcuts'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf } from '@/data/levels'
+import { COIN_RULES } from '@/data/coins'
+import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf, xpFor } from '@/data/levels'
 import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
 import { errText, fetchT } from '@/lib/http'
 
@@ -56,6 +57,9 @@ export interface ProgressData {
   v: 1
   updated: number
   xp: number
+  /** монетки Юны (баланс считает сервер) и текущая серия верных ответов подряд */
+  coins: number
+  combo: number
   /** дата → число верных ответов за день (ключ есть, если в этот день отвечала хоть раз) */
   days: Record<string, number>
   /** дата → все ответы за день */
@@ -79,6 +83,7 @@ export type Role = 'owner' | 'guest'
 /** Действие, которое уходит на сервер (POST /api/ops); сервер раскладывает его по таблицам базы. */
 export type Op =
   | { type: 'answer'; t: number; day: string; word: string | null; ok: boolean; source: string; mode?: string; xp: number }
+  | { type: 'round'; t: number; day: string; id: string; size: number }
   | { type: 'reset' }
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
   | { type: 'time'; day: string; seconds: number }
@@ -121,7 +126,7 @@ export const MAX_MARKS = 500
 export type MarkKind = 'w' | 'g' | 'd' | 'u'
 export const markKey = (kind: MarkKind, id: string) => `${kind}:${id}`
 const empty = (): ProgressData => ({
-  v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
+  v: 1, updated: 0, xp: 0, coins: 0, combo: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
   profile: emptyProfile(), settings: emptySettings(), moods: {},
 })
 
@@ -162,6 +167,8 @@ export function normalize(raw: unknown): ProgressData | null {
     v: 1,
     updated: Number(r.updated) || 0,
     xp: Number(r.xp) || 0,
+    coins: Math.max(0, Number(r.coins) || 0),
+    combo: Math.max(0, Number(r.combo) || 0),
     days: obj(r.days, {}),
     all: obj(r.all, {}),
     time: obj(r.time, {}),
@@ -338,6 +345,10 @@ export const useProgressStore = defineStore('progress', () => {
     if (d.log.length > LOG_MAX) d.log.length = LOG_MAX
 
     let goalReached = false
+    // монетки и серия подряд (как на сервере; потолок за день сервер поправит при сохранении)
+    d.combo = o.ok ? d.combo + 1 : 0
+    if (o.ok) d.coins += COIN_RULES.answer + (COIN_RULES.combo[d.combo] ?? 0)
+    else d.xp -= Math.min(COIN_RULES.wrongXp, d.xp - xpFor(levelOf(d.xp)))
     if (o.ok) {
       d.xp += o.xp ?? 10
       d.days[k]!++
@@ -347,6 +358,14 @@ export const useProgressStore = defineStore('progress', () => {
     queue({ type: 'answer', t: now, day: k, word: o.word ?? null, ok: o.ok, source: o.source, mode: o.mode, xp: o.xp ?? 10, ...(det ? { detail: det } : {}) })
     const level = levelOf(d.xp)
     return { level, levelUp: level > before, goalReached, bloomed, title: levelInfo(d.xp).title }
+  }
+
+  /** Серия заданий закончена: монетки за неё (один раз на `id`). */
+  function roundDone(id: string, size: number) {
+    if (!token.value || role.value === 'guest' || size < 3) return
+    const now = Date.now()
+    data.value.coins += COIN_RULES.round
+    queue({ type: 'round', t: now, day: dayKey(), id, size })
   }
 
   /** Один раз переносит очки старой версии игры. */
@@ -475,6 +494,14 @@ export const useProgressStore = defineStore('progress', () => {
         // 400: сервер не принял пачку; выбрасываем её, чтобы очередь не застряла навсегда
         if (!res.ok && res.status !== 400) throw new Error(`ошибка сервера ${res.status}`)
         outbox.value = outbox.value.slice(batch.length)
+        if (res.ok && !outbox.value.length) {
+          // сервер главный по монеткам: берём его баланс, когда очередь пуста
+          const st = (await res.json().catch(() => null)) as { coins?: number; combo?: number } | null
+          if (st && typeof st.coins === 'number') {
+            data.value.coins = st.coins
+            data.value.combo = Number(st.combo) || 0
+          }
+        }
         write(OUTBOX_KEY, JSON.stringify(outbox.value))
         if (res.status === 400) rejected = true
       }
@@ -642,7 +669,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   return {
-    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, streak, bestStreak, status, record, importXp, setProfile, setSettings, addTime,
+    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, streak, bestStreak, status, record, roundDone, importXp, setProfile, setSettings, addTime,
     token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }

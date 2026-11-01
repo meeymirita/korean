@@ -57,12 +57,27 @@ describe('сервер: прогресс в базе', () => {
     assert.ok(p.updated > 0)
   })
 
-  test('ошибка обнуляет серию и очков не даёт, но день считается', async () => {
+  test('ошибка обнуляет серию и отнимает 3 очка, но день считается', async () => {
     await ops(answer({ t: 6000, ok: false }))
     const p = await read()
-    assert.deepEqual([p.words['사람'].bad, p.words['사람'].streak, p.xp], [1, 0, 10])
+    assert.deepEqual([p.words['사람'].bad, p.words['사람'].streak, p.xp], [1, 0, 7])
     assert.deepEqual([p.days[day], p.all[day]], [1, 2])
     assert.deepEqual(p.sources.game, { ok: 1, bad: 1 })
+  })
+
+  test('монетки: подарок 100, +2 за верный ответ, ошибка монетки не отнимает и обрывает серию', async () => {
+    const p = await read()
+    assert.equal(p.coins, 102)
+    assert.equal(p.combo, 0)
+  })
+
+  test('серия из 5 верных подряд даёт бонус один раз, серия заданий платит один раз на id', async () => {
+    const before = (await read()).coins
+    await ops(...[20000, 20001, 20002, 20003, 20004].map(t => answer({ t })))
+    assert.equal((await read()).coins, before + 5 * 2 + 3)
+    const r = { type: 'round', t: 21000, day, id: 'abc', size: 10 }
+    await ops(r, r)
+    assert.equal((await read()).coins, before + 5 * 2 + 3 + 5)
   })
 
   test('слово выучено на пяти очках: kd запоминается один раз, ошибка снимает одно очко', async () => {

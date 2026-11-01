@@ -124,6 +124,18 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires INTEGER NOT NULL
 );
 
+-- монетки Юны: каждое начисление и списание; ref (необязателен) не даёт выплатить дважды за одно событие
+CREATE TABLE IF NOT EXISTS coin_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  t INTEGER NOT NULL,
+  day TEXT NOT NULL,           -- ГГГГ-ММ-ДД, по часам устройства
+  kind TEXT NOT NULL,          -- answer | combo | round | gift | buy | task | achievement
+  amount INTEGER NOT NULL,     -- плюс: начислено, минус: потрачено
+  reason TEXT NOT NULL DEFAULT '',
+  ref TEXT UNIQUE
+);
+CREATE INDEX IF NOT EXISTS coin_log_day ON coin_log (day, kind);
+
 -- журнал событий: входы, создание и отзыв гостевых токенов, неверные токены
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

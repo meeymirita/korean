@@ -114,8 +114,10 @@ function enter() {
 }
 watch([idx, () => props.tasks], enter)
 onMounted(enter)
+let roundId = Math.random().toString(36).slice(2, 12)
 watch(finished, v => {
   if (!v) return
+  progress.roundDone(roundId, props.tasks.length)
   void nextTick(() => {
     const r = document.querySelector('.rs-end')?.getBoundingClientRect()
     if (r && right.value >= props.tasks.length / 2) burst(r.left + r.width / 2, r.top + 40)
@@ -125,6 +127,7 @@ watch(finished, v => {
 watch(
   () => props.tasks,
   () => {
+    roundId = Math.random().toString(36).slice(2, 12)
     idx.value = 0
     picked.value = null
     missed.value = []
