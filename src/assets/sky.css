@@ -149,5 +149,5 @@ html { scrollbar-gutter: stable; }
 
 .study-shell.sky .study-links .ct.rdy { opacity: 1; padding: 1px 8px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #e46fc0, #8a5cf0); border-radius: 99px; }
 
-/* «Магазин»: кнопки «Меню» и «Поиск» не прилипают к экрану, а едут вместе со страницей и полосой «Главная › Магазин» */
-.study-shell.sky.scrolls .side-show, .study.sky.scrolls .sw-btn { position: absolute; }
+/* «Магазин»: полоса «Главная › Магазин» остаётся наверху экрана вместе с кнопками «Меню» и «Поиск» */
+.study-shell.sky.pinned .study-main .crumbs { position: sticky; top: 14px; z-index: 30; }
