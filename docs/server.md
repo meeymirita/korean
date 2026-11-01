@@ -18,7 +18,7 @@
 | `security.ts` | заголовки безопасности, лимиты частоты запросов, блокировка подбора токена, таймауты (см. «Защита») |
 | `db/` | `db.service.ts`: соединение и **все таблицы (`SCHEMA`)**; `backup.service.ts`: ежедневная копия базы |
 | `auth/` | вход по токену: `auth.guard.ts` проверяет каждый запрос, `@Public()` и `@Owner()` помечают маршруты; `session.controller.ts` пишет вход в журнал |
-| `progress/` | прогресс владельца: `POST /api/ops` и `GET /api/progress` |
+| `progress/` | прогресс владельца: `POST /api/ops` и `GET /api/progress`; монетки и магазин: `coins.ts` (цены и условия), `shop.service.ts`, `shop.controller.ts` (`docs/shop.md`) |
 | `guests/` | гостевые токены (только владелец) |
 | `notes/` | заметки |
 | `images/` | картинки: загрузка, миниатюры (`sharp`), выдача по токену; назначение `kind`, очистка ненужных (`pruneImages`) |
@@ -37,6 +37,7 @@
 `words` (статистика слова: верно, неверно, серия, последний ответ, когда выучено), `days` (по дням: верных и всего),
 `study_time` (секунды занятий по дням), `guests` (хэши гостевых токенов, имя, срок), `notes` (с картинками: `images`), `images` (название, описание; файлы лежат в `data/uploads` и `data/thumbs`),
 `plans` и `plan_files` (записи календаря и их файлы), `today_sets` (наборы «Сегодня»), `sessions` (сеансы после кода из письма),
+`coin_log` (журнал монеток: сумма, вид, уникальный `ref` против двойных выплат; подробно `docs/shop.md`),
 `events` (входы, создание и отзыв токенов, неверные токены, картинки; последние 2000).
 
 ## API (все запросы с заголовком `Authorization: Bearer токен`, кроме `/api/health`)
@@ -44,6 +45,7 @@
   собирается из таблиц.
 - `POST /api/ops` `{ ops: [...] }` (с `reset` и `import` нужен заголовок `X-Confirm-Token`): пачка действий (до 500): `answer`, `reset`, `profile` (имя, картинка, `cover` — id обложки кабинета), `settings` (цель, темы, группы игры, закладки `marks`, свои сочетания клавиш `keys`: id пункта → `mod+alt+shift+KeyG`, не больше 40, без повторов), `time` (секунды занятий за день, 1–3600), `import`. Если хоть одно неверное,
   не применяется ничего (400). Правила (что выучено, как растёт серия) те же, что на сайте: `tests/parity.test.mjs` сравнивает.
+- `GET /api/shop?day=`, `GET /api/shop/log`, `POST /api/shop/buy|use|claim`: магазин и монетки (только владелец, см. `docs/shop.md`); в ответе `POST /api/ops` теперь `{coins, combo, ready, news}`, действие `round` `{id, size, right}` засчитывает серию заданий.
 - `POST /api/session`: запись входа в журнал. `GET/PUT /api/notes`: заметки целиком (у каждой `images` — до 10 id картинок).
 - `GET/POST /api/guests`, `DELETE /api/guests/:id`: гостевые токены (создание возвращает токен один раз и требует `X-Confirm-Token`).
 - `GET/POST /api/images`, `GET /api/images/:id/file|thumb`, `PATCH`, `DELETE`: картинки (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ;

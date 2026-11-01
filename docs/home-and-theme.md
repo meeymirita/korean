@@ -30,7 +30,7 @@
 ## SEO (`src/data/seo.ts`, `index.html`, `public/`)
 - `seo.ts`: заголовок (до 75 символов, с названием 우리말), описание (60–190) и `noindex` для каждой страницы; `applySeo` вызывается из
   `router.afterEach` и обновляет `<title>`, `description`, `robots`, `canonical`, `og:*`, `twitter:*`. Закрытые токеном страницы (`today`,
-  `cabinet`, `trainers`, `review`, `garden`, `game`) не индексируются и закрыты в `robots.txt`. Неизвестный адрес получает общие данные.
+  `cabinet`, `shop`, `trainers`, `review`, `garden`, `game`) не индексируются и закрыты в `robots.txt`. Неизвестный адрес получает общие данные.
 - `index.html`: метатеги по умолчанию (то, что видят роботы соцсетей, не выполняющие JavaScript), canonical, Open Graph с картинкой
   `og-image.png` (1200×630, кадр главной), Twitter card, `theme-color`, манифест, JSON-LD (`WebSite` и `LearningResource`), `<noscript>`.
 - `public/`: `sitemap.xml` (12 открытых адресов с датой), `robots.txt`, `manifest.webmanifest`, `icon-192/512.png`, значки вкладки. Всё из `public/`
