@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import coinImg from '@/assets/icons/coin.webp'
 import yunaImg from '@/assets/icons/shop-yuna.webp'
-import bg from '@/assets/game/bg.webp'
 import { sectionById } from '@/data/korean/sections'
 import { useShopPage } from '@/composables/useShopPage'
 import { ITEMS, LOG_KINDS, SURPRISES } from '@/data/shop'
 
 const { shop, st, coins, rows, kind, when, pct, isActive, goalText, dailyDone, buy, turnOn } = useShopPage()
 const s = sectionById('shop')
-const bgStyle = { '--shx-bg': `url(${bg})` }
 </script>
 
 <template>
@@ -33,7 +31,7 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
         </div>
       </div>
     </header>
-    <div class="shx" :style="bgStyle">
+    <div class="shx">
       <aside class="shx-side">
         <img class="shx-yuna" :src="yunaImg" alt="" />
         <div class="shx-bal">
@@ -135,7 +133,7 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 
 <style>
 /* страница «Магазин»: стеклянные панели на фоне сакуры, фиолетовые акценты (как макет «Магазин Юны») */
-.study .shx { --pur: #5b2f9a; display: grid; grid-template-columns: clamp(260px, 30vw, 480px) 1fr; gap: 20px; align-items: start; margin-top: 18px; padding: 20px; border-radius: 28px; background: var(--shx-bg) center / cover, #efe3ff; }
+.study .shx { --pur: #5b2f9a; display: grid; grid-template-columns: clamp(260px, 30vw, 480px) 1fr; gap: 20px; align-items: start; margin-top: 18px; padding: 20px; border-radius: 28px; }
 .study .shx-side { position: sticky; top: 16px; display: grid; gap: 14px; justify-items: center; }
 .study .shx-yuna { width: auto; max-width: 100%; max-height: 88vh; object-fit: contain; height: auto; filter: drop-shadow(0 10px 18px rgba(91, 47, 154, .25)); }
 .study .shx-bal { width: 100%; display: grid; gap: 4px; justify-items: center; padding: 14px 16px; text-align: center; background: rgba(255, 255, 255, .72); border: 2px solid #fff; border-radius: 36px; box-shadow: 0 10px 28px rgba(91, 47, 154, .22); backdrop-filter: blur(10px); }
