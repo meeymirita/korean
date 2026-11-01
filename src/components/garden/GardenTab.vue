@@ -66,7 +66,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
           :title="`${p.word.k} — ${p.word.t}`"
           @click="picked = picked?.word.n === p.word.n ? null : p"
         >
-          <PlantIcon :stage="p.stage" :hue="p.flower" />
+          <PlantIcon :stage="p.stage" />
         </button>
       </div>
       <p v-if="!shown.length" class="gd-empty">Все слова напоены <Icon name="sprout" /></p>
@@ -78,7 +78,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
     </div>
 
     <div v-if="picked" class="pg-card gd-info">
-      <div class="gd-ico"><PlantIcon :stage="picked.stage" :hue="picked.flower" /></div>
+      <div class="gd-ico"><PlantIcon :stage="picked.stage" /></div>
       <div>
         <div class="gd-ko">{{ picked.word.k }} <small>{{ picked.word.r }}</small></div>
         <div class="gd-tr">{{ picked.word.t }}</div>
