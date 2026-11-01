@@ -6,6 +6,7 @@ import { COIN_RULES } from '@/data/coins'
 import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf, xpFor } from '@/data/levels'
 import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
 import { errText, fetchT } from '@/lib/http'
+import { useToastStore } from '@/stores/toast'
 
 export interface WordStat {
   ok: number
@@ -83,7 +84,7 @@ export type Role = 'owner' | 'guest'
 /** Действие, которое уходит на сервер (POST /api/ops); сервер раскладывает его по таблицам базы. */
 export type Op =
   | { type: 'answer'; t: number; day: string; word: string | null; ok: boolean; source: string; mode?: string; xp: number }
-  | { type: 'round'; t: number; day: string; id: string; size: number }
+  | { type: 'round'; t: number; day: string; id: string; size: number; right: number }
   | { type: 'reset' }
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
   | { type: 'time'; day: string; seconds: number }
@@ -361,11 +362,11 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /** Серия заданий закончена: монетки за неё (один раз на `id`). */
-  function roundDone(id: string, size: number) {
+  function roundDone(id: string, size: number, right = size) {
     if (!token.value || role.value === 'guest' || size < 3) return
     const now = Date.now()
     data.value.coins += COIN_RULES.round
-    queue({ type: 'round', t: now, day: dayKey(), id, size })
+    queue({ type: 'round', t: now, day: dayKey(), id, size, right })
   }
 
   /** Один раз переносит очки старой версии игры. */
@@ -496,11 +497,12 @@ export const useProgressStore = defineStore('progress', () => {
         outbox.value = outbox.value.slice(batch.length)
         if (res.ok && !outbox.value.length) {
           // сервер главный по монеткам: берём его баланс, когда очередь пуста
-          const st = (await res.json().catch(() => null)) as { coins?: number; combo?: number } | null
+          const st = (await res.json().catch(() => null)) as { coins?: number; combo?: number; news?: { name: string; coins: number }[] } | null
           if (st && typeof st.coins === 'number') {
             data.value.coins = st.coins
             data.value.combo = Number(st.combo) || 0
           }
+          for (const n of st?.news ?? []) useToastStore().ok(`${n.name}: +${n.coins} монеток`)
         }
         write(OUTBOX_KEY, JSON.stringify(outbox.value))
         if (res.status === 400) rejected = true
