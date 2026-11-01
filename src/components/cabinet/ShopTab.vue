@@ -1,48 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
 import coinImg from '@/assets/icons/coin.webp'
 import yunaImg from '@/assets/icons/shop-yuna.webp'
-import { ITEMS, itemName, LOG_KINDS, SURPRISES, type ShopItem } from '@/data/shop'
-import { type Goal, type LogRow, useShopStore } from '@/stores/shop'
-import { useProgressStore } from '@/stores/progress'
-import { useToastStore } from '@/stores/toast'
+import { useShopPage } from '@/composables/useShopPage'
+import { ITEMS, LOG_KINDS, SURPRISES } from '@/data/shop'
 
-const shop = useShopStore()
-const progress = useProgressStore()
-const st = computed(() => shop.state)
-const coins = computed(() => progress.data.coins)
-
-const rows = ref<LogRow[]>([])
-const kind = ref('')
-async function loadLog() {
-  rows.value = await shop.log(kind.value)
-}
-onMounted(() => {
-  void shop.load()
-  void loadLog()
-})
-watch(kind, loadLog)
-
-const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-const pct = (g: { now: number; goal: number }) => Math.min(100, Math.round((g.now / g.goal) * 100))
-const isActive = (id: string) => (id === 'shield' ? st.value?.active.shield : id === 'double' ? st.value?.active.double : false)
-
-async function buy(it: ShopItem) {
-  const s = await shop.buy(it.id)
-  if (!s) return
-  const toast = useToastStore()
-  if (s.got) toast.ok(`В наборе: ${Object.entries(s.got).map(([k, n]) => `${itemName(k)} ×${n}`).join(', ')}`)
-  else if (s.won) toast.ok(`В сундуке ${s.won} монеток`)
-  else toast.ok(`Куплено: ${it.name}`)
-  void loadLog()
-}
-async function turnOn(id: string) {
-  if (await shop.use(id)) {
-    useToastStore().ok(`Включено: ${itemName(id)}`)
-    void loadLog()
-  }
-}
-const goalText = (g: Goal) => (g.paid ? 'получено' : `${Math.min(g.now, g.goal)} из ${g.goal}`)
+const { shop, st, coins, rows, kind, when, pct, isActive, goalText, buy, turnOn } = useShopPage()
 </script>
 
 <template>
