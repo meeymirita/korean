@@ -88,17 +88,17 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
               <li v-for="g in st.daily" :key="g.id" :class="{ done: g.paid }">
                 <div><b>{{ g.name }}</b><small>сегодня · +{{ g.coins }}</small></div>
                 <div class="shx-bar"><i :style="{ width: pct(g) + '%' }"></i></div>
-                <span>{{ goalText(g) }}</span>
+                <button v-if="g.ready" type="button" class="shx-claim" :disabled="shop.pending === g.ref" @click="shop.claim(g)">Получить</button><span v-else>{{ goalText(g) }}</span>
               </li>
               <li :class="{ done: st.dailyAll.paid }">
                 <div><b>Все задания дня</b><small>бонус · +{{ st.dailyAll.coins }}</small></div>
                 <div class="shx-bar"><i :style="{ width: st.dailyAll.paid ? '100%' : (dailyDone / 3) * 100 + '%' }"></i></div>
-                <span>{{ st.dailyAll.paid ? 'получено' : `${dailyDone} из 3` }}</span>
+                <button v-if="st.dailyAll.ready" type="button" class="shx-claim" :disabled="shop.pending === st.dailyAll.ref" @click="shop.claim(st.dailyAll)">Получить</button><span v-else>{{ st.dailyAll.paid ? 'получено' : `${dailyDone} из 3` }}</span>
               </li>
               <li :class="{ done: st.week.paid }">
                 <div><b>{{ st.week.name }}</b><small>неделя · +{{ st.week.coins }}</small></div>
                 <div class="shx-bar"><i :style="{ width: pct(st.week) + '%' }"></i></div>
-                <span>{{ goalText(st.week) }}</span>
+                <button v-if="st.week.ready" type="button" class="shx-claim" :disabled="shop.pending === st.week.ref" @click="shop.claim(st.week)">Получить</button><span v-else>{{ goalText(st.week) }}</span>
               </li>
             </ul>
           </section>
@@ -108,7 +108,7 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
               <li v-for="g in st.ach" :key="g.id" :class="{ done: g.paid }">
                 <div><b>{{ g.name }}</b><small>{{ g.text }} · +{{ g.coins }}</small></div>
                 <div class="shx-bar"><i :style="{ width: pct(g) + '%' }"></i></div>
-                <span>{{ goalText(g) }}</span>
+                <button v-if="g.ready" type="button" class="shx-claim" :disabled="shop.pending === g.ref" @click="shop.claim(g)">Получить</button><span v-else>{{ goalText(g) }}</span>
               </li>
             </ul>
           </section>
@@ -193,4 +193,8 @@ html[data-theme='dark'] .study .shx-tip { color: #efe6ff; background: #25214a; }
 html[data-theme='dark'] .study .shx-tip i { color: #cdb4ff; }
 /* на этой странице общие отступы и скругление обёртки не нужны: как было до правки */
 .study-shell.sky .study-main .wrap.shx-wrap { border: 1px solid #fff; border-radius: 28px; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 18px 8px 64px; margin: 0 auto; max-width: 1100px; }
+.study .shx-claim { justify-self: end; padding: 4px 14px; font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: linear-gradient(180deg, #9a6cf0, #7b4fd6); border: 0; border-radius: 12px; box-shadow: 0 3px 8px rgba(91, 47, 154, .35); cursor: pointer; animation: shx-pulse 1.8s ease-in-out infinite; }
+.study .shx-claim:disabled { opacity: .5; animation: none; }
+@keyframes shx-pulse { 50% { box-shadow: 0 0 0 5px rgba(154, 108, 240, .28); } }
+@media (prefers-reduced-motion: reduce) { .study .shx-claim { animation: none; } }
 </style>

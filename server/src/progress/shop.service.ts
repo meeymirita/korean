@@ -37,16 +37,25 @@ export class ShopService {
   state(dayRaw?: string) {
     const day = this.day(dayRaw)
     const st = this.progress.rewardState(day)
-    const got = new Set(this.db.all<{ ref: string }>("SELECT ref FROM coin_log WHERE ref LIKE 'ach:%' OR ref LIKE 'task:%' OR ref LIKE 'week:%'").map(r => r.ref))
+    const rw = new Map(this.progress.rewards(day).map(r => [r.ref, r]))
+    const mark = (ref: string) => ({ ref, ready: !!rw.get(ref)?.done && !rw.get(ref)?.paid, paid: !!rw.get(ref)?.paid })
     return {
-      ...this.progress.coinState(),
+      ...this.progress.coinState(day),
       inv: this.inv(),
       active: this.progress.active(),
-      daily: DAILY.map(d => ({ ...d, ...st.daily[d.id]!, paid: got.has(`task:${d.id}:${day}`) })),
-      dailyAll: { coins: DAILY_ALL, paid: got.has(`task:all:${day}`) },
-      week: { ...WEEKLY, ...st.week, paid: got.has(`week:${st.week.from}`) },
-      ach: ACHIEVEMENTS.map(a => ({ ...a, ...st.ach[a.id]!, paid: got.has(`ach:${a.id}`) })),
+      daily: DAILY.map(d => ({ ...d, ...st.daily[d.id]!, ...mark(`task:${d.id}:${day}`) })),
+      dailyAll: { name: 'Все задания дня', coins: DAILY_ALL, ...mark(`task:all:${day}`) },
+      week: { ...WEEKLY, ...st.week, ...mark(`week:${st.week.from}`) },
+      ach: ACHIEVEMENTS.map(a => ({ ...a, ...st.ach[a.id]!, ...mark(`ach:${a.id}`) })),
     }
+  }
+
+  /** Забрать награду за выполненное задание или достижение. */
+  claim(body: unknown) {
+    const b = (body ?? {}) as Record<string, unknown>
+    const day = this.day(b.day)
+    if (typeof b.ref !== 'string' || !this.progress.claim(b.ref, day)) bad('nothing to claim')
+    return this.state(day)
   }
 
   /** Покупка предмета или сюрприза. Сюрприз открывается сразу: в ответе `got` (предметы) или `won` (монетки). */
@@ -82,7 +91,6 @@ export class ShopService {
         this.progress.coin(now, day, 'chest', won, 'Сундук с монетками')
       }
       this.setInv(inv)
-      this.progress.checkRewards(now, day)
     })
     return { ...this.state(day), ...(got ? { got } : {}), ...(won ? { won } : {}) }
   }

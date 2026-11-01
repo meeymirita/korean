@@ -99,6 +99,7 @@ onBeforeUnmount(() => {
           <span>{{ s.menu }}</span>
           <kbd v-if="shortcuts.labelOf('nav:' + s.id)" class="kb">{{ shortcuts.labelOf('nav:' + s.id) }}</kbd>
           <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
+          <span v-else-if="s.id === 'shop' && progress.data.ready" class="ct rdy" title="Есть награды, которые можно получить">{{ progress.data.ready }}</span>
           <span v-else-if="counts[s.id]" class="ct">{{ counts[s.id] }}</span>
           <span v-else class="num">{{ s.num }}</span>
         </RouterLink>

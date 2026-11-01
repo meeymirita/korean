@@ -11,6 +11,9 @@ export interface Goal {
   now: number
   goal: number
   paid: boolean
+  ref: string
+  /** выполнено, но награда ещё не получена: показывается кнопка «Получить» */
+  ready: boolean
   text?: string
 }
 export interface ShopState {
@@ -19,7 +22,8 @@ export interface ShopState {
   inv: Record<string, number>
   active: { shield: boolean; double: boolean }
   daily: Goal[]
-  dailyAll: { coins: number; paid: boolean }
+  ready: number
+  dailyAll: { name: string; coins: number; paid: boolean; ref: string; ready: boolean }
   week: Goal & { from: string }
   ach: Goal[]
   got?: Record<string, number>
@@ -45,6 +49,7 @@ export const useShopStore = defineStore('shop', () => {
   function take(s: ShopState) {
     state.value = s
     progress.data.coins = s.coins
+    progress.data.ready = s.ready
   }
   async function load() {
     if (progress.isGuest || !progress.unlocked) return
@@ -75,6 +80,21 @@ export const useShopStore = defineStore('shop', () => {
       pending.value = ''
     }
   }
+  /** Забрать награду за выполненное задание или достижение. */
+  async function claim(g: { ref: string; name: string; coins: number }) {
+    if (pending.value) return
+    pending.value = g.ref
+    try {
+      const res = await fetchT('/api/shop/claim', { method: 'POST', headers: headers(), body: JSON.stringify({ ref: g.ref, day: dayKey() }) })
+      if (!res.ok) throw new Error('награду уже получили или задание ещё не выполнено')
+      take((await res.json()) as ShopState)
+      useToastStore().ok(`${g.name}: +${g.coins} монеток`)
+    } catch (e) {
+      useToastStore().error(errText(e))
+    } finally {
+      pending.value = ''
+    }
+  }
   const buy = (id: string) => act('buy', id)
   const use = (id: string) => act('use', id)
   const count = (id: string) => state.value?.inv[id] ?? 0
@@ -87,5 +107,5 @@ export const useShopStore = defineStore('shop', () => {
       return []
     }
   }
-  return { state, busy, pending, load, buy, use, count, log }
+  return { state, busy, pending, load, buy, use, claim, count, log }
 })

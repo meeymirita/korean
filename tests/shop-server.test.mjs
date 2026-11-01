@@ -46,7 +46,7 @@ describe('сервер: магазин Юны', () => {
   })
 
   test('сюрпризы: набор подсказок даёт 5, случайный набор 3–5 предметов', async () => {
-    await ops(...Array.from({ length: 60 }, (_, i) => answer({ t: 6000 + i }))) // монетки на сюрпризы
+    await ops(...Array.from({ length: 120 }, (_, i) => answer({ t: 6000 + i }))) // монетки на сюрпризы
     let st = await shop()
     const before = st.coins
     const h = await (await post('buy', { id: 'hints' })).json()
@@ -59,7 +59,7 @@ describe('сервер: магазин Юны', () => {
   })
 
   test('история: покупки и использования записаны, можно отфильтровать', async () => {
-    const all = await (await s.call('GET', '/api/shop/log', OWNER)).json()
+    const all = await (await s.call('GET', '/api/shop/log?limit=500', OWNER)).json()
     assert.ok(all.some(e => e.kind === 'gift'))
     const buys = await (await s.call('GET', '/api/shop/log?kind=buy', OWNER)).json()
     assert.ok(buys.length >= 4 && buys.every(e => e.kind === 'buy' && e.amount < 0))
@@ -67,12 +67,28 @@ describe('сервер: магазин Юны', () => {
     assert.equal(use.length, 2)
   })
 
-  test('достижение выдаётся один раз: 100 верных ответов дают «Первые шаги»', async () => {
+  test('награда выдаётся кнопкой и один раз: 100 верных ответов открывают «Первые шаги»', async () => {
     await ops(...Array.from({ length: 50 }, (_, i) => answer({ t: 9000 + i })))
-    const st = await shop()
-    assert.equal(st.ach.find(a => a.id === 'first').paid, true)
+    let st = await shop(`?day=${day}`)
+    const a = st.ach.find(x => x.id === 'first')
+    assert.deepEqual([a.ready, a.paid], [true, false], 'выполнено, но не получено')
+    assert.ok(st.ready >= 1)
+    assert.equal((await post('claim', { ref: 'ach:nothing' })).status, 400)
+    assert.equal((await post('claim', { ref: 'ach:master' })).status, 400, 'условие не выполнено')
+    const before = st.coins
+    st = await (await post('claim', { ref: a.ref })).json()
+    assert.equal(st.coins, before + 30)
+    assert.equal(st.ach.find(x => x.id === 'first').paid, true)
+    assert.equal((await post('claim', { ref: a.ref })).status, 400, 'второй раз нельзя')
     const log = await (await s.call('GET', '/api/shop/log?kind=achievement', OWNER)).json()
     assert.equal(log.filter(e => e.reason === 'Первые шаги').length, 1)
+  })
+
+  test('ответ на пачку действий сообщает о новых выполненных наградах один раз', async () => {
+    const r1 = await (await ops(answer({ t: 30000, day: '2026-10-31' }))).json()
+    assert.ok(Array.isArray(r1.news))
+    const r2 = await (await ops(answer({ t: 30001, day: '2026-10-31' }))).json()
+    assert.deepEqual(r2.news.filter(n => r1.news.includes(n)), [])
   })
 
   test('гостю магазин закрыт', async () => {

@@ -28,6 +28,10 @@ const levelOf = (xp: number) => Math.min(40, Math.floor((1 + Math.sqrt(1 + (4 * 
 const LOG_LIMIT = 300
 const MAX_OPS = 500
 const DAY = /^\d{4}-\d{2}-\d{2}$/
+const localDay = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 export interface Profile {
   name: string
@@ -181,9 +185,9 @@ export class ProgressService {
   }
 
   /** Баланс монеток и текущая серия верных ответов подряд. */
-  coinState() {
+  coinState(day = localDay()) {
     this.gift()
-    return { coins: Number(this.db.getMeta('coins') ?? 0), combo: Number(this.db.getMeta('combo') ?? 0) }
+    return { coins: Number(this.db.getMeta('coins') ?? 0), combo: Number(this.db.getMeta('combo') ?? 0), ready: this.readyCount(day) }
   }
 
   read() {
@@ -229,15 +233,19 @@ export class ProgressService {
   apply(body: unknown) {
     const ops = (body as { ops?: unknown })?.ops
     if (!Array.isArray(ops) || ops.length > MAX_OPS) bad('invalid ops')
-    let news: { kind: string; name: string; coins: number }[] = []
+    let news: string[] = []
+    let last0: string | undefined
     this.db.tx(() => {
       for (const op of ops as Record<string, unknown>[]) this.one(op)
       const last = (ops as Record<string, unknown>[]).filter(o => typeof o?.day === 'string' && DAY.test(o.day as string)).pop()
-      if (last) news = this.checkRewards(Date.now(), last.day as string)
+      if (last) {
+        last0 = last.day as string
+        news = this.freshRewards(last0)
+      }
       this.db.setMeta('updated', String(Date.now()))
     })
     pruneImages(this.db) // старая обложка удаляется через час после замены
-    return { ok: true, applied: (ops as unknown[]).length, ...this.coinState(), news }
+    return { ok: true, applied: (ops as unknown[]).length, ...this.coinState(last0), news }
   }
 
   private one(op: Record<string, unknown>) {
@@ -393,18 +401,43 @@ export class ProgressService {
     return { ach, daily, week }
   }
 
-  /** Выдаёт монетки за выполненные достижения, задания дня и недели по одному разу. Возвращает то, что открылось сейчас. */
-  checkRewards(t: number, day: string): { kind: string; name: string; coins: number }[] {
-    const news: { kind: string; name: string; coins: number }[] = []
-    const give = (kind: string, name: string, coins: number, ref: string) => {
-      if (this.coin(t, day, kind, coins, name, ref)) news.push({ kind, name, coins })
-    }
+  /** Все награды с отметками: выполнено (done) и получено (paid). ref уникален и не даёт выплатить дважды. */
+  rewards(day: string) {
     const st = this.rewardState(day)
-    for (const a of ACHIEVEMENTS) if (st.ach[a.id]!.now >= st.ach[a.id]!.goal) give('achievement', a.name, a.coins, `ach:${a.id}`)
-    for (const d of DAILY) if (st.daily[d.id]!.now >= st.daily[d.id]!.goal) give('task', d.name, d.coins, `task:${d.id}:${day}`)
-    if (DAILY.every(d => st.daily[d.id]!.now >= st.daily[d.id]!.goal)) give('task', 'Все задания дня', DAILY_ALL, `task:all:${day}`)
-    if (st.week.now >= st.week.goal) give('task', WEEKLY.name, WEEKLY.coins, `week:${st.week.from}`)
-    return news
+    const paid = new Set(this.db.all<{ ref: string }>("SELECT ref FROM coin_log WHERE ref LIKE 'ach:%' OR ref LIKE 'task:%' OR ref LIKE 'week:%'").map(r => r.ref))
+    const out: { ref: string; kind: string; name: string; coins: number; done: boolean; paid: boolean }[] = []
+    const add = (ref: string, kind: string, name: string, coins: number, done: boolean) => out.push({ ref, kind, name, coins, done, paid: paid.has(ref) })
+    for (const a of ACHIEVEMENTS) add(`ach:${a.id}`, 'achievement', a.name, a.coins, st.ach[a.id]!.now >= st.ach[a.id]!.goal)
+    for (const d of DAILY) add(`task:${d.id}:${day}`, 'task', d.name, d.coins, st.daily[d.id]!.now >= st.daily[d.id]!.goal)
+    add(`task:all:${day}`, 'task', 'Все задания дня', DAILY_ALL, DAILY.every(d => st.daily[d.id]!.now >= st.daily[d.id]!.goal))
+    add(`week:${st.week.from}`, 'task', WEEKLY.name, WEEKLY.coins, st.week.now >= st.week.goal)
+    return out
+  }
+
+  /** Сколько наград выполнено, но ещё не получено. */
+  readyCount(day: string) {
+    return this.rewards(day).filter(r => r.done && !r.paid).length
+  }
+
+  /** Забрать награду кнопкой: только если условие выполнено, и один раз. Возвращает false, если нельзя. */
+  claim(ref: string, day: string): boolean {
+    const r = this.rewards(day).find(x => x.ref === ref)
+    if (!r || !r.done || r.paid) return false
+    return this.coin(Date.now(), day, r.kind, r.coins, r.name, r.ref)
+  }
+
+  /** Награды, о которых сайт ещё не сообщал: выполнено и не получено, имя возвращается один раз. */
+  freshRewards(day: string): string[] {
+    let list: string[] = []
+    try {
+      list = JSON.parse(this.db.getMeta('notified') ?? '[]') as string[]
+    } catch {
+      /* битая запись: начинаем заново */
+    }
+    const known = new Set(list)
+    const fresh = this.rewards(day).filter(r => r.done && !r.paid && !known.has(r.ref))
+    if (fresh.length) this.db.setMeta('notified', JSON.stringify([...known, ...fresh.map(r => r.ref)].slice(-400)))
+    return fresh.map(r => r.name)
   }
 
   /** Подарок при первом запуске: один раз за всё время. */

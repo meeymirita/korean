@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useNotesStore } from '@/stores/notes'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
 const toast = useToastStore()
+const router = useRouter()
+function onClick(t: { id: number; to?: string }) {
+  toast.dismiss(t.id)
+  if (t.to) void router.push(t.to)
+}
 const progress = useProgressStore()
 const notes = useNotesStore()
 
@@ -27,9 +33,9 @@ const icon = { ok: '✓', info: '✳︎', error: '!' } as const
 <template>
   <Teleport to="body">
     <TransitionGroup name="tst" tag="div" class="tst" role="status" aria-live="polite">
-      <button v-for="t in toast.items" :key="t.id" class="tst-item" :class="t.kind" @click="toast.dismiss(t.id)">
-        <span class="ic">{{ icon[t.kind] }}</span>
-        <span class="tx">{{ t.text }}</span>
+      <button v-for="t in toast.items" :key="t.id" class="tst-item" :class="t.kind" @click="onClick(t)">
+        <span class="ic">{{ t.to ? '★' : icon[t.kind] }}</span>
+        <span class="tx">{{ t.text }}<template v-if="t.to"> →</template></span>
       </button>
     </TransitionGroup>
   </Teleport>

@@ -6,6 +6,8 @@ export interface Toast {
   id: number
   kind: ToastKind
   text: string
+  /** адрес, куда ведёт нажатие на плашку (например, к награде в магазине) */
+  to?: string
 }
 
 const MAX = 4
@@ -23,13 +25,13 @@ export const useToastStore = defineStore('toast', () => {
     items.value = items.value.filter(t => t.id !== id)
   }
 
-  function show(kind: ToastKind, text: string) {
+  function show(kind: ToastKind, text: string, to?: string) {
     // одно и то же сообщение подряд не множим: старое просто живёт дальше
     if (items.value.some(t => t.kind === kind && t.text === text)) return
     const id = next++
-    items.value.push({ id, kind, text })
+    items.value.push({ id, kind, text, ...(to ? { to } : {}) })
     while (items.value.length > MAX) dismiss(items.value[0]!.id)
-    timers.set(id, setTimeout(() => dismiss(id), LIFETIME[kind]))
+    timers.set(id, setTimeout(() => dismiss(id), to ? 9000 : LIFETIME[kind]))
   }
 
   return {
@@ -39,5 +41,7 @@ export const useToastStore = defineStore('toast', () => {
     ok: (text: string) => show('ok', text),
     info: (text: string) => show('info', text),
     error: (text: string) => show('error', text),
+    /** плашка со ссылкой: нажатие ведёт на `to` */
+    reward: (text: string, to: string) => show('ok', text, to),
   }
 })

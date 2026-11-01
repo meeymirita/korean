@@ -61,17 +61,17 @@ const { shop, st, coins, rows, kind, when, pct, isActive, goalText, buy, turnOn 
         <li v-for="g in st.daily" :key="g.id" :class="{ done: g.paid }">
           <div><b>{{ g.name }}</b><small>сегодня · +{{ g.coins }} <img :src="coinImg" alt="" /></small></div>
           <div class="shp-bar"><i :style="{ width: pct(g) + '%' }"></i></div>
-          <span>{{ goalText(g) }}</span>
+          <button v-if="g.ready" type="button" class="shp-claim" :disabled="shop.pending === g.ref" @click="shop.claim(g)">Получить</button><span v-else>{{ goalText(g) }}</span>
         </li>
         <li :class="{ done: st.dailyAll.paid }">
           <div><b>Все задания дня</b><small>бонус · +{{ st.dailyAll.coins }} <img :src="coinImg" alt="" /></small></div>
           <div class="shp-bar"><i :style="{ width: st.dailyAll.paid ? '100%' : (st.daily.filter(g => g.now >= g.goal).length / 3) * 100 + '%' }"></i></div>
-          <span>{{ st.dailyAll.paid ? 'получено' : `${st.daily.filter(g => g.now >= g.goal).length} из 3` }}</span>
+          <button v-if="st.dailyAll.ready" type="button" class="shp-claim" :disabled="shop.pending === st.dailyAll.ref" @click="shop.claim(st.dailyAll)">Получить</button><span v-else>{{ st.dailyAll.paid ? 'получено' : `${st.daily.filter(g => g.now >= g.goal).length} из 3` }}</span>
         </li>
         <li :class="{ done: st.week.paid }">
           <div><b>{{ st.week.name }}</b><small>неделя · +{{ st.week.coins }} <img :src="coinImg" alt="" /></small></div>
           <div class="shp-bar"><i :style="{ width: pct(st.week) + '%' }"></i></div>
-          <span>{{ goalText(st.week) }}</span>
+          <button v-if="st.week.ready" type="button" class="shp-claim" :disabled="shop.pending === st.week.ref" @click="shop.claim(st.week)">Получить</button><span v-else>{{ goalText(st.week) }}</span>
         </li>
       </ul>
     </section>
@@ -82,7 +82,7 @@ const { shop, st, coins, rows, kind, when, pct, isActive, goalText, buy, turnOn 
         <li v-for="g in st.ach" :key="g.id" :class="{ done: g.paid }">
           <div><b>{{ g.name }}</b><small>{{ g.text }} · +{{ g.coins }} <img :src="coinImg" alt="" /></small></div>
           <div class="shp-bar"><i :style="{ width: pct(g) + '%' }"></i></div>
-          <span>{{ goalText(g) }}</span>
+          <button v-if="g.ready" type="button" class="shp-claim" :disabled="shop.pending === g.ref" @click="shop.claim(g)">Получить</button><span v-else>{{ goalText(g) }}</span>
         </li>
       </ul>
     </section>

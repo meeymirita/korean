@@ -24,6 +24,12 @@ export class ShopController {
     return this.shop.buy(body)
   }
 
+  @Post('claim')
+  @HttpCode(200)
+  claim(@Body() body: unknown) {
+    return this.shop.claim(body)
+  }
+
   @Post('use')
   @HttpCode(200)
   use(@Body() body: unknown) {
