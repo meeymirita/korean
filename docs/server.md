@@ -21,6 +21,7 @@
 | `progress/` | прогресс владельца: `POST /api/ops` и `GET /api/progress`; монетки и магазин: `coins.ts` (цены и условия), `shop.service.ts`, `shop.controller.ts` (`docs/shop.md`) |
 | `guests/` | гостевые токены (только владелец) |
 | `notes/` | заметки |
+| `chat/` | помощник-чат: `POST /api/chat` пересылает вопрос в OpenRouter, инструкция `prompt.ts` + `curriculum.ts` (см. `docs/chat.md`) |
 | `images/` | картинки: загрузка, миниатюры (`sharp`), выдача по токену; назначение `kind`, очистка ненужных (`pruneImages`) |
 | `admin/` | просмотр базы только для чтения (вкладка «База»); `backup-archive.service.ts` и `backup-status.controller.ts`: полный архив на почту и статус копий (см. `docs/backup.md`) |
 | `events/` | журнал событий в таблице `events` |
@@ -49,6 +50,7 @@
   не применяется ничего (400). Правила (что выучено, как растёт серия) те же, что на сайте: `tests/parity.test.mjs` сравнивает.
 - `GET /api/shop?day=`, `GET /api/shop/log`, `POST /api/shop/buy|use|claim`: магазин и монетки (только владелец, см. `docs/shop.md`); в ответе `POST /api/ops` теперь `{coins, combo, ready, news}`, действие `round` `{id, size, right}` засчитывает серию заданий.
 - `GET /api/site-images` (открыто всем), `GET /api/site-images/file/:key` (открыто всем), `POST /api/site-images/:key/file` (multipart, до 12 МБ, сжимается до 1600 px, webp), `PUT /api/site-images/:key` (`{url}` только https и/или `{x,y,zoom}`), `DELETE /api/site-images/:key`: подмена картинок сайта, запись только владелец.
+- `GET /api/chat` (`{configured, model, limit, left}`), `POST /api/chat` `{messages:[{role:'user'|'assistant', text}]}` → `{reply, left}`: помощник по корейскому (только владелец, ключ `OPENROUTER_API_KEY` в `.env`, подробности `docs/chat.md`).
 - `POST /api/session`: запись входа в журнал. `GET/PUT /api/notes`: заметки целиком (у каждой `images` — до 10 id картинок).
 - `GET/POST /api/guests`, `DELETE /api/guests/:id`: гостевые токены (создание возвращает токен один раз и требует `X-Confirm-Token`).
 - `GET/POST /api/images`, `GET /api/images/:id/file|thumb`, `PATCH`, `DELETE`: картинки (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ;

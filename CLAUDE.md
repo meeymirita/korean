@@ -85,7 +85,7 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 ## Маршруты
 
 `/` главная · `/about` «О платформе» (слайдер со скриншотами страниц) · `/game` игра «Хлебушек» · `/korean/...`: `home` (главная раздела: поиск по всему сайту,
-«Продолжить», статистика; `/korean` → `home`), `today`, `words`, `grammar`, `trainers` (ведёт в `/game/home`), `cabinet`, `review`, `shop` (Магазин Юны), `garden`,
+«Продолжить», статистика; `/korean` → `home`), `today`, `words`, `grammar`, `trainers` (ведёт в `/game/home`), `cabinet`, `review`, `shop` (Магазин Юны), `chat` (Помощник, только владелец), `garden`,
 **`ref/...` — «Справочник» с вкладками** `cheat`, `talk`, `hangul`, `alphabet`, `reading`, `sentences`, `numbers`
 (`/korean/ref` → последняя открытая вкладка из `localStorage['ref_last_tab']`; старые `/korean/cheat` и т. п.
 перенаправляют на `ref/...`). Ещё: `/me` (публичная визитка), `/history` (история изменений). Неизвестный адрес → страница 404.
@@ -130,6 +130,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 | `docs/data.md` | словарь, грамматика, справочники, Notion, переводы предложений, `parse.ts` |
 | `docs/game.md` | игра «Хлебушек»: режимы, `engine.ts`, «собери предложение» |
 | `docs/progress.md` | сад и коллекция, тренажёры, «Сегодня», хранилище прогресса, кабинет, заметки, доступ по токену, гостевые токены, тесты |
+| `docs/chat.md` | помощник-чат (`/korean/chat`): OpenRouter, ключ в `.env`, инструкция модели, кнопка «Разобрать», тесты |
 | `docs/shop.md` | монетки Юны, магазин, предметы, задания и достижения, награды кнопкой «Получить» (цены и условия в `server/src/progress/coins.ts`) |
 | `docs/server.md` | сервер NestJS + SQLite: таблицы базы, API, защита, как запускать, смотреть базу и тестировать |
 | `docs/hosting.md` | сервер на хостинге, Caddy, служба `progress`, усиление защиты (systemd, Caddy, брандмауэр), команды для владельца |
