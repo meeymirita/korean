@@ -76,7 +76,7 @@ function save() {
 }
 function clearBg() {
   store.clear()
-  toast.ok('Фон убран')
+  toast.ok('Вернул стандартный фон')
   emit('close')
 }
 
@@ -118,7 +118,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <p class="note">Картинка остаётся только в этом браузере и никуда не отправляется.</p>
 
         <footer>
-          <button class="btn ghost" :disabled="!store.bg && !draft" @click="clearBg">Убрать фон</button>
+          <button class="btn ghost" @click="clearBg">Стандартный фон</button>
           <span></span>
           <button class="btn ghost" @click="emit('close')">Отмена</button>
           <button class="btn main" :disabled="!draft" @click="save">Сохранить</button>

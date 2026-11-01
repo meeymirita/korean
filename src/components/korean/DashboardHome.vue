@@ -11,6 +11,7 @@ import { useBlockBg } from '@/composables/useBlockBg'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import catSleep from '@/assets/home/dash/cat-sleep.webp'
 import catWave from '@/assets/home/dash/cat-wave.webp'
+import bgYuna from '@/assets/home/dash/bg-yuna.webp'
 import qFire from '@/assets/home/dash/q-fire.webp'
 import qNotes from '@/assets/home/dash/q-notes.webp'
 import qBread from '@/assets/home/dash/q-bread.webp'
@@ -33,7 +34,9 @@ const words = [...D].sort(() => Math.random() - 0.5).slice(0, 5)
 /** Свои картинки на фоне трёх блоков (шестерёнка в углу): хранятся только в этом браузере. */
 const BLOCKS = { hero: 'Сейчас изучаем', words: 'Слова на сегодня', quote: 'Корея — это…' } as const
 type BlockId = keyof typeof BLOCKS
-const bgs = { hero: useBlockBg('hero'), words: useBlockBg('words'), quote: useBlockBg('quote') }
+/** стандартный фон: Юна с флагом; лицо в верхней трети картинки, поэтому y = 28% */
+const YUNA = { src: bgYuna, x: 50, y: 28, zoom: 1 }
+const bgs = { hero: useBlockBg('hero', { ...YUNA, x: 62 }), words: useBlockBg('words', YUNA), quote: useBlockBg('quote', { ...YUNA, x: 55 }) }
 const editing = ref<BlockId | null>(null)
 
 const rule = HOME_RULE

@@ -10,7 +10,8 @@ export interface BlockBg {
   zoom: number
 }
 
-const key = (id: string) => `home_bg_${id}`
+/** v2: ключ сменён 2026-11-01, чтобы старые пробные картинки не мешали стандартному фону */
+const key = (id: string) => `home_bg2_${id}`
 const state = reactive<Record<string, BlockBg | null>>({})
 
 function valid(v: unknown): v is BlockBg {
@@ -29,11 +30,11 @@ function read(id: string): BlockBg | null {
 }
 
 /** Фон блока по его имени. `save` возвращает false, если браузер не дал записать (мало места или запрет). */
-export function useBlockBg(id: string) {
+export function useBlockBg(id: string, fallback: BlockBg | null = null) {
   if (!(id in state)) state[id] = read(id)
   return {
     get bg() {
-      return state[id] ?? null
+      return state[id] ?? fallback
     },
     save(bg: BlockBg): boolean {
       try {
