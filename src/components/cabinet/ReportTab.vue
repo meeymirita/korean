@@ -115,9 +115,10 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 .rp-tbl td { padding: 5px 10px 5px 0; white-space: nowrap; }
 .rp-bar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: rgba(143, 124, 240, .18); vertical-align: middle; overflow: hidden; margin-right: 6px; }
 .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f7a8d4, #9ec8ff); }
-.rp-all { display: flex; gap: 14px; margin: 0 0 8px; }
-.study .rp-link { border: 0; background: none; padding: 0; font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
-.study .rp-link:hover { color: var(--pink, #d64da9); }
+.rp-all { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 20px; }
+.study .rp-link { padding: 4px 14px; border: 1px solid rgba(143, 124, 240, .3); border-radius: 999px; background: rgba(255, 255, 255, .7); font-size: 13px; font-weight: 400; color: var(--muted); transition: background .15s, border-color .15s, color .15s; }
+.study .rp-link:hover { background: rgba(214, 77, 169, .08); border-color: rgba(214, 77, 169, .45); color: var(--pink, #d64da9); }
+.study .rp-link:focus-visible { outline: 2px solid rgba(214, 77, 169, .5); outline-offset: 2px; }
 .study .rp-toggle { display: inline-flex; align-items: baseline; gap: 6px; padding: 0; border: 0; background: none; font: inherit; text-align: left; color: inherit; }
 .rp-chev { display: inline-block; width: 1em; color: var(--pink, #d64da9); transition: transform .18s; }
 .rp-toggle[aria-expanded='true'] .rp-chev { transform: rotate(90deg); }
