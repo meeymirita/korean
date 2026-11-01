@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
+import coinImg from '@/assets/icons/coin.webp'
 import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -10,6 +11,7 @@ import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
+import ShopTab from '@/components/cabinet/ShopTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
 import WeekTab from '@/components/cabinet/WeekTab.vue'
@@ -60,15 +62,15 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'shop' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
 /** Старые адреса ?tab=db и ?tab=logs: База и Журналы переехали в «Настройки». */
 const moved = (v: unknown) => (v === 'db' || v === 'logs' ? 'settings' : v)
 const q = moved(route.query.tab)
-const OWNER_ONLY = ['images', 'report']
-const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'settings']
+const OWNER_ONLY = ['images', 'report', 'shop']
+const TABS = ['repeat', 'week', 'history', 'report', 'shop', 'notes', 'images', 'settings']
 const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -90,7 +92,7 @@ const tabs = computed<[Tab, string][]>(() => [
   ['repeat', `Повторить${dueCount.value ? ' · ' + dueCount.value : ''}`],
   ['week', 'Неделя'],
   ['history', 'История'],
-  ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [Tab, string][])),
+  ...(progress.isGuest ? [] : ([['report', 'Отчёт'], ['shop', 'Магазин']] as [Tab, string][])),
   ['notes', 'Заметки'],
   // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
   ...(progress.isGuest ? [] : ([['images', 'Картинки']] as [Tab, string][])),
@@ -119,6 +121,7 @@ const tabs = computed<[Tab, string][]>(() => [
         </div>
         <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
+      <span v-if="!progress.isGuest" class="cb-coins" title="Монетки Юны"><img :src="coinImg" alt="" />{{ progress.data.coins }}</span>
       <button type="button" class="cb-lvl" title="Все уровни" @click="levelsOpen = true">{{ progress.info.level }}<small>уровень</small></button>
     </header>
 
@@ -136,6 +139,7 @@ const tabs = computed<[Tab, string][]>(() => [
     <WeekTab v-else-if="tab === 'week'" />
     <HistoryTab v-else-if="tab === 'history'" />
     <ReportTab v-else-if="tab === 'report'" />
+    <ShopTab v-else-if="tab === 'shop'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <SettingsTab v-else />

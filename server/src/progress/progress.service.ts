@@ -6,14 +6,32 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { Db } from '../db/db.service'
 import { pruneImages } from '../images/images.service'
+import { ACHIEVEMENTS, DAILY, DAILY_ALL, GRAMMAR_MODES, WEEKLY } from './coins'
 
 /** Слово считается выученным после стольких верных ответов подряд. */
 /** очков слова, с которых оно выучено (верный ответ +1, ошибка −1) */
 const KNOWN_STREAK = 5
 const GOALS = [10, 20, 50]
+
+/** Монетки Юны: цены и награды живут тут и в src/data/coins.ts (менять в обоих). */
+export const COINS = {
+  answer: 2, // за верный ответ
+  dayCap: 300, // потолок монеток за ответы в день
+  combo: { 5: 3, 10: 7 } as Record<number, number>, // за 5 и 10 верных подряд (один раз за серию)
+  round: 5, // за завершённую серию заданий
+  gift: 100, // подарок при первом запуске
+  wrongXp: 3, // ошибка отнимает очки, но не ниже начала текущего уровня
+}
+/** Очки, с которых начинается уровень L (как xpFor в src/data/levels.ts). */
+const xpFor = (L: number) => 30 * L * (L - 1)
+const levelOf = (xp: number) => Math.min(40, Math.floor((1 + Math.sqrt(1 + (4 * xp) / 30)) / 2))
 const LOG_LIMIT = 300
 const MAX_OPS = 500
 const DAY = /^\d{4}-\d{2}-\d{2}$/
+const localDay = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 export interface Profile {
   name: string
@@ -166,6 +184,12 @@ export class ProgressService {
     return { items, ok: count(' AND ok = 1'), bad: count(' AND ok = 0') }
   }
 
+  /** Баланс монеток и текущая серия верных ответов подряд. */
+  coinState(day = localDay()) {
+    this.gift()
+    return { coins: Number(this.db.getMeta('coins') ?? 0), combo: Number(this.db.getMeta('combo') ?? 0), ready: this.readyCount(day) }
+  }
+
   read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}
@@ -192,6 +216,7 @@ export class ProgressService {
       v: 1,
       updated: Number(this.db.getMeta('updated') ?? 0),
       xp: Number(this.db.getMeta('xp') ?? 0),
+      ...this.coinState(),
       days,
       all,
       time,
@@ -208,18 +233,27 @@ export class ProgressService {
   apply(body: unknown) {
     const ops = (body as { ops?: unknown })?.ops
     if (!Array.isArray(ops) || ops.length > MAX_OPS) bad('invalid ops')
+    let news: string[] = []
+    let last0: string | undefined
     this.db.tx(() => {
       for (const op of ops as Record<string, unknown>[]) this.one(op)
+      const last = (ops as Record<string, unknown>[]).filter(o => typeof o?.day === 'string' && DAY.test(o.day as string)).pop()
+      if (last) {
+        last0 = last.day as string
+        news = this.freshRewards(last0)
+      }
       this.db.setMeta('updated', String(Date.now()))
     })
     pruneImages(this.db) // старая обложка удаляется через час после замены
-    return { ok: true, applied: (ops as unknown[]).length }
+    return { ok: true, applied: (ops as unknown[]).length, ...this.coinState(last0), news }
   }
 
   private one(op: Record<string, unknown>) {
     switch (op?.type) {
       case 'answer':
         return this.answer(op)
+      case 'round':
+        return this.round(op)
       case 'reset':
         return this.reset()
       case 'profile':
@@ -255,10 +289,18 @@ export class ProgressService {
     const ok = typeof op.ok === 'boolean' ? op.ok : bad('invalid op')
     const source = str(op.source, 20) || bad('invalid op')
     const mode = op.mode == null ? '' : str(op.mode, 30)
-    const xp = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
+    const gain = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
 
     const detail = this.detail(op.detail)
+    const had = Number(this.db.getMeta('xp') ?? 0)
+    // ошибка отнимает очки, но уровень не падает: ниже начала текущего уровня очки не опускаются
+    const active = this.active()
+    const shielded = !ok && active.shield
+    if (shielded) this.setActive({ ...active, shield: false })
+    const xp = ok ? gain : shielded ? 0 : -Math.min(COINS.wrongXp, had - xpFor(levelOf(had)))
     this.db.run('INSERT INTO answers (t, word, ok, source, mode, xp, detail) VALUES (?, ?, ?, ?, ?, ?, ?)', t, word, ok ? 1 : 0, source, mode, xp, detail)
+    this.coinsForAnswer(t, day, ok, active.double ? 2 : 1)
+    if (ok && source === 'review') this.bump('rev', day)
     if (word) {
       const w = this.db.get<{ streak: number; kd: number | null }>('SELECT streak, kd FROM words WHERE word = ?', word)
       if (!w) this.db.run('INSERT INTO words (word, ok, bad, streak, last) VALUES (?, 0, 0, 0, 0)', word)
@@ -271,7 +313,140 @@ export class ProgressService {
       day,
       ok ? 1 : 0,
     )
-    if (xp) this.db.setMeta('xp', String(Number(this.db.getMeta('xp') ?? 0) + xp))
+    if (xp) this.db.setMeta('xp', String(had + xp))
+  }
+
+  /** Записывает в журнал монеток и меняет баланс (ref не даёт начислить дважды). Возвращает false, если такая запись уже была. */
+  coin(t: number, day: string, kind: string, amount: number, reason: string, ref?: string): boolean {
+    if (!amount) return false
+    if (ref && this.db.get('SELECT 1 FROM coin_log WHERE ref = ?', ref)) return false
+    this.db.run('INSERT INTO coin_log (t, day, kind, amount, reason, ref) VALUES (?, ?, ?, ?, ?, ?)', t, day, kind, amount, reason, ref ?? null)
+    this.db.setMeta('coins', String(Number(this.db.getMeta('coins') ?? 0) + amount))
+    return true
+  }
+
+  /** Верный ответ: +монетки (до потолка за день) и бонус за серию подряд; ошибка обрывает серию, монетки не отнимает. */
+  private coinsForAnswer(t: number, day: string, ok: boolean, times: number) {
+    if (!ok) return this.db.setMeta('combo', '0')
+    const combo = Number(this.db.getMeta('combo') ?? 0) + 1
+    this.db.setMeta('combo', String(combo))
+    if (combo > Number(this.db.getMeta('maxcombo') ?? 0)) this.db.setMeta('maxcombo', String(combo))
+    const today = this.db.get<{ n: number | null }>("SELECT SUM(amount) AS n FROM coin_log WHERE day = ? AND kind = 'answer'", day)?.n ?? 0
+    this.coin(t, day, 'answer', Math.max(0, Math.min(COINS.answer, COINS.dayCap - today)) * times, times > 1 ? 'Верный ответ (×2)' : 'Верный ответ')
+    const bonus = COINS.combo[combo]
+    if (bonus) this.coin(t, day, 'combo', bonus, `${combo} верных подряд`)
+  }
+
+  /** Серия заданий закончена: +монетки один раз (id придумывает сайт, повторная отправка не платит). */
+  private round(op: Record<string, unknown>) {
+    const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
+    const id = str(op.id, 40) || bad('invalid op')
+    const size = int(op.size, 0, 1000)
+    this.setActive({ ...this.active(), double: false }) // «Двойная награда» действует на одну серию
+    if (size >= 3 && int(op.right ?? 0, 0, 1000) === size) this.db.setMeta('flawless_day', day)
+    if (size >= 3) this.coin(int(op.t, 0, Number.MAX_SAFE_INTEGER), day, 'round', COINS.round, 'Серия заданий пройдена', `round:${id}`)
+  }
+
+  /** Включённые предметы: защита опыта и двойная награда. */
+  active(): { shield: boolean; double: boolean } {
+    const a = this.json<{ shield?: boolean; double?: boolean }>('active', {})
+    return { shield: !!a.shield, double: !!a.double }
+  }
+  setActive(a: { shield: boolean; double: boolean }) {
+    this.db.setMeta('active', JSON.stringify(a))
+  }
+
+  /** Счётчик «за день» в meta: { day, n }. */
+  private bump(key: string, day: string) {
+    const cur = this.json<{ day: string; n: number }>(key, { day, n: 0 })
+    this.db.setMeta(key, JSON.stringify({ day, n: cur.day === day ? cur.n + 1 : 1 }))
+  }
+  private bumped(key: string, day: string) {
+    const cur = this.json<{ day: string; n: number }>(key, { day, n: 0 })
+    return cur.day === day ? cur.n : 0
+  }
+
+  /** Что выполнено сейчас: достижения, задания дня и недели (для магазина и для выдачи наград). */
+  rewardState(day: string) {
+    const n = (sql: string, ...a: (string | number)[]) => this.db.get<{ n: number }>(sql, ...a)?.n ?? 0
+    const okCount = n('SELECT COUNT(*) AS n FROM answers WHERE ok = 1')
+    const grammar = n(`SELECT COUNT(*) AS n FROM answers WHERE mode IN (${GRAMMAR_MODES.map(() => '?').join(',')})`, ...GRAMMAR_MODES)
+    const buys = n("SELECT COUNT(*) AS n FROM coin_log WHERE kind = 'buy'")
+    let streakDays = 0
+    const d = new Date(day + 'T00:00:00Z')
+    while (streakDays < 7 && this.db.get('SELECT 1 FROM days WHERE day = ? AND total > 0', d.toISOString().slice(0, 10))) {
+      streakDays++
+      d.setUTCDate(d.getUTCDate() - 1)
+    }
+    const maxCombo = Number(this.db.getMeta('maxcombo') ?? 0)
+    const ach: Record<string, { now: number; goal: number }> = {
+      first: { now: okCount, goal: 100 },
+      master: { now: okCount, goal: 500 },
+      grammar: { now: grammar, goal: 100 },
+      flawless: { now: maxCombo, goal: 20 },
+      steady: { now: streakDays, goal: 7 },
+      collector: { now: buys, goal: 10 },
+    }
+    const total = this.db.get<{ total: number }>('SELECT total FROM days WHERE day = ?', day)?.total ?? 0
+    const daily: Record<string, { now: number; goal: number }> = {
+      answers: { now: total, goal: 20 },
+      flawless: { now: this.db.getMeta('flawless_day') === day ? 1 : 0, goal: 1 },
+      review: { now: this.bumped('rev', day), goal: 5 },
+    }
+    const mon = new Date(day + 'T00:00:00Z')
+    mon.setUTCDate(mon.getUTCDate() - ((mon.getUTCDay() + 6) % 7))
+    const from = mon.toISOString().slice(0, 10)
+    mon.setUTCDate(mon.getUTCDate() + 6)
+    const week = { from, now: n('SELECT COUNT(*) AS n FROM days WHERE day >= ? AND day <= ? AND total > 0', from, mon.toISOString().slice(0, 10)), goal: WEEKLY.days }
+    return { ach, daily, week }
+  }
+
+  /** Все награды с отметками: выполнено (done) и получено (paid). ref уникален и не даёт выплатить дважды. */
+  rewards(day: string) {
+    const st = this.rewardState(day)
+    const paid = new Set(this.db.all<{ ref: string }>("SELECT ref FROM coin_log WHERE ref LIKE 'ach:%' OR ref LIKE 'task:%' OR ref LIKE 'week:%'").map(r => r.ref))
+    const out: { ref: string; kind: string; name: string; coins: number; done: boolean; paid: boolean }[] = []
+    const add = (ref: string, kind: string, name: string, coins: number, done: boolean) => out.push({ ref, kind, name, coins, done, paid: paid.has(ref) })
+    for (const a of ACHIEVEMENTS) add(`ach:${a.id}`, 'achievement', a.name, a.coins, st.ach[a.id]!.now >= st.ach[a.id]!.goal)
+    for (const d of DAILY) add(`task:${d.id}:${day}`, 'task', d.name, d.coins, st.daily[d.id]!.now >= st.daily[d.id]!.goal)
+    add(`task:all:${day}`, 'task', 'Все задания дня', DAILY_ALL, DAILY.every(d => st.daily[d.id]!.now >= st.daily[d.id]!.goal))
+    add(`week:${st.week.from}`, 'task', WEEKLY.name, WEEKLY.coins, st.week.now >= st.week.goal)
+    return out
+  }
+
+  /** Сколько наград выполнено, но ещё не получено. */
+  readyCount(day: string) {
+    return this.rewards(day).filter(r => r.done && !r.paid).length
+  }
+
+  /** Забрать награду кнопкой: только если условие выполнено, и один раз. Возвращает false, если нельзя. */
+  claim(ref: string, day: string): boolean {
+    const r = this.rewards(day).find(x => x.ref === ref)
+    if (!r || !r.done || r.paid) return false
+    return this.coin(Date.now(), day, r.kind, r.coins, r.name, r.ref)
+  }
+
+  /** Награды, о которых сайт ещё не сообщал: выполнено и не получено, имя возвращается один раз. */
+  freshRewards(day: string): string[] {
+    let list: string[] = []
+    try {
+      list = JSON.parse(this.db.getMeta('notified') ?? '[]') as string[]
+    } catch {
+      /* битая запись: начинаем заново */
+    }
+    const known = new Set(list)
+    const fresh = this.rewards(day).filter(r => r.done && !r.paid && !known.has(r.ref))
+    if (fresh.length) this.db.setMeta('notified', JSON.stringify([...known, ...fresh.map(r => r.ref)].slice(-400)))
+    return fresh.map(r => r.name)
+  }
+
+  /** Подарок при первом запуске: один раз за всё время. */
+  private gift() {
+    if (this.db.getMeta('coin_gift')) return
+    this.db.setMeta('coin_gift', '1')
+    const now = new Date()
+    const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    this.coin(now.getTime(), day, 'gift', COINS.gift, 'Подарок от Юны', 'gift')
   }
 
   /** Сброс: ответы, слова, дни и очки обнуляются; профиль и настройки остаются. */
@@ -281,6 +456,8 @@ export class ProgressService {
     this.db.run('DELETE FROM days')
     this.db.run('DELETE FROM study_time')
     this.db.setMeta('xp', '0')
+    this.db.setMeta('combo', '0')
+    this.db.setMeta('maxcombo', '0')
     this.db.setMeta('moods', '{}')
   }
 

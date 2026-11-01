@@ -80,6 +80,7 @@ const router = createRouter({
           path: id,
           redirect: `/korean/ref/${id}`,
         })),
+        { path: 'shop', meta: { private: true }, component: () => import('@/views/korean/ShopView.vue') },
         { path: 'garden', meta: { private: true }, component: () => import('@/views/korean/GardenView.vue') },
         { path: 'review', meta: { private: true }, component: () => import('@/views/korean/ReviewView.vue') },
         { path: 'forms', meta: { private: true }, component: () => import('@/views/korean/FormsView.vue') },

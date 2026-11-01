@@ -11,5 +11,6 @@ Disallow: /korean/mistakes
 Disallow: /korean/marks
 Disallow: /korean/forms
 Disallow: /korean/garden
+Disallow: /korean/shop
 
 Sitemap: https://korean.meeymirita.ru/sitemap.xml

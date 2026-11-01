@@ -65,12 +65,12 @@ describe('record', () => {
     assert.equal(r.levelUp, false)
   })
 
-  test('ошибка обнуляет серию и очков не даёт, но день считается', () => {
+  test('ошибка обнуляет серию и отнимает 3 очка, но день считается', () => {
     store.record({ word: '사람', ok: true, source: 'game' })
     store.record({ word: '사람', ok: false, source: 'game' })
     const w = store.data.words['사람']
     assert.deepEqual([w.bad, w.streak], [1, 0])
-    assert.equal(store.data.xp, 10)
+    assert.equal(store.data.xp, 7)
     assert.equal(store.data.all[dayKey()], 2)
     assert.equal(store.data.days[dayKey()], 1)
   })

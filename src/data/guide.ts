@@ -55,6 +55,7 @@ export const PAGES: GuideCard[] = [
   { icon: 'bell', title: 'Мои ошибки', text: 'Слова, в которых ошибаешься чаще всего, со счётом верных и неверных ответов и быстрой тренировкой только по ним.', to: '/korean/mistakes', private: true },
   { icon: 'stopwatch', title: '5 минут', text: 'Десять заданий вперемешку без выбора: слова, которые пора повторить, правило и новое. Клавиши 1–4 и Enter.', to: '/game/home?game=quick', private: true },
   { icon: 'arrows', title: 'Повторение', text: 'Карточки слов, которые пора повторить.', to: '/korean/review', private: true },
+  { icon: 'star', title: 'Магазин Юны', text: 'Монетки за ответы и задания: покупай подсказки, второй шанс, защиту опыта и открывай сюрпризы.', to: '/korean/shop', private: true },
   { icon: 'sakura', title: 'Сад воспоминаний', text: 'Каждое выученное слово становится цветком. Не повторяешь — цветок вянет.', to: '/korean/garden', private: true },
   { icon: 'dict', title: 'Коллекция', text: 'Карточки слов открываются по мере выученности. Чем больше ошибок, тем реже карточка.', to: '/korean/garden?tab=cards', private: true },
 ]

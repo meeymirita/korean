@@ -48,7 +48,23 @@ function peekClose(delay = 250) {
   clearTimeout(peekTimer)
   peekTimer = setTimeout(() => (peek.value = false), delay)
 }
+/** На странице «Магазин» меню прячется само (только на время визита, выбор на устройстве не меняется). */
+let autoHidden = false
+watch(
+  () => route.path,
+  path => {
+    if (path === '/korean/shop' && !focus.value) {
+      focus.value = true
+      autoHidden = true
+    } else if (path !== '/korean/shop' && autoHidden) {
+      focus.value = false
+      autoHidden = false
+    }
+  },
+  { immediate: true },
+)
 function setFocus(v: boolean) {
+  autoHidden = false
   peek.value = false
   focus.value = v
   try {
@@ -82,7 +98,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="study study-shell sky" :class="{ focus, peek }">
+  <div class="study study-shell sky" :class="{ focus, peek, pinned: route.path === '/korean/shop' }">
     <aside class="study-side" @mouseenter="peekOpen" @mouseleave="peekClose()">
       <RouterLink to="/" class="brand brand-row brand-home" title="На главную страницу">
         <span class="brand-mark">✳︎</span>
@@ -99,6 +115,7 @@ onBeforeUnmount(() => {
           <span>{{ s.menu }}</span>
           <kbd v-if="shortcuts.labelOf('nav:' + s.id)" class="kb">{{ shortcuts.labelOf('nav:' + s.id) }}</kbd>
           <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
+          <span v-else-if="s.id === 'shop' && progress.data.ready" class="ct rdy" title="Есть награды, которые можно получить">{{ progress.data.ready }}</span>
           <span v-else-if="counts[s.id]" class="ct">{{ counts[s.id] }}</span>
           <span v-else class="num">{{ s.num }}</span>
         </RouterLink>
