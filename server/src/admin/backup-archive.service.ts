@@ -205,7 +205,39 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       mkdirSync(stage, { recursive: true, mode: 0o700 })
       this.db.sql.exec(`VACUUM INTO '${path.join(stage, 'app.db').replace(/'/g, "''")}'`)
       if (existsSync(path.join(ROOT, '.env'))) writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, '.env')), { mode: 0o600 })
-      writeFileSync(path.join(stage, 'manifest.txt'), `дата: ${new Date().toISOString()}\nвосстановление: docs/backup.md\n`)
+      // конфиги сервера, без которых заново не поднять (если процесс может их прочитать)
+      const cfg = path.join(stage, 'config')
+      const have: string[] = []
+      for (const f of ['/etc/caddy/Caddyfile', '/etc/systemd/system/progress.service']) {
+        try {
+          mkdirSync(cfg, { recursive: true, mode: 0o700 })
+          writeFileSync(path.join(cfg, path.basename(f)), readFileSync(f), { mode: 0o600 })
+          have.push(path.basename(f))
+        } catch {
+          /* нет файла или нет прав: так бывает на чужой машине */
+        }
+      }
+      // инструкция восстановления лежит рядом с архивом: на новом сервере репозитория ещё нет
+      const guide = [path.join(ROOT, '..', 'docs', 'backup.md'), path.join(ROOT, 'docs', 'backup.md')].find(existsSync)
+      if (guide) writeFileSync(path.join(stage, 'backup.md'), readFileSync(guide))
+      const sizes = ['uploads', 'docs', 'thumbs', 'public'].map(d => {
+        const dir = path.join(DATA_DIR, d)
+        return `  ${d}: ${existsSync(dir) ? Math.round(dirSize(dir) / 1024) + ' КБ' : 'нет папки'}`
+      })
+      writeFileSync(
+        path.join(stage, 'manifest.txt'),
+        [
+          `дата: ${new Date().toISOString()}`,
+          `база: app.db, ${Math.round(statSync(path.join(stage, 'app.db')).size / 1024)} КБ`,
+          'папки:',
+          ...sizes,
+          '  (docs — файлы, приложенные к планам в календаре; пуста, пока ничего не прикрепляли)',
+          `конфиги: ${have.length ? have.join(', ') : 'не прочитались (нет прав), их нужно сохранить отдельно'}`,
+          `секреты: server.env`,
+          guide ? 'восстановление: backup.md в этом архиве' : 'восстановление: docs/backup.md в репозитории',
+          '',
+        ].join('\n'),
+      )
 
       // 2. сжатие: процент считаем по размеру готового файла относительно исходных данных
       this.set(1, 8)
