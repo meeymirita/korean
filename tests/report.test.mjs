@@ -66,3 +66,17 @@ describe('сайт: данные отчёта', () => {
     assert.equal(spent(3900), '1 ч 05 мин')
   })
 })
+
+describe('сайт: звания и уровни', () => {
+  test('таблица званий покрывает все 40 уровней без пропусков', async () => {
+    const { rankTable, MAX_LEVEL, xpFor } = await load('/src/data/levels.ts')
+    const t = rankTable()
+    assert.equal(t.length, 9)
+    assert.equal(t[0].from, 1)
+    assert.equal(t.at(-1).to, MAX_LEVEL)
+    t.slice(1).forEach((r, i) => assert.equal(r.from, t[i].to + 1))
+    assert.equal(t.flatMap(r => r.levels).length, MAX_LEVEL)
+    assert.equal(t[0].levels[0].xp, 0)
+    assert.equal(t[0].levels[1].xp, xpFor(2))
+  })
+})

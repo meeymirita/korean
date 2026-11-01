@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
 import HeatMap from '@/components/cabinet/HeatMap.vue'
@@ -17,6 +18,7 @@ import { formatSpent, useTimerStore } from '@/stores/timer'
 const progress = useProgressStore()
 const timer = useTimerStore()
 const info = computed(() => progress.info)
+const levelsOpen = ref(false)
 /** Время занятий по таймеру: сегодня, за 7 дней и за всё время. */
 const spent = computed(() => {
   const t = progress.data.time
@@ -107,6 +109,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <div class="pg-t">{{ info.title }}</div>
         <div class="pg-bar"><i :style="{ width: info.pct + '%' }"></i></div>
         <div class="pg-s">{{ info.max ? 'максимальный уровень' : `${info.into} / ${info.span} очков до следующего` }} · всего {{ info.xp }}</div>
+        <button type="button" class="pg-lvl-btn" @click="levelsOpen = true">Все уровни</button>
       </div>
       <div class="pg-card">
         <div class="pg-k">Серия дней</div>
@@ -208,5 +211,11 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <td>неверно {{ progress.data.sources[id]?.bad ?? 0 }}</td>
       </tr>
     </table>
-  </div>
+    <LevelsModal v-if="levelsOpen" :info="info" @close="levelsOpen = false" />
+</div>
 </template>
+
+<style>
+.study .pg-lvl-btn { margin-top: 8px; padding: 2px 12px; border: 1px solid rgba(214, 77, 169, .3); border-radius: 999px; background: rgba(214, 77, 169, .06); font-size: 12px; font-weight: 400; color: var(--pink, #d64da9); }
+.study .pg-lvl-btn:hover { background: rgba(214, 77, 169, .14); border-color: rgba(214, 77, 169, .55); }
+</style>

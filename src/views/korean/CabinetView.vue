@@ -8,6 +8,7 @@ import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
+import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
@@ -20,6 +21,7 @@ import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
+const levelsOpen = ref(false)
 const images = useImagesStore()
 const section = sectionById('cabinet')
 
@@ -117,7 +119,7 @@ const tabs = computed<[Tab, string][]>(() => [
         </div>
         <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
-      <div class="cb-lvl">{{ progress.info.level }}<small>уровень</small></div>
+      <button type="button" class="cb-lvl" title="Все уровни" @click="levelsOpen = true">{{ progress.info.level }}<small>уровень</small></button>
     </header>
 
     <p v-if="backupNote" class="cb-note" role="status">
@@ -128,6 +130,7 @@ const tabs = computed<[Tab, string][]>(() => [
       <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="tab = id">{{ label }}<kbd v-if="shortcuts.labelOf('cab:' + id)" class="kb">{{ shortcuts.labelOf('cab:' + id) }}</kbd></button>
     </div>
 
+    <LevelsModal v-if="levelsOpen" :info="progress.info" @close="levelsOpen = false" />
     <OverviewTab v-if="tab === 'overview'" />
     <RepeatTab v-else-if="tab === 'repeat'" />
     <WeekTab v-else-if="tab === 'week'" />
