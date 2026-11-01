@@ -78,6 +78,7 @@ const PAGES: Record<string, Seo> = {
   },
   '/korean/today': { title: `Сегодня · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/cabinet': { title: `Мой кабинет · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/korean/chat': { title: `Помощник · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/forms': { title: `Слово в разных формах · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/marks': { title: `Важное · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/mistakes': { title: `Мои ошибки · ${BRAND}`, description: DEFAULT.description, noindex: true },

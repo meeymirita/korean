@@ -82,6 +82,7 @@ const router = createRouter({
         })),
         { path: 'shop', meta: { private: true }, component: () => import('@/views/korean/ShopView.vue') },
         { path: 'garden', meta: { private: true }, component: () => import('@/views/korean/GardenView.vue') },
+        { path: 'chat', meta: { private: true }, component: () => import('@/views/korean/ChatView.vue') },
         { path: 'review', meta: { private: true }, component: () => import('@/views/korean/ReviewView.vue') },
         { path: 'forms', meta: { private: true }, component: () => import('@/views/korean/FormsView.vue') },
         // игры переехали на /game/home: старые адреса ведут туда
