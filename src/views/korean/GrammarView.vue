@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import PhotoViewer from '@/components/korean/PhotoViewer.vue'
+import { photoOf } from '@/data/korean/grammarPhotos'
+import yunaGrammar from '@/assets/home/yuna-grammar.webp'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, SECS } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
@@ -16,6 +19,7 @@ const PARTS = [
   { id: 1, label: 'Часть 1', sub: 'Первый шаг · уроки 1–30' },
   { id: 2, label: 'Часть 2', sub: 'Второй шаг · 13 уроков' },
 ] as const
+const photo = ref<string | null>(null)
 const part = usePersisted<1 | 2>('grammar_part', 1, v => v === 1 || v === 2)
 const partCount = (n: number) => G.filter(g => (g.part ?? 1) === n).length
 const q = ref('')
@@ -38,8 +42,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="wrap">
+  <div class="wrap grammar-page">
     <SectionHead id="grammar" :big="G.length" />
+    <img class="gr-banner" :src="yunaGrammar" alt="" aria-hidden="true" draggable="false" />
     <div class="chips">
       <button class="chip" :class="{ on: !sec }" @click="sec = ''">Все</button>
       <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s">{{ s }}</button>
@@ -74,9 +79,11 @@ onMounted(() => {
           <span v-if="g.l" class="pill l">{{ g.l }}</span>
           <span class="pill" :class="g.st === 'ok' ? 's' : 'n'">{{ g.st === 'ok' ? 'пройдено' : 'ещё рано' }}</span>
           <span v-if="passed(g.id)" class="pill s">✓ {{ g.l || 'отмечено' }}</span>
+          <span v-if="photoOf(g)" class="pill ph" role="button" tabindex="0" title="Показать фото Юны к этому правилу" @click.stop="photo = photoOf(g)!" @keydown.enter.stop.prevent="photo = photoOf(g)!">Фото</span>
         </div>
       </button>
     </div>
+    <PhotoViewer :src="photo" @close="photo = null" />
   </div>
 </template>
 
@@ -91,4 +98,28 @@ onMounted(() => {
 .gpart small { color: var(--muted); font-size: 12.5px; }
 .gpart.on { border-color: var(--gold); background: var(--gold-soft); }
 .gempty { color: var(--muted); margin: 20px 0 0; }
+.pill.ph { cursor: pointer; color: #fff; background: var(--pink, #d64da9); border-color: transparent; }
+.pill.ph:hover { opacity: .85; }
+</style>
+
+<style>
+/* ===== «Грамматика»: Юна справа вверху (двигай здесь) ===== */
+.study .grammar-page { position: relative; }
+.study-shell.sky .study-main .wrap.grammar-page { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.study .gr-banner { --h: 400px; --right: 0px; --top: 0px;
+  position: absolute; z-index: 0; top: var(--top); right: var(--right); height: var(--h); width: auto; max-width: 70%; object-fit: contain; object-position: right top;
+  pointer-events: none; user-select: none; }
+.study .grammar-page > :not(.gr-banner) { position: relative; z-index: 1; }
+.study .grammar-page > .page-head { border-bottom-color: transparent; }
+/* число правил уходит влево от лица Юны */
+.study .grammar-page > .page-head { padding-right: 59%; align-items: center; }
+.study .grammar-page > .page-head .big { color: var(--pink); }
+.study .grammar-page .gdone { padding: 8px 14px; background: rgba(255, 255, 255, .75); border-radius: 99px; }
+/* чипы и текст не заходят под Юну */
+.study .grammar-page > .chips, .study .grammar-page > .gcourse { max-width: 58%; }
+@media (max-width: 900px) {
+  .study .gr-banner { position: static; display: block; max-width: 100%; height: auto; margin: 0 0 10px auto; }
+  .study .grammar-page > .chips, .study .grammar-page > .gcourse { max-width: none; }
+  .study .grammar-page > .page-head { padding-right: 0; }
+}
 </style>

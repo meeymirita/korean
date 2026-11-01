@@ -7,6 +7,8 @@ import { useShareCard } from '@/composables/useShareCard'
 import { useProgressStore } from '@/stores/progress'
 import { CHANNEL, videoOf } from '@/data/korean/course'
 import { titleOfVideo } from '@/data/korean/videoTitles'
+import PhotoViewer from '@/components/korean/PhotoViewer.vue'
+import { photoOf } from '@/data/korean/grammarPhotos'
 
 const { current, close, prev, next } = useGrammarModal()
 const { share, busy } = useShareCard()
@@ -20,6 +22,10 @@ const video = computed(() => {
   const v = current.value?.video ?? videoOf(current.value?.l)
   return v && v !== broken.value ? v : undefined
 })
+
+/** Фото Юны к карточке: метка «Фото» открывает его на весь экран; у своей карточки (не урок) оно ещё стоит справа вместо видео. */
+const photo = computed(() => (current.value ? photoOf(current.value) : undefined))
+const viewer = ref<string | null>(null)
 
 /** Метки цвета ({o|…}) и теги — в простой текст для карточки. */
 const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^>]+>/g, '')
@@ -96,6 +102,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
             <span class="pill" :class="current.st === 'ok' ? 's' : 'n'">
               {{ current.st === 'ok' ? 'пройдено' : 'ещё рано' }}
             </span>
+            <button v-if="photo" type="button" class="pass ph" title="Показать фото Юны к этому правилу" @click="viewer = photo!">Фото</button>
             <button v-if="owner && current && current.st !== 'ok'" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
               {{ passed ? `✓ ${current.l || 'Тема'} пройдено` : `Отметить пройденным${current.l ? ': ' + current.l.toLowerCase() : ''}` }}
             </button>
@@ -112,16 +119,24 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
         <div class="gsplit" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину. Двойной щелчок возвращает как было" @pointerdown="splitDown" @pointermove="splitMove" @pointerup="splitUp" @pointercancel="splitUp" @dblclick="splitReset"><i></i></div>
         <aside class="gv">
           <video v-if="video" :key="video" class="gvp" :src="video" controls preload="metadata" @error="broken = video!"></video>
-          <div v-else class="gvp stub">
+          <button v-else-if="photo && !current.l" type="button" class="gph" title="Открыть фото на весь экран" @click="viewer = photo!"><img :src="photo" :alt="`Фото Юны: ${current.ru}`" draggable="false" /></button>
+          <div v-else-if="broken" class="gvp stub">
             <span class="play" aria-hidden="true">▶</span>
             <b>{{ current.l ? `Видео · ${current.l}` : 'Видео' }}</b>
-            <small>{{ broken ? 'Не проигралось в этом браузере: смотри в Яндекс Браузере или Chrome' : 'появится, когда скачаю урок' }}</small>
+            <small>Не проигралось в этом браузере: смотри в Яндекс Браузере или Chrome</small>
           </div>
           <p v-if="video && titleOfVideo(video)" class="vt">{{ titleOfVideo(video) }}</p>
           <p v-if="video" class="src">Видео в формате AV1: в Яндекс Браузере, Chrome и Firefox играет, в Safari и на части iPad может не открываться.</p>
-          <p class="src">Автор видеоурока: <a :href="CHANNEL" target="_blank" rel="noopener">Учитель Ян · 양쌤의 한국어 교실</a></p>
+          <p v-if="current.l" class="src">Автор видеоурока: <a :href="CHANNEL" target="_blank" rel="noopener">Учитель Ян · 양쌤의 한국어 교실</a></p>
         </aside>
       </div>
     </div>
+    <PhotoViewer :src="viewer" :alt="current.ru" @close="viewer = null" />
   </div>
 </template>
+
+<style>
+.study-modal .gph { all: unset; display: block; cursor: zoom-in; }
+.study-modal .gph img { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 8px 24px rgba(110, 90, 190, .18); }
+.study-modal .gh .pass.ph { color: #fff; background: var(--pink, #d64da9); border-color: transparent; }
+</style>
