@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
         </div>
       </RouterLink>
       <div class="study-links" role="navigation">
-        <template v-for="s in sections.filter(s => !s.group)" :key="s.id">
+        <template v-for="s in sections.filter(s => !s.group && !(s.owner && progress.isGuest))" :key="s.id">
         <RouterLink :to="`/korean/${s.id}`">
           <span class="line"></span>
           <span class="ic"><Icon :name="icons[s.id] ?? 'star'" /></span>

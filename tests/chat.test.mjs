@@ -2,6 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
+const { sections } = await load('/src/data/korean/sections.ts')
 const { chatErrorText, koreanParts, parseReply } = await load('/src/lib/chat.ts')
 after(close)
 
@@ -33,5 +34,11 @@ describe('помощник-чат: тексты ошибок', () => {
     assert.deepEqual(koreanParts('только по-русски'), [])
     assert.equal(koreanParts('가나 다라 마바 사아 자차 카타 파하 거너', 6).length, 1)
     assert.equal(koreanParts(Array.from({ length: 9 }, (_, i) => '빵' + '을'.repeat(i + 1) + ' 먹어요.').join('\n')).length, 6)
+  })
+
+  test('страница помощника только для владельца и закрыта токеном', () => {
+    const s = sections.find(x => x.id === 'chat')
+    assert.equal(s.private, true)
+    assert.equal(s.owner, true)
   })
 })

@@ -30,6 +30,7 @@ const HINTS = ['Как сказать «я ем хлеб»?', 'Чем отлич
 const down = () => nextTick(() => box.value?.scrollTo({ top: box.value.scrollHeight, behavior: 'smooth' }))
 
 onMounted(async () => {
+  if (progress.isGuest) return
   const st = await chatStatus(progress.bearer)
   if (st) {
     configured.value = st.configured
@@ -80,6 +81,8 @@ async function clear() {
 <template>
   <div class="wrap chat">
     <SectionHead id="chat" />
+    <p v-if="progress.isGuest" class="cb-empty">Помощник доступен только владельцу сайта.</p>
+    <template v-else>
     <p v-if="!configured" class="cb-empty">Помощник пока не подключён: на сервере нет ключа. Как подключить — в <code>server/.env.example</code>.</p>
     <p class="chat-note">Вопросы уходят в сторонний сервис (OpenRouter), бесплатные модели могут сохранять тексты. Личного не пиши. Бесплатная модель может ошибаться в переводе и примерах. Чтение и разбор корейского считает сайт по своему словарю (кнопка «Разобрать»), сверяй с грамматикой и учителем.</p>
 
@@ -114,6 +117,7 @@ async function clear() {
         <button type="submit" class="chat-send" :disabled="busy || !input.trim() || !configured">Спросить</button>
       </div>
     </form>
+    </template>
   </div>
 </template>
 
