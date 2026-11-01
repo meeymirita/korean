@@ -261,8 +261,8 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gh-block { margin-top: 12px; padding: 8px; background: rgba(255, 255, 255, .5); border-radius: 20px; }
 .gh .gh-bh { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; cursor: pointer; }
 .gh .gh-bh b { font-size: 16px; }
-.gh .gh-bh span { flex: 1; font-size: 12px; color: var(--muted); }
-.gh .gh-bh em { font-style: normal; font-size: 13px; font-weight: 700; color: var(--pink); }
+.gh .gh-bh span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
+.gh .gh-bh em { flex: none; white-space: nowrap; font-style: normal; font-size: 13px; font-weight: 700; color: var(--pink); }
 .gh .gh-bh .gi-img { width: 30px; height: 30px; object-fit: contain; }
 .gh .gh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 6px 4px 4px; }
 .gh .gh-card { display: flex; align-items: center; gap: 10px; padding: 12px; background: #fff; border: 1px solid #efeafd; border-radius: 16px; color: var(--ink); text-decoration: none; transition: .2s; }

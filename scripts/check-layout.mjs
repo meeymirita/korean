@@ -13,7 +13,7 @@ const TOKEN = process.env.TOKEN
 if (!TOKEN) { console.error('Задайте TOKEN=токен демо-сервера (не токен владельца)'); process.exit(2) }
 const widths = (process.env.WIDTHS || '360,768').split(',').map(Number)
 const shots = process.env.SHOTS
-const routes = (process.env.ROUTES || '/,/about,/history,/me,/game/home,/game/play,/korean/home,/korean/today,/korean/words,/korean/grammar,/korean/ref/cheat,/korean/ref/talk,/korean/ref/hangul,/korean/ref/alphabet,/korean/ref/reading,/korean/ref/sentences,/korean/ref/numbers,/game/home?game=match,/korean/review,/korean/garden,/korean/cabinet,/korean/cabinet?tab=repeat,/korean/cabinet?tab=week,/korean/cabinet?tab=history,/korean/cabinet?tab=notes,/korean/cabinet?tab=images,/korean/cabinet?tab=db,/korean/cabinet?tab=logs,/korean/cabinet?tab=settings,/nope').split(',')
+const routes = (process.env.ROUTES || '/,/about,/history,/me,/game/home,/game/play,/korean/home,/korean/today,/korean/words,/korean/grammar,/korean/ref/cheat,/korean/ref/talk,/korean/ref/hangul,/korean/ref/alphabet,/korean/ref/reading,/korean/ref/sentences,/korean/ref/numbers,/game/home?game=match,/korean/review,/korean/garden,/korean/cabinet,/korean/cabinet?tab=repeat,/korean/cabinet?tab=week,/korean/cabinet?tab=history,/korean/cabinet?tab=notes,/korean/cabinet?tab=images,/korean/cabinet?tab=db,/korean/cabinet?tab=logs,/korean/cabinet?tab=settings,/korean/cabinet?tab=shop,/korean/shop,/korean/forms,/korean/marks,/korean/mistakes,/korean/today?tab=history,/korean/today?tab=check,/nope').split(',')
 const ch = spawn(CHROME, ['--remote-debugging-port=9333', '--no-sandbox', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' })
 await new Promise(r => setTimeout(r, 1500))
 const targets = await (await fetch('http://127.0.0.1:9333/json')).json()

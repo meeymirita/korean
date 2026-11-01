@@ -367,7 +367,7 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 /* вкладка «Неделя»: календарь слева, статистика за 7 дней справа */
 .study .wk-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 28px; }
 .study .wk-cal { flex: 0 0 340px; max-width: 100%; }
-.study .wk-side { flex: 1; min-width: 300px; }
+.study .wk-side { flex: 1; min-width: min(300px, 100%); }
 .study .wk-side .wk-chart { height: 150px; margin-top: 12px; padding: 12px 12px 6px; gap: 6px; }
 .study .wk-side .wk-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 .study .wk-side .wk-stat { padding: 10px 14px; }
@@ -523,8 +523,8 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .shp-bal b img { width: 52px; height: 52px; object-fit: contain; }
 .study .shp-bal span { font-size: 13px; color: var(--muted); }
 .study .shp-box h3 { margin: 0 0 14px; }
-.study .shp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
-.study .shp-grid.three { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.study .shp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 12px; }
+.study .shp-grid.three { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
 .study .shp-item { display: grid; grid-template-columns: 72px 1fr; gap: 6px 14px; align-items: start; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
 .study .shp-item > img { width: 72px; height: 72px; object-fit: contain; }
 .study .shp-info h4 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
