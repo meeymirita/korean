@@ -13,7 +13,10 @@ import { TRANSLATIONS } from '@/data/korean/translations'
 import yunaBook from '@/assets/home/yuna-book.webp'
 
 const progress = useProgressStore()
-const marked = computed(() => progress.data.settings.marks.filter(m => m.startsWith('w:')).length)
+/** Слова со звёздочкой: фильтр «★ Важное» показывает только их прямо в списке. */
+const markedWords = computed(() => new Set(progress.data.settings.marks.filter(m => m.startsWith('w:')).map(m => m.slice(2))))
+const marked = computed(() => markedWords.value.size)
+const fav = usePersisted('words_fav', false, v => typeof v === 'boolean')
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
@@ -33,7 +36,7 @@ function openWord(d: Word) {
 const input = ref<HTMLInputElement>()
 
 const qs = computed(() => parseQuery(q.value))
-const pool = computed(() => (cat.value ? D.filter(d => d.c.includes(cat.value)) : D))
+const pool = computed(() => D.filter(d => (!cat.value || d.c.includes(cat.value)) && (!fav.value || markedWords.value.has(d.k))))
 
 const rows = computed(() => {
   if (picked.value) return [picked.value]
@@ -48,7 +51,7 @@ const rows = computed(() => {
 const counter = computed(() => {
   if (picked.value) return 'Случайное слово'
   if (qs.value.length) return `Найдено: ${rows.value.length}`
-  return (cat.value ? `${CATN[cat.value]}: ` : 'Всего слов: ') + rows.value.length
+  return (fav.value ? 'Важное: ' : cat.value ? `${CATN[cat.value]}: ` : 'Всего слов: ') + rows.value.length
 })
 
 const h = (text: string) => hl(text, picked.value ? [] : qs.value)
@@ -104,7 +107,7 @@ const shareWord = (d: Word) =>
       </div>
       <div class="chips">
         <button class="chip" :class="{ on: !cat }" @click="((cat = ''), (picked = null))">Все</button>
-        <RouterLink v-if="marked" to="/korean/marks" class="chip">★ Важное · {{ marked }}</RouterLink>
+        <button v-if="marked || fav" class="chip" :class="{ on: fav }" :aria-pressed="fav" title="Показать только слова со звёздочкой" @click="((fav = !fav), (picked = null))">★ Важное · {{ marked }}</button>
         <RouterLink v-if="progress.unlocked" to="/korean/forms" class="chip">🔧 Формы глаголов</RouterLink>
         <button
           v-for="(name, c) in CATN"
@@ -145,7 +148,8 @@ const shareWord = (d: Word) =>
     </div>
     <div v-else class="empty">
       <div class="big">✿</div>
-      Ничего не нашлось по «<span v-html="esc(q)"></span>».<br />Попробуй другое слово или русскую форму («ем» → «есть»).
+      <template v-if="fav && !q">Звёздочек пока нет: нажми ☆ рядом со словом, и оно появится здесь.</template>
+      <template v-else>Ничего не нашлось по «<span v-html="esc(q)"></span>».<br />Попробуй другое слово или русскую форму («ем» → «есть»).</template>
     </div>
   </div>
 </template>

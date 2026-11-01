@@ -23,7 +23,7 @@ export interface CheckSnap {
 const POOL: { group: string; make: (n: number) => Omit<CheckItem, 'id'>; goals: number[] }[] = [
   { group: 'game', goals: [10, 15, 20], make: n => ({ text: `Пройди ${n} раз любой режим в игре`, to: '/game/home', goal: n, source: 'game' }) },
   { group: 'game', goals: [10, 15], make: n => ({ text: `Собери ${n} предложений в игре`, to: '/game/home?game=build', goal: n, source: 'game' }) },
-  { group: 'game', goals: [10, 15], make: n => ({ text: `Ответь ${n} раз в режиме «Прошедшее время»`, to: '/game/home?game=past', goal: n, source: 'game' }) },
+  { group: 'game', goals: [10, 15], make: n => ({ text: `Ответь ${n} раз в режиме «Выбери форму»`, to: '/game/home?game=form', goal: n, source: 'game' }) },
   { group: 'trainer', goals: [10, 20], make: n => ({ text: `Ответь ${n} раз в тренажёрах`, to: '/game/home?game=match', goal: n, source: 'trainer' }) },
   { group: 'trainer', goals: [10, 15], make: n => ({ text: `Реши ${n} заданий на частицы`, to: '/game/home?game=particles', goal: n, source: 'trainer' }) },
   { group: 'trainer', goals: [10, 15], make: n => ({ text: `Переведи ${n} предложений`, to: '/game/home?game=translate', goal: n, source: 'trainer' }) },

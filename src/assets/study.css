@@ -56,19 +56,19 @@
 
 /* ---- слова ---- */
 .study .tb { margin-top: 24px; }
-.study .row { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 2fr);
+.study .row { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 2fr);
   gap: 16px; align-items: baseline; padding: 13px 8px; border-bottom: 1px solid var(--line-soft); font-size: 15px;
   transition: background .15s; }
 .study .row:hover { background: var(--gold-soft); }
 .study .row.h { background: transparent; border-bottom: 1px solid var(--line); padding: 10px 8px;
   font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
-.study .row .n { font-family: var(--mono); font-size: 12px; color: var(--gold); opacity: .8; }
+.study .row .n { display: flex; align-items: center; gap: 2px; white-space: nowrap; font-family: var(--mono); font-size: 12px; color: var(--gold); opacity: .8; }
 .study .row .k { font-family: var(--ko); font-size: 22px; font-weight: 700; }
 .study .row .rd, .study .row .se { color: var(--muted); }
 .study .row .se { font-family: var(--ko); }
 .study .row .tr { font-size: 16px; }
 @media (max-width: 560px) {
-  .study .row { grid-template-columns: 28px 1fr; gap: 4px 10px; }
+  .study .row { grid-template-columns: 62px 1fr; gap: 4px 10px; }
   .study .row > :nth-child(n+3) { grid-column: 2; }
   .study .row.h { display: none; }
 }
