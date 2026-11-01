@@ -87,3 +87,13 @@ export const MAX_NB_NAME = 100
 export const MAX_NB_TEXT = 20_000
 export const MAX_NB_STROKES = 2_000_000
 export const MAX_NB_DEPTH = 8
+
+/** Помощник-чат (OpenRouter): ключ только в server/.env, на сайт он не попадает. Без ключа чат отвечает «не настроен». */
+export const CHAT_KEY = process.env.OPENROUTER_API_KEY || ''
+/** Модель: бесплатные у OpenRouter оканчиваются на «:free» (список на openrouter.ai/models). */
+export const CHAT_MODEL = process.env.CHAT_MODEL || 'openrouter/free'
+export const CHAT_BASE = (process.env.CHAT_BASE || 'https://openrouter.ai/api/v1').replace(/\/+$/, '')
+/** Сколько вопросов в сутки (по UTC) пускать наружу: у бесплатного тарифа 50 запросов в день и 20 в минуту, лишнее не тратим. */
+export const CHAT_DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT || 40)
+export const CHAT_MAX_TEXT = 2000
+export const CHAT_MAX_HISTORY = 12

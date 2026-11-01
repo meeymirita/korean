@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { APP_FILTER } from '@nestjs/core'
 import { AdminModule } from './admin/admin.module'
 import { AuthModule } from './auth/auth.module'
+import { ChatModule } from './chat/chat.module'
 import { DbModule } from './db/db.module'
 import { ErrorFilter } from './error.filter'
 import { EventsModule } from './events/events.module'
@@ -18,7 +19,7 @@ import { SetsModule } from './sets/sets.module'
 import { ProgressModule } from './progress/progress.module'
 
 @Module({
-  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, AdminModule],
+  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, AdminModule],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }],
 })
