@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, ref } from 'vue'
 import { answerText, isCorrect, labelOf, promptOf, shown, statKey, type Direction, type TWord } from '@/data/korean/trainer'
 import { useProgressStore } from '@/stores/progress'
@@ -101,7 +102,7 @@ const showAnswer = computed(() => (current.value ? answerText(current.value, pro
         </form>
 
         <div v-if="state === 'ask'" class="tq-tools">
-          <button type="button" @click="hint = Math.min(hint + 1, showAnswer.length)">💡 Подсказка</button>
+          <button type="button" @click="hint = Math.min(hint + 1, showAnswer.length)"><Icon name="bulb" /> Подсказка</button>
           <button type="button" @click="check(false)">Не знаю</button>
         </div>
         <div v-else class="tq-fb" :class="state">
@@ -116,7 +117,7 @@ const showAnswer = computed(() => (current.value ? answerText(current.value, pro
 
     <div v-else class="tq-end">
       <div class="tq-score">{{ right }} <small>из {{ words.length }}</small></div>
-      <p v-if="wrongWords.length === 0">🌸 Всё верно!</p>
+      <p v-if="wrongWords.length === 0"><Icon name="sakura" /> Всё верно!</p>
       <template v-else>
         <p>Повтори эти слова:</p>
         <ul>
@@ -129,7 +130,7 @@ const showAnswer = computed(() => (current.value ? answerText(current.value, pro
       <div class="mg-actions">
         <button v-if="wrongWords.length" @click="emit('retry', wrongWords)">Повторить ошибки ({{ wrongWords.length }})</button>
         <button @click="emit('again')">Новый тест</button>
-        <button class="plain" @click="print()">🖨 Лист для печати</button>
+        <button class="plain" @click="print()"><Icon name="notebook" /> Лист для печати</button>
       </div>
     </div>
   </div>

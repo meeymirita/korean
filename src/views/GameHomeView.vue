@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
@@ -161,7 +162,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           <span class="gx-lv-t"><span><img class="gi-img" :src="ICON.star" alt="" aria-hidden="true" /> Уровень {{ progress.info.level }} · {{ progress.info.title }}</span><b>{{ progress.info.into }} / {{ progress.info.span }}</b></span>
           <span class="lv-bar"><i :style="{ width: progress.info.pct + '%' }"></i></span>
         </template>
-        <span v-else>🔒 Войти по токену</span>
+        <span v-else><Icon name="lock" /> Войти по токену</span>
       </RouterLink>
     </aside>
 

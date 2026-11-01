@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
@@ -182,7 +183,7 @@ onBeforeUnmount(() => {
     <template v-if="!finished && current">
       <div class="rs-bar">
         <span>{{ idx + 1 }} из {{ tasks.length }}</span>
-        <span class="rs-clock" aria-label="Время на задание">⏱ {{ clock(elapsed) }}</span>
+        <span class="rs-clock" aria-label="Время на задание"><Icon name="stopwatch" /> {{ clock(elapsed) }}</span>
         <span>верно: {{ right }}</span>
       </div>
       <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="tasks.length"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
@@ -223,14 +224,14 @@ onBeforeUnmount(() => {
     <div v-else class="rs-end">
       <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
       <p v-if="pace" class="rs-pace">Время: {{ clock(pace.total) }}, в среднем {{ pace.avg }} с на задание. Дольше всего: задание {{ pace.slowest + 1 }}.</p>
-      <p>{{ right === tasks.length ? '🌸 Всё верно!' : 'Слова с ошибками вернутся в повторение. Вот что не получилось:' }}</p>
+      <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Слова с ошибками вернутся в повторение. Вот что не получилось:</template></p>
       <ul v-if="missed.length" class="qk-miss">
         <li v-for="t in missed" :key="t.id"><span class="ko">{{ t.prompt }}</span> → <b class="ko">{{ t.answer }}</b></li>
       </ul>
       <div class="md" role="group" aria-label="Как прошло?">
         <template v-if="!moodSet">
           <span class="md-q">Как прошло?</span>
-          <button v-for="m in MOODS" :key="m.id" type="button" class="md-b" @click="setMood(m.id)">{{ m.icon }} {{ m.label }}</button>
+          <button v-for="m in MOODS" :key="m.id" type="button" class="md-b" @click="setMood(m.id)"><Icon :name="m.icon" /> {{ m.label }}</button>
         </template>
         <span v-else class="md-q">Записано: {{ MOODS.find(m => m.id === moodSet)?.label.toLowerCase() }}</span>
       </div>

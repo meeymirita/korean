@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import KeysBlock from '@/components/cabinet/KeysBlock.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
@@ -238,7 +239,7 @@ async function refreshPublic() {
         <div v-if="!progress.isGuest" class="st-col">
           <p>Обложка в шапке кабинета.</p>
           <div class="st-avatars">
-            <label class="st-up">{{ coverBusy ? 'Загружаю…' : '🖼 Загрузить обложку' }}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" :disabled="coverBusy" @change="uploadCover" /></label>
+            <label class="st-up"><template v-if="coverBusy">Загружаю…</template><template v-else><Icon name="picture" /> Загрузить обложку</template><input type="file" accept="image/jpeg,image/png,image/gif,image/webp" :disabled="coverBusy" @change="uploadCover" /></label>
             <button v-if="profile.cover" class="st-up" type="button" @click="progress.setProfile({ cover: '' })">Убрать обложку</button>
           </div>
         </div>

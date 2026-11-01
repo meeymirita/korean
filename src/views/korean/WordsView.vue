@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
@@ -99,7 +100,7 @@ const shareWord = (d: Word) =>
           @input="picked = null"
         />
         <button title="Очистить" aria-label="Очистить" @click="clear">✕</button>
-        <button title="Случайное слово" aria-label="Случайное слово" @click="random">🎲</button>
+        <button title="Случайное слово" aria-label="Случайное слово" @click="random"><Icon name="dice" /></button>
       </div>
       <div class="meta">
         <span>{{ counter }}</span>
@@ -108,7 +109,7 @@ const shareWord = (d: Word) =>
       <div class="chips">
         <button class="chip" :class="{ on: !cat }" @click="((cat = ''), (picked = null))">Все</button>
         <button v-if="marked || fav" class="chip" :class="{ on: fav }" :aria-pressed="fav" title="Показать только слова со звёздочкой" @click="((fav = !fav), (picked = null))">★ Важное · {{ marked }}</button>
-        <RouterLink v-if="progress.unlocked" to="/korean/forms" class="chip">🔧 Формы глаголов</RouterLink>
+        <RouterLink v-if="progress.unlocked" to="/korean/forms" class="chip"><Icon name="wrench" /> Формы глаголов</RouterLink>
         <button
           v-for="(name, c) in CATN"
           :key="c"
@@ -135,7 +136,7 @@ const shareWord = (d: Word) =>
         </div>
         <div v-if="openN === d.n" class="row-detail">
           <SentenceBreakdown :sentence="d.s" />
-          <button class="share-btn" :disabled="sharing" @click="shareWord(d)">🖼 Поделиться словом</button>
+          <button class="share-btn" :disabled="sharing" @click="shareWord(d)"><Icon name="picture" /> Поделиться словом</button>
           <button class="share-btn" :aria-pressed="simN === d.n" @click="simN = simN === d.n ? null : d.n">≈ Похожие слова</button>
           <div v-if="simN === d.n" class="sim">
             <template v-if="similar.length">

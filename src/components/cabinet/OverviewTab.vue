@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
@@ -94,7 +95,7 @@ const total = computed(() =>
 
 const { share, busy: sharing } = useShareCard()
 const shareAch = (a: (typeof achievements.value)[number]) =>
-  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Серия: ${progress.streak}`], icon: a.icon }, `достижение-${a.id}`)
+  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Серия: ${progress.streak}`], icon: '🏆' }, `достижение-${a.id}`)
 </script>
 
 <template>
@@ -109,32 +110,32 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       </div>
       <div class="pg-card">
         <div class="pg-k">Серия дней</div>
-        <div class="pg-v">🔥 {{ progress.streak }}</div>
+        <div class="pg-v"><Icon name="fire" /> {{ progress.streak }}</div>
         <div class="pg-t">лучшая серия: {{ progress.bestStreak }}</div>
         <div class="pg-s">заниматься нужно хотя бы раз в день</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Время занятий</div>
-        <div class="pg-v">⏱ {{ formatSpent(spent.today) }}</div>
+        <div class="pg-v"><Icon name="stopwatch" /> {{ formatSpent(spent.today) }}</div>
         <div class="pg-t">за 7 дней: {{ formatSpent(spent.week) }}</div>
         <div class="pg-s">всего {{ formatSpent(spent.total) }} · таймер справа внизу, включай его, когда занимаешься</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Цель дня</div>
-        <div class="pg-v">🎯 {{ Math.min(progress.todayOk, goal) }} <small>из {{ goal }}</small></div>
+        <div class="pg-v"><Icon name="target" /> {{ Math.min(progress.todayOk, goal) }} <small>из {{ goal }}</small></div>
         <div class="pg-bar goal"><i :style="{ width: Math.min(100, (progress.todayOk / goal) * 100) + '%' }"></i></div>
-        <div class="pg-s">{{ progress.goalDone ? 'выполнена 🎉' : `ещё ${goal - progress.todayOk} верных ответов` }}</div>
+        <div class="pg-s"><template v-if="progress.goalDone">выполнена <Icon name="party" /></template><template v-else>ещё {{ goal - progress.todayOk }} верных ответов</template></div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Выученные слова</div>
-        <div class="pg-v">🌸 {{ knownCount }} <small>из {{ D.length }}</small></div>
+        <div class="pg-v"><Icon name="sakura" /> {{ knownCount }} <small>из {{ D.length }}</small></div>
         <div class="pg-bar"><i :style="{ width: (knownCount / D.length) * 100 + '%' }"></i></div>
         <div class="pg-s">{{ learningCount }} в процессе · слово выучено, когда набрал {{ KNOWN_STREAK }} очков: верный ответ +1, ошибка −1</div>
       </div>
     </div>
 
     <template v-if="hasRecords">
-      <h2 class="today-h">Личные рекорды <small v-if="records.todayIsBest">сегодня лучший день! 🎉</small></h2>
+      <h2 class="today-h">Личные рекорды <small v-if="records.todayIsBest">сегодня лучший день! <Icon name="party" /></small></h2>
       <div class="pg-rec">
         <div v-if="records.bestDay" class="pg-recc"><span class="k">Лучший день</span><b>{{ records.bestDay.n }}</b><small>верных · {{ dayLabel(records.bestDay.key) }}</small></div>
         <div v-if="records.bestWeek" class="pg-recc"><span class="k">Лучшая неделя</span><b>{{ records.bestWeek.n }}</b><small>верных · {{ weekLabel(records.bestWeek.key) }}</small></div>
@@ -150,7 +151,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
           <span v-for="d in mood.recent" :key="d.key" class="md-d" :class="moodColor(d.score)" :title="d.score === null ? `${d.key}: без отметок` : `${d.key}: ${d.score < 1.67 ? 'легко' : d.score < 2.34 ? 'нормально' : 'тяжело'}`"></span>
         </div>
         <p class="md-sum">
-          <span v-for="(m, i) in MOODS" :key="m.id">{{ m.icon }} {{ m.label.toLowerCase() }}: <b>{{ mood.counts[i] }}</b></span>
+          <span v-for="(m, i) in MOODS" :key="m.id"><Icon :name="m.icon" /> {{ m.label.toLowerCase() }}: <b>{{ mood.counts[i] }}</b></span>
         </p>
         <p v-if="mood.hardest" class="md-hard">Тяжелее всего обычно {{ mood.hardest }}: можно взять задания полегче или короче.</p>
       </div>
@@ -188,14 +189,14 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     <h2 class="today-h">Достижения <small>{{ doneCount }} из {{ achievements.length }}</small></h2>
     <div class="pg-ach">
       <div v-for="a in achievements" :key="a.id" class="pg-a" :class="{ done: a.done }">
-        <span class="pg-ai">{{ a.icon }}</span>
+        <span class="pg-ai"><Icon :name="a.icon" /></span>
         <div>
           <b>{{ a.title }}</b>
           <small>{{ a.desc }}</small>
           <div class="pg-bar"><i :style="{ width: (a.cur / a.goal) * 100 + '%' }"></i></div>
         </div>
         <span class="pg-an">{{ a.cur }} / {{ a.goal }}</span>
-        <button v-if="a.done" class="pg-share" title="Поделиться достижением" aria-label="Поделиться достижением" :disabled="sharing" @click="shareAch(a)">🖼</button>
+        <button v-if="a.done" class="pg-share" title="Поделиться достижением" aria-label="Поделиться достижением" :disabled="sharing" @click="shareAch(a)"><Icon name="picture" /></button>
       </div>
     </div>
 

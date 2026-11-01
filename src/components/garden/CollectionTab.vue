@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { RARITY, cards, type Card, type CardState, type Rarity } from '@/data/garden'
 import { CATN } from '@/data/korean/words'
@@ -79,7 +80,7 @@ const STATES: ['' | CardState, string][] = [
           <div class="cl-ko">{{ c.word.k }}</div>
           <div class="cl-rd">{{ c.word.r }}</div>
           <div class="cl-tr cl-hid">перевод откроется…</div>
-          <div class="cl-st">🌱 {{ c.stat!.streak }} / {{ KNOWN_STREAK }} очков</div>
+          <div class="cl-st"><Icon name="sprout" /> {{ c.stat!.streak }} / {{ KNOWN_STREAK }} очков</div>
         </template>
         <template v-else>
           <div class="cl-ko">?</div>

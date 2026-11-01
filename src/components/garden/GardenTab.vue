@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { STAGE_NAME, emojiOf, plants, type Plant } from '@/data/garden'
@@ -28,22 +29,22 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
     <div class="pg-cards">
       <div class="pg-card">
         <div class="pg-k">Цветёт</div>
-        <div class="pg-v">🌸 {{ blooming }}</div>
+        <div class="pg-v"><Icon name="sakura" /> {{ blooming }}</div>
         <div class="pg-s">слово расцветает на {{ KNOWN_STREAK }} очках: верный ответ +1, ошибка −1</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Растёт</div>
-        <div class="pg-v">🌱 {{ sprouts }}</div>
+        <div class="pg-v"><Icon name="sprout" /> {{ sprouts }}</div>
         <div class="pg-s">слова, которые ещё учатся: не хватает очков до {{ KNOWN_STREAK }}</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Полито сегодня</div>
-        <div class="pg-v">💧 {{ watered }}</div>
+        <div class="pg-v"><Icon name="sparkle" /> {{ watered }}</div>
         <div class="pg-s">верный ответ в игре, тренажёрах или повторении поливает слово</div>
       </div>
       <div class="pg-card" :class="{ gd_thirst: thirsty.length }">
         <div class="pg-k">Хотят пить</div>
-        <div class="pg-v">🥀 {{ thirsty.length }}</div>
+        <div class="pg-v"><Icon name="bell" /> {{ thirsty.length }}</div>
         <RouterLink v-if="thirsty.length" :to="{ path: '/korean/cabinet', query: { tab: 'repeat' } }" class="pg-s gd-go">Полить в повторении →</RouterLink>
         <div v-else class="pg-s">все слова напоены</div>
       </div>
@@ -70,7 +71,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
       <p v-if="!shown.length" class="gd-empty">Все слова напоены 🌿</p>
     </div>
     <div v-else class="empty">
-      <div class="big">🌱</div>
+      <div class="big"><Icon name="sprout" /></div>
       Сад пока пуст. Ответь на любое слово в игре, тренажёре или «Сегодня» — оно прорастёт.<br />
       <RouterLink to="/game/home">Идти играть →</RouterLink>
     </div>

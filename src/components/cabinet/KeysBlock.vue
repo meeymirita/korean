@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, ref } from 'vue'
 import { SHORTCUT_ITEMS } from '@/data/shortcuts'
 import { RESERVED_KEYS, comboFromEvent, comboLabel, isMac } from '@/lib/shortcuts'
@@ -87,7 +88,7 @@ async function resetAll() {
     <p v-if="hint" class="kb-hint" role="status">{{ hint }}</p>
 
     <div class="kb-group">
-      <h4>🔒 Занято сайтом (не менять)</h4>
+      <h4><Icon name="lock" /> Занято сайтом (не менять)</h4>
       <ul class="kb-list locked">
         <li v-for="r in RESERVED_KEYS" :key="r.keys">
           <span class="kb-name">{{ r.what }}</span>

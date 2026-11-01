@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
@@ -234,7 +235,7 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
       <img v-if="tab === 'list'" class="td-yuna" :src="yunaChecklist" alt="" aria-hidden="true" draggable="false" />
     </Teleport>
     <div class="fcb td-bar">
-      <button v-if="finished" @click="tab = 'today'; newAll()">🎲 Новый набор на сегодня</button>
+      <button v-if="finished" @click="tab = 'today'; newAll()"><Icon name="dice" /> Новый набор на сегодня</button>
       <span class="td-tabs" role="tablist">
         <button role="tab" :aria-selected="tab === 'today'" :class="{ on: tab === 'today' }" @click="tab = 'today'">Сегодня</button>
         <button role="tab" :aria-selected="tab === 'list'" :class="{ on: tab === 'list' }" @click="tab = 'list'">Чек-лист</button>

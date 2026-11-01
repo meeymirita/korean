@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import CollectionTab from '@/components/garden/CollectionTab.vue'
@@ -14,7 +15,7 @@ const tab = ref<'garden' | 'cards'>(useRoute().query.tab === 'cards' ? 'cards' :
     <SectionHead id="garden" />
     <img class="gd-banner" :src="yunaGarden" alt="" aria-hidden="true" draggable="false" />
     <div class="chips cb-tabs">
-      <button class="chip" :class="{ on: tab === 'garden' }" @click="tab = 'garden'">🌸 Сад</button>
+      <button class="chip" :class="{ on: tab === 'garden' }" @click="tab = 'garden'"><Icon name="sakura" /> Сад</button>
       <button class="chip" :class="{ on: tab === 'cards' }" @click="tab = 'cards'">🇰🇷 Коллекция</button>
     </div>
     <GardenTab v-if="tab === 'garden'" />

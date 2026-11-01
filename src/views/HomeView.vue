@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
@@ -113,7 +114,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
         <div class="actions">
           <RouterLink to="/korean/home" class="btn-main">Продолжить <span class="arrow">→</span></RouterLink>
           <button class="link" aria-haspopup="dialog" @click="guide = true">что здесь есть</button>
-          <RouterLink to="/korean/cabinet" class="link">{{ hello.title }}</RouterLink>
+          <RouterLink to="/korean/cabinet" class="link"><Icon v-if="hello.locked" name="lock" /> {{ hello.title }}</RouterLink>
           <button v-if="!installed" class="link" @click="install">скачать приложение</button>
         </div>
 
@@ -125,7 +126,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <RouterLink to="/history" class="link show-sm">История изменений</RouterLink>
           <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
           <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to" class="link">
-            {{ m.title }}<span v-if="!progress.unlocked" class="lock">🔒</span>
+            {{ m.title }}<span v-if="!progress.unlocked" class="lock"><Icon name="lock" /></span>
           </RouterLink>
         </div>
       </section>
@@ -167,7 +168,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <span>вопросы — <a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a></span>
         </div>
         <p class="foot-note">* Отображается только пройденный материал автором, новое появляется по мере изучения.</p>
-        <span class="seal"><i></i>made with 🌸 · <span class="ko">우리말</span></span>
+        <span class="seal"><i></i>made with <Icon name="sakura" /> · <span class="ko">우리말</span></span>
       </footer>
     </div>
 

@@ -2,9 +2,9 @@ import { dayKey } from '@/stores/progress'
 
 export type Mood = 'easy' | 'ok' | 'hard'
 export const MOODS: { id: Mood; label: string; icon: string }[] = [
-  { id: 'easy', label: 'Легко', icon: '😌' },
-  { id: 'ok', label: 'Нормально', icon: '🙂' },
-  { id: 'hard', label: 'Тяжело', icon: '😓' },
+  { id: 'easy', label: 'Легко', icon: 'sun' },
+  { id: 'ok', label: 'Нормально', icon: 'star' },
+  { id: 'hard', label: 'Тяжело', icon: 'moon' },
 ]
 
 /** Оценка дня: 1 — легко, 2 — нормально, 3 — тяжело (среднее по отметкам дня); null — отметок не было. */

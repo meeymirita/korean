@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -107,11 +108,11 @@ const tabs = computed<[Tab, string][]>(() => [
           <Avatar :avatar="progress.data.profile.avatar" :size="64" />
           <div>
             <b>{{ progress.data.profile.name ? `Привет, ${progress.data.profile.name}!` : 'Привет!' }}</b>
-            <small>⭐ уровень {{ progress.info.level }} · {{ progress.info.title }} · 🔥 серия {{ progress.streak }}</small>
+            <small><Icon name="star" /> уровень {{ progress.info.level }} · {{ progress.info.title }} · <Icon name="fire" /> серия {{ progress.streak }}</small>
             <small v-if="!progress.data.profile.name"><br />Имя можно задать в «Настройках».</small>
           </div>
         </div>
-        <RouterLink to="/game/home" class="cb-play">🎮 Играть</RouterLink>
+        <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
       <div class="cb-lvl">{{ progress.info.level }}<small>уровень</small></div>
     </header>

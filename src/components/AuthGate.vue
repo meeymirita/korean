@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
 import { RouterLink } from 'vue-router'
@@ -75,7 +76,7 @@ async function submit() {
   <div class="gate">
     <div class="gate-card">
       <template v-if="progress.needs2fa">
-        <div class="gate-ico">✉️</div>
+        <div class="gate-ico"><Icon name="mail" /></div>
         <h2>Код из письма</h2>
         <p>Токен подошёл. Мы отправили код из 4 цифр на {{ sentTo || 'вашу почту' }}. Он действует 10 минут.</p>
         <form class="gate-form" @submit.prevent="submitCode">
@@ -87,7 +88,7 @@ async function submit() {
         <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
       </template>
       <template v-else>
-      <div class="gate-ico">🔒</div>
+      <div class="gate-ico"><Icon name="lock" /></div>
       <h2>Этот раздел открывается по токену</h2>
       <p>
         Справочники открыты всем: слова, грамматика, шпаргалка, разговорник, хангыль, алфавит, правила чтения, примеры и числа.

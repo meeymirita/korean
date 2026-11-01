@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { D } from '@/data/korean/words'
@@ -113,7 +114,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         </template>
         <RouterLink v-else to="/korean/cabinet" class="locked">
           <div class="sh"><h3>Твой прогресс</h3></div>
-          🔒 Личная статистика откроется после входа по токену
+          <Icon name="lock" /> Личная статистика откроется после входа по токену
         </RouterLink>
       </section>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
@@ -115,7 +116,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           </div>
         </div>
         <MarkStar kind="g" :id="current.id" />
-        <button title="Поделиться карточкой" aria-label="Поделиться карточкой" :disabled="busy" @click="shareRule">🖼</button>
+        <button title="Поделиться карточкой" aria-label="Поделиться карточкой" :disabled="busy" @click="shareRule"><Icon name="picture" /></button>
         <button title="Предыдущая" aria-label="Предыдущая" @click="prev">←</button>
         <button title="Следующая" aria-label="Следующая" @click="next">→</button>
         <button title="Закрыть" aria-label="Закрыть" @click="close">✕</button>
