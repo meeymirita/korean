@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { cutoutBackground } from '@/lib/cutout'
 import { ZOOM, dragPlacement, type Placement } from '@/lib/siteImages'
 import { useSiteImagesStore } from '@/stores/siteImages'
 import { useToastStore } from '@/stores/toast'
@@ -181,6 +182,46 @@ function onFile(e: Event) {
   store.useFile(f)
 }
 const pct = (n: number) => Math.round(n)
+
+/** «Удалить фон»: вырезает белый фон и нарисованную шахматку (`lib/cutout.ts`), результат сразу виден на странице. */
+const cutting = ref(false)
+async function cutout() {
+  const dd = store.draft
+  if (!dd || cutting.value) return
+  cutting.value = true
+  try {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = shown.value
+    await img.decode()
+    const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight))
+    const c = document.createElement('canvas')
+    c.width = Math.max(1, Math.round(img.naturalWidth * k))
+    c.height = Math.max(1, Math.round(img.naturalHeight * k))
+    const g = c.getContext('2d', { willReadFrequently: true })!
+    g.drawImage(img, 0, 0, c.width, c.height)
+    let data: ImageData
+    try {
+      data = g.getImageData(0, 0, c.width, c.height)
+    } catch {
+      return void toast.error('Эту картинку по ссылке обработать нельзя: загрузи её файлом')
+    }
+    let clear = 0
+    for (let i = 3; i < data.data.length; i += 4) if (data.data[i]! < 250) clear++
+    if (clear / (c.width * c.height) > 0.02) return void toast.info('У картинки уже есть прозрачный фон')
+    const removed = cutoutBackground(data.data, c.width, c.height)
+    if (removed < 0.005) return void toast.info('Белого или шахматного фона по краям не нашёл')
+    g.putImageData(data, 0, 0)
+    const blob = await new Promise<Blob | null>(res => c.toBlob(res, 'image/png'))
+    if (!blob) return void toast.error('Не получилось вырезать фон')
+    store.useFile(new File([blob], 'cutout.png', { type: 'image/png' }), true)
+    toast.ok('Фон вырезан. Если что-то лишнее осталось, нажми «Отмена»; сохранится по «Сохранить»')
+  } catch {
+    toast.error('Не удалось открыть картинку, чтобы вырезать фон')
+  } finally {
+    cutting.value = false
+  }
+}
 </script>
 
 <template>
@@ -220,6 +261,7 @@ const pct = (n: number) => Math.round(n)
           </div>
           <input ref="file" type="file" accept="image/*" hidden @change="onFile" />
           <button class="wide" type="button" @click="file?.click()">Загрузить файл с устройства</button>
+          <button class="wide" type="button" :disabled="cutting" title="Вырезает белый фон и нарисованную шахматку по краям картинки" @click="cutout()">{{ cutting ? 'Вырезаю…' : 'Удалить фон' }}</button>
           <p class="hint">Новая картинка целиком занимает место старой, у всех.</p>
         </div>
 

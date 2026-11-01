@@ -101,10 +101,12 @@ export const useSiteImagesStore = defineStore('siteImages', () => {
     if (draft.value.file) URL.revokeObjectURL(draft.value.src)
     draft.value = { ...draft.value, src, file: undefined, x: 50, y: 50, zoom: 1 }
   }
-  function useFile(file: File) {
+  /** Новая картинка из файла. `keepPlace` оставляет сдвиг и приближение (так делает «Удалить фон»). */
+  function useFile(file: File, keepPlace = false) {
     if (!draft.value) return
     if (draft.value.file) URL.revokeObjectURL(draft.value.src)
-    draft.value = { ...draft.value, src: URL.createObjectURL(file), file, x: 50, y: 50, zoom: 1 }
+    const place = keepPlace ? {} : { x: 50, y: 50, zoom: 1 }
+    draft.value = { ...draft.value, src: URL.createObjectURL(file), file, ...place }
   }
 
   const headers = () => ({ Authorization: `Bearer ${progress.bearer}` })
