@@ -100,7 +100,10 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 .rp-tbl td { padding: 5px 10px 5px 0; white-space: nowrap; }
 .rp-bar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: rgba(143, 124, 240, .18); vertical-align: middle; overflow: hidden; margin-right: 6px; }
 .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f7a8d4, #9ec8ff); }
-.rp-gbtn { border: 1px solid var(--pink, #d64da9); color: var(--pink, #d64da9); background: #fff; border-radius: 12px; padding: 1px 10px; font: inherit; font-size: 12px; cursor: pointer; margin-left: 6px; }
-.rp-gbtn:hover { background: rgba(214, 77, 169, .08); }
+.rp-gbtn { font: 400 12px/1.5 inherit; font-family: inherit; letter-spacing: 0; vertical-align: middle; margin-left: 8px; padding: 1px 11px; border: 1px solid rgba(214, 77, 169, .3); border-radius: 999px;
+  background: rgba(214, 77, 169, .06); color: var(--pink, #d64da9); cursor: pointer; transition: background .15s, border-color .15s; }
+.rp-gbtn:hover { background: rgba(214, 77, 169, .14); border-color: rgba(214, 77, 169, .55); }
+.rp-gbtn:focus-visible { outline: 2px solid rgba(214, 77, 169, .5); outline-offset: 2px; }
+.rp-tbl .rp-gbtn { margin-left: 0; }
 .rp-note { color: var(--muted); font-size: 13px; }
 </style>
