@@ -14,7 +14,7 @@ const again = () => (tasks.value = quickTasks(progress.data))
 <template>
   <div class="wrap">
     <SectionHead id="quick" />
-    <TaskSession :tasks="tasks" source="quick" again-label="Ещё пять минут" @again="again">
+    <TaskSession :tasks="tasks" source="quick" mode="quick" again-label="Ещё пять минут" @again="again">
       <template #after><RouterLink to="/korean/home" class="qk-home">На главную раздела</RouterLink></template>
     </TaskSession>
   </div>

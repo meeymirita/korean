@@ -72,6 +72,45 @@ export class ProgressService {
   }
 
   /** Весь прогресс одним объектом, как его ждёт сайт (поле v: 1). */
+  /**
+   * Отчёт по режимам: по каждой паре «раздел + режим» ответы, верные, дни занятий, последний раз и примерное время
+   * (промежутки между ответами до 90 секунд, после долгой паузы засчитывается 15 секунд на ответ). Общее время берётся из таймера занятий.
+   */
+  report(days: number) {
+    const since = days ? Date.now() - days * 86_400_000 : 0
+    const sinceDay = days ? new Date(since).toLocaleDateString('sv-SE') : ''
+    const rows = new Map<string, { source: string; mode: string; ok: number; bad: number; days: Set<string>; first: number; last: number; sec: number }>()
+    const answers = this.db.all<{ t: number; ok: number; source: string; mode: string }>('SELECT t, ok, source, mode FROM answers WHERE t >= ? ORDER BY t', since)
+    const dayOf = (t: number) => new Date(t).toLocaleDateString('sv-SE')
+    let prev = 0
+    for (const a of answers) {
+      const key = a.source + '\u0000' + a.mode
+      let r = rows.get(key)
+      if (!r) rows.set(key, (r = { source: a.source, mode: a.mode, ok: 0, bad: 0, days: new Set(), first: a.t, last: a.t, sec: 0 }))
+      if (a.ok) r.ok++
+      else r.bad++
+      r.days.add(dayOf(a.t))
+      r.last = Math.max(r.last, a.t)
+      const gap = prev ? (a.t - prev) / 1000 : Infinity
+      r.sec += gap <= 90 ? gap : 15
+      prev = a.t
+    }
+    const study = this.db.all<{ day: string; seconds: number }>('SELECT day, seconds FROM study_time WHERE day >= ?', sinceDay)
+    const answerDays = new Set(answers.map(a => dayOf(a.t)))
+    return {
+      days,
+      totals: {
+        ok: answers.filter(a => a.ok).length,
+        bad: answers.filter(a => !a.ok).length,
+        activeDays: new Set([...answerDays, ...study.filter(s => s.seconds > 0).map(s => s.day)]).size,
+        seconds: study.reduce((n, s) => n + s.seconds, 0),
+      },
+      rows: [...rows.values()]
+        .map(r => ({ source: r.source, mode: r.mode, ok: r.ok, bad: r.bad, days: r.days.size, first: r.first, last: r.last, seconds: Math.round(r.sec) }))
+        .sort((a, b) => b.ok + b.bad - (a.ok + a.bad)),
+    }
+  }
+
   read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}

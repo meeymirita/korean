@@ -21,7 +21,7 @@ const pick = (d: TranslateDir) => {
     <div class="chips">
       <button v-for="d in TRANSLATE_DIRS" :key="d.id" class="chip" :class="{ on: dir === d.id }" @click="pick(d.id)">{{ d.label }}</button>
     </div>
-    <TaskSession :tasks="tasks" source="trainer" again-label="Ещё набор" @again="again">
+    <TaskSession :tasks="tasks" source="trainer" mode="translate" again-label="Ещё набор" @again="again">
       <template #after><RouterLink to="/korean/ref/sentences" class="qk-home">Все примеры с разбором</RouterLink></template>
     </TaskSession>
   </div>

@@ -15,7 +15,7 @@ const again = () => (tasks.value = pairTasks(progress.data))
   <div class="wrap">
     <SectionHead id="pairs" />
     <p class="sub-note">Варианты ответа здесь похожи на верное слово: из той же темы или с теми же слогами. Сначала идут слова, в которых были ошибки.</p>
-    <TaskSession :tasks="tasks" source="trainer" again-label="Ещё набор" @again="again">
+    <TaskSession :tasks="tasks" source="trainer" mode="pairs" again-label="Ещё набор" @again="again">
       <template #after><RouterLink to="/korean/mistakes" class="qk-home">Мои ошибки</RouterLink></template>
     </TaskSession>
   </div>

@@ -13,7 +13,7 @@ import { useProgressStore } from '@/stores/progress'
  * Серия заданий по одному: вопрос, варианты (клавиши 1–9), «Дальше» (Enter или →), итог со списком ошибок.
  * Ответы пишутся в прогресс с источником `source`. Новый набор (смена `tasks`) начинает серию заново.
  */
-const props = defineProps<{ tasks: Task[]; source: string; againLabel?: string }>()
+const props = defineProps<{ tasks: Task[]; source: string; /** режим для отчёта в кабинете: particles, translate, pairs… */ mode?: string; againLabel?: string }>()
 const emit = defineEmits<{ again: [] }>()
 
 const progress = useProgressStore()
@@ -143,7 +143,7 @@ function answer(option: string) {
   const ok = option === t.answer
   if (ok) right.value++
   else missed.value.push(t)
-  progress.record({ word: t.word, ok, source: props.source, detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
+  progress.record({ word: t.word, ok, source: props.source, mode: props.mode, detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
   ;(ok ? pop : shake)(zone.value)
 }
 function next() {

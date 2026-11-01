@@ -10,6 +10,7 @@ import ImagesTab from '@/components/cabinet/ImagesTab.vue'
 import LogsTab from '@/components/cabinet/LogsTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
+import ReportTab from '@/components/cabinet/ReportTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
 import WeekTab from '@/components/cabinet/WeekTab.vue'
@@ -59,13 +60,13 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'logs' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'logs' | 'report' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
 const q = route.query.tab
-const OWNER_ONLY = ['images', 'db', 'logs']
-const TABS = ['repeat', 'week', 'history', 'notes', 'images', 'db', 'logs', 'settings']
+const OWNER_ONLY = ['images', 'db', 'logs', 'report']
+const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'db', 'logs', 'settings']
 const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -86,6 +87,7 @@ const tabs = computed<[Tab, string][]>(() => [
   ['repeat', `Повторить${dueCount.value ? ' · ' + dueCount.value : ''}`],
   ['week', 'Неделя'],
   ['history', 'История'],
+  ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [Tab, string][])),
   ['notes', 'Заметки'],
   // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
   ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['db', 'База'], ['logs', 'Журналы']] as [Tab, string][])),
@@ -129,6 +131,7 @@ const tabs = computed<[Tab, string][]>(() => [
     <RepeatTab v-else-if="tab === 'repeat'" />
     <WeekTab v-else-if="tab === 'week'" />
     <HistoryTab v-else-if="tab === 'history'" />
+    <ReportTab v-else-if="tab === 'report'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <DbTab v-else-if="tab === 'db'" />
