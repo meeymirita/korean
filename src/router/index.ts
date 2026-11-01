@@ -91,6 +91,8 @@ const router = createRouter({
         { path: 'mistakes', meta: { private: true }, component: () => import('@/views/korean/MistakesView.vue') },
       ],
     },
+    // «Тетрадь»: отдельный модуль на весь экран, без меню и шапки сайта
+    { path: '/notebook', name: 'notebook', meta: { private: true }, component: () => import('@/views/NotebookView.vue') },
     { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
     { path: '/me', name: 'me', component: () => import('@/views/PublicMeView.vue') },
     { path: '/history', name: 'history', component: () => import('@/views/HistoryView.vue') },

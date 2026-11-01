@@ -127,6 +127,13 @@ onBeforeUnmount(() => {
           <span v-if="!progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
         </RouterLink>
         </template>
+        <RouterLink to="/notebook">
+          <span class="line"></span>
+          <span class="ic"><Icon name="book" /></span>
+          <span>Тетрадь</span>
+          <span v-if="!progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
+          <span v-else class="num">↗</span>
+        </RouterLink>
       </div>
       <RouterLink v-if="progress.unlocked" to="/korean/cabinet" class="study-level">
         <span class="lv-who">
