@@ -87,9 +87,12 @@ const tasksRight = computed(() => tasks.value.filter(t => picked.value[t.id] ===
 /* ---------- проверка слов ---------- */
 const checking = ref(false)
 const checkResult = ref<WordsCheckResult | null>(restored?.checkResult ?? null)
+/** Блок «Слова дня» можно свернуть целиком; после «Закрыть слова» он сворачивается сам, открыть можно кнопкой. */
+const wordsHidden = usePersisted('today_words_hidden', false, v => typeof v === 'boolean')
 function onChecked(r: WordsCheckResult) {
   checkResult.value = r
   checking.value = false
+  wordsHidden.value = true
 }
 
 /* ---------- ответы и новый набор ---------- */
@@ -243,7 +246,14 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
       </span>
     </div>
 
-    <template v-if="tab === 'today'">
+    <template v-if="tab === 'today' && saved">
+      <div class="td-fin" role="status">
+        <b>Набор проверен и сохранён.</b> Верно {{ right }} из {{ all.length }}. Он лежит во вкладке <a href="#" @click.prevent="showHistory">«История»</a>.
+      </div>
+      <div class="td-end-one"><button type="button" @click="newAll()">Новые задания</button></div>
+    </template>
+
+    <template v-else-if="tab === 'today'">
       <div v-if="finished" class="td-fin" role="status">
         <b>На сегодня всё закончено.</b> Верно {{ right }} из {{ all.length }}. Хочешь ещё раз — нажми «Новый набор на сегодня» сверху.
       </div>
@@ -269,7 +279,11 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
         </ol>
       </template>
 
-      <h2 class="today-h">Слова дня <small>нажми на слово — увидишь перевод</small></h2>
+      <h2 class="today-h">
+        Слова дня <small v-if="!wordsHidden">нажми на слово — увидишь перевод</small>
+        <button type="button" class="plain td-fold" :aria-expanded="!wordsHidden" @click="wordsHidden = !wordsHidden">{{ wordsHidden ? 'Показать' : 'Скрыть' }}</button>
+      </h2>
+      <template v-if="!wordsHidden">
       <div class="tw">
         <button v-for="w in words" :key="w.n" class="tw-card" :class="{ open: revealed[w.n] }" @click="toggle(w.n)">
           <span class="k">{{ w.k }}</span>
@@ -286,6 +300,10 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
       <WordsCheck v-if="checking" :key="words.map(w => w.n).join()" :words="words" @done="onChecked" @cancel="checking = false" />
       <p v-else-if="checkResult" class="td-res">
         Пары без ошибок: {{ checkResult.pairs.right }} из {{ checkResult.pairs.total }} · перевод: {{ checkResult.quiz.right }} из {{ checkResult.quiz.total }}<template v-if="checkResult.build.total"> · предложения: {{ checkResult.build.right }} из {{ checkResult.build.total }}</template>
+      </p>
+      </template>
+      <p v-else-if="checkResult" class="td-res">
+        Слова закрыты: пары {{ checkResult.pairs.right }}/{{ checkResult.pairs.total }} · перевод {{ checkResult.quiz.right }}/{{ checkResult.quiz.total }}<template v-if="checkResult.build.total"> · предложения {{ checkResult.build.right }}/{{ checkResult.build.total }}</template>
       </p>
 
       <h2 class="today-h">
@@ -447,4 +465,7 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
 @media (min-width: 1200px) { .study-shell.sky .study-main .wrap.today-page.td-list { padding-right: 320px; } }
 @media (max-width: 1199px) { .td-yuna { display: none; } }
 @media (max-width: 760px) { .study .td-banner { position: static; display: block; max-width: 100%; height: auto; margin: 0 0 10px auto; } .study .today-page > .td-bar { margin-bottom: 0; } }
+.study .td-fold { margin-left: 12px; padding: 4px 14px; font: inherit; font-size: 12px; font-weight: 600; color: var(--ink); background: rgba(255, 255, 255, .75); border: 1px solid var(--line); border-radius: 99px; cursor: pointer; vertical-align: middle; }
+.study .td-end-one { margin-top: 18px; }
+.study .td-end-one button { padding: 12px 26px; font: inherit; font-weight: 700; color: #fff; background: var(--gold); border: 0; border-radius: 14px; cursor: pointer; }
 </style>
