@@ -29,12 +29,6 @@ const words = [...D].sort(() => Math.random() - 0.5).slice(0, 5)
 const rule = HOME_RULE
 const ruleText = rule.label.replace(/^Грамматика · /, '')
 
-const lessons = computed(() => [
-  { n: '01', title: 'Слова', sub: `${D.length} слов в словаре`, foot: 'Открыть →', to: '/korean/words' },
-  { n: '02', title: 'Грамматика', sub: `${G.length} правил`, foot: `✓ ${grammarDone} пройдено`, to: '/korean/grammar' },
-  { n: '03', title: 'Справочник', sub: 'памятка, чтение, примеры', foot: 'Изучить →', to: '/korean/ref' },
-  { n: '04', title: 'Игры', sub: 'тренажёры, диалоги и миксы', foot: progress.unlocked ? 'Играть →' : '🔒 Нужен токен', to: '/game/home' },
-])
 
 /** Быстрый доступ: стикеры из набора «Пастельный набор кавайных стикеров» (src/assets/home/dash/q-*.webp) */
 const quick = [
@@ -74,13 +68,11 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
       </section>
 
       <section class="panel">
-        <div class="sh"><h3>✧ Мои разделы</h3></div>
-        <div class="lessons">
-          <RouterLink v-for="l in lessons" :key="l.n" :to="l.to" class="lesson">
-            <span class="num">{{ l.n }}</span>
-            <strong>{{ l.title }}</strong>
-            <small>{{ l.sub }}</small>
-            <span class="foot">{{ l.foot }}</span>
+        <div class="sh"><h3>✧ Быстрый доступ</h3></div>
+        <div class="quick">
+          <RouterLink v-for="q in quick" :key="q.to + q.title" :to="q.to">
+            <img class="qi" :src="q.img" alt="" aria-hidden="true" draggable="false" />
+            <b>{{ q.title }}</b>
           </RouterLink>
         </div>
       </section>
@@ -92,16 +84,6 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
             <strong class="ko">{{ w.k }}</strong>
             <small>{{ w.r }}</small>
             <small>{{ w.t }}</small>
-          </RouterLink>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="sh"><h3>✧ Быстрый доступ</h3></div>
-        <div class="quick">
-          <RouterLink v-for="q in quick" :key="q.to + q.title" :to="q.to">
-            <img class="qi" :src="q.img" alt="" aria-hidden="true" draggable="false" />
-            <b>{{ q.title }}</b>
           </RouterLink>
         </div>
       </section>
@@ -180,18 +162,6 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
   color: #5b4fb3; font-weight: 700; transition: .2s; }
 .primary:hover { filter: brightness(1.04); transform: translateY(-1px); }
 
-.lessons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.lesson { padding: 15px 13px; min-height: 145px; border-radius: 18px; display: flex; flex-direction: column; align-items: flex-start;
-  gap: 7px; transition: .2s; }
-.lesson:hover, .word:hover, .quick a:hover { transform: translateY(-3px); }
-.lesson:nth-child(1) { background: linear-gradient(140deg, #d6e4ff, #e4eaff); }
-.lesson:nth-child(2) { background: linear-gradient(140deg, #ffe0f4, #ffebf8); }
-.lesson:nth-child(3) { background: linear-gradient(140deg, #e6dcff, #f0eaff); }
-.lesson:nth-child(4) { background: linear-gradient(140deg, #d8f7f2, #eafaf8); }
-.lesson .num { font-size: 12px; color: #626bb8; }
-.lesson strong { font-size: 15px; }
-.lesson small { font-size: 11px; color: var(--muted); line-height: 1.4; }
-.lesson .foot { margin-top: auto; font-size: 12px; color: #7e75d9; }
 
 .words { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
 .word { background: rgba(255, 255, 255, .72); border: 1px solid #fff; border-radius: 15px; padding: 12px 10px; transition: .2s; min-width: 0; }
@@ -241,8 +211,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
   .dcol:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  .lessons, .words { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dcol:last-child { grid-template-columns: 1fr; }
   .hero-in { max-width: 100%; }
     .hero-cat { display: none; }
