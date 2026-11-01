@@ -583,3 +583,4 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .rs-item:disabled { opacity: .4; cursor: default; }
 .study .rs-hint { margin: 0 0 8px; font-size: 14px; text-align: center; color: #7a5a14; }
 .study .rs-chance { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin: 12px 0; padding: 10px 14px; font-size: 14px; background: rgba(248, 185, 233, .22); border-radius: 14px; }
+.study .rs-combo { margin: 0 0 6px; font-size: 13px; font-weight: 600; text-align: center; color: #b2538c; }

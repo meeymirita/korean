@@ -5,6 +5,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { MOODS, type Mood } from '@/data/mood'
+import { nextCombo } from '@/data/coins'
 import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
 import { burst, cascade, drop, follow, pop, shake, springBack } from '@/lib/fx'
@@ -276,6 +277,9 @@ onBeforeUnmount(() => {
         <span>верно: {{ right }}</span>
       </div>
       <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="tasks.length"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
+      <div v-if="owner && progress.data.combo >= 2" class="rs-combo">
+        Серия {{ progress.data.combo }}<template v-if="nextCombo(progress.data.combo)">: ещё {{ nextCombo(progress.data.combo)!.left }} до +{{ nextCombo(progress.data.combo)!.coins }} монеток</template>
+      </div>
       <div class="rs-sub">{{ current.title }}</div>
       <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back', over }" title="Перетащи сюда вариант ответа">{{ current.prompt }}</div>
       <div v-if="current.hint" class="rs-sub">{{ current.hint }}</div>
