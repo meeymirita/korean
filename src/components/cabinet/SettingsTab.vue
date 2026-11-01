@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
+import DbTab from '@/components/cabinet/DbTab.vue'
+import LogsTab from '@/components/cabinet/LogsTab.vue'
 import KeysBlock from '@/components/cabinet/KeysBlock.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
@@ -185,6 +187,8 @@ const SYS_TABS = [
   { id: 'data', label: 'Прогресс и копии' },
   { id: 'access', label: 'Защита и доступ' },
   { id: 'card', label: 'Визитка' },
+  { id: 'db', label: 'База' },
+  { id: 'logs', label: 'Журналы' },
 ] as const
 const sysTab = usePersisted<string>('settings_sys_tab', 'data', v => SYS_TABS.some(t => t.id === v))
 
@@ -326,6 +330,8 @@ async function refreshPublic() {
       <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
       <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
     </div>
+    <DbTab v-if="progress.unlocked && !progress.isGuest && sysTab === 'db'" />
+    <LogsTab v-if="progress.unlocked && !progress.isGuest && sysTab === 'logs'" />
     <div v-show="sysTab === 'card'">
       <div v-if="progress.unlocked && !progress.isGuest" class="st-block">
         <h3>Публичная визитка</h3>

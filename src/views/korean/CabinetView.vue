@@ -4,10 +4,8 @@ import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
-import DbTab from '@/components/cabinet/DbTab.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
-import LogsTab from '@/components/cabinet/LogsTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
@@ -60,13 +58,15 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'logs' | 'report' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
-const q = route.query.tab
-const OWNER_ONLY = ['images', 'db', 'logs', 'report']
-const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'db', 'logs', 'settings']
+/** Старые адреса ?tab=db и ?tab=logs: База и Журналы переехали в «Настройки». */
+const moved = (v: unknown) => (v === 'db' || v === 'logs' ? 'settings' : v)
+const q = moved(route.query.tab)
+const OWNER_ONLY = ['images', 'report']
+const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'settings']
 const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -76,7 +76,8 @@ watch(tab, t => {
 /** Крошка «Кабинет» (и кнопка «назад») меняют ?tab=… извне: вкладка следует за адресом. */
 watch(
   () => route.query.tab,
-  v => {
+  raw => {
+    const v = moved(raw)
     const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as Tab
     if (next !== tab.value) tab.value = next
   },
@@ -90,7 +91,7 @@ const tabs = computed<[Tab, string][]>(() => [
   ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [Tab, string][])),
   ['notes', 'Заметки'],
   // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
-  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['db', 'База'], ['logs', 'Журналы']] as [Tab, string][])),
+  ...(progress.isGuest ? [] : ([['images', 'Картинки']] as [Tab, string][])),
   ['settings', 'Настройки'],
 ])
 </script>
@@ -134,8 +135,6 @@ const tabs = computed<[Tab, string][]>(() => [
     <ReportTab v-else-if="tab === 'report'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
-    <DbTab v-else-if="tab === 'db'" />
-    <LogsTab v-else-if="tab === 'logs'" />
     <SettingsTab v-else />
   </div>
 </template>

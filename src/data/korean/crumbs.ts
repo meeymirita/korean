@@ -17,8 +17,6 @@ export const CABINET_TABS: Record<string, string> = {
   report: 'Отчёт',
   notes: 'Заметки',
   images: 'Картинки',
-  db: 'База',
-  logs: 'Журналы',
   settings: 'Настройки',
 }
 
