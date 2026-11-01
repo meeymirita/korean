@@ -135,9 +135,9 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 
 <style>
 /* страница «Магазин»: стеклянные панели на фоне сакуры, фиолетовые акценты (как макет «Магазин Юны») */
-.study .shx { --pur: #5b2f9a; display: grid; grid-template-columns: 250px 1fr; gap: 20px; align-items: start; margin-top: 18px; padding: 20px; border-radius: 28px; background: var(--shx-bg) center / cover, #efe3ff; }
+.study .shx { --pur: #5b2f9a; display: grid; grid-template-columns: clamp(260px, 30vw, 480px) 1fr; gap: 20px; align-items: start; margin-top: 18px; padding: 20px; border-radius: 28px; background: var(--shx-bg) center / cover, #efe3ff; }
 .study .shx-side { position: sticky; top: 16px; display: grid; gap: 14px; justify-items: center; }
-.study .shx-yuna { width: 100%; max-width: 230px; height: auto; filter: drop-shadow(0 10px 18px rgba(91, 47, 154, .25)); }
+.study .shx-yuna { width: 100%; max-width: 480px; height: auto; filter: drop-shadow(0 10px 18px rgba(91, 47, 154, .25)); }
 .study .shx-bal { width: 100%; display: grid; gap: 4px; justify-items: center; padding: 14px 16px; text-align: center; background: rgba(255, 255, 255, .72); border: 2px solid #fff; border-radius: 36px; box-shadow: 0 10px 28px rgba(91, 47, 154, .22); backdrop-filter: blur(10px); }
 .study .shx-bal small { font-size: 15px; font-weight: 600; color: var(--pur); }
 .study .shx-bal b { display: inline-flex; align-items: center; gap: 10px; font-size: 40px; font-weight: 700; line-height: 1; color: var(--pur); font-variant-numeric: lining-nums; }
@@ -178,6 +178,7 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 .study .shx-log .when { font-size: 12px; color: #7d5ab5; }
 .study .shx-log .plus { color: #2f8f5b; }
 .study .shx-log .minus { color: #c0508a; }
+@media (max-height: 900px) { .study .shx-side { position: static; } }
 @media (max-width: 980px) { .study .shx { grid-template-columns: 1fr; } .study .shx-side { position: static; grid-template-columns: 130px 1fr; align-items: center; } .study .shx-two { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .study .shx { padding: 12px; } .study .shx-grid, .study .shx-grid.three { grid-template-columns: 1fr; } .study .shx-side { grid-template-columns: 1fr; } .study .shx-log li { grid-template-columns: 1fr auto; } .study .shx-log .when { grid-column: 1 / -1; } }
 
