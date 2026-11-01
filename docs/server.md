@@ -26,6 +26,7 @@
 | `events/` | журнал событий в таблице `events` |
 | `plans/` | записи календаря и файлы к ним (`plans`, `plan_files`) |
 | `sets/` | история наборов «Сегодня» (`today_sets`) |
+| `siteimg/` | подмена картинок сайта (режим редактирования): таблица `site_images`, файлы в `data/site/`; чтение открыто всем, менять только владелец |
 | `public/` | публичная визитка `/me` и её картинка для соцсетей |
 | `reminders/` | письмо-напоминание заниматься (`meta.reminder`, проверка раз в минуту, `GET/PUT /api/reminder`, `POST /api/reminder/test`) |
 | `logs/` | журналы Node и Caddy для вкладки «Журналы» |
@@ -37,6 +38,7 @@
 `words` (статистика слова: верно, неверно, серия, последний ответ, когда выучено), `days` (по дням: верных и всего),
 `study_time` (секунды занятий по дням), `guests` (хэши гостевых токенов, имя, срок), `notes` (с картинками: `images`), `images` (название, описание; файлы лежат в `data/uploads` и `data/thumbs`),
 `plans` и `plan_files` (записи календаря и их файлы), `today_sets` (наборы «Сегодня»), `sessions` (сеансы после кода из письма),
+`site_images` (замены картинок сайта: ключ, файл или ссылка, сдвиг и приближение),
 `coin_log` (журнал монеток: сумма, вид, уникальный `ref` против двойных выплат; подробно `docs/shop.md`),
 `events` (входы, создание и отзыв токенов, неверные токены, картинки; последние 2000).
 
@@ -46,6 +48,7 @@
 - `POST /api/ops` `{ ops: [...] }` (с `reset` и `import` нужен заголовок `X-Confirm-Token`): пачка действий (до 500): `answer`, `reset`, `profile` (имя, картинка, `cover` — id обложки кабинета), `settings` (цель, темы, группы игры, закладки `marks`, свои сочетания клавиш `keys`: id пункта → `mod+alt+shift+KeyG`, не больше 40, без повторов), `time` (секунды занятий за день, 1–3600), `import`. Если хоть одно неверное,
   не применяется ничего (400). Правила (что выучено, как растёт серия) те же, что на сайте: `tests/parity.test.mjs` сравнивает.
 - `GET /api/shop?day=`, `GET /api/shop/log`, `POST /api/shop/buy|use|claim`: магазин и монетки (только владелец, см. `docs/shop.md`); в ответе `POST /api/ops` теперь `{coins, combo, ready, news}`, действие `round` `{id, size, right}` засчитывает серию заданий.
+- `GET /api/site-images` (открыто всем), `GET /api/site-images/file/:key` (открыто всем), `POST /api/site-images/:key/file` (multipart, до 12 МБ, сжимается до 1600 px, webp), `PUT /api/site-images/:key` (`{url}` только https и/или `{x,y,zoom}`), `DELETE /api/site-images/:key`: подмена картинок сайта, запись только владелец.
 - `POST /api/session`: запись входа в журнал. `GET/PUT /api/notes`: заметки целиком (у каждой `images` — до 10 id картинок).
 - `GET/POST /api/guests`, `DELETE /api/guests/:id`: гостевые токены (создание возвращает токен один раз и требует `X-Confirm-Token`).
 - `GET/POST /api/images`, `GET /api/images/:id/file|thumb`, `PATCH`, `DELETE`: картинки (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ;

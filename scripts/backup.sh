@@ -63,7 +63,7 @@ if (Object.values(r)[0] !== 'ok') { console.error('integrity_check:', JSON.strin
 PREV=$(ls -d "$BACKUP_DIR"/20??-??-??_?????? 2>/dev/null | sort | tail -1 || true)
 LINK=()
 [ -n "$PREV" ] && [ -d "$PREV/files" ] && LINK=(--link-dest="$PREV/files")
-for d in uploads docs thumbs public; do
+for d in uploads docs thumbs public site; do
   [ -d "$DATA/$d" ] && rsync -a "${LINK[@]+"${LINK[@]}"}" "$DATA/$d" "$WORK/files/"
 done
 

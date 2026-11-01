@@ -22,8 +22,10 @@ import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
+import { useSiteImagesStore } from '@/stores/siteImages'
 
 const progress = useProgressStore()
+const siteImages = useSiteImagesStore()
 const profile = computed(() => progress.data.profile)
 const settings = computed(() => progress.data.settings)
 const message = ref('')
@@ -246,6 +248,10 @@ async function refreshPublic() {
             <label class="st-up"><template v-if="coverBusy">Загружаю…</template><template v-else><Icon name="picture" /> Загрузить обложку</template><input type="file" accept="image/jpeg,image/png,image/gif,image/webp" :disabled="coverBusy" @change="uploadCover" /></label>
             <button v-if="profile.cover" class="st-up" type="button" @click="progress.setProfile({ cover: '' })">Убрать обложку</button>
           </div>
+          <label class="st-edit">
+            <input type="checkbox" :checked="siteImages.editMode" @change="siteImages.setEditMode(($event.target as HTMLInputElement).checked)" />
+            <span><b>Режим редактирования</b><small>У картинок сайта (фото Юны и другие) появляется ⚙︎: заменить, подвинуть, приблизить. Меняется у всех посетителей, не только у тебя.</small></span>
+          </label>
         </div>
       </div>
       <h4 class="st-path-h">Мой путь</h4>

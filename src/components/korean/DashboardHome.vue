@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { HOME_PHRASES, HOME_RULE } from '@/composables/useHome'
 import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
-import BlockBgModal from '@/components/korean/BlockBgModal.vue'
-import { useBlockBg } from '@/composables/useBlockBg'
+import { useSiteImagesStore } from '@/stores/siteImages'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import catSleep from '@/assets/home/dash/cat-sleep.webp'
 import catWave from '@/assets/home/dash/cat-wave.webp'
@@ -31,15 +30,11 @@ const percent = computed(() => Math.round((known.value / D.length) * 100))
 /** Пять слов на сегодня: другие после каждой перезагрузки страницы. */
 const words = [...D].sort(() => Math.random() - 0.5).slice(0, 5)
 
-/** Свои картинки на фоне трёх блоков (шестерёнка в углу): хранятся только в этом браузере. */
-const BLOCKS = { hero: 'Сейчас изучаем', words: 'Слова на сегодня', quote: 'Корея — это…' } as const
-type BlockId = keyof typeof BLOCKS
-/** стандартный фон (у «Слов на сегодня» его нет, только по желанию через шестерёнку): Юна с флагом; лицо в верхней трети картинки, поэтому y = 28% */
-const YUNA = { src: bgYuna, x: 50, y: 28, zoom: 1 }
-const bgs = { hero: useBlockBg('hero', { ...YUNA, x: 62 }), words: useBlockBg('words'), quote: useBlockBg('quote', { ...YUNA, x: 55 }) }
-const editing = ref<BlockId | null>(null)
-/** шестерёнки видит только владелец (вошёл по своему токену, не гость) */
-const canEdit = computed(() => progress.unlocked && !progress.isGuest)
+/** Фоны трёх блоков меняются в режиме редактирования (шестерёнка в углу блока): подмена хранится на сервере и видна всем. */
+const siteImages = useSiteImagesStore()
+/** Положение стандартного фона: лицо Юны в верхней трети картинки, поэтому y = 28% */
+const PLACE = { hero: { x: 62, y: 28, zoom: 1 }, words: { x: 50, y: 50, zoom: 1 }, quote: { x: 55, y: 28, zoom: 1 } }
+const editBlock = (id: keyof typeof PLACE) => window.dispatchEvent(new CustomEvent('site-image-edit', { detail: { key: 'block-' + id, place: PLACE[id] } }))
 
 const rule = HOME_RULE
 const ruleText = rule.label.replace(/^Грамматика · /, '')
@@ -71,9 +66,9 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 <template>
   <div class="dash">
     <div class="dcol">
-      <section class="hero" :class="{ pic: bgs.hero.bg }">
-        <BlockBgLayer :bg="bgs.hero.bg" veil />
-        <button v-if="canEdit" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'hero'">⚙︎</button>
+      <section class="hero">
+        <BlockBgLayer id="hero" :fallback="bgYuna" :place="PLACE.hero" veil />
+        <button v-if="siteImages.editMode" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editBlock('hero')">⚙︎</button>
         <div class="hero-in">
           <span class="eyebrow">СЕЙЧАС ИЗУЧАЕМ · УРОВЕНЬ 1A</span>
           <h2 class="ko">{{ rule.rule }}</h2>
@@ -94,10 +89,10 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         </div>
       </section>
 
-      <section class="panel wpanel" :class="{ pic: bgs.words.bg }">
-        <BlockBgLayer :bg="bgs.words.bg" />
+      <section class="panel wpanel" :class="{ pic: siteImages.items['block-words']?.src }">
+        <BlockBgLayer id="words" />
         <span class="spark s1" aria-hidden="true">✦</span><span class="spark s2" aria-hidden="true">✧</span><span class="spark s3" aria-hidden="true">✦</span>
-        <div class="sh"><h3>▤ Слова на сегодня</h3><span class="shr"><RouterLink to="/korean/words" class="tbtn">Все слова →</RouterLink><button v-if="canEdit" class="gear in" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'words'">⚙︎</button></span></div>
+        <div class="sh"><h3>▤ Слова на сегодня</h3><span class="shr"><RouterLink to="/korean/words" class="tbtn">Все слова →</RouterLink><button v-if="siteImages.editMode" class="gear in" title="Фон блока" aria-label="Настроить фон блока" @click="editBlock('words')">⚙︎</button></span></div>
         <div class="words">
           <RouterLink v-for="(w, i) in words" :key="w.n" :to="{ path: '/korean/words', query: { q: w.k } }" class="word" :class="'c' + (i % 5)">
             <i class="wn">{{ i + 1 }}</i>
@@ -147,13 +142,12 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
       </section>
 
       <section class="panel quote">
-        <BlockBgLayer :bg="bgs.quote.bg" veil />
-        <button v-if="canEdit" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'quote'">⚙︎</button>
+        <BlockBgLayer id="quote" :fallback="bgYuna" :place="PLACE.quote" veil />
+        <button v-if="siteImages.editMode" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editBlock('quote')">⚙︎</button>
         <p>Корея — это не только язык, но и новые возможности, люди и мечты. ♡</p>
         <RouterLink to="/korean/today">Всё получится →</RouterLink>
       </section>
     </div>
-    <BlockBgModal v-if="editing" :id="editing" :title="BLOCKS[editing]" :veil="editing !== 'words'" @close="editing = null" />
   </div>
 </template>
 

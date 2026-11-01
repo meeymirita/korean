@@ -220,7 +220,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       // инструкция восстановления лежит рядом с архивом: на новом сервере репозитория ещё нет
       const guide = [path.join(ROOT, '..', 'docs', 'backup.md'), path.join(ROOT, 'docs', 'backup.md')].find(existsSync)
       if (guide) writeFileSync(path.join(stage, 'backup.md'), readFileSync(guide))
-      const sizes = ['uploads', 'docs', 'thumbs', 'public'].map(d => {
+      const sizes = ['uploads', 'docs', 'thumbs', 'public', 'site'].map(d => {
         const dir = path.join(DATA_DIR, d)
         return `  ${d}: ${existsSync(dir) ? Math.round(dirSize(dir) / 1024) + ' КБ' : 'нет папки'}`
       })
@@ -241,7 +241,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
       // 2. сжатие: процент считаем по размеру готового файла относительно исходных данных
       this.set(1, 8)
-      const dirs = ['uploads', 'docs', 'thumbs', 'public'].filter(d => existsSync(path.join(DATA_DIR, d)))
+      const dirs = ['uploads', 'docs', 'thumbs', 'public', 'site'].filter(d => existsSync(path.join(DATA_DIR, d)))
       const total = dirSize(stage) + dirs.reduce((n, d) => n + dirSize(path.join(DATA_DIR, d)), 0) || 1
       const poll = setInterval(() => {
         try {

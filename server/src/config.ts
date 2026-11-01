@@ -37,6 +37,10 @@ export const UPLOADS = path.join(DATA_DIR, 'uploads')
 export const THUMBS = path.join(DATA_DIR, 'thumbs')
 export const DOCS = path.join(DATA_DIR, 'docs')
 export const PUBLIC_DIR = path.join(DATA_DIR, 'public')
+/** Подменённые картинки сайта (режим редактирования) */
+export const SITE_DIR = path.join(DATA_DIR, 'site')
+export const MAX_SITE_IMAGE = 12 * 1024 * 1024
+export const MAX_SITE_IMAGES = 300
 
 export const KEEP_BACKUPS = 30
 /** Тела запросов (JSON): заметки до 200 × 5000 символов на кириллице занимают около 2 МБ. */

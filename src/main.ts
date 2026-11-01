@@ -8,6 +8,8 @@ import App from './App.vue'
 import router from './router'
 import { initTheme } from './lib/theme'
 import { initPwa } from './lib/pwa'
+import { initSiteImages } from './lib/siteImagesDom'
+import { useSiteImagesStore } from './stores/siteImages'
 
 initTheme()
 initPwa()
@@ -34,3 +36,7 @@ if (guest && !progress.unlocked) void progress.connect(guest)
 else void progress.init()
 
 app.mount('#app')
+
+// картинки, которые владелец заменил в режиме редактирования: видны всем посетителям
+initSiteImages(pinia)
+void useSiteImagesStore(pinia).load()

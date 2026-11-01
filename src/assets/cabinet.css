@@ -151,6 +151,10 @@
 .study .st-av.on { border-color: var(--gold); }
 .study .st-up { padding: 8px 14px; font-size: 13px; font-weight: 600; border: 1px dashed var(--line); border-radius: 99px; cursor: pointer; align-self: center; }
 .study .st-up input { display: none; }
+.study .st-edit { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
+.study .st-edit input { margin-top: 3px; accent-color: #8c78da; }
+.study .st-edit b { display: block; font-size: 14px; }
+.study .st-edit small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 .study .st-goals { display: flex; gap: 8px; margin-top: 14px; }
 .study .st-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 

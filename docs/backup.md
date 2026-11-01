@@ -4,7 +4,7 @@
 
 ## 1. Полный архив на почту
 
-В архиве: база, картинки (`uploads`, `thumbs`), файлы календаря (`docs`), обложка визитки (`public`) и `server/.env`. Всё сжато и **зашифровано** паролем `BACKUP_PASSPHRASE`
+В архиве: база, картинки (`uploads`, `thumbs`), файлы календаря (`docs`), обложка визитки (`public`), заменённые картинки сайта (`site`) и `server/.env`. Всё сжато и **зашифровано** паролем `BACKUP_PASSPHRASE`
 (AES-256, `openssl`): без пароля содержимое не прочитать ни на сервере, ни в почте.
 
 Нужно один раз вписать в `server/.env` (значение в чат и git не попадает):
@@ -41,9 +41,9 @@ node --no-warnings -e "const {DatabaseSync}=require('node:sqlite');const d=new D
 
 После проверки **удалите распакованное**: в `server.env` лежат токен и пароли (`rm -rf korean-restore korean.tar.gz`).
 
-Если архив пришёл частями: `cat korean-ДАТА.tar.gz.enc.part* > korean-ДАТА.tar.gz.enc`. Внутри `app.db`, `server.env`, папки `uploads`, `docs`, `thumbs`, `public`.
+Если архив пришёл частями: `cat korean-ДАТА.tar.gz.enc.part* > korean-ДАТА.tar.gz.enc`. Внутри `app.db`, `server.env`, папки `uploads`, `docs`, `thumbs`, `site`, `public`.
 
-**Восстановление:** остановить службу, положить `app.db`, `uploads`, `docs`, `thumbs`, `public` в `server/data/`, вернуть `server.env` как `server/.env`, запустить службу.
+**Восстановление:** остановить службу, положить `app.db`, `uploads`, `docs`, `thumbs`, `public`, `site` в `server/data/`, вернуть `server.env` как `server/.env`, запустить службу.
 
 ## 2. Ночная копия на сервере
 

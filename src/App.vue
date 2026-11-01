@@ -4,6 +4,7 @@ import GlobalSearch from '@/components/GlobalSearch.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import StudyTimer from '@/components/StudyTimer.vue'
+import SiteImageEditor from '@/components/SiteImageEditor.vue'
 
 const route = useRoute()
 </script>
@@ -13,6 +14,7 @@ const route = useRoute()
   <!-- в разделе корейского (/korean/…) кнопка и окно поиска есть в самом разделе; на самой главной поиска нет (так решил владелец) -->
   <GlobalSearch v-if="route.path !== '/' && !route.path.startsWith('/korean')" />
   <StudyTimer />
+  <SiteImageEditor />
   <ConfirmDialog />
   <ToastHost />
 </template>

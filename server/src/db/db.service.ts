@@ -117,6 +117,18 @@ CREATE TABLE IF NOT EXISTS today_sets (
 );
 CREATE INDEX IF NOT EXISTS today_sets_created ON today_sets (created);
 
+-- подмена картинок сайта (режим редактирования): key — имя файла картинки без хэша; kind: file (в data/site) или url (https)
+CREATE TABLE IF NOT EXISTS site_images (
+  key TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  ref TEXT NOT NULL,
+  mime TEXT NOT NULL DEFAULT '',
+  x REAL NOT NULL DEFAULT 50,
+  y REAL NOT NULL DEFAULT 50,
+  zoom REAL NOT NULL DEFAULT 1,
+  v INTEGER NOT NULL DEFAULT 1
+);
+
 -- сеансы после двухфакторного входа: хранится только хэш
 CREATE TABLE IF NOT EXISTS sessions (
   hash TEXT PRIMARY KEY,
