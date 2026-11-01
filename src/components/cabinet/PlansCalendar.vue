@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { errText } from '@/lib/http'
 import TagInput from '@/components/cabinet/TagInput.vue'
@@ -322,8 +323,8 @@ onBeforeUnmount(() => {
                 </label>
                 <TagInput v-model="tags" :suggestions="allTags" />
                 <div v-if="!editingId" class="pc-pick">
-                  <label class="pc-attach">📎 PDF, Word, картинки<input type="file" multiple :accept="DOC_ACCEPT" :disabled="busy" @change="pickFiles" /></label>
-                  <span v-for="(f, i) in picked" :key="f.name + i" class="pc-file">📄 {{ f.name }} · {{ formatSize(f.size) }}<button type="button" :aria-label="`Убрать ${f.name}`" @click="picked.splice(i, 1)">✕</button></span>
+                  <label class="pc-attach"><Icon name="notebook" /> PDF, Word, картинки<input type="file" multiple :accept="DOC_ACCEPT" :disabled="busy" @change="pickFiles" /></label>
+                  <span v-for="(f, i) in picked" :key="f.name + i" class="pc-file"><Icon name="notebook" /> {{ f.name }} · {{ formatSize(f.size) }}<button type="button" :aria-label="`Убрать ${f.name}`" @click="picked.splice(i, 1)">✕</button></span>
                   <small class="pc-hint">Файлы можно перетащить прямо сюда.</small>
                 </div>
                 <ul v-if="problems.length" class="pc-err"><li v-for="p in problems" :key="p">{{ p }}</li></ul>
@@ -359,7 +360,7 @@ onBeforeUnmount(() => {
                   </ul>
 
                   <div class="pc-acts">
-                    <label class="pc-attach">{{ uploading === p.id ? 'Загружаю…' : '📎 Файл' }}<input type="file" multiple :accept="DOC_ACCEPT" :disabled="uploading === p.id" @change="attach($event, p)" /></label>
+                    <label class="pc-attach"><template v-if="uploading === p.id">Загружаю…</template><template v-else><Icon name="notebook" /> Файл</template><input type="file" multiple :accept="DOC_ACCEPT" :disabled="uploading === p.id" @change="attach($event, p)" /></label>
                     <button type="button" class="pc-btn" @click="startEdit(p)">Изменить</button>
                     <button type="button" class="pc-btn danger" @click="removePlan(p)">Удалить</button>
                   </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { makeTask, type Task } from '@/data/korean/tasks'
 import type { Word } from '@/data/korean/words'
@@ -58,7 +59,7 @@ function next() {
     </template>
     <div v-else class="rs-end">
       <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
-      <p>{{ right === tasks.length ? '🌸 Всё верно!' : 'Слова, в которых были ошибки, вернутся в повторение.' }}</p>
+      <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Слова, в которых были ошибки, вернутся в повторение.</template></p>
       <button class="rs-start" @click="emit('done')">Готово</button>
     </div>
   </div>

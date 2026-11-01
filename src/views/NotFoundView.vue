@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
 import { RouterLink, useRoute } from 'vue-router'
 import '@/assets/home/fonts.css'
 import { openSearch } from '@/composables/useSearchWindow'
@@ -15,7 +16,7 @@ const LINKS = [
 
 <template>
   <main class="nf">
-    <div class="mark ko">✳︎</div>
+    <Cat name="think" />
     <h1 class="ko">404</h1>
     <p class="lead">Такой страницы нет</p>
     <p class="path">{{ route.fullPath }}</p>

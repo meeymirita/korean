@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
+import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import DashboardHome from '@/components/korean/DashboardHome.vue'
@@ -45,12 +47,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
   <div class="wrap ov">
     <header class="greet">
       <div>
-        <h1>Привет! 안녕 👋</h1>
+        <h1>Привет! 안녕 <Icon name="sparkle" /></h1>
         <p>{{ progress.unlocked && progress.data.profile.name ? progress.data.profile.name + ', сегодня' : 'Сегодня' }} ты ближе к своей цели, чем вчера.</p>
       </div>
       <div class="greet-r">
         <RouterLink v-if="lastVisited" :to="lastVisited.path" class="chip">↩ {{ lastVisited.title }}</RouterLink>
-        <span v-if="progress.unlocked" class="streak">🔥 <b>{{ progress.streak }}</b> дн. подряд</span>
+        <span v-if="progress.unlocked" class="streak"><Icon name="fire" /> <b>{{ progress.streak }}</b> дн. подряд</span>
       </div>
     </header>
 
@@ -68,7 +70,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
     <template v-if="result">
       <div v-if="!result.total" class="empty">
-        <div class="big">✿</div>
+        <Cat name="think" />
         Ничего не нашлось. Попробуй другое слово или русскую форму («ем» → «есть»).
       </div>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
 import SectionHead from '@/components/korean/SectionHead.vue'
@@ -150,7 +151,7 @@ watch(finished, v => {
       </template>
       <div v-else class="rs-end">
         <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
-        <p>{{ right === tasks.length ? '🌸 Всё верно!' : 'Вот что не получилось:' }}</p>
+        <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Вот что не получилось:</template></p>
         <ul v-if="missed.length" class="qk-miss"><li v-for="t in missed" :key="t.word.n"><span class="ko">{{ t.word.k }}</span> ({{ t.word.r }}) — {{ t.prompt }}</li></ul>
         <div class="pg-btns"><button class="rs-start" @click="again">Ещё раз</button></div>
       </div>

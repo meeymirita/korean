@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { RARITY, cards, type Card, type CardState, type Rarity } from '@/data/garden'
 import { CATN } from '@/data/korean/words'
@@ -41,7 +42,7 @@ const STATES: ['' | CardState, string][] = [
     <div class="pg-cards">
       <div class="pg-card">
         <div class="pg-k">Открыто карточек</div>
-        <div class="pg-v">🇰🇷 {{ opened.length }} <small>из {{ all.length }}</small></div>
+        <div class="pg-v"><Icon name="flag-kr" /> {{ opened.length }} <small>из {{ all.length }}</small></div>
         <div class="pg-bar"><i :style="{ width: (opened.length / all.length) * 100 + '%' }"></i></div>
         <div class="pg-s">карточка открывается, когда слово выучено ({{ KNOWN_STREAK }} очков: верный +1, ошибка −1)</div>
       </div>
@@ -79,7 +80,7 @@ const STATES: ['' | CardState, string][] = [
           <div class="cl-ko">{{ c.word.k }}</div>
           <div class="cl-rd">{{ c.word.r }}</div>
           <div class="cl-tr cl-hid">перевод откроется…</div>
-          <div class="cl-st">🌱 {{ c.stat!.streak }} / {{ KNOWN_STREAK }} очков</div>
+          <div class="cl-st"><Icon name="sprout" /> {{ c.stat!.streak }} / {{ KNOWN_STREAK }} очков</div>
         </template>
         <template v-else>
           <div class="cl-ko">?</div>
@@ -87,7 +88,7 @@ const STATES: ['' | CardState, string][] = [
         </template>
       </div>
     </div>
-    <div v-else class="empty"><div class="big">🇰🇷</div>Таких карточек пока нет.<br />Отвечай верно в «Сегодня» и в тренажёрах: карточки появятся сами.</div>
+    <div v-else class="empty"><div class="big"><Icon name="flag-kr" /></div>Таких карточек пока нет.<br />Отвечай верно в «Сегодня» и в тренажёрах: карточки появятся сами.</div>
     <button v-if="!more && rows.length > LIMIT" class="chip cl-more" @click="more = true">Показать ещё {{ rows.length - LIMIT }}</button>
   </div>
 </template>

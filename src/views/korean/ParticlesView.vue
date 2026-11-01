@@ -24,7 +24,7 @@ const pick = (id: string) => {
       <button class="chip" :class="{ on: !rule }" @click="pick('')">Вперемешку</button>
       <button v-for="s in sets" :key="s.id" class="chip" :class="{ on: rule === s.id }" :title="s.ru" @click="pick(s.id)">{{ s.ko }}</button>
     </div>
-    <TaskSession :tasks="tasks" source="trainer" again-label="Ещё набор" @again="again">
+    <TaskSession :tasks="tasks" source="trainer" mode="particles" again-label="Ещё набор" @again="again">
       <template #after>
         <RouterLink :to="{ path: '/korean/grammar', query: rule ? { g: rule } : {} }" class="qk-home">{{ rule ? 'Открыть правило' : 'Вся грамматика' }}</RouterLink>
       </template>

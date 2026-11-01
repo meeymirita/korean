@@ -37,6 +37,12 @@ const bad = (msg: string): never => {
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.length <= max ? v : bad('invalid op'))
 const int = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max ? v : bad('invalid op'))
 
+/** День «ГГГГ-ММ-ДД» по местному времени: без Intl, в сотни раз быстрее toLocaleDateString на больших выборках. */
+function dayKeyOf(t: number): string {
+  const d = new Date(t)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function parseDetail(s: string): Record<string, string> {
   try {
     return JSON.parse(s) as Record<string, string>
@@ -50,7 +56,7 @@ const IMAGE_ID = /^[a-f0-9]{16}$/
 /** За одно действие таймера можно записать не больше часа. */
 const MAX_TIME_OP = 3600
 const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [], keys: {} }
-const MARK = /^[wgd]:.{1,40}$/
+const MARK = /^[wgdu]:.{1,40}$/
 const MAX_MARKS = 500
 const KEY_ID = /^(nav|cab):[a-z]{1,20}$/
 const KEY_COMBO = /^mod(\+alt)?(\+shift)?\+[A-Za-z0-9]{1,20}$/
@@ -72,6 +78,94 @@ export class ProgressService {
   }
 
   /** Весь прогресс одним объектом, как его ждёт сайт (поле v: 1). */
+  /**
+   * Отчёт по режимам: по каждой паре «раздел + режим» ответы, верные, дни занятий, последний раз и примерное время
+   * (промежутки между ответами до 90 секунд, после долгой паузы засчитывается 15 секунд на ответ). Общее время берётся из таймера занятий.
+   */
+  report(days: number) {
+    const since = days ? Date.now() - days * 86_400_000 : 0
+    const sinceDay = days ? dayKeyOf(since) : ''
+    const rows = new Map<string, { source: string; mode: string; ok: number; bad: number; days: Set<string>; first: number; last: number; sec: number }>()
+    const answers = this.db.all<{ t: number; ok: number; source: string; mode: string }>('SELECT t, ok, source, mode FROM answers WHERE t >= ? ORDER BY t', since)
+    const dayOf = dayKeyOf
+    let prev = 0
+    for (const a of answers) {
+      const key = a.source + '\u0000' + a.mode
+      let r = rows.get(key)
+      if (!r) rows.set(key, (r = { source: a.source, mode: a.mode, ok: 0, bad: 0, days: new Set(), first: a.t, last: a.t, sec: 0 }))
+      if (a.ok) r.ok++
+      else r.bad++
+      r.days.add(dayOf(a.t))
+      r.last = Math.max(r.last, a.t)
+      const gap = prev ? (a.t - prev) / 1000 : Infinity
+      r.sec += gap <= 90 ? gap : 15
+      prev = a.t
+    }
+    const study = this.db.all<{ day: string; seconds: number }>('SELECT day, seconds FROM study_time WHERE day >= ?', sinceDay)
+    const answerDays = new Set(answers.map(a => dayOf(a.t)))
+    return {
+      days,
+      totals: {
+        ok: answers.filter(a => a.ok).length,
+        bad: answers.filter(a => !a.ok).length,
+        activeDays: new Set([...answerDays, ...study.filter(s => s.seconds > 0).map(s => s.day)]).size,
+        seconds: study.reduce((n, s) => n + s.seconds, 0),
+      },
+      rows: [...rows.values()]
+        .map(r => ({ source: r.source, mode: r.mode, ok: r.ok, bad: r.bad, days: r.days.size, first: r.first, last: r.last, seconds: Math.round(r.sec) }))
+        .sort((a, b) => b.ok + b.bad - (a.ok + a.bad)),
+    }
+  }
+
+  /** Ответы по дням для графика отчёта: от `days` дней назад до сегодня (0 — с первого ответа, не больше 120 дней), пустые дни с нулями. */
+  series(source: string, mode: string | undefined, days: number) {
+    const where = mode === undefined ? 'source = ?' : 'source = ? AND mode = ?'
+    const args = mode === undefined ? [source] : [source, mode]
+    const first = this.db.get<{ t: number | null }>(`SELECT MIN(t) AS t FROM answers WHERE ${where}`, ...args)?.t ?? null
+    const span = days || (first ? Math.min(120, Math.max(7, Math.ceil((Date.now() - first) / 86_400_000) + 1)) : 30)
+    const from = new Date()
+    from.setHours(0, 0, 0, 0)
+    from.setDate(from.getDate() - (span - 1))
+    const rows = this.db.all<{ t: number; ok: number }>(`SELECT t, ok FROM answers WHERE ${where} AND t >= ?`, ...args, from.getTime())
+    const byDay = new Map<string, { ok: number; bad: number }>()
+    for (const r of rows) {
+      const k = dayKeyOf(r.t)
+      const d = byDay.get(k) ?? { ok: 0, bad: 0 }
+      if (r.ok) d.ok++
+      else d.bad++
+      byDay.set(k, d)
+    }
+    const out: { day: string; ok: number; bad: number }[] = []
+    for (let i = 0; i < span; i++) {
+      const d = new Date(from)
+      d.setDate(from.getDate() + i)
+      const k = dayKeyOf(d.getTime())
+      out.push({ day: k, ...(byDay.get(k) ?? { ok: 0, bad: 0 }) })
+    }
+    return { source, mode: mode ?? null, days: out }
+  }
+
+  /** Сами ответы раздела или режима за период: слово, верно ли, вопрос / верный ответ / что выбрано. Новые сверху, не больше 300. */
+  answersOf(source: string, mode: string | undefined, days: number, only?: 'ok' | 'bad') {
+    const conds = ['source = ?']
+    const args: (string | number)[] = [source]
+    if (mode !== undefined) {
+      conds.push('mode = ?')
+      args.push(mode)
+    }
+    if (days) {
+      conds.push('t >= ?')
+      args.push(Date.now() - days * 86_400_000)
+    }
+    const base = conds.join(' AND ')
+    const count = (extra: string) => this.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM answers WHERE ${base}${extra}`, ...args)!.n
+    const where = base + (only === 'ok' ? ' AND ok = 1' : only === 'bad' ? ' AND ok = 0' : '')
+    const items = this.db
+      .all<{ t: number; word: string | null; ok: number; detail: string }>(`SELECT t, word, ok, detail FROM answers WHERE ${where} ORDER BY t DESC, id DESC LIMIT 300`, ...args)
+      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, ...(r.detail ? { d: parseDetail(r.detail) } : {}) }))
+    return { items, ok: count(' AND ok = 1'), bad: count(' AND ok = 0') }
+  }
+
   read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { visit } from '@/composables/useLastVisited'
@@ -19,7 +20,8 @@ import { useProgressStore } from '@/stores/progress'
 import { useShortcutsStore } from '@/stores/shortcuts'
 
 const counts: Record<string, number> = { words: D.length, grammar: G.length }
-const icons: Record<string, string> = { game: '◈', home: '⌂', today: '☀', cabinet: '♡', words: '▤', grammar: '◉', ref: '▣', trainers: '✧', review: '↻', garden: '🌸' }
+/** Значки пунктов меню: имена иконок из src/lib/icons.ts */
+const icons: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura' }
 const progress = useProgressStore()
 const route = useRoute()
 const router = useRouter()
@@ -93,19 +95,19 @@ onBeforeUnmount(() => {
         <template v-for="s in sections.filter(s => !s.group)" :key="s.id">
         <RouterLink :to="`/korean/${s.id}`">
           <span class="line"></span>
-          <span class="ic">{{ icons[s.id] }}</span>
+          <span class="ic"><Icon :name="icons[s.id] ?? 'star'" /></span>
           <span>{{ s.menu }}</span>
           <kbd v-if="shortcuts.labelOf('nav:' + s.id)" class="kb">{{ shortcuts.labelOf('nav:' + s.id) }}</kbd>
-          <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену">🔒</span>
+          <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
           <span v-else-if="counts[s.id]" class="ct">{{ counts[s.id] }}</span>
           <span v-else class="num">{{ s.num }}</span>
         </RouterLink>
-        <RouterLink v-if="s.id === 'today'" to="/game">
+        <RouterLink v-if="s.id === 'today'" to="/game/home">
           <span class="line"></span>
-          <span class="ic">{{ icons.game }}</span>
+          <span class="ic"><Icon :name="icons.game!" /></span>
           <span>Игра на слова</span>
           <kbd v-if="shortcuts.labelOf('nav:game')" class="kb">{{ shortcuts.labelOf('nav:game') }}</kbd>
-          <span v-if="!progress.unlocked" class="lock" title="Откроется после входа по токену">🔒</span>
+          <span v-if="!progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
         </RouterLink>
         </template>
       </div>
@@ -114,12 +116,12 @@ onBeforeUnmount(() => {
           <Avatar :avatar="progress.data.profile.avatar" :size="26" />
           <b>{{ progress.data.profile.name || 'Мой кабинет' }}</b>
         </span>
-        <span>⭐ Уровень {{ progress.info.level }} · {{ progress.info.title }}</span>
+        <span><Icon name="star" /> Уровень {{ progress.info.level }} · {{ progress.info.title }}</span>
         <span class="lv-bar"><i :style="{ width: progress.info.pct + '%' }"></i></span>
-        <small>🔥 серия {{ progress.streak }} · 🎯 {{ Math.min(progress.todayOk, progress.goal) }} / {{ progress.goal }} сегодня</small>
+        <small><Icon name="fire" /> серия {{ progress.streak }} · <Icon name="target" /> {{ Math.min(progress.todayOk, progress.goal) }} / {{ progress.goal }} сегодня</small>
       </RouterLink>
       <RouterLink v-else to="/korean/cabinet" class="study-level">
-        <span>🔒 Войти по токену</span>
+        <span><Icon name="lock" /> Войти по токену</span>
         <small>откроются задания, тренажёры, игра и кабинет</small>
       </RouterLink>
       <div class="foot">

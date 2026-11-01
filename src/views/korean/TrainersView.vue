@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePersisted } from '@/composables/usePersisted'
@@ -59,12 +60,12 @@ watch(mode, () => start())
     <SectionHead id="trainers" />
 
     <div class="chips">
-      <button class="chip" :class="{ on: mode === 'match' }" @click="setMode('match')">🔗 Найди пару</button>
-      <button class="chip" :class="{ on: mode === 'type' }" @click="setMode('type')">⌨️ Напиши перевод</button>
-      <RouterLink to="/korean/particles" class="chip">🧩 Частицы и окончания</RouterLink>
-      <RouterLink to="/korean/pairs" class="chip">👯 Похожие, но разные</RouterLink>
-      <RouterLink to="/korean/translate" class="chip">🔀 Переведи предложение</RouterLink>
-      <RouterLink to="/korean/syllables" class="chip">🧱 Собери по слогам</RouterLink>
+      <button class="chip" :class="{ on: mode === 'match' }" @click="setMode('match')"><Icon name="hearts" /> Найди пару</button>
+      <button class="chip" :class="{ on: mode === 'type' }" @click="setMode('type')"><Icon name="pencil" /> Напиши перевод</button>
+      <RouterLink to="/game/home?game=particles" class="chip"><Icon name="puzzle" /> Частицы и окончания</RouterLink>
+      <RouterLink to="/game/home?game=pairs" class="chip"><Icon name="hearts" /> Похожие, но разные</RouterLink>
+      <RouterLink to="/game/home?game=translate" class="chip"><Icon name="arrows" /> Переведи предложение</RouterLink>
+      <RouterLink to="/game/home?game=syllables" class="chip"><Icon name="board" /> Собери по слогам</RouterLink>
     </div>
 
     <div class="chips">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
@@ -86,9 +87,12 @@ const tasksRight = computed(() => tasks.value.filter(t => picked.value[t.id] ===
 /* ---------- проверка слов ---------- */
 const checking = ref(false)
 const checkResult = ref<WordsCheckResult | null>(restored?.checkResult ?? null)
+/** Блок «Слова дня» можно свернуть целиком; после «Закрыть слова» он сворачивается сам, открыть можно кнопкой. */
+const wordsHidden = usePersisted('today_words_hidden', false, v => typeof v === 'boolean')
 function onChecked(r: WordsCheckResult) {
   checkResult.value = r
   checking.value = false
+  wordsHidden.value = true
 }
 
 /* ---------- ответы и новый набор ---------- */
@@ -221,13 +225,20 @@ async function removeSet(s: SavedSet) {
 /** Снимок набора заданий (запись не чек-лист). */
 const tasksOf = (s: SavedSet) => s.data as SetData
 const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.answer ? 'ok' : 'bad')
+import yunaToday from '@/assets/home/yuna-today.webp'
+import yunaChecklist from '@/assets/home/yuna-checklist.webp'
 </script>
 
 <template>
-  <div class="wrap">
+  <div class="wrap today-page" :class="{ 'td-list': tab === 'list' }">
     <SectionHead id="today" />
+    <img v-if="tab === 'today'" class="td-banner" :src="yunaToday" alt="" aria-hidden="true" draggable="false" />
+    <!-- Юна на «Чек-листе» зафиксирована справа (в body: у стеклянной панели есть размытие, внутри неё fixed «прилипает») -->
+    <Teleport to="body">
+      <img v-if="tab === 'list'" class="td-yuna" :src="yunaChecklist" alt="" aria-hidden="true" draggable="false" />
+    </Teleport>
     <div class="fcb td-bar">
-      <button v-if="finished" @click="tab = 'today'; newAll()">🎲 Новый набор на сегодня</button>
+      <button v-if="finished" @click="tab = 'today'; newAll()"><Icon name="dice" /> Новый набор на сегодня</button>
       <span class="td-tabs" role="tablist">
         <button role="tab" :aria-selected="tab === 'today'" :class="{ on: tab === 'today' }" @click="tab = 'today'">Сегодня</button>
         <button role="tab" :aria-selected="tab === 'list'" :class="{ on: tab === 'list' }" @click="tab = 'list'">Чек-лист</button>
@@ -235,7 +246,14 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
       </span>
     </div>
 
-    <template v-if="tab === 'today'">
+    <template v-if="tab === 'today' && saved">
+      <div class="td-fin" role="status">
+        <b>Набор проверен и сохранён.</b> Верно {{ right }} из {{ all.length }}. Он лежит во вкладке <a href="#" @click.prevent="showHistory">«История»</a>.
+      </div>
+      <div class="td-end-one"><button type="button" @click="newAll()">Новые задания</button></div>
+    </template>
+
+    <template v-else-if="tab === 'today'">
       <div v-if="finished" class="td-fin" role="status">
         <b>На сегодня всё закончено.</b> Верно {{ right }} из {{ all.length }}. Хочешь ещё раз — нажми «Новый набор на сегодня» сверху.
       </div>
@@ -261,7 +279,11 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
         </ol>
       </template>
 
-      <h2 class="today-h">Слова дня <small>нажми на слово — увидишь перевод</small></h2>
+      <h2 class="today-h">
+        Слова дня <small v-if="!wordsHidden">нажми на слово — увидишь перевод</small>
+        <button type="button" class="plain td-fold" :aria-expanded="!wordsHidden" @click="wordsHidden = !wordsHidden">{{ wordsHidden ? 'Показать' : 'Скрыть' }}</button>
+      </h2>
+      <template v-if="!wordsHidden">
       <div class="tw">
         <button v-for="w in words" :key="w.n" class="tw-card" :class="{ open: revealed[w.n] }" @click="toggle(w.n)">
           <span class="k">{{ w.k }}</span>
@@ -278,6 +300,10 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
       <WordsCheck v-if="checking" :key="words.map(w => w.n).join()" :words="words" @done="onChecked" @cancel="checking = false" />
       <p v-else-if="checkResult" class="td-res">
         Пары без ошибок: {{ checkResult.pairs.right }} из {{ checkResult.pairs.total }} · перевод: {{ checkResult.quiz.right }} из {{ checkResult.quiz.total }}<template v-if="checkResult.build.total"> · предложения: {{ checkResult.build.right }} из {{ checkResult.build.total }}</template>
+      </p>
+      </template>
+      <p v-else-if="checkResult" class="td-res">
+        Слова закрыты: пары {{ checkResult.pairs.right }}/{{ checkResult.pairs.total }} · перевод {{ checkResult.quiz.right }}/{{ checkResult.quiz.total }}<template v-if="checkResult.build.total"> · предложения {{ checkResult.build.right }}/{{ checkResult.build.total }}</template>
       </p>
 
       <h2 class="today-h">
@@ -307,21 +333,31 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
     </template>
 
     <template v-else-if="tab === 'list'">
-      <h2 class="today-h">Чек-лист на сегодня <small>{{ listDone }} из {{ items.length }}</small></h2>
-      <div v-if="listDone === items.length" class="td-fin" role="status"><b>Чек-лист на сегодня закончен.</b> Завтра будет новый.</div>
-      <p class="td-res">Набор меняется каждый день. Ответы считаются сами, пункт без счётчика отметь галочкой.</p>
-      <ul class="cl">
-        <li v-for="(it, i) in items" :key="it.id" :class="{ ok: snaps[i]!.done }">
-          <input v-if="!it.source" type="checkbox" :checked="ticked(it.id)" :aria-label="it.text" @change="tick(it.id)" />
-          <span v-else class="cl-mark">{{ snaps[i]!.done ? '✓' : '○' }}</span>
-          <RouterLink :to="it.to">{{ it.text }}</RouterLink>
-          <small v-if="it.source">{{ snaps[i]!.have }} из {{ it.goal }}</small>
-        </li>
-      </ul>
+      <div class="cl-panel">
+        <div class="cl-head">
+          <div>
+            <h2 class="today-h">Чек-лист на сегодня</h2>
+            <p class="td-res">Набор меняется каждый день. Ответы считаются сами, пункт без счётчика отметь галочкой.</p>
+          </div>
+          <div class="cl-prog" :aria-label="`Сделано ${listDone} из ${items.length}`">
+            <b>{{ listDone }} из {{ items.length }}</b>
+            <span class="cl-bar"><i :style="{ width: (items.length ? (listDone / items.length) * 100 : 0) + '%' }"></i></span>
+          </div>
+        </div>
+        <div v-if="listDone === items.length" class="td-fin" role="status"><b>Чек-лист на сегодня закончен.</b> Завтра будет новый.</div>
+        <ul class="cl">
+          <li v-for="(it, i) in items" :key="it.id" :class="{ ok: snaps[i]!.done }">
+            <input v-if="!it.source" type="checkbox" :checked="ticked(it.id)" :aria-label="it.text" @change="tick(it.id)" />
+            <span v-else class="cl-mark">{{ snaps[i]!.done ? '✓' : '○' }}</span>
+            <RouterLink :to="it.to">{{ it.text }}</RouterLink>
+            <small v-if="it.source">{{ snaps[i]!.have }} из {{ it.goal }}</small>
+          </li>
+        </ul>
       <div class="today-end">
         <b v-if="listDone === items.length">Всё сделано!</b>
         <b v-else>Сделано {{ listDone }} из {{ items.length }}.</b>
         <button v-if="owner" :disabled="listSaving || listSaved" @click="saveList">{{ listSaving ? 'Сохраняю…' : listSaved ? '✓ Сохранено в историю' : 'Сохранить в историю' }}</button>
+      </div>
       </div>
       <p v-if="!owner" class="td-res">Сохранять в историю может только владелец.</p>
     </template>
@@ -405,4 +441,31 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
 .study .cl small { margin-left: auto; color: var(--muted); }
 .study .cl-mark { width: 16px; text-align: center; color: var(--muted); }
 .study .cl li.ok .cl-mark { color: var(--ok, #3d8b5f); }
+
+/* ===== «Сегодня» и «Чек-лист»: Юна (двигай здесь) ===== */
+/* без стеклянной подложки и размытия: страница лежит прямо на фоне */
+.study-shell.sky .study-main .wrap.today-page { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.study .today-page { position: relative; }
+.study .td-banner { --h: 200px; --right: 0px; --top: 37px;
+  position: absolute; z-index: 0; top: var(--top); right: var(--right); height: var(--h); width: auto; max-width: 62%; object-fit: contain; object-position: right top;
+  pointer-events: none; user-select: none; }
+.study .today-page > :not(.td-banner) { position: relative; z-index: 1; }
+.study .today-page > .page-head { border-bottom-color: transparent; }
+.study .today-page > .td-bar { margin-bottom: 26px; }
+.td-yuna { --h: min(82vh, 860px); --right: 14px; --bottom: 0px;
+  position: fixed; right: var(--right); bottom: var(--bottom); height: var(--h); width: auto; z-index: 3; pointer-events: none; user-select: none; }
+.study .cl-panel { padding: 22px 22px 18px; background: rgba(255, 255, 255, .45); border: 1px solid #fff; border-radius: 26px; }
+.study .cl-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.study .cl-head .today-h { margin: 0; padding: 0; border: 0; }
+.study .cl-prog { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: rgba(255, 255, 255, .7); border-radius: 99px; }
+.study .cl-bar { width: 150px; height: 8px; background: rgba(150, 130, 230, .2); border-radius: 99px; overflow: hidden; }
+.study .cl-bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; transition: width .3s; }
+.study .cl li { align-items: center; padding: 14px 18px; border-radius: 99px; background: rgba(255, 255, 255, .75); }
+.study .cl li a { flex: 1; }
+@media (min-width: 1200px) { .study-shell.sky .study-main .wrap.today-page.td-list { padding-right: 320px; } }
+@media (max-width: 1199px) { .td-yuna { display: none; } }
+@media (max-width: 760px) { .study .td-banner { position: static; display: block; max-width: 100%; height: auto; margin: 0 0 10px auto; } .study .today-page > .td-bar { margin-bottom: 0; } }
+.study .td-fold { margin-left: 12px; padding: 4px 14px; font: inherit; font-size: 12px; font-weight: 600; color: var(--ink); background: rgba(255, 255, 255, .75); border: 1px solid var(--line); border-radius: 99px; cursor: pointer; vertical-align: middle; }
+.study .td-end-one { margin-top: 18px; }
+.study .td-end-one button { padding: 12px 26px; font: inherit; font-weight: 700; color: #fff; background: var(--gold); border: 0; border-radius: 14px; cursor: pointer; }
 </style>

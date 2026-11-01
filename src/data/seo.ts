@@ -78,18 +78,12 @@ const PAGES: Record<string, Seo> = {
   },
   '/korean/today': { title: `Сегодня · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/cabinet': { title: `Мой кабинет · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/trainers': { title: `Тренажёры слов · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/forms': { title: `Слово в разных формах · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/syllables': { title: `Собери слово по слогам · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/translate': { title: `Переведи предложение · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/pairs': { title: `Похожие, но разные · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/particles': { title: `Частицы и окончания · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/marks': { title: `Важное · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/mistakes': { title: `Мои ошибки · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/quick': { title: `5 минут · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/review': { title: `Повторение · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/garden': { title: `Сад воспоминаний · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/game': { title: `Игра на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/game/home': { title: `Игры на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },
 }
 
 /** SEO страницы по адресу; неизвестный адрес получает общие данные. */

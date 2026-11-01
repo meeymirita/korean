@@ -20,7 +20,7 @@ function picture(w: WeekReport) {
       title: range(w),
       sub: `${w.total} ответов, верных ${w.accuracy ?? 0}%`,
       lines: [`Дней с занятиями: ${w.activeDays} из 7`, `Выучено слов: ${w.learned}`, `Время: ${studyTime(w.seconds)}`],
-      icon: '📅',
+      icon: 'calendar',
       footer: '우리말',
     },
     `неделя-${w.start}`,

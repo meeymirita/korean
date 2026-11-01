@@ -55,6 +55,11 @@ describe('сервер: полный архив по кнопке', () => {
     const list = execFileSync('tar', ['-tzf', path.join(out, 'ok.tar.gz')]).toString()
     assert.match(list, /app\.db/)
     assert.match(list, /uploads\/cat\.png/)
+    assert.match(list, /manifest\.txt/)
+    const manifest = execFileSync('tar', ['-xzOf', path.join(out, 'ok.tar.gz'), './manifest.txt']).toString()
+    assert.match(manifest, /папки:/)
+    assert.match(manifest, /uploads: \d+ КБ/)
+    assert.match(manifest, /docs — файлы, приложенные к планам/)
 
     // письмо ушло получателю с вложением, пароль в письме не упоминается
     const mails = (await readFile(mailFile, 'utf8')).trim().split('\n').map(l => JSON.parse(l))

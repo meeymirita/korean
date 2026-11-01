@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { GAMES, PAGES } from '@/data/guide'
@@ -35,12 +36,12 @@ const n = (i: number) => String(i + 1).padStart(2, '0')
             <u></u>
             <div>
               <small>{{ n(i) }}</small>
-              <b>{{ c.title }}<em v-if="c.private && !progress.unlocked">🔒</em></b>
+              <b>{{ c.title }}<em v-if="c.private && !progress.unlocked"><Icon name="lock" /></em></b>
               <span>{{ c.text }}</span>
             </div>
           </RouterLink>
         </div>
-        <p v-if="!progress.unlocked" class="note">🔒 открывается после входа по токену</p>
+        <p v-if="!progress.unlocked" class="note"><Icon name="lock" /> открывается после входа по токену</p>
       </aside>
     </div>
   </Transition>

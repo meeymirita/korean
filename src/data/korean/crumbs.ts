@@ -14,10 +14,9 @@ export const CABINET_TABS: Record<string, string> = {
   repeat: 'Повторить',
   week: 'Неделя',
   history: 'История',
+  report: 'Отчёт',
   notes: 'Заметки',
   images: 'Картинки',
-  db: 'База',
-  logs: 'Журналы',
   settings: 'Настройки',
 }
 

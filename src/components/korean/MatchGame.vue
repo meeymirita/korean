@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { shuffle } from '@/data/korean/tasks'
 import { shown, statKey, type TWord } from '@/data/korean/trainer'
@@ -227,7 +228,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 
     <div v-if="done" class="mg-end">
       <div>
-        <b>{{ mistakes === 0 ? '🌸 Без ошибок!' : 'Готово!' }}</b>
+        <b><template v-if="mistakes === 0"><Icon name="sakura" /> Без ошибок!</template><template v-else>Готово!</template></b>
         <span>ошибок: {{ mistakes }}</span>
       </div>
       <div class="mg-actions">

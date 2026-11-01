@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
+import { EMOJI_ICON } from '@/lib/icons'
+
 withDefaults(defineProps<{ avatar: string; size?: number }>(), { size: 36 })
 </script>
 
 <template>
   <span class="avatar" :style="{ width: size + 'px', height: size + 'px', fontSize: size * 0.55 + 'px' }">
     <img v-if="avatar.startsWith('data:image/')" :src="avatar" alt="" />
+    <Icon v-else-if="EMOJI_ICON[avatar]" :name="EMOJI_ICON[avatar]!" />
     <template v-else>{{ avatar }}</template>
   </span>
 </template>

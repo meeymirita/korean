@@ -10,20 +10,20 @@ export interface Plant {
   word: Word
   stat: WordStat
   stage: Stage
-  flower: string
+  /** поворот цвета цветка в градусах */
+  flower: number
   /** слово отвечали за последние сутки — «полито» */
   watered: boolean
 }
 
-export const STAGE_EMOJI: Record<Exclude<Stage, 'bloom' | 'thirsty'>, string> = { seed: '🌰', sprout: '🌱', bud: '🌿', wilted: '🥀' }
-
-const FLOWERS = ['🌸', '🌼', '🌷', '🌺', '🌻', '🪻', '💮', '🏵️', '🌹', '🪷', '🌾']
+/** Поворот цвета цветка по теме слов (сакура-иконка перекрашивается, у каждой из 11 тем свой оттенок). */
+const FLOWER_HUES = [0, 40, 95, 150, 195, 240, 285, 320, 20, 130, 215]
 const catIds = Object.keys(CATN)
 
 /** Цветок слова: у каждой темы словаря свой, у слов без темы — по номеру. */
-export function flowerOf(w: Word) {
+export function flowerOf(w: Word): number {
   const c = catIds.indexOf(w.c[0] ?? '')
-  return FLOWERS[c >= 0 ? c : w.n % FLOWERS.length]!
+  return FLOWER_HUES[c >= 0 ? c : w.n % FLOWER_HUES.length]!
 }
 
 export function stageOf(stat: WordStat, now = Date.now()): Stage {
@@ -47,8 +47,6 @@ export function plants(p: ProgressData, now = Date.now()): Plant[] {
   }
   return out
 }
-
-export const emojiOf = (pl: Plant) => (pl.stage === 'bloom' || pl.stage === 'thirsty' ? pl.flower : STAGE_EMOJI[pl.stage])
 
 export const STAGE_NAME: Record<Stage, string> = {
   seed: 'семечко',

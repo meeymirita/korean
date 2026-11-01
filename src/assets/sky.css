@@ -30,7 +30,7 @@
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
-.study.sky h1, .study.sky h2, .study.sky h3 { font-weight: 700; letter-spacing: -.01em; }
+.study.sky h1, .study.sky h2, .study.sky h3 { letter-spacing: -.01em; }
 .study.sky .kicker, .study.sky .row.h { letter-spacing: .12em; font-weight: 600; }
 .study.sky .kicker::before { background: var(--pink); }
 .study.sky .kicker { color: var(--pink); }

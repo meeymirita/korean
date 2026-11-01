@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
@@ -12,7 +14,7 @@ import { useProgressStore } from '@/stores/progress'
  * Серия заданий по одному: вопрос, варианты (клавиши 1–9), «Дальше» (Enter или →), итог со списком ошибок.
  * Ответы пишутся в прогресс с источником `source`. Новый набор (смена `tasks`) начинает серию заново.
  */
-const props = defineProps<{ tasks: Task[]; source: string; againLabel?: string }>()
+const props = defineProps<{ tasks: Task[]; source: string; /** режим для отчёта в кабинете: particles, translate, pairs… */ mode?: string; againLabel?: string }>()
 const emit = defineEmits<{ again: [] }>()
 
 const progress = useProgressStore()
@@ -142,7 +144,7 @@ function answer(option: string) {
   const ok = option === t.answer
   if (ok) right.value++
   else missed.value.push(t)
-  progress.record({ word: t.word, ok, source: props.source, detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
+  progress.record({ word: t.word, ok, source: props.source, mode: props.mode, detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
   ;(ok ? pop : shake)(zone.value)
 }
 function next() {
@@ -182,7 +184,7 @@ onBeforeUnmount(() => {
     <template v-if="!finished && current">
       <div class="rs-bar">
         <span>{{ idx + 1 }} из {{ tasks.length }}</span>
-        <span class="rs-clock" aria-label="Время на задание">⏱ {{ clock(elapsed) }}</span>
+        <span class="rs-clock" aria-label="Время на задание"><Icon name="stopwatch" /> {{ clock(elapsed) }}</span>
         <span>верно: {{ right }}</span>
       </div>
       <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="tasks.length"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
@@ -221,16 +223,17 @@ onBeforeUnmount(() => {
       <button v-if="picked !== null" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">
+      <Cat :name="right === tasks.length ? 'cheer' : right * 2 >= tasks.length ? 'happy' : 'sad'" />
       <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
       <p v-if="pace" class="rs-pace">Время: {{ clock(pace.total) }}, в среднем {{ pace.avg }} с на задание. Дольше всего: задание {{ pace.slowest + 1 }}.</p>
-      <p>{{ right === tasks.length ? '🌸 Всё верно!' : 'Слова с ошибками вернутся в повторение. Вот что не получилось:' }}</p>
+      <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Слова с ошибками вернутся в повторение. Вот что не получилось:</template></p>
       <ul v-if="missed.length" class="qk-miss">
         <li v-for="t in missed" :key="t.id"><span class="ko">{{ t.prompt }}</span> → <b class="ko">{{ t.answer }}</b></li>
       </ul>
       <div class="md" role="group" aria-label="Как прошло?">
         <template v-if="!moodSet">
           <span class="md-q">Как прошло?</span>
-          <button v-for="m in MOODS" :key="m.id" type="button" class="md-b" @click="setMood(m.id)">{{ m.icon }} {{ m.label }}</button>
+          <button v-for="m in MOODS" :key="m.id" type="button" class="md-b" @click="setMood(m.id)"><Icon :name="m.icon" /> {{ m.label }}</button>
         </template>
         <span v-else class="md-q">Записано: {{ MOODS.find(m => m.id === moodSet)?.label.toLowerCase() }}</span>
       </div>

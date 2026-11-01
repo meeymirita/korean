@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
+import yunaImg from '@/assets/home/yuna.webp'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
@@ -89,6 +91,8 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
         <div class="dots"><span class="on"></span><span></span><span></span><span></span></div>
       </aside>
 
+      <img class="yuna" :src="yunaImg" alt="Юна с котиком у окна с сакурой" draggable="false" />
+
       <section class="center">
         <div class="kick-row">
           <div class="kicker">личное пространство · с 1 июня</div>
@@ -110,7 +114,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
         <div class="actions">
           <RouterLink to="/korean/home" class="btn-main">Продолжить <span class="arrow">→</span></RouterLink>
           <button class="link" aria-haspopup="dialog" @click="guide = true">что здесь есть</button>
-          <RouterLink to="/korean/cabinet" class="link">{{ hello.title }}</RouterLink>
+          <RouterLink to="/korean/cabinet" class="link"><Icon v-if="hello.locked" name="lock" /> {{ hello.title }}</RouterLink>
           <button v-if="!installed" class="link" @click="install">скачать приложение</button>
         </div>
 
@@ -122,7 +126,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <RouterLink to="/history" class="link show-sm">История изменений</RouterLink>
           <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
           <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to" class="link">
-            {{ m.title }}<span v-if="!progress.unlocked" class="lock">🔒</span>
+            {{ m.title }}<span v-if="!progress.unlocked" class="lock"><Icon name="lock" /></span>
           </RouterLink>
         </div>
       </section>
@@ -164,7 +168,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <span>вопросы — <a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a></span>
         </div>
         <p class="foot-note">* Отображается только пройденный материал автором, новое появляется по мере изучения.</p>
-        <span class="seal"><i></i>made with 🌸 · <span class="ko">우리말</span></span>
+        <span class="seal"><i></i>made with <Icon name="sakura" /> · <span class="ko">우리말</span></span>
       </footer>
     </div>
 
@@ -183,7 +187,15 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 </template>
 
 <style scoped>
-.home { --ink: #1e2350; --soft: #8b8fc4; --line: rgba(120, 110, 200, .16); --accent: #d64da9; --accent2: #6a5cd0; --cream: #fbf8ff;
+.home {
+  /* ===== Юна: двигай здесь ===== */
+  --yuna-w: min(60vw, 100vh, 720px);   /* ширина картинки */
+  --yuna-x: 0px;                      /* сдвиг вправо (+) / влево (−) от центра */
+  --yuna-y: 4vh;                      /* сдвиг вниз (+) / вверх (−) от середины области под шапкой */
+  --yuna-opacity: 1;
+  --side-pad: clamp(16px, 2vw, 32px); /* поля слева и справа: меньше = ближе к краю экрана */
+  --stage-max: 1560px;                /* максимальная ширина страницы */
+  --ink: #1e2350; --soft: #8b8fc4; --line: rgba(120, 110, 200, .16); --accent: #d64da9; --accent2: #6a5cd0; --cream: #fbf8ff;
   position: fixed; inset: 0; overflow: auto; color: var(--ink); background: var(--cream); word-break: keep-all;
   font-family: 'Inter', 'Archivo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .home::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
@@ -200,10 +212,13 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 .frame::before { top: -8px; left: 24px; background: var(--cream); padding: 0 6px; }
 .frame::after { bottom: -8px; right: 24px; background: var(--cream); padding: 0 6px; }
 
-.stage { position: relative; z-index: 2; min-height: 100%; max-width: 1280px; margin: 0 auto; display: grid;
+.stage { position: relative; z-index: 2; min-height: 100%; max-width: var(--stage-max); margin: 0 auto; display: grid;
   grid-template-columns: auto 1fr auto; grid-template-rows: auto 1fr auto;
-  padding: clamp(28px, 4vh, 52px) clamp(28px, 4vw, 64px); gap: clamp(18px, 3vh, 36px); }
+  padding: clamp(28px, 4vh, 52px) var(--side-pad); gap: clamp(18px, 3vh, 36px); }
 
+.yuna { position: absolute; z-index: 1; left: 56%; top: 50%; width: var(--yuna-w); height: auto; opacity: var(--yuna-opacity);
+  transform: translate(calc(-50% + var(--yuna-x)), calc(-50% + var(--yuna-y))); pointer-events: none; user-select: none; }
+.topbar, .rail, .center, .notes { position: relative; z-index: 2; }
 .topbar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 20px;
   padding-bottom: clamp(14px, 2vh, 22px); border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: baseline; gap: 12px; }
@@ -229,7 +244,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 .home .demo-link { padding: 0 0 3px; font: inherit; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); background: none; border: 0; border-bottom: 1px solid currentColor; cursor: pointer; transition: .2s; }
 .home .demo-link:hover { color: var(--accent2); }
 .kicker::before { content: ""; width: 24px; height: 1px; background: var(--accent); }
-.title { font-size: clamp(40px, min(7.4vw, 10.5vh), 104px); line-height: .92; letter-spacing: -.035em; font-weight: 800; margin: 0 0 clamp(14px, 2.2vh, 28px); }
+.title { font-size: clamp(40px, min(7.4vw, 10vh), 104px); line-height: .92; letter-spacing: -.035em; font-weight: 800; margin: 0 0 clamp(14px, 2.2vh, 28px); }
 .title .line { display: block; overflow: hidden; }
 .title .it { font-style: italic; font-weight: 400; color: var(--accent); }
 .title .ko { font-weight: 800; color: transparent; -webkit-text-stroke: 1.3px #b7a8ee; letter-spacing: .02em; }
@@ -284,6 +299,8 @@ a.note:hover .val { color: var(--accent); }
 
 @media (max-width: 1024px) {
   .stage { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto auto; }
+  .yuna { position: static; display: block; width: min(80vw, 420px); margin: 0 auto; transform: none; order: -1; }
+  .topbar { order: -2; }
   .rail, .notes { border: 0; padding: 0; max-width: none; }
   .rail { flex-direction: row; align-items: center; justify-content: flex-start; }
   .rail .num { writing-mode: horizontal-tb; transform: none; }

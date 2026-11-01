@@ -55,7 +55,7 @@ describe('сочетания клавиш', () => {
     const ids = data.SHORTCUT_IDS
     assert.equal(new Set(ids).size, ids.length)
     for (const id of ['nav:home', 'nav:cabinet', 'nav:today', 'nav:game', 'nav:words', 'nav:ref', 'nav:garden', 'cab:overview', 'cab:settings', 'cab:notes']) assert.ok(ids.includes(id), id)
-    assert.equal(data.SHORTCUT_ITEMS.find(i => i.id === 'nav:game').to, '/game')
+    assert.equal(data.SHORTCUT_ITEMS.find(i => i.id === 'nav:game').to, '/game/home')
     assert.equal(data.SHORTCUT_ITEMS.find(i => i.id === 'cab:notes').to, '/korean/cabinet?tab=notes')
   })
 })

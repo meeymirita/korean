@@ -3,17 +3,12 @@ Allow: /
 Allow: /api/public/
 Disallow: /api/
 Disallow: /game
+Disallow: /game/home
 Disallow: /korean/today
 Disallow: /korean/cabinet
-Disallow: /korean/trainers
 Disallow: /korean/review
-Disallow: /korean/quick
 Disallow: /korean/mistakes
 Disallow: /korean/marks
-Disallow: /korean/particles
-Disallow: /korean/pairs
-Disallow: /korean/translate
-Disallow: /korean/syllables
 Disallow: /korean/forms
 Disallow: /korean/garden
 

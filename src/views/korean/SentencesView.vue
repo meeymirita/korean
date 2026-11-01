@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cat from '@/components/Cat.vue'
 import { computed, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
@@ -38,7 +39,7 @@ const rows = computed(() =>
         </div>
         <div v-if="openN === d.n" class="row-detail"><SentenceBreakdown :sentence="d.s" /></div>
       </template>
-      <div v-if="!rows.length" class="empty"><div class="big">✿</div>Ничего не нашлось.<br />Попробуй другое слово или сбрось фильтры.</div>
+      <div v-if="!rows.length" class="empty"><Cat name="think" />Ничего не нашлось.<br />Попробуй другое слово или сбрось фильтры.</div>
     </div>
   </div>
 </template>

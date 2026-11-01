@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
@@ -41,7 +42,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <div class="kicker">{{ String(i + 1).padStart(2, '0') }} / {{ ABOUT_SLIDES.length }}</div>
         <h1 :key="slide.id + 't'">{{ slide.title }}</h1>
         <p :key="slide.id + 'p'">{{ slide.text }}</p>
-        <p v-if="slide.private && !progress.unlocked" class="lock">🔒 Откроется после входа по токену</p>
+        <p v-if="slide.private && !progress.unlocked" class="lock"><Icon name="lock" /> Откроется после входа по токену</p>
         <RouterLink :to="slide.to" class="open">Открыть страницу →</RouterLink>
       </div>
     </section>

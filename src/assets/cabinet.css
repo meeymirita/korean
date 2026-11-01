@@ -137,7 +137,7 @@
 
 /* настройки */
 .study .st-block { margin-top: 24px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
-.study .st-block h3 { margin: 0 0 4px; font-family: var(--serif); font-size: 26px; font-weight: 600; }
+.study .st-block h3 { margin: 0 0 4px; font-family: var(--serif); font-size: 24px; font-weight: 600; }
 .study .st-block p { margin: 4px 0 0; font-size: 13.5px; color: var(--muted); }
 .study .st-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 4px; }
 .study .st-cols.one { grid-template-columns: 1fr; }

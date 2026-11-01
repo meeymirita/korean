@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { formatClock, useTimerStore } from '@/stores/timer'
@@ -12,7 +13,7 @@ onMounted(() => timer.watchReminder())
   <div v-if="timer.available && !['/', '/about', '/history'].includes(route.path)" class="stm">
     <Transition name="stm-pop">
       <div v-if="timer.reminder" class="stm-note" role="status">
-        <span>⏱ Не забывай нажимать таймер: время занятий запишется в кабинет.</span>
+        <span><Icon name="stopwatch" /> Не забывай нажимать таймер: время занятий запишется в кабинет.</span>
         <button class="go" @click="timer.start()">Запустить</button>
         <button class="x" aria-label="Закрыть" @click="timer.dismiss()">✕</button>
       </div>

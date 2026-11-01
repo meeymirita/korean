@@ -12,10 +12,10 @@ export const HOME_LINKS = [
 ]
 
 export const HOME_MORE = [
-  { title: '5 минут', to: '/korean/quick' },
+  { title: '5 минут', to: '/game/home?game=quick' },
   { title: 'Сегодня', to: '/korean/today' },
-  { title: 'Тренажёры', to: '/korean/trainers' },
-  { title: 'Игра на слова', to: '/game' },
+  { title: 'Игры', to: '/game/home' },
+  { title: 'Игра на слова', to: '/game/home' },
 ]
 
 /** Убирает из текста карточки метки цвета {o|…}, {b|…}, {r|…} и т. п., теги и хвостовую точку. */
@@ -73,11 +73,11 @@ export function useHome() {
       ? {
           locked: false,
           title: 'Привет' + (progress.data.profile.name ? ', ' + progress.data.profile.name : '') + '!',
-          sub: `⭐ Уровень ${progress.info.level} · ${progress.info.title} · 🔥 ${progress.streak}`,
+          sub: `Уровень ${progress.info.level} · ${progress.info.title} · серия ${progress.streak}`,
         }
       : {
           locked: true,
-          title: '🔒 Войти по токену →',
+          title: 'Войти по токену →',
           sub: 'откроются задания, игра и кабинет',
         },
   )

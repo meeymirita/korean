@@ -25,7 +25,7 @@ export const sections: Section[] = [
   { id: 'reading', num: '05', menu: 'Чтение', kicker: 'Чтение', title: 'Правила чтения', sub: 'как звучит ㄹ, что происходит между гласными, 받침 и другие случаи', group: 'ref' },
   { id: 'sentences', num: '05', menu: 'Примеры', kicker: 'Из словаря', title: 'Примеры предложений', sub: 'все предложения из словаря', group: 'ref' },
   { id: 'numbers', num: '05', menu: 'Числа', kicker: 'Счёт', title: 'Числа и счёт', sub: 'цены, количество, счётные слова', group: 'ref' },
-  { id: 'trainers', num: '06', menu: 'Тренажёры', kicker: 'Игры', title: 'Тренажёры слов', sub: 'найди пару и напиши перевод', private: true },
+  { id: 'trainers', num: '06', menu: 'Тренажёры', kicker: 'Игры', title: 'Тренажёры слов', sub: 'найди пару и напиши перевод', private: true, group: 'extra' },
   { id: 'review', num: '07', menu: 'Повторение', kicker: 'Карточки', title: 'Повторение', sub: 'случайная карточка — нажми, чтобы увидеть ответ', private: true },
   { id: 'quick', num: '09', menu: '5 минут', kicker: 'Быстрый набор', title: '5 минут', sub: 'десять заданий вперемешку: слабые слова, правило и новое', private: true, group: 'extra' },
   { id: 'mistakes', num: '10', menu: 'Мои ошибки', kicker: 'Слабые места', title: 'Мои ошибки', sub: 'слова, в которых ошибаешься чаще всего, и быстрая тренировка', private: true, group: 'extra' },

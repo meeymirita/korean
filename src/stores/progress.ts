@@ -117,7 +117,8 @@ const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
 const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [], keys: {} })
 export const MAX_MARKS = 500
 /** w — слово, g — правило (звёздочка «Важное»), d — урок грамматики отмечен пройденным */
-export type MarkKind = 'w' | 'g' | 'd'
+/** w — слово, g — правило, d — «урок пройден» (вручную), u — «снять отметку „пройдено“» у карточки, которая в данных помечена пройденной */
+export type MarkKind = 'w' | 'g' | 'd' | 'u'
 export const markKey = (kind: MarkKind, id: string) => `${kind}:${id}`
 const empty = (): ProgressData => ({
   v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
@@ -177,7 +178,7 @@ export function normalize(raw: unknown): ProgressData | null {
       goal: GOAL_OPTIONS.includes(Number(settings.goal)) ? Number(settings.goal) : DAILY_GOAL,
       cats: Array.isArray(settings.cats) ? settings.cats.filter(c => typeof c === 'string') : [],
       gameCats: settings.gameCats && typeof settings.gameCats === 'object' ? settings.gameCats : null,
-      marks: Array.isArray(settings.marks) ? [...new Set(settings.marks.filter((m): m is string => typeof m === 'string' && /^[wgd]:.{1,40}$/.test(m)))].slice(0, MAX_MARKS) : [],
+      marks: Array.isArray(settings.marks) ? [...new Set(settings.marks.filter((m): m is string => typeof m === 'string' && /^[wgdu]:.{1,40}$/.test(m)))].slice(0, MAX_MARKS) : [],
       keys: cleanBindings(settings.keys, SHORTCUT_IDS),
     },
   }

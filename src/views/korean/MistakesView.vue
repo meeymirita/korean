@@ -28,7 +28,7 @@ const pct = (r: number) => Math.round(r * 100)
         <button type="button" @click="train">{{ tasks ? 'Другой набор' : 'Потренировать эти слова' }}</button>
         <RouterLink to="/korean/cabinet?tab=repeat" class="qk-home">Повторение по расписанию</RouterLink>
       </div>
-      <TaskSession v-if="tasks" :tasks="tasks" source="review" again-label="Ещё набор" @again="train" />
+      <TaskSession v-if="tasks" :tasks="tasks" source="review" mode="mistakes" again-label="Ещё набор" @again="train" />
 
       <div class="tb mk-tb">
         <div class="row h"><span>Слово</span><span>Чтение</span><span>Перевод</span><span>Верно / неверно</span></div>

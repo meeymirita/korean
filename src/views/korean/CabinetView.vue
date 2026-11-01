@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
-import DbTab from '@/components/cabinet/DbTab.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
-import LogsTab from '@/components/cabinet/LogsTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
+import LevelsModal from '@/components/cabinet/LevelsModal.vue'
+import ReportTab from '@/components/cabinet/ReportTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
 import WeekTab from '@/components/cabinet/WeekTab.vue'
@@ -20,6 +21,7 @@ import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
+const levelsOpen = ref(false)
 const images = useImagesStore()
 const section = sectionById('cabinet')
 
@@ -58,13 +60,15 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'db' | 'logs' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
-const q = route.query.tab
-const OWNER_ONLY = ['images', 'db', 'logs']
-const TABS = ['repeat', 'week', 'history', 'notes', 'images', 'db', 'logs', 'settings']
+/** Старые адреса ?tab=db и ?tab=logs: База и Журналы переехали в «Настройки». */
+const moved = (v: unknown) => (v === 'db' || v === 'logs' ? 'settings' : v)
+const q = moved(route.query.tab)
+const OWNER_ONLY = ['images', 'report']
+const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'settings']
 const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -74,7 +78,8 @@ watch(tab, t => {
 /** Крошка «Кабинет» (и кнопка «назад») меняют ?tab=… извне: вкладка следует за адресом. */
 watch(
   () => route.query.tab,
-  v => {
+  raw => {
+    const v = moved(raw)
     const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as Tab
     if (next !== tab.value) tab.value = next
   },
@@ -85,9 +90,10 @@ const tabs = computed<[Tab, string][]>(() => [
   ['repeat', `Повторить${dueCount.value ? ' · ' + dueCount.value : ''}`],
   ['week', 'Неделя'],
   ['history', 'История'],
+  ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [Tab, string][])),
   ['notes', 'Заметки'],
   // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
-  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['db', 'База'], ['logs', 'Журналы']] as [Tab, string][])),
+  ...(progress.isGuest ? [] : ([['images', 'Картинки']] as [Tab, string][])),
   ['settings', 'Настройки'],
 ])
 </script>
@@ -107,13 +113,13 @@ const tabs = computed<[Tab, string][]>(() => [
           <Avatar :avatar="progress.data.profile.avatar" :size="64" />
           <div>
             <b>{{ progress.data.profile.name ? `Привет, ${progress.data.profile.name}!` : 'Привет!' }}</b>
-            <small>⭐ уровень {{ progress.info.level }} · {{ progress.info.title }} · 🔥 серия {{ progress.streak }}</small>
+            <small><Icon name="star" /> уровень {{ progress.info.level }} · {{ progress.info.title }} · <Icon name="fire" /> серия {{ progress.streak }}</small>
             <small v-if="!progress.data.profile.name"><br />Имя можно задать в «Настройках».</small>
           </div>
         </div>
-        <RouterLink to="/game" class="cb-play">🎮 Играть</RouterLink>
+        <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
-      <div class="cb-lvl">{{ progress.info.level }}<small>уровень</small></div>
+      <button type="button" class="cb-lvl" title="Все уровни" @click="levelsOpen = true">{{ progress.info.level }}<small>уровень</small></button>
     </header>
 
     <p v-if="backupNote" class="cb-note" role="status">
@@ -124,14 +130,14 @@ const tabs = computed<[Tab, string][]>(() => [
       <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="tab = id">{{ label }}<kbd v-if="shortcuts.labelOf('cab:' + id)" class="kb">{{ shortcuts.labelOf('cab:' + id) }}</kbd></button>
     </div>
 
+    <LevelsModal v-if="levelsOpen" :info="progress.info" @close="levelsOpen = false" />
     <OverviewTab v-if="tab === 'overview'" />
     <RepeatTab v-else-if="tab === 'repeat'" />
     <WeekTab v-else-if="tab === 'week'" />
     <HistoryTab v-else-if="tab === 'history'" />
+    <ReportTab v-else-if="tab === 'report'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
-    <DbTab v-else-if="tab === 'db'" />
-    <LogsTab v-else-if="tab === 'logs'" />
     <SettingsTab v-else />
   </div>
 </template>

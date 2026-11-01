@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, ref } from 'vue'
 import { SHORTCUT_ITEMS } from '@/data/shortcuts'
 import { RESERVED_KEYS, comboFromEvent, comboLabel, isMac } from '@/lib/shortcuts'
@@ -9,6 +10,8 @@ import { useToastStore } from '@/stores/toast'
 const store = useShortcutsStore()
 const toast = useToastStore()
 const mac = isMac()
+/** Блок всегда начинается свёрнутым (состояние не запоминается). */
+const open = ref(false)
 const groups = [
   { title: 'Меню', items: SHORTCUT_ITEMS.filter(i => i.group === 'menu') },
   { title: 'Вкладки кабинета', items: SHORTCUT_ITEMS.filter(i => i.group === 'cabinet') },
@@ -63,7 +66,10 @@ async function resetAll() {
 
 <template>
   <div class="st-block kb-block">
-    <h3>Клавиши</h3>
+    <h3>
+      <button type="button" class="kb-toggle" :aria-expanded="open" @click="open = !open"><span class="kb-chev" aria-hidden="true">▸</span>Клавиши</button>
+    </h3>
+    <div v-show="open">
     <p>
       Назначь сочетание ⌘/Ctrl + клавиша на любой пункт меню или вкладку кабинета: оно откроет её откуда угодно в разделе, а рядом с пунктом появится подсказка.
       Сочетания хранятся на этом устройстве.
@@ -87,7 +93,7 @@ async function resetAll() {
     <p v-if="hint" class="kb-hint" role="status">{{ hint }}</p>
 
     <div class="kb-group">
-      <h4>🔒 Занято сайтом (не менять)</h4>
+      <h4><Icon name="lock" /> Занято сайтом (не менять)</h4>
       <ul class="kb-list locked">
         <li v-for="r in RESERVED_KEYS" :key="r.keys">
           <span class="kb-name">{{ r.what }}</span>
@@ -99,5 +105,12 @@ async function resetAll() {
     <div class="kb-foot">
       <button type="button" class="plain" @click="resetAll">Сбросить все</button>
     </div>
+    </div>
   </div>
 </template>
+
+<style>
+.study .kb-toggle { display: inline-flex; align-items: baseline; gap: 6px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; }
+.kb-chev { display: inline-block; width: 1em; color: var(--pink, #d64da9); transition: transform .18s; }
+.kb-toggle[aria-expanded='true'] .kb-chev { transform: rotate(90deg); }
+</style>

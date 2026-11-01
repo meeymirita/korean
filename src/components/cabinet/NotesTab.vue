@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref } from 'vue'
 import { errText } from '@/lib/http'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
@@ -159,7 +160,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
       <p v-if="imgError" class="nt-err">{{ imgError }}</p>
       <div class="nt-bar">
         <span class="nt-count cb-count" :class="{ at: text.length >= MAX_TEXT }">{{ text.length }} / {{ MAX_TEXT }}</span>
-        <label v-if="canImages" class="nt-add">{{ uploading ? 'Загружаю…' : '📎 Картинки' }}<input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp" :disabled="uploading" @change="attach($event, 'new')" /></label>
+        <label v-if="canImages" class="nt-add"><template v-if="uploading">Загружаю…</template><template v-else><Icon name="picture" /> Картинки</template><input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp" :disabled="uploading" @change="attach($event, 'new')" /></label>
         <button type="submit" :disabled="(!title.trim() && !text.trim() && !pending.length) || store.full">Добавить заметку</button>
       </div>
       <p v-if="store.full" class="nt-warn">Достигнут лимит: {{ MAX_NOTES }} заметок. Удалите ненужные, чтобы добавить новые.</p>
@@ -188,7 +189,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
           <NoteImages :ids="editImages" removable @remove="id => (editImages = editImages.filter(x => x !== id))" />
           <p v-if="imgError" class="nt-err">{{ imgError }}</p>
           <div class="nt-acts">
-            <label v-if="canImages" class="nt-add">{{ uploading ? 'Загружаю…' : '📎 Картинки' }}<input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp" :disabled="uploading" @change="attach($event, 'edit')" /></label>
+            <label v-if="canImages" class="nt-add"><template v-if="uploading">Загружаю…</template><template v-else><Icon name="picture" /> Картинки</template><input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp" :disabled="uploading" @change="attach($event, 'edit')" /></label>
             <button @click="saveEdit">Сохранить</button>
             <button class="plain" @click="editing = null">Отмена</button>
           </div>

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { fetchT, LONG_TIMEOUT } from '@/lib/http'
+import { EMOJI_ICON } from '@/lib/icons'
 import { renderCard } from '@/lib/shareCard'
 import { useHome } from '@/composables/useHome'
 import { D } from '@/data/korean/words'
@@ -60,7 +61,7 @@ export function usePublicCard() {
       title: c.name || 'Изучаю корейский',
       sub: `уровень ${c.level} · ${c.title}`,
       lines: [`${c.days} дней в пути · серия ${c.streak}`, `выучено слов: ${c.learned} · ответов: ${c.answers}`],
-      icon: c.avatar.length <= 8 ? c.avatar : '🌸',
+      icon: (EMOJI_ICON[c.avatar] ?? 'sakura'),
       footer: 'korean.meeymirita.ru/me',
     })
     const form = new FormData()

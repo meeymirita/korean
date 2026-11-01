@@ -25,6 +25,14 @@ const RANKS: [number, string][] = [
 
 export const rankOf = (level: number) => [...RANKS].reverse().find(([from]) => level >= from)![1]
 
+/** Все звания с границами: с какого и по какой уровень, сколько очков нужно на первый уровень звания. */
+export function rankTable() {
+  return RANKS.map(([from, name], i) => {
+    const to = i + 1 < RANKS.length ? RANKS[i + 1]![0] - 1 : MAX_LEVEL
+    return { name, from, to, levels: Array.from({ length: to - from + 1 }, (_, k) => ({ level: from + k, xp: xpFor(from + k) })) }
+  })
+}
+
 export interface LevelInfo {
   level: number
   title: string

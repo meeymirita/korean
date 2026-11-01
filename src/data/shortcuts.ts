@@ -15,7 +15,7 @@ export const SHORTCUT_ITEMS: ShortcutItem[] = [
     .filter(s => !s.group)
     .flatMap<ShortcutItem>(s => [
       { id: `nav:${s.id}`, label: s.menu, to: `/korean/${s.id}`, group: 'menu' },
-      ...(s.id === 'today' ? [{ id: 'nav:game', label: 'Игра на слова', to: '/game', group: 'menu' as const }] : []),
+      ...(s.id === 'today' ? [{ id: 'nav:game', label: 'Игра на слова', to: '/game/home', group: 'menu' as const }] : []),
     ]),
   { id: 'cab:overview', label: 'Обзор', to: '/korean/cabinet', group: 'cabinet' },
   ...Object.entries(CABINET_TABS).map<ShortcutItem>(([tab, label]) => ({ id: `cab:${tab}`, label, to: `/korean/cabinet?tab=${tab}`, group: 'cabinet' })),
