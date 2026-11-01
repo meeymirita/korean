@@ -98,7 +98,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="study study-shell sky" :class="{ focus, peek }">
+  <div class="study study-shell sky" :class="{ focus, peek, scrolls: route.path === '/korean/shop' }">
     <aside class="study-side" @mouseenter="peekOpen" @mouseleave="peekClose()">
       <RouterLink to="/" class="brand brand-row brand-home" title="На главную страницу">
         <span class="brand-mark">✳︎</span>
