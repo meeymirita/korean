@@ -25,7 +25,7 @@ export const COINS = {
 /** Очки, с которых начинается уровень L (как xpFor в src/data/levels.ts). */
 const xpFor = (L: number) => 30 * L * (L - 1)
 const levelOf = (xp: number) => Math.min(40, Math.floor((1 + Math.sqrt(1 + (4 * xp) / 30)) / 2))
-const LOG_LIMIT = 300
+const LOG_LIMIT = 1000
 const MAX_OPS = 500
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const localDay = () => {

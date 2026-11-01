@@ -110,7 +110,7 @@ const OUTBOX_KEY = 'progress_outbox'
 /** Через сколько после последнего действия очередь уходит на сервер, и сколько действий за один запрос. */
 const FLUSH_DELAY = 800
 const BATCH = 200
-const LOG_MAX = 300
+const LOG_MAX = 1000
 /** Оставляет только q / a / y, строки не длиннее 300 знаков (так же режет сервер). */
 function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
   if (!d) return undefined

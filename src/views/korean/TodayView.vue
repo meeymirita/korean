@@ -3,7 +3,7 @@ import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
-import { checklistFor, snapshot } from '@/data/checklist'
+import { CHECK_DEFAULT, CHECK_MAX, CHECK_MIN, checklistFor, clampCheckSize, snapshot } from '@/data/checklist'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsCheck.vue'
@@ -87,7 +87,7 @@ const tasksRight = computed(() => tasks.value.filter(t => picked.value[t.id] ===
 /* ---------- проверка слов ---------- */
 const checking = ref(false)
 const checkResult = ref<WordsCheckResult | null>(restored?.checkResult ?? null)
-/** Блок «Слова дня» можно свернуть целиком; после «Закрыть слова» он сворачивается сам, открыть можно кнопкой. */
+/** Блок «Слова дня» можно свернуть целиком; после «Закрепить слова» он сворачивается сам, открыть можно кнопкой. */
 const wordsHidden = usePersisted('today_words_hidden', false, v => typeof v === 'boolean')
 function onChecked(r: WordsCheckResult) {
   checkResult.value = r
@@ -164,9 +164,68 @@ async function checkAndSave() {
   }
 }
 
+/* ---------- ответы из истории ---------- */
+/**
+ * Ответы набора дня хранятся на этом устройстве. Если набор прошли на другом (или данные браузера стёрлись), страница показывала бы его пустым,
+ * хотя он уже лежит в «Истории»: берём ответы оттуда, когда это тот же набор (те же задания в том же порядке).
+ */
+async function restoreFromSaved() {
+  if (saved.value) return
+  try {
+    if (!sets.loaded) await sets.load()
+  } catch {
+    return
+  }
+  const day = dayKey()
+  const mine = [...ruleItems.value, ...tasks.value]
+  const hit = [...sets.items]
+    .filter(x => x.day === day && x.data && !isChecklist(x.data))
+    .sort((a, b) => b.created - a.created)
+    .find(x => {
+      const d = tasksOf(x)
+      const list = [...d.ruleTasks, ...d.tasks]
+      return list.length === mine.length && list.every((t, i) => t.prompt === mine[i]!.prompt && t.answer === mine[i]!.answer)
+    })
+  if (!hit) return
+  const list = [...tasksOf(hit).ruleTasks, ...tasksOf(hit).tasks]
+  const got: Record<number, string> = {}
+  list.forEach((t, i) => t.picked !== null && (got[mine[i]!.id] = t.picked))
+  if (Object.keys(got).length < done.value) return
+  picked.value = got
+  if (!checkResult.value && tasksOf(hit).check) checkResult.value = tasksOf(hit).check
+  saved.value = true
+  toast.ok('Ответы за сегодня взяты из истории')
+}
+watch(owner, o => o && void restoreFromSaved(), { immediate: true })
+
 /* ---------- чек-лист на день ---------- */
 const today = dayKey()
-const items = checklistFor(today)
+/** Сколько пунктов в чек-листе (от 5): помним на этом устройстве. */
+const SIZE_KEY = 'check_size'
+function readSize() {
+  try {
+    return clampCheckSize(Number(localStorage.getItem(SIZE_KEY)) || CHECK_DEFAULT)
+  } catch {
+    return CHECK_DEFAULT
+  }
+}
+const checkSize = ref(readSize())
+const sizeText = ref(String(checkSize.value))
+const sizeNote = ref('')
+function setSize(raw: number) {
+  const want = Math.round(raw)
+  const n = clampCheckSize(want)
+  sizeNote.value = want > CHECK_MAX ? `Больше ${CHECK_MAX} не набирается: столько разных игр и дел есть, а одна игра в списке встречается один раз.` : want < CHECK_MIN ? `Меньше ${CHECK_MIN} не бывает.` : ''
+  checkSize.value = n
+  sizeText.value = String(n)
+  listSaved.value = false
+  try {
+    localStorage.setItem(SIZE_KEY, String(n))
+  } catch {
+    /* без хранилища размер не запомнится */
+  }
+}
+const items = computed(() => checklistFor(today, checkSize.value))
 /** Вручную отмеченные пункты: помним до закрытия вкладки браузера; чужой день не берём. */
 const ticks = usePersisted<{ day: string; ids: string[] }>('check_ticks', { day: today, ids: [] }, v => (v as { day?: string })?.day === today)
 const ticked = (id: string) => ticks.value.ids.includes(id)
@@ -174,7 +233,7 @@ function tick(id: string) {
   ticks.value = { day: today, ids: ticked(id) ? ticks.value.ids.filter(x => x !== id) : [...ticks.value.ids, id] }
   listSaved.value = false
 }
-const snaps = computed(() => snapshot(items, progress.data.log, today, ticks.value.ids))
+const snaps = computed(() => snapshot(items.value, progress.data.log, today, ticks.value.ids))
 const listDone = computed(() => snaps.value.filter(s => s.done).length)
 const listSaved = ref(false)
 const listSaving = ref(false)
@@ -184,7 +243,7 @@ async function saveList() {
     if (!sets.loaded) await sets.load()
     // за один день храним один чек-лист: старый заменяем новым
     for (const old of sets.items.filter(s => s.day === today && isChecklist(s.data))) await sets.remove(old.id)
-    await sets.save(today, listDone.value, items.length, { list: snaps.value })
+    await sets.save(today, listDone.value, items.value.length, { list: snaps.value })
     listSaved.value = true
     toast.ok('Чек-лист сохранён в истории')
   } catch (e) {
@@ -223,7 +282,9 @@ async function removeSet(s: SavedSet) {
   }
 }
 /** Снимок набора заданий (запись не чек-лист). */
-const tasksOf = (s: SavedSet) => s.data as SetData
+function tasksOf(s: SavedSet) {
+  return s.data as SetData
+}
 const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.answer ? 'ok' : 'bad')
 import yunaToday from '@/assets/home/yuna-today.webp'
 import yunaChecklist from '@/assets/home/yuna-checklist.webp'
@@ -294,7 +355,7 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
         </button>
       </div>
       <div class="fcb">
-        <button v-if="!checking" @click="checking = true">{{ checkResult ? '✓ Слова закрыты · ещё раз' : '✓ Закрыть слова' }}</button>
+        <button v-if="!checking" title="Три игры подряд на словах дня: пары, перевод, предложения. Слова остаются на странице" @click="checking = true">{{ checkResult ? '✓ Слова закреплены · ещё раз' : '✓ Закрепить слова' }}</button>
         <button class="plain" @click="words = randomWords(WORDS, progress.data.settings.cats); revealed = {}; checkResult = null; checking = false">Другие слова</button>
       </div>
       <WordsCheck v-if="checking" :key="words.map(w => w.n).join()" :words="words" @done="onChecked" @cancel="checking = false" />
@@ -303,7 +364,7 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
       </p>
       </template>
       <p v-else-if="checkResult" class="td-res">
-        Слова закрыты: пары {{ checkResult.pairs.right }}/{{ checkResult.pairs.total }} · перевод {{ checkResult.quiz.right }}/{{ checkResult.quiz.total }}<template v-if="checkResult.build.total"> · предложения {{ checkResult.build.right }}/{{ checkResult.build.total }}</template>
+        Слова закреплены: пары {{ checkResult.pairs.right }}/{{ checkResult.pairs.total }} · перевод {{ checkResult.quiz.right }}/{{ checkResult.quiz.total }}<template v-if="checkResult.build.total"> · предложения {{ checkResult.build.right }}/{{ checkResult.build.total }}</template>
       </p>
 
       <h2 class="today-h">
@@ -338,6 +399,15 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
           <div>
             <h2 class="today-h">Чек-лист на сегодня</h2>
             <p class="td-res">Набор меняется каждый день. Ответы считаются сами, пункт без счётчика отметь галочкой.</p>
+            <div class="cl-size">
+              <label>Пунктов:
+                <button type="button" class="plain" aria-label="Меньше" @click="setSize(checkSize - 1)">−</button>
+                <input v-model="sizeText" type="number" inputmode="numeric" :min="CHECK_MIN" :max="CHECK_MAX" @change="setSize(Number(sizeText))" @keydown.enter="setSize(Number(sizeText))" />
+                <button type="button" class="plain" aria-label="Больше" @click="setSize(checkSize + 1)">+</button>
+              </label>
+              <small>от {{ CHECK_MIN }} до {{ CHECK_MAX }}: в каждом пункте своя игра, 15–50 ответов</small>
+            </div>
+            <p v-if="sizeNote" class="td-res">{{ sizeNote }}</p>
           </div>
           <div class="cl-prog" :aria-label="`Сделано ${listDone} из ${items.length}`">
             <b>{{ listDone }} из {{ items.length }}</b>
@@ -386,8 +456,8 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
           </div>
           <div v-else-if="openId === s.id && s.data" class="td-body">
             <p v-if="tasksOf(s).words.length" class="td-words"><span v-for="w in tasksOf(s).words" :key="w.k" :title="w.t" class="ko">{{ w.k }}</span></p>
-            <p v-if="tasksOf(s).check" class="td-res">Слова закрыты: пары {{ tasksOf(s).check!.pairs.right }}/{{ tasksOf(s).check!.pairs.total }} · перевод {{ tasksOf(s).check!.quiz.right }}/{{ tasksOf(s).check!.quiz.total }}<template v-if="tasksOf(s).check!.build.total"> · предложения {{ tasksOf(s).check!.build.right }}/{{ tasksOf(s).check!.build.total }}</template></p>
-            <p v-else class="td-res">Слова в этот раз не закрывали.</p>
+            <p v-if="tasksOf(s).check" class="td-res">Слова закреплены: пары {{ tasksOf(s).check!.pairs.right }}/{{ tasksOf(s).check!.pairs.total }} · перевод {{ tasksOf(s).check!.quiz.right }}/{{ tasksOf(s).check!.quiz.total }}<template v-if="tasksOf(s).check!.build.total"> · предложения {{ tasksOf(s).check!.build.right }}/{{ tasksOf(s).check!.build.total }}</template></p>
+            <p v-else class="td-res">Слова в этот раз не закрепляли.</p>
             <ol class="td-tasks">
               <li v-for="(t, i) in [...tasksOf(s).ruleTasks, ...tasksOf(s).tasks]" :key="i" :class="markOf(t)">
                 <span class="ko">{{ t.prompt }}</span>
@@ -457,6 +527,11 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
 .study .cl-panel { padding: 22px 22px 18px; background: rgba(255, 255, 255, .45); border: 1px solid #fff; border-radius: 26px; }
 .study .cl-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .study .cl-head .today-h { margin: 0; padding: 0; border: 0; }
+.study .cl-size { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 10px; }
+.study .cl-size label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.study .cl-size input { width: 64px; padding: 6px 8px; font: inherit; text-align: center; color: var(--ink); background: rgba(255, 255, 255, .85); border: 1px solid var(--line); border-radius: 10px; }
+.study .cl-size button { width: 34px; height: 34px; padding: 0; font: inherit; font-size: 18px; color: var(--ink); background: rgba(255, 255, 255, .85); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.study .cl-size small { color: var(--muted); }
 .study .cl-prog { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: rgba(255, 255, 255, .7); border-radius: 99px; }
 .study .cl-bar { width: 150px; height: 8px; background: rgba(150, 130, 230, .2); border-radius: 99px; overflow: hidden; }
 .study .cl-bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; transition: width .3s; }

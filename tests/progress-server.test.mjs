@@ -97,11 +97,12 @@ describe('сервер: прогресс в базе', () => {
     assert.equal(p.log[0].w, null)
   })
 
-  test('журнал: последние 300 ответов, новые первыми', async () => {
-    await ops(...Array.from({ length: 320 }, (_, i) => answer({ t: 20_000 + i, word: null })))
+  test('журнал: последние 1000 ответов, новые первыми', async () => {
+    const batch = Array.from({ length: 1020 }, (_, i) => answer({ t: 20_000 + i, word: null }))
+    for (let i = 0; i < batch.length; i += 400) await ops(...batch.slice(i, i + 400)) // за один запрос сервер берёт не больше 500 действий
     const log = (await read()).log
-    assert.equal(log.length, 300)
-    assert.equal(log[0].t, 20_319)
+    assert.equal(log.length, 1000)
+    assert.equal(log[0].t, 21_019)
   })
 
   test('профиль и настройки сохраняются, неверные значения — 400 и ничего не меняют', async () => {

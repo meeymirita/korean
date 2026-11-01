@@ -46,9 +46,9 @@ describe('normalize', () => {
     assert.equal(d.settings.goal, 20)
   })
 
-  test('журнал обрезается до 300 записей', () => {
-    const log = Array.from({ length: 500 }, (_, i) => ({ t: i, w: null, ok: true, s: 'game' }))
-    assert.equal(normalize({ v: 1, log }).log.length, 300)
+  test('журнал обрезается до 1000 записей', () => {
+    const log = Array.from({ length: 1500 }, (_, i) => ({ t: i, w: null, ok: true, s: 'game' }))
+    assert.equal(normalize({ v: 1, log }).log.length, 1000)
   })
 })
 
@@ -117,9 +117,9 @@ describe('record', () => {
     assert.equal(store.info.level, 2)
   })
 
-  test('журнал не длиннее 300', () => {
-    for (let i = 0; i < 320; i++) store.record({ ok: true, source: 'game' })
-    assert.equal(store.data.log.length, 300)
+  test('журнал не длиннее 1000', () => {
+    for (let i = 0; i < 1020; i++) store.record({ ok: true, source: 'game' })
+    assert.equal(store.data.log.length, 1000)
   })
 })
 
