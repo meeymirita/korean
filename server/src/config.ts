@@ -80,3 +80,10 @@ export const MAX_SET_DATA = 200_000
 
 /** Публичная визитка: картинка для превью ссылки (1200×630) не тяжелее 1 МБ. */
 export const MAX_OG = 1024 * 1024
+
+/** Тетрадь: папки и листы с рисунками, до 2000 штук, штрихи листа не больше 2 МБ JSON, вложенность папок до 8. */
+export const MAX_NB_ITEMS = 2000
+export const MAX_NB_NAME = 100
+export const MAX_NB_TEXT = 20_000
+export const MAX_NB_STROKES = 2_000_000
+export const MAX_NB_DEPTH = 8

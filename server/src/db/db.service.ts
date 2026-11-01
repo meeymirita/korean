@@ -148,6 +148,21 @@ CREATE TABLE IF NOT EXISTS coin_log (
 );
 CREATE INDEX IF NOT EXISTS coin_log_day ON coin_log (day, kind);
 
+-- «Тетрадь»: папки и листы с рисунками (штрихи хранятся векторно, JSON)
+CREATE TABLE IF NOT EXISTS nb_items (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,          -- folder | sheet
+  name TEXT NOT NULL,
+  parent TEXT,                 -- id папки или NULL (корень)
+  tpl TEXT NOT NULL DEFAULT 'blank',
+  text TEXT NOT NULL DEFAULT '',
+  strokes TEXT NOT NULL DEFAULT '[]',
+  fav INTEGER NOT NULL DEFAULT 0,  -- 1: в избранном
+  created INTEGER NOT NULL,
+  updated INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS nb_items_parent ON nb_items (parent);
+
 -- журнал событий: входы, создание и отзыв гостевых токенов, неверные токены
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,6 +193,7 @@ export class Db implements OnModuleDestroy {
     if (!has('notes', 'images')) this.sql.exec("ALTER TABLE notes ADD COLUMN images TEXT NOT NULL DEFAULT '[]'")
     if (!has('notes', 'tags')) this.sql.exec("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
     if (!has('plans', 'kind')) this.sql.exec("ALTER TABLE plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'own'")
+    if (!has('nb_items', 'fav')) this.sql.exec('ALTER TABLE nb_items ADD COLUMN fav INTEGER NOT NULL DEFAULT 0')
     if (!has('answers', 'detail')) this.sql.exec("ALTER TABLE answers ADD COLUMN detail TEXT NOT NULL DEFAULT ''")
     if (!has('images', 'tags')) this.sql.exec("ALTER TABLE images ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
     if (!has('images', 'kind')) {
