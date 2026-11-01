@@ -146,8 +146,8 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 .study .shx-main { display: grid; gap: 18px; min-width: 0; }
 .study .shx-panel { padding: 18px 20px; background: rgba(255, 255, 255, .68); border: 2px solid rgba(255, 255, 255, .9); border-radius: 26px; box-shadow: 0 12px 30px rgba(91, 47, 154, .16); backdrop-filter: blur(12px); }
 .study .shx-panel h2 { margin: 0 0 14px; font-size: 26px; font-weight: 600; color: var(--pur); }
-.study .shx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.study .shx-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.study .shx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.study .shx-grid.three { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .study .shx-card { display: grid; grid-template-columns: 76px 1fr; gap: 6px 12px; align-items: start; padding: 14px; background: rgba(255, 255, 255, .85); border-radius: 20px; box-shadow: 0 4px 14px rgba(91, 47, 154, .1); }
 .study .shx-card > img { width: 76px; height: 76px; object-fit: contain; }
 .study .shx-card h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; color: #2d1559; }
@@ -178,8 +178,8 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 .study .shx-log .when { font-size: 12px; color: #7d5ab5; }
 .study .shx-log .plus { color: #2f8f5b; }
 .study .shx-log .minus { color: #c0508a; }
-@media (max-width: 980px) { .study .shx { grid-template-columns: 1fr; } .study .shx-side { position: static; grid-template-columns: 130px 1fr; align-items: center; } .study .shx-grid.three, .study .shx-two { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .study .shx { padding: 12px; } .study .shx-grid { grid-template-columns: 1fr; } .study .shx-side { grid-template-columns: 1fr; } .study .shx-log li { grid-template-columns: 1fr auto; } .study .shx-log .when { grid-column: 1 / -1; } }
+@media (max-width: 980px) { .study .shx { grid-template-columns: 1fr; } .study .shx-side { position: static; grid-template-columns: 130px 1fr; align-items: center; } .study .shx-two { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .study .shx { padding: 12px; } .study .shx-grid, .study .shx-grid.three { grid-template-columns: 1fr; } .study .shx-side { grid-template-columns: 1fr; } .study .shx-log li { grid-template-columns: 1fr auto; } .study .shx-log .when { grid-column: 1 / -1; } }
 
 .study .shx-head .shx-titlerow { position: relative; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
 .study .shx-head h1 { margin: 0; }
@@ -192,7 +192,7 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 html[data-theme='dark'] .study .shx-tip { color: #efe6ff; background: #25214a; }
 html[data-theme='dark'] .study .shx-tip i { color: #cdb4ff; }
 /* на этой странице общие отступы и скругление обёртки не нужны: как было до правки */
-.study-shell.sky .study-main .wrap.shx-wrap { border: 1px solid #fff; border-radius: 28px; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 18px 8px 64px; margin: 0 auto; max-width: 1100px; }
+.study-shell.sky .study-main .wrap.shx-wrap { border: 1px solid #fff; border-radius: 28px; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 18px 8px 64px; margin: 0 auto; }
 .study .shx-claim { justify-self: end; padding: 4px 14px; font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: linear-gradient(180deg, #9a6cf0, #7b4fd6); border: 0; border-radius: 12px; box-shadow: 0 3px 8px rgba(91, 47, 154, .35); cursor: pointer; animation: shx-pulse 1.8s ease-in-out infinite; }
 .study .shx-claim:disabled { opacity: .5; animation: none; }
 @keyframes shx-pulse { 50% { box-shadow: 0 0 0 5px rgba(154, 108, 240, .28); } }

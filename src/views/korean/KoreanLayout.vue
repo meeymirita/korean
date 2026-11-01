@@ -48,7 +48,23 @@ function peekClose(delay = 250) {
   clearTimeout(peekTimer)
   peekTimer = setTimeout(() => (peek.value = false), delay)
 }
+/** На странице «Магазин» меню прячется само (только на время визита, выбор на устройстве не меняется). */
+let autoHidden = false
+watch(
+  () => route.path,
+  path => {
+    if (path === '/korean/shop' && !focus.value) {
+      focus.value = true
+      autoHidden = true
+    } else if (path !== '/korean/shop' && autoHidden) {
+      focus.value = false
+      autoHidden = false
+    }
+  },
+  { immediate: true },
+)
 function setFocus(v: boolean) {
+  autoHidden = false
   peek.value = false
   focus.value = v
   try {
