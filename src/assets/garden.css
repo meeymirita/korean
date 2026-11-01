@@ -7,7 +7,8 @@
 .study .gd-plant:nth-child(3n) { animation-delay: -1.4s; }
 .study .gd-plant:nth-child(3n + 1) { animation-delay: -2.9s; }
 .study .gd-plant:hover, .study .gd-plant.on { background: var(--gold-soft); animation-play-state: paused; }
-.study .gd-plant.wet::after { content: '💧'; position: absolute; right: 0; top: -2px; font-size: 11px; }
+.study .gd-plant.wet::after { content: ''; position: absolute; right: 2px; top: 0; width: 9px; height: 12px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: linear-gradient(160deg, #bfe4ff, #6fb4f5); box-shadow: 0 0 0 1px #fff; }
+.study .plant-ic.lg { display: inline-block; width: 1.4em; height: 1.4em; vertical-align: -.4em; }
 .study .gd-plant.thirsty { filter: saturate(.55); transform: rotate(-9deg); animation: none; }
 .study .gd-plant.wilted { filter: grayscale(.4); animation: none; }
 .study .gd-empty { margin: 8px 0 0; text-align: center; color: var(--muted); }

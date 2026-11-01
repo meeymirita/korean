@@ -2,7 +2,8 @@
 import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { STAGE_NAME, emojiOf, plants, type Plant } from '@/data/garden'
+import PlantIcon from '@/components/garden/PlantIcon.vue'
+import { STAGE_NAME, plants, type Plant } from '@/data/garden'
 import { CATN } from '@/data/korean/words'
 import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
 
@@ -65,10 +66,10 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
           :title="`${p.word.k} — ${p.word.t}`"
           @click="picked = picked?.word.n === p.word.n ? null : p"
         >
-          {{ emojiOf(p) }}
+          <PlantIcon :stage="p.stage" :hue="p.flower" />
         </button>
       </div>
-      <p v-if="!shown.length" class="gd-empty">Все слова напоены 🌿</p>
+      <p v-if="!shown.length" class="gd-empty">Все слова напоены <Icon name="sprout" /></p>
     </div>
     <div v-else class="empty">
       <div class="big"><Icon name="sprout" /></div>
@@ -77,7 +78,7 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
     </div>
 
     <div v-if="picked" class="pg-card gd-info">
-      <div class="gd-ico">{{ emojiOf(picked) }}</div>
+      <div class="gd-ico"><PlantIcon :stage="picked.stage" :hue="picked.flower" /></div>
       <div>
         <div class="gd-ko">{{ picked.word.k }} <small>{{ picked.word.r }}</small></div>
         <div class="gd-tr">{{ picked.word.t }}</div>
@@ -89,8 +90,8 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
     </div>
 
     <p class="pg-s gd-legend">
-      🌰 семечко (ошибся) · 🌱 росток · 🌿 бутон · цветок — слово выучено (у каждой темы свой) · хочет пить — пора повторить, завяло —
-      давно не повторял. 🥀 возвращается в цветок после верного ответа.
+      <PlantIcon stage="seed" class="lg" /> семечко (ошибся) · <PlantIcon stage="sprout" class="lg" /> росток · <PlantIcon stage="bud" class="lg" /> бутон · цветок — слово выучено (у каждой темы свой оттенок) · хочет пить — пора повторить, завяло —
+      давно не повторял. <PlantIcon stage="wilted" class="lg" /> возвращается в цветок после верного ответа.
     </p>
   </div>
 </template>
