@@ -15,6 +15,8 @@ import { usePersisted } from '@/composables/usePersisted'
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const progress = useProgressStore()
 const passed = (id: string) => progress.isMarked('d', id)
+/** «пройдено» по данным, если владелец не снял отметку (метка u) */
+const isOk = (g: { id: string; st: string }) => g.st === 'ok' && !progress.isMarked('u', g.id)
 const PARTS = [
   { id: 1, label: 'Часть 1', sub: 'Первый шаг · уроки 1–30' },
   { id: 2, label: 'Часть 2', sub: 'Второй шаг · 13 уроков' },
@@ -29,7 +31,7 @@ const list = computed(() => {
   return G.filter(g =>
     (g.part ?? 1) === part.value &&
     (!sec.value || g.s === sec.value) &&
-    (!onlyDone.value || g.st === 'ok' || passed(g.id)) &&
+    (!onlyDone.value || isOk(g) || passed(g.id)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
 })
 const { open } = useGrammarModal()
@@ -77,7 +79,7 @@ onMounted(() => {
         <div class="ft">
           <span class="pill">{{ g.s }}</span>
           <span v-if="g.l" class="pill l">{{ g.l }}</span>
-          <span class="pill" :class="g.st === 'ok' ? 's' : 'n'">{{ g.st === 'ok' ? 'пройдено' : 'ещё рано' }}</span>
+          <span class="pill" :class="isOk(g) ? 's' : 'n'">{{ isOk(g) ? 'пройдено' : 'ещё рано' }}</span>
           <span v-if="passed(g.id)" class="pill s">✓ {{ g.l || 'отмечено' }}</span>
           <span v-if="photoOf(g)" class="pill ph" role="button" tabindex="0" title="Показать фото Юны к этому правилу" @click.stop="photo = photoOf(g)!" @keydown.enter.stop.prevent="photo = photoOf(g)!">Фото</span>
         </div>

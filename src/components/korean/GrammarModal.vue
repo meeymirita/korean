@@ -16,6 +16,9 @@ const progress = useProgressStore()
 /** Отметка «урок пройден» ведёт сам владелец (у гостя записи не сохраняются). */
 const owner = computed(() => progress.unlocked && !progress.isGuest)
 const passed = computed(() => !!current.value && progress.isMarked('d', current.value.id))
+/** отметка «пройдено» из данных снята владельцем (метка u) */
+const unmarked = computed(() => !!current.value && progress.isMarked('u', current.value.id))
+const isOk = computed(() => current.value?.st === 'ok' && !unmarked.value)
 /** Видео урока; если файла на сервере нет (или локально), показываем заглушку. */
 const broken = ref('')
 const video = computed(() => {
@@ -99,10 +102,13 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           <div class="pl">
             <span class="pill">{{ current.s }}</span>
             <span v-if="current.l" class="pill l">{{ current.l }}</span>
-            <span class="pill" :class="current.st === 'ok' ? 's' : 'n'">
-              {{ current.st === 'ok' ? 'пройдено' : 'ещё рано' }}
+            <span class="pill" :class="isOk ? 's' : 'n'">
+              {{ isOk ? 'пройдено' : 'ещё рано' }}
             </span>
             <button v-if="photo" type="button" class="pass ph" title="Показать фото Юны к этому правилу" @click="viewer = photo!">Фото</button>
+            <button v-if="owner && current.st === 'ok'" type="button" class="pass" :class="{ on: unmarked }" :aria-pressed="unmarked" :title="unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»: карточка не пройдена'" @click="progress.toggleMark('u', current.id)">
+              {{ unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»' }}
+            </button>
             <button v-if="owner && current && current.st !== 'ok'" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
               {{ passed ? `✓ ${current.l || 'Тема'} пройдено` : `Отметить пройденным${current.l ? ': ' + current.l.toLowerCase() : ''}` }}
             </button>
