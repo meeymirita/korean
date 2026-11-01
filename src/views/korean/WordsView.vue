@@ -10,6 +10,7 @@ import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
 import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
+import yunaBook from '@/assets/home/yuna-book.webp'
 
 const progress = useProgressStore()
 const marked = computed(() => progress.data.settings.marks.filter(m => !m.startsWith('d:')).length)
@@ -77,7 +78,11 @@ const shareWord = (d: Word) =>
 </script>
 
 <template>
-  <div class="wrap">
+  <div class="wrap words-page">
+    <!-- Юна зафиксирована справа: страница прокручивается, она остаётся на месте (в body, чтобы не зависеть от родителей) -->
+    <Teleport to="body">
+      <img class="words-yuna" :src="yunaBook" alt="" aria-hidden="true" draggable="false" />
+    </Teleport>
     <SectionHead id="words" :sub="`словарь корейского · ${D.length} слов`" :big="D.length" />
     <div class="searchbar">
       <div class="sb">
@@ -144,3 +149,17 @@ const shareWord = (d: Word) =>
     </div>
   </div>
 </template>
+
+<style>
+/* Юна на «Словах»: двигай здесь */
+.words-yuna {
+  --h: min(80vh, 840px);   /* высота картинки */
+  --right: 12px;           /* отступ от правого края */
+  --bottom: 0px;           /* отступ от низа */
+  position: fixed; right: var(--right); bottom: var(--bottom); height: var(--h); width: auto;
+  z-index: 3; pointer-events: none; user-select: none; opacity: .95;
+}
+/* место справа под Юну: таблица не заходит под неё */
+.study-shell.sky .study-main .wrap.words-page { padding-right: 240px; }
+@media (max-width: 1100px) { .words-yuna { display: none; } .study-shell.sky .study-main .wrap.words-page { padding-right: 14px; } }
+</style>
