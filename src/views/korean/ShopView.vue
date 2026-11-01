@@ -192,5 +192,5 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 html[data-theme='dark'] .study .shx-tip { color: #efe6ff; background: #25214a; }
 html[data-theme='dark'] .study .shx-tip i { color: #cdb4ff; }
 /* на этой странице общие отступы и скругление обёртки не нужны: как было до правки */
-.study-shell.sky .study-main .wrap.shx-wrap { border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 18px 8px 64px; margin: 0 auto; max-width: 1100px; }
+.study-shell.sky .study-main .wrap.shx-wrap { border: 1px solid #fff; border-radius: 28px; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 18px 8px 64px; margin: 0 auto; max-width: 1100px; }
 </style>
