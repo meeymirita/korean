@@ -8,7 +8,6 @@ import { HOME_PHRASES, HOME_RULE } from '@/composables/useHome'
 import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
 import { useSiteImagesStore } from '@/stores/siteImages'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
-import catSleep from '@/assets/home/dash/cat-sleep.webp'
 import catWave from '@/assets/home/dash/cat-wave.webp'
 import bgYuna from '@/assets/home/dash/bg-yuna.webp'
 import qFire from '@/assets/home/dash/q-fire.webp'
@@ -76,7 +75,6 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
           <p class="ko">{{ rule.examples }}</p>
           <RouterLink class="primary" :to="rule.to">Открыть правило&nbsp; →</RouterLink>
         </div>
-        <img class="hero-cat" :src="catSleep" alt="" aria-hidden="true" draggable="false" />
       </section>
 
       <section class="panel">
@@ -161,16 +159,14 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .tbtn { color: #7371ed; font-size: 12px; padding: 4px; }
 .tbtn:hover { color: var(--pink); }
 
-/* ===== «Сейчас изучаем»: котик (двигай здесь) ===== */
-.hero { --cat-w: 150px; --cat-right: 28px; --cat-bottom: 16px;
-  min-height: 290px; position: relative; overflow: hidden; border-radius: 22px; color: #fff; padding: 28px;
+/* ===== «Сейчас изучаем» (котика `assets/home/dash/cat-sleep.webp` убрали временно) ===== */
+.hero { min-height: 290px; position: relative; overflow: hidden; border-radius: 22px; color: #fff; padding: 28px;
   background: radial-gradient(circle at 78% 30%, rgba(255, 214, 244, .55), transparent 45%),
     linear-gradient(115deg, #6a5bc0, #8c78da 55%, #b7a2ee);
   box-shadow: var(--shadow); }
 .hero::before { content: "✦      ✧         ✦"; position: absolute; right: 20px; top: 16px; color: #ffe3f6;
   font-size: 22px; letter-spacing: 14px; opacity: .85; }
 .hero-in { position: relative; z-index: 2; max-width: 52%; }
-.hero-cat { position: absolute; z-index: 3; right: var(--cat-right); bottom: var(--cat-bottom); width: var(--cat-w); height: auto; pointer-events: none; user-select: none; }
 .eyebrow { display: inline-block; background: rgba(255, 255, 255, .88); color: #5b4fb3; border-radius: 30px; padding: 7px 12px; font-size: 12px; font-weight: 600; }
 .hero h2 { font-size: 34px; margin: 17px 0 2px; }
 .hero h3 { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
@@ -262,7 +258,6 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
     .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dcol:last-child { grid-template-columns: 1fr; }
   .hero-in { max-width: 100%; }
-    .hero-cat { display: none; }
   .hero { min-height: 280px; padding: 23px; }
   .hero h2 { font-size: 30px; }
 }
