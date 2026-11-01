@@ -37,6 +37,12 @@ const bad = (msg: string): never => {
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.length <= max ? v : bad('invalid op'))
 const int = (v: unknown, min: number, max: number) => (typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max ? v : bad('invalid op'))
 
+/** День «ГГГГ-ММ-ДД» по местному времени: без Intl, в сотни раз быстрее toLocaleDateString на больших выборках. */
+function dayKeyOf(t: number): string {
+  const d = new Date(t)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function parseDetail(s: string): Record<string, string> {
   try {
     return JSON.parse(s) as Record<string, string>
@@ -78,10 +84,10 @@ export class ProgressService {
    */
   report(days: number) {
     const since = days ? Date.now() - days * 86_400_000 : 0
-    const sinceDay = days ? new Date(since).toLocaleDateString('sv-SE') : ''
+    const sinceDay = days ? dayKeyOf(since) : ''
     const rows = new Map<string, { source: string; mode: string; ok: number; bad: number; days: Set<string>; first: number; last: number; sec: number }>()
     const answers = this.db.all<{ t: number; ok: number; source: string; mode: string }>('SELECT t, ok, source, mode FROM answers WHERE t >= ? ORDER BY t', since)
-    const dayOf = (t: number) => new Date(t).toLocaleDateString('sv-SE')
+    const dayOf = dayKeyOf
     let prev = 0
     for (const a of answers) {
       const key = a.source + '\u0000' + a.mode
@@ -123,7 +129,7 @@ export class ProgressService {
     const rows = this.db.all<{ t: number; ok: number }>(`SELECT t, ok FROM answers WHERE ${where} AND t >= ?`, ...args, from.getTime())
     const byDay = new Map<string, { ok: number; bad: number }>()
     for (const r of rows) {
-      const k = new Date(r.t).toLocaleDateString('sv-SE')
+      const k = dayKeyOf(r.t)
       const d = byDay.get(k) ?? { ok: 0, bad: 0 }
       if (r.ok) d.ok++
       else d.bad++
@@ -133,7 +139,7 @@ export class ProgressService {
     for (let i = 0; i < span; i++) {
       const d = new Date(from)
       d.setDate(from.getDate() + i)
-      const k = d.toLocaleDateString('sv-SE')
+      const k = dayKeyOf(d.getTime())
       out.push({ day: k, ...(byDay.get(k) ?? { ok: 0, bad: 0 }) })
     }
     return { source, mode: mode ?? null, days: out }
