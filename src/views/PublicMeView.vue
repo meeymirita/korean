@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
+import Icon from '@/components/Icon.vue'
+import { EMOJI_ICON } from '@/lib/icons'
 import { fetchT } from '@/lib/http'
 
 interface PublicCard {
@@ -67,7 +69,7 @@ onMounted(async () => {
       <div class="cover" :class="{ photo: card.cover }" :style="card.cover ? { backgroundImage: 'url(/api/public/cover)' } : undefined"></div>
       <div class="who">
         <img v-if="isPhoto(card.avatar)" :src="card.avatar" alt="" class="ava" />
-        <span v-else class="ava emoji">{{ card.avatar || '🌸' }}</span>
+        <span v-else class="ava emoji"><Icon v-if="EMOJI_ICON[card.avatar || '🌸']" :name="EMOJI_ICON[card.avatar || '🌸']!" /><template v-else>{{ card.avatar }}</template></span>
         <div>
           <h1>{{ card.name || 'Изучаю корейский' }}</h1>
           <p>уровень {{ card.level }} · {{ card.title }}</p>

@@ -39,7 +39,7 @@ function shareRule() {
   const formula = g.b.find(b => b[0] === 'formula')?.[1] as string | undefined
   const ex = g.b.find(b => b[0] === 'ex')?.[1] as [string, string][] | undefined
   const lines = [formula ? plain(formula) : '', ...(ex ?? []).slice(0, 2).map(([k, r]) => `${plain(k)}  ${r}`)].filter(Boolean)
-  void share({ kicker: g.l ? `правило · ${g.l}` : 'правило', title: plain(g.ko), sub: plain(g.ru), lines, icon: '📘' }, `правило-${g.id}`)
+  void share({ kicker: g.l ? `правило · ${g.l}` : 'правило', title: plain(g.ko), sub: plain(g.ru), lines, icon: 'grammar' }, `правило-${g.id}`)
 }
 
 /* ---------- движок между описанием и видео ---------- */

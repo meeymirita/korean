@@ -95,7 +95,7 @@ const total = computed(() =>
 
 const { share, busy: sharing } = useShareCard()
 const shareAch = (a: (typeof achievements.value)[number]) =>
-  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Серия: ${progress.streak}`], icon: '🏆' }, `достижение-${a.id}`)
+  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Серия: ${progress.streak}`], icon: 'trophy' }, `достижение-${a.id}`)
 </script>
 
 <template>

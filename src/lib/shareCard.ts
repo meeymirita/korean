@@ -1,4 +1,5 @@
 import '@/assets/home/fonts.css'
+import { ICONS } from '@/lib/icons'
 
 /** Карточка для соцсетей 1200×630: рисуется на canvas в цветах платформы, шрифты те же, что на сайте. */
 export const CARD_W = 1200
@@ -14,6 +15,7 @@ export interface CardSpec {
   /** до четырёх строк пояснений (пример, формула) */
   lines?: string[]
   /** большой значок слева сверху (эмодзи) */
+  /** имя иконки платформы (`src/lib/icons.ts`), рисуется справа сверху */
   icon?: string
   footer?: string
 }
@@ -57,6 +59,18 @@ async function loadFonts() {
 }
 
 /** Рисует карточку и возвращает PNG. */
+/** Иконка платформы по имени (`src/lib/icons.ts`) для рисования на холсте. */
+function loadIcon(name: string): Promise<HTMLImageElement | null> {
+  const src = ICONS[name]
+  if (!src) return Promise.resolve(null)
+  return new Promise(res => {
+    const img = new Image()
+    img.onload = () => res(img)
+    img.onerror = () => res(null)
+    img.src = src
+  })
+}
+
 export async function renderCard(spec: CardSpec): Promise<Blob> {
   await loadFonts()
   const canvas = document.createElement('canvas')
@@ -100,8 +114,8 @@ export async function renderCard(spec: CardSpec): Promise<Blob> {
   c.fillText(spec.kicker.toUpperCase().split('').join(' '), left, pad + 84)
 
   if (spec.icon) {
-    c.font = `96px ${LAT}`
-    c.fillText(spec.icon, CARD_W - left - 100, pad + 130)
+    const img = await loadIcon(spec.icon)
+    if (img) c.drawImage(img, CARD_W - left - 104, pad + 36, 104, 104)
   }
 
   // главное: подбираем размер, чтобы влезло в одну-две строки

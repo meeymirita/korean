@@ -80,7 +80,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
 const { share, busy: sharing } = useShareCard()
 const shareWord = (d: Word) =>
-  share({ kicker: 'слово', title: d.k, sub: d.t, lines: [d.r, d.s, TRANSLATIONS[d.s] ?? ''].filter(Boolean), icon: '🌸' }, `слово-${d.k}`)
+  share({ kicker: 'слово', title: d.k, sub: d.t, lines: [d.r, d.s, TRANSLATIONS[d.s] ?? ''].filter(Boolean), icon: 'sakura' }, `слово-${d.k}`)
 </script>
 
 <template>
