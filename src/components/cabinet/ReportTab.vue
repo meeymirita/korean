@@ -38,6 +38,14 @@ watch(days, load)
 /** Какой график открыт: раздел целиком (mode не задан) или один режим. */
 const chart = ref<{ source: string; mode?: string; title: string } | null>(null)
 const groups = computed(() => groupReport(reply.value?.rows ?? []))
+/** Раскрытые разделы (запоминаются); пока ничего не выбрано, открыт только самый большой. */
+const openSaved = usePersisted<string[] | null>('report_open', null, v => v === null || (Array.isArray(v) && v.every(x => typeof x === 'string')))
+const isOpen = (s: string) => (openSaved.value ?? groups.value.slice(0, 1).map(g => g.source)).includes(s)
+function toggle(s: string) {
+  const cur = openSaved.value ?? groups.value.slice(0, 1).map(g => g.source)
+  openSaved.value = cur.includes(s) ? cur.filter(x => x !== s) : [...cur, s]
+}
+const setAll = (open: boolean) => (openSaved.value = open ? groups.value.map(g => g.source) : [])
 const t = computed(() => reply.value?.totals)
 const answers = computed(() => (t.value ? t.value.ok + t.value.bad : 0))
 const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
@@ -60,9 +68,16 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
       </div>
 
       <p v-if="!groups.length" class="empty">За этот период ответов нет. Поиграй или пройди «Сегодня»: отчёт появится сам.</p>
-      <section v-for="g in groups" :key="g.source" class="rp-g">
-        <h3>{{ g.name }} <small>{{ g.ok + g.bad }} отв. · верно {{ percent(g.ok, g.bad) }}% · около {{ spent(g.seconds) }}</small> <button type="button" class="rp-gbtn" @click="chart = { source: g.source, title: g.name }">график</button></h3>
-        <table class="pg-tbl rp-tbl">
+      <div v-if="groups.length > 1" class="rp-all">
+        <button type="button" class="rp-link" @click="setAll(true)">Развернуть всё</button>
+        <button type="button" class="rp-link" @click="setAll(false)">Свернуть всё</button>
+      </div>
+      <section v-for="g in groups" :key="g.source" class="rp-g" :class="{ shut: !isOpen(g.source) }">
+        <h3>
+          <button type="button" class="rp-toggle" :aria-expanded="isOpen(g.source)" @click="toggle(g.source)">
+            <span class="rp-chev" aria-hidden="true">▸</span>{{ g.name }} <small>{{ g.ok + g.bad }} отв. · верно {{ percent(g.ok, g.bad) }}% · около {{ spent(g.seconds) }}</small>
+          </button> <button type="button" class="rp-gbtn" @click="chart = { source: g.source, title: g.name }">график</button></h3>
+        <table v-show="isOpen(g.source)" class="pg-tbl rp-tbl">
           <thead>
             <tr><th>Режим</th><th>Ответов</th><th>Верно</th><th>Ошибок</th><th class="rp-bar-h">Доля верных</th><th>Дней</th><th>Время</th><th>Последний раз</th><th></th></tr>
           </thead>
@@ -100,6 +115,13 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 .rp-tbl td { padding: 5px 10px 5px 0; white-space: nowrap; }
 .rp-bar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: rgba(143, 124, 240, .18); vertical-align: middle; overflow: hidden; margin-right: 6px; }
 .rp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f7a8d4, #9ec8ff); }
+.rp-all { display: flex; gap: 14px; margin: 0 0 8px; }
+.study .rp-link { border: 0; background: none; padding: 0; font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.study .rp-link:hover { color: var(--pink, #d64da9); }
+.study .rp-toggle { display: inline-flex; align-items: baseline; gap: 6px; padding: 0; border: 0; background: none; font: inherit; text-align: left; color: inherit; }
+.rp-chev { display: inline-block; width: 1em; color: var(--pink, #d64da9); transition: transform .18s; }
+.rp-toggle[aria-expanded='true'] .rp-chev { transform: rotate(90deg); }
+.rp-g.shut { margin-bottom: 10px; }
 .study .rp-gbtn { font-family: inherit; font-size: 12px; font-weight: 400; line-height: 1.5; letter-spacing: 0; text-transform: none; vertical-align: middle; margin-left: 8px; padding: 1px 11px; border: 1px solid rgba(214, 77, 169, .3); border-radius: 999px;
   background: rgba(214, 77, 169, .06); color: var(--pink, #d64da9); cursor: pointer; transition: background .15s, border-color .15s; }
 .study .rp-gbtn:hover { background: rgba(214, 77, 169, .14); border-color: rgba(214, 77, 169, .55); }
