@@ -30,8 +30,8 @@ const { shop, st, coins, rows, kind, when, pct, isActive, goalText, buy, turnOn 
           <div class="shp-foot">
             <span class="shp-price"><img :src="coinImg" alt="" />{{ it.price }}</span>
             <span class="shp-have">у тебя: {{ shop.count(it.id) }}</span>
-            <button v-if="it.id === 'shield' || it.id === 'double'" type="button" class="shp-btn soft" :disabled="shop.busy || !shop.count(it.id) || isActive(it.id)" @click="turnOn(it.id)">{{ isActive(it.id) ? 'Включено' : 'Включить' }}</button>
-            <button type="button" class="shp-btn" :disabled="shop.busy || coins < it.price" @click="buy(it)">Купить</button>
+            <button v-if="it.id === 'shield' || it.id === 'double'" type="button" class="shp-btn soft" :disabled="shop.pending === it.id || !shop.count(it.id) || isActive(it.id)" @click="turnOn(it.id)">{{ isActive(it.id) ? 'Включено' : 'Включить' }}</button>
+            <button type="button" class="shp-btn" :disabled="shop.pending === it.id || coins < it.price" @click="buy(it)">Купить</button>
           </div>
         </article>
       </div>
@@ -49,7 +49,7 @@ const { shop, st, coins, rows, kind, when, pct, isActive, goalText, buy, turnOn 
           </div>
           <div class="shp-foot">
             <span class="shp-price"><img :src="coinImg" alt="" />{{ it.price }}</span>
-            <button type="button" class="shp-btn" :disabled="shop.busy || coins < it.price" @click="buy(it)">Открыть</button>
+            <button type="button" class="shp-btn" :disabled="shop.pending === it.id || coins < it.price" @click="buy(it)">Открыть</button>
           </div>
         </article>
       </div>

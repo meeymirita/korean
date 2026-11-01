@@ -38,6 +38,8 @@ export const useShopStore = defineStore('shop', () => {
   const progress = useProgressStore()
   const state = ref<ShopState | null>(null)
   const busy = ref(false)
+  /** id предмета, который покупается или включается прямо сейчас (блокируется только его кнопка, остальные не мигают) */
+  const pending = ref('')
   const headers = () => ({ Authorization: `Bearer ${progress.bearer}`, 'Content-Type': 'application/json' })
 
   function take(s: ShopState) {
@@ -58,6 +60,7 @@ export const useShopStore = defineStore('shop', () => {
   async function act(path: 'buy' | 'use', id: string): Promise<ShopState | null> {
     if (busy.value) return null
     busy.value = true
+    pending.value = id
     try {
       const res = await fetchT(`/api/shop/${path}`, { method: 'POST', headers: headers(), body: JSON.stringify({ id, day: dayKey() }) })
       if (!res.ok) throw new Error(res.status === 400 ? 'не получилось: не хватает монеток или предмета' : `ошибка сервера ${res.status}`)
@@ -69,6 +72,7 @@ export const useShopStore = defineStore('shop', () => {
       return null
     } finally {
       busy.value = false
+      pending.value = ''
     }
   }
   const buy = (id: string) => act('buy', id)
@@ -83,5 +87,5 @@ export const useShopStore = defineStore('shop', () => {
       return []
     }
   }
-  return { state, busy, load, buy, use, count, log }
+  return { state, busy, pending, load, buy, use, count, log }
 })
