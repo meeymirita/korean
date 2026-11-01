@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { HOME_PHRASES, HOME_RULE } from '@/composables/useHome'
+import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
+import BlockBgModal from '@/components/korean/BlockBgModal.vue'
+import { useBlockBg } from '@/composables/useBlockBg'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import catSleep from '@/assets/home/dash/cat-sleep.webp'
 import catWave from '@/assets/home/dash/cat-wave.webp'
@@ -26,6 +29,12 @@ const percent = computed(() => Math.round((known.value / D.length) * 100))
 
 /** Пять слов на сегодня: другие после каждой перезагрузки страницы. */
 const words = [...D].sort(() => Math.random() - 0.5).slice(0, 5)
+
+/** Свои картинки на фоне трёх блоков (шестерёнка в углу): хранятся только в этом браузере. */
+const BLOCKS = { hero: 'Сейчас изучаем', words: 'Слова на сегодня', quote: 'Корея — это…' } as const
+type BlockId = keyof typeof BLOCKS
+const bgs = { hero: useBlockBg('hero'), words: useBlockBg('words'), quote: useBlockBg('quote') }
+const editing = ref<BlockId | null>(null)
 
 const rule = HOME_RULE
 const ruleText = rule.label.replace(/^Грамматика · /, '')
@@ -57,7 +66,9 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 <template>
   <div class="dash">
     <div class="dcol">
-      <section class="hero">
+      <section class="hero" :class="{ pic: bgs.hero.bg }">
+        <BlockBgLayer :bg="bgs.hero.bg" veil />
+        <button class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'hero'">⚙︎</button>
         <div class="hero-in">
           <span class="eyebrow">СЕЙЧАС ИЗУЧАЕМ · УРОВЕНЬ 1A</span>
           <h2 class="ko">{{ rule.rule }}</h2>
@@ -78,10 +89,13 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         </div>
       </section>
 
-      <section class="panel">
-        <div class="sh"><h3>▤ Слова на сегодня</h3><RouterLink to="/korean/words" class="tbtn">Все слова →</RouterLink></div>
+      <section class="panel wpanel" :class="{ pic: bgs.words.bg }">
+        <BlockBgLayer :bg="bgs.words.bg" />
+        <span class="spark s1" aria-hidden="true">✦</span><span class="spark s2" aria-hidden="true">✧</span><span class="spark s3" aria-hidden="true">✦</span>
+        <div class="sh"><h3>▤ Слова на сегодня</h3><span class="shr"><RouterLink to="/korean/words" class="tbtn">Все слова →</RouterLink><button class="gear in" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'words'">⚙︎</button></span></div>
         <div class="words">
-          <RouterLink v-for="w in words" :key="w.n" :to="{ path: '/korean/words', query: { q: w.k } }" class="word">
+          <RouterLink v-for="(w, i) in words" :key="w.n" :to="{ path: '/korean/words', query: { q: w.k } }" class="word" :class="'c' + (i % 5)">
+            <i class="wn">{{ i + 1 }}</i>
             <strong class="ko">{{ w.k }}</strong>
             <small>{{ w.r }}</small>
             <small>{{ w.t }}</small>
@@ -128,10 +142,13 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
       </section>
 
       <section class="panel quote">
+        <BlockBgLayer :bg="bgs.quote.bg" veil />
+        <button class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'quote'">⚙︎</button>
         <p>Корея — это не только язык, но и новые возможности, люди и мечты. ♡</p>
         <RouterLink to="/korean/today">Всё получится →</RouterLink>
       </section>
     </div>
+    <BlockBgModal v-if="editing" :id="editing" :title="BLOCKS[editing]" :veil="editing !== 'words'" @close="editing = null" />
   </div>
 </template>
 
@@ -164,10 +181,40 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .primary:hover { filter: brightness(1.04); transform: translateY(-1px); }
 
 
-.words { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
-.word { background: rgba(255, 255, 255, .72); border: 1px solid #fff; border-radius: 15px; padding: 12px 10px; transition: .2s; min-width: 0; }
-.word strong { display: block; font-size: 18px; margin-bottom: 5px; overflow-wrap: anywhere; }
+/* шестерёнка настройки фона */
+.gear { position: absolute; z-index: 4; top: 12px; right: 12px; width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .55); color: #5b4fb3; font: inherit; font-size: 17px; line-height: 1; cursor: pointer; opacity: .7; transition: .2s; backdrop-filter: blur(4px); }
+.gear:hover, .gear:focus-visible { opacity: 1; background: rgba(255, 255, 255, .95); transform: rotate(60deg); }
+.gear.in { position: static; width: 28px; height: 28px; font-size: 15px; background: rgba(255, 255, 255, .8); }
+.shr { display: inline-flex; align-items: center; gap: 8px; }
+.hero .gear { top: 14px; right: 14px; }
+.quote .gear { top: 10px; right: 10px; }
+.hero::before { z-index: 1; }
+
+/* ===== «Слова на сегодня»: пастельная подложка и цветные карточки ===== */
+.wpanel { position: relative; overflow: hidden; border-color: #fff;
+  background: radial-gradient(circle at 12% 0%, rgba(255, 214, 244, .75), transparent 42%), radial-gradient(circle at 92% 100%, rgba(173, 224, 255, .75), transparent 45%),
+    linear-gradient(135deg, #f6efff, #eef3ff 60%, #fdf1fb); }
+.wpanel.pic { background: none; }
+.wpanel > :not(.bgl):not(.spark) { position: relative; z-index: 1; }
+.spark { position: absolute; z-index: 0; color: #c9b8f5; opacity: .7; pointer-events: none; user-select: none; }
+.spark.s1 { top: 14px; left: 46%; font-size: 14px; }
+.spark.s2 { bottom: 12px; left: 8px; font-size: 18px; color: #f2b6e3; }
+.spark.s3 { bottom: 20px; right: 20px; font-size: 13px; color: #a9d3f5; }
+.words { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.word { --a: #c3a7ff; --b: #a8c7ff; position: relative; overflow: hidden; background: rgba(255, 255, 255, .82); border: 1px solid #fff; border-radius: 18px; padding: 16px 11px 12px;
+  box-shadow: 0 6px 16px rgba(124, 108, 200, .12); transition: transform .2s, box-shadow .2s; min-width: 0; }
+.word::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--a), var(--b)); }
+.word:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(124, 108, 200, .22); }
+.word.c1 { --a: #f8b9e9; --b: #c3a7ff; }
+.word.c2 { --a: #9de4ff; --b: #a8c7ff; }
+.word.c3 { --a: #ffd6a8; --b: #f8b9e9; }
+.word.c4 { --a: #b8f0d2; --b: #9de4ff; }
+.wn { position: absolute; top: 12px; right: 9px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--a), var(--b));
+  color: #fff; font-size: 10px; font-style: normal; font-weight: 700; }
+.word strong { display: block; font-size: 20px; margin-bottom: 6px; padding-right: 18px; overflow-wrap: anywhere; }
 .word small { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.word small:nth-of-type(2) { margin-top: 4px; padding-top: 5px; border-top: 1px dashed #ddd6f7; color: #4d4a86; font-size: 12px; font-weight: 600; }
 
 /* ===== Быстрый доступ: стикеры ===== */
 .quick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
@@ -208,6 +255,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .quote a { display: inline-block; background: #fff; color: #5c60b5; border-radius: 25px; padding: 10px 15px; font-size: 12px; position: relative; z-index: 1; font-weight: 600; }
 
 @media (max-width: 1100px) {
+  .words { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
   .dash { grid-template-columns: 1fr; }
   .dcol:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
