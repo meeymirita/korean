@@ -2,17 +2,37 @@
 import coinImg from '@/assets/icons/coin.webp'
 import yunaImg from '@/assets/icons/shop-yuna.webp'
 import bg from '@/assets/game/bg.webp'
-import SectionHead from '@/components/korean/SectionHead.vue'
+import { sectionById } from '@/data/korean/sections'
 import { useShopPage } from '@/composables/useShopPage'
 import { ITEMS, LOG_KINDS, SURPRISES } from '@/data/shop'
 
 const { shop, st, coins, rows, kind, when, pct, isActive, goalText, dailyDone, buy, turnOn } = useShopPage()
+const s = sectionById('shop')
 const bgStyle = { '--shx-bg': `url(${bg})` }
 </script>
 
 <template>
   <div class="wrap">
-    <SectionHead id="shop" />
+    <header class="page-head shx-head">
+      <div>
+        <div class="kicker">{{ s.num }} — {{ s.kicker }}</div>
+        <div class="shx-titlerow">
+          <h1>{{ s.title }}</h1>
+          <span class="shx-sub">{{ s.sub }}</span>
+          <span class="shx-help" tabindex="0" role="button" aria-label="Как пользоваться магазином">
+            ?
+            <span class="shx-tip" role="tooltip">
+              <b>Как это работает</b>
+              <span><i>Монетки.</i> Дают за верные ответы (2 монетки, до 300 в день), 5 и 10 верных подряд, завершённую серию, задания дня и достижения. Ошибка монетки не отнимает.</span>
+              <span><i>Подсказка, 50/50, Повтор вопроса, Второй шанс.</i> Купи, и в задании над ответами появятся кнопки с этими предметами (только если они у тебя есть). «Второй шанс» предложит исправить неверный ответ, «Повтор» отложит вопрос в конец серии.</span>
+              <span><i>Защита опыта и Двойная награда.</i> Нажми «Включить» здесь, потом пройди серию: защита отменит одно списание очков за ошибку, двойная удвоит монетки за верные ответы в одной серии.</span>
+              <span><i>Где работают.</i> В тренажёрах: «5 минут», «Частицы и окончания», «Похожие, но разные», «Переведи предложение», «Мои ошибки». В «Найди пару», «Собери по слогам» и игре «Хлебушек» предметов пока нет.</span>
+              <span><i>Сюрпризы.</i> Открываются сразу после покупки: набор из 3–5 предметов, сундук с 60–110 монетками или пять подсказок.</span>
+            </span>
+          </span>
+        </div>
+      </div>
+    </header>
     <div class="shx" :style="bgStyle">
       <aside class="shx-side">
         <img class="shx-yuna" :src="yunaImg" alt="" />
@@ -160,4 +180,15 @@ const bgStyle = { '--shx-bg': `url(${bg})` }
 .study .shx-log .minus { color: #c0508a; }
 @media (max-width: 980px) { .study .shx { grid-template-columns: 1fr; } .study .shx-side { position: static; grid-template-columns: 130px 1fr; align-items: center; } .study .shx-grid.three, .study .shx-two { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .study .shx { padding: 12px; } .study .shx-grid { grid-template-columns: 1fr; } .study .shx-side { grid-template-columns: 1fr; } .study .shx-log li { grid-template-columns: 1fr auto; } .study .shx-log .when { grid-column: 1 / -1; } }
+
+.study .shx-head .shx-titlerow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+.study .shx-head h1 { margin: 0; }
+.study .shx-sub { font-size: 15px; color: var(--muted); }
+.study .shx-help { position: relative; display: inline-flex; align-items: center; justify-content: center; align-self: center; width: 28px; height: 28px; font-size: 16px; font-weight: 700; color: #5b2f9a; background: rgba(154, 108, 240, .16); border: 1px solid rgba(154, 108, 240, .4); border-radius: 50%; cursor: help; outline: none; }
+.study .shx-tip { position: absolute; z-index: 40; left: 0; top: calc(100% + 10px); display: none; flex-direction: column; gap: 8px; width: min(440px, 86vw); padding: 14px 16px; font-size: 13px; font-weight: 400; line-height: 1.5; text-align: left; color: #2d1559; background: #fff; border: 1px solid rgba(154, 108, 240, .35); border-radius: 16px; box-shadow: 0 16px 40px rgba(91, 47, 154, .28); }
+.study .shx-tip b { font-size: 15px; font-weight: 600; }
+.study .shx-tip i { font-style: normal; font-weight: 600; color: #5b2f9a; }
+.study .shx-help:hover .shx-tip, .study .shx-help:focus .shx-tip, .study .shx-help:focus-within .shx-tip { display: flex; }
+html[data-theme='dark'] .study .shx-tip { color: #efe6ff; background: #25214a; }
+html[data-theme='dark'] .study .shx-tip i { color: #cdb4ff; }
 </style>
