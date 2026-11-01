@@ -35,11 +35,6 @@ const s = sectionById('shop')
     <div class="shx">
       <aside class="shx-side">
         <img class="shx-yuna" :src="yunaImg" alt="" />
-        <div class="shx-bal">
-          <small>Твой баланс</small>
-          <b><img :src="coinImg" alt="" />{{ coins }}</b>
-          <span v-if="st && st.combo >= 2">Серия верных подряд: {{ st.combo }}</span>
-        </div>
       </aside>
 
       <div class="shx-main">
