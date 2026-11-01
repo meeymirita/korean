@@ -34,9 +34,9 @@ const words = [...D].sort(() => Math.random() - 0.5).slice(0, 5)
 /** Свои картинки на фоне трёх блоков (шестерёнка в углу): хранятся только в этом браузере. */
 const BLOCKS = { hero: 'Сейчас изучаем', words: 'Слова на сегодня', quote: 'Корея — это…' } as const
 type BlockId = keyof typeof BLOCKS
-/** стандартный фон: Юна с флагом; лицо в верхней трети картинки, поэтому y = 28% */
+/** стандартный фон (у «Слов на сегодня» его нет, только по желанию через шестерёнку): Юна с флагом; лицо в верхней трети картинки, поэтому y = 28% */
 const YUNA = { src: bgYuna, x: 50, y: 28, zoom: 1 }
-const bgs = { hero: useBlockBg('hero', { ...YUNA, x: 62 }), words: useBlockBg('words', YUNA), quote: useBlockBg('quote', { ...YUNA, x: 55 }) }
+const bgs = { hero: useBlockBg('hero', { ...YUNA, x: 62 }), words: useBlockBg('words'), quote: useBlockBg('quote', { ...YUNA, x: 55 }) }
 const editing = ref<BlockId | null>(null)
 
 const rule = HOME_RULE
