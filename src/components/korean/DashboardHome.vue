@@ -38,6 +38,8 @@ type BlockId = keyof typeof BLOCKS
 const YUNA = { src: bgYuna, x: 50, y: 28, zoom: 1 }
 const bgs = { hero: useBlockBg('hero', { ...YUNA, x: 62 }), words: useBlockBg('words'), quote: useBlockBg('quote', { ...YUNA, x: 55 }) }
 const editing = ref<BlockId | null>(null)
+/** шестерёнки видит только владелец (вошёл по своему токену, не гость) */
+const canEdit = computed(() => progress.unlocked && !progress.isGuest)
 
 const rule = HOME_RULE
 const ruleText = rule.label.replace(/^Грамматика · /, '')
@@ -71,7 +73,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
     <div class="dcol">
       <section class="hero" :class="{ pic: bgs.hero.bg }">
         <BlockBgLayer :bg="bgs.hero.bg" veil />
-        <button class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'hero'">⚙︎</button>
+        <button v-if="canEdit" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'hero'">⚙︎</button>
         <div class="hero-in">
           <span class="eyebrow">СЕЙЧАС ИЗУЧАЕМ · УРОВЕНЬ 1A</span>
           <h2 class="ko">{{ rule.rule }}</h2>
@@ -95,7 +97,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
       <section class="panel wpanel" :class="{ pic: bgs.words.bg }">
         <BlockBgLayer :bg="bgs.words.bg" />
         <span class="spark s1" aria-hidden="true">✦</span><span class="spark s2" aria-hidden="true">✧</span><span class="spark s3" aria-hidden="true">✦</span>
-        <div class="sh"><h3>▤ Слова на сегодня</h3><span class="shr"><RouterLink to="/korean/words" class="tbtn">Все слова →</RouterLink><button class="gear in" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'words'">⚙︎</button></span></div>
+        <div class="sh"><h3>▤ Слова на сегодня</h3><span class="shr"><RouterLink to="/korean/words" class="tbtn">Все слова →</RouterLink><button v-if="canEdit" class="gear in" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'words'">⚙︎</button></span></div>
         <div class="words">
           <RouterLink v-for="(w, i) in words" :key="w.n" :to="{ path: '/korean/words', query: { q: w.k } }" class="word" :class="'c' + (i % 5)">
             <i class="wn">{{ i + 1 }}</i>
@@ -146,7 +148,7 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
       <section class="panel quote">
         <BlockBgLayer :bg="bgs.quote.bg" veil />
-        <button class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'quote'">⚙︎</button>
+        <button v-if="canEdit" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editing = 'quote'">⚙︎</button>
         <p>Корея — это не только язык, но и новые возможности, люди и мечты. ♡</p>
         <RouterLink to="/korean/today">Всё получится →</RouterLink>
       </section>
