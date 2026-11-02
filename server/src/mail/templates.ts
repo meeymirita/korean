@@ -238,5 +238,5 @@ export function digestMail(o: DigestMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
-  return { subject: `${o.time} · ${what} на повторение`, text, html }
+  return { subject: `Повторение: ${o.time} · ${what}`, text, html }
 }

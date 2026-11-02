@@ -46,13 +46,13 @@ describe('письмо-подборка: расписание', () => {
     await svc.tick(at(12, 0))
     const [to, subject, text, html] = sent[0]
     assert.equal(to, 'me@example.org')
-    assert.equal(subject, '12:00 · 3 слова и 2 предложения на повторение')
+    assert.equal(subject, 'Повторение: 12:00 · 3 слова и 2 предложения')
     assert.equal((html.match(/font-size:20px;font-weight:700/g) ?? []).length, 3)
     assert.equal((html.match(/font-size:17px;font-weight:700/g) ?? []).length, 2)
     assert.ok(text.includes('Слова:') && text.includes('Предложения:'))
     const def = fake()
     assert.deepEqual([def.svc.get().words, def.svc.get().sentences], [10, 5])
-    assert.equal(digestMail({ words: [['a', 'б']], sentences: [], time: '12:00' }).subject, '12:00 · 1 слово на повторение')
+    assert.equal(digestMail({ words: [['a', 'б']], sentences: [], time: '12:00' }).subject, 'Повторение: 12:00 · 1 слово')
   })
 
   test('почты нет — письма нет; сбой отправки не съедает день', async () => {
@@ -103,6 +103,6 @@ describe('сервер: подборка по времени', () => {
       if (t.trim()) row = JSON.parse(t.trim().split('\n')[0])
       else await new Promise(r => setTimeout(r, 100))
     }
-    assert.match(row.subject, /^12:00 · 10 слов и 5 предложений на повторение$/)
+    assert.match(row.subject, /^Повторение: 12:00 · 10 слов и 5 предложений$/)
   })
 })
