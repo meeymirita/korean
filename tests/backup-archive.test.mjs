@@ -135,7 +135,7 @@ describe('письмо с копией', async () => {
     assert.match(part.subject, /часть 2 из 3/)
     assert.match(part.html, /cat korean-1\.tar\.gz\.enc\.part\*/)
     assert.match(backupMail({ kind: 'archive', name: '<b>x</b>' }).html, /&lt;b&gt;x&lt;\/b&gt;/)
-    assert.match(backupMail({ kind: 'big', mb: '200' }).text, /server\/data\/export/)
+    assert.match(backupMail({ kind: 'big', mb: '200' }).text, /backend\/data\/export/)
     assert.match(backupMail({ kind: 'test' }).subject, /проверка/)
   })
 })
