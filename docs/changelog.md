@@ -2,6 +2,19 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-11-02 (ветка `nuxt`), сайт на Nuxt с отрисовкой на сервере
+
+- **Nuxt 4.6** вместо Vite SPA: файловый роутинг (`src/pages/`, обёртки над `views/`), старые адреса в `src/router.options.ts`, запуск в браузере `src/plugins/app.client.ts`.
+  Открытые страницы рисуются на сервере (одинаковые — готовым HTML при сборке, главные и `/me` — на каждый запрос), закрытые токеном — только в браузере (`routeRules`).
+- **SEO:** `useSeoMeta` из `seo.ts` (`seoMetaFor`), `@nuxtjs/robots` и `@nuxtjs/sitemap` (из `seo.ts`, файлы в `public/` убраны), `nuxt-schema-org`; 404 с настоящим кодом.
+  `scripts/prerender.mjs` и `index.html` больше не нужны.
+- **`useFetch`:** визитка `/me` приходит с сервера готовой (имя и счётчики в HTML), кэш Nitro 60 с (`swr`).
+- **Гидрация без расхождений:** случайное на главных от зерна запроса (`useHomePicks`), прошлая фраза в cookie; вход из `localStorage` подставляется после оживления
+  (`progress.restore()`), «последний раздел» и окно грамматики больше не общие на всех посетителей сервера. Проверено headless-браузером: 39 страниц с токеном и без — ни ошибок, ни предупреждений.
+- **Заголовки безопасности** для страниц (`routeRules`), `serverDir: 'src/nitro'` (папка `server/` — это NestJS).
+- **Деплой:** служба `korean-web` (`scripts/korean-web.service`), `deploy.sh` перезапускает её и проверяет; Caddy проксирует сайт на 3000 (шаги в `docs/hosting.md`). Нужен Node 22.22+/24.15+.
+- `scripts/demo-seed.mjs`: демо-данные через API. Тесты 518 (новый `nuxt-ssr.test.mjs`: сборка + настоящий сервер Nuxt и API), `nuxt typecheck` чистый.
+
 ## 2026-11-02 (ночь, позже), NestJS 12
 
 - Сервер переведён на **NestJS 12** (`@nestjs/common`, `core`, `platform-express` 12.3, `@nestjs/cli` 12.0, `@nestjs/swagger` 12.0). Код менять не пришлось, все 512 тестов зелёные. `npm audit` у сервера: 0 уязвимостей (было 7: `glob`, `minimatch`, `deepmerge` в `@nestjs/cli` 11 и `js-yaml` в `@nestjs/swagger` 11). У `@nestjs/cli` 12 внутри всё ещё `minimatch` 10: поднят до 11 через `overrides` в `server/package.json`, убрать, когда CLI обновит его сам.

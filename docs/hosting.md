@@ -3,6 +3,18 @@
 - Сервер Ubuntu (`root@se-40678`), проект в `/var/sites/korean` (новый каталог), сайт `https://korean.meeymirita.ru` (отдельный блок в Caddy,
   A-запись `korean` в DNS). Главная `meeymirita.ru` — другой проект (`/var/sites/meeymirita_start_page`).
   Владелец сам заходит по SSH; мне доступа нет, поэтому команды ему даём текстом.
+- **Сайт на Nuxt (ветка `nuxt`, 2026-11-02; в `main` пока прежний Vue SPA).** Страницы рисует сервер Nuxt — отдельная служба `korean-web`
+  (`node .output/server/index.mjs`, порт 3000, только 127.0.0.1), API остаётся службой `progress` (3001). Переход на сервере один раз:
+  1. Node: `node -v` должен быть **22.22+ или 24.15+** (Nuxt 4.6 младше не запускается); иначе сначала обновить Node.
+  2. `git fetch && git checkout nuxt && npm ci` (после слияния в `main` — обычный `bash scripts/deploy.sh`).
+  3. `npm run build` (собирает `.output/`), затем `cp scripts/korean-web.service /etc/systemd/system/`,
+     `systemctl daemon-reload && systemctl enable --now korean-web`, проверка: `curl -sI http://127.0.0.1:3000/robots.txt` (200).
+  4. **Caddy**, блок сайта: вместо `handle { root * …/dist; try_files …; file_server }` поставить `handle { reverse_proxy 127.0.0.1:3000 }`;
+     `handle /api/*` (3001) и `handle /video/*` остаются **выше** него как были. Кэш: `/_nuxt/*` вечный (`immutable`, имена с хэшем), страницы `no-cache`
+     (бывшее правило для `/assets/*` переименовать на `/_nuxt/*`). `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`.
+  5. Откат, если что-то не так: в Caddy вернуть прежний `handle` с `dist` (копия `Caddyfile.bak3`), `git checkout main && npm ci && npm run build`.
+  Дальше `deploy.sh` сам перезапускает `korean-web` после сборки и проверяет `http://127.0.0.1:3000/robots.txt` (при ошибке откат). Диагностика: `journalctl -u korean-web -n 30 --no-pager`.
+  `robots.txt` и `sitemap.xml` теперь отдаёт сам сайт (модули `@nuxtjs/robots`, `@nuxtjs/sitemap`), файлов в `public/` больше нет.
 - **Обновление одной командой:** `cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт: отказывается работать при несохранённых правках в папке; `git pull --ff-only`; ставит пакеты, если менялись
   `package*.json`; при изменениях в `server/` ставит пакеты сервера, собирает его и перезапускает службу `progress`; собирает сайт (с пререндером); проверяет `/api/health` до 20 секунд;
   **если сервер не ответил или сборка упала, сам возвращает прежнюю версию**, пересобирает и перезапускает. Файлы блокировки (`package-lock.json`, `server/package-lock.json`), которые переписал npm на сервере, скрипт сам возвращает как в git; любые другие несохранённые правки его останавливают. Параметры: `--force` (собрать всё и перезапустить, даже если изменений нет),

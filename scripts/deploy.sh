@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Обновление сайта на сервере одной командой:  bash scripts/deploy.sh
 #
-# Что делает: забирает свежий код (git pull), ставит пакеты, если они менялись, собирает сайт, при изменении сервера собирает и перезапускает
-# его, проверяет, что сервер отвечает, и, если нет, сам возвращает прежнюю версию и сообщает об этом.
+# Что делает: забирает свежий код (git pull), ставит пакеты, если они менялись, собирает сайт (Nuxt) и перезапускает его службу,
+# при изменении сервера API собирает и перезапускает и его, проверяет, что оба отвечают, и, если нет, сам возвращает прежнюю версию.
 #
 # Параметры (необязательные):
 #   --force        собрать и перезапустить сервер, даже если в server/ ничего не менялось
@@ -11,6 +11,8 @@
 #   RESTART_CMD         как перезапускать сервер (по умолчанию: systemctl restart progress)
 #   HEALTH_URL          адрес проверки (по умолчанию: http://127.0.0.1:3001/api/health)
 #   HEALTH_TRIES        сколько секунд ждать ответа (по умолчанию 20)
+#   SITE_RESTART_CMD    как перезапускать сайт (по умолчанию: systemctl restart korean-web; пусто — не перезапускать)
+#   SITE_HEALTH_URL     адрес проверки сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
 #   GIT_PULL=0          не делать git pull (код уже на месте)
 #   INSTALL_ROOT_CMD, INSTALL_SERVER_CMD, BUILD_SERVER_CMD, BUILD_SITE_CMD — свои команды вместо npm
 #   NOTIFY_TELEGRAM_TOKEN и NOTIFY_TELEGRAM_CHAT — отправить результат в Telegram (по желанию; задать в /etc/korean-deploy.env)
@@ -22,6 +24,8 @@ cd "$(dirname "$0")/.."
 RESTART_CMD=${RESTART_CMD:-systemctl restart progress}
 HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:3001/api/health}
 HEALTH_TRIES=${HEALTH_TRIES:-20}
+SITE_RESTART_CMD=${SITE_RESTART_CMD-systemctl restart korean-web}
+SITE_HEALTH_URL=${SITE_HEALTH_URL:-http://127.0.0.1:3000/robots.txt}
 INSTALL_ROOT_CMD=${INSTALL_ROOT_CMD:-npm ci}
 INSTALL_SERVER_CMD=${INSTALL_SERVER_CMD:-npm --prefix server ci}
 BUILD_SERVER_CMD=${BUILD_SERVER_CMD:-npm --prefix server run build}
@@ -50,6 +54,16 @@ healthy() {
   local i
   for i in $(seq 1 "$HEALTH_TRIES"); do
     if curl -fsS -m 3 "$HEALTH_URL" 2>/dev/null | grep -q '"ok":true'; then return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+# сайт (Nuxt) отвечает?
+site_healthy() {
+  local i
+  for i in $(seq 1 "$HEALTH_TRIES"); do
+    if curl -fsS -m 3 -o /dev/null "$SITE_HEALTH_URL" 2>/dev/null; then return 0; fi
     sleep 1
   done
   return 1
@@ -94,6 +108,7 @@ rollback() {
   { $INSTALL_SERVER_CMD && $BUILD_SERVER_CMD; } >/dev/null 2>&1 || echo "(пересборка сервера при откате не удалась)"
   $BUILD_SITE_CMD >/dev/null 2>&1 || echo "(пересборка сайта при откате не удалась)"
   [ "$RESTART" = 1 ] && $RESTART_CMD
+  [ "$RESTART" = 1 ] && [ -n "$SITE_RESTART_CMD" ] && $SITE_RESTART_CMD
   if healthy; then echo "Откат выполнен, сервер отвечает."; else echo "ВНИМАНИЕ: после отката сервер не отвечает, смотри: journalctl -u progress -n 30 --no-pager"; fi
 }
 
@@ -113,6 +128,7 @@ fi
 say "Сборка сайта"
 $BUILD_SITE_CMD || { rollback; fail "не удалось собрать сайт"; }
 
+
 if [ "$RESTART" = 1 ] && [ "$SERVER_CHANGED" = 1 ]; then
   say "Перезапуск сервера"
   $RESTART_CMD || { rollback; fail "не удалось перезапустить службу"; }
@@ -125,5 +141,15 @@ elif [ "$RESTART" = 1 ]; then
   healthy || fail "сервер не отвечает (обновление его не трогало; смотри journalctl -u progress -n 30 --no-pager)"
 fi
 
-say "Готово: $(git rev-parse --short HEAD) ($BRANCH). Сервер отвечает."
-notify "우리말: обновлено до $(git rev-parse --short HEAD), сервер отвечает"
+# сайт рисуется на сервере (Nuxt, служба korean-web): новая сборка заработает только после перезапуска
+if [ "$RESTART" = 1 ] && [ -n "$SITE_RESTART_CMD" ]; then
+  say "Перезапуск сайта"
+  $SITE_RESTART_CMD || { rollback; fail "не удалось перезапустить сайт (служба korean-web)"; }
+  if ! site_healthy; then
+    rollback
+    fail "сайт не ответил после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри journalctl -u korean-web -n 30 --no-pager"
+  fi
+fi
+
+say "Готово: $(git rev-parse --short HEAD) ($BRANCH). Сайт и сервер отвечают."
+notify "우리말: обновлено до $(git rev-parse --short HEAD), сайт и сервер отвечают"

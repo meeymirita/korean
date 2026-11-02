@@ -40,6 +40,8 @@ async function deploy(args = [], env = {}) {
         BUILD_SERVER_CMD: `${tmp}/call.sh server-build`,
         BUILD_SITE_CMD: `${tmp}/call.sh site-build`,
         RESTART_CMD: `${tmp}/restart.sh`,
+        SITE_RESTART_CMD: `${tmp}/call.sh site-restart`,
+        SITE_HEALTH_URL: `http://127.0.0.1:${port}/health`,
         ...env,
       },
     })
@@ -103,7 +105,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     resetCalls()
     const r = await deploy()
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['site-build'])
+    assert.deepEqual(calls(), ['site-build', 'site-restart'])
     assert.match(r.out, /перезапуск не нужен/)
   })
 
@@ -112,8 +114,8 @@ describe('скрипт обновления на сервере (scripts/deploy.
     resetCalls()
     const r = await deploy()
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['server-install', 'server-build', 'site-build', 'restart'])
-    assert.match(r.out, /Сервер отвечает/)
+    assert.deepEqual(calls(), ['server-install', 'server-build', 'site-build', 'restart', 'site-restart'])
+    assert.match(r.out, /Сайт и сервер отвечают/)
   })
 
   test('изменились пакеты сайта: сначала ставятся они', async () => {
@@ -121,7 +123,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     resetCalls()
     const r = await deploy()
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['root-install', 'site-build'])
+    assert.deepEqual(calls(), ['root-install', 'site-build', 'site-restart'])
   })
 
   test('неудачный выпуск: сервер не ответил, скрипт сам откатывается на прошлую версию и заканчивается ошибкой', async () => {
@@ -179,7 +181,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     resetCalls()
     const r = await deploy(['--force'])
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['root-install', 'server-install', 'server-build', 'site-build', 'restart'])
+    assert.deepEqual(calls(), ['root-install', 'server-install', 'server-build', 'site-build', 'restart', 'site-restart'])
   })
 
   test('неизвестный параметр отклоняется', async () => {

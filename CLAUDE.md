@@ -48,10 +48,17 @@
   - **изменил страницу или добавил новую → обнови слайд и скриншот в «О платформе»** (`src/data/about.ts`, `src/assets/about/`);
   - **поменял слайды «О платформе» (`data/about.ts`) → поменяй и галерею в `README.md`** (заголовки, описания, картинки идут один в один, `tests/readme.test.mjs` следит);
   - **сделал идею из `правки/ideas/`** → отметь статус в `правки/ideas/ROADMAP.md`, обнови `правки/ideas/CURRENT.md`, запись в `docs/changelog.md` (папка локальная, в git её нет);
-  - **добавил открытую страницу → допиши её в `src/data/seo.ts` (заголовок до 75 символов, описание 60–190) и в `public/sitemap.xml`**;
-    закрытую токеном страницу пометь `noindex` и добавь `Disallow` в `public/robots.txt` (`tests/seo.test.mjs` проверяет совпадение);
-    открытую страницу добавь ещё и в `scripts/prerender.mjs` (`NAV`, `H1`, `BODY`): `npm run build` на выходе кладёт готовый HTML в `dist/<адрес>/index.html`
-    (предварительная отрисовка для SEO, Vue потом заменяет её живым приложением; тест `tests/prerender.test.mjs`). Тег `yandex-verification` в `index.html` не удалять;
+  - **новая страница = файл в `src/pages/`** (файловый роутинг Nuxt; тонкая обёртка над экраном из `views/`, закрытая токеном: `definePageMeta({ private: true })`)
+    **и запись в `src/data/seo.ts`** (заголовок до 75 символов, описание 60–190; закрытая — `noindex`). Остальное Nuxt делает сам по `seo.ts`:
+    открытые страницы попадают в `sitemap.xml` и рисуются на сервере (одинаковые для всех — готовым HTML при сборке), закрытые — в `Disallow` robots.txt
+    и рисуются только в браузере (`routeRules` в `nuxt.config.ts`). Старые адреса-перенаправления: `src/router.options.ts`. Тесты: `seo.test.mjs`, `nuxt-ssr.test.mjs`.
+    Тег `yandex-verification` в `nuxt.config.ts` (`app.head`) не удалять;
+  - **код рисуется и на сервере (Nuxt SSR)**: на уровне модуля и в `setup` открытых страниц нельзя трогать `window`, `document`, `localStorage`, `matchMedia`
+    (только в `onMounted`, обработчиках или под `if (import.meta.client)`); общая переменная модуля на сервере одна на **всех посетителей** — состояние запроса
+    держи в `useState`, а то, что зависит от браузера, рисуй в `<ClientOnly>` или после `onMounted`. Случайное на открытых страницах — только от зерна запроса
+    (`useHomePicks`, `withSeed`), иначе сервер и браузер выберут разное (расхождение при оживлении, «Hydration mismatch»). Вход и прогресс из `localStorage`
+    подставляются после оживления (`progress.restore()` в `plugins/app.client.ts`). Проверка: headless-браузер без ошибок и предупреждений в консоли с токеном и без;
+  - запросы к API при отрисовке на сервере — `useFetch` с `baseURL: runtimeConfig.apiBase` и `timeout` (пример: `PublicMeView.vue`), в браузере по-прежнему `fetchT`;
   - добавил игру или раздел → допиши его в шторку «Что здесь есть» (`src/data/guide.ts`);
   - окна поверх страницы держат порядок слоёв: окно подтверждения 500 и плашки 600 выше всего, просмотр картинки 300, окно грамматики
     50, поиск 45, окно заметки 60 (иначе окно «ныряет» под другое, так уже было с удалением картинки);
@@ -69,9 +76,11 @@
 
 ## Стек и запуск
 
-Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**), Pinia, Vue Router (history mode),
-шрифты самохостятся (`src/assets/fonts.css`). Скрипты: `npm run dev`, `npm run build` (type-check + сборка),
-`npm run preview`, `npm test` (собирает сервер и запускает все тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
+**Ветка `nuxt` (2026-11-02):** Nuxt 4 (SSR, `nuxt.config.ts`, `srcDir: 'src'`, страницы `src/pages/`, запуск в браузере `src/plugins/app.client.ts`,
+модули `@pinia/nuxt`, `@nuxtjs/robots`, `@nuxtjs/sitemap`, `nuxt-schema-org`), Vue 3, Vite 8 (на rolldown, **esbuild нет**), Pinia, Vue Router 5.
+В `main` пока прежний Vue SPA (`src/main.ts`, `router/index.ts`, `index.html`, `scripts/prerender.mjs`). Шрифты самохостятся (`src/assets/fonts.css`).
+Скрипты: `npm run dev` (Nuxt, порт 3000, `/api` → `API_PORT`), `npm run build` (`.output/`), `npm run preview` (`node .output/server/index.mjs`),
+`npm run type-check` (`nuxt typecheck`), `npm test` (собирает сервер и запускает все тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
 **Сервер** (`server/`, NestJS + SQLite, свои зависимости): `npm run server:build`, `npm run server`, `npm run server:dev`;
 подробности в `docs/server.md`. Зависимости сервера ставить только внутри `server/` (`npm --prefix server ci`). Корневой
 `node_modules` у проекта **свой** (раньше был ссылкой на соседний проект, отвязан 2026-10-30), пакеты в сайт ставить можно: `npm install <пакет>`,
@@ -95,7 +104,7 @@ Vue 3 (`<script setup>`, TypeScript), Vite 8 (на rolldown, **esbuild нет**)
 предложений и букв); клик по результату справочника ведёт на `ref/<вкладка>?q=…`, `RichView` подсвечивает совпадения
 и раскрывает `<details>`. «Продолжить»: последний раздел (`useLastVisited`, `localStorage['last_section']`) и слабые
 слова (с токеном); вкладка кабинета записана в адрес: `?tab=repeat|week|history|notes|images|db|logs|settings` (после обновления
-страницы остаёмся на ней; без параметра — «Обзор»). Прокрутку после обновления возвращает `scrollBehavior` в `router/index.ts`.
+страницы остаёмся на ней; без параметра — «Обзор»). Прокрутку после обновления возвращает `scrollBehavior` в `router.options.ts`.
 
 ## Структура
 
@@ -146,7 +155,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
 - Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`; esbuild недоступен).
-- Дев-сервер: `npx vite --port 5199`; после проверки обязательно `pkill -f "vite --port"`.
+- Дев-сервер: `API_PORT=3002 npx nuxt dev --port 3100` (в `main`: `npx vite --port 5199`); после проверки остановить. Демо-данные на демо-сервер: `API=http://127.0.0.1:3002 TOKEN=… node scripts/demo-seed.mjs` (месяц занятий, заметки, календарь, картинки).
 - Вёрстка на телефоне: `TOKEN=токен-демо-сервера WIDTHS=320,390,768 node scripts/check-layout.mjs` (демо-сервер и `API_PORT=3002 npx vite --port 5198`, см. шапку скрипта) ищет всё, что вылезает за край; ничего не печатает, если всё в порядке. Сделал страницу или блок: прогони.
 - Битые ссылки: `node scripts/check-links.mjs` (сайт открыт на `BASE`, по умолчанию `http://localhost:5198`; `TOKEN=` демо-сервера — и закрытые страницы, `EXTERNAL=1` — и внешние ссылки, `BASE=https://korean.meeymirita.ru` — боевой сайт) обходит сайт по ссылкам в headless Chromium и печатает 404, битые картинки и файлы, ошибки запросов (API: только 5xx). Chromium ищет сам (Mac: кэш Playwright, Linux: `chromium` из PATH, snap тоже) или `CHROME=путь`.
 - Swagger сервера: `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs` (только локально, на боевом сервере не включать: `docs/server.md`).
@@ -196,7 +205,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 
 ## Что осталось / идеи (ещё не сделаны)
 
-- Архитектура (решение 2026-10-31): остаёмся на Vue SPA + NestJS + SQLite. Nuxt, Postgres, GraphQL и Docker обсуждали и отложили: для закрытого токеном сайта выигрыша мало (SEO открытых страниц закрывает `prerender.mjs`). Можно позже: монорепозиторий `apps/api` + `apps/web` (день работы). Nuxt имеет смысл, если появятся много публичных страниц (слово/урок на своём адресе). Не предлагать смену стека без причины.
+- Архитектура: 2026-11-02 владелец попросил Nuxt с полной отрисовкой на сервере — сделано в ветке `nuxt` (см. «Стек и запуск», `docs/hosting.md`); NuxtHub (база, Blob, KV) и Nuxt UI (Tailwind) решили не брать: дублируют NestJS/SQLite и свой дизайн. Раньше (2026-10-31) было решено остаться на Vue SPA + NestJS + SQLite. Nuxt, Postgres, GraphQL и Docker обсуждали и отложили: для закрытого токеном сайта выигрыша мало (SEO открытых страниц закрывает `prerender.mjs`). Можно позже: монорепозиторий `apps/api` + `apps/web` (день работы). Nuxt имеет смысл, если появятся много публичных страниц (слово/урок на своём адресе). Не предлагать смену стека без причины.
 - Грамматика: содержимое пустых карточек уроков 11–30 и всей части 2 (`st: 'soon'`, один блок `tip`) — когда владелец принесёт конспекты; заголовки части 2 взяты из имён файлов видео, сверить с конспектом. Уроки 12 и 13 (числительные): есть страница «Числа» в справочнике.
 - Интервальное повторение по `words[слово].last` уже есть в кабинете; идея: показывать выученное/слабое на страницах «Слова»
   и «Повторение».
