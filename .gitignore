@@ -3,8 +3,6 @@ dist
 .DS_Store
 .idea
 *.local
-server/data
-server/.env
 design/
 
 # Nuxt
