@@ -28,6 +28,7 @@ export const GAMES: GuideCard[] = [
   { icon: 'calendar', title: 'Дни недели', text: 'Дни недели, части дня и недели: перевод, «какой день завтра», будни или выходные.', to: game('days'), private: true },
   { icon: 'clock', title: 'Когда? (에)', text: 'Нужна ли частица «когда»: в пятницу, на выходных, но сегодня, завтра, сейчас без нее.', to: game('when'), private: true },
   { icon: 'hearts', title: 'Тоже (도)', text: 'Вставь «тоже»: 도 вместо 은/는, 이/가, 을/를, а также 에도 и 에서도.', to: game('too'), private: true },
+  { icon: 'grammar', title: 'Потренировать правило', text: 'Выбери карточку грамматики, и сайт сделает десять заданий из её примеров. Кнопка есть и в окне самой карточки.', to: game('rule'), private: true },
   { icon: 'heart', title: 'Это или не это', text: 'Скажи «это …» и «это не …»: 이에요 / 예요 и 이 / 가 아니에요 по 받침.', to: game('neg'), private: true },
   { icon: 'home', title: 'Куда, где', text: 'Частица при месте: 에 (иду, нахожусь) или 에서 (что-то делаю).', to: game('place'), private: true },
   { icon: 'search', title: 'Этот, тот, вон тот', text: '이 / 그 / 저, 이것 / 그것 / 저것 и 여기 / 거기 / 저기: близко, у собеседника, далеко.', to: game('dem'), private: true },
