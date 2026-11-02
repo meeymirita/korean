@@ -6,8 +6,8 @@ import { readFileSync } from 'node:fs'
 const { ALL_GAMES, GAME_GROUPS, TOOL_IDS, findGames } = await load('/src/data/games.ts')
 after(close)
 
-test('семь групп и у каждой есть игры', () => {
-  assert.equal(GAME_GROUPS.length, 7)
+test('одиннадцать групп и у каждой есть игры', () => {
+  assert.equal(GAME_GROUPS.length, 11)
   for (const g of GAME_GROUPS) assert.ok(g.games.length > 0, g.id)
 })
 
@@ -41,4 +41,16 @@ test('группы по темам: «Числа и деньги» и «Врем
   const byId = Object.fromEntries(GAME_GROUPS.map(g => [g.id, g.games.map(x => x.id)]))
   assert.deepEqual(byId.numbers, ['num', 'price', 'count'])
   assert.deepEqual(byId.time, ['days', 'when', 'too'])
+})
+
+test('группы по разделам грамматики: каждая игра ровно в одной группе', () => {
+  const byId = Object.fromEntries(GAME_GROUPS.map(g => [g.id, g.games.map(x => x.id)]))
+  assert.deepEqual(byId.be, ['neg'])
+  assert.deepEqual(byId.particles, ['pair', 'part', 'particles', 'err'])
+  assert.deepEqual(byId.place, ['place'])
+  assert.deepEqual(byId.verbs, ['form', 'type'])
+  assert.deepEqual(byId.questions, ['qw', 'dem'])
+  assert.deepEqual(byId.talk, ['dlg', 'polite'])
+  const all = GAME_GROUPS.flatMap(g => g.games.map(x => x.id))
+  assert.equal(new Set(all).size, all.length)
 })
