@@ -19,7 +19,7 @@ describe('приложение (PWA)', () => {
 
   test('сайт регистрирует воркер и манифест подходит для установки', () => {
     assert.ok(file('src/lib/pwa.ts').includes("register('/sw.js')"))
-    assert.ok(file('src/main.ts').includes('initPwa()'))
+    assert.ok(file('src/plugins/app.client.ts').includes('initPwa()'))
     const m = JSON.parse(file('public/manifest.webmanifest'))
     assert.equal(m.display, 'standalone')
     assert.ok(m.icons.some(i => i.sizes === '512x512') && m.icons.some(i => i.sizes === '192x192'))

@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { G, type Gram } from '@/data/korean/grammar'
-import { nextPhrase, pickOther } from '@/data/phrases'
+import { PHRASE_COOKIE, pickOther, pickPhrase } from '@/data/phrases'
+import { withSeed } from '@/lib/seeded'
 import { dueWords } from '@/data/review'
 import { useProgressStore } from '@/stores/progress'
 
@@ -41,13 +42,23 @@ export function randomRule(rand: () => number = Math.random) {
   return ruleOf(list[Math.floor(rand() * list.length)]!)
 }
 
-/** Правило на главной: другое после каждой перезагрузки (на странице одно, пока её не обновят). Ведёт на карточку грамматики. */
-export const HOME_RULE = randomRule()
-
-/** Фраза дня: другая после каждого обновления страницы (`data/phrases.ts`). */
-export const HOME_PHRASE = nextPhrase()
-/** Две фразы дня для главной раздела: вторая всегда другая. */
-export const HOME_PHRASES = [HOME_PHRASE, pickOther([HOME_PHRASE])]
+/**
+ * Случайное на главных для этой загрузки страницы: правило, фраза дня (другая после каждого обновления) и вторая фраза.
+ * Число-зерно выбирает сервер на каждый запрос и передаёт в браузер вместе со страницей (useState), поэтому выбор одинаков
+ * в готовом HTML и после оживления страницы. Номер прошлой фразы лежит в cookie, его видит и сервер: подряд фраза не повторяется.
+ */
+export function useHomePicks() {
+  const cookie = useCookie<number>(PHRASE_COOKIE, { default: () => -1, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 })
+  // зерно и номер прошлой фразы фиксируются на сервере: браузер видит в cookie уже новый номер, но выбирать должен как сервер
+  const seed = useState('home_seed', () => String(Math.random()))
+  const last = useState('home_last', () => Number(cookie.value))
+  const picks = withSeed(seed.value, () => {
+    const { index, phrase } = pickPhrase(Math.random, last.value)
+    return { index, rule: randomRule(), phrase, phrases: [phrase, pickOther([phrase])] }
+  })
+  cookie.value = picks.index
+  return { seed: seed.value, rule: picks.rule, phrase: picks.phrase, phrases: picks.phrases }
+}
 
 const START = new Date(2026, 5, 1)
 export const plural = (n: number, forms: [string, string, string]) =>

@@ -51,7 +51,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <p>{{ progress.unlocked && progress.data.profile.name ? progress.data.profile.name + ', сегодня' : 'Сегодня' }} ты ближе к своей цели, чем вчера.</p>
       </div>
       <div class="greet-r">
-        <RouterLink v-if="lastVisited" :to="lastVisited.path" class="chip">↩ {{ lastVisited.title }}</RouterLink>
+        <ClientOnly><RouterLink v-if="lastVisited" :to="lastVisited.path" class="chip">↩ {{ lastVisited.title }}</RouterLink></ClientOnly>
         <span v-if="progress.unlocked" class="streak"><Icon name="fire" /> <b>{{ progress.streak }}</b> дн. подряд</span>
       </div>
     </header>

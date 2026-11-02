@@ -16,6 +16,7 @@ const notes = useNotesStore()
 
 /* события входа и связи с сервером показываем плашками, чтобы они не терялись в тексте на странице */
 watch(() => progress.unlocked, (now, was) => {
+  if (progress.takeRestoredLogin()) return // сохранённый вход подставлен после загрузки страницы: это не новый вход
   if (now && !was) toast.ok(progress.isGuest ? 'Гостевой вход выполнен' : 'Вход выполнен')
   else if (!now && was) toast.info('Вы вышли')
 })

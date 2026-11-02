@@ -1,5 +1,6 @@
 /**
- * SEO: заголовок, описание и индексация каждой страницы. Роутер подставляет их при каждом переходе (`applySeo`).
+ * SEO: заголовок, описание и индексация каждой страницы. app.vue подставляет их через useSeoMeta (`seoMetaFor`), nuxt.config.ts берёт
+ * отсюда открытые и закрытые адреса (готовый HTML при сборке, robots.txt, sitemap.xml).
  * Закрытые токеном страницы не индексируются (`noindex`), там нет ничего, кроме поля для токена.
  */
 export const SITE = 'https://korean.meeymirita.ru'
@@ -97,36 +98,23 @@ export const seoFor = (path: string): Seo => PAGES[path.replace(/\/+$/, '') || '
 export const indexablePaths = () => Object.entries(PAGES).filter(([, s]) => !s.noindex).map(([p]) => p)
 export const privatePaths = () => Object.entries(PAGES).filter(([, s]) => s.noindex).map(([p]) => p)
 
-/** Подставляет title, description, canonical, robots и Open Graph в <head>. Вызывается из роутера после каждого перехода. */
-export function applySeo(path: string) {
+/** Канонический адрес страницы (без завершающего «/», кроме главной). */
+export const canonicalOf = (path: string) => SITE + (path === '/' ? '/' : path.replace(/\/+$/, ''))
+
+/** Всё для <head> страницы: title, description, robots, Open Graph и Twitter. Подставляет app.vue через useSeoMeta (на сервере и в браузере). */
+export function seoMetaFor(path: string) {
   const s = seoFor(path)
-  const url = SITE + (path === '/' ? '/' : path.replace(/\/+$/, ''))
-  document.title = s.title
-  const set = (sel: string, attr: 'name' | 'property', key: string, value: string) => {
-    let el = document.head.querySelector<HTMLMetaElement>(sel)
-    if (!el) {
-      el = document.createElement('meta')
-      el.setAttribute(attr, key)
-      document.head.appendChild(el)
-    }
-    el.content = value
-  }
-  set('meta[name="description"]', 'name', 'description', s.description)
-  set('meta[name="robots"]', 'name', 'robots', s.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large')
-  set('meta[property="og:title"]', 'property', 'og:title', s.title)
-  set('meta[property="og:description"]', 'property', 'og:description', s.description)
-  set('meta[property="og:url"]', 'property', 'og:url', url)
-  set('meta[name="twitter:title"]', 'name', 'twitter:title', s.title)
-  set('meta[name="twitter:description"]', 'name', 'twitter:description', s.description)
-  let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
-  if (!link) {
-    link = document.createElement('link')
-    link.rel = 'canonical'
-    document.head.appendChild(link)
-  }
-  link.href = url
-  if (s.image) {
-    set('meta[property="og:image"]', 'property', 'og:image', s.image)
-    set('meta[name="twitter:image"]', 'name', 'twitter:image', s.image)
+  const image = s.image ?? SITE + '/og-image.png'
+  return {
+    title: s.title,
+    description: s.description,
+    robots: s.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large',
+    ogTitle: s.title,
+    ogDescription: s.description,
+    ogUrl: canonicalOf(path),
+    ogImage: image,
+    twitterTitle: s.title,
+    twitterDescription: s.description,
+    twitterImage: image,
   }
 }

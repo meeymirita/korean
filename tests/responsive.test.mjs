@@ -5,11 +5,11 @@ import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 
 const css = n => readFileSync(new URL(`../src/assets/${n}`, import.meta.url), 'utf8')
-const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+const config = readFileSync(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
 
 describe('вёрстка для разных размеров экрана', () => {
-  test('в index.html есть viewport, без него телефон рисует «настольную» страницу', () => {
-    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1/)
+  test('в <head> есть viewport (nuxt.config.ts), без него телефон рисует «настольную» страницу', () => {
+    assert.match(config, /viewport: 'width=device-width, initial-scale=1/)
   })
 
   test('у основных таблиц стилей есть правила для узкого экрана', () => {

@@ -6,3 +6,8 @@ dist
 server/data
 server/.env
 design/
+
+# Nuxt
+.nuxt
+.output
+.data

@@ -38,24 +38,8 @@ export function pickPhrase(rand: () => number = Math.random, last = -1): { index
   return { index, phrase: PHRASES[index]! }
 }
 
-const KEY = 'ui_phrase_last'
-
-/** Фраза для текущей загрузки страницы: номер прошлой запоминается в sessionStorage. */
-export function nextPhrase(): Phrase {
-  let last = -1
-  try {
-    last = Number(sessionStorage.getItem(KEY) ?? -1)
-  } catch {
-    /* без запоминания */
-  }
-  const { index, phrase } = pickPhrase(Math.random, last)
-  try {
-    sessionStorage.setItem(KEY, String(index))
-  } catch {
-    /* без запоминания */
-  }
-  return phrase
-}
+/** Cookie с номером прошлой фразы: главные (useHomePicks) не показывают одну фразу два обновления подряд. */
+export const PHRASE_COOKIE = 'ui_phrase_last'
 
 /** Ещё одна фраза, отличная от уже выбранных (для блока «Фразы дня» с двумя фразами). */
 export function pickOther(taken: Phrase[], rand: () => number = Math.random): Phrase {

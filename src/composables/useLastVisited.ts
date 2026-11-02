@@ -9,6 +9,7 @@ export interface Visited {
 }
 
 function read(): Visited | null {
+  if (import.meta.server) return null // на сервере одна переменная на всех посетителей: «последний раздел» только в браузере
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null')
     return v && typeof v.path === 'string' && typeof v.title === 'string' ? v : null
@@ -21,6 +22,7 @@ export const lastVisited = ref<Visited | null>(read())
 
 /** Запоминает страницу раздела (кроме главной раздела), чтобы предложить вернуться. */
 export function visit(path: string) {
+  if (import.meta.server) return
   const [, , id, tab] = path.split('/')
   if (!id || id === 'home') return
   const section = id === 'ref' ? refTabs.find(t => t.id === tab) : sectionById(id)

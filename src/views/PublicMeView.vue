@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
 import Icon from '@/components/Icon.vue'
 import { EMOJI_ICON } from '@/lib/icons'
-import { fetchT } from '@/lib/http'
 
 interface PublicCard {
   name: string
@@ -18,36 +17,23 @@ interface PublicCard {
   cover: boolean
 }
 
-const card = ref<PublicCard | null>(null)
-const state = ref<'loading' | 'open' | 'closed' | 'error'>('loading')
+/**
+ * Визитка грузится при отрисовке на сервере (useFetch): поисковик и превью ссылки сразу видят имя и счётчики, браузер получает
+ * данные вместе со страницей и второй раз не спрашивает. На сервере запрос идёт прямо в NestJS (runtimeConfig.apiBase).
+ */
+const config = useRuntimeConfig()
+const { data, error } = await useFetch<PublicCard>('/api/public/me', {
+  baseURL: import.meta.server ? config.apiBase : undefined,
+  timeout: 15_000,
+  ignoreResponseError: false,
+})
+const card = computed(() => data.value ?? null)
+/** 404: владелец не включил визитку. */
+const state = computed<'open' | 'closed' | 'error'>(() => (card.value ? 'open' : error.value?.statusCode === 404 ? 'closed' : 'error'))
 const isPhoto = (a: string) => a.startsWith('data:image/')
 
-/** Пока владелец не включил визитку, страница закрыта: не показываем ничего и просим поисковики не индексировать. */
-function robots(content: string) {
-  let el = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]')
-  if (!el) {
-    el = document.createElement('meta')
-    el.name = 'robots'
-    document.head.appendChild(el)
-  }
-  el.content = content
-}
-
-onMounted(async () => {
-  try {
-    const res = await fetchT('/api/public/me')
-    if (res.status === 404) {
-      state.value = 'closed'
-      robots('noindex, nofollow')
-      return
-    }
-    if (!res.ok) throw new Error(String(res.status))
-    card.value = (await res.json()) as PublicCard
-    state.value = 'open'
-  } catch {
-    state.value = 'error'
-  }
-})
+// пока визитка закрыта, страницу не индексируем
+useSeoMeta({ robots: () => (state.value === 'open' ? 'index, follow, max-image-preview:large' : 'noindex, nofollow') })
 </script>
 
 <template>
@@ -56,8 +42,7 @@ onMounted(async () => {
       <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span></RouterLink>
     </header>
 
-    <p v-if="state === 'loading'" class="msg">Загружаю…</p>
-    <section v-else-if="state === 'closed'" class="closed">
+    <section v-if="state === 'closed'" class="closed">
       <div class="big ko">✳︎</div>
       <h1>Эта страница закрыта</h1>
       <p>Владелец пока не показывает свою визитку. Загляни позже.</p>

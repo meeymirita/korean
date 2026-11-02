@@ -7,9 +7,7 @@ const { SITE, seoFor, indexablePaths, privatePaths } = await load('/src/data/seo
 after(close)
 
 const file = p => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
-const sitemap = file('public/sitemap.xml')
-const robots = file('public/robots.txt')
-const html = file('index.html')
+// robots.txt, sitemap.xml и <head> каждой страницы теперь собирает Nuxt: они проверяются на живом сайте в nuxt-ssr.test.mjs
 
 describe('SEO', () => {
   test('у каждой открытой страницы свой заголовок и описание нужной длины', () => {
@@ -24,22 +22,16 @@ describe('SEO', () => {
     }
   })
 
-  test('закрытые токеном страницы не индексируются, а в карту сайта и robots они не попадают как разрешённые', () => {
+  test('закрытые токеном страницы помечены noindex', () => {
     assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/forms', '/korean/garden', '/korean/marks', '/korean/mistakes', '/korean/review', '/korean/shop', '/korean/today', '/notebook', '/upload'])
-    for (const p of privatePaths()) {
-      assert.equal(seoFor(p).noindex, true)
-      assert.ok(!sitemap.includes(`${SITE}${p}<`), `${p} в карте сайта`)
-      assert.ok(robots.includes(`Disallow: ${p}`), `${p} не закрыт в robots.txt`)
-    }
-    assert.ok(robots.includes('Disallow: /api/'))
+    for (const p of privatePaths()) assert.equal(seoFor(p).noindex, true)
   })
 
-  test('карта сайта: все открытые страницы есть, адреса полные и без повторов', () => {
-    const locs = [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map(m => m[1])
-    assert.equal(new Set(locs).size, locs.length)
-    for (const p of indexablePaths()) assert.ok(locs.includes(p === '/' ? `${SITE}/` : `${SITE}${p}`), `${p} нет в sitemap.xml`)
-    assert.equal(locs.length, indexablePaths().length, 'в карте нет лишнего')
-    assert.ok(robots.includes(`Sitemap: ${SITE}/sitemap.xml`))
+  test('у каждой страницы из seo.ts есть файл в src/pages', () => {
+    for (const p of [...indexablePaths(), ...privatePaths()]) {
+      const f = p === '/' ? 'index' : p.slice(1)
+      assert.ok(existsSync(new URL(`../src/pages/${f}.vue`, import.meta.url)), `нет src/pages/${f}.vue для ${p}`)
+    }
   })
 
   test('неизвестный адрес и адрес со слешем на конце получают нормальные данные', () => {
@@ -47,12 +39,11 @@ describe('SEO', () => {
     assert.equal(seoFor('/нет-такой').noindex, true)
   })
 
-  test('index.html: описание, canonical, Open Graph, Twitter, манифест, JSON-LD и запасной текст без JS', () => {
-    for (const must of ['name="description"', 'rel="canonical"', 'property="og:title"', 'property="og:image"', 'name="twitter:card"', 'rel="manifest"', 'application/ld+json', '<noscript>', '<html lang="ru">', 'name="theme-color"', 'name="yandex-verification" content="7e91f055e8c3fe9f"']) {
-      assert.ok(html.includes(must), `в index.html нет ${must}`)
+  test('nuxt.config.ts: проверка Яндекса, язык, манифест и значки в <head> всех страниц', () => {
+    const cfg = file('nuxt.config.ts')
+    for (const must of ["content: '7e91f055e8c3fe9f'", "lang: 'ru'", "rel: 'manifest'", "name: 'theme-color'", "rel: 'icon'", "'@nuxtjs/robots'", "'@nuxtjs/sitemap'", "'nuxt-schema-org'"]) {
+      assert.ok(cfg.includes(must), `в nuxt.config.ts нет ${must}`)
     }
-    const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])
-    assert.ok(ld['@graph'].some(n => n['@type'] === 'WebSite'))
   })
 
   test('файлы, на которые ссылаются метатеги, существуют', () => {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { close, load, stubLocalStorage } from './_load.mjs'
 
 stubLocalStorage()
-const { ruleOf, ruleCards, randomRule, HOME_RULE } = await load('/src/composables/useHome.ts')
+const { ruleOf, ruleCards, randomRule } = await load('/src/composables/useHome.ts')
 const { G } = await load('/src/data/korean/grammar.ts')
 after(close)
 
@@ -44,7 +44,10 @@ describe('правило на главной', () => {
   })
 
   test('на главной всегда готовое правило', () => {
-    assert.ok(HOME_RULE.rule && HOME_RULE.examples && HOME_RULE.to.query.g)
+    for (const x of [0, 0.3, 0.7, 0.999]) {
+      const r = randomRule(() => x)
+      assert.ok(r.rule && r.examples && r.to.query.g)
+    }
   })
 })
 

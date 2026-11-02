@@ -9,9 +9,11 @@ import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { installApp, isInstalled } from '@/lib/pwa'
 import { useToastStore } from '@/stores/toast'
-import { HOME_LINKS, HOME_MORE, HOME_PHRASE, HOME_RULE, useHome } from '@/composables/useHome'
+import { HOME_LINKS, HOME_MORE, useHome, useHomePicks } from '@/composables/useHome'
+import { withSeed } from '@/lib/seeded'
 
 const { progress, days, daysWord, hello, due, dueText } = useHome()
+const { seed, rule: HOME_RULE, phrase: HOME_PHRASE } = useHomePicks()
 const guide = ref(false)
 /** Окно с видео-обзором платформы: видео грузится, только когда окно открыто. */
 const demo = ref(false)
@@ -53,15 +55,17 @@ onMounted(openOnArrival)
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 const toast = useToastStore()
-const installed = isInstalled()
+/** Сайт открыт как установленное приложение: узнаём только в браузере, после оживления страницы. */
+const installed = ref(false)
+onMounted(() => (installed.value = isInstalled()))
 /** Окно установки браузера; если браузер его не даёт (Safari, iPhone), подсказываем, где искать. */
 async function install() {
   if (await installApp()) toast.ok('Приложение установлено')
   else if (!isInstalled()) toast.ok('Chrome и Edge: значок установки в адресной строке. Safari на Mac: «Файл → Добавить в Dock». iPhone: «Поделиться → На экран „Домой“».')
 }
 
-/** Слово дня: другое после каждой перезагрузки страницы. */
-const word = D[Math.floor(Math.random() * D.length)]!
+/** Слово дня: другое после каждой перезагрузки страницы (от того же зерна, что и фраза: одинаково на сервере и в браузере). */
+const word = withSeed(seed + ':word', () => D[Math.floor(Math.random() * D.length)]!)
 /** Карточка слова переворачивается по нажатию: видно перевод. */
 const flipped = ref(false)
 const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: word.k } } : '/korean/words'))

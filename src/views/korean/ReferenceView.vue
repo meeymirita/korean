@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { REF_TAB_KEY, refTabs } from '@/data/korean/sections'
 
 const route = useRoute()
@@ -24,6 +24,6 @@ watch(
     <nav class="wrap ref-tabs chips" aria-label="Справочник">
       <RouterLink v-for="t in refTabs" :key="t.id" :to="`/korean/ref/${t.id}`" class="chip">{{ t.menu }}</RouterLink>
     </nav>
-    <RouterView />
+    <NuxtPage />
   </div>
 </template>

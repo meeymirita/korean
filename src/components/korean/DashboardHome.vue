@@ -4,7 +4,9 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
-import { HOME_PHRASES, HOME_RULE } from '@/composables/useHome'
+import { useHomePicks } from '@/composables/useHome'
+import { withSeed } from '@/lib/seeded'
+import { shuffle } from '@/data/korean/tasks'
 import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
 import { useSiteImagesStore } from '@/stores/siteImages'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
@@ -27,7 +29,9 @@ const answers = computed(() =>
 const percent = computed(() => Math.round((known.value / D.length) * 100))
 
 /** Пять слов на сегодня: другие после каждой перезагрузки страницы. */
-const words = [...D].sort(() => Math.random() - 0.5).slice(0, 5)
+const { seed, rule: HOME_RULE, phrases: HOME_PHRASES } = useHomePicks()
+// пять случайных слов на эту загрузку страницы: от зерна, одинаково на сервере и в браузере
+const words = withSeed(seed + ':words', () => shuffle(D).slice(0, 5))
 
 /** Фоны трёх блоков меняются в режиме редактирования (шестерёнка в углу блока): подмена хранится на сервере и видна всем. */
 const siteImages = useSiteImagesStore()

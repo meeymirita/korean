@@ -1,12 +1,15 @@
 import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import { close, load } from './_load.mjs'
 
 const { ABOUT_SLIDES } = await load('/src/data/about.ts')
 after(close)
 const assets = new URL('../src/assets/about/', import.meta.url)
-const routerSrc = readFileSync(new URL('../src/router/index.ts', import.meta.url), 'utf8')
+// страницы: файлы в src/pages (файловый роутинг Nuxt, имя файла = последняя часть адреса) и старые адреса в src/router.options.ts
+const pageIds = readdirSync(new URL('../src/pages/', import.meta.url), { recursive: true }).filter(f => f.endsWith('.vue')).map(f => `'${path.basename(f, '.vue')}'`)
+const routerSrc = readFileSync(new URL('../src/router.options.ts', import.meta.url), 'utf8') + pageIds.join(' ')
 const sectionsSrc = readFileSync(new URL('../src/data/korean/sections.ts', import.meta.url), 'utf8')
 
 describe('«О платформе»: слайды', () => {

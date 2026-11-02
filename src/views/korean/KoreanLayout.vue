@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { visit } from '@/composables/useLastVisited'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
     <main class="study-main">
       <Breadcrumbs />
       <AuthGate v-if="route.meta.private && !progress.unlocked" />
-      <RouterView v-else />
+      <NuxtPage v-else />
     </main>
     <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
       <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>

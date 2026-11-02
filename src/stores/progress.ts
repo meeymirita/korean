@@ -228,32 +228,60 @@ const write = (k: string, v: string | null) => {
 }
 
 export const useProgressStore = defineStore('progress', () => {
+  /**
+   * Страница пришла готовой с сервера и сейчас оживает: сервер рисовал её «без входа», и первый вид в браузере должен совпасть,
+   * иначе Vue ругается на расхождение. Сохранённые вход и прогресс подставляет restore() сразу после оживления (plugins/app.client.ts).
+   */
+  const deferred = import.meta.client && tryUseNuxtApp()?.isHydrating === true
+  const stored = (k: string) => (deferred ? '' : read(k))
   /** гость: прогресс только в памяти, на сервер ничего не уходит (см. lib/guestStorage.ts) */
-  const role = ref<Role>(read(ROLE_KEY) === 'guest' ? 'guest' : 'owner')
+  const role = ref<Role>(stored(ROLE_KEY) === 'guest' ? 'guest' : 'owner')
   if (role.value === 'guest') enableGuestStorage()
   const guestExpires = ref(0)
   const isGuest = computed(() => role.value === 'guest')
   let expireTimer: ReturnType<typeof setTimeout> | undefined
 
-  const data = ref<ProgressData>(load())
-  const token = ref(read(TOKEN_KEY))
+  const data = ref<ProgressData>(deferred ? empty() : load())
+  const token = ref(stored(TOKEN_KEY))
   /** Сеанс двухфакторного входа (выдаётся за код из письма); без включённой защиты пуст. */
-  const session = ref(read(SESSION_KEY))
+  const session = ref(stored(SESSION_KEY))
   /** Токен подошёл, но сервер просит ещё код из письма. */
   const needs2fa = ref(false)
   /** Что идёт в заголовке Authorization после «Bearer»: токен, а после двухфакторного входа «токен сеанс». */
   const bearer = computed(() => (session.value ? `${token.value} ${session.value}` : token.value))
   /** токен хотя бы раз подошёл серверу: до этого функции сайта закрыты */
-  const verified = ref(read(VERIFIED_KEY) === '1')
+  const verified = ref(stored(VERIFIED_KEY) === '1')
   const sync = ref<SyncState>(token.value ? 'idle' : 'off')
   const syncMessage = ref('')
   /** Очередь неотправленных действий: хранится в браузере, поэтому ничего не теряется без сети и после перезагрузки. */
-  const outbox = ref<Op[]>(role.value === 'guest' ? [] : loadOutbox())
+  const outbox = ref<Op[]>(role.value === 'guest' || deferred ? [] : loadOutbox())
   let flushTimer: ReturnType<typeof setTimeout> | undefined
   let flushing = false
 
   /* ---------- доступ ---------- */
   const unlocked = computed(() => !!token.value && verified.value)
+
+  /** Вход появился из-за restore(), а не потому, что человек только что вошёл: плашку «Вход выполнен» не показываем (ToastHost). */
+  let restoredLogin = false
+  const takeRestoredLogin = () => {
+    const r = restoredLogin
+    restoredLogin = false
+    return r
+  }
+  /** Подставляет сохранённые в браузере вход и прогресс (после оживления готовой с сервера страницы); без отложенного старта ничего не делает. */
+  function restore() {
+    if (!deferred) return
+    const before = unlocked.value
+    role.value = read(ROLE_KEY) === 'guest' ? 'guest' : 'owner'
+    if (role.value === 'guest') enableGuestStorage()
+    data.value = load()
+    token.value = read(TOKEN_KEY)
+    session.value = read(SESSION_KEY)
+    verified.value = read(VERIFIED_KEY) === '1'
+    sync.value = token.value ? 'idle' : 'off'
+    outbox.value = role.value === 'guest' ? [] : loadOutbox()
+    restoredLogin = unlocked.value !== before
+  }
 
   function lock(message = '') {
     const wasGuest = role.value === 'guest'
@@ -676,7 +704,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   return {
     data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, streak, bestStreak, status, record, roundDone, importXp, setProfile, setSettings, addTime,
-    token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
+    token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
 })
