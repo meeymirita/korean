@@ -65,12 +65,12 @@ console.log(`ответов: ${ops.filter(o => o.type === 'answer').length}, д�
 /* ---------- картинки с тегами (из картинок самого сайта) ---------- */
 const imageIds = []
 if (process.env.IMAGES !== '0') {
-  const sharp = createRequire(path.join(root, 'server/package.json'))('sharp')
+  const sharp = createRequire(path.join(root, 'backend/package.json'))('sharp')
   const pics = [
-    ['src/assets/upload/bg.webp', 'Сакура ночью', ['сакура', 'фон']],
-    ['src/assets/home/yuna.webp', 'Юна у окна', ['юна']],
-    ['src/assets/icons/shop-yuna.webp', 'Юна в магазине', ['юна', 'магазин']],
-    ['src/assets/home/dash/bg-yuna.webp', 'Юна с флагом', ['юна', 'корея']],
+    ['frontend/src/assets/upload/bg.webp', 'Сакура ночью', ['сакура', 'фон']],
+    ['frontend/src/assets/home/yuna.webp', 'Юна у окна', ['юна']],
+    ['frontend/src/assets/icons/shop-yuna.webp', 'Юна в магазине', ['юна', 'магазин']],
+    ['frontend/src/assets/home/dash/bg-yuna.webp', 'Юна с флагом', ['юна', 'корея']],
   ]
   for (const [file, caption, tags] of pics) {
     const jpg = await sharp(path.join(root, file)).flatten({ background: '#f6eefc' }).jpeg({ quality: 80 }).toBuffer()
