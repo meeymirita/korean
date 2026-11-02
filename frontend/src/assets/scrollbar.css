@@ -1,0 +1,34 @@
+/* Полосы прокрутки в цвет сайта: везде, где что-то листается (страница, окна, меню, списки).
+   Chrome, Edge, Safari: тонкий «капсульный» ползунок с розово-фиолетовым градиентом, при наведении ярче.
+   Firefox градиент не умеет, там тонкая полоса одного цвета. Тёмная тема меняет только цвета переменных. */
+:root {
+  --sb-a: #f4a9de;
+  --sb-b: #a899f5;
+  --sb-ah: #ee7fc8;
+  --sb-bh: #7f6bf5;
+  --sb-track: rgba(143, 124, 240, 0.1);
+  --sb-flat: #b9a8f5;
+}
+html[data-theme='dark'] {
+  --sb-a: #c577b3;
+  --sb-b: #6f61c9;
+  --sb-ah: #f07fc6;
+  --sb-bh: #a898ff;
+  --sb-track: rgba(168, 152, 255, 0.12);
+  --sb-flat: #6f61c9;
+}
+
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-track { background: var(--sb-track); border-radius: 999px; margin: 4px; }
+*::-webkit-scrollbar-thumb {
+  min-height: 44px; min-width: 44px; border-radius: 999px;
+  background: linear-gradient(180deg, var(--sb-a), var(--sb-b)) padding-box;
+  border: 2px solid transparent;
+  transition: background .2s;
+}
+*::-webkit-scrollbar-thumb:hover, *::-webkit-scrollbar-thumb:active { background: linear-gradient(180deg, var(--sb-ah), var(--sb-bh)) padding-box; }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--sb-flat) transparent; }
+}
