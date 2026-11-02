@@ -148,7 +148,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
     <p v-else-if="state === 'bad'" class="bk-bad">✗ Последняя копия не удалась{{ status.message ? ': ' + status.message : '' }}. Посмотрите вывод скрипта на сервере (docs/backup.md).</p>
     <p v-else class="bk-warn">⚠ Копии пока не настроены: скрипт scripts/backup.sh на сервере ещё ни разу не запускался. Инструкция в docs/backup.md.</p>
     <p v-if="state === 'ok' && !status.offsite" class="st-sub">Если сервер или диск пропадут, копия пропадёт вместе с ними. Настройте отправку за пределы сервера (OFFSITE_RSYNC или OFFSITE_RCLONE, см. docs/backup.md).</p>
-    <p class="st-sub">Кроме того, сервер сам раз в сутки делает копию базы в server/data/backups (последние 30).</p>
+    <p class="st-sub">Кроме того, сервер сам раз в сутки делает копию базы в backend/data/backups (последние 30).</p>
   </div>
 </template>
 

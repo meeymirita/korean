@@ -32,7 +32,7 @@
 
 ### 01. Главная страница
 
-<p align="center"><img src="src/assets/about/home.webp" alt="Страница «Главная страница»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/home.webp" alt="Страница «Главная страница»" width="860"></p>
 
 Тихий вход в платформу: фраза дня, случайное слово и случайное правило грамматики, счётчик дней с начала пути и быстрые ссылки на все разделы. Каждая перезагрузка приносит что-то новое.
 
@@ -40,7 +40,7 @@
 
 ### 02. История изменений
 
-<p align="center"><img src="src/assets/about/history.webp" alt="Страница «История изменений»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/history.webp" alt="Страница «История изменений»" width="860"></p>
 
 Что и когда добавляли на платформу: этапы от первой версии на Vue до поиска, защиты, заметок, игры и автоматических проверок. Новое сверху.
 
@@ -48,7 +48,7 @@
 
 ### 03. Главная раздела
 
-<p align="center"><img src="src/assets/about/overview.webp" alt="Страница «Главная раздела»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/overview.webp" alt="Страница «Главная раздела»" width="860"></p>
 
 Поиск по всему сайту сразу: слова, правила, фразы, буквы и примеры. Тот же поиск открывается окном с любой страницы кнопкой справа вверху (Ctrl/⌘ + K), без переходов. Здесь же правило дня, слова на сегодня, прогресс, календарь занятий и быстрый доступ к заданиям.
 
@@ -56,7 +56,7 @@
 
 ### 04. Сегодня
 
-<p align="center"><img src="src/assets/about/today.webp" alt="Страница «Сегодня»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/today.webp" alt="Страница «Сегодня»" width="860"></p>
 
 Каждый день новый набор: правило дня с заданием на него, слова дня с игрой «Закрепить слова» (пары, перевод, собери предложение) и 15 заданий. В конце «Проверить и сохранить»: набор попадает во вкладку «История». Верные ответы идут в цель дня и в серию.
 
@@ -64,7 +64,7 @@
 
 ### 05. Личный кабинет
 
-<p align="center"><img src="src/assets/about/cabinet.webp" alt="Страница «Личный кабинет»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/cabinet.webp" alt="Страница «Личный кабинет»" width="860"></p>
 
 Профиль с обложкой, уровень и серия, красивые графики (ответы, время, темы, прогноз повторений), календарь с записями и файлами, итоги недели, история ответов, заметки и картинки с тегами, журналы сервера и настройки.
 
@@ -72,7 +72,7 @@
 
 ### 06. Настройки и защита
 
-<p align="center"><img src="src/assets/about/settings.webp" alt="Страница «Настройки и защита»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/settings.webp" alt="Страница «Настройки и защита»" width="860"></p>
 
 Профиль, цель дня, темы слов и группы игры; защита кодом из письма (после токена приходит 4 цифры на почту); резервные копии: кнопка «Сделать архив и отправить» шифрует всё паролем и шлёт на почту, а каждый день делает это сама; ночная копия на сервере и гостевые токены.
 
@@ -80,7 +80,7 @@
 
 ### 07. Слова
 
-<p align="center"><img src="src/assets/about/words.webp" alt="Страница «Слова»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/words.webp" alt="Страница «Слова»" width="860"></p>
 
 Словарь корейского: чтение русскими буквами, перевод, пример предложения с разбором и темы. Поиск понимает и корейский, и русский, и чтение.
 
@@ -88,7 +88,7 @@
 
 ### 08. Грамматика
 
-<p align="center"><img src="src/assets/about/grammar.webp" alt="Страница «Грамматика»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/grammar.webp" alt="Страница «Грамматика»" width="860"></p>
 
 Правила по урокам в виде карточек. Нажми на карточку: откроется объяснение с формулой, таблицей и примерами. Пройденные правила отмечены.
 
@@ -96,7 +96,7 @@
 
 ### 09. Шпаргалка
 
-<p align="center"><img src="src/assets/about/cheat.webp" alt="Страница «Шпаргалка»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/cheat.webp" alt="Страница «Шпаргалка»" width="860"></p>
 
 Частицы, формулы и шаблоны предложений на одной странице: быстро вспомнить, как строится фраза.
 
@@ -104,7 +104,7 @@
 
 ### 10. Разговорник
 
-<p align="center"><img src="src/assets/about/talk.webp" alt="Страница «Разговорник»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/talk.webp" alt="Страница «Разговорник»" width="860"></p>
 
 Живые фразы, диалоги знакомства и слэнг. Подходит, чтобы сразу начать говорить.
 
@@ -112,7 +112,7 @@
 
 ### 11. Хангыль
 
-<p align="center"><img src="src/assets/about/hangul.webp" alt="Страница «Хангыль»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/hangul.webp" alt="Страница «Хангыль»" width="860"></p>
 
 Таблица слогов, как читать и как писать корейские буквы.
 
@@ -120,7 +120,7 @@
 
 ### 12. Алфавит
 
-<p align="center"><img src="src/assets/about/alphabet.webp" alt="Страница «Алфавит»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/alphabet.webp" alt="Страница «Алфавит»" width="860"></p>
 
 Все буквы и слоги с чтением. Нажми на букву, чтобы увидеть подробности.
 
@@ -128,7 +128,7 @@
 
 ### 13. Правила чтения
 
-<p align="center"><img src="src/assets/about/reading.webp" alt="Страница «Правила чтения»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/reading.webp" alt="Страница «Правила чтения»" width="860"></p>
 
 Как звучит ㄹ, что происходит между гласными, как читается 받침 и другие особые случаи.
 
@@ -136,7 +136,7 @@
 
 ### 14. Примеры предложений
 
-<p align="center"><img src="src/assets/about/sentences.webp" alt="Страница «Примеры предложений»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/sentences.webp" alt="Страница «Примеры предложений»" width="860"></p>
 
 Все предложения из словаря. Нажми на предложение, и оно разберётся по словам и частицам.
 
@@ -144,7 +144,7 @@
 
 ### 15. Числа и счёт
 
-<p align="center"><img src="src/assets/about/numbers.webp" alt="Страница «Числа и счёт»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/numbers.webp" alt="Страница «Числа и счёт»" width="860"></p>
 
 Цены, количество и счётные слова: два вида счёта и когда какой нужен.
 
@@ -152,7 +152,7 @@
 
 ### 16. Тренажёры
 
-<p align="center"><img src="src/assets/about/trainers.webp" alt="Страница «Тренажёры»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/trainers.webp" alt="Страница «Тренажёры»" width="860"></p>
 
 Найди пару и напиши перевод: короткие раунды по темам словаря и по грамматике. Таймер занятий включается кнопкой справа внизу.
 
@@ -160,7 +160,7 @@
 
 ### 17. Повторение
 
-<p align="center"><img src="src/assets/about/review.webp" alt="Страница «Повторение»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/review.webp" alt="Страница «Повторение»" width="860"></p>
 
 Карточки со словами, которые пора повторить: сначала вспомни ответ, потом проверь себя.
 
@@ -168,7 +168,7 @@
 
 ### 18. Сад воспоминаний
 
-<p align="center"><img src="src/assets/about/garden.webp" alt="Страница «Сад воспоминаний»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/garden.webp" alt="Страница «Сад воспоминаний»" width="860"></p>
 
 Каждое выученное слово становится цветком в саду, а ещё здесь коллекция карточек.
 
@@ -176,7 +176,7 @@
 
 ### 19. Игра на слова
 
-<p align="center"><img src="src/assets/about/game.webp" alt="Страница «Игра на слова»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/game.webp" alt="Страница «Игра на слова»" width="860"></p>
 
 Режимы игры: выбери перевод, собери предложение, блиц на 60 секунд, выживание. Печёшь хлебушки, растёшь в уровне и видишь слабые слова.
 
@@ -186,7 +186,7 @@
 
 ### 20. Моя визитка
 
-<p align="center"><img src="src/assets/about/me.webp" alt="Страница «Моя визитка»" width="860"></p>
+<p align="center"><img src="frontend/src/assets/about/me.webp" alt="Страница «Моя визитка»" width="860"></p>
 
 Страница, которую можно открыть всем одной ссылкой: счётчик дней в пути, серия, выученные слова, уровень и обложка. По умолчанию закрыта, включается и выключается в настройках кабинета.
 
@@ -198,22 +198,25 @@
 
 - Vue 3 (Composition API, `<script setup>`)
 - TypeScript
-- Vite
+- Nuxt 4 (отрисовка на сервере) и Vite
 - Pinia — хранилище прогресса
 - Vue Router
 
 ### Запуск
 
 ```sh
-npm install
-npm run dev
+npm ci && npm --prefix frontend ci && npm --prefix backend ci
+npm run dev            # сайт (Nuxt, порт 3000; /api идёт на API_PORT, по умолчанию 3001)
+npm run server:dev     # сервер API в другом окне
 ```
 
 Сборка и проверка типов:
 
 ```sh
-npm run build
+npm run type-check     # nuxt typecheck
+npm run build          # frontend/.output
 npm run preview
+npm test               # все тесты
 ```
 
 ### Страницы
@@ -240,8 +243,8 @@ npm run preview
 ### Структура
 
 ```
-public/                 картинки
-server/                 сервер на NestJS + SQLite (src/), база и картинки в server/data/ (в git не попадает)
+frontend/               сайт на Nuxt (внутри: src/, public/, nuxt.config.ts; пути ниже считай от frontend/)
+backend/                 сервер на NestJS + SQLite (src/), база и картинки в backend/data/ (в git не попадает)
 src/
   assets/               base.css (общие цвета), study.css (корейский и игра), sky.css (пастельная тема), fonts.css, about/ (скриншоты)
   components/
@@ -271,27 +274,27 @@ src/
 Справочники открыты всем: слова, грамматика, шпаргалка, разговорник, хангыль, алфавит, правила чтения, примеры, числа.
 Опасные действия (сброс прогресса, загрузка копии, создание гостевого токена) просят токен ещё раз.
 Задания «Сегодня», тренажёры, повторение, игра и «Мой кабинет» открываются после ввода токена (он тот же, что в
-`server/.env`). Пока токен не введён, в меню рядом с этими разделами замок, а на их страницах поле для токена.
+`backend/.env`). Пока токен не введён, в меню рядом с этими разделами замок, а на их страницах поле для токена.
 На каждом устройстве токен вводится один раз; «Выйти» в кабинете → «Настройки» закрывает доступ на этом устройстве.
 
 ### Прогресс и сервер
 
 Каждый верный ответ (игра, тренажёры, «Сегодня») даёт очки; слово считается выученным, когда наберёт 5 очков
 (верный ответ +1, ошибка −1). Всё, что вы делаете (ответы, профиль, настройки, заметки, картинки, гостевые токены), хранится в базе SQLite на
-сервере: `server/data/app.db`. Сайт показывает прогресс сразу, а на сервер действия уходят через секунду; без сети они
+сервере: `backend/data/app.db`. Сайт показывает прогресс сразу, а на сервер действия уходят через секунду; без сети они
 копятся в браузере и отправляются позже. Подробное устройство сервера: `docs/server.md`.
 
 Запуск (нужен Node 22.18 или новее, 24 лучше):
 
-1. Установи зависимости сервера один раз: `npm --prefix server ci`.
-2. Создай токен (пароль для входа) и положи в `server/.env`:
+1. Установи зависимости сервера один раз: `npm --prefix backend ci`.
+2. Создай токен (пароль для входа) и положи в `backend/.env`:
    ```sh
-   echo "PROGRESS_TOKEN=$(openssl rand -base64 24)" > server/.env
-   cat server/.env        # покажет токен, он понадобится на сайте
+   echo "PROGRESS_TOKEN=$(openssl rand -base64 24)" > backend/.env
+   cat backend/.env        # покажет токен, он понадобится на сайте
    ```
-   Или скопируй `server/.env.example` в `server/.env` и впиши свой токен. Файл `server/.env` в git не попадает.
+   Или скопируй `backend/.env.example` в `backend/.env` и впиши свой токен. Файл `backend/.env` в git не попадает.
 3. Собери и запусти: `npm run server:build`, затем `npm run server` (слушает `127.0.0.1:3001`). В разработке:
-   `npm run server:dev` (перезапускается при правках) и в другом окне `npm run dev`, Vite сам проксирует `/api`.
+   `npm run server:dev` (перезапускается при правках) и в другом окне `npm run dev`, Nuxt сам проксирует `/api`.
 4. На хостинге сервер работает как служба systemd (см. `docs/hosting.md`), а наружу его выставляет Caddy:
 
 ```
@@ -300,15 +303,13 @@ example.ru {
         reverse_proxy 127.0.0.1:3001
     }
     handle {
-        root * /путь/к/проекту/dist
-        try_files {path} {path}/index.html /index.html
-        file_server
+        reverse_proxy 127.0.0.1:3000   # сайт (Nuxt, служба korean-web), см. docs/hosting.md
     }
 }
 ```
 
-После правки Caddyfile: `caddy reload`. Если на сайте пишет «неверный токен», токен не совпадает с `server/.env`; если
-«сервер недоступен», не запущен сервер или нет блока `handle /api/*` в Caddy. Папка `server/data/` не коммитится.
+После правки Caddyfile: `caddy reload`. Если на сайте пишет «неверный токен», токен не совпадает с `backend/.env`; если
+«сервер недоступен», не запущен сервер или нет блока `handle /api/*` в Caddy. Папка `backend/data/` не коммитится.
 
 Тесты: `npm test` (собирает сервер и запускает все проверки, больше двухсот).
 
@@ -329,13 +330,12 @@ example.ru {
 
 ### SEO
 
-Каждая открытая страница получает свой заголовок, описание, canonical и Open Graph при переходе (`src/data/seo.ts`, подставляет роутер);
-закрытые токеном страницы помечены `noindex`. В `public/`: `sitemap.xml`, `robots.txt`, `manifest.webmanifest`, значки и `og-image.png`
-(превью для соцсетей). В `index.html`: метатеги, JSON-LD (WebSite и LearningResource), текст для тех, у кого выключен JavaScript.
-Добавил открытую страницу: допиши её в `seo.ts` и `sitemap.xml` (тест `tests/seo.test.mjs` следит, чтобы они совпадали).
-Сайт одностраничный (Vue, не SSR), поэтому в конце `npm run build` запускается предварительная отрисовка (`scripts/prerender.mjs`): для каждой
-открытой страницы создаётся готовый HTML с метатегами и настоящим содержимым (словарь, грамматика, справочники), который роботы и соцсети видят без JavaScript.
-Подтверждение Яндекса лежит в `index.html`. Для работы пререндера Caddy нужен `try_files {path} {path}/index.html /index.html` (`docs/hosting.md`).
+Каждая открытая страница получает свой заголовок, описание, canonical и Open Graph (`frontend/src/data/seo.ts`, подставляет Nuxt через `useSeoMeta`);
+закрытые токеном страницы помечены `noindex`. `sitemap.xml` и `robots.txt` Nuxt собирает сам из `seo.ts` (модули `@nuxtjs/sitemap`, `@nuxtjs/robots`),
+в `frontend/public/` остаются `manifest.webmanifest`, значки и `og-image.png` (превью для соцсетей). Метатеги и JSON-LD ставит `nuxt-schema-org`.
+Открытые страницы рисуются на сервере (одинаковые для всех — готовым HTML при сборке), поэтому роботы и соцсети видят настоящее содержимое без JavaScript;
+закрытые токеном рисуются только в браузере. Добавил открытую страницу: файл в `frontend/src/pages/` и запись в `seo.ts` (тесты `seo.test.mjs`, `nuxt-ssr.test.mjs`).
+Подтверждение Яндекса лежит в `nuxt.config.ts` (`app.head`). Caddy проксирует сайт на `127.0.0.1:3000` (`docs/hosting.md`).
 
 ### Контакты
 

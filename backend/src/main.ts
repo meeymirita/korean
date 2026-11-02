@@ -1,5 +1,5 @@
 /**
- * Сервер сайта: NestJS + SQLite. Токен владельца берётся из server/.env (PROGRESS_TOKEN=секрет) или из переменной окружения.
+ * Сервер сайта: NestJS + SQLite. Токен владельца берётся из backend/.env (PROGRESS_TOKEN=секрет) или из переменной окружения.
  * Слушает только 127.0.0.1: наружу его выставляет Caddy (reverse_proxy /api/* → порт сервера).
  * Запуск: npm run build, затем npm start (в разработке npm run dev).
  */
@@ -16,7 +16,7 @@ startLogCapture() // журнал для кабинета: копим всё, ч
 
 async function bootstrap() {
   if (!TOKEN) {
-    console.error('Не задан PROGRESS_TOKEN. Создай файл server/.env со строкой PROGRESS_TOKEN=придумай-секрет (образец: server/.env.example).')
+    console.error('Не задан PROGRESS_TOKEN. Создай файл backend/.env со строкой PROGRESS_TOKEN=придумай-секрет (образец: backend/.env.example).')
     process.exit(1)
   }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: ['error', 'warn'], bodyParser: false })

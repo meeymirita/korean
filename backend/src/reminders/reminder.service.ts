@@ -1,7 +1,7 @@
 /**
  * Напоминание заниматься: в выбранное время, если за день ещё нет ни одного ответа, на почту приходит письмо.
  * Настройки (включено, время ЧЧ:ММ по времени сервера, день последнего письма) лежат в `meta.reminder`; письмо одно в день.
- * Адрес: REMINDER_MAIL_TO в server/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
+ * Адрес: REMINDER_MAIL_TO в backend/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
  */
 import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { TwoFaService, maskEmail } from '../auth/twofa.service'

@@ -1,5 +1,5 @@
 /**
- * Отправка писем через SMTP (nodemailer). Доступы лежат в server/.env: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM (адрес отправителя).
+ * Отправка писем через SMTP (nodemailer). Доступы лежат в backend/.env: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM (адрес отправителя).
  * Для тестов: MAIL_DUMP_FILE=путь — письма не уходят, а дописываются строками JSON в этот файл.
  */
 import { Injectable } from '@nestjs/common'

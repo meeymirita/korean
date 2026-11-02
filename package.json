@@ -6,6 +6,13 @@
   "description": "Хлебушек: тесты всего проекта (frontend/ — Nuxt-сайт, backend/ — NestJS-сервер, см. CLAUDE.md)",
   "scripts": {
     "postinstall": "node scripts/link-test-deps.mjs",
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "type-check": "npm --prefix frontend run type-check",
+    "server": "npm --prefix backend start",
+    "server:build": "npm --prefix backend run build",
+    "server:dev": "npm --prefix backend run dev",
     "test": "npm --prefix backend run build && node --test \"tests/*.test.mjs\""
   },
   "devDependencies": {

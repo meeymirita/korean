@@ -7,7 +7,7 @@ Description=korean.meeymirita.ru: сайт (Nuxt SSR)
 After=network.target progress.service
 
 [Service]
-WorkingDirectory=/var/sites/korean
+WorkingDirectory=/var/sites/korean/frontend
 ExecStart=/usr/bin/node .output/server/index.mjs
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1

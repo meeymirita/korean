@@ -65,7 +65,7 @@ const time = (t: number) => new Date(t).toLocaleString('ru-RU', { day: '2-digit'
 const hint = computed(() => {
   const r = reply.value
   if (!r || r.configured) return ''
-  return r.reason === 'missing' ? 'Файл журнала Caddy не найден по пути из CADDY_LOG_FILE.' : r.reason === 'denied' ? 'У службы сервера нет прав читать файл журнала Caddy.' : 'Журнал Caddy не подключён: в server/.env не задан CADDY_LOG_FILE.'
+  return r.reason === 'missing' ? 'Файл журнала Caddy не найден по пути из CADDY_LOG_FILE.' : r.reason === 'denied' ? 'У службы сервера нет прав читать файл журнала Caddy.' : 'Журнал Caddy не подключён: в backend/.env не задан CADDY_LOG_FILE.'
 })
 </script>
 
@@ -89,7 +89,7 @@ const hint = computed(() => {
     <p v-if="failed" class="cb-empty">Не получилось загрузить журнал: {{ failed }}</p>
     <div v-else-if="hint" class="cb-empty">
       <p>{{ hint }}</p>
-      <p class="lg-how">Как подключить: в блоке сайта в Caddyfile добавь <code>log { output file /var/log/caddy/korean.log; format json }</code>, дай службе <code>progress</code> право читать файл и впиши в server/.env строку <code>CADDY_LOG_FILE=/var/log/caddy/korean.log</code>. Подробности в docs/hosting.md.</p>
+      <p class="lg-how">Как подключить: в блоке сайта в Caddyfile добавь <code>log { output file /var/log/caddy/korean.log; format json }</code>, дай службе <code>progress</code> право читать файл и впиши в backend/.env строку <code>CADDY_LOG_FILE=/var/log/caddy/korean.log</code>. Подробности в docs/hosting.md.</p>
     </div>
     <p v-else-if="reply && !rows.length" class="cb-empty">Записей нет{{ q || level ? ' по такому фильтру' : '' }}.</p>
 

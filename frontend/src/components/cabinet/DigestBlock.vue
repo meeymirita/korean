@@ -74,7 +74,7 @@ async function test() {
   <div v-if="st && !failed" class="st-block">
     <h3>Подборка на повторение</h3>
     <p class="st-sub">Каждый день в выбранное время приходит письмо со случайными словами и предложениями из пройденного, занимались вы в этот день или нет. Время по часам сервера.</p>
-    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес защиты кодом или REMINDER_MAIL_TO.</p>
+    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес защиты кодом или REMINDER_MAIL_TO.</p>
     <div class="rm-row">
       <label class="rm-on"><input type="checkbox" :checked="st.enabled" :disabled="busy || !st.mailReady" @change="save({ enabled: ($event.target as HTMLInputElement).checked })" /> Присылать</label>
       <label class="rm-time">в <input type="time" :value="st.time" :disabled="busy" aria-label="Время подборки" @change="save({ time: ($event.target as HTMLInputElement).value })" /></label>

@@ -57,7 +57,7 @@ const revoke = () => askTokenDo({ title: 'Выйти на всех устрой�
 
     <template v-if="tf.status.value.enabled">
       <p class="tf-on">✓ Включена. Коды приходят на <b>{{ tf.status.value.email }}</b>.</p>
-      <p v-if="tf.status.value.bypassed" class="tf-warn">Сейчас защита отключена аварийным выключателем на сервере (DISABLE_2FA=1 в server/.env). Уберите строку и перезапустите службу, чтобы вернуть её.</p>
+      <p v-if="tf.status.value.bypassed" class="tf-warn">Сейчас защита отключена аварийным выключателем на сервере (DISABLE_2FA=1 в backend/.env). Уберите строку и перезапустите службу, чтобы вернуть её.</p>
       <div class="pg-btns">
         <button class="plain" @click="revoke">Выйти на всех устройствах</button>
         <button class="plain danger" @click="off">Выключить защиту</button>
@@ -65,7 +65,7 @@ const revoke = () => askTokenDo({ title: 'Выйти на всех устрой�
     </template>
 
     <template v-else>
-      <p v-if="!tf.status.value.mailConfigured" class="tf-warn">На сервере не настроена почта: добавьте SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS и SMTP_FROM в server/.env и перезапустите службу (см. docs/server.md).</p>
+      <p v-if="!tf.status.value.mailConfigured" class="tf-warn">На сервере не настроена почта: добавьте SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS и SMTP_FROM в backend/.env и перезапустите службу (см. docs/server.md).</p>
       <form v-else-if="!sentTo" class="pg-form" @submit.prevent="start">
         <input v-model="email" type="email" placeholder="почта для кодов" autocomplete="email" aria-label="Почта для кодов" />
         <button type="submit" :disabled="busy || !email.trim()">Отправить код</button>
@@ -76,7 +76,7 @@ const revoke = () => askTokenDo({ title: 'Выйти на всех устрой�
         <button type="button" class="plain" :disabled="busy" @click="sentTo = ''; code = ''">Другой адрес</button>
       </form>
       <p v-if="sentTo" class="st-sub">Письмо ушло на {{ sentTo }}. Защита включится, только когда код подойдёт: так вы не потеряете доступ из-за опечатки в адресе.</p>
-      <p v-else class="st-sub">Защита включается кодом, присланным на этот же адрес. Если письма перестанут приходить, на сервере есть аварийный выключатель (DISABLE_2FA=1 в server/.env).</p>
+      <p v-else class="st-sub">Защита включается кодом, присланным на этот же адрес. Если письма перестанут приходить, на сервере есть аварийный выключатель (DISABLE_2FA=1 в backend/.env).</p>
     </template>
   </div>
 </template>

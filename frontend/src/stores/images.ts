@@ -19,7 +19,7 @@ export interface ImageItem {
   created: number
 }
 
-/** Те же ограничения, что на сервере (server/src/config.ts). */
+/** Те же ограничения, что на сервере (backend/src/config.ts). */
 export const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 export type ImageKind = 'gallery' | 'note' | 'cover'
 export const MAX_CAPTION = 200

@@ -30,7 +30,7 @@ export interface Plan {
   files: PlanFile[]
 }
 
-/** Те же ограничения, что на сервере (server/src/config.ts). */
+/** Те же ограничения, что на сервере (backend/src/config.ts). */
 export const MAX_PLAN_TITLE = 100
 export const MAX_PLAN_TEXT = 5000
 export const MAX_PLAN_FILES = 20

@@ -1,24 +1,24 @@
 # Сервер: NestJS + SQLite
 
-Папка `server/`, свои `package.json` и `node_modules` (у сайта свой корневой `node_modules`).
+Папка `backend/`, свои `package.json` и `node_modules` (у сайта свой корневой `node_modules`).
 База встроенная: модуль `node:sqlite` из Node (нужен Node 22.18+ или 24.12+), обычный SQL без ORM. Файл базы:
-`server/data/app.db` (в git не попадает).
+`backend/data/app.db` (в git не попадает).
 
 ## Запуск
-- `npm --prefix server ci` (один раз), `npm run server:build`, `npm run server` (порт 3001, только `127.0.0.1`).
+- `npm --prefix backend ci` (один раз), `npm run server:build`, `npm run server` (порт 3001, только `127.0.0.1`).
 - Разработка: `npm run server:dev` (перезапуск при правках) и `npm run dev` для сайта (Vite проксирует `/api`).
-- Настройки: `server/.env` (`PROGRESS_TOKEN=токен`, образец `server/.env.example`) или переменные окружения: `PROGRESS_TOKEN`,
+- Настройки: `backend/.env` (`PROGRESS_TOKEN=токен`, образец `backend/.env.example`) или переменные окружения: `PROGRESS_TOKEN`,
   `PORT`, `DATA_DIR` (папка с базой и картинками), `IMAGES_QUOTA_MB` (нужна только тестам).
 - Токен создать: `openssl rand -base64 24`.
-- **Swagger** (`server/src/swagger.ts`, пакет `@nestjs/swagger`): `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs`
+- **Swagger** (`backend/src/swagger.ts`, пакет `@nestjs/swagger`): `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs`
   (описание в JSON: `/api/docs-json`). Все адреса API, сгруппированные по разделу адреса (`/api/notes/...` → `notes`); запросы прямо со
   страницы: кнопка Authorize, поле bearer, токен. Включается **только локально**: страница отдаётся мимо проверки токена, а Caddy
-  пропускает наружу всё `/api/*`, поэтому в `server/.env` на боевом сервере `SWAGGER` не ставить. Для `/api/docs` при включённом
+  пропускает наружу всё `/api/*`, поэтому в `backend/.env` на боевом сервере `SWAGGER` не ставить. Для `/api/docs` при включённом
   Swagger мягче CSP (свои скрипты и стили), у остального API строгая. Тест: `server.test.mjs`, «health и Swagger».
 - **`/api/health`** (открыт): проверяет, что база читается (`SELECT 1`): `200 {"ok":true}`, иначе `503 {"ok":false}` (подробности
   только в журнале сервера). На нём держится `scripts/deploy.sh`: сломанная база после обновления → откат.
 
-## Устройство (`server/src/`)
+## Устройство (`backend/src/`)
 | Папка | Что делает |
 |---|---|
 | `main.ts`, `app.module.ts`, `config.ts` | запуск, сборка модулей, настройки и лимиты |
@@ -76,7 +76,7 @@
 - Роли: владелец делает всё; гость получает пустые ответы и его записи игнорируются, а картинки, база и токены ему закрыты (403).
   Ответы несут заголовки `X-Role` и `X-Guest-Expires`. Просроченный гостевой токен даёт 401 `{ error: 'expired' }`.
 
-## Защита (`server/src/security.ts`)
+## Защита (`backend/src/security.ts`)
 - **Заголовки** на каждый ответ API: `nosniff`, `X-Frame-Options: DENY`, CSP `default-src 'none'`, `Referrer-Policy: no-referrer`,
   CORP/COOP same-origin, HSTS; `X-Powered-By` выключен.
 - **Подбор токена**: 10 неверных токенов подряд с одного адреса (`RATE_BAD_LIMIT`) блокируют адрес на 15 минут (`RATE_LOCK_MIN`),
@@ -96,16 +96,16 @@
   тот же лимит и блокировка, в журнале `bad_confirm`). Сайт спрашивает токен окном и шлёт заголовок сам.
 - **Токен**: сравнивается без утечки по времени, строка длиннее 200 символов отбрасывается; токен короче 20 символов даёт
   предупреждение в журнале службы. Гостевые токены хранятся хэшами.
-- Зависимости: `npm audit --omit=dev` в `server/` сейчас чистый (`multer` поднят `overrides` до 2.5.0, пока Nest не обновит свой). `webpack` в `overrides`
+- Зависимости: `npm audit --omit=dev` в `backend/` сейчас чистый (`multer` поднят `overrides` до 2.5.0, пока Nest не обновит свой). `webpack` в `overrides`
   закреплён на одной версии: без этого `npm ci` на старых npm (9–10, у меня и на хостинге) падал с «Missing: webpack from lock file», потому что
   npm 11 и более старые npm по-разному раскладывают конфликт peer-зависимостей. Проверка: `npx npm@10 ci --dry-run` в копии `package.json` и `package-lock.json`.
   Меняешь зависимости сервера: после `npm install` повтори эту проверку с npm 9 и 10.
-  Раз в месяц делай `npm audit` и `npm outdated` в `server/`.
+  Раз в месяц делай `npm audit` и `npm outdated` в `backend/`.
 
 ## Как смотреть, что в базе
 1. Вкладка «База» в кабинете (только владелец): таблицы, строки, поиск, страницы по 50.
-2. На сервере: `sqlite3 server/data/app.db` (например `SELECT * FROM answers ORDER BY id DESC LIMIT 20;`).
-3. PhpStorm: Database → Data Source → SQLite → указать скачанный файл `app.db`. Ежедневные копии лежат в `server/data/backups/`.
+2. На сервере: `sqlite3 backend/data/app.db` (например `SELECT * FROM answers ORDER BY id DESC LIMIT 20;`).
+3. PhpStorm: Database → Data Source → SQLite → указать скачанный файл `app.db`. Ежедневные копии лежат в `backend/data/backups/`.
 
 ## Сайт и сервер
 Сайт (`stores/progress.ts`) показывает прогресс сразу из памяти, а каждое действие ставит в очередь `progress_outbox` (в браузере),
@@ -133,11 +133,11 @@
 - **Код.** 4 цифры, живёт 10 минут, одноразовый, после 5 неверных попыток сгорает; новое письмо не раньше чем через 30 секунд; неверный код считается попыткой подбора (блокировка адреса, как у токена).
 - **Включение без риска потерять доступ.** `POST /api/2fa/enable/start {email}` шлёт код на новый адрес, защита включается только после `POST /api/2fa/enable/confirm {code}`, то есть когда письмо дошло. Без настроенной почты включить нельзя.
 - **Выключение и выход везде:** `DELETE /api/2fa` и `DELETE /api/2fa/sessions` просят токен ещё раз (`X-Confirm-Token`).
-- **Почта.** Доступы в `server/.env`: `SMTP_HOST`, `SMTP_PORT` (465 или 587), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. Пароль в чат и в git не попадает.
-- **Проверка почты:** `npm --prefix server run mail:check` проверяет вход в SMTP, а `npm --prefix server run mail:check -- адрес@почта` ещё и шлёт тестовое письмо (нужен собранный сервер).
-- **Аварийный выход:** `DISABLE_2FA=1` в `server/.env` и перезапуск службы: вход снова по одному токену, настройки защиты сохраняются; после починки почты строку убрать.
+- **Почта.** Доступы в `backend/.env`: `SMTP_HOST`, `SMTP_PORT` (465 или 587), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. Пароль в чат и в git не попадает.
+- **Проверка почты:** `npm --prefix backend run mail:check` проверяет вход в SMTP, а `npm --prefix backend run mail:check -- адрес@почта` ещё и шлёт тестовое письмо (нужен собранный сервер).
+- **Аварийный выход:** `DISABLE_2FA=1` в `backend/.env` и перезапуск службы: вход снова по одному токену, настройки защиты сохраняются; после починки почты строку убрать.
 - Таблицы: `sessions` (хэш, срок), настройки в `meta` (`twofa`). События в журнале: `2fa_sent`, `2fa_login`, `2fa_bad_code`, `2fa_on`, `2fa_off`, `2fa_mail_failed`.
-- Код: `server/src/auth/twofa.service.ts`, `twofa.controller.ts`, `server/src/mail/mail.service.ts`; сайт: `composables/useTwoFa.ts`, `AuthGate.vue`, `cabinet/TwoFaBlock.vue`. Тесты `twofa-server`, `twofa-store`
+- Код: `backend/src/auth/twofa.service.ts`, `twofa.controller.ts`, `backend/src/mail/mail.service.ts`; сайт: `composables/useTwoFa.ts`, `AuthGate.vue`, `cabinet/TwoFaBlock.vue`. Тесты `twofa-server`, `twofa-store`
   (в тестах письма пишутся в файл `MAIL_DUMP_FILE` вместо SMTP).
 
 ## Что менялось 2026-10-31 (вечер)

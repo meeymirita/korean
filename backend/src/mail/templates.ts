@@ -36,7 +36,7 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
   <tr><td align="center" style="padding:8px 28px 20px;font-size:13px;color:#8b8fc4">Код действует ${minutes} минут и подходит один раз.</td></tr>
   <tr><td style="padding:0 28px 26px">
     <div style="border-left:4px solid #d64da9;background:#fff5f9;padding:12px 16px;border-radius:0 14px 14px 0;font-size:14px;line-height:1.6;color:#1e2350">
-      Если вы не входили на сайт, никому не называйте код и смените токен в файле <b>server/.env</b>.
+      Если вы не входили на сайт, никому не называйте код и смените токен в файле <b>backend/.env</b>.
     </div>
   </td></tr>
   <tr><td style="padding:16px 28px;background:#fbf8ff;border-top:1px solid #eee9ff;font-size:12px;line-height:1.7;color:#8b8fc4">
@@ -45,7 +45,7 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
 </table>
 </td></tr></table>
 </body></html>`
-  const text = `${title} для 우리말: ${code}\n\n${lead}\nКод действует ${minutes} минут и подходит один раз.\n\nЕсли вы не входили на сайт, никому не называйте код и смените токен в файле server/.env.\n\nЭто служебное письмо платформы 우리말 (korean.meeymirita.ru), отвечать на него не нужно.`
+  const text = `${title} для 우리말: ${code}\n\n${lead}\nКод действует ${minutes} минут и подходит один раз.\n\nЕсли вы не входили на сайт, никому не называйте код и смените токен в файле backend/.env.\n\nЭто служебное письмо платформы 우리말 (korean.meeymirita.ru), отвечать на него не нужно.`
   return { subject: `${title}: ${code}`, text, html }
 }
 
@@ -80,7 +80,7 @@ export function backupMail(o: BackupMailOptions): Mail {
   const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки', 'nightly-fail': 'Ночная копия не удалась', stale: 'Ночная копия давно не делалась' }
   const leads = {
     archive: `Во вложении полный архив: база, картинки, файлы календаря и настройки${o.mb ? ` (${o.mb} МБ)` : ''}. Он зашифрован вашим паролем, поэтому открыть его без пароля нельзя.`,
-    big: `Полный архив${o.mb ? ` (${o.mb} МБ)` : ''} не помещается в письма и остался на сервере в папке server/data/export. Скачайте его оттуда вручную.`,
+    big: `Полный архив${o.mb ? ` (${o.mb} МБ)` : ''} не помещается в письма и остался на сервере в папке backend/data/export. Скачайте его оттуда вручную.`,
     test: 'Это проверочное письмо из «Настроек». Если оно пришло, почта для резервных копий настроена верно.',
     'nightly-fail': `Скрипт scripts/backup.sh завершился с ошибкой${o.detail ? `: ${o.detail}` : ''}. Последняя хорошая копия осталась на месте, но новой нет.`,
     stale: `Свежей ночной копии нет ${o.detail ?? 'больше суток'}: скрипт не запускался или завис. Проверьте таймер на сервере.`,

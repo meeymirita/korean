@@ -30,7 +30,7 @@ describe('сервер: помощник-чат', () => {
   before(async () => {
     g = await fakeмодель()
     s = await start({ env: { OPENROUTER_API_KEY: 'test-key', CHAT_BASE: g.base, CHAT_MODEL: 'test-model', CHAT_DAILY_LIMIT: '4' } })
-    // пустой ключ в окружении главнее server/.env: тест не должен подхватить настоящий ключ владельца
+    // пустой ключ в окружении главнее backend/.env: тест не должен подхватить настоящий ключ владельца
     off = await start({ env: { OPENROUTER_API_KEY: '' } })
   })
   after(() => g.close())

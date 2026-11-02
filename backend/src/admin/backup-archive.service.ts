@@ -1,7 +1,7 @@
 /**
  * Полный архив платформы по кнопке в кабинете (и раз в неделю сам): база + картинки + файлы календаря + настройки,
  * сжат (tar.gz) и зашифрован паролем BACKUP_PASSPHRASE (openssl, AES-256), потом уходит на почту (вложением, при большом размере частями).
- * Переменные в server/.env: BACKUP_PASSPHRASE; BACKUP_MAIL_TO (по умолчанию почта из двухфакторной защиты).
+ * Переменные в backend/.env: BACKUP_PASSPHRASE; BACKUP_MAIL_TO (по умолчанию почта из двухфакторной защиты).
  */
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { spawn } from 'node:child_process'
@@ -163,8 +163,8 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   /** Чего не хватает для запуска (пусто — можно запускать). */
   problems(): string[] {
     const p: string[] = []
-    if (!process.env.BACKUP_PASSPHRASE) p.push('не задан пароль архива BACKUP_PASSPHRASE в server/.env')
-    if (!this.mailOn()) p.push('некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес BACKUP_MAIL_TO')
+    if (!process.env.BACKUP_PASSPHRASE) p.push('не задан пароль архива BACKUP_PASSPHRASE в backend/.env')
+    if (!this.mailOn()) p.push('некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO')
     return p
   }
 
@@ -321,7 +321,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
   /** Проверка почты без сборки архива: короткое письмо. Пароль архива не нужен. */
   async test() {
-    if (!this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес BACKUP_MAIL_TO' }
+    if (!this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO' }
     try {
       const m = backupMail({ kind: 'test' })
       await this.mail.send(this.mailTo(), m.subject, m.text, m.html)

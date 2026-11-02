@@ -1,8 +1,8 @@
-/** Настройки сервера: файл server/.env, переменные окружения и константы. */
+/** Настройки сервера: файл backend/.env, переменные окружения и константы. */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-/** Читает server/.env: строки вида КЛЮЧ=значение, # — комментарий. Уже заданные переменные не трогает. */
+/** Читает backend/.env: строки вида КЛЮЧ=значение, # — комментарий. Уже заданные переменные не трогает. */
 function loadEnv(file: string) {
   let text: string
   try {
@@ -22,7 +22,7 @@ function loadEnv(file: string) {
   }
 }
 
-/** server/dist/config.js → server/ */
+/** backend/dist/config.js → backend/ */
 export const ROOT = path.join(__dirname, '..')
 loadEnv(path.join(ROOT, '.env'))
 
@@ -90,7 +90,7 @@ export const MAX_NB_TEXT = 20_000
 export const MAX_NB_STROKES = 2_000_000
 export const MAX_NB_DEPTH = 8
 
-/** Помощник-чат (OpenRouter): ключ только в server/.env, на сайт он не попадает. Без ключа чат отвечает «не настроен». */
+/** Помощник-чат (OpenRouter): ключ только в backend/.env, на сайт он не попадает. Без ключа чат отвечает «не настроен». */
 export const CHAT_KEY = process.env.OPENROUTER_API_KEY || ''
 /** Модель: бесплатные у OpenRouter оканчиваются на «:free» (список на openrouter.ai/models). */
 export const CHAT_MODEL = process.env.CHAT_MODEL || 'openrouter/free'

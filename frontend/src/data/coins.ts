@@ -1,4 +1,4 @@
-/** Монетки Юны: награды. Те же числа лежат на сервере (`COINS` в server/src/progress/progress.service.ts): менять в обоих. */
+/** Монетки Юны: награды. Те же числа лежат на сервере (`COINS` в backend/src/progress/progress.service.ts): менять в обоих. */
 export const COIN_RULES = {
   answer: 2, // за верный ответ
   dayCap: 300, // потолок монеток за ответы в день

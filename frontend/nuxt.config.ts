@@ -1,5 +1,5 @@
 /**
- * Nuxt: сайт рисуется на сервере (SSR), API остаётся в NestJS (server/, порт 3001).
+ * Nuxt: сайт рисуется на сервере (SSR), API остаётся в NestJS (backend/, порт 3001).
  * Открытые страницы (src/data/seo.ts без noindex) отрисовываются при сборке и отдаются готовым HTML,
  * закрытые токеном работают как приложение в браузере (ssr: false): токен лежит в localStorage, серверу его не видно.
  * Запуск: npm run dev (порт 3000, /api проксируется на API_PORT, по умолчанию 3001), npm run build, npm run preview.
@@ -20,7 +20,7 @@ const STATIC = pub.filter(p => !PER_REQUEST.includes(p))
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-01',
   srcDir: 'src',
-  // server/ в корне — это NestJS (API), а не серверная часть Nuxt: своих серверных маршрутов у Nuxt нет
+  // backend/ в корне — это NestJS (API), а не серверная часть Nuxt: своих серверных маршрутов у Nuxt нет
   serverDir: 'src/nitro',
   // @/ → src/ (как было в Vite); public/ Nuxt берёт из корня проекта сам
   devtools: { enabled: false },
@@ -74,7 +74,7 @@ export default defineNuxtConfig({
     '/korean/ref': { ssr: false },
     // локальная проверка собранного сайта (npm run preview) без Caddy: /api уходит в NestJS; на боевом сервере /api раньше перехватывает Caddy
     '/api/**': { proxy: `${API}/api/**` },
-    // заголовки безопасности для страниц сайта (API ставит свои сам, server/src/security.ts)
+    // заголовки безопасности для страниц сайта (API ставит свои сам, backend/src/security.ts)
     '/**': {
       headers: {
         'X-Content-Type-Options': 'nosniff',

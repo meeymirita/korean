@@ -10,7 +10,7 @@ export const CHAT_MAX_TEXT = 2000
 
 /** Понятный текст ошибки помощника по ответу сервера. */
 export function chatErrorText(status: number, error?: string): string {
-  if (status === 503) return 'Помощник не настроен: на сервере нет ключа (OPENROUTER_API_KEY в server/.env)'
+  if (status === 503) return 'Помощник не настроен: на сервере нет ключа (OPENROUTER_API_KEY в backend/.env)'
   if (status === 429) return error === 'daily limit' ? 'На сегодня вопросы закончились, завтра можно снова' : 'Слишком часто, подожди минуту и спроси ещё раз'
   if (status === 502) return 'Помощник сейчас не отвечает, попробуй чуть позже'
   if (status === 401 || status === 403) return 'Помощник доступен только после входа по токену'

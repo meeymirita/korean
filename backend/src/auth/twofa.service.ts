@@ -1,7 +1,7 @@
 /**
  * Двухфакторная защита: после токена владельца сервер просит ещё и код из 4 цифр, присланный на почту, заданную в кабинете.
  * За верный код выдаётся сеанс (случайная строка, в базе только её хэш, живёт 30 дней); сайт шлёт его вместе с токеном: «токен сеанс».
- * Пока защита выключена, ничего не меняется. Аварийный выход, если почта сломалась: DISABLE_2FA=1 в server/.env и перезапуск службы.
+ * Пока защита выключена, ничего не меняется. Аварийный выход, если почта сломалась: DISABLE_2FA=1 в backend/.env и перезапуск службы.
  */
 import { BadRequestException, HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto'

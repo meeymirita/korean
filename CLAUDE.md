@@ -43,7 +43,7 @@
   - **коммить только при зелёных тестах**: `npm test | grep …` возвращает код `grep`, а не тестов, и коммит всё равно проходит. Смотри строку `ℹ fail 0` до `git commit` (так уже ушёл коммит с упавшим тестом: у записи `HISTORY` не было пункта);
   - **случайное «на день»** делай через `withSeed(seed, fn)` из `src/lib/seeded.ts` (он подменяет `Math.random` на время вызова): так набор одинаков при обновлении и на разных устройствах (`TodayView.vue`);
   - **новый режим игры** добавляй и в `MODES`, и в `MODE_HELP` (`src/game/engine.ts`): кнопка «?» с описанием и примером, `tests/grammar-data.test.mjs` это проверяет;
-  - **значок ✳** пиши с селектором текстового вида `U+FE0E` (`✳︎`), иначе iOS показывает зелёный смайлик; `KNOWN_STREAK` (очки до «выучено») живёт в `stores/progress.ts` и в `server/src/progress/progress.service.ts`: менять в обоих;
+  - **значок ✳** пиши с селектором текстового вида `U+FE0E` (`✳︎`), иначе iOS показывает зелёный смайлик; `KNOWN_STREAK` (очки до «выучено») живёт в `stores/progress.ts` и в `backend/src/progress/progress.service.ts`: менять в обоих;
   - **сделал заметное изменение → допиши запись в начало `HISTORY` в `src/data/history.ts`** (страница `/history`, тест следит за форматом);
   - **изменил страницу или добавил новую → обнови слайд и скриншот в «О платформе»** (`src/data/about.ts`, `src/assets/about/`);
   - **поменял слайды «О платформе» (`data/about.ts`) → поменяй и галерею в `README.md`** (заголовки, описания, картинки идут один в один, `tests/readme.test.mjs` следит);
@@ -64,7 +64,7 @@
     50, поиск 45, окно заметки 60 (иначе окно «ныряет» под другое, так уже было с удалением картинки);
   - поменял сервер → перезапусти локальный сервер (`pkill -f "node dist/main.js"; npm run server`): старый процесс держит
     старый код, и сайт «не видит» новых возможностей.
-- **Предметы магазина**: новый режим на `TaskSession.vue` получает их сам; в «Найди пару», «Слоги» и игре (`engine.ts`) они не подключены. Цены и условия монеток менять только в `server/src/progress/coins.ts` и `COINS` (сайт держит копию в `src/data/coins.ts` и `shop.ts`), потом перезапускать сервер.
+- **Предметы магазина**: новый режим на `TaskSession.vue` получает их сам; в «Найди пару», «Слоги» и игре (`engine.ts`) они не подключены. Цены и условия монеток менять только в `backend/src/progress/coins.ts` и `COINS` (сайт держит копию в `src/data/coins.ts` и `shop.ts`), потом перезапускать сервер.
 - **Список правок владельца** лежит в локальной папке `правки/ПРАВКИ.md` (в `.git/info/exclude`, в git не попадает, в репозитории её нет): в начале сессии прочитай файл, берись за пункты по одному, сделанное переноси в раздел «Сделано» внутри файла. Скриншоты к багам лежат рядом в той же папке.
 - Рабочие привычки владельца: показывает правки по одной и быстро меняет решение («удали», «верни»), поэтому делай
   маленькими шагами и показывай результат скриншотом; временные файлы и скриншоты держи вне репозитория и удаляй; тесты в
@@ -72,24 +72,25 @@
 - Коммиты и пуш: владелец разрешил делать их самому без вопросов (память `feedback_commit-push-autonomy.md`); в конце ответа повторять, что делать на сервере (деплой, `.env`). Отдельными коммитами по каждому действию.
   Сообщения на английском, повелительное наклонение, в конце строка
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Перед пушем проверять, что каждый коммит
-  собирается (временный `git worktree` + симлинки на `node_modules` проекта и `server/node_modules` + `vue-tsc --build` + `npm run build` + `npm test`).
-  На Nuxt симлинк на корневой `node_modules` не годится: Nuxt собирает в `node_modules/.cache/nuxt` и попадает в чужой проект («#internal/nuxt/paths is not defined»), в копии делай `npm ci`.
+  собирается (временный `git worktree`, в нём `npm ci` в корне, `frontend/` и `backend/` + `npm run type-check` + `npm run build` + `npm test`).
+  Симлинк на `node_modules` не годится: Nuxt собирает в `node_modules/.cache/nuxt` и попадает в чужой проект («#internal/nuxt/paths is not defined»).
 
 ## Стек и запуск
 
-**Ветка `nuxt` (2026-11-02):** Nuxt 4 (SSR, `nuxt.config.ts`, `srcDir: 'src'`, страницы `src/pages/`, запуск в браузере `src/plugins/app.client.ts`,
-модули `@pinia/nuxt`, `@nuxtjs/robots`, `@nuxtjs/sitemap`, `nuxt-schema-org`), Vue 3, Vite 8 (на rolldown, **esbuild нет**), Pinia, Vue Router 5.
-В `main` пока прежний Vue SPA (`src/main.ts`, `router/index.ts`, `index.html`, `scripts/prerender.mjs`). Шрифты самохостятся (`src/assets/fonts.css`).
-Скрипты: `npm run dev` (Nuxt, порт 3000, `/api` → `API_PORT`), `npm run build` (`.output/`), `npm run preview` (`node .output/server/index.mjs`),
+**Папки (с 2026-11-02):** `frontend/` — сайт на Nuxt 4 (SSR, `nuxt.config.ts`, `srcDir: 'src'`, страницы `src/pages/`, запуск в браузере `src/plugins/app.client.ts`,
+модули `@pinia/nuxt`, `@nuxtjs/robots`, `@nuxtjs/sitemap`, `nuxt-schema-org`), Vue 3, Vite 8 (на rolldown, **esbuild нет**), Pinia, Vue Router 5; свои `package.json` и `node_modules`.
+`backend/` — сервер NestJS + SQLite, свои `package.json` и `node_modules` (раньше `server/`). В корне: `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов.
+**Все пути `src/...` ниже и в `docs/` считай от `frontend/`** (`src/data/seo.ts` = `frontend/src/data/seo.ts`). Прежний Vue SPA сохранён в ветке `main_old` (старый `main`); основная ветка теперь `main` (бывшая `nuxt`).
+Шрифты самохостятся (`src/assets/fonts.css`).
+Скрипты из корня: `npm run dev` (Nuxt, порт 3000, `/api` → `API_PORT`), `npm run build` (`frontend/.output/`), `npm run preview` (`node .output/server/index.mjs`),
 `npm run type-check` (`nuxt typecheck`), `npm test` (собирает сервер и запускает все тесты, см. `docs/progress.md`). Алиас `@/` → `src/`.
-**Сервер** (`server/`, NestJS + SQLite, свои зависимости): `npm run server:build`, `npm run server`, `npm run server:dev`;
-подробности в `docs/server.md`. Зависимости сервера ставить только внутри `server/` (`npm --prefix server ci`). Корневой
-`node_modules` у проекта **свой** (раньше был ссылкой на соседний проект, отвязан 2026-10-30), пакеты в сайт ставить можно: `npm install <пакет>`,
-после этого `npm test` и `npm run build`. Серверные пакеты внутри `server/`. Для временной проверки коммитов в `git worktree` в нём делай симлинк на
-`/Users/mira/Documents/projects/git_korean/node_modules` и `server/node_modules`.
+**Сервер**: `npm run server:build`, `npm run server`, `npm run server:dev`; подробности в `docs/server.md`.
+Установка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci` (корневой `postinstall` делает `pinia`/`vue` ссылками на копии из `frontend/`, чтобы в тестах была одна копия;
+если ставил корень раньше `frontend`, запусти `node scripts/link-test-deps.mjs`). Пакеты сайта ставь внутри `frontend/`, серверные внутри `backend/`, потом `npm test` и `npm run build`.
+Для временной проверки коммитов в `git worktree` делай там `npm ci` во всех трёх папках (симлинк на `node_modules` не годится: Nuxt собирает в `node_modules/.cache`).
 
-**Хостинг:** владелец сам заходит на сервер и запускает одну команду `bash scripts/deploy.sh` (делает всё ниже сам, проверяет `/api/health`, при ошибке откатывает; `--force`, `--no-restart`). Вручную то же: `git pull`, `npm run build` и, если менялся `server/`,
-`cd server && npm ci && npm run build` с `systemctl restart progress` (**сервер обязательно перезапускать**, иначе сайт новый, а сервер старый); Caddy отдаёт `dist`, сервер работает как служба systemd.
+**Хостинг:** владелец сам заходит на сервер и запускает одну команду `bash scripts/deploy.sh` (делает всё ниже сам, проверяет `/api/health` и сайт, при ошибке откатывает; `--force`, `--no-restart`). Вручную то же: `git pull`, `npm --prefix frontend ci && npm --prefix frontend run build`, `systemctl restart korean-web` и, если менялся `backend/`,
+`cd backend && npm ci && npm run build` с `systemctl restart progress` (**сервер обязательно перезапускать**, иначе сайт новый, а сервер старый); Caddy проксирует сайт на `korean-web` (3000) и `/api` на `progress` (3001), обе службы systemd.
 Подробности и команды — `docs/hosting.md`.
 
 ## Маршруты
@@ -110,6 +111,7 @@
 ## Структура
 
 ```
+(пути от frontend/; backend/ — сервер, tests/, docs/, scripts/ — в корне)
 src/assets/        base.css (токены --bg --ink --muted --gold), study.css (раздел корейского), sky.css (пастельная тема), cabinet.css,
                    fonts.css, home/ (Archivo и Noto Sans KR), about/ (скриншоты для «О платформе», webp)
 src/components/    GlobalSearch (кнопка и окно поиска вне раздела `/korean`), AuthGate (поле токена), Avatar, StudyTimer (таймер занятий), ToastHost (плашки), ConfirmDialog (подтверждение и ввод токена),
@@ -123,7 +125,7 @@ src/composables/   useQueryParam (состояние страницы в адр�
 src/stores/        progress.ts (прогресс, профиль, обложка, время занятий, вход по токену), notes.ts, images.ts, plans.ts, todaySets.ts, timer.ts, toast.ts
 tests/             *.test.mjs (node --test), _load.mjs (загрузчик TS-модулей)
 docs/              подробности по темам (см. таблицу ниже)
-server/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, plans, sets, public, logs, mail, admin, events), свои package.json и node_modules; data/ в .gitignore
+backend/            сервер на NestJS + SQLite (src/: auth, db, progress, guests, notes, images, plans, sets, public, logs, mail, admin, events), свои package.json и node_modules; data/ в .gitignore
 src/lib/           seeded.ts (withSeed: детерминированный Math.random для набора дня), fx.ts (анимации тренажёров на gsap: cascade, pop, shake, drawLine, burst, follow/springBack; учитывает «уменьшить движение»), shortcuts.ts (свои сочетания клавиш и список занятых), guestStorage.ts (гостевой режим: localStorage в памяти), http.ts (fetchT с таймаутом), tags.ts, shareCard.ts
 src/data/          alphabet.ts (буквы, слоги), phrases.ts (фразы дня), seo.ts (заголовки, описания, индексация страниц), history.ts (история изменений), about.ts (слайды «О платформе»), guide.ts (шторка «Что здесь есть»),
                    levels.ts (40 уровней, звания, цель дня), achievements.ts, review.ts (повторение, итог недели), garden.ts, charts.ts, dbView.ts
@@ -141,7 +143,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 | `docs/game.md` | игра «Хлебушек»: режимы, `engine.ts`, «собери предложение» |
 | `docs/progress.md` | сад и коллекция, тренажёры, «Сегодня», хранилище прогресса, кабинет, заметки, доступ по токену, гостевые токены, тесты |
 | `docs/chat.md` | помощник-чат (`/korean/chat`): OpenRouter, ключ в `.env`, инструкция модели, кнопка «Разобрать», тесты |
-| `docs/shop.md` | монетки Юны, магазин, предметы, задания и достижения, награды кнопкой «Получить» (цены и условия в `server/src/progress/coins.ts`) |
+| `docs/shop.md` | монетки Юны, магазин, предметы, задания и достижения, награды кнопкой «Получить» (цены и условия в `backend/src/progress/coins.ts`) |
 | `docs/server.md` | сервер NestJS + SQLite: таблицы базы, API, защита, как запускать, смотреть базу и тестировать |
 | `docs/hosting.md` | сервер на хостинге, Caddy, служба `progress`, усиление защиты (systemd, Caddy, брандмауэр), команды для владельца |
 | `docs/backup.md` | резервные копии: зашифрованный архив на почту, ночной скрипт, проверка и восстановление |
@@ -151,23 +153,23 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 ## Как проверять изменения
 
 - Автопроверки на GitHub (`.github/workflows/ci.yml`: типы, сборка, тесты, `npm audit` на Node 22 и 24) идут после каждого push; Dependabot раз в неделю предлагает обновления.
-- Тесты: `npm test` (460 тестов, около 10 секунд; для новой логики тесты обязательны). Типы и сборка: `npx vue-tsc --build`, `npm run build`.
+- Тесты: `npm test` (460 тестов, около 10 секунд; для новой логики тесты обязательны). Типы и сборка: `npm run type-check`, `npm run build`.
 - Визуально: headless Chromium из кэша Playwright
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   (`--screenshot`, или `--remote-debugging-port` и свой скрипт на Node 24 с `WebSocket` для кликов по странице).
 - Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`; esbuild недоступен).
-- Дев-сервер: `API_PORT=3002 npx nuxt dev --port 3100` (в `main`: `npx vite --port 5199`); после проверки остановить. Демо-данные на демо-сервер: `API=http://127.0.0.1:3002 TOKEN=… node scripts/demo-seed.mjs` (месяц занятий, заметки, календарь, картинки).
-- Вёрстка на телефоне: `TOKEN=токен-демо-сервера WIDTHS=320,390,768 node scripts/check-layout.mjs` (демо-сервер и `API_PORT=3002 npx vite --port 5198`, см. шапку скрипта) ищет всё, что вылезает за край; ничего не печатает, если всё в порядке. Сделал страницу или блок: прогони.
+- Дев-сервер: `API_PORT=3002 npx nuxt dev --port 3100`; после проверки остановить. Демо-данные на демо-сервер: `API=http://127.0.0.1:3002 TOKEN=… node scripts/demo-seed.mjs` (месяц занятий, заметки, календарь, картинки).
+- Вёрстка на телефоне: `TOKEN=токен-демо-сервера WIDTHS=320,390,768 node scripts/check-layout.mjs` (демо-сервер и `API_PORT=3002 npx --prefix frontend nuxt dev --port 5198`, см. шапку скрипта) ищет всё, что вылезает за край; ничего не печатает, если всё в порядке. Сделал страницу или блок: прогони.
 - Битые ссылки: `node scripts/check-links.mjs` (сайт открыт на `BASE`, по умолчанию `http://localhost:5198`; `TOKEN=` демо-сервера — и закрытые страницы, `EXTERNAL=1` — и внешние ссылки, `BASE=https://korean.meeymirita.ru` — боевой сайт) обходит сайт по ссылкам в headless Chromium и печатает 404, битые картинки и файлы, ошибки запросов (API: только 5xx). Chromium ищет сам (Mac: кэш Playwright, Linux: `chromium` из PATH, snap тоже) или `CHROME=путь`.
 - Swagger сервера: `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs` (только локально, на боевом сервере не включать: `docs/server.md`).
 - На macOS нет `timeout` и `tac`; `sleep` в foreground блокируется — ждать через Monitor с циклом `for i in $(seq …)`.
 - Временные скрипты и скриншоты держи вне репозитория и удаляй после проверки.
 - Пересборка истории коммитов: `git rm --cached` попадает в следующий коммит, поэтому перед пересборкой делай
   `git reset <база>` и коммить через `git add -A -- <пути>`; каждый коммит проверяй в временном `git worktree`.
-- Токен (`PROGRESS_TOKEN`) никогда не вставляй в чат и файлы репозитория. Нужен токен для проверки в браузере: читай `server/.env`
+- Токен (`PROGRESS_TOKEN`) никогда не вставляй в чат и файлы репозитория. Нужен токен для проверки в браузере: читай `backend/.env`
   прямо в скрипте, не выводя в чат; владельцу токен в буфер: `sed … | pbcopy`.
 - Скриншоты «О платформе» снимай на **демо-данных**, а не на данных владельца: отдельный сервер
-  (`DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node server/dist/main.js`) и `API_PORT=3002 npx vite --port 5198`, учебные ответы
+  (`DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node backend/dist/main.js`) и `API_PORT=3002 npx --prefix frontend nuxt dev --port 5198`, учебные ответы
   и заметки (без обложки, имени и личных картинок). Потом убери временный сервер и файлы.
 - Тесты, которым нужен `_load.mjs`, обязаны вызывать `after(close)`, иначе `npm test` зависает. Таймеры в тестах двигай по
   секунде (`mock.timers.tick(1000)` в цикле): за один большой прыжок таймер занятий засчитает не больше 10 секунд.
@@ -178,26 +180,26 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 - **Массовая загрузка картинок** `/upload` (`ImagesUploadView.vue`, ссылка из «Кабинет → Картинки»): много файлов, у каждого теги и описание; лимит 40 загрузок в минуту страница пережидает сама.
 - **Сервер:** `/api/health` проверяет базу (503 при поломке, деплой откатит), Swagger на `/api/docs` по `SWAGGER=1` (только локально), скрипт обхода сайта по ссылкам `scripts/check-links.mjs`.
 - **Блокнот на iPad:** рисует только перо (палец листает, переключатель в панели), ластик стирает кусок штриха, а не весь штрих; владелец проверил.
-- **Письмо-подборка** (`server/src/digest/`, `DigestBlock.vue`): слова и предложения на повторение по времени, тема начинается с «Повторение:»; пул слов `server/src/digest/pool.ts` создаёт `node scripts/digest-pool.mjs` (менял словарь или `translations.ts` → запусти, тест следит). Часовой пояс сервера владелец ставит Asia/Novosibirsk.
+- **Письмо-подборка** (`backend/src/digest/`, `DigestBlock.vue`): слова и предложения на повторение по времени, тема начинается с «Повторение:»; пул слов `backend/src/digest/pool.ts` создаёт `node scripts/digest-pool.mjs` (менял словарь или `translations.ts` → запусти, тест следит). Часовой пояс сервера владелец ставит Asia/Novosibirsk.
 - Архив на почте и ночной скрипт копируют больше конфигов. Тесты 509.
 - Закрыто по `правки/ПРАВКИ.md`: видео, проверка 21 режима, шаги 4–5 этапа 3, иконки и позы котика (всё подтвердил владелец); галерея фото Юны отменена. Открыто: проверки на устройствах, анимации «Повторения», слайды «О платформе», остаток эмодзи.
 
 **2026-11-01** (подробно: `docs/changelog.md`, `docs/shop.md`):
-- **Монетки Юны и Магазин** (`/korean/shop`): монетки за верные ответы и серии, 6 предметов для заданий-тренажёров, 3 сюрприза, задания дня и недели, 6 достижений; награды выдаются кнопкой «Получить» (значок числа готовых наград у пункта меню). Сервер: `server/src/progress/coins.ts`, `shop.service.ts`, таблица `coin_log`; сайт: `stores/shop.ts`, `ShopView.vue`, `ShopTab.vue`. Предметы пока не работают в «Найди пару», «Слоги» и игре «Хлебушек». **Деплой на боевой сервер владелец делает сам** (`bash scripts/deploy.sh`; таблица создаётся при старте, 100 монеток подарком, награды за всю историю появятся кнопками).
-- **Режим редактирования картинок** (галочка в «Настройках», по умолчанию выключен): ⚙︎ у любой картинки из `src/assets`, боковая панель с живым предпросмотром, замена видна всем, хранится на сервере (`server/src/siteimg/`, `data/site`, `stores/siteImages.ts`, `SiteImageEditor.vue`); подробно `docs/home-and-theme.md`. Новая картинка в `assets` редактируема сама.
+- **Монетки Юны и Магазин** (`/korean/shop`): монетки за верные ответы и серии, 6 предметов для заданий-тренажёров, 3 сюрприза, задания дня и недели, 6 достижений; награды выдаются кнопкой «Получить» (значок числа готовых наград у пункта меню). Сервер: `backend/src/progress/coins.ts`, `shop.service.ts`, таблица `coin_log`; сайт: `stores/shop.ts`, `ShopView.vue`, `ShopTab.vue`. Предметы пока не работают в «Найди пару», «Слоги» и игре «Хлебушек». **Деплой на боевой сервер владелец делает сам** (`bash scripts/deploy.sh`; таблица создаётся при старте, 100 монеток подарком, награды за всю историю появятся кнопками).
+- **Режим редактирования картинок** (галочка в «Настройках», по умолчанию выключен): ⚙︎ у любой картинки из `src/assets`, боковая панель с живым предпросмотром, замена видна всем, хранится на сервере (`backend/src/siteimg/`, `data/site`, `stores/siteImages.ts`, `SiteImageEditor.vue`); подробно `docs/home-and-theme.md`. Новая картинка в `assets` редактируема сама.
 - Папка идей теперь локальная `правки/ideas/` (вне git).
 - Полный чекап: типы, 460 тестов, вылезания на 320/390/768 исправлены (`scripts/check-layout.mjs` теперь проверяет и магазин), мёртвого кода нет.
 
 **2026-10-31, вечер** (подробно: `docs/changelog.md`, «2026-10-31 (вечер)»; темы по файлам: `docs/data.md`, `docs/game.md`, `docs/progress.md`, `docs/server.md`, `docs/home-and-theme.md`, `docs/hosting.md`):
 - **Видеоуроки в грамматике:** `/korean/grammar` с вкладками «Часть 1» (31 карточка урока 1–30 + 16-1, 16-2) и «Часть 2» (13 карточек), 56 карточек всего, окно карточки на весь экран (описание слева, видео справа, движок между ними), отметка «урок пройден» (`d:`-метки). Видео вне git: на сервере `/var/sites/korean-video/` (Caddy `/video/*`), у владельца `~/Movies/Korean-videos/` (`upload/`, `по-грамматикам/`, `README.md` с таблицей и командой загрузки). Подробно `docs/hosting.md`.
 - **Правки владельца** (список в `правки/ПРАВКИ.md`, всё перенесено в «Сделано»): игра (разбор не закрывается, поиск слов, «?» у режимов, меню в шапке), «Переведи предложение» (разбор всех вариантов), «Сегодня» (набор от даты), история с окном и подробностями, очки слов 5, флаг 🇰🇷, перо на iPad, размер раунда с добавкой, архив на почту каждый день, поиск везде, выезжающее меню, крошки «таблеткой». Не проверено мной на устройствах (список для владельца в конце `правки/ПРАВКИ.md`): перо и ✳ на iPad, Safari, утреннее письмо с архивом.
-- Тесты 433, чистка неиспользуемого кода (`npx vue-tsc --noEmit --noUnusedLocals --noUnusedParameters -p tsconfig.app.json` ничего не выводит).
+- Тесты 433, чистка неиспользуемого кода (`npx vue-tsc --noEmit --noUnusedLocals --noUnusedParameters` (из `frontend/`) ничего не выводит).
 
 **2026-10-31, раньше** (подробно: `docs/changelog.md`, «2026-10-31, крошки…»):
 - **Хлебные крошки** над страницей (`data/korean/crumbs.ts` + `Breadcrumbs.vue` в `KoreanLayout.vue`); вкладки кабинета `?tab=`, «Сегодня» `?tab=list|history`, режим тренажёров `?mode=type` лежат в адресе (`useQueryParam`). Новая страница или вкладка в разделе: допиши её в `crumbs.ts` (тест `tests/crumbs.test.mjs` следит, что у каждой страницы есть крошки).
 - **Клавиши**: «Настройки → Клавиши», ⌘/Ctrl + клавиша для пунктов меню и вкладок кабинета, в базе `settings.keys` (сервер `progress.service.ts`). Занятое нельзя трогать (правило выше).
 - **Перетаскивание и анимации**: `MatchGame.vue` («Найди пару»: линия за курсором), `SyllablesView.vue` (пакет `vuedraggable`), `TaskSession.vue` (вариант тянется на вопрос: «Частицы», «Похожие», «Перевод», «5 минут», «Мои ошибки»). Не сделано: «Собери предложение» в игре (`src/game/engine.ts`, чистый DOM): нужен `sortablejs` или переписывание игры на Vue, решает владелец. Уведомления остаются свои (`useToastStore`), `vue-toastification` владелец отклонил.
-- **Видео-обзор** `public/demo.webm` (10:15, 24 МБ, единственная копия) открывается на главной само при заходе (`HomeView.vue`, `sessionStorage['demo_auto_shown']`, при запрете звука стартует без звука). Как снималось, если понадобится заново: Playwright `recordVideo` (пакет лежит в кэше npx, `~/.npm/_npx/*/node_modules/playwright`) на **боевой сборке** (`vite build --outDir <tmp>` + `vite preview`, не дев-сервер: у дев-сервера свой значок DevTools), демо-сервер (`DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node server/dist/main.js`, `API_PORT=3002`), переходы через `router.push` без перезагрузок, прокрутка через `requestAnimationFrame` до края страницы, перед каждым нажатием возврат наверх. Глюк захвата Chromium: на «Числах» и «Примерах» кадры с серым слоем и увеличенными карточками (сам сайт ни при чём): такие куски надо снять отдельно в чистом контексте и вклеить через `ffmpeg xfade`; склейка и звук (трек `~/Downloads/na_video.mp3` с 35-й секунды, копии через `acrossfade`) собираются одной командой ffmpeg, кодирование VP9 около 10–20 минут. Кадры проверять контактным листом (`fps=1/N,tile=`).
+- **Видео-обзор** `public/demo.webm` (10:15, 24 МБ, единственная копия) открывается на главной само при заходе (`HomeView.vue`, `sessionStorage['demo_auto_shown']`, при запрете звука стартует без звука). Как снималось, если понадобится заново: Playwright `recordVideo` (пакет лежит в кэше npx, `~/.npm/_npx/*/node_modules/playwright`) на **боевой сборке** (`vite build --outDir <tmp>` + `vite preview`, не дев-сервер: у дев-сервера свой значок DevTools), демо-сервер (`DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node backend/dist/main.js`, `API_PORT=3002`), переходы через `router.push` без перезагрузок, прокрутка через `requestAnimationFrame` до края страницы, перед каждым нажатием возврат наверх. Глюк захвата Chromium: на «Числах» и «Примерах» кадры с серым слоем и увеличенными карточками (сам сайт ни при чём): такие куски надо снять отдельно в чистом контексте и вклеить через `ffmpeg xfade`; склейка и звук (трек `~/Downloads/na_video.mp3` с 35-й секунды, копии через `acrossfade`) собираются одной командой ffmpeg, кодирование VP9 около 10–20 минут. Кадры проверять контактным листом (`fps=1/N,tile=`).
 
 **2026-10-30:**
 
@@ -206,7 +208,7 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 
 ## Что осталось / идеи (ещё не сделаны)
 
-- Архитектура: 2026-11-02 владелец попросил Nuxt с полной отрисовкой на сервере — сделано в ветке `nuxt` (см. «Стек и запуск», `docs/hosting.md`); NuxtHub (база, Blob, KV) и Nuxt UI (Tailwind) решили не брать: дублируют NestJS/SQLite и свой дизайн. Раньше (2026-10-31) было решено остаться на Vue SPA + NestJS + SQLite. Nuxt, Postgres, GraphQL и Docker обсуждали и отложили: для закрытого токеном сайта выигрыша мало (SEO открытых страниц закрывает `prerender.mjs`). Можно позже: монорепозиторий `apps/api` + `apps/web` (день работы). Nuxt имеет смысл, если появятся много публичных страниц (слово/урок на своём адресе). Не предлагать смену стека без причины.
+- Архитектура: 2026-11-02 владелец попросил Nuxt с полной отрисовкой на сервере — сделано, ветка `nuxt` стала `main` (см. «Стек и запуск», `docs/hosting.md`); NuxtHub (база, Blob, KV) и Nuxt UI (Tailwind) решили не брать: дублируют NestJS/SQLite и свой дизайн. Раньше (2026-10-31) было решено остаться на Vue SPA + NestJS + SQLite. Nuxt, Postgres, GraphQL и Docker обсуждали и отложили: для закрытого токеном сайта выигрыша мало (SEO открытых страниц закрывает `prerender.mjs`). Можно позже: монорепозиторий `apps/api` + `apps/web` (день работы). Nuxt имеет смысл, если появятся много публичных страниц (слово/урок на своём адресе). Не предлагать смену стека без причины.
 - Грамматика: содержимое пустых карточек уроков 11–30 и всей части 2 (`st: 'soon'`, один блок `tip`) — когда владелец принесёт конспекты; заголовки части 2 взяты из имён файлов видео, сверить с конспектом. Уроки 12 и 13 (числительные): есть страница «Числа» в справочнике.
 - Интервальное повторение по `words[слово].last` уже есть в кабинете; идея: показывать выученное/слабое на страницах «Слова»
   и «Повторение».

@@ -83,7 +83,7 @@ async function clear() {
     <SectionHead id="chat" />
     <p v-if="progress.isGuest" class="cb-empty">Помощник доступен только владельцу сайта.</p>
     <template v-else>
-    <p v-if="!configured" class="cb-empty">Помощник пока не подключён: на сервере нет ключа. Как подключить — в <code>server/.env.example</code>.</p>
+    <p v-if="!configured" class="cb-empty">Помощник пока не подключён: на сервере нет ключа. Как подключить — в <code>backend/.env.example</code>.</p>
     <p class="chat-note">Вопросы уходят в сторонний сервис (OpenRouter), бесплатные модели могут сохранять тексты. Личного не пиши. Бесплатная модель может ошибаться в переводе и примерах. Чтение и разбор корейского считает сайт по своему словарю (кнопка «Разобрать»), сверяй с грамматикой и учителем.</p>
 
     <div ref="box" class="chat-box" aria-live="polite">

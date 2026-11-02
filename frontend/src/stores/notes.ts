@@ -25,7 +25,7 @@ export interface NotesData {
 
 export type NotesStatus = 'local' | 'saving' | 'saved' | 'error'
 
-/** Те же лимиты, что на сервере (server/config.mjs). */
+/** Те же лимиты, что на сервере (backend/config.mjs). */
 export const MAX_NOTES = 200
 export const MAX_TITLE = 100
 export const MAX_TEXT = 5000

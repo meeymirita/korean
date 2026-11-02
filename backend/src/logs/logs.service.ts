@@ -51,7 +51,7 @@ export class LogsService {
     return { source: 'app', configured: true, lines: recent(this.clamp(limit), typeof level === 'string' ? level : undefined, typeof q === 'string' ? q : undefined) }
   }
 
-  /** Caddy: журнал доступа из файла, путь задаётся CADDY_LOG_FILE в server/.env. */
+  /** Caddy: журнал доступа из файла, путь задаётся CADDY_LOG_FILE в backend/.env. */
   caddy(limit?: unknown, level?: unknown, q?: unknown) {
     const file = process.env.CADDY_LOG_FILE
     if (!file) return { source: 'caddy', configured: false, reason: 'not set', lines: [] as LogLine[] }

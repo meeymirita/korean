@@ -8,7 +8,7 @@ import box from '@/assets/icons/shop-box.webp'
 import chest from '@/assets/icons/shop-chest.webp'
 import hints from '@/assets/icons/shop-hints.webp'
 
-/** Предметы и сюрпризы магазина. Цены главные на сервере (`server/src/progress/coins.ts`), тут они для показа. */
+/** Предметы и сюрпризы магазина. Цены главные на сервере (`backend/src/progress/coins.ts`), тут они для показа. */
 export type ItemId = 'hint' | 'fifty' | 'skip' | 'shield' | 'double' | 'second'
 export type SurpriseId = 'box' | 'chest' | 'hints'
 
