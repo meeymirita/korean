@@ -29,6 +29,7 @@
 | `sets/` | история наборов «Сегодня» (`today_sets`) |
 | `siteimg/` | подмена картинок сайта (режим редактирования): таблица `site_images`, файлы в `data/site/`; чтение открыто всем, менять только владелец |
 | `public/` | публичная визитка `/me` и её картинка для соцсетей |
+| `digest/` | письмо-подборка по времени (`meta.digest`, `GET/PUT /api/digest`, `POST /api/digest/test`); слова и предложения в `pool.ts` создаёт `node scripts/digest-pool.mjs` (после правки словаря или переводов), тест `digest-pool` следит |
 | `reminders/` | письмо-напоминание заниматься (`meta.reminder`, проверка раз в минуту, `GET/PUT /api/reminder`, `POST /api/reminder/test`) |
 | `logs/` | журналы Node и Caddy для вкладки «Журналы» |
 | `mail/` | отправка писем (`mail.service.ts`, SMTP) и оформление писем (`templates.ts`: код входа, резервная копия) |
@@ -61,6 +62,7 @@
   и не равны `profile.cover`), удаляются вместе с файлом и миниатюрой при сохранении заметок или профиля, но не раньше чем через сутки.
 - `GET/POST/PATCH/DELETE /api/plans`, `/api/plans/:id/files`, `/api/plans/files/:fid/file|thumb`: записи календаря и файлы к ним; `GET/POST/DELETE /api/sets`: наборы «Сегодня».
 - `GET /api/logs/app|caddy`: журналы (владелец). `GET /api/public/me|og.png|cover` открыты без токена, `GET/PUT /api/public/settings` и `POST /api/public/og` только владельцу.
+- `GET/PUT /api/digest` (`{enabled, time ЧЧ:ММ, words 0–30, sentences 0–15}`), `POST /api/digest/test`: подборка слов и предложений на почту каждый день в своё время (владелец); время по часам сервера (часовой пояс: `timedatectl set-timezone Asia/Novosibirsk` и `systemctl restart progress`).
 - `GET/PUT /api/reminder` (`{enabled, time ЧЧ:ММ}`), `POST /api/reminder/test`: напоминание заниматься (владелец); письмо одно в день, если до выбранного времени нет ответов; адрес `REMINDER_MAIL_TO` или почта защиты кодом.
 - `POST /api/backup/run` (202), `POST /api/backup/test`, `GET /api/backup/status`: полный архив на почту и статус копий (владелец, см. `docs/backup.md`).
 - `GET /api/db/tables`, `GET /api/db/tables/:name?limit&offset&q`: просмотр базы (хэши скрыты, длинные значения обрезаны).

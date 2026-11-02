@@ -183,3 +183,60 @@ export function reminderMail(o: ReminderMailOptions = {}): Mail {
   const text = `Пора заниматься (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nВремя и включение: кабинет, «Настройки».`
   return { subject: '우리말: пора заниматься', text, html }
 }
+
+export interface DigestMailOptions {
+  /** слова: [по-корейски, перевод] */
+  words: [string, string][]
+  /** предложения: [по-корейски, перевод] */
+  sentences: [string, string][]
+  /** время отправки ЧЧ:ММ (для темы и подвала) */
+  time: string
+  site?: string
+}
+
+const plural = (n: number, one: string, few: string, many: string) => (n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many)
+
+/** Письмо-подборка по времени: случайные слова и предложения на повторение. */
+export function digestMail(o: DigestMailOptions): Mail {
+  const site = (o.site || 'https://korean.meeymirita.ru').replace(/\/$/, '')
+  const link = `${site}/korean/review`
+  const nw = o.words.length
+  const ns = o.sentences.length
+  const parts = [nw ? `${nw} ${plural(nw, 'слово', 'слова', 'слов')}` : '', ns ? `${ns} ${plural(ns, 'предложение', 'предложения', 'предложений')}` : ''].filter(Boolean)
+  const what = parts.join(' и ')
+  const lead = `${nw ? `${nw} случайных ${plural(nw, 'слово', 'слова', 'слов')}` : ''}${nw && ns ? ' и ' : ''}${ns ? `${ns} ${plural(ns, 'предложение', 'предложения', 'предложений')}` : ''}. Всё из пройденного.`
+  const label = (t: string) => `<div style="margin:20px 0 10px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8f7cf0">${t}</div>`
+  const wordRows = o.words
+    .map(([k, r]) => `<tr><td style="padding:0 0 6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f1ff;border-radius:12px"><tr><td style="padding:10px 14px;font-size:20px;font-weight:700;color:#37378f">${esc(k)}</td><td align="right" style="padding:10px 14px;font-size:14px;color:#6c70a8">${esc(r)}</td></tr></table></td></tr>`)
+    .join('')
+  const sentRows = o.sentences
+    .map(([k, r]) => `<tr><td style="padding:0 0 8px"><div style="padding:12px 14px;border:1px solid #e4dcff;border-radius:14px"><div style="font-size:17px;font-weight:700;color:#37378f;line-height:1.4">${esc(k)}</div><div style="font-size:13px;color:#6c70a8;margin-top:2px">${esc(r)}</div></div></td></tr>`)
+    .join('')
+  const html = `<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Подборка на сегодня</title></head>
+<body style="margin:0;padding:0;background:#f1eaff">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(what)} на повторение.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1eaff"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:24px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#1e2350">
+  <tr><td style="padding:22px 28px;background:#f4e9fd;background-image:linear-gradient(135deg,#f9e8fb,#e7eaff 55%,#fff0f6)">
+    <span style="font-size:24px;color:#6a5cd0;vertical-align:middle">&#10035;&#xFE0E;</span>
+    <span style="font-size:18px;font-weight:700;letter-spacing:3px;vertical-align:middle;margin-left:8px">우리말</span>
+  </td></tr>
+  <tr><td style="padding:26px 28px 6px">
+    <h1 style="margin:0 0 6px;font-size:22px;line-height:1.2;color:#1e2350">Подборка на сегодня</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:#6c70a8">${esc(lead)}</p>
+    ${nw ? label('Слова') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${wordRows}</table>` : ''}
+    ${ns ? label('Предложения') + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${sentRows}</table>` : ''}
+  </td></tr>
+  <tr><td align="center" style="padding:14px 28px 26px">
+    <a href="${esc(link)}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#37378f;background:#cfe9fb;background-image:linear-gradient(100deg,#f8b9e9,#9de4ff);border-radius:28px;text-decoration:none">Повторить на сайте</a>
+  </td></tr>
+  <tr><td style="padding:16px 28px;background:#fbf8ff;border-top:1px solid #eee9ff;font-size:12px;line-height:1.7;color:#8b8fc4">
+    Приходит в ${esc(o.time)} по часам сервера. Время и число слов меняются в кабинете, в «Настройках». Отвечать на письмо не нужно.
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`
+  const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
+  return { subject: `${o.time} · ${what} на повторение`, text, html }
+}
