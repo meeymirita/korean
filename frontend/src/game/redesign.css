@@ -4,7 +4,7 @@
   --panel: rgba(255, 255, 255, .86);
   --line: rgba(111, 105, 190, .22);
   --glass: rgba(255, 255, 255, .72);
-  display: grid; grid-template-columns: clamp(250px, 19vw, 310px) minmax(0, 1fr); gap: 20px; align-items: start;
+  display: grid; grid-template-columns: calc(clamp(250px, 21vw, 310px)) minmax(0, 1fr); gap: 20px; align-items: start;
   box-sizing: border-box; min-height: 100vh; padding: 14px clamp(12px, 1.6vw, 28px) 14px; position: relative; background-color: #f1dff7;
   background: linear-gradient(to bottom, transparent 68%, #f1dff7 93%), var(--gx-bg) center top -230px / 100% auto fixed no-repeat !important;
 }
