@@ -36,6 +36,7 @@ async function deploy(args = [], env = {}) {
         HEALTH_URL: `http://127.0.0.1:${port}/health`,
         HEALTH_TRIES: '2',
         INSTALL_ROOT_CMD: `${tmp}/call.sh root-install`,
+        INSTALL_SITE_CMD: `${tmp}/call.sh site-install`,
         INSTALL_SERVER_CMD: `${tmp}/call.sh server-install`,
         BUILD_SERVER_CMD: `${tmp}/call.sh server-build`,
         BUILD_SITE_CMD: `${tmp}/call.sh site-build`,
@@ -56,11 +57,11 @@ before(async () => {
   origin = path.join(tmp, 'origin.git')
   work = path.join(tmp, 'work')
   srv = path.join(tmp, 'srv')
-  // подставные команды: пишут в calls.log; «перезапуск» делает сервер нездоровым, если в server/a.txt есть BAD
+  // подставные команды: пишут в calls.log; «перезапуск» делает сервер нездоровым, если в backend/a.txt есть BAD
   writeFileSync(path.join(tmp, 'call.sh'), '#!/bin/bash\necho "$1" >> "$(dirname "$0")/calls.log"\n')
   writeFileSync(
     path.join(tmp, 'restart.sh'),
-    `#!/bin/bash\necho restart >> ${tmp}/calls.log\nif grep -q BAD ${srv}/server/a.txt; then echo down > ${tmp}/health.state; else echo up > ${tmp}/health.state; fi\n`,
+    `#!/bin/bash\necho restart >> ${tmp}/calls.log\nif grep -q BAD ${srv}/backend/a.txt; then echo down > ${tmp}/health.state; else echo up > ${tmp}/health.state; fi\n`,
   )
   chmodSync(path.join(tmp, 'call.sh'), 0o755)
   chmodSync(path.join(tmp, 'restart.sh'), 0o755)
@@ -78,7 +79,7 @@ before(async () => {
   await sh(tmp, `git init -q -b main ${work}`)
   await sh(work, 'git config user.email t@t && git config user.name t')
   copyFileSync(SCRIPT, path.join(work, 'scripts/deploy.sh'))
-  for (const [f, t] of Object.entries({ 'src/a.txt': '1', 'server/a.txt': '1', 'package.json': '{}', 'package-lock.json': '{}', 'server/package-lock.json': '{}' })) {
+  for (const [f, t] of Object.entries({ 'src/a.txt': '1', 'backend/a.txt': '1', 'package.json': '{}', 'package-lock.json': '{}', 'frontend/package.json': '{}', 'frontend/package-lock.json': '{}', 'backend/package-lock.json': '{}' })) {
     mkdirSync(path.dirname(path.join(work, f)), { recursive: true })
     writeFileSync(path.join(work, f), t)
   }
@@ -110,7 +111,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
   })
 
   test('изменился сервер: ставятся пакеты сервера, собирается сервер и сайт, служба перезапускается, сервер отвечает', async () => {
-    await release({ 'server/a.txt': '2' })
+    await release({ 'backend/a.txt': '2' })
     resetCalls()
     const r = await deploy()
     assert.equal(r.code, 0, r.out)
@@ -118,7 +119,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.match(r.out, /Сайт и сервер отвечают/)
   })
 
-  test('изменились пакеты сайта: сначала ставятся они', async () => {
+  test('изменились пакеты корня (тесты): ставятся они, сайт пересобирается', async () => {
     await release({ 'package-lock.json': '{"v":2}' })
     resetCalls()
     const r = await deploy()
@@ -126,9 +127,17 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.deepEqual(calls(), ['root-install', 'site-build', 'site-restart'])
   })
 
+  test('изменились пакеты сайта (frontend/): перед сборкой ставятся они', async () => {
+    await release({ 'frontend/package-lock.json': '{"v":2}' })
+    resetCalls()
+    const r = await deploy()
+    assert.equal(r.code, 0, r.out)
+    assert.deepEqual(calls(), ['site-install', 'site-build', 'site-restart'])
+  })
+
   test('неудачный выпуск: сервер не ответил, скрипт сам откатывается на прошлую версию и заканчивается ошибкой', async () => {
     const before = await sh(srv, 'git rev-parse HEAD')
-    await release({ 'server/a.txt': 'BAD' })
+    await release({ 'backend/a.txt': 'BAD' })
     resetCalls()
     const r = await deploy()
     assert.notEqual(r.code, 0, 'должна быть ошибка')
@@ -138,7 +147,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.equal(calls().filter(c => c === 'restart').length, 2, 'служба перезапущена и после отката')
     assert.match(r.out, /Откат выполнен, сервер отвечает/)
     // после отката следующий выпуск (исправленный) ставится нормально
-    await release({ 'server/a.txt': '3' })
+    await release({ 'backend/a.txt': '3' })
     resetCalls()
     const ok = await deploy()
     assert.equal(ok.code, 0, ok.out)
@@ -155,7 +164,8 @@ describe('скрипт обновления на сервере (scripts/deploy.
 
   test('файл блокировки, переписанный npm на сервере, возвращается как в git, и обновление идёт дальше', async () => {
     writeFileSync(path.join(srv, 'package-lock.json'), '{"переписал":"npm"}')
-    writeFileSync(path.join(srv, 'server/package-lock.json'), '{"переписал":"npm"}')
+    writeFileSync(path.join(srv, 'frontend/package-lock.json'), '{"переписал":"npm"}')
+    writeFileSync(path.join(srv, 'backend/package-lock.json'), '{"переписал":"npm"}')
     await release({ 'src/c.txt': 'y' })
     resetCalls()
     const r = await deploy()
@@ -181,7 +191,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     resetCalls()
     const r = await deploy(['--force'])
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['root-install', 'server-install', 'server-build', 'site-build', 'restart', 'site-restart'])
+    assert.deepEqual(calls(), ['root-install', 'site-install', 'server-install', 'server-build', 'site-build', 'restart', 'site-restart'])
   })
 
   test('неизвестный параметр отклоняется', async () => {

@@ -5,7 +5,7 @@
 # при изменении сервера API собирает и перезапускает и его, проверяет, что оба отвечают, и, если нет, сам возвращает прежнюю версию.
 #
 # Параметры (необязательные):
-#   --force        собрать и перезапустить сервер, даже если в server/ ничего не менялось
+#   --force        собрать и перезапустить сервер, даже если в backend/ ничего не менялось
 #   --no-restart   не перезапускать службу (только собрать)
 # Переменные окружения (нужны тестам, на сервере обычно не трогаешь):
 #   RESTART_CMD         как перезапускать сервер (по умолчанию: systemctl restart progress)
@@ -14,7 +14,7 @@
 #   SITE_RESTART_CMD    как перезапускать сайт (по умолчанию: systemctl restart korean-web; пусто — не перезапускать)
 #   SITE_HEALTH_URL     адрес проверки сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
 #   GIT_PULL=0          не делать git pull (код уже на месте)
-#   INSTALL_ROOT_CMD, INSTALL_SERVER_CMD, BUILD_SERVER_CMD, BUILD_SITE_CMD — свои команды вместо npm
+#   INSTALL_ROOT_CMD, INSTALL_SITE_CMD, INSTALL_SERVER_CMD, BUILD_SERVER_CMD, BUILD_SITE_CMD — свои команды вместо npm
 #   NOTIFY_TELEGRAM_TOKEN и NOTIFY_TELEGRAM_CHAT — отправить результат в Telegram (по желанию; задать в /etc/korean-deploy.env)
 set -uo pipefail
 
@@ -27,9 +27,10 @@ HEALTH_TRIES=${HEALTH_TRIES:-20}
 SITE_RESTART_CMD=${SITE_RESTART_CMD-systemctl restart korean-web}
 SITE_HEALTH_URL=${SITE_HEALTH_URL:-http://127.0.0.1:3000/robots.txt}
 INSTALL_ROOT_CMD=${INSTALL_ROOT_CMD:-npm ci}
-INSTALL_SERVER_CMD=${INSTALL_SERVER_CMD:-npm --prefix server ci}
-BUILD_SERVER_CMD=${BUILD_SERVER_CMD:-npm --prefix server run build}
-BUILD_SITE_CMD=${BUILD_SITE_CMD:-npm run build}
+INSTALL_SITE_CMD=${INSTALL_SITE_CMD:-npm --prefix frontend ci}
+INSTALL_SERVER_CMD=${INSTALL_SERVER_CMD:-npm --prefix backend ci}
+BUILD_SERVER_CMD=${BUILD_SERVER_CMD:-npm --prefix backend run build}
+BUILD_SITE_CMD=${BUILD_SITE_CMD:-npm --prefix frontend run build}
 
 FORCE=0
 RESTART=1
@@ -70,7 +71,7 @@ site_healthy() {
 }
 
 # npm на сервере (особенно старый) любит переписать package-lock.json: это не правки владельца, возвращаем файлы блокировки как в git
-for f in package-lock.json server/package-lock.json; do
+for f in package-lock.json frontend/package-lock.json backend/package-lock.json; do
   if git ls-files --error-unmatch "$f" >/dev/null 2>&1 && ! git diff --quiet -- "$f"; then
     echo "Возвращаю $f как в git (его изменил npm на сервере)"
     git checkout -- "$f"
@@ -106,19 +107,24 @@ rollback() {
   say "ОТКАТ на $(git rev-parse --short "$PREV")"
   git reset --hard "$PREV" >/dev/null
   { $INSTALL_SERVER_CMD && $BUILD_SERVER_CMD; } >/dev/null 2>&1 || echo "(пересборка сервера при откате не удалась)"
-  $BUILD_SITE_CMD >/dev/null 2>&1 || echo "(пересборка сайта при откате не удалась)"
+  { $INSTALL_SITE_CMD && $BUILD_SITE_CMD; } >/dev/null 2>&1 || echo "(пересборка сайта при откате не удалась)"
   [ "$RESTART" = 1 ] && $RESTART_CMD
   [ "$RESTART" = 1 ] && [ -n "$SITE_RESTART_CMD" ] && $SITE_RESTART_CMD
   if healthy; then echo "Откат выполнен, сервер отвечает."; else echo "ВНИМАНИЕ: после отката сервер не отвечает, смотри: journalctl -u progress -n 30 --no-pager"; fi
 }
 
 if [ "$FORCE" = 1 ] || changed '^(package\.json|package-lock\.json)$'; then
-  say "Пакеты сайта"
-  $INSTALL_ROOT_CMD || { rollback; fail "не удалось поставить пакеты сайта"; }
+  say "Пакеты тестов (корень)"
+  $INSTALL_ROOT_CMD || { rollback; fail "не удалось поставить пакеты корня"; }
+fi
+
+if [ "$FORCE" = 1 ] || changed '^frontend/(package\.json|package-lock\.json)$'; then
+  say "Пакеты сайта (frontend/)"
+  $INSTALL_SITE_CMD || { rollback; fail "не удалось поставить пакеты сайта"; }
 fi
 
 SERVER_CHANGED=0
-if [ "$FORCE" = 1 ] || changed '^server/'; then SERVER_CHANGED=1; fi
+if [ "$FORCE" = 1 ] || changed '^backend/'; then SERVER_CHANGED=1; fi
 
 if [ "$SERVER_CHANGED" = 1 ]; then
   say "Сервер: пакеты и сборка"
