@@ -32,6 +32,7 @@ const TRAINER: Record<string, { source: string; mode?: string }> = {
   pairs: { source: 'trainer', mode: 'pairs' },
   syllables: { source: 'trainer', mode: 'syllables' },
   particles: { source: 'trainer', mode: 'particles' },
+  rule: { source: 'trainer', mode: 'rule' },
   translate: { source: 'trainer', mode: 'translate' },
   quick: { source: 'quick' },
 }

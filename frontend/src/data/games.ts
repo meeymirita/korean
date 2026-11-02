@@ -3,7 +3,7 @@
  * Режимы движка «Хлебушек» (word, rev, form…) и тренажёры (TOOL_IDS) показываются на месте каталога, сверху ссылка «К списку игр».
  */
 /** Игры-тренажёры (компоненты Vue); остальные id в каталоге это режимы движка «Хлебушек». */
-export const TOOL_IDS = ['match', 'quick', 'particles', 'pairs', 'translate', 'syllables'] as const
+export const TOOL_IDS = ['match', 'quick', 'particles', 'pairs', 'translate', 'syllables', 'rule'] as const
 
 export interface GameCard {
   id: string
@@ -141,6 +141,7 @@ export const GAME_GROUPS: GameGroup[] = [
 export const GAME_MIX: GameCard[] = [
   { id: 'mix', name: 'Микс', desc: 'Все режимы вперемешку', icon: 'dice', to: '/game/home?game=mix' },
   { id: 'quick', name: '5 минут', desc: 'Десять заданий вперемешку', icon: 'rocket', to: '/game/home?game=quick' },
+  { id: 'rule', name: 'Потренировать правило', desc: 'Выбери карточку грамматики: десять заданий из её примеров', icon: 'grammar', to: '/game/home?game=rule' },
 ]
 
 /** Все игры списком (для счётчика и поиска). */

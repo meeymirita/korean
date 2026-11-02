@@ -2,6 +2,8 @@
 import Icon from '@/components/Icon.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { trainableRule } from '@/data/korean/rule-tasks'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { F, blk } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
@@ -12,6 +14,15 @@ import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { photoOf } from '@/data/korean/grammarPhotos'
 
 const { current, close, prev, next } = useGrammarModal()
+const router = useRouter()
+/** «Потренировать это правило»: серия заданий из примеров карточки; игры открыты тем, кто вошёл (владелец и гости). */
+const canTrain = computed(() => progress.unlocked && !!current.value && trainableRule(current.value))
+function train() {
+  const id = current.value?.id
+  if (!id) return
+  close()
+  void router.push({ path: '/game/home', query: { game: 'rule', g: id } })
+}
 const { share, busy } = useShareCard()
 const progress = useProgressStore()
 /** Отметка «урок пройден» ведёт сам владелец (у гостя записи не сохраняются). */
@@ -106,6 +117,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
             <span class="pill" :class="isOk ? 's' : 'n'">
               {{ isOk ? 'пройдено' : 'ещё рано' }}
             </span>
+            <button v-if="canTrain" type="button" class="pass train" title="Игра из примеров этой карточки" @click="train">Потренировать это правило</button>
             <button v-if="photo" type="button" class="pass ph" title="Показать фото Юны к этому правилу" @click="viewer = photo!">Фото</button>
             <button v-if="owner && current.st === 'ok'" type="button" class="pass" :class="{ on: unmarked }" :aria-pressed="unmarked" :title="unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»: карточка не пройдена'" @click="progress.toggleMark('u', current.id)">
               {{ unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»' }}
