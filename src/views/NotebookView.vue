@@ -352,6 +352,7 @@ function paint() {
   const g = c.getContext('2d')!
   drawTpl(g, sh.tpl)
   for (const st of [...sh.strokes, ...(drawing ? [drawing] : [])]) { g.fillStyle = st.c; g.fill(pathOf(st)) }
+  if (erasing && eraserAt) { g.beginPath(); g.arc(eraserAt[0], eraserAt[1], eraserR(), 0, 7); g.strokeStyle = '#ee6fa9'; g.lineWidth = 1.5; g.stroke() }
 }
 /** Маленькая копия листа в панели «Страницы». */
 function thumb() {
@@ -364,33 +365,111 @@ function pos(e: PointerEvent): [number, number, number] {
 }
 const changed = () => { strokesDirty = true; touch() }
 function snapshot() { undo.push([...sheet.value!.strokes]); redo.length = 0 }
-/** Ластик стирает штрихи целиком, до которых дотронулся: фон листа остаётся. */
-function erase(x: number, y: number) {
-  const sh = sheet.value!
-  const r = size.value * 2 + 8
-  const keep = sh.strokes.filter(st => !st.p.some(([px, py]) => Math.hypot(px - x, py - y) < r + st.w))
-  if (keep.length !== sh.strokes.length) { sh.strokes = keep; changed(); paint() }
+/** Ластик стирает только кусок под собой: штрих режется на части, остальное остаётся. */
+type Pt = [number, number, number]
+function eraserR() { return 6 + size.value * 2 }
+function distToSeg(px: number, py: number, a: [number, number], b: [number, number]) {
+  const dx = b[0] - a[0], dy = b[1] - a[1]
+  const l2 = dx * dx + dy * dy
+  const t = l2 ? Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / l2)) : 0
+  return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy))
 }
+/** Добавляет точки на длинных отрезках штриха (шаг около 2), чтобы резать его аккуратно. */
+function densify(p: Pt[]): Pt[] {
+  const out: Pt[] = []
+  p.forEach((q, i) => {
+    const prev = p[i - 1]
+    if (prev) {
+      const n = Math.ceil(Math.hypot(q[0] - prev[0], q[1] - prev[1]) / 2)
+      for (let k = 1; k < n; k++) {
+        const t = k / n
+        out.push([prev[0] + (q[0] - prev[0]) * t, prev[1] + (q[1] - prev[1]) * t, prev[2] + (q[2] - prev[2]) * t])
+      }
+    }
+    out.push(q)
+  })
+  return out
+}
+function erasePath(a: [number, number], b: [number, number]) {
+  const sh = sheet.value!
+  const r = eraserR()
+  const x0 = Math.min(a[0], b[0]) - r, x1 = Math.max(a[0], b[0]) + r
+  const y0 = Math.min(a[1], b[1]) - r, y1 = Math.max(a[1], b[1]) + r
+  let any = false
+  const out: Stroke[] = []
+  for (const st of sh.strokes) {
+    if (!st.p.some(([px, py]) => px >= x0 - 3 && px <= x1 + 3 && py >= y0 - 3 && py <= y1 + 3) && !boxCrosses(st.p, x0, y0, x1, y1)) { out.push(st); continue }
+    const dense = densify(st.p)
+    const hit = dense.map(([px, py]) => distToSeg(px, py, a, b) < r)
+    if (!hit.some(Boolean)) { out.push(st); continue }
+    any = true
+    let run: Pt[] = []
+    dense.forEach((q, i) => {
+      if (hit[i]) { if (run.length > 1) out.push({ c: st.c, w: st.w, p: run }); run = [] } else run.push(q)
+    })
+    if (run.length > 1) out.push({ c: st.c, w: st.w, p: run })
+  }
+  if (any) { sh.strokes = out; changed(); schedulePaint() }
+}
+/** Штрих может пройти через область ластика между двумя далёкими точками: проверяем отрезки. */
+function boxCrosses(p: Pt[], x0: number, y0: number, x1: number, y1: number) {
+  for (let i = 1; i < p.length; i++) {
+    const m = p[i - 1]!, n = p[i]!
+    if (Math.max(m[0], n[0]) < x0 || Math.min(m[0], n[0]) > x1 || Math.max(m[1], n[1]) < y0 || Math.min(m[1], n[1]) > y1) continue
+    return true
+  }
+  return false
+}
+
+/** Рисуют пером и мышью; палец и ладонь по умолчанию только листают (иначе кисть руки оставляет мусор). */
+const penOnly = ref(true)
+try { penOnly.value = localStorage.getItem('nb_pen_only') !== '0' } catch { /* без памяти браузера */ }
+function togglePenOnly() {
+  penOnly.value = !penOnly.value
+  try { localStorage.setItem('nb_pen_only', penOnly.value ? '1' : '0') } catch { /* ничего */ }
+}
+let activeId: number | null = null
+let eraserAt: [number, number] | null = null
+let raf = 0
+function schedulePaint() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; paint() }) }
 function down(e: PointerEvent) {
-  if (!sheet.value) return
+  if (!sheet.value || activeId !== null) return // второе касание во время штриха (ладонь) не считаем
+  if (e.pointerType === 'touch' && penOnly.value) return
+  if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 5) return
+  activeId = e.pointerId
   cv.value!.setPointerCapture(e.pointerId)
   const p = pos(e)
   snapshot()
-  if (tool.value === 'eraser') { erasing = true; erase(p[0], p[1]); return }
+  // ластик на конце Apple Pencil (buttons & 32) стирает, даже если выбрана ручка
+  if (tool.value === 'eraser' || (e.buttons & 32)) { erasing = true; eraserAt = [p[0], p[1]]; erasePath([p[0], p[1]], [p[0], p[1]]); schedulePaint(); return }
   drawing = { c: color.value, w: size.value + 1, p: [p] }
+  schedulePaint()
 }
 function move(e: PointerEvent) {
-  if (erasing) { const p = pos(e); erase(p[0], p[1]); return }
-  if (!drawing) return
-  drawing.p.push(pos(e)); paint()
+  if (e.pointerId !== activeId) return
+  const evs = e.getCoalescedEvents?.() ?? []
+  for (const ev of evs.length ? evs : [e]) {
+    const p = pos(ev)
+    if (erasing) { const from = eraserAt ?? [p[0], p[1]]; eraserAt = [p[0], p[1]]; erasePath(from, [p[0], p[1]]); continue }
+    const last = drawing?.p[drawing.p.length - 1]
+    if (drawing && (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) >= 0.8)) drawing.p.push(p)
+  }
+  schedulePaint()
 }
-function up() {
+function finish(e: PointerEvent, cancelled: boolean) {
+  if (e.pointerId !== activeId) return
+  activeId = null
   erasing = false
-  if (drawing && sheet.value) { sheet.value.strokes.push(drawing); drawing = null; changed(); paint() }
+  eraserAt = null
+  if (drawing && sheet.value && !cancelled) { sheet.value.strokes.push(drawing); changed() }
+  drawing = null
+  paint()
   const top = undo[undo.length - 1]
   if (top && sheet.value && top.length === sheet.value.strokes.length && top.every((s, i) => s === sheet.value!.strokes[i])) undo.pop() // ничего не изменилось
   thumb()
 }
+const up = (e: PointerEvent) => finish(e, false)
+const cancel = (e: PointerEvent) => finish(e, true)
 function stepBack() { const prev = undo.pop(); if (prev && sheet.value) { redo.push([...sheet.value.strokes]); sheet.value.strokes = prev; changed(); paint(); thumb() } }
 function stepForward() { const next = redo.pop(); if (next && sheet.value) { undo.push([...sheet.value.strokes]); sheet.value.strokes = next; changed(); paint(); thumb() } }
 /** Картинка листа для экспорта: сам лист, котик в углу (как на экране) и внизу полоса с названием, путём и датой. */
@@ -582,12 +661,13 @@ onMounted(makeThumbs)
               <div class="nb-tools">
                 <button :class="{ on: tool === 'pen' }" title="Ручка" @click="tool = 'pen'"><img :src="ic('pen')" alt="" /></button>
                 <button :class="{ on: tool === 'eraser' }" title="Ластик" @click="tool = 'eraser'"><img :src="ic('eraser')" alt="" /></button>
+                <button :class="['nb-hand', { on: penOnly }]" :title="penOnly ? 'Рисует только перо; палец листает. Нажми, чтобы рисовать и пальцем' : 'Рисует и палец. Нажми, чтобы рисовало только перо'" @click="togglePenOnly"><span>{{ penOnly ? 'только перо' : 'и палец' }}</span></button>
                 <button :class="{ on: textOpen }" title="Текст к листу" @click="textOpen = !textOpen"><img :src="ic('text')" alt="" /></button>
               </div>
               <div class="nb-paper">
                 <div class="nb-scroll">
-                  <canvas ref="cv" class="nb-canvas" :width="W" :height="H" :style="{ width: zoom + '%' }"
-                    @pointerdown.prevent="down" @pointermove="move" @pointerup="up" @pointercancel="up" />
+                  <canvas ref="cv" :class="['nb-canvas', { 'pen-only': penOnly }]" :width="W" :height="H" :style="{ width: zoom + '%' }"
+                    @pointerdown.prevent="down" @pointermove="move" @pointerup="up" @pointercancel="cancel" @contextmenu.prevent @selectstart.prevent />
                 </div>
                 <img :src="catSleep" class="nb-paper-cat" alt="" />
               </div>
@@ -762,7 +842,10 @@ onMounted(makeThumbs)
 .nb-tools img { width: 30px; height: 30px; object-fit: contain; }
 .nb-paper { position: relative; min-height: 0; border-radius: 16px; background: #fff; border: 1px solid rgba(143, 111, 224, .25); box-shadow: 0 6px 20px rgba(130, 100, 200, .12); overflow: hidden; }
 .nb-scroll { height: 100%; overflow: auto; }
-.nb-canvas { display: block; touch-action: none; cursor: crosshair; background: #fff; }
+.nb-canvas { display: block; touch-action: none; cursor: crosshair; background: #fff; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.nb-canvas.pen-only { touch-action: pan-x pan-y pinch-zoom; }
+.nb-paper, .nb-scroll { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.nb-tools .nb-hand span { font-size: 10px; line-height: 1.1; text-align: center; color: var(--mute); }
 .nb-paper-cat { clip-path: inset(0 12% 0 0); position: absolute; right: 14px; bottom: 8px; width: 120px; pointer-events: none; }
 .nb-pages { display: flex; flex-direction: column; gap: 8px; align-self: start; padding: 10px; border-radius: 18px; background: rgba(246, 240, 255, .6); }
 .nb-pages-head { display: flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap; }
