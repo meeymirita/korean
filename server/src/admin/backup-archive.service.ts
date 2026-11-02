@@ -14,6 +14,15 @@ import { Db } from '../db/db.service'
 import { MailService } from '../mail/mail.service'
 import { backupMail } from '../mail/templates'
 
+/** Конфиги сервера, которые кладём в архив (что не прочиталось, пропускается). */
+const CONFIG_FILES = [
+  '/etc/caddy/Caddyfile',
+  '/etc/systemd/system/progress.service',
+  '/etc/systemd/system/korean-backup.service',
+  '/etc/systemd/system/korean-backup.timer',
+  '/etc/korean-backup.env',
+]
+const CONFIG_DIRS = ['/etc/caddy/conf.d', '/etc/systemd/system/progress.service.d']
 const OUT = path.join(DATA_DIR, 'export')
 const FILE = path.join(DATA_DIR, 'backup-archive.json')
 /** Одно письмо — не больше 18 МБ вложения (у Яндекса лимит около 30 МБ, а вложение растёт на треть при пересылке), частей не больше 5. */
@@ -208,13 +217,27 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       // конфиги сервера, без которых заново не поднять (если процесс может их прочитать)
       const cfg = path.join(stage, 'config')
       const have: string[] = []
-      for (const f of ['/etc/caddy/Caddyfile', '/etc/systemd/system/progress.service']) {
+      for (const f of CONFIG_FILES) {
         try {
           mkdirSync(cfg, { recursive: true, mode: 0o700 })
           writeFileSync(path.join(cfg, path.basename(f)), readFileSync(f), { mode: 0o600 })
           have.push(path.basename(f))
         } catch {
           /* нет файла или нет прав: так бывает на чужой машине */
+        }
+      }
+      for (const d of CONFIG_DIRS) {
+        try {
+          for (const n of readdirSync(d)) {
+            const file = path.join(d, n)
+            if (!statSync(file).isFile()) continue
+            const to = `${path.basename(d)}-${n}`
+            mkdirSync(cfg, { recursive: true, mode: 0o700 })
+            writeFileSync(path.join(cfg, to), readFileSync(file), { mode: 0o600 })
+            have.push(to)
+          }
+        } catch {
+          /* папки нет или нет прав */
         }
       }
       // инструкция восстановления лежит рядом с архивом: на новом сервере репозитория ещё нет

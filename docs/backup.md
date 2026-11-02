@@ -47,7 +47,7 @@ node --no-warnings -e "const {DatabaseSync}=require('node:sqlite');const d=new D
 
 ## 2. Ночная копия на сервере
 
-`scripts/backup.sh`: целостный снимок базы (с проверкой `integrity_check`), файлы жёсткими ссылками (одинаковые за разные дни хранятся один раз), конфиги Caddy и службы.
+`scripts/backup.sh`: целостный снимок базы (с проверкой `integrity_check`), файлы жёсткими ссылками (одинаковые за разные дни хранятся один раз), конфиги Caddy (Caddyfile, conf.d), службы progress и таймера копий, `/etc/korean-backup.env`.
 Хранит последние 14 копий в `/var/backups/korean`, пишет итог в `server/data/backup-status.json`.
 
 Включить одной командой (от root, на сервере): `sudo bash scripts/install-backup-timer.sh --now`. Сначала можно посмотреть, что будет создано: `bash scripts/install-backup-timer.sh --print`.

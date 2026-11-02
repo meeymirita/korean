@@ -69,8 +69,11 @@ done
 
 # 3. настройки: секреты и конфиги, без которых заново не поднять (права только для владельца)
 [ -f "$ROOT/server/.env" ] && cp "$ROOT/server/.env" "$WORK/config/server.env"
-for f in /etc/caddy/Caddyfile /etc/systemd/system/progress.service; do
+for f in /etc/caddy/Caddyfile /etc/systemd/system/progress.service /etc/systemd/system/korean-backup.service /etc/systemd/system/korean-backup.timer /etc/korean-backup.env; do
   [ -r "$f" ] && cp "$f" "$WORK/config/$(basename "$f")" || true
+done
+for d in /etc/caddy/conf.d /etc/systemd/system/progress.service.d; do
+  [ -d "$d" ] && for f in "$d"/*; do [ -f "$f" ] && [ -r "$f" ] && cp "$f" "$WORK/config/$(basename "$d")-$(basename "$f")"; done || true
 done
 chmod -R go-rwx "$WORK/config"
 
