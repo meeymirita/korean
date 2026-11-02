@@ -116,9 +116,9 @@ function toggleTopic(id: string) {
 
 const GAME_GROUPS: [string, string][] = [
   ['v', 'Глаголы'], ['a', 'Прилагательные'], ['q', 'Вопросительные'], ['p', 'Местоимения'],
-  ['d', 'Наречия и время'], ['n', 'Числа и счёт'], ['l', 'Над / под / рядом'], ['s', 'Существительные'],
+  ['d', 'Наречия и время'], ['n', 'Числа и счёт'], ['l', 'Над / под / рядом'], ['s', 'Существительные'], ['w', 'Время и дни'],
 ]
-const GAME_DEFAULT: Record<string, number> = { v: 1, a: 1, q: 1, p: 1, d: 1, n: 1, l: 1, s: 0 }
+const GAME_DEFAULT: Record<string, number> = { v: 1, a: 1, q: 1, p: 1, d: 1, n: 1, l: 1, s: 0, w: 1 }
 const gameCats = computed(() => ({ ...GAME_DEFAULT, ...(settings.value.gameCats ?? {}) }))
 function toggleGame(id: string) {
   const next = { ...gameCats.value, [id]: gameCats.value[id] ? 0 : 1 }

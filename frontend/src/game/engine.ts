@@ -16,12 +16,13 @@ export function initGame(hooks) {
 const CATS=[
   {id:'v',name:'Глаголы'},{id:'a',name:'Прилагательные'},{id:'q',name:'Вопросительные'},
   {id:'p',name:'Местоимения'},{id:'d',name:'Наречия и время'},{id:'n',name:'Числа и счёт'},
-  {id:'l',name:'Над / под / рядом'},{id:'s',name:'Существительные'}
+  {id:'l',name:'Над / под / рядом'},{id:'s',name:'Существительные'},
+  {id:'w',name:'Время и дни'}
 ];
-const W={v:[],a:[],q:[],p:[],d:[],n:[],l:[],s:[]};
+const W={v:[],a:[],q:[],p:[],d:[],n:[],l:[],s:[],w:[]};
 D.V.forEach(r=>W.v.push({ko:r[0],rd:r[1],ru:r[2],pres:r[3],past:r[4],note:r[5],cat:'v'}));
 D.A.forEach(r=>W.a.push({ko:r[0],rd:r[1],ru:r[2],pres:r[3],past:r[4],note:r[5],cat:'a'}));
-['Q:q','P:p','D:d','N:n','L:l','S:s'].forEach(s=>{const [k,c]=s.split(':');D[k].forEach(r=>W[c].push({ko:r[0],rd:r[1],ru:r[2],cat:c}));});
+['Q:q','P:p','D:d','N:n','L:l','S:s','W:w'].forEach(s=>{const [k,c]=s.split(':');D[k].forEach(r=>W[c].push({ko:r[0],rd:r[1],ru:r[2],cat:c}));});
 const ALLW=Object.values(W).flat();
 const FORMS=W.v.concat(W.a);
 const byKo={};W.v.forEach(e=>byKo[e.ko]=e);
@@ -34,7 +35,9 @@ const MODES=[
   {id:'spot',icon:'🔍',name:'Найди верное'},{id:'type',icon:'⌨️',name:'Напиши правильную форму'},
   {id:'err',icon:'🕵️',name:'Найди ошибку'},{id:'pair',icon:'⚖️',name:'Пара или нет'},
   {id:'ord',icon:'↔️',name:'Порядок слов'},{id:'dlg',icon:'💬',name:'Диалог'},
-  {id:'han',icon:'ㅎ',name:'Хангыль-блиц'}
+  {id:'han',icon:'ㅎ',name:'Хангыль-блиц'},
+  {id:'days',icon:'📅',name:'Дни недели'},{id:'when',icon:'🕒',name:'Когда? (에)'},{id:'too',icon:'➕',name:'Тоже (도)'},
+  {id:'num',icon:'🔢',name:'Числа'},{id:'price',icon:'💴',name:'Сколько стоит?'},{id:'count',icon:'🥤',name:'Счётные слова'}
 ];
 
 /* ---------- подсказки по режимам: кнопка «?» рядом с заданием раскрывает, что делать, и пример ---------- */
@@ -51,7 +54,13 @@ const MODE_HELP={
   pair:['Из двух вариантов выбери верный: частицу, которая подходит к слову, или нужную форму.','Пример: 책 ___ → 을 (после согласной), а 커피 ___ → 를 (после гласной).'],
   ord:['Слово нужно поставить на своё место в предложении: выбери вариант, где порядок слов правильный. В корейском глагол стоит в конце.','Пример: «Я иду в школу» → 저는 학교에 가요, а не 가요 저는 학교에.'],
   dlg:['Прочитай реплику собеседника и выбери подходящий ответ.','Пример: «이름이 뭐예요?» → «저는 나나예요.»'],
-  han:['Хангыль-блиц: собери слог из букв или выбери, как слог читается.','Пример: ㅂ + ㅏ → 바 [па/ба]; 가 читается «ка/га».']
+  han:['Хангыль-блиц: собери слог из букв или выбери, как слог читается.','Пример: ㅂ + ㅏ → 바 [па/ба]; 가 читается «ка/га».'],
+  days:['Дни недели, части дня и недели. Выбери перевод или корейское слово; иногда нужно сказать, какой день будет завтра или был вчера, или будни это или выходные.','Пример: 금요일 → «пятница»; сегодня 수요일, завтра → 목요일.'],
+  when:['Частица 에 («когда?») ставится к слову, которое отвечает на вопрос «когда»: дни недели, утро, вечер, выходные. Но 오늘, 내일, 지금, 언제 без 에. Выбери нужную частицу или «ничего не нужно».','Пример: 금요일___ 친구를 만나요 → 에; 오늘___ 학교에 가요 → без частицы.'],
+  too:['Частица 도 значит «тоже». Она ставится вместо 은/는, 이/가, 을/를 (вместе с ними не бывает), а с 에 и 에서 даёт 에도 и 에서도.','Пример: 저는 학생이에요. 나나 씨도 학생이에요; 토요일에 만나요. 일요일에도 만나요.'],
+  num:['Числа бывают двух видов: корейские (하나, 둘, 셋…) для счёта вещей и китайские (일, 이, 삼…) для цен, дат, номеров. Выбери число или цифру.','Пример: 3 по-корейски (счёт) → 셋; 일곱 → 7; 100 → 백.'],
+  price:['Цены читаются китайскими числами + 원: 천 (1000), 만 (10 000). Перед 만 цифру 일 не говорят. Выбери верное чтение цены или цену.','Пример: 3 500원 → 삼천오백 원; 10 000원 → 만 원.'],
+  count:['Перед счётным словом (개, 병, 잔, 그릇) стоит корейское число в короткой форме: 한, 두, 세, 네. Выбери счётное слово или форму числа.','Пример: 물 한 병 주세요; 사과 세 개.']
 };
 function labelWithHelp(q){
   const wrap=el('div','labelrow');
@@ -79,7 +88,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0},reading:true,tense:'both',
+  mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
@@ -413,10 +422,161 @@ function genHan(){
     options:opts,correct:opts.findIndex(o=>o.text===h.rd),right:h.rd,explain:[h.ch+' = '+h.hint+' → '+h.rd,
     (h.v===4||h.v===8)?'ㅓ — среднее «о» (머, 서), ㅗ — глубокое «о» (고, 보)':''],hp:h.ch,hr:h.rd,icon:'ㅎ'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(Math.random()<.5?genForm():genPast()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan};
+/* ---------- «Время и дни»: дни недели, частицы 에 («когда») и 도 («тоже») ---------- */
+const DAYS=[['월요일','понедельник','ворёиль'],['화요일','вторник','хваёиль'],['수요일','среда','суёиль'],['목요일','четверг','мокёиль'],['금요일','пятница','кымнёиль'],['토요일','суббота','тхоёиль'],['일요일','воскресенье','ильёиль']];
+const DAY_TIME=[['아침','утро','ачим'],['점심','день, обед','чомсим'],['저녁','вечер','чонёк'],['밤','ночь','пам']];
+const DAY_WEEK=[['지난주','прошлая неделя','чинанджу'],['이번 주','эта неделя','ибон чу'],['다음 주','следующая неделя','таым чу'],['주','неделя','чу']];
+function genDays(){
+  const t=rnd(['ko2ru','ru2ko','ko2ru','ru2ko','near','kind']);
+  if(t==='near'){
+    const i=pickW(DAYS.map((x,k)=>k),k=>'dn:'+k);
+    const back=Math.random()<.5,r=DAYS[(i+(back?6:1))%7];
+    const set=shuffle(DAYS.filter(x=>x!==r)).slice(0,3).concat([r]);
+    const opts=shuffle(set).map(x=>({text:x[0],ko:true}));
+    return {type:'choice',mode:'days',key:'dn:'+i+':'+(back?'b':'f'),word:r[0],label:'Сегодня «'+DAYS[i][0]+'» ('+DAYS[i][1]+'). Какой день '+(back?'был вчера?':'будет завтра?'),
+      prompt:(back?'어제':'내일')+' = ?',promptKo:true,options:opts,correct:opts.findIndex(o=>o.text===r[0]),right:r[0],
+      explain:[DAYS[i][0]+' → '+(back?'вчера ':'завтра ')+r[0]+' ('+r[1]+')','Неделя идёт по кругу: 월 화 수 목 금 토 일'],hp:DAYS[i][0]+' → '+(back?'вчера':'завтра'),hr:r[0],icon:'📅'};
+  }
+  if(t==='kind'){
+    const d=pickW(DAYS,x=>'dk:'+x[0]);const wk=d[0]==='토요일'||d[0]==='일요일';
+    const opts=shuffle([{text:'평일',sub:'будни'},{text:'주말',sub:'выходные'}]).map(o=>({text:o.text+' — '+o.sub,ko:false,k:o.text}));
+    const right=wk?'주말':'평일';
+    return {type:'choice',mode:'days',key:'dk:'+d[0],word:d[0],label:'Будни или выходные?',prompt:d[0],promptKo:true,reading:d[2],sub:d[1],
+      options:opts,correct:opts.findIndex(o=>o.k===right),right:right+' — '+(wk?'выходные':'будни'),explain:[d[0]+' ('+d[1]+') — '+(wk?'выходные: 토요일 и 일요일':'будний день: с 월요일 по 금요일')],hp:d[0],hr:right,icon:'📅'};
+  }
+  const grp=rnd([DAYS,DAYS,DAYS,DAY_TIME,DAY_WEEK]);
+  const w=pickW(grp,x=>'dy:'+x[0]+':'+t);
+  const others=shuffle(grp.filter(x=>x!==w)).slice(0,3);
+  while(others.length<3){const x=rnd(DAYS);if(x!==w&&!others.includes(x))others.push(x);}
+  if(t==='ko2ru'){
+    const opts=shuffle([w,...others]).map(x=>({text:x[1]}));
+    return {type:'choice',mode:'days',key:'dy:'+w[0]+':'+t,word:w[0],label:'Выбери перевод',prompt:w[0],promptKo:true,reading:w[2],options:opts,correct:opts.findIndex(o=>o.text===w[1]),
+      right:w[1],explain:[w[0]+' · '+w[2]+' — '+w[1]],hp:w[0],hr:w[1],icon:'📅'};
+  }
+  const opts=shuffle([w,...others]).map(x=>({text:x[0],ko:true,sub:x[2]}));
+  return {type:'choice',mode:'days',key:'dy:'+w[0]+':'+t,word:w[0],label:'Выбери слово по-корейски',prompt:w[1],promptKo:false,options:opts,correct:opts.findIndex(o=>o.text===w[0]),
+    right:w[0],explain:[w[0]+' · '+w[2]+' — '+w[1]],hp:w[1],hr:w[0],icon:'📅'};
+}
+
+/* «Когда?»: к слову времени ставится 에, но не к 오늘, 내일, 지금, 언제 */
+const WHEN_ON=[['월요일','в понедельник'],['화요일','во вторник'],['수요일','в среду'],['목요일','в четверг'],['금요일','в пятницу'],['토요일','в субботу'],['일요일','в воскресенье'],
+  ['아침','утром'],['저녁','вечером'],['밤','ночью'],['점심','днём'],['주말','на выходных'],['평일','в будни'],['이번 주','на этой неделе'],['다음 주','на следующей неделе']];
+const WHEN_OFF=[['오늘','сегодня'],['내일','завтра'],['지금','сейчас']];
+const WHEN_ACT=[['친구를 만나요','встречаюсь с другом','Когда ты встречаешься с другом?'],['운동해요','занимаюсь спортом','Когда ты занимаешься спортом?'],
+  ['한국어를 공부해요','занимаюсь корейским','Когда ты занимаешься корейским?'],['도서관에 가요','иду в библиотеку','Когда ты идёшь в библиотеку?'],
+  ['영화를 봐요','смотрю фильм','Когда ты смотришь фильм?'],['쇼핑해요','хожу по магазинам','Когда ты ходишь по магазинам?'],
+  ['요리를 배워요','учусь готовить','Когда ты учишься готовить?'],['집에 있어요','я дома','Когда ты дома?']];
+const NONE='ничего не нужно';
+const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
+function genWhen(){
+  const act=rnd(WHEN_ACT);
+  const r=Math.random();
+  const q=r<.12,off=q||r<.3;
+  const time=q?['언제','когда']:off?rnd(WHEN_OFF):rnd(WHEN_ON);
+  const post=' '+act[0]+(q?'?':'.');
+  const ru=q?act[2]:cap1(time[1])+' '+act[1]+'.';
+  const opts=shuffle(['에','에서','는',NONE]).map(t=>({text:t,ko:t!==NONE}));
+  const right=off?NONE:'에';
+  return {type:'choice',mode:'when',key:'wh:'+time[0]+':'+act[0],word:null,label:'Нужна ли частица, которая отвечает на вопрос «когда»?',sentence:{pre:time[0],post:post},ru:ru,
+    options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+    explain:[(off?time[0]:time[0]+'에')+post,off?'С 오늘, 내일, 지금, 언제 частицу 에 не ставят.':'Слово отвечает на вопрос «когда» → к нему добавляется 에.'],
+    hp:time[0]+' ___'+post,hr:right,icon:'🕒'};
+}
+
+/* «Тоже»: 도 вместо 은/는, 이/가, 을/를; с 에 и 에서 получается 에도, 에서도 */
+/** [начало, конец, перевод, какая частица стояла бы без «тоже»] */
+const TOO=[
+  ['민우 씨는 한국 사람이에요. 유진 씨',' 한국 사람이에요.','Мину из Кореи. Ючжин тоже из Кореи.','는'],
+  ['저는 학교에 가요. 제 친구',' 학교에 가요.','Я иду в школу. Мой друг тоже идёт в школу.','가'],
+  ['나나 씨는 비빔밥을 먹어요. 김치',' 먹어요.','Нана ест бибимбап. Кимчи тоже ест.','를'],
+  ['저는 모자를 사요. 가방',' 사요.','Я покупаю шапку. Сумку тоже покупаю.','을'],
+  ['교실에 중국 학생이 있어요. 미국 학생',' 있어요.','В классе есть китайский ученик. Американский ученик тоже есть.','이'],
+  ['저는 불고기를 좋아해요. 비빔밥',' 좋아해요.','Я люблю пулькоги. Бибимбап тоже люблю.','를'],
+  ['크리스 씨는 커피를 안 마셔요. 콜라',' 안 마셔요.','Крис не пьёт кофе. Колу тоже не пьёт.','는'],
+  ['하이 씨는 파티에 가요. 나나 씨',' 파티에 가요.','Хай идёт на вечеринку. Нана тоже идёт.','는'],
+];
+/** [начало, конец, перевод, правильная форма: 에도 или 에서도] */
+const TOO_AT=[
+  ['저는 토요일에 친구를 만나요. 일요일',' 친구를 만나요.','В субботу я встречаюсь с другом. И в воскресенье тоже.','에도'],
+  ['저는 도서관에 가요. 학교',' 가요.','Я иду в библиотеку. И в школу тоже.','에도'],
+  ['저는 도서관에서 공부해요. 카페',' 공부해요.','Я занимаюсь в библиотеке. И в кафе тоже.','에서도'],
+  ['저는 집에서 쉬어요. 공원',' 쉬어요.','Я отдыхаю дома. И в парке тоже.','에서도'],
+];
+function genToo(){
+  const at=Math.random()<.4;
+  const pool=at?TOO_AT:TOO;
+  const i=pickW(pool.map((x,k)=>k),k=>(at?'ta:':'to:')+k);
+  const x=pool[i];
+  const right=at?x[3]:'도';
+  let set;
+  if(at)set=x[3]==='에도'?['에도','도','에','에서도']:['에서도','도','에서','에도'];
+  else{const other=rnd(['이','가','은','는','을','를'].filter(t=>t!==x[3]));set=['도',x[3],x[3]+'도',other];}
+  const opts=shuffle(set).map(t=>({text:t,ko:true}));
+  return {type:'choice',mode:'too',key:(at?'ta:':'to:')+i,word:null,label:'Вставь частицу «тоже»',sentence:{pre:x[0],post:x[1]},ru:x[2],
+    options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+    explain:[x[0]+right+x[1],at?'С 에 и 에서 частица 도 добавляется: 에도, 에서도.':'도 заменяет 은/는, 이/가, 을/를: вместе с ними её не ставят.'],hp:x[0]+' ___'+x[1],hr:right,icon:'➕'};
+}
+
+/* ---------- «Числа и деньги»: числа, цены, счётные слова ---------- */
+const NAT=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
+const SINO=['일','이','삼','사','오','육','칠','팔','구','십'];
+const SINO_BIG=[[100,'백'],[1000,'천'],[10000,'만']];
+function genNum(){
+  const nat=Math.random()<.5;
+  const list=nat?NAT.map((k,i)=>[i+1,k]):SINO.map((k,i)=>[i+1,k]).concat(SINO_BIG);
+  const x=pickW(list,y=>'nu:'+(nat?'n':'s')+y[0]);
+  const toKo=Math.random()<.5;
+  const others=shuffle(list.filter(y=>y!==x)).slice(0,3);
+  const sys=nat?'Корейские числа (하나, 둘, 셋…)':'Китайские числа (일, 이, 삼…)';
+  const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  const note=nat?'Корейские числа считают вещи, людей, животных; после 열 (10) — 열하나, 열둘…':'Китайские числа нужны для цен, дат, номеров и минут.';
+  const set=shuffle([x,...others]);
+  if(toKo){
+    return {type:'choice',mode:'num',key:'nu:'+(nat?'n':'s')+x[0],word:nat?x[1]:null,label:sys+': как будет «'+fmt(x[0])+'»?',prompt:fmt(x[0]),promptKo:false,
+      options:set.map(y=>({text:y[1],ko:true})),correct:set.indexOf(x),right:x[1],explain:[fmt(x[0])+' = '+x[1],note],hp:fmt(x[0])+(nat?' (корейское)':' (китайское)'),hr:x[1],icon:'🔢'};
+  }
+  return {type:'choice',mode:'num',key:'nu:'+(nat?'n':'s')+x[0],word:nat?x[1]:null,label:sys+': какое это число?',prompt:x[1],promptKo:true,
+    options:set.map(y=>({text:fmt(y[0])})),correct:set.indexOf(x),right:fmt(x[0]),explain:[x[1]+' = '+fmt(x[0]),note],hp:x[1],hr:fmt(x[0]),icon:'🔢'};
+}
+const SDIG=['','일','이','삼','사','오','육','칠','팔','구'];
+function sinoPart(x){let o='';const th=Math.floor(x/1000),h=Math.floor(x%1000/100),t=Math.floor(x%100/10),u=x%10;
+  if(th)o+=(th>1?SDIG[th]:'')+'천';if(h)o+=(h>1?SDIG[h]:'')+'백';if(t)o+=(t>1?SDIG[t]:'')+'십';if(u)o+=SDIG[u];return o;}
+/** Сумма 1..99999 китайскими числами: 3500 → 삼천오백, 10000 → 만 (일 перед 만, 천, 백, 십 не говорят) */
+function sinoNum(n){const man=Math.floor(n/10000),r=n%10000;return (man?(man>1?sinoPart(man):'')+'만':'')+sinoPart(r);}
+const fmtMoney=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')+'원';
+function genPrice(){
+  const kind=rnd(['t','t','h','m','mix']);
+  const n=kind==='t'?(1+Math.floor(Math.random()*9))*1000:kind==='h'?(1+Math.floor(Math.random()*9))*1000+500:kind==='m'?(1+Math.floor(Math.random()*9))*10000:(1+Math.floor(Math.random()*4))*10000+(1+Math.floor(Math.random()*9))*1000;
+  const key='pr:'+n;
+  const cands=[n*10<100000?n*10:n/10,n+1000<100000?n+1000:n-1000,n>=10000?(n%10000===0?n/10:n-(n%10000)):n+500,n+10000<100000?n+10000:n-10000,n>1000?n-1000:n+2000];
+  const bad=[];for(const c of cands){const v=Math.round(c);if(v>0&&v<100000&&v!==n&&!bad.includes(v))bad.push(v);if(bad.length>=3)break;}
+  let g=0;while(bad.length<3&&g++<50){const v=(1+Math.floor(Math.random()*19))*500;if(v!==n&&!bad.includes(v))bad.push(v);}
+  const set=shuffle([n,...bad]);
+  const readable=n=>sinoNum(n)+' 원';
+  const parts=[];if(n>=10000)parts.push(Math.floor(n/10000)===1?'만 (10 000)':sinoPart(Math.floor(n/10000))+'만');if(n%10000)parts.push(sinoPart(n%10000));
+  const how=fmtMoney(n)+' = '+parts.join(' + ');
+  if(Math.random()<.5){
+    return {type:'choice',mode:'price',key:key,word:null,label:'Прочитай цену по-корейски',prompt:fmtMoney(n),promptKo:false,options:set.map(v=>({text:readable(v),ko:true})),correct:set.indexOf(n),
+      right:readable(n),explain:[readable(n),how,'Перед 만 цифру 일 не говорят: 10 000 = 만, а не 일만.'],hp:fmtMoney(n),hr:readable(n),icon:'💴'};
+  }
+  return {type:'choice',mode:'price',key:key,word:null,label:'Сколько это стоит?',prompt:readable(n),promptKo:true,options:set.map(v=>({text:fmtMoney(v)})),correct:set.indexOf(n),
+    right:fmtMoney(n),explain:[readable(n)+' = '+fmtMoney(n),how],hp:readable(n),hr:fmtMoney(n),icon:'💴'};
+}
+const COUNTERS=['병','잔','개','그릇','명','마리','권','장'];
+function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k];return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
+function genCount(){
+  const pool=countPool();
+  const i=pickW(pool,k=>'cn:'+k);
+  const p=D.PB[i];
+  const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
+  const parts=p[0].split('___');
+  return {type:'choice',mode:'count',key:'cn:'+i,label:'Вставь счётное слово или число',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
+    options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],hp:p[0].replace('___','…'),hr:p[2],icon:'🥤'};
+}
+const GEN={word:genWord,rev:genRev,form:()=>(Math.random()<.5?genForm():genPast()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount};
 function genQuestion(){
   let m=S.mode;
-  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg']);
+  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too']);
   return GEN[m]();
 }
 

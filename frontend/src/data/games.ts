@@ -79,6 +79,28 @@ export const GAME_GROUPS: GameGroup[] = [
     icon: 'mail',
     games: [{ id: 'dlg', name: 'Диалог', desc: 'Выбери подходящий ответ собеседнику', icon: 'mail', to: '/game/home?game=dlg' }],
   },
+  {
+    id: 'numbers',
+    title: 'Числа и деньги',
+    desc: 'Корейские и китайские числа, цены и счётные слова.',
+    icon: 'croissant',
+    games: [
+      { id: 'num', name: 'Числа', desc: 'Число и цифра: корейский и китайский счёт', icon: 'dice', to: '/game/home?game=num' },
+      { id: 'price', name: 'Сколько стоит?', desc: 'Прочитай цену в вонах', icon: 'croissant', to: '/game/home?game=price' },
+      { id: 'count', name: 'Счётные слова', desc: 'Бутылка, чашка, штука: выбери слово и число', icon: 'macaron', to: '/game/home?game=count' },
+    ],
+  },
+  {
+    id: 'time',
+    title: 'Время и дни недели',
+    desc: 'Дни недели, утро и вечер, частицы 에 («когда») и 도 («тоже»).',
+    icon: 'clock',
+    games: [
+      { id: 'days', name: 'Дни недели', desc: 'Понедельник, будни, выходные, эта неделя', icon: 'sun', to: '/game/home?game=days' },
+      { id: 'when', name: 'Когда? (에)', desc: 'Нужна ли частица «когда»: в пятницу, но сегодня', icon: 'clock', to: '/game/home?game=when' },
+      { id: 'too', name: 'Тоже (도)', desc: 'Вставь «тоже»: 도, 에도, 에서도', icon: 'hearts', to: '/game/home?game=too' },
+    ],
+  },
 ]
 
 /** Отдельно от групп: быстрые режимы со смесью заданий. */

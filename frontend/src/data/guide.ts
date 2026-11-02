@@ -25,6 +25,12 @@ export const GAMES: GuideCard[] = [
   { icon: 'comet', title: 'Порядок слов', text: 'Названо слово. Выбери предложение, где оно стоит на своём месте.', to: game('ord'), private: true },
   { icon: 'chat', title: 'Диалог', text: 'Реплика собеседника, нужно выбрать подходящий ответ из трёх.', to: game('dlg'), private: true },
   { icon: 'han', title: 'Хангыль-блиц', text: 'Собери слог из букв или прочитай слог. Для самых первых уроков.', to: game('han'), private: true },
+  { icon: 'calendar', title: 'Дни недели', text: 'Дни недели, части дня и недели: перевод, «какой день завтра», будни или выходные.', to: game('days'), private: true },
+  { icon: 'clock', title: 'Когда? (에)', text: 'Нужна ли частица «когда»: в пятницу, на выходных, но сегодня, завтра, сейчас без нее.', to: game('when'), private: true },
+  { icon: 'hearts', title: 'Тоже (도)', text: 'Вставь «тоже»: 도 вместо 은/는, 이/가, 을/를, а также 에도 и 에서도.', to: game('too'), private: true },
+  { icon: 'chart', title: 'Числа', text: 'Корейские числа (하나, 둘…) и китайские (일, 이…): число по цифре и цифра по числу.', to: game('num'), private: true },
+  { icon: 'coin', title: 'Сколько стоит?', text: 'Прочитай цену в вонах по-корейски: 삼천오백 원, 만 원. Или найди цену по чтению.', to: game('price'), private: true },
+  { icon: 'macaron', title: 'Счётные слова', text: 'Бутылка, чашка, штука, миска: выбери счётное слово и короткую форму числа (한, 두, 세, 네).', to: game('count'), private: true },
   { icon: 'stopwatch', title: 'Блиц 60 секунд', text: 'Минута на то, чтобы ответить на как можно больше вопросов. Рекорд запоминается.', to: '/game/home', private: true },
   { icon: 'heart', title: 'На выживание', text: 'Три жизни. Каждая ошибка забирает одну. Побей свой рекорд.', to: '/game/home', private: true },
 ]
