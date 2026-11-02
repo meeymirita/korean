@@ -121,7 +121,7 @@ const tabs = computed<[Tab, string][]>(() => [
         </div>
         <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
-      <span v-if="!progress.isGuest" class="cb-coins" title="Монетки Юны"><img :src="coinImg" alt="" />{{ progress.data.coins }}</span>
+      <span v-if="!progress.isGuest" class="cb-coins" title="Монетки Юны"><img :src="coinImg" alt="" /><span v-count="progress.data.coins">{{ progress.data.coins }}</span></span>
       <button type="button" class="cb-lvl" title="Все уровни" @click="levelsOpen = true">{{ progress.info.level }}<small>уровень</small></button>
     </header>
 

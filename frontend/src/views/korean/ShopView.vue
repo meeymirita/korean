@@ -28,7 +28,7 @@ const s = sectionById('shop')
               <span><i>Сюрпризы.</i> Открываются сразу после покупки: набор из 3–5 предметов, сундук с 60–110 монетками или пять подсказок.</span>
             </span>
           </span>
-          <span class="shx-hbal" title="Твой баланс"><img :src="coinImg" alt="" />{{ coins }}</span>
+          <span class="shx-hbal" title="Твой баланс"><img :src="coinImg" alt="" /><span v-count="coins">{{ coins }}</span></span>
         </div>
       </div>
     </header>

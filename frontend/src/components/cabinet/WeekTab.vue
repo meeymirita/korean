@@ -48,7 +48,7 @@ const max = computed(() => Math.max(1, ...week.value.days.map(d => d.all)))
         <p class="pg-legend"><i class="learning"></i> всего ответов <i class="known"></i> верных</p>
 
         <div class="wk-stats">
-          <div class="wk-stat"><b>{{ week.total }}</b><small>ответов за неделю</small></div>
+          <div class="wk-stat"><b v-count="week.total">{{ week.total }}</b><small>ответов за неделю</small></div>
           <div class="wk-stat"><b>{{ week.accuracy === null ? '–' : week.accuracy + '%' }}</b><small>верных ({{ week.ok }})</small></div>
           <div class="wk-stat"><b>{{ week.activeDays }} / 7</b><small>дней с занятиями</small></div>
           <div class="wk-stat">

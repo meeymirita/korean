@@ -3,16 +3,29 @@ import { gsap } from 'gsap'
 /** Анимации тренажёров. Если в системе включено «уменьшить движение», всё происходит сразу, без анимации. */
 const calm = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
+/**
+ * Выключает CSS-переходы (`transition`) у элементов на время анимации GSAP и возвращает функцию, которая их возвращает.
+ * Без этого собственные переходы карточек и кнопок «размазывают» кадры GSAP: движение стартует с лагом.
+ */
+export function stillCss(els: ArrayLike<Element>): () => void {
+  const list = [...Array.from(els)].filter((e): e is HTMLElement => e instanceof HTMLElement)
+  const prev = list.map(e => e.style.transition)
+  list.forEach(e => (e.style.transition = 'none'))
+  return () => list.forEach((e, i) => (prev[i] ? (e.style.transition = prev[i]!) : e.style.removeProperty('transition')))
+}
+
 /** Карточки выезжают каскадом. */
 export function cascade(els: ArrayLike<Element>) {
   if (calm() || !els.length) return
-  gsap.from(els, { opacity: 0, y: 14, scale: 0.97, duration: 0.38, stagger: 0.04, ease: 'power2.out', clearProps: 'opacity,transform' })
+  const back = stillCss(els)
+  gsap.from(els, { opacity: 0, y: 14, scale: 0.97, duration: 0.38, stagger: 0.04, ease: 'power2.out', clearProps: 'opacity,transform', onComplete: back })
 }
 
 /** Верный ответ: карточка «вскакивает». */
 export function pop(el: Element | null | undefined) {
   if (calm() || !el) return
-  gsap.fromTo(el, { scale: 1 }, { scale: 1.07, duration: 0.16, yoyo: true, repeat: 1, ease: 'power2.out', clearProps: 'transform' })
+  const back = stillCss([el])
+  gsap.fromTo(el, { scale: 1 }, { scale: 1.07, duration: 0.16, yoyo: true, repeat: 1, ease: 'power2.out', clearProps: 'transform', onComplete: back })
 }
 
 /** Неверный ответ: карточка вздрагивает. */

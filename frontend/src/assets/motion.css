@@ -1,0 +1,5 @@
+/* Мягкие изменения полос и счётчиков (дополняет GSAP из lib/motion.ts): полоса не прыгает, а плавно растёт. */
+.gx-level .lv-bar i, #xpBar, #goalBar, #loafBar { transition: width .6s cubic-bezier(.22, 1, .36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .gx-level .lv-bar i, #xpBar, #goalBar, #loafBar { transition: none; }
+}

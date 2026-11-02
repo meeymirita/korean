@@ -167,8 +167,8 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 
       <footer class="footer">
         <div class="meta">
-          <span><b>{{ D.length }}</b> слов</span>
-          <span><b>{{ G.length }}</b> правил</span>
+          <span><b v-count="D.length">{{ D.length }}</b> слов</span>
+          <span><b v-count="G.length">{{ G.length }}</b> правил</span>
           <span>вопросы — <a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a></span>
         </div>
         <p class="foot-note">* Отображается только пройденный материал автором, новое появляется по мере изучения.</p>

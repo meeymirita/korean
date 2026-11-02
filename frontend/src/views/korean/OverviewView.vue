@@ -52,7 +52,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       </div>
       <div class="greet-r">
         <ClientOnly><RouterLink v-if="lastVisited" :to="lastVisited.path" class="chip">↩ {{ lastVisited.title }}</RouterLink></ClientOnly>
-        <span v-if="progress.unlocked" class="streak"><Icon name="fire" /> <b>{{ progress.streak }}</b> дн. подряд</span>
+        <span v-if="progress.unlocked" class="streak"><Icon name="fire" /> <b v-count="progress.streak">{{ progress.streak }}</b> дн. подряд</span>
       </div>
     </header>
 

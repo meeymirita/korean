@@ -13,7 +13,7 @@ const { shop, st, coins, rows, kind, when, pct, isActive, goalText, buy, turnOn 
       <img class="shp-yuna" :src="yunaImg" alt="" />
       <div class="shp-bal">
         <small>Твой баланс</small>
-        <b><img :src="coinImg" alt="" />{{ coins }}</b>
+        <b><img :src="coinImg" alt="" /><span v-count="coins">{{ coins }}</span></b>
         <span v-if="st">Серия верных подряд: {{ st.combo }}</span>
       </div>
     </section>

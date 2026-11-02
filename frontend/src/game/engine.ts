@@ -7,6 +7,9 @@ import { analyze } from '@/data/korean/parse'
 import { EXCHANGES } from './dialogs'
 import { syllableRows, syllableVowels } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
+import { gsap } from 'gsap'
+import { burst, cascade, pop } from '@/lib/fx'
+import { motionCalm } from '@/lib/motion'
 
 /** Запускает игру на уже отрисованной разметке; возвращает функцию очистки. */
 /** hooks: общий прогресс сайта (record, importXp, state) — передаёт GameView. */
@@ -665,6 +668,7 @@ function renderQuestion(q){
       b.appendChild(tx);b.addEventListener('click',()=>answerChoice(i));opts.appendChild(b);
     });
     card.appendChild(opts);
+    cascade(opts.children);
     if(q.options.length>2&&!S.blitz.on){
       const acts=el('div','acts');
       const hb=el('button','ghost hint');hb.innerHTML=iconImg('sparkle')+' 50/50 · '+S.hints;hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0;
@@ -791,6 +795,8 @@ function answerChoice(i){
   if(gap){gap.textContent=q.right;gap.className='gap '+(ok?'ok':'bad');}
   if(!ok&&btns[i])btns[i].classList.add('shake');
   finish(ok,q.options[i].text);
+  // верный вариант «вскакивает», каждые 5 верных подряд брызги звёзд
+  if(ok&&btns[i]){pop(btns[i]);if(S.ses.streak>0&&S.ses.streak%5===0){const r=btns[i].getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,14);}}
 }
 
 /* ---------- ответ, статистика, история ---------- */
@@ -821,6 +827,7 @@ function finish(ok,chosen){
 }
 function showFeedback(q,ok){
   const fb=$('#fb');fb.className='feedback show '+(ok?'ok':'bad');fb.innerHTML='';
+  if(!motionCalm())gsap.from(fb,{opacity:0,y:12,duration:.32,ease:'power2.out',clearProps:'opacity,transform'});
   const streak=S.ses.streak;
   fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
   q.explain.forEach(t=>{if(t)fb.appendChild(el('div','fbt',t));});

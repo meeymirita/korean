@@ -105,7 +105,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     <div class="pg-cards">
       <div class="pg-card">
         <div class="pg-k">Уровень</div>
-        <div class="pg-v">{{ info.level }} <small>из {{ MAX_LEVEL }}</small></div>
+        <div class="pg-v"><span v-count="info.level">{{ info.level }}</span> <small>из {{ MAX_LEVEL }}</small></div>
         <div class="pg-t">{{ info.title }}</div>
         <div class="pg-bar"><i :style="{ width: info.pct + '%' }"></i></div>
         <div class="pg-s">{{ info.max ? 'максимальный уровень' : `${info.into} / ${info.span} очков до следующего` }} · всего {{ info.xp }}</div>
@@ -113,7 +113,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       </div>
       <div class="pg-card">
         <div class="pg-k">Серия дней</div>
-        <div class="pg-v"><Icon name="fire" /> {{ progress.streak }}</div>
+        <div class="pg-v"><Icon name="fire" /> <span v-count="progress.streak">{{ progress.streak }}</span></div>
         <div class="pg-t">лучшая серия: {{ progress.bestStreak }}</div>
         <div class="pg-s">заниматься нужно хотя бы раз в день</div>
       </div>
@@ -125,13 +125,13 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       </div>
       <div class="pg-card">
         <div class="pg-k">Цель дня</div>
-        <div class="pg-v"><Icon name="target" /> {{ Math.min(progress.todayOk, goal) }} <small>из {{ goal }}</small></div>
+        <div class="pg-v"><Icon name="target" /> <span v-count="Math.min(progress.todayOk, goal)">{{ Math.min(progress.todayOk, goal) }}</span> <small>из {{ goal }}</small></div>
         <div class="pg-bar goal"><i :style="{ width: Math.min(100, (progress.todayOk / goal) * 100) + '%' }"></i></div>
         <div class="pg-s"><template v-if="progress.goalDone">выполнена <Icon name="party" /></template><template v-else>ещё {{ goal - progress.todayOk }} верных ответов</template></div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Выученные слова</div>
-        <div class="pg-v"><Icon name="sakura" /> {{ knownCount }} <small>из {{ D.length }}</small></div>
+        <div class="pg-v"><Icon name="sakura" /> <span v-count="knownCount">{{ knownCount }}</span> <small>из {{ D.length }}</small></div>
         <div class="pg-bar"><i :style="{ width: (knownCount / D.length) * 100 + '%' }"></i></div>
         <div class="pg-s">{{ learningCount }} в процессе · слово выучено, когда набрал {{ KNOWN_STREAK }} очков: верный ответ +1, ошибка −1</div>
       </div>
@@ -140,9 +140,9 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     <template v-if="hasRecords">
       <h2 class="today-h">Личные рекорды <small v-if="records.todayIsBest">сегодня лучший день! <Icon name="party" /></small></h2>
       <div class="pg-rec">
-        <div v-if="records.bestDay" class="pg-recc"><span class="k">Лучший день</span><b>{{ records.bestDay.n }}</b><small>верных · {{ dayLabel(records.bestDay.key) }}</small></div>
-        <div v-if="records.bestWeek" class="pg-recc"><span class="k">Лучшая неделя</span><b>{{ records.bestWeek.n }}</b><small>верных · {{ weekLabel(records.bestWeek.key) }}</small></div>
-        <div v-if="records.longestStreak" class="pg-recc"><span class="k">Самая длинная серия</span><b>{{ records.longestStreak }}</b><small>{{ records.longestStreak === 1 ? 'день' : 'дн.' }} подряд</small></div>
+        <div v-if="records.bestDay" class="pg-recc"><span class="k">Лучший день</span><b v-count="records.bestDay.n">{{ records.bestDay.n }}</b><small>верных · {{ dayLabel(records.bestDay.key) }}</small></div>
+        <div v-if="records.bestWeek" class="pg-recc"><span class="k">Лучшая неделя</span><b v-count="records.bestWeek.n">{{ records.bestWeek.n }}</b><small>верных · {{ weekLabel(records.bestWeek.key) }}</small></div>
+        <div v-if="records.longestStreak" class="pg-recc"><span class="k">Самая длинная серия</span><b v-count="records.longestStreak">{{ records.longestStreak }}</b><small>{{ records.longestStreak === 1 ? 'день' : 'дн.' }} подряд</small></div>
         <div v-if="records.bestTime" class="pg-recc"><span class="k">Дольше всего занимался</span><b>{{ formatSpent(records.bestTime.n) }}</b><small>{{ dayLabel(records.bestTime.key) }}</small></div>
       </div>
     </template>
