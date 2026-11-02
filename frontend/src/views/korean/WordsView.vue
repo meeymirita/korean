@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
@@ -52,10 +52,17 @@ const rows = computed(() => {
     .map(x => x[1])
 })
 
+/** Сначала видны первые 100 слов, остальные открываются кнопкой «Показать ещё». В разметке (и для поисковиков) остаются все слова. */
+const PAGE = 100
+const limit = ref(PAGE)
+const more = () => (limit.value += PAGE)
+watch([q, cat, fav, picked], () => (limit.value = PAGE))
+
 const counter = computed(() => {
   if (picked.value) return 'Случайное слово'
-  if (qs.value.length) return `Найдено: ${rows.value.length}`
-  return (fav.value ? 'Важное: ' : cat.value ? `${CATN[cat.value]}: ` : 'Всего слов: ') + rows.value.length
+  const shown = rows.value.length > limit.value ? `Показано ${limit.value} из ${rows.value.length}` : ''
+  if (qs.value.length) return `Найдено: ${rows.value.length}` + (shown ? ` · ${shown}` : '')
+  return (fav.value ? 'Важное: ' : cat.value ? `${CATN[cat.value]}: ` : 'Всего слов: ') + rows.value.length + (shown ? ` · ${shown}` : '')
 })
 
 const h = (text: string) => hl(text, picked.value ? [] : qs.value)
@@ -127,8 +134,8 @@ const shareWord = (d: Word) =>
 
     <div v-if="rows.length" class="tb">
       <div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
-      <template v-for="d in rows" :key="d.n">
-        <div class="row">
+      <template v-for="(d, i) in rows" :key="d.n">
+        <div v-show="i < limit" class="row">
           <span class="n"><MarkStar kind="w" :id="d.k" />{{ d.n }}</span>
           <span class="k" v-html="h(d.k)"></span>
           <span class="rd" v-html="h(d.r)"></span>
@@ -137,7 +144,7 @@ const shareWord = (d: Word) =>
             <button class="se-btn" :class="{ open: openN === d.n }" title="Разобрать предложение" @click="toggle(d.n)" v-html="h(d.s)"></button>
           </span>
         </div>
-        <div v-if="openN === d.n" class="row-detail">
+        <div v-if="openN === d.n" v-show="i < limit" class="row-detail">
           <SentenceBreakdown :sentence="d.s" />
           <button class="share-btn" :disabled="sharing" @click="shareWord(d)"><Icon name="picture" /> Поделиться словом</button>
           <button class="share-btn" :aria-pressed="simN === d.n" @click="simN = simN === d.n ? null : d.n">≈ Похожие слова</button>
@@ -150,7 +157,10 @@ const shareWord = (d: Word) =>
         </div>
       </template>
     </div>
-    <div v-else class="empty">
+    <button v-if="rows.length > limit" type="button" class="words-more" @click="more">
+      Показать ещё {{ Math.min(PAGE, rows.length - limit) }} <small>(осталось {{ rows.length - limit }})</small>
+    </button>
+    <div v-if="!rows.length" class="empty">
       <Cat :name="fav && !q ? 'read' : 'think'" />
       <template v-if="fav && !q">Звёздочек пока нет: нажми ☆ рядом со словом, и оно появится здесь.</template>
       <template v-else>Ничего не нашлось по «<span v-html="esc(q)"></span>».<br />Попробуй другое слово или русскую форму («ем» → «есть»).</template>
@@ -159,6 +169,10 @@ const shareWord = (d: Word) =>
 </template>
 
 <style>
+/* Кнопка «Показать ещё» под списком слов */
+.words-more { display: block; margin: 18px auto 6px; padding: 12px 28px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--pink); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .2s, background .2s; }
+.words-more small { color: var(--muted); font-weight: 500; }
+.words-more:hover { border-color: var(--pink); background: #fff; }
 /* Юна на «Словах»: двигай здесь */
 .words-yuna {
   --h: min(80vh, 840px);   /* высота картинки */
