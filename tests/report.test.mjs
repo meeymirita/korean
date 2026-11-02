@@ -1,9 +1,10 @@
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { OWNER, cleanup, start } from './_server.mjs'
-import { load } from './_load.mjs'
+import { close, load } from './_load.mjs'
 
 after(cleanup)
+after(close)
 const { groupReport, modeName, percent, spent } = await load('/src/data/report.ts')
 
 describe('сервер: отчёт по режимам', () => {

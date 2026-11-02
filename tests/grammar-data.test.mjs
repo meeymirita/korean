@@ -26,7 +26,7 @@ describe('данные грамматики', () => {
   })
 
   test('ссылки на карточки из разбора предложений (parse.ts) ведут на существующие карточки', () => {
-    const src = readFileSync('src/data/korean/parse.ts', 'utf8')
+    const src = readFileSync('frontend/src/data/korean/parse.ts', 'utf8')
     const ids = [...src.matchAll(/\bP\('[^']*',\s*'[^']*',\s*'[^']*',\s*'(\w+)'(?:,\s*\[[^\]]*\])?\)/g)].map(m => m[1])
     assert.ok(ids.length >= 15, 'ссылки не нашлись: поменялся формат P(...)')
     for (const id of new Set(ids)) assert.ok(G.some(g => g.id === id), `parse.ts ссылается на «${id}», такой карточки нет`)
@@ -58,7 +58,7 @@ describe('данные грамматики', () => {
 
 describe('подсказки режимов игры', () => {
   test('у каждого режима игры (кроме «Микс») есть подсказка «?» с описанием и примером', () => {
-    const src = readFileSync('src/game/engine.ts', 'utf8')
+    const src = readFileSync('frontend/src/game/engine.ts', 'utf8')
     const modes = [...src.slice(src.indexOf('const MODES=['), src.indexOf('];', src.indexOf('const MODES=['))).matchAll(/\{id:'(\w+)'/g)].map(m => m[1]).filter(m => m !== 'mix')
     const helpBlock = src.slice(src.indexOf('const MODE_HELP={'), src.indexOf('};', src.indexOf('const MODE_HELP={')))
     assert.ok(modes.length >= 13)

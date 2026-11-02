@@ -4,7 +4,7 @@
 # Что кладёт в копию (папка BACKUP_DIR/ГГГГ-ММ-ДД_ЧЧММСС):
 #   app.db           целостный снимок базы (VACUUM INTO: можно делать, пока сервер работает), с проверкой integrity_check
 #   files/           картинки, файлы календаря и обложка визитки; одинаковые файлы за разные дни хранятся один раз (жёсткие ссылки)
-#   config/          server/.env (секреты, права 600), а также Caddyfile и служба progress, если их можно прочитать
+#   config/          backend/.env (секреты, права 600), а также Caddyfile и служба progress, если их можно прочитать
 #   manifest.txt     дата, версия кода, размеры, контрольная сумма базы
 # Лишнего (node_modules, dist, .git) в копии нет: их можно собрать заново.
 #
@@ -25,7 +25,7 @@ ROOT=${ROOT:-$(cd "$(dirname "$0")/.." && pwd)}
 BACKUP_DIR=${BACKUP_DIR:-/var/backups/korean}
 KEEP=${KEEP:-14}
 KEEP_OFFSITE_DAYS=${KEEP_OFFSITE_DAYS:-30}
-DATA=${DATA_DIR:-$ROOT/server/data}
+DATA=${DATA_DIR:-$ROOT/backend/data}
 STATUS="$DATA/backup-status.json"
 STAMP=$(date +%Y-%m-%d_%H%M%S)
 WORK="$BACKUP_DIR/$STAMP.tmp"
@@ -68,7 +68,7 @@ for d in uploads docs thumbs public site; do
 done
 
 # 3. настройки: секреты и конфиги, без которых заново не поднять (права только для владельца)
-[ -f "$ROOT/server/.env" ] && cp "$ROOT/server/.env" "$WORK/config/server.env"
+[ -f "$ROOT/backend/.env" ] && cp "$ROOT/backend/.env" "$WORK/config/server.env"
 for f in /etc/caddy/Caddyfile /etc/systemd/system/progress.service /etc/systemd/system/korean-backup.service /etc/systemd/system/korean-backup.timer /etc/korean-backup.env; do
   [ -r "$f" ] && cp "$f" "$WORK/config/$(basename "$f")" || true
 done

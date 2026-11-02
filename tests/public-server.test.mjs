@@ -4,7 +4,7 @@ import { createRequire } from 'node:module'
 import { OWNER, cleanup, start } from './_server.mjs'
 
 after(cleanup)
-const sharp = createRequire(import.meta.url)('../server/node_modules/sharp')
+const sharp = createRequire(import.meta.url)('../backend/node_modules/sharp')
 const png = (w, h) => sharp({ create: { width: w, height: h, channels: 3, background: '#f6f1ff' } }).png().toBuffer()
 const PNG1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64')
 

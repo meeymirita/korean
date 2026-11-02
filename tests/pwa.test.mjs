@@ -2,7 +2,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const file = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
+const file = p => readFileSync(new URL('../frontend/' + p, import.meta.url), 'utf8')
 
 describe('приложение (PWA)', () => {
   const sw = file('public/sw.js')
@@ -31,6 +31,6 @@ describe('видео-демонстрация на главной', () => {
     const { existsSync } = await import('node:fs')
     const home = file('src/views/HomeView.vue')
     assert.ok(home.includes('посмотреть видео-демонстрацию') && home.includes("DEMO_SRC = '/demo.webm'") && home.includes('<Teleport to="body">'))
-    assert.ok(existsSync(new URL('../public/demo.webm', import.meta.url)))
+    assert.ok(existsSync(new URL('../frontend/public/demo.webm', import.meta.url)))
   })
 })

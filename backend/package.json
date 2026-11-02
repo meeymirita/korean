@@ -1,5 +1,5 @@
 {
-  "name": "korean-server",
+  "name": "korean-backend",
   "version": "1.0.0",
   "private": true,
   "description": "Сервер сайта «Хлебушек»: NestJS + SQLite (встроенный node:sqlite)",

@@ -126,7 +126,7 @@ describe('сервер: тревога о ночной копии', () => {
 
 describe('письмо с копией', async () => {
   test('шаги открытия, части и экранирование; пароля в письме нет', async () => {
-    const { backupMail } = await import('../server/dist/mail/templates.js')
+    const { backupMail } = await import('../backend/dist/mail/templates.js')
     const one = backupMail({ kind: 'archive', name: 'korean-1.tar.gz.enc', mb: '1.3' })
     assert.match(one.html, /openssl enc -d -aes-256-cbc/)
     assert.ok(!one.html.includes('-pass') && !one.text.includes('-pass'), 'пароль в командной строке не светим')

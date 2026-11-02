@@ -6,7 +6,7 @@ import { close, load } from './_load.mjs'
 const { SITE, seoFor, indexablePaths, privatePaths } = await load('/src/data/seo.ts')
 after(close)
 
-const file = p => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
+const file = p => readFileSync(new URL(`../frontend/${p}`, import.meta.url), 'utf8')
 // robots.txt, sitemap.xml и <head> каждой страницы теперь собирает Nuxt: они проверяются на живом сайте в nuxt-ssr.test.mjs
 
 describe('SEO', () => {
@@ -30,7 +30,7 @@ describe('SEO', () => {
   test('у каждой страницы из seo.ts есть файл в src/pages', () => {
     for (const p of [...indexablePaths(), ...privatePaths()]) {
       const f = p === '/' ? 'index' : p.slice(1)
-      assert.ok(existsSync(new URL(`../src/pages/${f}.vue`, import.meta.url)), `нет src/pages/${f}.vue для ${p}`)
+      assert.ok(existsSync(new URL(`../frontend/src/pages/${f}.vue`, import.meta.url)), `нет src/pages/${f}.vue для ${p}`)
     }
   })
 
@@ -48,7 +48,7 @@ describe('SEO', () => {
 
   test('файлы, на которые ссылаются метатеги, существуют', () => {
     for (const f of ['public/og-image.png', 'public/favicon.svg', 'public/favicon-32.png', 'public/apple-touch-icon.png', 'public/icon-192.png', 'public/icon-512.png', 'public/manifest.webmanifest']) {
-      assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), f)
+      assert.ok(existsSync(new URL(`../frontend/${f}`, import.meta.url)), f)
     }
     const m = JSON.parse(file('public/manifest.webmanifest'))
     assert.equal(m.lang, 'ru')
@@ -56,9 +56,9 @@ describe('SEO', () => {
   })
 
   test('в public нет тяжёлых лишних файлов (всё из public попадает на сайт)', () => {
-    for (const f of readdirSync(new URL('../public/', import.meta.url))) {
+    for (const f of readdirSync(new URL('../frontend/public/', import.meta.url))) {
       if (f === 'demo.webm') continue // видео-обзор для окна на главной: грузится только по нажатию, поэтому может быть тяжёлым
-      assert.ok(statSync(new URL(`../public/${f}`, import.meta.url)).size < 600 * 1024, `${f} слишком большой`)
+      assert.ok(statSync(new URL(`../frontend/public/${f}`, import.meta.url)).size < 600 * 1024, `${f} слишком большой`)
     }
   })
 })

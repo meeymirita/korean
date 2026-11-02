@@ -2,6 +2,27 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-11-02 (позже), перенос `server/` → `backend/` + `frontend/` (перенос файлов, шаг 1 из плана)
+
+- По просьбе владельца сайт (Nuxt) и сервер (NestJS) явно разнесены по папкам одного репозитория: `server/` →
+  `backend/`, всё, что было в корне и относится к сайту (`src/`, `public/`, `nuxt.config.ts`, `package.json`,
+  `tsconfig.json`), → `frontend/`. `tests/`, `docs/`, `scripts/`, `.github/` остались в корне — проверяют и то, и
+  другое сразу.
+- У корня новый `package.json` только для тестов (`vite`, `typescript`, `@types/node`); `pinia`/`vue` там не
+  устанавливаются отдельной копией — `scripts/link-test-deps.mjs` (сам запускается через `postinstall`) делает
+  `node_modules/pinia` и `node_modules/vue` символическими ссылками на копии внутри `frontend/node_modules`:
+  иначе у Pinia получаются две разные копии модуля, и `setActivePinia()` в тесте не действует на стор, который
+  загрузил `tests/_load.mjs` (поймали как 127 упавших тестов при первой попытке).
+- Поправлены пути: `tests/_server.mjs` (`../backend/dist/main.js`), `tests/_load.mjs` (корень Vite — `../frontend/`),
+  тесты, которые читали файлы напрямую (`about`, `seo`, `pwa`, `grammar-data`, `responsive`, `games-catalog`,
+  `readme`, `chat-prompt`, `backup`, `backup-archive`, `digest-pool`, `digest-server`, `docs-shop`,
+  `public-server`), `scripts/backup.sh`, `scripts/chat-curriculum.mjs`, `scripts/digest-pool.mjs`.
+- **Не сделано в этом шаге** (сознательно отложено, см. `правки/backend-frontend-plan.md`): `.github/workflows/ci.yml`,
+  `scripts/deploy.sh`, комментарии-ссылки на `server/.env` внутри `backend/src/*`, остальная документация
+  (`docs/hosting.md`, `server.md` и т. д., `README.md`, корневой `CLAUDE.md`), перенос на хостинге
+  (`server/.env` → `backend/.env`, пути в `progress.service`).
+- Тесты 518 (из корня, `npm test`), `npx vue-tsc --build` и `npm run build` из `frontend/` — чисто.
+
 ## 2026-11-02 (ветка `nuxt`), сайт на Nuxt с отрисовкой на сервере
 
 - **Nuxt 4.6** вместо Vite SPA: файловый роутинг (`src/pages/`, обёртки над `views/`), старые адреса в `src/router.options.ts`, запуск в браузере `src/plugins/app.client.ts`.

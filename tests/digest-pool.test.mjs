@@ -12,7 +12,7 @@ describe('письмо-подборка: слова и предложения', 
   })
 
   test('в подборке много слов и предложений, будущего времени нет, всё с переводом', async () => {
-    const { DIGEST_WORDS, DIGEST_SENTENCES } = await import('../server/dist/digest/pool.js')
+    const { DIGEST_WORDS, DIGEST_SENTENCES } = await import('../backend/dist/digest/pool.js')
     assert.ok(DIGEST_WORDS.length > 400, 'слов мало')
     assert.ok(DIGEST_SENTENCES.length > 400, 'предложений мало')
     for (const [k, r] of [...DIGEST_WORDS, ...DIGEST_SENTENCES]) assert.ok(k && r, `пустая пара: ${k}`)

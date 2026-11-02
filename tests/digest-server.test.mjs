@@ -4,8 +4,8 @@ import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { OWNER, cleanup, start } from './_server.mjs'
-import { DigestService, sample } from '../server/dist/digest/digest.service.js'
-import { digestMail } from '../server/dist/mail/templates.js'
+import { DigestService, sample } from '../backend/dist/digest/digest.service.js'
+import { digestMail } from '../backend/dist/mail/templates.js'
 
 after(cleanup)
 

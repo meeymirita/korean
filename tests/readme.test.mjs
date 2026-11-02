@@ -17,7 +17,7 @@ describe('README', () => {
       assert.ok(readme.includes(s.text), `нет описания слайда «${s.title}»`)
       assert.ok(readme.includes(`src/assets/about/${s.img}.webp`), `нет картинки ${s.img}`)
       assert.ok(readme.includes(`Адрес: \`${s.to}\``), `нет адреса ${s.to}`)
-      assert.ok(existsSync(new URL(`../src/assets/about/${s.img}.webp`, import.meta.url)), `нет файла ${s.img}.webp`)
+      assert.ok(existsSync(new URL(`../frontend/src/assets/about/${s.img}.webp`, import.meta.url)), `нет файла ${s.img}.webp`)
     }
   })
 

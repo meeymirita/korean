@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { ITEMS, SURPRISES, ACHIEVEMENTS, DAILY, DAILY_ALL, WEEKLY } = require('../server/dist/progress/coins.js')
+const { ITEMS, SURPRISES, ACHIEVEMENTS, DAILY, DAILY_ALL, WEEKLY } = require('../backend/dist/progress/coins.js')
 const doc = readFileSync(new URL('../docs/shop.md', import.meta.url), 'utf8')
 const rows = doc.split('\n')
 

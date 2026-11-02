@@ -1,8 +1,8 @@
-// Загрузка TS-модулей проекта для тестов: Vite в режиме SSR, алиас @/ → src/, без esbuild.
+// Загрузка TS-модулей сайта (frontend/) для тестов: Vite в режиме SSR, алиас @/ → src/, без esbuild.
 import { createServer } from 'vite'
 import { fileURLToPath } from 'node:url'
 
-const root = fileURLToPath(new URL('..', import.meta.url))
+const root = fileURLToPath(new URL('../frontend/', import.meta.url))
 let server
 
 /** Заглушка localStorage: нужна модулям, которые читают его при загрузке. */

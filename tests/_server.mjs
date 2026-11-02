@@ -1,4 +1,4 @@
-// Запуск настоящего сервера (server/dist/main.js) на свободном порту с временной папкой данных для тестов.
+// Запуск настоящего сервера (backend/dist/main.js) на свободном порту с временной папкой данных для тестов.
 import { spawn } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import net from 'node:net'
@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const SERVER = fileURLToPath(new URL('../server/dist/main.js', import.meta.url))
+const SERVER = fileURLToPath(new URL('../backend/dist/main.js', import.meta.url))
 export const OWNER = 'owner-secret-for-tests'
 const children = []
 const dirs = []

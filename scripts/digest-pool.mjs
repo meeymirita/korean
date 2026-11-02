@@ -1,11 +1,11 @@
 // Слова и предложения для письма-подборки (кабинет → Настройки → «Подборка на повторение»).
-// Пишет server/src/digest/pool.ts. Запуск: node scripts/digest-pool.mjs (после изменения словаря или переводов).
+// Пишет backend/src/digest/pool.ts. Запуск: node scripts/digest-pool.mjs (после изменения словаря или переводов).
 // Тест tests/digest-pool.test.mjs следит, что файл не отстал от данных сайта.
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { close, load } from '../tests/_load.mjs'
 
-export const OUT = fileURLToPath(new URL('../server/src/digest/pool.ts', import.meta.url))
+export const OUT = fileURLToPath(new URL('../backend/src/digest/pool.ts', import.meta.url))
 /** Будущее время и обещания ещё не проходили: такие предложения в письмо не берём. */
 export const FUTURE = /거예요|거에요|겠|게요|ㄹ까요|을까요/
 

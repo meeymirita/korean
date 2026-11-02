@@ -4,8 +4,8 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 
-const css = n => readFileSync(new URL(`../src/assets/${n}`, import.meta.url), 'utf8')
-const config = readFileSync(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
+const css = n => readFileSync(new URL(`../frontend/src/assets/${n}`, import.meta.url), 'utf8')
+const config = readFileSync(new URL('../frontend/nuxt.config.ts', import.meta.url), 'utf8')
 
 describe('вёрстка для разных размеров экрана', () => {
   test('в <head> есть viewport (nuxt.config.ts), без него телефон рисует «настольную» страницу', () => {
@@ -21,7 +21,7 @@ describe('вёрстка для разных размеров экрана', () 
   })
 
   test('нигде нет жёсткого min-width больше ширины телефона без min(…, 100%)', () => {
-    const files = readdirSync(new URL('../src/assets/', import.meta.url)).filter(f => f.endsWith('.css'))
+    const files = readdirSync(new URL('../frontend/src/assets/', import.meta.url)).filter(f => f.endsWith('.css'))
     for (const f of files) {
       // таблица хангыля (.hg) лежит в блоке с горизонтальной прокруткой, ей широкая ширина разрешена
       for (const m of css(f).replace(/\.hg table \{[^}]*\}/g, '').matchAll(/(?<!\()min-width:\s*(\d+)px/g)) {

@@ -1,11 +1,11 @@
 // Что помощник-чат знает о программе владельца: пройденные темы грамматики и слова словаря.
-// Пишет server/src/chat/curriculum.ts. Запуск: node scripts/chat-curriculum.mjs (после изменения словаря или грамматики).
+// Пишет backend/src/chat/curriculum.ts. Запуск: node scripts/chat-curriculum.mjs (после изменения словаря или грамматики).
 // Тест tests/chat-prompt.test.mjs следит, что файл не отстал от данных сайта.
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { close, load } from '../tests/_load.mjs'
 
-export const OUT = fileURLToPath(new URL('../server/src/chat/curriculum.ts', import.meta.url))
+export const OUT = fileURLToPath(new URL('../backend/src/chat/curriculum.ts', import.meta.url))
 
 /** Текст файла curriculum.ts по текущим данным сайта. */
 export async function build() {

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { close, load } from './_load.mjs'
 import { OWNER, cleanup, start } from './_server.mjs'
 
-const root = fileURLToPath(new URL('..', import.meta.url))
+const root = fileURLToPath(new URL('../frontend/', import.meta.url))
 const { SITE, seoFor, indexablePaths, privatePaths } = await load('/src/data/seo.ts')
 const { D } = await load('/src/data/korean/words.ts')
 after(close)
@@ -25,7 +25,7 @@ const freePort = () =>
 let base, web, api
 before(async () => {
   api = await start()
-  execFileSync(process.execPath, [fileURLToPath(new URL('../node_modules/nuxt/bin/nuxt.mjs', import.meta.url)), 'build'], { cwd: root, stdio: 'pipe', env: { ...process.env, API_PORT: new URL(api.base).port } })
+  execFileSync(process.execPath, [fileURLToPath(new URL('../frontend/node_modules/nuxt/bin/nuxt.mjs', import.meta.url)), 'build'], { cwd: root, stdio: 'pipe', env: { ...process.env, API_PORT: new URL(api.base).port } })
   const port = await freePort()
   web = spawn(process.execPath, ['.output/server/index.mjs'], { cwd: root, env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', NUXT_API_BASE: api.base }, stdio: 'ignore' })
   base = `http://127.0.0.1:${port}`

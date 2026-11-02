@@ -18,7 +18,7 @@ test('id игр не повторяются, адреса ведут в игру
 })
 
 test('режимы ?game=… существуют в движке игры или среди тренажёров', () => {
-  const engine = readFileSync(new URL('../src/game/engine.ts', import.meta.url), 'utf8')
+  const engine = readFileSync(new URL('../frontend/src/game/engine.ts', import.meta.url), 'utf8')
   for (const g of ALL_GAMES) {
     const m = /^\/game\/home\?game=(\w+)$/.exec(g.to)
     if (m && !TOOL_IDS.includes(m[1])) assert.ok(engine.includes(`{id:'${m[1]}'`), `нет режима ${m[1]}`)
@@ -27,7 +27,7 @@ test('режимы ?game=… существуют в движке игры ил�
 
 test('иконки каталога есть среди нарезанных', () => {
   for (const g of [...ALL_GAMES, ...GAME_GROUPS]) {
-    assert.ok(readFileSync(new URL(`../src/assets/game/icons/${g.icon}.webp`, import.meta.url)).length > 0, g.icon)
+    assert.ok(readFileSync(new URL(`../frontend/src/assets/game/icons/${g.icon}.webp`, import.meta.url)).length > 0, g.icon)
   }
 })
 

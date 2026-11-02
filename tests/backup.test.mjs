@@ -9,7 +9,7 @@ import { DatabaseSync } from 'node:sqlite'
 
 const script = fileURLToPath(new URL('../scripts/backup.sh', import.meta.url))
 let root, out
-const data = () => path.join(root, 'server/data')
+const data = () => path.join(root, 'backend/data')
 const run = (env = {}) => spawnSync('bash', [script], { env: { ...process.env, ROOT: root, BACKUP_DIR: out, ...env }, encoding: 'utf8' })
 const snaps = () => readdirSync(out).filter(n => /^20\d\d-\d\d-\d\d_\d{6}$/.test(n)).sort()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -23,7 +23,7 @@ before(() => {
   writeFileSync(path.join(data(), 'uploads/a.png'), 'картинка')
   writeFileSync(path.join(data(), 'docs/d.pdf'), '%PDF-1.4')
   writeFileSync(path.join(data(), 'thumbs/a.webp'), 'миниатюра')
-  writeFileSync(path.join(root, 'server/.env'), 'PROGRESS_TOKEN=секрет\n')
+  writeFileSync(path.join(root, 'backend/.env'), 'PROGRESS_TOKEN=секрет\n')
   const db = new DatabaseSync(path.join(data(), 'app.db'))
   db.exec('PRAGMA journal_mode = WAL; CREATE TABLE notes (id TEXT, title TEXT); INSERT INTO notes VALUES (\'1\', \'Важная заметка\');')
   db.close()
