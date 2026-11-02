@@ -205,6 +205,11 @@ function analyzeToken(tok: string, depth = 0): Segment[] | null {
   if (tok.endsWith('해요') && tok.length > 2) {
     const stem = tok.slice(0, -2)
     const head = LEX.get(stem)
+    // «미안해요»: в словаре слово лежит целиком как 미안하다 (глагол или прилагательное на -하다)
+    const whole = head ? undefined : LEX.get(stem + '하다')
+    if (whole) {
+      return [{ ...entrySeg(tok, whole), explain: `${stem}하다 + 아요 → ${tok}: слова на -하다 всегда дают 해요` }]
+    }
     return [
       head ? entrySeg(stem, head) : { text: stem, type: 'unknown', gloss: 'нет в словаре' },
       {
