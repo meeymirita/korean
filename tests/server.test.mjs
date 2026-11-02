@@ -269,3 +269,13 @@ describe('сервер: разнос старых картинок по назн
     }
   })
 })
+
+describe('сервер: health', () => {
+  test('health проверяет базу и отвечает ok', async () => {
+    const s = await start()
+    const res = await s.call('GET', '/api/health')
+    assert.equal(res.status, 200)
+    assert.deepEqual(await res.json(), { ok: true })
+  })
+
+})
