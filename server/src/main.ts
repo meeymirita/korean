@@ -7,9 +7,10 @@ import 'reflect-metadata'
 import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module'
-import { DATA_DIR, MAX_JSON, PORT, TOKEN } from './config'
+import { DATA_DIR, MAX_JSON, PORT, SWAGGER, TOKEN } from './config'
 import { accessLogger, startLogCapture } from './logs/log-buffer'
 import { RateLimiter, requestTimeout, securityHeaders } from './security'
+import { DOCS_PATH, setupSwagger } from './swagger'
 
 startLogCapture() // журнал для кабинета: копим всё, что пишет сервер
 
@@ -30,6 +31,7 @@ async function bootstrap() {
   app.useBodyParser('json', { limit: MAX_JSON })
   app.setGlobalPrefix('api')
   app.enableShutdownHooks()
+  if (SWAGGER) setupSwagger(app)
   const server = await app.listen(PORT, '127.0.0.1')
   // медленные и зависшие соединения закрываются (защита от «медленных» атак)
   server.headersTimeout = 15_000
@@ -38,5 +40,6 @@ async function bootstrap() {
   server.maxHeadersCount = 60
   server.maxRequestsPerSocket = 200
   console.log(`Сервер: http://127.0.0.1:${PORT}/api, данные в ${DATA_DIR}`)
+  if (SWAGGER) console.warn(`Swagger открыт без токена: http://127.0.0.1:${PORT}/${DOCS_PATH} (на боевом сервере SWAGGER не включать)`)
 }
 void bootstrap()

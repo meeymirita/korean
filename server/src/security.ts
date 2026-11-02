@@ -4,6 +4,7 @@
  */
 import { Injectable } from '@nestjs/common'
 import type { NextFunction, Request, Response } from 'express'
+import { SWAGGER } from './config'
 
 const num = (name: string, fallback: number) => {
   const v = Number(process.env[name])
@@ -115,13 +116,17 @@ export class RateLimiter {
 }
 
 /** Заголовки безопасности для каждого ответа API. */
-export function securityHeaders(_req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(req: Request, res: Response, next: NextFunction) {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('Cross-Origin-Resource-Policy', 'same-origin')
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
-  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+  // страница Swagger (только при SWAGGER=1) грузит свои скрипты, стили и картинки
+  const docs = SWAGGER && req.path.startsWith('/api/docs')
+  res.setHeader('Content-Security-Policy', docs
+    ? "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-store')

@@ -29,6 +29,8 @@ loadEnv(path.join(ROOT, '.env'))
 export const PORT = Number(process.env.PORT || 3001)
 /** Токен владельца: полный доступ. Гостевые токены создаются из кабинета и лежат в базе (хэшами). */
 export const TOKEN = process.env.PROGRESS_TOKEN || ''
+/** Страница Swagger /api/docs (см. swagger.ts): только для локальной работы. */
+export const SWAGGER = process.env.SWAGGER === '1'
 export const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data')
 
 export const DB_FILE = path.join(DATA_DIR, 'app.db')

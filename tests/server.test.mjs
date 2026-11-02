@@ -270,12 +270,25 @@ describe('сервер: разнос старых картинок по назн
   })
 })
 
-describe('сервер: health', () => {
-  test('health проверяет базу и отвечает ok', async () => {
+describe('сервер: health и Swagger', () => {
+  test('health проверяет базу и отвечает ok; Swagger по умолчанию выключен', async () => {
     const s = await start()
     const res = await s.call('GET', '/api/health')
     assert.equal(res.status, 200)
     assert.deepEqual(await res.json(), { ok: true })
+    assert.notEqual((await s.call('GET', '/api/docs')).status, 200)
+    assert.notEqual((await s.call('GET', '/api/docs-json')).status, 200)
   })
 
+  test('SWAGGER=1: страница и описание API, группы по разделу адреса, строгий CSP у остального API', async () => {
+    const s = await start({ env: { SWAGGER: '1' } })
+    const page = await s.call('GET', '/api/docs/')
+    assert.equal(page.status, 200)
+    assert.match(page.headers.get('content-security-policy'), /default-src 'self'/)
+    const doc = await (await s.call('GET', '/api/docs-json')).json()
+    assert.ok(doc.paths['/api/health'] && doc.paths['/api/notes'])
+    assert.deepEqual(doc.paths['/api/notes'].get.tags, ['notes'])
+    assert.ok(doc.components.securitySchemes.bearer)
+    assert.match((await s.call('GET', '/api/health')).headers.get('content-security-policy'), /default-src 'none'/)
+  })
 })
