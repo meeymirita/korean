@@ -37,4 +37,12 @@ describe('вёрстка для разных размеров экрана', () 
     assert.equal(r.status, 2)
     assert.match(r.stderr, /TOKEN/)
   })
+
+  test('обход по ссылкам (scripts/check-links.mjs) без ошибок синтаксиса и без браузера честно падает', () => {
+    const file = path.resolve('scripts/check-links.mjs')
+    assert.equal(spawnSync(process.execPath, ['--check', file]).status, 0)
+    const r = spawnSync(process.execPath, [file], { encoding: 'utf8', env: { PATH: process.env.PATH, HOME: process.env.HOME, CHROME: '/nonexistent/chrome' } })
+    assert.equal(r.status, 2)
+    assert.match(r.stderr, /Chromium не запустился|Порт \d+ занят/)
+  })
 })

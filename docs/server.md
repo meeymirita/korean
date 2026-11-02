@@ -1,6 +1,6 @@
 # Сервер: NestJS + SQLite
 
-Папка `server/`, свои `package.json` и `node_modules` (корневой `node_modules` общий с другим проектом, туда ничего не ставим).
+Папка `server/`, свои `package.json` и `node_modules` (у сайта свой корневой `node_modules`).
 База встроенная: модуль `node:sqlite` из Node (нужен Node 22.18+ или 24.12+), обычный SQL без ORM. Файл базы:
 `server/data/app.db` (в git не попадает).
 
@@ -10,6 +10,13 @@
 - Настройки: `server/.env` (`PROGRESS_TOKEN=токен`, образец `server/.env.example`) или переменные окружения: `PROGRESS_TOKEN`,
   `PORT`, `DATA_DIR` (папка с базой и картинками), `IMAGES_QUOTA_MB` (нужна только тестам).
 - Токен создать: `openssl rand -base64 24`.
+- **Swagger** (`server/src/swagger.ts`, пакет `@nestjs/swagger`): `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs`
+  (описание в JSON: `/api/docs-json`). Все адреса API, сгруппированные по разделу адреса (`/api/notes/...` → `notes`); запросы прямо со
+  страницы: кнопка Authorize, поле bearer, токен. Включается **только локально**: страница отдаётся мимо проверки токена, а Caddy
+  пропускает наружу всё `/api/*`, поэтому в `server/.env` на боевом сервере `SWAGGER` не ставить. Для `/api/docs` при включённом
+  Swagger мягче CSP (свои скрипты и стили), у остального API строгая. Тест: `server.test.mjs`, «health и Swagger».
+- **`/api/health`** (открыт): проверяет, что база читается (`SELECT 1`): `200 {"ok":true}`, иначе `503 {"ok":false}` (подробности
+  только в журнале сервера). На нём держится `scripts/deploy.sh`: сломанная база после обновления → откат.
 
 ## Устройство (`server/src/`)
 | Папка | Что делает |
