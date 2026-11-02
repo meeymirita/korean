@@ -7,7 +7,7 @@ import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { photoOf } from '@/data/korean/grammarPhotos'
 import yunaGrammar from '@/assets/home/yuna-grammar.webp'
 import { useGrammarModal } from '@/composables/useGrammarModal'
-import { G, SECS } from '@/data/korean/grammar'
+import { G, SECS, tabOf } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { COURSE } from '@/data/korean/course'
 import { useProgressStore } from '@/stores/progress'
@@ -18,9 +18,11 @@ const progress = useProgressStore()
 const passed = (id: string) => progress.isMarked('d', id)
 /** «пройдено» по данным, если владелец не снял отметку (метка u) */
 const isOk = (g: { id: string; st: string }) => g.st === 'ok' && !progress.isMarked('u', g.id)
+/** Вкладка 0: свои карточки (без номера урока: с Лерой и сам); 1 и 2: карточки уроков видеокурса */
 const PARTS = [
-  { id: 1, label: 'Часть 1', sub: 'Первый шаг · уроки 1–30' },
-  { id: 2, label: 'Часть 2', sub: 'Второй шаг · 13 уроков' },
+  { id: 0, label: 'Мои карточки', sub: 'С Лерой и свои' },
+  { id: 1, label: 'Часть 1', sub: 'Видеокурс · уроки 1–30' },
+  { id: 2, label: 'Часть 2', sub: 'Видеокурс · 13 уроков' },
 ] as const
 const photo = ref<string | null>(null)
 /** Иконки вкладок-тем (имена из src/lib/icons.ts) */
@@ -28,28 +30,29 @@ const SEC_ICON: Record<string, string> = {
   'Быть и отрицание': 'check', 'Частицы': 'puzzle', 'Место и направление': 'target', 'Глаголы и просьбы': 'pencil', 'Указатели и вопросы': 'question',
   'Вежливость': 'heart', 'Произношение': 'speech', 'Числительные': 'chart', 'Время': 'clock', 'Желание и предложение': 'star', 'Связки': 'arrows',
 }
-const part = usePersisted<1 | 2>('grammar_part', 1, v => v === 1 || v === 2)
-const partCount = (n: number) => G.filter(g => (g.part ?? 1) === n).length
+const part = usePersisted<0 | 1 | 2>('grammar_tab', 0, v => v === 0 || v === 1 || v === 2)
+const partCount = (n: number) => G.filter(g => tabOf(g) === n).length
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
 const list = computed(() => {
   const w = q.value.trim().toLowerCase()
   return G.filter(g =>
-    (g.part ?? 1) === part.value &&
     (!sec.value || g.s === sec.value) &&
     (!onlyDone.value || isOk(g) || passed(g.id)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
-    // сначала свои карточки (без подписи урока), потом карточки уроков; внутри групп порядок прежний
-    .map((g, i) => ({ g, i }))
-    .sort((a, b) => Number(!!a.g.l) - Number(!!b.g.l) || a.i - b.i)
-    .map(x => x.g)
 })
+/** Карточки выбранной вкладки. В разметку попадают все вкладки (скрытые через v-show): поисковики видят все карточки, а не одну вкладку. */
+const shown = computed(() => list.value.filter(g => tabOf(g) === part.value))
 const { open } = useGrammarModal()
 const route = useRoute()
 /** /korean/grammar?g=ayo сразу открывает карточку */
 onMounted(() => {
   const g = String(route.query.g ?? '')
-  if (G.some(x => x.id === g)) open(g)
+  const card = G.find(x => x.id === g)
+  if (card) {
+    part.value = tabOf(card)
+    open(g)
+  }
 })
 </script>
 
@@ -75,14 +78,17 @@ onMounted(() => {
       </div>
       <label class="gdone"><input v-model="onlyDone" type="checkbox" /> показывать только пройденное</label>
     </div>
+    <p v-if="part === 0" class="gcourse">
+      Здесь правила, которые разбирали с Лерой по учебнику 서울대 한국어+, и свои карточки. Номера урока у них нет: видео к ним не привязано, а темы могут повторяться с видеоуроками.
+    </p>
     <div class="gparts" role="tablist">
       <button v-for="p in PARTS" :key="p.id" role="tab" :aria-selected="part === p.id" class="gpart" :class="{ on: part === p.id }" @click="part = p.id">
         <b>{{ p.label }}</b><small>{{ p.sub }} · {{ partCount(p.id) }} карточек</small>
       </button>
     </div>
-    <p v-if="!list.length" class="gempty">Ничего не найдено.</p>
+    <p v-if="!shown.length" class="gempty">Ничего не найдено.</p>
     <div class="gg">
-      <button v-for="g in list" :key="g.id" class="gc" @click="open(g.id)">
+      <button v-for="g in list" v-show="tabOf(g) === part" :key="g.id" class="gc" @click="open(g.id)">
         <h3 v-html="F(g.ko)"></h3>
         <div class="rn">{{ g.ru }}</div>
         <div class="d">{{ g.d }}</div>
