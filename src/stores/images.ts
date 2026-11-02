@@ -28,12 +28,20 @@ export const MAX_DESCRIPTION = 1000
 const fmtMb = (n: number) => (n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0)
 export const formatSize = (n: number) => (n >= 1024 * 1024 ? `${fmtMb(n)} МБ` : `${Math.max(1, Math.round(n / 1024))} КБ`)
 
+/** Сервер ограничивает загрузки (40 в минуту): ошибка знает, сколько секунд подождать. */
+export class UploadLimitError extends Error {
+  constructor(readonly retryAfter: number) {
+    super(uploadError(429))
+  }
+}
+
 /** Человеческий текст по ответу сервера на загрузку. */
 function uploadError(status: number): string {
   if (status === 413) return 'файл слишком большой или закончилось место'
   if (status === 400) return 'не получилось прочитать картинку (нужны JPEG, PNG, GIF или WebP)'
   if (status === 403) return 'картинки доступны только владельцу'
   if (status === 401) return 'нужно войти по токену'
+  if (status === 429) return 'слишком много загрузок подряд, подождите минуту'
   return `ошибка сервера ${status}`
 }
 
@@ -75,10 +83,11 @@ export const useImagesStore = defineStore('images', () => {
   }
 
   /** kind: «Картинки» (gallery), вложение заметки (note) или обложка кабинета (cover): у каждого назначения свой список. */
-  async function upload(file: File, caption = '', kind: ImageKind = 'gallery', tags: string[] = []): Promise<ImageItem> {
+  async function upload(file: File, caption = '', kind: ImageKind = 'gallery', tags: string[] = [], description = ''): Promise<ImageItem> {
     const form = new FormData()
     form.append('file', file)
     if (caption) form.append('caption', caption)
+    if (description.trim()) form.append('description', description.trim())
     if (kind !== 'gallery') form.append('kind', kind)
     if (tags.length) form.append('tags', JSON.stringify(tags))
     let res: Response
@@ -87,6 +96,7 @@ export const useImagesStore = defineStore('images', () => {
     } catch (e) {
       throw new Error(errText(e))
     }
+    if (res.status === 429) throw new UploadLimitError(Number(res.headers.get('Retry-After')) || 60)
     if (!res.ok) throw new Error(uploadError(res.status))
     const item = (await res.json()) as ImageItem & { ext?: string }
     item.tags ??= []

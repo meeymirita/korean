@@ -199,6 +199,8 @@
   background: var(--surface); border: 2px dashed var(--line); border-radius: 16px; transition: border-color .2s, background .2s; }
 .study .im-drop:hover, .study .im-drop.on { border-color: var(--gold); background: var(--gold-soft, var(--surface)); }
 .study .im-drop input { display: none; }
+.study .im-bulk { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 600; color: var(--gold); text-decoration: none; }
+.study .im-bulk:hover { text-decoration: underline; }
 .study .im-drop b { font-size: 16px; }
 .study .im-drop small, .study .im-usage span { font-size: 13px; color: var(--muted); }
 .study .im > .tg-in { margin-top: 14px; }

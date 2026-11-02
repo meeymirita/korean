@@ -93,6 +93,7 @@ const router = createRouter({
       ],
     },
     // «Тетрадь»: отдельный модуль на весь экран, без меню и шапки сайта
+    { path: '/upload', name: 'upload', meta: { private: true }, component: () => import('@/views/ImagesUploadView.vue') },
     { path: '/notebook', name: 'notebook', meta: { private: true }, component: () => import('@/views/NotebookView.vue') },
     { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
     { path: '/me', name: 'me', component: () => import('@/views/PublicMeView.vue') },

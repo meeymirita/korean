@@ -14,5 +14,6 @@ Disallow: /korean/chat
 Disallow: /korean/garden
 Disallow: /korean/shop
 Disallow: /notebook
+Disallow: /upload
 
 Sitemap: https://korean.meeymirita.ru/sitemap.xml

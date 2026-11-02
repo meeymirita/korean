@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
 import TagInput from '@/components/cabinet/TagInput.vue'
 import { useAllTags } from '@/composables/useAllTags'
@@ -165,6 +166,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <b>{{ busy ? status : 'Перетащите картинки сюда или нажмите, чтобы выбрать' }}</b>
       <small>JPEG, PNG, GIF, WebP · до {{ formatSize(store.maxFile) }} каждая</small>
     </label>
+
+    <RouterLink to="/upload" class="im-bulk">Массовая загрузка: много картинок сразу, у каждой свои теги и описание →</RouterLink>
 
     <TagInput v-model="uploadTags" :suggestions="allTags" label="Теги для новых картинок (необязательно)" />
 
