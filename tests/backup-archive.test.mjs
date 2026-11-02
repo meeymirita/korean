@@ -50,7 +50,11 @@ describe('сервер: полный архив по кнопке', () => {
     await mkdir(out)
     assert.ok(!bytes.includes(Buffer.from('не-совсем-картинка')), 'внутри архива открытого текста нет')
     const dec = pw => ['enc', '-d', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-in', path.join(exp, name), '-out', path.join(out, 'ok.tar.gz'), '-pass', 'pass:' + pw]
-    assert.throws(() => execFileSync('openssl', dec('не тот'), { stdio: 'pipe' }))
+    // неверный пароль: обычно openssl ругается на отступ, но примерно 1 раз из 256 отступ случайно «верный» и на выходе мусор, который tar не читает
+    assert.throws(() => {
+      execFileSync('openssl', dec('не тот'), { stdio: 'pipe' })
+      execFileSync('tar', ['-tzf', path.join(out, 'ok.tar.gz')], { stdio: 'pipe' })
+    })
     execFileSync('openssl', dec('секретная фраза 123'))
     const list = execFileSync('tar', ['-tzf', path.join(out, 'ok.tar.gz')]).toString()
     assert.match(list, /app\.db/)
