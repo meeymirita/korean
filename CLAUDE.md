@@ -176,6 +176,12 @@ src/game/          words.ts (данные игры), engine.ts (логика), b
 
 ## Что нового и где искать
 
+**2026-11-02, ночь: сайт на Nuxt и папки `frontend/` + `backend/` на боевом сервере** (подробно: `docs/changelog.md`, `docs/hosting.md`):
+- Ветка `nuxt` стала `main`, прежний Vue SPA лежит в ветке `main_old` (откат: `git checkout -B main origin/main_old`, шаги в `docs/hosting.md`). Владелец перенёс сервер сам, проверил главную, вход по токену, видео, `robots.txt`, `sitemap.xml`, картинки в заметках; `scripts/deploy.sh` на новой структуре отработал.
+- Службы: `korean-web` (Nuxt, порт 3000) и `progress` (`backend/dist/main.js`, порт 3001), Caddy проксирует на обе. Данные и `.env` теперь в `backend/data` и `backend/.env`.
+- Тесты: `npm test` из корня запускает сборку сервера, Nest-тесты (`backend/test`, vitest + `@nestjs/testing` + supertest), Nuxt-тесты (`frontend/test`, vitest + `@nuxt/test-utils`) и все `tests/*.test.mjs` (519 штук). Отдельно: `npm run test:nest`, `npm run test:nuxt`.
+- Не забыть: слайды «О платформе» и остальное из списка ниже по-прежнему открыты.
+
 **2026-11-02** (подробно: `docs/changelog.md`, «2026-11-02 (вечер)» и «2026-11-02 (позже)»):
 - **Массовая загрузка картинок** `/upload` (`ImagesUploadView.vue`, ссылка из «Кабинет → Картинки»): много файлов, у каждого теги и описание; лимит 40 загрузок в минуту страница пережидает сама.
 - **Сервер:** `/api/health` проверяет базу (503 при поломке, деплой откатит), Swagger на `/api/docs` по `SWAGGER=1` (только локально), скрипт обхода сайта по ссылкам `scripts/check-links.mjs`.

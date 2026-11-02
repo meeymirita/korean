@@ -2,6 +2,14 @@
 
 Подробности по темам — в остальных файлах `docs/`; здесь только хронология и чек-лист обновления сервера.
 
+## 2026-11-02 (ночь), боевой сервер на Nuxt, `nuxt` стала `main`
+
+- Ветка `main` переписана вперёд на `nuxt` (обычный fast-forward, без force), старый `main` сохранён как `main_old`; ветка `nuxt` удалена.
+- Шаг 2 плана выполнен: `ci.yml` (три `npm ci`, `type-check`, сборка из `frontend/`, `audit` для `frontend`), `deploy.sh` (`backend/`, отдельный `npm ci` для `frontend/`, откат пересобирает сайт), `demo-seed.mjs`, пути в `docs/*`, `README.md`, `CLAUDE.md`, комментариях и текстах писем (`backend/data/export`). `korean-web.service`: `WorkingDirectory=/var/sites/korean/frontend`.
+- Тесты фреймворков: Nest (`backend/test`, vitest с `unplugin-swc`: jest не запускается с ESM-пакетами Nest 12) и Nuxt (`frontend/test`, `@nuxt/test-utils`). В корневом `package.json` добавлены `dev`, `build`, `preview`, `type-check`, `server`, `server:build`, `server:dev`, `test:nest`, `test:nuxt`. Тестов 519 + 8 (Nest) + 9 (Nuxt).
+- Сервер владельца: `server/.env` и `server/data` перенесены в `backend/`, `progress.service` смотрит на `backend/dist/main.js`, поставлена служба `korean-web`, Caddy проксирует сайт на порт 3000 (правило кэша `/_nuxt/*`), старый `server/` удалён. Проверено владельцем: главная, вход, «Сегодня», «Кабинет», видеоурок, `robots.txt`, `sitemap.xml`, загрузка картинки; `bash scripts/deploy.sh` отвечает «Нечего обновлять».
+- Файл плана `backend-frontend-plan.md` удалён за ненадобностью.
+
 ## 2026-11-02 (позже), перенос `server/` → `backend/` + `frontend/` (перенос файлов, шаг 1 из плана)
 
 - По просьбе владельца сайт (Nuxt) и сервер (NestJS) явно разнесены по папкам одного репозитория: `server/` →
