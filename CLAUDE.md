@@ -73,6 +73,7 @@
   Сообщения на английском, повелительное наклонение, в конце строка
   `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Перед пушем проверять, что каждый коммит
   собирается (временный `git worktree` + симлинки на `node_modules` проекта и `server/node_modules` + `vue-tsc --build` + `npm run build` + `npm test`).
+  На Nuxt симлинк на корневой `node_modules` не годится: Nuxt собирает в `node_modules/.cache/nuxt` и попадает в чужой проект («#internal/nuxt/paths is not defined»), в копии делай `npm ci`.
 
 ## Стек и запуск
 
