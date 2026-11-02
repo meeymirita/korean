@@ -17,9 +17,11 @@ export default defineConfig({
   },
   build: {
     rolldownOptions: {
+      // справка «плагины работали N с» на каждой сборке: сборка и так около 4 секунд, пользы нет
+      checks: { bundlerTimings: false },
       output: {
         // библиотеки меняются редко: в отдельных файлах браузер не перекачивает их после каждой выкладки сайта
-        advancedChunks: {
+        codeSplitting: {
           groups: [
             { name: 'vendor', test: /node_modules[\\/](vue|@vue|pinia|vue-router)[\\/]/ },
             { name: 'gsap', test: /node_modules[\\/]gsap[\\/]/ },
