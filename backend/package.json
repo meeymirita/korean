@@ -7,7 +7,8 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "dev": "nest start --watch",
-    "mail:check": "node scripts/mail-check.cjs"
+    "mail:check": "node scripts/mail-check.cjs",
+    "test": "vitest run"
   },
   "engines": {
     "node": "^22.18.0 || >=24.12.0"
@@ -24,11 +25,17 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.11",
+    "@nestjs/testing": "^12.3.2",
+    "@swc/core": "^1.16.21",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
     "@types/node": "^24.19.2",
     "@types/nodemailer": "^8.0.2",
-    "typescript": "~5.9"
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.1",
+    "typescript": "~5.9",
+    "unplugin-swc": "^2.0.0",
+    "vitest": "^5.0.5"
   },
   "overrides": {
     "multer": "^2.5.0",
