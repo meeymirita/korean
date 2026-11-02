@@ -23,7 +23,6 @@ import { useProgressStore } from '@/stores/progress'
 import { themeDark, toggleTheme } from '@/lib/theme'
 import catSleep from '@/assets/game/cat-sleep.webp'
 import catWow from '@/assets/game/cat-wow.webp'
-import yunaStand from '@/assets/game/yuna-stand.webp'
 import yunaSit from '@/assets/game/yuna-sit.webp'
 import bg from '@/assets/game/bg.webp'
 import '@/assets/home/fonts.css'
@@ -164,21 +163,6 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           </div>
         </nav>
       </div>
-      <img v-if="!game" class="gh-stand" :src="yunaStand" alt="" aria-hidden="true" draggable="false" />
-      <div v-if="!game" class="gh-cloud" aria-hidden="true">
-        <svg viewBox="0 0 200 110" width="100%" height="100%">
-          <defs><linearGradient id="ghc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" /><stop offset="1" stop-color="#f6e6ff" /></linearGradient></defs>
-          <g fill="#e48cc8" stroke="#e48cc8" stroke-width="6" stroke-linejoin="round">
-            <rect x="14" y="26" width="172" height="46" rx="23" /><circle cx="46" cy="30" r="20" /><circle cx="86" cy="22" r="22" /><circle cx="128" cy="24" r="20" /><circle cx="164" cy="38" r="18" />
-            <circle cx="52" cy="90" r="7" /><circle cx="36" cy="102" r="4" />
-          </g>
-          <g fill="url(#ghc)">
-            <rect x="14" y="26" width="172" height="46" rx="23" /><circle cx="46" cy="30" r="20" /><circle cx="86" cy="22" r="22" /><circle cx="128" cy="24" r="20" /><circle cx="164" cy="38" r="18" />
-            <circle cx="52" cy="90" r="7" /><circle cx="36" cy="102" r="4" />
-          </g>
-        </svg>
-        <span>Во что<br />поиграть?</span>
-      </div>
       <RouterLink to="/korean/cabinet" class="gx-level">
         <template v-if="progress.unlocked">
           <span class="gx-lv-t"><span><img class="gi-img" :src="ICON.star" alt="" aria-hidden="true" /> Уровень {{ progress.info.level }} · {{ progress.info.title }}</span><b>{{ progress.info.into }} / {{ progress.info.span }}</b></span>
@@ -235,11 +219,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 
 <style>
 /* ===== /game/home: Юны и каталог (двигай здесь) ===== */
-.gh { --stand-h: 240px; --stand-left: 54px; --stand-bottom: 75px; --sit-h: 220px; --sit-right: 100px; --sit-top: -8px; --cloud-x: 50px; --cloud-y: 0px; }
-.gh .gh-stand { position: absolute; z-index: 3; left: var(--stand-left); bottom: var(--stand-bottom); height: var(--stand-h); width: auto; pointer-events: none; user-select: none; }
-.gh .gh-cloud { position: absolute; z-index: 4; left: calc(var(--stand-left) + 20px + var(--cloud-x)); bottom: calc(var(--stand-bottom) + var(--stand-h) - 6px + var(--cloud-y)); width: 140px; height: 77px; pointer-events: none; filter: drop-shadow(0 8px 14px rgba(100, 87, 170, .22)); }
-.gh .gh-cloud svg { position: absolute; inset: 0; }
-.gh .gh-cloud span { position: absolute; left: 0; right: 0; top: 17px; text-align: center; font-weight: 800; font-size: 13px; line-height: 1.15; color: var(--ink); }
+.gh { --sit-h: 220px; --sit-right: 100px; --sit-top: -8px; }
 .gh .gh-sit { position: absolute; z-index: 1; right: var(--sit-right); top: var(--sit-top); height: var(--sit-h); width: auto; pointer-events: none; user-select: none; }
 .gh .game-top.gx-top { position: relative; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px; }
 .gh .gx-tools { flex: none; }
@@ -276,7 +256,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gh-card small { font-size: 11px; color: var(--muted); line-height: 1.3; }
 .gh .gh-card i { font-style: normal; font-size: 11px; color: #fff; background: #7863ff; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; flex: none; }
 .gh .gh-empty { margin: 18px 4px; color: var(--muted); }
-@media (max-width: 1100px) { .gh .gh-stand, .gh .gh-cloud, .gh .gh-sit { display: none; } }
+@media (max-width: 1100px) { .gh .gh-sit { display: none; } }
 /* поиск (sw-btn) и кнопки шапки (gx-tools) стоят в одну линию: сначала поиск, справа за ним кнопки */
 body.on-game-home .study.sky .sw-btn { top: 52px; right: 236px; }
 @media (max-width: 860px) { body.on-game-home .study.sky .sw-btn { top: auto; right: auto; } }
