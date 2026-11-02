@@ -6,8 +6,8 @@ import { readFileSync } from 'node:fs'
 const { ALL_GAMES, GAME_GROUPS, TOOL_IDS, findGames } = await load('/src/data/games.ts')
 after(close)
 
-test('пять групп и у каждой есть игры', () => {
-  assert.equal(GAME_GROUPS.length, 5)
+test('семь групп и у каждой есть игры', () => {
+  assert.equal(GAME_GROUPS.length, 7)
   for (const g of GAME_GROUPS) assert.ok(g.games.length > 0, g.id)
 })
 
@@ -35,4 +35,10 @@ test('поиск по названию и описанию, пустой зап�
   assert.equal(findGames(ALL_GAMES, '').length, ALL_GAMES.length)
   assert.ok(findGames(ALL_GAMES, 'ПАРУ').some(g => g.id === 'match'))
   assert.equal(findGames(ALL_GAMES, 'zzzz').length, 0)
+})
+
+test('группы по темам: «Числа и деньги» и «Время и дни недели» со своими играми', () => {
+  const byId = Object.fromEntries(GAME_GROUPS.map(g => [g.id, g.games.map(x => x.id)]))
+  assert.deepEqual(byId.numbers, ['num', 'price', 'count'])
+  assert.deepEqual(byId.time, ['days', 'when', 'too'])
 })
