@@ -1,177 +1,92 @@
-# Хостинг владельца (настроено 2026-10-29, обновлено 2026-10-30, работает)
+# Боевой сервер
 
-- Сервер Ubuntu (`root@se-40678`), проект в `/var/sites/korean` (новый каталог), сайт `https://korean.meeymirita.ru` (отдельный блок в Caddy,
-  A-запись `korean` в DNS). Главная `meeymirita.ru` — другой проект (`/var/sites/meeymirita_start_page`).
-  Владелец сам заходит по SSH; мне доступа нет, поэтому команды ему даём текстом.
-- **Сайт на Nuxt, папки `frontend/` и `backend/` (с 2026-11-02; прежний Vue SPA сохранён в ветке `main_old`).** Страницы рисует сервер Nuxt: отдельная служба `korean-web`
-  (`node .output/server/index.mjs` из папки `frontend/`, порт 3000, только 127.0.0.1), API остаётся службой `progress` (3001, `backend/dist/main.js`).
-  **Переезд на сервере один раз** (владелец, по SSH, `cd /var/sites/korean`):
-  1. Node: `node -v` должен быть **22.22+ или 24.15+** (Nuxt 4.6 младше не запускается); иначе сначала обновить Node.
-  2. Остановить API и забрать код: `systemctl stop progress && git fetch && git checkout -B main origin/main`
-     (в папке не должно быть правок; старые `server/.env`, `server/data` лежат в `.gitignore` и git их не трогает).
-  3. Перенести секреты и данные: `mv server/.env backend/.env && mv server/data backend/data` (права на `.env` остаются 600).
-  4. Пакеты и сборка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci`, затем `npm --prefix backend run build && npm --prefix frontend run build`.
-  5. Служба API: в `/etc/systemd/system/progress.service` заменить в `ExecStart=` `server/dist/main.js` на `backend/dist/main.js`, а в `ReadWritePaths=` (если есть)
-     `/var/sites/korean/backend/data` на `/var/sites/korean/backend/data`.
-  6. Служба сайта: `cp scripts/korean-web.service /etc/systemd/system/` (там `WorkingDirectory=/var/sites/korean/frontend`).
-  7. `systemctl daemon-reload && systemctl enable --now korean-web && systemctl restart progress`; проверка:
-     `curl -s http://127.0.0.1:3001/api/health` (`"ok":true`) и `curl -sI http://127.0.0.1:3000/robots.txt` (200).
-  8. **Caddy**, блок сайта: вместо `handle { root * …/dist; try_files …; file_server }` поставить `handle { reverse_proxy 127.0.0.1:3000 }`;
-     `handle /api/*` (3001) и `handle /video/*` остаются **выше** него как были. Кэш: `/_nuxt/*` вечный (`immutable`, имена с хэшем), страницы `no-cache`
-     (бывшее правило для `/assets/*` переименовать на `/_nuxt/*`). `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`.
-  9. Если настроены ночная копия или таймер (`scripts/backup.sh`, `docs/backup.md`), в их unit-файлах и cron заменить `server/` на `backend/`
-     (`grep -rn "korean/server" /etc/systemd/system /etc/cron.d /etc/korean-deploy.env`); скрипт сам берёт `backend/data` и `backend/.env`.
-  10. Позже убрать остатки старого сервера: `rm -rf server/` (после проверки, что всё работает).
-  Откат, если что-то не так: `git checkout -B main origin/main_old`, вернуть `mv backend/.env server/.env && mv backend/data server/data`, в Caddy прежний `handle` с `dist`
-  (копия `Caddyfile.bak3`), прежние `ExecStart`/`ReadWritePaths`, `npm ci && npm --prefix server ci && npm run build && npm --prefix server run build`, `systemctl restart progress`, `systemctl disable --now korean-web`.
-  Дальше обычный `bash scripts/deploy.sh`: он сам ставит пакеты, собирает и перезапускает `progress` и `korean-web` и проверяет оба (при ошибке откат). Диагностика: `journalctl -u korean-web -n 30 --no-pager`.
-  `robots.txt` и `sitemap.xml` отдаёт сам сайт (модули `@nuxtjs/robots`, `@nuxtjs/sitemap`), файлов в `public/` нет.
-- **Обновление одной командой:** `cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт: отказывается работать при несохранённых правках в папке; `git pull --ff-only`; ставит пакеты корня, `frontend/` и `backend/`, если менялись их `package*.json`; при изменениях в `backend/` ставит пакеты сервера, собирает его и перезапускает службу `progress`; собирает сайт (`frontend/`, Nuxt) и перезапускает `korean-web`; проверяет `/api/health` и сайт до 20 секунд;
-  **если сервер не ответил или сборка упала, сам возвращает прежнюю версию**, пересобирает и перезапускает. Файлы блокировки (`package-lock.json`, `frontend/package-lock.json`, `backend/package-lock.json`), которые переписал npm на сервере, скрипт сам возвращает как в git; любые другие несохранённые правки его останавливают. Параметры: `--force` (собрать всё и перезапустить, даже если изменений нет),
-  `--no-restart`. Уведомление в Telegram по желанию: файл `/etc/korean-deploy.env` со строками `NOTIFY_TELEGRAM_TOKEN=…` и `NOTIFY_TELEGRAM_CHAT=…` (права `chmod 600`). Тесты: `tests/deploy.test.mjs`.
-  Вручную то же самое выглядит так (так делали раньше):
-- Обновление сайта вручную: `git pull` → `npm --prefix frontend ci && npm --prefix frontend run build` → `systemctl restart korean-web`. Сервер прогресса перезапускать только если менялся
-  `backend/`: `cd backend && npm ci && npm run build`, затем `systemctl restart progress`.
-- **Caddy** (`/etc/caddy/Caddyfile`, копия до правки `Caddyfile.bak`), блок сайта:
-  `encode zstd gzip`, заголовки безопасности (HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, `-Server`), `request_body max_size 60MB`,
-  кэш (`/assets/*` вечный, страницы и карта сайта `no-cache`), `handle /api/* { reverse_proxy 127.0.0.1:3001 }`,
-  `handle { root * …/dist; try_files {path} {path}/index.html /index.html; file_server }` (**`{path}/index.html` нужен для готовых страниц SEO**; применено владельцем 2026-10-30,
-  `Content-Security-Policy` для сайта пока не включён, копия прежнего Caddyfile: `Caddyfile.bak2`).
-  `try_files` обязателен для SPA (иначе прямые ссылки на `/korean/...` дают 404). Для предварительной отрисовки (SEO) строка должна быть такой:
-  `try_files {path} {path}/index.html /index.html` (ищет сначала файл, потом готовую страницу раздела, потом общий `index.html`). После правки:
-  `caddy validate --config /etc/caddy/Caddyfile` и `systemctl reload caddy`.
-- **Сервер прогресса** — служба systemd `progress` (`/etc/systemd/system/progress.service`: `WorkingDirectory=` папка
-  проекта, `ExecStart=/usr/bin/node backend/dist/main.js`, `Restart=always`, автозапуск включён). pm2 на сервере нет
-  (владелец не ставил). Токен лежит в `backend/.env` на сервере (не в git, права 600); данные в `backend/data/`
-  (`app.db` с базой, `uploads/` и `thumbs/` с картинками, `backups/` с ежедневными копиями базы). Диагностика: `systemctl status progress`, `journalctl -u progress -n 20`,
-  `curl http://127.0.0.1:3001/api/health`, снаружи `curl https://meeymirita.ru/api/health`. Подключение проверено:
-  на странице «Прогресс» статус «подключён · сохранено на сервере».
-- **Как давать владельцу команды для терминала:** его терминал переносит длинные строки и портит вставку.
-  Давай короткие команды (до ~70 символов), многострочные файлы собирай серией `echo '…' >> $F`, а не `cat <<EOF`
-  (отступы при копировании ломают `EOF`), не вставляй команды с отступами в начале строк. Просить показать вывод
-  (`cat`, `status`), прежде чем править чужой конфиг (в Caddyfile могут быть другие сайты).
-- **Сервер** — NestJS + SQLite, подробно в `docs/server.md`. Нужен Node 22.18+ или 24.12+ (`node -v`): база встроенная (`node:sqlite`),
-  но у сервера свои пакеты. **На сервере сейчас Node 24 (пакет NodeSource, `/usr/bin/node`, обновлён 2026-10-30 командой `curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && apt install -y nodejs`; вместе с ним apt убрал системные `node-*` и старый npm, это нормально, npm теперь свой от NodeSource); после смены Node нужен `bash scripts/deploy.sh --force`.** После `git pull`, который меняет что-то в `backend/`: `cd backend && npm ci && npm run build`, затем
-  `systemctl restart progress`. Картинки обрабатывает пакет `sharp` (ставится вместе с остальными, готовые сборки для Linux есть).
-- **Переход со старого сервера** (один раз): в `/etc/systemd/system/progress.service` заменить `ExecStart` на
-  `/usr/bin/node backend/dist/main.js`, затем `systemctl daemon-reload && systemctl restart progress`. Старые файлы
-  `backend/data/progress.json`, `guests.json`, `notes.json` новому серверу не нужны (прогресс начинается с чистого листа); их можно
-  удалить или оставить как архив. `backend/.env` остаётся прежним.
-- **Токен владельца** создать так: `openssl rand -base64 24` (подсказка есть в `backend/.env.example`).
+Ubuntu (`root@se-40678`), проект в `/var/sites/korean`, сайт `https://korean.meeymirita.ru` (отдельный блок в Caddy). Главная `meeymirita.ru` другой проект.
+Владелец заходит по SSH сам, Claude доступа не имеет: команды даём текстом, короткие (терминал владельца портит длинные строки), перед правкой конфига просим показать его (`cat`).
 
+## Как это работает
+| Что | Как |
+|---|---|
+| Сайт | служба `korean-web` (`scripts/korean-web.service`: Nuxt из `frontend/.output`, порт 3000) |
+| API | служба `progress` (`ExecStart=/usr/bin/node backend/dist/main.js`, порт 3001) |
+| Данные | `backend/data/` (база, картинки, копии), токен и ключи `backend/.env` (права 600), оба вне git |
+| Видео | `/var/sites/korean-video/` (вне git, `deploy.sh` не трогает), Caddy отдаёт `/video/*` |
+| Node | 24 (NodeSource, `/usr/bin/node`); нужен 22.22+ или 24.15+ |
 
-## Dependabot и обновления пакетов
-Dependabot раз в неделю сам открывает pull request-ы на GitHub (ветки `dependabot/...`). Автопроверки (CI) на каждом показывают, ничего ли не сломалось. **Не сливай вслепую
-крупные обновления** (смена первой цифры версии: TypeScript 7, Nest 12, `@types/node` 26, `actions/checkout` 7): смотри зелёную галочку, читай, что изменилось, мелкие (`minor-and-patch`)
-обычно безопасны. Слил pull request на GitHub: на сервере `bash scripts/deploy.sh`. Сомневаешься: закрой pull request, Dependabot предложит снова при следующей версии.
+## Обновление
+`cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт отказывается работать при несохранённых правках, делает `git pull --ff-only`, ставит пакеты корня, `frontend/` и `backend/` если менялись их `package*.json`,
+собирает сервер (при изменениях в `backend/`) и сайт, перезапускает `progress` и `korean-web`, ждёт ответа `/api/health` и сайта до 20 секунд. **Если что-то не ответило или сборка упала, возвращает прежнюю версию.**
+`package-lock.json`, переписанные npm на сервере, возвращает как в git. Параметры: `--force`, `--no-restart`. Telegram-уведомление по желанию: `/etc/korean-deploy.env` с `NOTIFY_TELEGRAM_TOKEN` и `NOTIFY_TELEGRAM_CHAT` (права 600).
+Тест: `tests/deploy.test.mjs`. После смены Node: `bash scripts/deploy.sh --force`. Диагностика: `journalctl -u progress -n 30 --no-pager`, `journalctl -u korean-web -n 30 --no-pager`, `curl http://127.0.0.1:3001/api/health`.
 
-## Усиление защиты на хостинге (делает владелец на сервере)
-
-Сервер уже защищает себя сам (см. `docs/server.md`, «Защита»), но часть защиты живёт вне кода. Команды и куски конфигов ниже.
-
-**1. Служба `progress` (systemd).** В `/etc/systemd/system/progress.service`, секция `[Service]`, добавить и затем
-`systemctl daemon-reload && systemctl restart progress`:
-```
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/var/sites/korean/backend/data
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectControlGroups=true
-RestrictSUIDSGID=true
-RestrictNamespaces=true
-LockPersonality=true
-MemoryMax=512M
-TasksMax=200
-Restart=always
-RestartSec=3
-```
-Если после этого служба не стартует, смотри `journalctl -u progress -n 50`: скорее всего, путь в `ReadWritePaths` не совпал с `DATA_DIR`.
-Служба не должна работать от root: `User=` должен быть обычный пользователь.
-
-**2. Caddy** (`/etc/caddy/Caddyfile`, блок сайта). Заголовки для самого сайта и ограничение тела запроса к API:
+## Caddy (`/etc/caddy/Caddyfile`, блок сайта)
 ```
 korean.meeymirita.ru {
+    encode zstd gzip
+    log {
+        output file /var/log/caddy/korean.log {
+            mode 640
+            roll_size 20MiB
+            roll_keep 5
+        }
+        format json
+    }
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "no-referrer"
         Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-        Content-Security-Policy "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         -Server
     }
     request_body {
         max_size 60MB
     }
-    # сжатие (текст и данные ужимаются в 3–4 раза: самая дешёвая прибавка к скорости)
-    encode zstd gzip
-    # журнал доступа в файл (формат JSON): его читает вкладка «Журналы» кабинета, путь пропиши в backend/.env как CADDY_LOG_FILE
-    log {
-        output file /var/log/caddy/korean.log {
-            roll_size 20MiB
-            roll_keep 5
-        }
-        format json
-    }
-    # кэш для скорости (и для SEO): файлы с хэшем в имени вечные, значки сутки, страница и карта сайта проверяются каждый раз
-    @assets path /assets/*
+    @assets path /_nuxt/*
     header @assets Cache-Control "public, max-age=31536000, immutable"
-    @static path /favicon.svg /favicon-32.png /og-image.png /icon-*.png /apple-touch-icon.png
-    header @static Cache-Control "public, max-age=86400"
     @pages path / /index.html /sitemap.xml /robots.txt /manifest.webmanifest
     header @pages Cache-Control "no-cache"
-    # ... существующие root, try_files и reverse_proxy /api/* остаются как были
-}
-```
-После правки: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. Если после CSP что-то не грузится
-(шрифты, картинки), открой консоль браузера: там написано, какой источник заблокирован.
-
-**3. Брандмауэр и вход по SSH.** Наружу должны смотреть только 80, 443 и SSH: `ufw allow 22,80,443/tcp && ufw enable`;
-порт 3001 наружу не открывать (сервер и так слушает только 127.0.0.1). SSH только по ключу
-(`PasswordAuthentication no` в `/etc/ssh/sshd_config`) и `apt install fail2ban`.
-
-**4. Токен владельца**: длинный случайный (`openssl rand -base64 24`), только в `backend/.env` на сервере (права `chmod 600 backend/.env`),
-нигде больше. Подозреваешь утечку: меняй токен и `systemctl restart progress`, гостевые токены отзови в кабинете.
-
-**5. Копии.** База копируется сама раз в день (`backend/data/backups`, 30 штук), но это на том же диске. Полный зашифрованный архив (база, картинки, файлы, `.env`)
-приходит на почту по кнопке в «Настройках» и каждый день сам; ночная копия на сервере с ротацией и проверкой делается `scripts/backup.sh`. Настройка, проверка и восстановление: `docs/backup.md`.
-
-**6. Обновления системы**: `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades` для автоматических
-обновлений безопасности.
-
-## Журналы во вкладке «Журналы» кабинета
-
-Вкладка видна только владельцу и показывает две вещи: журнал сервера (Node: всё, что служба пишет с последнего запуска, в памяти до 2000 строк; полный журнал по-прежнему `journalctl -u progress`)
-и журнал доступа Caddy (последние строки файла). Сервер подключается сам; для Caddy нужны три шага:
-
-1. В блок сайта Caddyfile добавь `log { output file /var/log/caddy/korean.log … format json }` (готовый блок есть выше), `caddy validate` и `systemctl reload caddy`.
-2. Дай службе `progress` право читать файл: `chmod 640 /var/log/caddy/korean.log` и добавь её пользователя в группу `caddy` (`usermod -aG caddy <пользователь службы>`), в `ReadOnlyPaths` юнита добавь `/var/log/caddy`, если включена изоляция.
-3. В `backend/.env` впиши `CADDY_LOG_FILE=/var/log/caddy/korean.log` и перезапусти службу.
-
-Если файл не читается, вкладка пишет, что именно не так (не задан путь, файла нет, нет прав).
-
-## Приложение (PWA) и видео-обзор
-
-- `public/sw.js` работает как обычный файл сайта: сайт (Nuxt) отдаёт его из `frontend/public`. Браузер сам проверяет его раз в сутки; поменял логику, подними `VERSION` в файле.
-- `public/demo.webm` (10 МБ, видео-обзор на главной) грузится только по нажатию на «посмотреть видео-демонстрацию». Caddy отдаёт файл с поддержкой перемотки сам; если по адресу `/demo.webm` приходит главная страница, правило `try_files` перехватывает путь.
-
-## Видеоуроки (`/video/…`)
-
-Видео (44 файла: 31 из «Первого шага» и 13 из «Второго шага», уроки 1–30 курса 양쌤의 한국어 교실, оригиналы 1080p AV1 + Opus без перекодирования, 7,8 ГБ) в git не лежат: они на сервере в `/var/sites/korean-video/`
-(рядом с проектом, `deploy.sh` их не трогает). Файлы: `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4` (часть 1) и `part2-01.mp4` … `part2-13.mp4` (часть 2).
-Сайт сам берёт файл по подписи карточки («Урок N»), см. `videoOf` в `src/data/korean/course.ts`; нет файла — в окне заглушка.
-Токеном видео не закрыты (решение владельца). Идея на потом: перенести видео в Яндекс Object Storage (расчёт владельца: 10 ГБ, 100 ГБ исходящего трафика, 21,38 ₽/мес; бакет с публичным чтением, адрес задать константой `VIDEO_DIR` или переменной сборки, оповещение о расходах); решение отложено. AV1/Opus не везде играет (Safari, часть iPad): в окне карточки есть пометка, владелец смотрит в Яндекс Браузере; на этот случай перекодировать так: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`. Service worker `.mp4` не кэширует.
-
-Caddy, в блок сайта **до** общего `handle { … dist … }`:
-```
+    handle /api/* {
+        reverse_proxy 127.0.0.1:3001
+    }
     handle_path /video/* {
         root * /var/sites/korean-video
         header Cache-Control "public, max-age=86400"
         file_server
     }
+    handle {
+        reverse_proxy 127.0.0.1:3000
+    }
+}
 ```
-Потом `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. Перемотка (Range) работает у `file_server` сама.
-Заливка с Mac одной командой: `rsync -avP ~/Movies/Korean-videos/upload/ root@<сервер>:/var/sites/korean-video/` (у владельца папка `~/Movies/Korean-videos/` с README и таблицей «файл ↔ грамматика»; в git видео не лежат).
+После правки: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. `/api/*` и `/video/*` должны стоять выше общего `handle`. Content-Security-Policy для сайта пока не включён (см. ниже).
+
+## Откат на прежнюю версию (Vue SPA, ветка `main_old`)
+`systemctl stop korean-web`; `git checkout -B main origin/main_old`; `mv backend/.env server/.env && mv backend/data server/data`; в `progress.service` вернуть `server/dist/main.js`;
+в Caddy прежний `handle` с `root * /var/sites/korean/dist` и `try_files {path} {path}/index.html /index.html`; `npm ci && npm --prefix server ci && npm run build && npm --prefix server run build`; `systemctl daemon-reload && systemctl restart progress`.
+Дальше на сервере делали бы обычный деплой из `main_old`. Нужно это только если Nuxt-версия окажется неработоспособной.
+
+## Dependabot
+Раз в неделю открывает pull request-ы (`dependabot/...`), CI показывает, ничего ли не сломалось. Крупные обновления (смена первой цифры: TypeScript 7, `@types/node` 26, `actions/checkout` 7) не сливай вслепую;
+мелкие (`minor-and-patch`) обычно безопасны. Слил: на сервере `bash scripts/deploy.sh`. Сомневаешься: закрой, Dependabot предложит снова.
+
+## Усиление защиты (делает владелец, всё ещё открыто)
+1. **Служба `progress`** в `[Service]`: `NoNewPrivileges=true`, `PrivateTmp=true`, `ProtectSystem=strict`, `ProtectHome=true`, `ReadWritePaths=/var/sites/korean/backend/data`, `ProtectKernelTunables=true`, `ProtectKernelModules=true`,
+   `ProtectControlGroups=true`, `RestrictSUIDSGID=true`, `RestrictNamespaces=true`, `LockPersonality=true`, `MemoryMax=512M`, `TasksMax=200`, `Restart=always`, `RestartSec=3`; `User=` обычный пользователь, не root.
+   Потом `systemctl daemon-reload && systemctl restart progress`. Не стартует: `journalctl -u progress -n 50` (скорее всего, путь в `ReadWritePaths` не совпал с `DATA_DIR`).
+2. **CSP в Caddy:** `Content-Security-Policy "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"`.
+   Nuxt добавляет свои инлайн-скрипты, поэтому проверяй в консоли браузера, что не заблокировано (возможно, понадобится `'unsafe-inline'` в `script-src`).
+3. **Брандмауэр и SSH:** `ufw allow 22,80,443/tcp && ufw enable` (порты 3000 и 3001 наружу не открывать), SSH только по ключу (`PasswordAuthentication no`), `apt install fail2ban`.
+4. **Токен:** длинный случайный, только в `backend/.env`. Подозрение на утечку: сменить токен, `systemctl restart progress`, гостевые отозвать в кабинете.
+5. **Копии:** база копируется сама раз в день на том же диске; полный архив уходит на почту, ночная копия `scripts/backup.sh`: `docs/backup.md`. Копии вне сервера ещё не настроены (`OFFSITE_RSYNC` или `OFFSITE_RCLONE`).
+6. **Обновления системы:** `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades`. Яндекс.Вебмастер и Google Search Console: добавить сайт и `https://korean.meeymirita.ru/sitemap.xml`.
+
+## Журналы в кабинете
+Вкладка «Журналы» (владелец) показывает журнал сервера (в памяти, до 2000 строк; полный `journalctl -u progress`) и доступ Caddy. Для Caddy: блок `log` выше, `chmod 640 /var/log/caddy/korean.log`,
+пользователя службы в группу `caddy` (`usermod -aG caddy <пользователь>`), `CADDY_LOG_FILE=/var/log/caddy/korean.log` в `backend/.env`, перезапуск службы. Если файл не читается, вкладка пишет почему.
+
+## Приложение и видео
+- `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` грузится только по кнопке.
+- **Видеоуроки** (44 файла, уроки 1–30 курса 양쌤의 한국어 교실, AV1 + Opus, 7,8 ГБ): `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`, `part2-01.mp4` … `part2-13.mp4`.
+  Сайт берёт файл по подписи карточки («Урок N», `videoOf` в `src/data/korean/course.ts`); нет файла: заглушка. Заливка с Mac:
+  `rsync -avP ~/Movies/Korean-videos/upload/ root@<сервер>:/var/sites/korean-video/` (единственная копия видео у владельца в `~/Movies/Korean-videos/`).
+  AV1 не везде играет (Safari, часть iPad); перекодировать: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`.
