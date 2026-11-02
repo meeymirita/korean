@@ -37,7 +37,8 @@ const MODES=[
   {id:'ord',icon:'↔️',name:'Порядок слов'},{id:'dlg',icon:'💬',name:'Диалог'},
   {id:'han',icon:'ㅎ',name:'Хангыль-блиц'},
   {id:'days',icon:'📅',name:'Дни недели'},{id:'when',icon:'🕒',name:'Когда? (에)'},{id:'too',icon:'➕',name:'Тоже (도)'},
-  {id:'num',icon:'🔢',name:'Числа'},{id:'price',icon:'💴',name:'Сколько стоит?'},{id:'count',icon:'🥤',name:'Счётные слова'}
+  {id:'num',icon:'🔢',name:'Числа'},{id:'price',icon:'💴',name:'Сколько стоит?'},{id:'count',icon:'🥤',name:'Счётные слова'},
+  {id:'neg',icon:'🙅',name:'Это или не это'},{id:'place',icon:'📍',name:'Куда, где'},{id:'dem',icon:'👉',name:'Этот, тот, вон тот'},{id:'polite',icon:'🙇',name:'Уровень вежливости'}
 ];
 
 /* ---------- подсказки по режимам: кнопка «?» рядом с заданием раскрывает, что делать, и пример ---------- */
@@ -60,7 +61,11 @@ const MODE_HELP={
   too:['Частица 도 значит «тоже». Она ставится вместо 은/는, 이/가, 을/를 (вместе с ними не бывает), а с 에 и 에서 даёт 에도 и 에서도.','Пример: 저는 학생이에요. 나나 씨도 학생이에요; 토요일에 만나요. 일요일에도 만나요.'],
   num:['Числа бывают двух видов: корейские (하나, 둘, 셋…) для счёта вещей и китайские (일, 이, 삼…) для цен, дат, номеров. Выбери число или цифру.','Пример: 3 по-корейски (счёт) → 셋; 일곱 → 7; 100 → 백.'],
   price:['Цены читаются китайскими числами + 원: 천 (1000), 만 (10 000). Перед 만 цифру 일 не говорят. Выбери верное чтение цены или цену.','Пример: 3 500원 → 삼천오백 원; 10 000원 → 만 원.'],
-  count:['Перед счётным словом (개, 병, 잔, 그릇) стоит корейское число в короткой форме: 한, 두, 세, 네. Выбери счётное слово или форму числа.','Пример: 물 한 병 주세요; 사과 세 개.']
+  count:['Перед счётным словом (개, 병, 잔, 그릇) стоит корейское число в короткой форме: 한, 두, 세, 네. Выбери счётное слово или форму числа.','Пример: 물 한 병 주세요; 사과 세 개.'],
+  neg:['Скажи по-корейски «это …» или «это не …». Есть 받침 (согласная внизу) → 이에요 и 이 아니에요, нет 받침 → 예요 и 가 아니에요. Смотри и на смысл: «это» или «не это».','Пример: «Это книга» → 책이에요; «Это не кофе» → 커피가 아니에요.'],
+  place:['Выбери частицу при месте. 에 — куда идёшь (가요) и где находишься (있어요). 에서 — где что-то делаешь (공부해요, 운동해요, 먹어요).','Пример: 학교___ 가요 → 에; 도서관___ 공부해요 → 에서.'],
+  dem:['이 / 그 / 저 («этот / тот / вон тот»), 이것 / 그것 / 저것 («эта вещь…») и 여기 / 거기 / 저기 («здесь / там / вон там»). Первое рядом со мной, второе рядом с собеседником, третье далеко от обоих.','Пример: «вон тот» → 저; «здесь» → 여기.'],
+  polite:['«Спасибо» говорят по-разному: от друзей до начальника. Выбери форму для нужного собеседника или скажи, кому такая форма подходит.','Пример: другу → 고마워; начальнику → 감사합니다.']
 };
 function labelWithHelp(q){
   const wrap=el('div','labelrow');
@@ -573,10 +578,64 @@ function genCount(){
   return {type:'choice',mode:'count',key:'cn:'+i,label:'Вставь счётное слово или число',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
     options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],hp:p[0].replace('___','…'),hr:p[2],icon:'🥤'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(Math.random()<.5?genForm():genPast()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount};
+/* ---------- по разделам грамматики: «Быть и отрицание», «Место и направление», «Указатели», «Вежливость» ---------- */
+/** «Это …» и «это не …»: 이에요/예요 и 이/가 아니에요 по 받침 */
+function genNeg(){
+  const pool=D.S.filter(r=>/^[а-яё]+$/i.test(r[2]));
+  const w=pickW(pool,r=>'ng:'+r[0]);
+  const ko=w[0],hasB=jong(ko[ko.length-1])>0;
+  const neg=Math.random()<.5;
+  const aff=ko+(hasB?'이에요':'예요'),affBad=ko+(hasB?'예요':'이에요');
+  const no=ko+(hasB?'이':'가')+' 아니에요',noBad=ko+(hasB?'가':'이')+' 아니에요';
+  const right=neg?no:aff;
+  const set=shuffle(neg?[no,aff,noBad,affBad]:[aff,no,affBad,noBad]);
+  return {type:'choice',mode:'neg',key:'ng:'+ko+':'+(neg?'n':'a'),word:ko,label:'Скажи по-корейски',prompt:(neg?'Это не ':'Это ')+w[2]+'.',promptKo:false,
+    options:set.map(t=>({text:t,ko:true})),correct:set.indexOf(right),right:right,
+    explain:[right+' — '+(neg?'Это не ':'Это ')+w[2],hasB?'У слова «'+ko+'» есть 받침 → '+(neg?'이 아니에요':'이에요'):'У слова «'+ko+'» нет 받침 → '+(neg?'가 아니에요':'예요')],hp:(neg?'не ':'')+w[2],hr:right,icon:'🙅'};
+}
+const PLACES=[['학교','в школу','в школе',['공부해요','занимаюсь']],['도서관','в библиотеку','в библиотеке',['공부해요','занимаюсь'],['책을 읽어요','читаю книгу']],['공원','в парк','в парке',['운동해요','занимаюсь спортом']],
+  ['카페','в кафе','в кафе',['커피를 마셔요','пью кофе']],['시장','на рынок','на рынке',['빵을 사요','покупаю хлеб']],['식당','в столовую','в столовой',['밥을 먹어요','ем']],
+  ['백화점','в универмаг','в универмаге',['쇼핑해요','хожу по магазинам']],['집','домой','дома',['쉬어요','отдыхаю']],['은행','в банк','в банке']];
+/** 에 (куда, где находишься) или 에서 (где действие) */
+function genPlace(){
+  const p=pickW(PLACES,x=>'pl:'+x[0]);
+  const acts=p.slice(3);
+  const t=rnd(acts.length?['go','be','do','do']:['go','be']);
+  let pre='저는 '+p[0],post,ru,right,why;
+  if(t==='go'){post=' 가요.';ru='Я иду '+p[1]+'.';right='에';why='Куда идёшь (가요) → 에';}
+  else if(t==='be'){post=' 있어요.';ru='Я '+p[2]+'.';right='에';why='Где находишься (있어요) → 에';}
+  else{const a=rnd(acts);post=' '+a[0]+'.';ru=cap1(p[2])+' '+a[1]+'.';right='에서';why='Где что-то делаешь ('+a[0]+') → 에서';}
+  const opts=shuffle(['에','에서','를','는']).map(x=>({text:x,ko:true}));
+  return {type:'choice',mode:'place',key:'pl:'+p[0]+':'+t+post,word:null,label:'Вставь частицу места',sentence:{pre:pre,post:post},ru:ru,
+    options:opts,correct:opts.findIndex(o=>o.text===right),right:right,explain:[pre+right+post,why],hp:pre+' ___'+post,hr:right,icon:'📍'};
+}
+const DEM=[
+  [['이','этот (рядом со мной)'],['그','тот (рядом с тобой или уже известный)'],['저','вон тот (далеко от обоих)']],
+  [['이것','эта вещь (рядом со мной)'],['그것','та вещь (рядом с тобой)'],['저것','вон та вещь (далеко от обоих)']],
+  [['여기','здесь (рядом со мной)'],['거기','там (рядом с тобой)'],['저기','вон там (далеко от обоих)']],
+];
+function genDem(){
+  const fam=rnd(DEM);
+  const w=pickW(fam,x=>'dm:'+x[0]);
+  const toKo=Math.random()<.5;
+  const set=shuffle(fam);
+  const note='1) близко ко мне, 2) близко к собеседнику, 3) далеко от обоих: '+fam.map(x=>x[0]).join(' / ');
+  if(toKo)return {type:'choice',mode:'dem',key:'dm:'+w[0]+':k',word:null,label:'Выбери слово',prompt:w[1],promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],hp:w[1],hr:w[0],icon:'👉'};
+  return {type:'choice',mode:'dem',key:'dm:'+w[0]+':r',word:null,label:'Что значит слово?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1]})),correct:set.indexOf(w),right:w[1],explain:[w[0]+' — '+w[1],note],hp:w[0],hr:w[1],icon:'👉'};
+}
+const POLITE=[['고마워','друзьям (самое неформальное)'],['고마워요','знакомым и близким старше тебя'],['감사해요','коллегам, товарищам'],['감사합니다','по работе, начальнику (формально)']];
+function genPolite(){
+  const w=pickW(POLITE,x=>'po:'+x[0]);
+  const toKo=Math.random()<.5;
+  const set=shuffle(POLITE);
+  const note='От самого неформального к официальному: '+POLITE.map(x=>x[0]).join(' → ');
+  if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],hp:w[1],hr:w[0],icon:'🙇'};
+  return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],hp:w[0],hr:w[1],icon:'🙇'};
+}
+const GEN={word:genWord,rev:genRev,form:()=>(Math.random()<.5?genForm():genPast()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite};
 function genQuestion(){
   let m=S.mode;
-  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too']);
+  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite']);
   return GEN[m]();
 }
 
