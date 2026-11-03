@@ -25,6 +25,20 @@ export class ProgressController {
     return this.progress.report(Number(days) > 0 ? Math.min(Number(days), 3650) : 0)
   }
 
+  /** GET /api/report/clock?days=90: ответы по часу дня (0–23) за период — когда больше ошибок. Только владельцу. */
+  @Get('report/clock')
+  @Owner()
+  clock(@Query('days') days?: string) {
+    return this.progress.clock(Number(days) > 0 ? Math.min(Number(days), 365) : 90)
+  }
+
+  /** GET /api/report/weeks: «эта неделя vs прошлая» — ответы и время последних 7 дней против предыдущих. Только владельцу. */
+  @Get('report/weeks')
+  @Owner()
+  weeks() {
+    return this.progress.weekCompare()
+  }
+
   /** GET /api/report/series?source=game&mode=build&days=30: ответы по дням для графика; mode не задан — весь раздел, mode=- — ответы без режима. */
   @Get('report/series')
   @Owner()
@@ -32,7 +46,8 @@ export class ProgressController {
     return this.progress.series(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 365) : 0)
   }
 
-  /** GET /api/report/answers?source=game&mode=type&days=30&only=bad|ok: сами ответы (новые сверху, не больше 300) для окна графика. */
+  /** GET /api/report/answers?source=game&mode=type&days=30&only=bad|ok: сами ответы (новые сверху, не больше 300) для окна графика.
+   * Без `source` — по всем разделам сразу (общий «Дневник ошибок»). */
   @Get('report/answers')
   @Owner()
   answers(@Query('source') source?: string, @Query('mode') mode?: string, @Query('days') days?: string, @Query('only') only?: string) {
