@@ -39,5 +39,4 @@
 ## Сервер и сайт
 - Сервер (только `@Owner()`): `GET /api/shop?day=`, `GET /api/shop/log`, `POST /api/shop/buy|use|claim` `{id}`; `POST /api/ops` отдаёт `{coins, combo, ready, news}`. Таблица `coin_log`, мета `coins, combo, maxcombo, coin_gift, inv, active, notified, flawless_day, rev`.
   Код: `shop.service.ts`, `shop.controller.ts`, `progress.service.ts` (`coin`, `coinState`, `rewardState`, `claim`). Тесты: `tests/shop-server.test.mjs`.
-- Сайт: `src/data/coins.ts`, `src/data/shop.ts`, `src/stores/shop.ts`, `src/composables/useShopPage.ts`, страница `src/views/korean/ShopView.vue` (меню на ней прячется само), та же витрина в кабинете `components/cabinet/ShopTab.vue`,
-  плашка баланса в шапке кабинета, серия в задании «Серия N: ещё M до +K». Иконки `src/assets/icons/coin.webp`, `shop-*.webp`.
+- Сайт: `src/data/coins.ts`, `src/data/shop.ts`, `src/stores/shop.ts`, `src/composables/useShopPage.ts`, страница `src/views/korean/ShopView.vue` (меню на ней прячется само), плашка баланса в шапке кабинета, серия в задании «Серия N: ещё M до +K». Иконки `src/assets/icons/coin.webp`, `shop-*.webp`.

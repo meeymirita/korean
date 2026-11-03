@@ -74,7 +74,7 @@
 
 ## Маршруты
 
-`/` главная · `/about` · `/history` · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/notebook` (тетрадь с рисунками, только владелец) · `/game/home` игры (`?game=<id>`, `/game` и `/korean/trainers` ведут сюда) · `/korean/...`: `home`, `today`, `words`, `grammar`, `cabinet` (`?tab=repeat|week|history|report|shop|notes|images|notifications|settings`; «База» и «Журналы» живут внутри «Настроек»),
+`/` главная · `/about` · `/history` · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/notebook` (тетрадь с рисунками, только владелец) · `/game/home` игры (`?game=<id>`, `/game` и `/korean/trainers` ведут сюда) · `/korean/...`: `home`, `today`, `words`, `grammar`, `cabinet` (`?tab=repeat|week|history|report|notes|images|notifications|settings`; «База» и «Журналы» живут внутри «Настроек»),
 `review`, `shop`, `chat` (только владелец), `garden`, `culture` (мини-уроки культуры Кореи), `know` («что я уже знаю» перед созвоном), `lab` (мастерская грамматики: конструктор, дерево тем, «почему так», два стиля), `sites` (полезные сайты), `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `mistakes`, `marks`, `forms`; тренажёры `quick`, `particles`, `pairs`, `translate`, `syllables`, `keyboard` (печать на корейском) открываются только как `/game/home?game=<id>`.
 Открыты всем: справочники, слова, грамматика, главная, история, «О платформе»; остальное по токену (замок в меню, `AuthGate`). Список разделов `src/data/korean/sections.ts`.
 

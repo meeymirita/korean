@@ -44,7 +44,8 @@ describe('хлебные крошки', () => {
     assert.equal(labels(c), 'Главная › Кабинет › Заметки')
     assert.equal(c[1].to, '/korean/cabinet')
     assert.equal(labels(crumbsFor('/korean/cabinet', { tab: 'мусор' })), 'Главная › Кабинет')
-    assert.equal(Object.keys(CABINET_TABS).length, 9)
+    assert.equal(Object.keys(CABINET_TABS).length, 8)
+    assert.ok(!('shop' in CABINET_TABS), 'магазин из кабинета убран')
   })
 
   test('вкладки «Сегодня» и режим тренажёров берутся из адреса', () => {
