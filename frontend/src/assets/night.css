@@ -1,6 +1,5 @@
 /* Ночная палитра: data-theme="dark" + data-palette="night" на <html> (режим «Ночная» в src/lib/theme.ts).
-   Свои тёплые приглушённые цвета (сливовый и тёплый уголь, мягкий розовый акцент), без холодного индиго тёмной темы.
-   Правила повторяют assets/dark.css с заменой цветов; правишь структуру в dark.css, переноси сюда. */
+   Файл собирается скриптом scripts/build-night.mjs из dark.css: не правь его руками, правь dark.css и запусти скрипт. */
 html[data-theme='dark'][data-palette='night'] { color-scheme: dark; --bg: #1a1519; --ink: #e4d9d2; --muted: #b0a19c; }
 html[data-theme='dark'][data-palette='night'] body { background: #1a1519; color: #e4d9d2; }
 
@@ -122,4 +121,14 @@ html[data-theme='dark'][data-palette='night'] .study .ht-c.h4 { background: #e0a
 @media (min-width: 861px) { html[data-theme='dark'][data-palette='night'] .study-shell.sky.focus.peek .study-side { background: rgba(36, 29, 35, .99); } }
 html[data-theme='dark'][data-palette='night'] .study-main .crumbs ol { background: rgba(44, 35, 42, .82); border-color: var(--line); }
 html[data-theme='dark'][data-palette='night'] .study .fcb select { background-color: rgba(44, 35, 42, .82); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d9a9b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-html[data-theme='dark'][data-palette='night'] .study-shell.sky .study-main .wrap { background: rgba(26, 28, 62, .66); border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .study-shell.sky .study-main .wrap { background: rgba(34, 27, 33, .66); border-color: var(--line); }
+
+/* страница игр `/game/home` (стили в GameHomeView.vue светлые и жёсткие): каталог, панель, вкладки, плитки */
+html[data-theme='dark'][data-palette='night'] .gh .gh-grp { background: rgba(44, 35, 42, .82); }
+html[data-theme='dark'][data-palette='night'] .gh .gh-grp.on { background: linear-gradient(90deg, rgba(196, 120, 140, .34), rgba(240, 127, 198, .2)); }
+html[data-theme='dark'][data-palette='night'] .gh .gh-glist a.cur, html[data-theme='dark'][data-palette='night'] .gh .gh-glist a:hover { background: rgba(255, 255, 255, .1); }
+html[data-theme='dark'][data-palette='night'] .gh .gh-panel { background: rgba(34, 27, 33, .8); border-color: var(--line); box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+html[data-theme='dark'][data-palette='night'] .gh :is(.gh-tab, .gh-backlink) { background: rgba(44, 35, 42, .9); border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .gh .gh-tab.on { background: #a9687f; border-color: #a9687f; }
+html[data-theme='dark'][data-palette='night'] .gh .gh-block { background: rgba(44, 35, 42, .5); }
+html[data-theme='dark'][data-palette='night'] .gh .gh-card { background: rgba(44, 35, 42, .9); border-color: var(--line); }

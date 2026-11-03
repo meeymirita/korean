@@ -41,17 +41,9 @@ describe('документация не расходится с кодом', () 
 })
 
 describe('ночная тема не отстаёт от тёмной', () => {
-  const selectors = css =>
-    css
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .split('{')
-      .slice(0, -1)
-      .map(x => x.split('}').pop().trim())
-      .filter(x => x && !x.startsWith('@'))
-  test('в night.css столько же правил, сколько в dark.css, и тот же набор селекторов', () => {
-    const dark = selectors(read('frontend/src/assets/dark.css')).map(s => s.replaceAll("html[data-theme='dark']", 'H'))
-    const night = selectors(read('frontend/src/assets/night.css')).map(s => s.replaceAll("html[data-theme='dark'][data-palette='night']", 'H'))
-    assert.deepEqual(night, dark, 'правила dark.css и night.css разошлись: перенеси изменение в оба файла')
+  test('night.css получен из dark.css скриптом scripts/build-night.mjs (запусти его, если тест упал)', async () => {
+    const { buildNight } = await import('../scripts/build-night.mjs')
+    assert.equal(read('frontend/src/assets/night.css'), buildNight(read('frontend/src/assets/dark.css')))
   })
   test('night.css подключён после dark.css', () => {
     const main = read('frontend/src/assets/main.css')

@@ -121,3 +121,13 @@ html[data-theme='dark'] .study .ht-c.h4 { background: #b8a8ff; }
 html[data-theme='dark'] .study-main .crumbs ol { background: rgba(37, 39, 78, .82); border-color: var(--line); }
 html[data-theme='dark'] .study .fcb select { background-color: rgba(37, 39, 78, .82); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23b9b4ff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 html[data-theme='dark'] .study-shell.sky .study-main .wrap { background: rgba(26, 28, 62, .66); border-color: var(--line); }
+
+/* страница игр `/game/home` (стили в GameHomeView.vue светлые и жёсткие): каталог, панель, вкладки, плитки */
+html[data-theme='dark'] .gh .gh-grp { background: rgba(37, 39, 78, .82); }
+html[data-theme='dark'] .gh .gh-grp.on { background: linear-gradient(90deg, rgba(143, 124, 240, .34), rgba(240, 127, 198, .2)); }
+html[data-theme='dark'] .gh .gh-glist a.cur, html[data-theme='dark'] .gh .gh-glist a:hover { background: rgba(255, 255, 255, .1); }
+html[data-theme='dark'] .gh .gh-panel { background: rgba(26, 28, 62, .8); border-color: var(--line); box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+html[data-theme='dark'] .gh :is(.gh-tab, .gh-backlink) { background: rgba(37, 39, 78, .9); border-color: var(--line); }
+html[data-theme='dark'] .gh .gh-tab.on { background: #7863ff; border-color: #7863ff; }
+html[data-theme='dark'] .gh .gh-block { background: rgba(37, 39, 78, .5); }
+html[data-theme='dark'] .gh .gh-card { background: rgba(37, 39, 78, .9); border-color: var(--line); }
