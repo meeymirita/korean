@@ -161,8 +161,10 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
             <button type="button" class="gh-gbtn" :aria-expanded="sideOpen(g.id)" @click="sideToggle(g.id)">
               <img class="gi-img" :src="icon(g.icon)" alt="" aria-hidden="true" /><span>{{ g.title }}</span><i aria-hidden="true">{{ sideOpen(g.id) ? '⌄' : '›' }}</i>
             </button>
-            <div v-show="sideOpen(g.id)" class="gh-glist">
-              <RouterLink v-for="x in findGames(g.games, q)" :key="x.id" :to="x.to" :class="{ cur: isActive(x) }"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" />{{ x.name }}</RouterLink>
+            <div class="gh-fold" :class="{ open: sideOpen(g.id) }" :inert="!sideOpen(g.id)">
+              <div class="gh-in"><div class="gh-glist">
+                <RouterLink v-for="x in findGames(g.games, q)" :key="x.id" :to="x.to" :class="{ cur: isActive(x) }"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" />{{ x.name }}</RouterLink>
+              </div></div>
             </div>
           </div>
         </nav>
@@ -203,7 +205,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
         </div>
         <h2 class="gh-h">{{ view === 'all' ? 'Все игровые режимы' : view === 'mix' ? 'Микс' : GAME_GROUPS.find(g => g.id === view)?.title }} <small>{{ found }} игр</small></h2>
 
-        <div v-if="mix.length" class="gh-block">
+        <div v-if="mix.length" class="gh-block gh-mix">
           <div class="gh-cards">
             <RouterLink v-for="x in mix" :key="x.id" :to="x.to" class="gh-card"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><i aria-hidden="true">▶</i></RouterLink>
           </div>
@@ -212,8 +214,10 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           <button type="button" class="gh-bh" :aria-expanded="isOpen(g.id)" @click="toggle(g.id)">
             <img class="gi-img" :src="icon(g.icon)" alt="" aria-hidden="true" /><b>{{ g.title }}</b><span>{{ g.desc }}</span><em>{{ g.list.length }} {{ g.list.length === 1 ? 'игра' : g.list.length < 5 ? 'игры' : 'игр' }} {{ isOpen(g.id) ? '⌄' : '›' }}</em>
           </button>
-          <div v-show="isOpen(g.id)" class="gh-cards">
+          <div class="gh-fold" :class="{ open: isOpen(g.id) }" :inert="!isOpen(g.id)">
+            <div class="gh-in"><div class="gh-cards">
             <RouterLink v-for="x in g.list" :key="x.id" :to="x.to" class="gh-card"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><i aria-hidden="true">▶</i></RouterLink>
+          </div></div>
           </div>
         </div>
         <p v-if="!found" class="gh-empty">Ничего не нашлось. Попробуй другое слово.</p>
@@ -249,6 +253,11 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gh-gbtn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; cursor: pointer; font-weight: 700; font-size: 13px; }
 .gh .gh-gbtn span { flex: 1; }
 .gh .gh-gbtn .gi-img, .gh .gh-glist .gi-img { width: 22px; height: 22px; object-fit: contain; }
+/* раскрытие групп плавно: высота 0fr → 1fr */
+.gh .gh-fold { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .35s cubic-bezier(.4, 0, .2, 1), opacity .25s ease; }
+.gh .gh-fold.open { grid-template-rows: 1fr; opacity: 1; }
+.gh .gh-fold > .gh-in { min-height: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .gh .gh-fold { transition: none; } }
 .gh .gh-glist { display: grid; gap: 2px; padding: 0 8px 8px; }
 .gh .gh-glist a { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; font-size: 12px; color: var(--ink); text-decoration: none; }
 .gh .gh-glist a.cur { background: #fff; color: var(--pink); font-weight: 700; }
@@ -265,7 +274,9 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gh-bh span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
 .gh .gh-bh em { flex: none; white-space: nowrap; font-style: normal; font-size: 13px; font-weight: 700; color: var(--pink); }
 .gh .gh-bh .gi-img { width: 30px; height: 30px; object-fit: contain; }
-.gh .gh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 6px 4px 4px; }
+.gh .gh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 8px 10px 18px; }
+.gh .gh-mix .gh-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.gh .gh-mix .gh-card small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gh .gh-card { display: flex; align-items: center; gap: 10px; padding: 12px; background: #fff; border: 1px solid #efeafd; border-radius: 16px; color: var(--ink); text-decoration: none; transition: .2s; }
 .gh .gh-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(100, 87, 170, .2); }
 .gh .gh-card .gi-img { width: 38px; height: 38px; object-fit: contain; flex: none; }

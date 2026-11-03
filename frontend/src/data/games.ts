@@ -142,7 +142,7 @@ export const GAME_GROUPS: GameGroup[] = [
 export const GAME_MIX: GameCard[] = [
   { id: 'mix', name: 'Микс', desc: 'Все режимы вперемешку', icon: 'dice', to: '/game/home?game=mix' },
   { id: 'quick', name: '5 минут', desc: 'Десять заданий вперемешку', icon: 'rocket', to: '/game/home?game=quick' },
-  { id: 'rule', name: 'Потренировать правило', desc: 'Выбери карточку грамматики: десять заданий из её примеров', icon: 'grammar', to: '/game/home?game=rule' },
+  { id: 'rule', name: 'Потренировать правило', desc: 'Десять заданий из примеров любой карточки', icon: 'grammar', to: '/game/home?game=rule' },
 ]
 
 /** Все игры списком (для счётчика и поиска). */
