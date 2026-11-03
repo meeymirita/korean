@@ -69,6 +69,10 @@
 /* повторить сегодня */
 .study .rp-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .study .rp-top p { margin: 0; font-size: 15px; }
+.study .rp-go { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.study .rp-n { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); }
+.study .rp-n input { width: 72px; padding: 9px 10px; font: inherit; font-size: 15px; font-weight: 600; text-align: center; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; }
+.study .rp-n input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
 .study .rp-start { padding: 11px 22px; font-size: 15px; font-weight: 600; color: #fff; background: var(--gold); border: 0; border-radius: 12px; cursor: pointer; }
 .study .rp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 16px; }
 .study .rp-w { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }

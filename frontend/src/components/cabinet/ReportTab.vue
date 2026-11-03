@@ -14,7 +14,13 @@ interface Reply {
 }
 
 const progress = useProgressStore()
-const PERIODS: [number, string][] = [[7, 'Неделя'], [30, 'Месяц'], [0, 'Всё время']]
+const PERIODS: [number, string][] = [[7, '7 дней'], [30, '30 дней'], [0, 'Всё время']]
+/** Что показывает выбранный период: подпись под кнопками, чтобы не гадать. */
+const PERIOD_TEXT: Record<number, string> = {
+  7: 'Цифры и графики ниже только за последние 7 дней, включая сегодня.',
+  30: 'Цифры и графики ниже только за последние 30 дней, включая сегодня.',
+  0: 'Цифры и графики ниже за всё время, с первого ответа.',
+}
 const days = usePersisted('report_days', 30, v => PERIODS.some(p => p[0] === v))
 const reply = ref<Reply | null>(null)
 const failed = ref('')
@@ -54,8 +60,12 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 
 <template>
   <div class="rp">
-    <div class="chips rp-per" role="group" aria-label="Период">
-      <button v-for="[d, label] in PERIODS" :key="d" class="chip" :class="{ on: days === d }" @click="days = d">{{ label }}</button>
+    <div class="rp-per">
+      <div class="chips" role="group" aria-label="За какой период показать отчёт">
+        <span class="rp-per-t">Период отчёта:</span>
+        <button v-for="[d, label] in PERIODS" :key="d" class="chip" :class="{ on: days === d }" :aria-pressed="days === d" @click="days = d">{{ label }}</button>
+      </div>
+      <p class="rp-per-d">{{ PERIOD_TEXT[days] }}</p>
     </div>
 
     <p v-if="failed" class="empty" role="alert">Не получилось загрузить отчёт: {{ failed }}</p>
@@ -107,6 +117,9 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 
 <style>
 .study .rp-per { margin: 18px 0 22px; }
+.study .rp-per .chips { align-items: center; margin-top: 0; }
+.study .rp-per-t { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.study .rp-per-d { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .rp-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .rp-sum > div { background: rgba(255, 255, 255, .6); border: 1px solid rgba(143, 124, 240, .25); border-radius: 14px; padding: 12px 14px; }
 .rp-sum b { display: block; font-size: 24px; color: var(--pink, #d64da9); }
