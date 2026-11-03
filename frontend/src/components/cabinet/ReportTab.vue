@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AnalyticsPanel from '@/components/cabinet/AnalyticsPanel.vue'
 import ReportChartModal from '@/components/cabinet/ReportChartModal.vue'
 import { usePersisted } from '@/composables/usePersisted'
-import { groupReport, percent, spent, type ReportRow } from '@/data/report'
+import { groupReport, percent, spent, type ReportGroup, type ReportRow } from '@/data/report'
 import { errText, fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 
@@ -54,6 +54,33 @@ function toggle(s: string) {
 }
 const setAll = (open: boolean) => (openSaved.value = open ? groups.value.map(g => g.source) : [])
 const t = computed(() => reply.value?.totals)
+
+/* ---------- PDF раздела: печатный лист, в окне печати «Сохранить как PDF» ---------- */
+const periodName = computed(() => PERIODS.find(p => p[0] === days.value)?.[1] ?? '')
+const periodLong = computed(() => (days.value === 0 ? 'за всё время' : `за последние ${days.value} дней`))
+const today = () => new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+const sheet = ref<ReportGroup | null>(null)
+let oldTitle = ''
+function endPrint() {
+  document.body.classList.remove('pr-group')
+  if (oldTitle) document.title = oldTitle
+  oldTitle = ''
+  sheet.value = null
+}
+async function savePdf(g: ReportGroup) {
+  sheet.value = g
+  await nextTick()
+  oldTitle = document.title
+  // имя файла по умолчанию в окне «Сохранить как PDF»
+  document.title = `Отчёт ${g.name} ${new Date().toISOString().slice(0, 10)}`
+  document.body.classList.add('pr-group')
+  window.addEventListener('afterprint', endPrint, { once: true })
+  window.print()
+}
+onBeforeUnmount(() => {
+  window.removeEventListener('afterprint', endPrint)
+  endPrint()
+})
 const answers = computed(() => (t.value ? t.value.ok + t.value.bad : 0))
 const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 </script>
@@ -87,7 +114,7 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
         <h3>
           <button type="button" class="rp-toggle" :aria-expanded="isOpen(g.source)" @click="toggle(g.source)">
             <span class="rp-chev" aria-hidden="true">▸</span>{{ g.name }} <small>{{ g.ok + g.bad }} отв. · верно {{ percent(g.ok, g.bad) }}% · около {{ spent(g.seconds) }}</small>
-          </button> <button type="button" class="rp-gbtn" @click="chart = { source: g.source, title: g.name }">график</button></h3>
+          </button> <button type="button" class="rp-gbtn" @click="chart = { source: g.source, title: g.name }">график</button> <button type="button" class="rp-gbtn" title="Сохранить красивый отчёт по этому разделу в PDF" @click="savePdf(g)">PDF</button></h3>
         <table v-show="isOpen(g.source)" class="pg-tbl rp-tbl">
           <thead>
             <tr><th>Режим</th><th>Ответов</th><th>Верно</th><th>Ошибок</th><th class="rp-bar-h">Доля верных</th><th>Дней</th><th>Время</th><th>Последний раз</th><th></th></tr>
@@ -111,11 +138,70 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
 
       <AnalyticsPanel :groups="groups" :days="days" />
     </template>
+    <article v-if="sheet" class="rp-pdf" aria-hidden="true">
+      <header class="pdf-head">
+        <div><span class="pdf-brand">✳︎ 우리말</span><h1>Отчёт по занятиям</h1><p>{{ sheet.name }} · {{ periodLong }}</p></div>
+        <time>{{ today() }}</time>
+      </header>
+      <section class="pdf-tiles">
+        <div><b>{{ sheet.ok + sheet.bad }}</b><small>ответов</small></div>
+        <div><b>{{ percent(sheet.ok, sheet.bad) }}%</b><small>верных</small></div>
+        <div><b>{{ sheet.ok }}</b><small>верно</small></div>
+        <div><b>{{ sheet.bad }}</b><small>ошибок</small></div>
+        <div><b>{{ spent(sheet.seconds) }}</b><small>время (примерно)</small></div>
+      </section>
+      <h2>По режимам</h2>
+      <table class="pdf-tbl">
+        <thead><tr><th>Режим</th><th>Ответов</th><th class="pdf-bar-h">Доля верных</th><th>Дней</th><th>Время</th><th>Последний раз</th></tr></thead>
+        <tbody>
+          <tr v-for="r in sheet.rows" :key="r.mode">
+            <td><b>{{ r.name }}</b></td>
+            <td>{{ r.ok + r.bad }}<small> ({{ r.ok }} / {{ r.bad }})</small></td>
+            <td><span class="pdf-bar"><i :style="{ width: percent(r.ok, r.bad) + '%' }"></i></span> {{ percent(r.ok, r.bad) }}%</td>
+            <td>{{ r.days }}</td>
+            <td>{{ spent(r.seconds) }}</td>
+            <td>{{ date(r.last) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="pdf-note">Период отчёта: {{ periodName }}. Время по режимам примерное: считается по промежуткам между ответами.</p>
+      <footer class="pdf-foot">Сформировано на платформе 우리말 · {{ today() }}</footer>
+    </article>
     <ReportChartModal v-if="chart" :source="chart.source" :mode="chart.mode" :title="chart.title" :days="days" @close="chart = null" />
   </div>
 </template>
 
-<style>
+ <style>
+/* ---- PDF-лист раздела: на экране скрыт, в печати занимает страницу ---- */
+.rp-pdf { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body.pr-group * { visibility: hidden !important; }
+  body.pr-group .rp-pdf, body.pr-group .rp-pdf * { visibility: visible !important; }
+  body.pr-group .print-sheet { display: none !important; }
+  body.pr-group, body.pr-group:has(.study-shell.sky), body.pr-group .study.sky:not(.study-modal) { background: #fff !important; background-image: none !important; }
+  body.pr-group .rp-pdf { display: block; position: absolute; left: 0; top: 0; width: 100%; color: #25264f; background: #fff; font-family: 'Archivo', 'Noto Sans KR', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rp-pdf .pdf-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 22px 24px; border-radius: 18px; background: linear-gradient(120deg, #f7d3ee, #cfe0ff); }
+  .rp-pdf .pdf-brand { font-size: 13px; font-weight: 700; letter-spacing: .06em; color: #6a4fd4; }
+  .rp-pdf h1 { margin: 6px 0 4px; font-size: 30px; line-height: 1.1; }
+  .rp-pdf .pdf-head p { margin: 0; font-size: 14px; color: #4a4a78; }
+  .rp-pdf .pdf-head time { font-size: 13px; color: #4a4a78; white-space: nowrap; }
+  .rp-pdf .pdf-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 16px 0 6px; }
+  .rp-pdf .pdf-tiles div { padding: 12px 10px; border-radius: 14px; background: #f3effd; text-align: center; }
+  .rp-pdf .pdf-tiles b { display: block; font-size: 22px; color: #5a3fc4; }
+  .rp-pdf .pdf-tiles small { font-size: 11.5px; color: #5d5d88; }
+  .rp-pdf h2 { margin: 20px 0 8px; font-size: 16px; }
+  .rp-pdf .pdf-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .rp-pdf .pdf-tbl th { padding: 8px 8px; text-align: left; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: #6a6a95; border-bottom: 2px solid #d9d2f5; }
+  .rp-pdf .pdf-tbl td { padding: 9px 8px; border-bottom: 1px solid #ece8fa; vertical-align: middle; }
+  .rp-pdf .pdf-tbl tr { break-inside: avoid; }
+  .rp-pdf .pdf-tbl small { color: #7a7aa3; }
+  .rp-pdf .pdf-bar-h { width: 28%; }
+  .rp-pdf .pdf-bar { display: inline-block; width: 90px; height: 8px; margin-right: 6px; border-radius: 99px; background: #e8e3fa; overflow: hidden; vertical-align: middle; }
+  .rp-pdf .pdf-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f08bd0, #7aa7ff); }
+  .rp-pdf .pdf-note { margin: 12px 0 0; font-size: 11.5px; color: #7a7aa3; }
+  .rp-pdf .pdf-foot { margin-top: 22px; padding-top: 10px; border-top: 1px solid #ece8fa; font-size: 11px; color: #9a9ac0; text-align: center; }
+}
 .study .rp-per { margin: 18px 0 22px; }
 .study .rp-per .chips { align-items: center; margin-top: 0; }
 .study .rp-per-t { font-size: 13.5px; font-weight: 600; color: var(--muted); }
