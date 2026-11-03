@@ -11,6 +11,8 @@ import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
 import DayStatsModal from '@/components/korean/DayStatsModal.vue'
 import { useSiteImagesStore } from '@/stores/siteImages'
 import { useQueryParam } from '@/composables/useQueryParam'
+import { dueWords } from '@/data/review'
+import { plural } from '@/lib/plural'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import catWave from '@/assets/home/dash/cat-wave.webp'
 import bgYuna from '@/assets/home/dash/bg-yuna.webp'
@@ -29,6 +31,9 @@ const answers = computed(() =>
   Object.values(progress.data.sources).reduce((n, x) => n + x.ok + x.bad, 0),
 )
 const percent = computed(() => Math.round((known.value / D.length) * 100))
+/** Сколько слов пора повторить: показываем подсказкой, только если прогресс открыт и такие слова есть. */
+const dueCount = computed(() => (progress.unlocked ? dueWords(progress.data).length : 0))
+const dueLabel = computed(() => plural(dueCount.value, ['слово', 'слова', 'слов']))
 
 /** Пять слов на сегодня: другие после каждой перезагрузки страницы. */
 const { seed, rule: HOME_RULE, phrases: HOME_PHRASES } = useHomePicks()
@@ -131,6 +136,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
             <div><strong>{{ grammarDone }}</strong><small>правил</small></div>
             <div><strong>{{ answers }}</strong><small>ответов</small></div>
           </div>
+          <RouterLink v-if="dueCount" to="/korean/review" class="due-hint"><Icon name="arrows" /> Пора повторить {{ dueCount }} {{ dueLabel }} →</RouterLink>
           <p class="note">слово выучено, когда набрал {{ KNOWN_STREAK }} очков: верный ответ +1, ошибка −1</p>
         </template>
         <RouterLink v-else to="/korean/cabinet" class="locked">
@@ -253,6 +259,8 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
 .stats div + div { border-left: 1px solid var(--line-soft); }
 .stats strong { display: block; font-size: 17px; font-variant-numeric: lining-nums; }
 .stats small { font-size: 10px; color: var(--muted); }
+.due-hint { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding: 9px 14px; border-radius: 999px; background: rgba(168, 199, 255, .25); color: #4d4a86; font-size: 12.5px; font-weight: 600; transition: .15s; }
+.due-hint:hover { background: rgba(168, 199, 255, .4); }
 .note { margin: 12px 0 0; font-size: 11px; color: var(--muted); line-height: 1.5; }
 .locked { display: block; font-size: 13px; color: var(--muted); }
 
