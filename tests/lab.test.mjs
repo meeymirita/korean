@@ -35,3 +35,23 @@ describe('мастерская: конструктор', () => {
     for (const v of lab.VERBS) assert.ok(v.present && v.past && v.neg, v.k)
   })
 })
+
+describe('мастерская: дерево тем', () => {
+  test('все темы дерева есть в грамматике, зависимости известны и без циклов', async () => {
+    const { G } = await load('/src/data/korean/grammar.ts')
+    const ids = new Set(G.map(g => g.id))
+    for (const [id, deps] of Object.entries(lab.DEPS)) {
+      assert.ok(ids.has(id), `нет карточки ${id}`)
+      for (const d of deps) {
+        assert.ok(ids.has(d) && d in lab.DEPS, `${id}: неизвестная зависимость ${d}`)
+        assert.ok(lab.depthOf(d) < lab.depthOf(id), `${id}: цикл или неверный уровень с ${d}`)
+      }
+    }
+  })
+  test('уровни покрывают все темы по одному разу', () => {
+    const flat = lab.treeLevels().flat()
+    assert.equal(flat.length, Object.keys(lab.DEPS).length)
+    assert.equal(lab.depthOf('iyo'), 0)
+    assert.ok(lab.depthOf('past_i') > lab.depthOf('past'))
+  })
+})

@@ -2,11 +2,19 @@
 import { computed, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { useQueryParam } from '@/composables/useQueryParam'
-import { build, NOUNS, PARTICLES, VERB_FORMS, VERBS, type VerbForm } from '@/data/korean/lab'
+import { useGrammarModal } from '@/composables/useGrammarModal'
+import { G } from '@/data/korean/grammar'
+import { build, DEPS, NOUNS, PARTICLES, treeLevels, VERB_FORMS, VERBS, type VerbForm } from '@/data/korean/lab'
 
-const TABS = ['build'] as const
+const TABS = ['build', 'tree'] as const
 const tab = useQueryParam<(typeof TABS)[number]>('tab', 'build', TABS)
-const TAB_LABEL: Record<(typeof TABS)[number], string> = { build: 'Конструктор' }
+const TAB_LABEL: Record<(typeof TABS)[number], string> = { build: 'Конструктор', tree: 'Дерево тем' }
+
+/* Дерево тем */
+const { open } = useGrammarModal()
+const levels = treeLevels()
+const card = (id: string) => G.find(g => g.id === id)
+const LEVEL_NAME = ['Основа: с этого начинаем', 'Второй уровень', 'Третий уровень', 'Четвёртый уровень', 'Пятый уровень']
 
 /* Конструктор */
 const nounA = ref('저')
@@ -58,6 +66,20 @@ const gloss = computed(() => {
         <p class="note">Предложение собрано по форме, смысл не проверяется: так видно, как работают частицы и окончания.</p>
       </div>
     </section>
+
+    <section v-else-if="tab === 'tree'" class="lab-pane">
+      <p class="intro">Какие темы на каких держатся: чтобы понять карточку, полезно знать те, что под её названием. Розовым отмечены пройденные темы. Нажми на карточку, чтобы открыть объяснение.</p>
+      <div v-for="(ids, l) in levels" :key="l" class="level">
+        <h3>{{ LEVEL_NAME[l] ?? 'Дальше' }}</h3>
+        <div class="tree-row">
+          <button v-for="id in ids" :key="id" type="button" class="tnode" :class="{ ok: card(id)?.st === 'ok' }" @click="open(id)">
+            <b>{{ card(id)?.ko }}</b>
+            <span class="tru">{{ card(id)?.ru }}</span>
+            <span v-if="DEPS[id]?.length" class="tdep">опирается на: {{ DEPS[id]!.map(d => card(d)?.ko).join(', ') }}</span>
+          </button>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -73,5 +95,14 @@ const gloss = computed(() => {
 .sentence { font-family: var(--ko); font-size: 32px; font-weight: 700; line-height: 1.25; word-break: keep-all; }
 .gloss { margin-top: 4px; font-size: 14px; color: var(--muted); }
 .steps { margin: 14px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.45; }
+.level h3 { margin: 22px 0 8px; font-size: 14px; letter-spacing: .03em; color: var(--muted); }
+.tree-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.tnode { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+  color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform .15s, border-color .15s; }
+.tnode:hover { transform: translateY(-2px); border-color: var(--gold); }
+.tnode.ok { border-color: var(--pink); background: var(--gold-soft); }
+.tnode b { font-family: var(--ko); font-size: 16px; }
+.tru { font-size: 12.5px; color: var(--muted); }
+.tdep { margin-top: 4px; font-size: 11.5px; color: var(--muted); }
 .note { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }
 </style>

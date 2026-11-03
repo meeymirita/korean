@@ -101,3 +101,62 @@ export function build(a: { noun: string; p: LabParticle }, b: { noun: string; p:
     steps: [`${a.noun} + ${x.particle}: ${x.why}`, `${b.noun} + ${y.particle}: ${y.why}`, `${v.k} → ${z.out}: ${z.how}`],
   }
 }
+
+/* ---------- Грамматическое дерево: какая тема на какой опирается ---------- */
+
+/** id карточки грамматики → от каких тем она зависит (их лучше знать до неё). */
+export const DEPS: Record<string, string[]> = {
+  iyo: [],
+  eun: ['iyo'],
+  iga: ['eun'],
+  anie: ['iyo', 'iga'],
+  iss: ['iga'],
+  ayo: [],
+  adj: ['ayo'],
+  an: ['ayo'],
+  eul: ['eun'],
+  gada: ['iss', 'ayo'],
+  eseo: ['gada', 'eul'],
+  hago: [],
+  pos: ['iss'],
+  here: ['iss'],
+  deul: [],
+  nuga: ['iga', 'eun'],
+  ijeo: ['iyo'],
+  juse: ['eul', 'ayo'],
+  wagwa: ['eul'],
+  ege: ['eul'],
+  ro: ['eseo'],
+  num_sino: [],
+  num_native: ['num_sino'],
+  seyo: ['ayo'],
+  jima_seyo: ['seyo', 'an'],
+  past: ['ayo'],
+  past_i: ['iyo', 'past'],
+  time_e: ['gada'],
+  gosipda: ['ayo'],
+  lkka: ['ayo'],
+  psida: ['lkka'],
+  mot: ['an'],
+  reo: ['gada'],
+  do: ['eun', 'iga', 'eul'],
+  aseo: ['ayo'],
+  future: ['ayo'],
+  nun: ['ayo', 'adj'],
+  mnida: ['seyo'],
+  buteo: ['eseo', 'time_e'],
+}
+
+/** Уровень темы: 0 — база, дальше на 1 больше самой «глубокой» из тем, на которые она опирается. */
+export function depthOf(id: string, seen: string[] = []): number {
+  if (seen.includes(id)) return 0
+  const d = DEPS[id] ?? []
+  return d.length ? 1 + Math.max(...d.map(x => depthOf(x, [...seen, id]))) : 0
+}
+
+/** Темы по уровням для показа дерева. */
+export function treeLevels(): string[][] {
+  const ids = Object.keys(DEPS)
+  const max = Math.max(...ids.map(i => depthOf(i)))
+  return Array.from({ length: max + 1 }, (_, l) => ids.filter(i => depthOf(i) === l))
+}
