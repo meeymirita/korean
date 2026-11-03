@@ -163,7 +163,8 @@ onBeforeUnmount(() => {
     </main>
     <div class="topbar-fixed">
       <NotificationsBell v-if="progress.unlocked" />
-      <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
+      <!-- на главной раздела своё поле поиска: кнопку не дублируем (⌘K и «/» работают везде) -->
+      <button v-if="route.path !== '/korean/home'" class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
         <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
       </button>
     </div>
