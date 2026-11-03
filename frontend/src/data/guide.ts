@@ -72,4 +72,5 @@ export const PAGES: GuideCard[] = [
   { icon: 'sakura', title: 'Сад воспоминаний', text: 'Каждое выученное слово становится цветком. Не повторяешь — цветок вянет.', to: '/korean/garden', private: true },
   { icon: 'dict', title: 'Коллекция', text: 'Карточки слов открываются по мере выученности. Чем больше ошибок, тем реже карточка.', to: '/korean/garden?tab=cards', private: true },
   { icon: 'sparkle', title: 'Культура Кореи', text: 'Мини-уроки карточками: еда, праздники, этикет. Вперемешку попадаются и слова из словаря.', to: '/korean/culture', private: true },
+  { icon: 'notebook', title: 'Что я уже знаю', text: 'Пройденная грамматика на одной странице: формула и пример. Удобно открыть перед созвоном.', to: '/korean/know', private: true },
 ]
