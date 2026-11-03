@@ -24,7 +24,7 @@ onBeforeUnmount(() => {
 <template>
   <!-- вынесено в body: внутри карточки с transform окно «прилипало» бы к карточке и дёргалось при наведении -->
   <Teleport to="body">
-    <div class="nm" @click.self="emit('close')">
+    <div class="nm-wrap" @click.self="emit('close')">
       <article class="nm-box" role="dialog" aria-modal="true" :aria-label="note.title">
         <button class="nm-x" aria-label="Закрыть" @click="emit('close')">✕</button>
         <h2>{{ note.title }}</h2>
@@ -42,7 +42,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-.nm { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; overflow-y: auto; background: rgba(32, 38, 92, .5);
+.nm-wrap { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; overflow-y: auto; background: rgba(32, 38, 92, .5);
   backdrop-filter: blur(6px); font-family: 'Archivo', 'Noto Sans KR', sans-serif; color: #20265c; }
 .nm-box { position: relative; width: min(720px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; padding: 28px 30px; background: #f6f1ff; border: 1px solid #fff;
   border-radius: 24px; box-shadow: 0 40px 80px -30px rgba(32, 38, 92, .5); }
