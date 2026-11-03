@@ -60,7 +60,7 @@ export default defineNuxtConfig({
       ],
       script: [
         // тёмная тема до отрисовки, чтобы страница не мигала светлой (src/lib/theme.ts)
-        { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m==="dark"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark"}catch(e){}', tagPosition: 'head' },
+        { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m==="dark"||m==="night"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";if(m==="night")document.documentElement.dataset.palette="night"}catch(e){}', tagPosition: 'head' },
       ],
     },
   },

@@ -13,11 +13,12 @@ describe('тема оформления', () => {
     assert.equal(resolveTheme('auto', false), 'light')
     assert.equal(resolveTheme('light', true), 'light')
     assert.equal(resolveTheme('dark', false), 'dark')
+    assert.equal(resolveTheme('night', false), 'dark')
   })
 
   test('допустимы только три режима', () => {
-    assert.deepEqual(MODES.map(m => m.id), ['auto', 'light', 'dark'])
-    for (const ok of ['auto', 'light', 'dark']) assert.ok(isMode(ok))
+    assert.deepEqual(MODES.map(m => m.id), ['auto', 'light', 'dark', 'night'])
+    for (const ok of ['auto', 'light', 'dark', 'night']) assert.ok(isMode(ok))
     for (const bad of ['', 'Dark', null, undefined, 5, 'sepia']) assert.ok(!isMode(bad))
   })
 

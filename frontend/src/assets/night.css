@@ -1,0 +1,125 @@
+/* Ночная палитра: data-theme="dark" + data-palette="night" на <html> (режим «Ночная» в src/lib/theme.ts).
+   Свои тёплые приглушённые цвета (сливовый и тёплый уголь, мягкий розовый акцент), без холодного индиго тёмной темы.
+   Правила повторяют assets/dark.css с заменой цветов; правишь структуру в dark.css, переноси сюда. */
+html[data-theme='dark'][data-palette='night'] { color-scheme: dark; --bg: #1a1519; --ink: #e4d9d2; --muted: #b0a19c; }
+html[data-theme='dark'][data-palette='night'] body { background: #1a1519; color: #e4d9d2; }
+
+/* раздел корейского, игра, кабинет */
+html[data-theme='dark'][data-palette='night'] .study.sky {
+  --bg: #1a1519;
+  --ink: #e4d9d2;
+  --muted: #b0a19c;
+  --gold: #a9687f;
+  --accent: #d2a0b0;
+  --pink: #e39aa8;
+  --surface: rgba(44, 35, 42, .78);
+  --line: rgba(222, 170, 180, .24);
+  --line-soft: rgba(222, 170, 180, .14);
+  --gold-soft: rgba(196, 120, 140, .2);
+  --ok: #6fcf97;
+  --ok-bg: rgba(111, 207, 151, .14);
+  --bad: #ff8f7e;
+  --bad-bg: rgba(255, 143, 126, .14);
+  --shadow: 0 18px 45px rgba(0, 0, 0, .28);
+}
+html[data-theme='dark'][data-palette='night'] .study.sky:not(.study-modal), html[data-theme='dark'][data-palette='night'] body:has(.study-shell.sky) {
+  background-color: #1a1519;
+  background-image: linear-gradient(rgba(20, 15, 19, .84), rgba(20, 15, 19, .84)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), url('./game/bg.webp');
+  background-position: 0 0, 0 0, center top -230px;
+  background-size: 100% 100%, 100% 100%, 100% auto;
+}
+html[data-theme='dark'][data-palette='night'] .study-modal.sky { background: rgba(10, 6, 9, .66); }
+html[data-theme='dark'][data-palette='night'] .study-modal.sky .gp { border-color: var(--line); background: #2a2128; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .7); }
+html[data-theme='dark'][data-palette='night'] .study.sky .rich .tip, html[data-theme='dark'][data-palette='night'] .study.sky .rich pre { background: rgba(196, 120, 140, .14); }
+/* стеклянные панели и пилюли, которые были белыми */
+html[data-theme='dark'][data-palette='night'] .study.sky .sb,
+html[data-theme='dark'][data-palette='night'] .study.sky .chip,
+html[data-theme='dark'][data-palette='night'] .study-shell.sky .study-level,
+html[data-theme='dark'][data-palette='night'] .study.sky .sw-btn,
+html[data-theme='dark'][data-palette='night'] .study.sky .nb-btn,
+html[data-theme='dark'][data-palette='night'] .nb-panel,
+html[data-theme='dark'][data-palette='night'] .study .nt-form,
+html[data-theme='dark'][data-palette='night'] .study .nt-card,
+html[data-theme='dark'][data-palette='night'] .study .im-box { background: rgba(44, 35, 42, .82); border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .study-shell.sky .study-side { background: rgba(38, 30, 36, .82); border-color: var(--line); }
+@media (max-width: 860px) { html[data-theme='dark'][data-palette='night'] .study-shell.sky .study-side { background: rgba(34, 27, 32, .95); } }
+html[data-theme='dark'][data-palette='night'] .study.sky .chip.on, html[data-theme='dark'][data-palette='night'] .study.sky .chip.router-link-active { background: var(--gold); border-color: var(--gold); color: #fff; }
+html[data-theme='dark'][data-palette='night'] .study.sky .side-show { background: rgba(44, 35, 42, .92); border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .study.sky .sw-btn kbd,
+html[data-theme='dark'][data-palette='night'] .study .nt-add,
+html[data-theme='dark'][data-palette='night'] .study .nt-acts button,
+html[data-theme='dark'][data-palette='night'] .study .nt-acts .plain { background: rgba(196, 120, 140, .22); color: #ecd3d8; }
+html[data-theme='dark'][data-palette='night'] .study .nt-acts .danger:hover { color: #ff9d8f; background: rgba(255, 143, 126, .2); }
+html[data-theme='dark'][data-palette='night'] .study .nt input, html[data-theme='dark'][data-palette='night'] .study .nt textarea { background: rgba(20, 21, 43, .7); border-color: var(--line); color: var(--ink); }
+html[data-theme='dark'][data-palette='night'] .study input, html[data-theme='dark'][data-palette='night'] .study textarea, html[data-theme='dark'][data-palette='night'] .study select { color: var(--ink); }
+html[data-theme='dark'][data-palette='night'] .study input::placeholder, html[data-theme='dark'][data-palette='night'] .study textarea::placeholder { color: #9b8a88; }
+html[data-theme='dark'][data-palette='night'] .study .cb-note { background: rgba(240, 170, 60, .14); border-color: rgba(240, 170, 60, .4); color: #ecc796; }
+html[data-theme='dark'][data-palette='night'] .study .bk-warn { color: #ecc796; }
+html[data-theme='dark'][data-palette='night'] .study .pc-empty { color: var(--muted); }
+html[data-theme='dark'][data-palette='night'] .study .share-btn { color: #e3c3cb; }
+
+/* общие стили отдельных страниц: главная, «О платформе», история, визитка, 404 */
+html[data-theme='dark'][data-palette='night'] :is(.home, .hist, .about, .nf, .me) { --ink: #e4d9d2; --soft: #b0a19c; --line: rgba(222, 170, 180, .22); --accent: #e39aa8; --accent2: #d2a0b0; --cream: #1a1519; }
+html[data-theme='dark'][data-palette='night'] .home::before {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(150, 80, 100, .35) 0, transparent 30%),
+    radial-gradient(circle at 4% 96%, rgba(170, 90, 90, .28) 0, transparent 28%),
+    radial-gradient(circle at 50% 50%, rgba(140, 70, 100, .2) 0, transparent 60%);
+}
+html[data-theme='dark'][data-palette='night'] :is(.btn-main, .open, .nav .enter:hover, .btn:hover) { color: #1a1519 !important; }
+
+/* окна, плашки, шторка */
+html[data-theme='dark'][data-palette='night'] :is(.cf-box, .sw-box, .nm-box) { background: #2a2128; border-color: var(--line); color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] :is(.cf-box h2, .cf-box p, .sw-head h2, .nm-box h2, .nm-text) { color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] .cf-token input { background: #1a1519; color: #e4d9d2; border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .cf-token input.bad { background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='night'] :is(.cf-cancel, .nm-acts button, .sw-x, .nm-x) { background: rgba(196, 120, 140, .22); color: #ecd3d8; }
+html[data-theme='dark'][data-palette='night'] .cf-ok { background: #bd7f92; color: #1a1519; }
+html[data-theme='dark'][data-palette='night'] .nm-tags li { background: rgba(196, 120, 140, .22); color: #ecd3d8; }
+html[data-theme='dark'][data-palette='night'] .tst-item.info { background: #30262d; color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] .tst-item.error { background: rgba(255, 143, 126, .2); color: #ffb3a6; border-color: rgba(255, 143, 126, .45); }
+html[data-theme='dark'][data-palette='night'] .stm-btn, html[data-theme='dark'][data-palette='night'] .stm-note { background: rgba(44, 35, 42, .95); border-color: var(--line); color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] .ch-tip { background: #30262d; color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] :is(.pc-x, .pc-btn) { background: rgba(44, 35, 42, .9); border-color: var(--line); color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] .pc-f :is(input, textarea) { background: #1a1519; color: #e4d9d2; border-color: var(--line); }
+
+/* страницы «О платформе», история, визитка, 404, шторка на главной */
+html[data-theme='dark'][data-palette='night'] :is(.about, .hist) { background: #1a1519; }
+html[data-theme='dark'][data-palette='night'] .shot { background: #2a2128; border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .arrow { background: rgba(44, 35, 42, .92); color: #e4d9d2; }
+html[data-theme='dark'][data-palette='night'] .dots button { background: #4d3c45; }
+html[data-theme='dark'][data-palette='night'] .dot { background: #1a1519; }
+html[data-theme='dark'][data-palette='night'] :is(.hist .card, .me .card) { background: rgba(44, 35, 42, .82); border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .me .stats div { background: rgba(196, 120, 140, .18); }
+html[data-theme='dark'][data-palette='night'] .nf .btn { background: transparent; }
+
+/* пастельные плитки и кружки календаря на главной раздела: текст остаётся тёмным, а сами плитки приглушены */
+html[data-theme='dark'][data-palette='night'] .lesson { filter: brightness(.78) saturate(.9); }
+html[data-theme='dark'][data-palette='night'] .lesson strong { color: #3d2230; }
+html[data-theme='dark'][data-palette='night'] .lesson small { color: #6d4a58; }
+html[data-theme='dark'][data-palette='night'] .cal i { background: rgba(196, 120, 140, .16); color: #d4b1b9; }
+html[data-theme='dark'][data-palette='night'] .cal i.done { background: linear-gradient(135deg, #b07585, #c68a98); color: #fff; }
+
+/* страница игры: своя палитра в .game */
+html[data-theme='dark'][data-palette='night'] .study.sky.game {
+  --panel: rgba(42, 33, 40, .94);
+  --line: rgba(222, 170, 180, .28);
+  --accent: #d2a0b0;
+  --accent-ink: #1a1519;
+  --accent-soft: rgba(196, 120, 140, .2);
+  --ok: #6fcf97;
+  --ok-bg: rgba(111, 207, 151, .14);
+  --bad: #ff8f7e;
+  --bad-bg: rgba(255, 143, 126, .14);
+  --shadow: 0 30px 60px -34px rgba(0, 0, 0, .7);
+}
+html[data-theme='dark'][data-palette='night'] .game .over { background: rgba(10, 6, 9, .72); }
+html[data-theme='dark'][data-palette='night'] .study .ht-c.h1 { background: rgba(214, 140, 160, .28); }
+html[data-theme='dark'][data-palette='night'] .study .ht-c.h2 { background: rgba(214, 140, 160, .5); }
+html[data-theme='dark'][data-palette='night'] .study .ht-c.h3 { background: rgba(214, 140, 160, .75); }
+html[data-theme='dark'][data-palette='night'] .study .ht-c.h4 { background: #e0aab8; }
+
+@media (min-width: 861px) { html[data-theme='dark'][data-palette='night'] .study-shell.sky.focus.peek .study-side { background: rgba(36, 29, 35, .99); } }
+html[data-theme='dark'][data-palette='night'] .study-main .crumbs ol { background: rgba(44, 35, 42, .82); border-color: var(--line); }
+html[data-theme='dark'][data-palette='night'] .study .fcb select { background-color: rgba(44, 35, 42, .82); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23d9a9b6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+html[data-theme='dark'][data-palette='night'] .study-shell.sky .study-main .wrap { background: rgba(26, 28, 62, .66); border-color: var(--line); }
