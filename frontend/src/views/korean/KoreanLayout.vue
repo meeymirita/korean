@@ -11,6 +11,7 @@ import SearchWindow from '@/components/SearchWindow.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 import Breadcrumbs from '@/components/korean/Breadcrumbs.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
+import NotificationsBell from '@/components/korean/NotificationsBell.vue'
 import { sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
@@ -160,9 +161,12 @@ onBeforeUnmount(() => {
       <AuthGate v-if="route.meta.private && !progress.unlocked" />
       <NuxtPage v-else />
     </main>
-    <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
-      <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
-    </button>
+    <div class="topbar-fixed">
+      <NotificationsBell v-if="progress.unlocked" />
+      <button class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">
+        <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
+      </button>
+    </div>
     <SearchWindow />
     <GrammarModal />
   </div>

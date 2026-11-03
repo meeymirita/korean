@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import { refTabs, sectionById } from '@/data/korean/sections'
 
 const KEY = 'last_section'
+/** дата → раздел → когда заходили в последний раз (мс); для напоминаний в колокольчике, см. useNotices.ts */
+const VISITS_KEY = 'section_visits'
 
 export interface Visited {
   path: string
@@ -20,6 +22,17 @@ function read(): Visited | null {
 
 export const lastVisited = ref<Visited | null>(read())
 
+/** Когда последний раз заходили в раздел (мс), 0 — не заходили (или нет данных браузера). */
+export function lastVisitOf(id: string): number {
+  if (import.meta.server) return 0
+  try {
+    const v = JSON.parse(localStorage.getItem(VISITS_KEY) || '{}')
+    return (v && typeof v === 'object' && Number(v[id])) || 0
+  } catch {
+    return 0
+  }
+}
+
 /** Запоминает страницу раздела (кроме главной раздела), чтобы предложить вернуться. */
 export function visit(path: string) {
   if (import.meta.server) return
@@ -30,6 +43,9 @@ export function visit(path: string) {
   const v = { path, title: section.menu }
   try {
     localStorage.setItem(KEY, JSON.stringify(v))
+    const visits = JSON.parse(localStorage.getItem(VISITS_KEY) || '{}')
+    visits[id] = Date.now()
+    localStorage.setItem(VISITS_KEY, JSON.stringify(visits))
   } catch {
     /* ничего страшного */
   }
