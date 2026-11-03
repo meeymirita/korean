@@ -7,7 +7,7 @@ import { GAME_GROUPS } from '@/data/games'
 /** Разметка игры так, как её собирает страница `/game/home` (иконки подставлены, фон кота не нужен). */
 const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 
-const ENGINE_MODES = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).filter(id => !['match', 'pairs', 'particles', 'translate', 'syllables', 'typewords', 'quick'].includes(id))
+const ENGINE_MODES = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).filter(id => !['match', 'pairs', 'particles', 'translate', 'syllables', 'typewords', 'quick', 'keyboard'].includes(id))
 const NEW_MODES = ['days', 'when', 'too', 'num', 'price', 'count', 'neg', 'place', 'dem', 'polite']
 
 let dispose: (() => void) | undefined

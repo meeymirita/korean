@@ -17,6 +17,7 @@ import ParticlesView from '@/views/korean/ParticlesView.vue'
 import PairsView from '@/views/korean/PairsView.vue'
 import TranslateView from '@/views/korean/TranslateView.vue'
 import SyllablesView from '@/views/korean/SyllablesView.vue'
+import KeyboardView from '@/views/korean/KeyboardView.vue'
 import RuleView from '@/views/korean/RuleView.vue'
 import { ICON } from '@/game/icons'
 import { useProgressStore } from '@/stores/progress'
@@ -44,7 +45,7 @@ const markup = markupRaw
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
 const route = useRoute()
 const game = computed(() => (typeof route.query.game === 'string' ? route.query.game : ''))
-const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView, pairs: PairsView, translate: TranslateView, syllables: SyllablesView, rule: RuleView }
+const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView, pairs: PairsView, translate: TranslateView, syllables: SyllablesView, rule: RuleView, keyboard: KeyboardView }
 const tool = computed(() => (TOOL_IDS as readonly string[]).includes(game.value) ? TOOLS[game.value as keyof typeof TOOLS] : null)
 const engineOn = computed(() => !!game.value && !tool.value && ALL_GAMES.some(g => g.id === game.value))
 const current = computed(() => ALL_GAMES.find(g => g.id === game.value))

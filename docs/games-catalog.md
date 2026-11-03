@@ -58,6 +58,7 @@
 | pairs | `korean/PairsView.vue` | «Похожие, но разные»: слово среди похожих | `data/korean/pairs.ts` — `similarWords()` из `words.ts`, приоритет по `mistakes.ts` |
 | translate | `korean/TranslateView.vue` | «Переведи предложение», 3 направления | `data/korean/translate.ts` + переводы примеров `data/korean/translations.ts` |
 | syllables | `korean/SyllablesView.vue` | «Собери по слогам»: слово из слогов-плиток, своя DnD-разметка (`vuedraggable`) | `data/korean/syllables.ts`, приоритет по `mistakes.ts` (`mistakeWords`) |
+| keyboard | `korean/KeyboardView.vue` | «Печать на корейском»: 4 уровня (буквы, слоги, слова, предложения), подсветка клавиши на экранной клавиатуре, скорость и точность, рекорд уровня в `localStorage` (`kb_best`) | `lib/hangulKeys.ts` (раскладка 두벌식, разложение слога на клавиши, `matches`) + `data/korean/keyboard.ts` (уровни из словаря). Нажатия сверяются по `KeyboardEvent.code`, корейская раскладка в системе не нужна |
 
 **Общий UI для 15-вопросных серий** (particles / translate / quick / pairs — НЕ match, НЕ syllables, у них своя
 разметка): `components/korean/TaskSession.vue`. Новый режим вида «вопрос → несколько вариантов» — переиспользуй

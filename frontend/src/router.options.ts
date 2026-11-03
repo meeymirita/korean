@@ -6,7 +6,7 @@ import type { RouterConfig } from '@nuxt/schema'
 import type { RouteRecordRaw } from 'vue-router'
 
 const REF = ['cheat', 'talk', 'hangul', 'alphabet', 'reading', 'sentences', 'numbers']
-const GAMES = ['quick', 'particles', 'pairs', 'translate', 'syllables']
+const GAMES = ['quick', 'particles', 'pairs', 'translate', 'syllables', 'keyboard']
 
 const redirects: RouteRecordRaw[] = [
   { path: '/korean/progress', redirect: '/korean/cabinet' },
