@@ -39,6 +39,16 @@ const EXTRA_MODES: Record<string, string> = {
 export const modeName = (mode: string): string => (mode ? (ALL_GAMES.find(g => g.id === mode)?.name ?? EXTRA_MODES[mode] ?? mode) : 'без режима')
 export const sourceName = (s: string): string => SOURCE_NAMES[s] ?? s
 
+/** Грубые темы для «Дневника ошибок»: группируем похожие режимы, чтобы фильтр не разваливался на десятки пунктов. */
+const MISTAKE_CATS: [string, string[]][] = [
+  ['Частицы и окончания', ['part', 'pair', 'particles']],
+  ['Порядок слов', ['ord', 'build']],
+  ['Форма слова', ['form', 'type']],
+  ['Перевод', ['word', 'rev', 'translate', 'typing']],
+]
+export const MISTAKE_CAT_NAMES = ['Все', ...MISTAKE_CATS.map(([name]) => name), 'Другое']
+export const mistakeCatOf = (mode: string): string => MISTAKE_CATS.find(([, modes]) => modes.includes(mode))?.[0] ?? 'Другое'
+
 export interface ReportGroup {
   source: string
   name: string

@@ -105,6 +105,8 @@ const KEY = 'progress_v1'
 const TOKEN_KEY = 'progress_token'
 const VERIFIED_KEY = 'progress_verified'
 const SESSION_KEY = 'progress_session'
+/** Когда появился текущий сеанс двухфакторного входа: для напоминания «скоро истечёт» в колокольчике (см. useNotices.ts). */
+const SESSION_CREATED_KEY = 'progress_session_created'
 const ROLE_KEY = 'progress_role'
 const OUTBOX_KEY = 'progress_outbox'
 /** Через сколько после последнего действия очередь уходит на сервер, и сколько действий за один запрос. */
@@ -245,6 +247,8 @@ export const useProgressStore = defineStore('progress', () => {
   const token = ref(stored(TOKEN_KEY))
   /** Сеанс двухфакторного входа (выдаётся за код из письма); без включённой защиты пуст. */
   const session = ref(stored(SESSION_KEY))
+  /** Когда вошли сеансом (мс), 0 — сеанса нет; сеанс живёт SESSION_DAYS (server/src/auth/twofa.service.ts). */
+  const sessionCreatedAt = ref(Number(stored(SESSION_CREATED_KEY)) || 0)
   /** Токен подошёл, но сервер просит ещё код из письма. */
   const needs2fa = ref(false)
   /** Что идёт в заголовке Authorization после «Bearer»: токен, а после двухфакторного входа «токен сеанс». */
@@ -277,6 +281,7 @@ export const useProgressStore = defineStore('progress', () => {
     data.value = load()
     token.value = read(TOKEN_KEY)
     session.value = read(SESSION_KEY)
+    sessionCreatedAt.value = Number(read(SESSION_CREATED_KEY)) || 0
     verified.value = read(VERIFIED_KEY) === '1'
     sync.value = token.value ? 'idle' : 'off'
     outbox.value = role.value === 'guest' ? [] : loadOutbox()
@@ -288,12 +293,14 @@ export const useProgressStore = defineStore('progress', () => {
     clearTimeout(expireTimer)
     token.value = ''
     session.value = ''
+    sessionCreatedAt.value = 0
     needs2fa.value = false
     verified.value = false
     role.value = 'owner'
     guestExpires.value = 0
     write(TOKEN_KEY, null)
     write(SESSION_KEY, null)
+    write(SESSION_CREATED_KEY, null)
     write(VERIFIED_KEY, null)
     write(ROLE_KEY, null)
     if (wasGuest) {
@@ -488,6 +495,8 @@ export const useProgressStore = defineStore('progress', () => {
     if (error !== '2fa') return lock(error === 'expired' ? 'срок гостевого доступа закончился' : 'неверный токен')
     session.value = ''
     write(SESSION_KEY, null)
+    sessionCreatedAt.value = 0
+    write(SESSION_CREATED_KEY, null)
     needs2fa.value = true
     verified.value = false
     write(VERIFIED_KEY, null)
@@ -500,6 +509,8 @@ export const useProgressStore = defineStore('progress', () => {
     session.value = id
     needs2fa.value = false
     write(SESSION_KEY, id)
+    sessionCreatedAt.value = Date.now()
+    write(SESSION_CREATED_KEY, String(sessionCreatedAt.value))
   }
 
   /** Ставит действие в очередь; через FLUSH_DELAY после последнего действия очередь уходит на сервер. Гостю и без токена не отправляется. */
@@ -617,6 +628,8 @@ export const useProgressStore = defineStore('progress', () => {
       // другой токен (например, гостевой): сеанс прежнего токена к нему не подходит
       session.value = ''
       write(SESSION_KEY, null)
+      sessionCreatedAt.value = 0
+      write(SESSION_CREATED_KEY, null)
     }
     needs2fa.value = false
     token.value = value
@@ -704,7 +717,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   return {
     data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, streak, bestStreak, status, record, roundDone, importXp, setProfile, setSettings, addTime,
-    token, bearer, session, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
+    token, bearer, session, sessionCreatedAt, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
 })

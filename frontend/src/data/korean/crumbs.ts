@@ -18,6 +18,7 @@ export const CABINET_TABS: Record<string, string> = {
   shop: 'Магазин',
   notes: 'Заметки',
   images: 'Картинки',
+  notifications: 'Уведомления',
   settings: 'Настройки',
 }
 

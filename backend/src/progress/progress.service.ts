@@ -135,6 +135,41 @@ export class ProgressService {
     }
   }
 
+  /** Ответы по часу дня (0–23, местное время сервера) за период — паттерн усталости: в какое время суток больше ошибок. */
+  clock(days: number) {
+    const since = days ? Date.now() - days * 86_400_000 : 0
+    const rows = this.db.all<{ t: number; ok: number }>('SELECT t, ok FROM answers WHERE t >= ?', since)
+    const hours = Array.from({ length: 24 }, () => ({ ok: 0, bad: 0 }))
+    for (const r of rows) {
+      const h = hours[new Date(r.t).getHours()]!
+      if (r.ok) h.ok++
+      else h.bad++
+    }
+    return { days, hours }
+  }
+
+  /** «Эта неделя vs прошлая»: ответы и время занятий за последние 7 дней против предыдущих 7. */
+  weekCompare() {
+    const now = Date.now()
+    const week = 7 * 86_400_000
+    const curSince = now - week
+    const prevSince = now - 2 * week
+    const sum = (rows: { ok: number }[]) => ({ ok: rows.filter(r => r.ok).length, bad: rows.filter(r => !r.ok).length })
+    const curRows = this.db.all<{ ok: number }>('SELECT ok FROM answers WHERE t >= ?', curSince)
+    const prevRows = this.db.all<{ ok: number }>('SELECT ok FROM answers WHERE t >= ? AND t < ?', prevSince, curSince)
+    const curDay = dayKeyOf(curSince)
+    const prevDay = dayKeyOf(prevSince)
+    const secondsOf = (fromDay: string, toDay?: string) =>
+      (toDay
+        ? this.db.all<{ seconds: number }>('SELECT seconds FROM study_time WHERE day >= ? AND day < ?', fromDay, toDay)
+        : this.db.all<{ seconds: number }>('SELECT seconds FROM study_time WHERE day >= ?', fromDay)
+      ).reduce((n, s) => n + s.seconds, 0)
+    return {
+      cur: { ...sum(curRows), seconds: secondsOf(curDay) },
+      prev: { ...sum(prevRows), seconds: secondsOf(prevDay, curDay) },
+    }
+  }
+
   /** Ответы по дням для графика отчёта: от `days` дней назад до сегодня (0 — с первого ответа, не больше 120 дней), пустые дни с нулями. */
   series(source: string, mode: string | undefined, days: number) {
     const where = mode === undefined ? 'source = ?' : 'source = ? AND mode = ?'
@@ -163,10 +198,15 @@ export class ProgressService {
     return { source, mode: mode ?? null, days: out }
   }
 
-  /** Сами ответы раздела или режима за период: слово, верно ли, вопрос / верный ответ / что выбрано. Новые сверху, не больше 300. */
+  /** Сами ответы раздела или режима за период: слово, верно ли, вопрос / верный ответ / что выбрано. Новые сверху, не больше 300.
+   * Без `source` (пустая строка) — по всем разделам сразу: так собирается общий «Дневник ошибок». */
   answersOf(source: string, mode: string | undefined, days: number, only?: 'ok' | 'bad') {
-    const conds = ['source = ?']
-    const args: (string | number)[] = [source]
+    const conds: string[] = []
+    const args: (string | number)[] = []
+    if (source) {
+      conds.push('source = ?')
+      args.push(source)
+    }
     if (mode !== undefined) {
       conds.push('mode = ?')
       args.push(mode)
@@ -175,12 +215,15 @@ export class ProgressService {
       conds.push('t >= ?')
       args.push(Date.now() - days * 86_400_000)
     }
-    const base = conds.join(' AND ')
+    const base = conds.length ? conds.join(' AND ') : '1 = 1'
     const count = (extra: string) => this.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM answers WHERE ${base}${extra}`, ...args)!.n
     const where = base + (only === 'ok' ? ' AND ok = 1' : only === 'bad' ? ' AND ok = 0' : '')
     const items = this.db
-      .all<{ t: number; word: string | null; ok: number; detail: string }>(`SELECT t, word, ok, detail FROM answers WHERE ${where} ORDER BY t DESC, id DESC LIMIT 300`, ...args)
-      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, ...(r.detail ? { d: parseDetail(r.detail) } : {}) }))
+      .all<{ t: number; word: string | null; ok: number; detail: string; source: string; mode: string }>(
+        `SELECT t, word, ok, detail, source, mode FROM answers WHERE ${where} ORDER BY t DESC, id DESC LIMIT 300`,
+        ...args,
+      )
+      .map(r => ({ t: r.t, w: r.word, ok: !!r.ok, source: r.source, mode: r.mode, ...(r.detail ? { d: parseDetail(r.detail) } : {}) }))
     return { items, ok: count(' AND ok = 1'), bad: count(' AND ok = 0') }
   }
 

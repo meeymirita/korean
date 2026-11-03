@@ -9,3 +9,8 @@ design/
 .nuxt
 .output
 .data
+
+# Claude Code skills (npx skills add), локально для инструмента, не для проекта
+.agents/
+.claude/
+skills-lock.json

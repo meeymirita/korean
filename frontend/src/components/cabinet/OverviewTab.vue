@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
@@ -9,6 +9,7 @@ import { moodSummary, MOODS } from '@/data/mood'
 import { personalRecords } from '@/data/records'
 import { answersByDay } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
+import { achievedAt, markAchieved } from '@/lib/achievedDates'
 import { useShareCard } from '@/composables/useShareCard'
 import { MAX_LEVEL } from '@/data/levels'
 import { CATN, D } from '@/data/korean/words'
@@ -76,13 +77,25 @@ const weak = computed(() =>
 )
 
 
-const achievements = computed(() =>
-  ACHIEVEMENTS.map(a => {
+/** Бьётся после каждой новой отметки даты, чтобы achievements пересчитался и подхватил её из localStorage. */
+const dateTick = ref(0)
+const achievements = computed(() => {
+  void dateTick.value
+  return ACHIEVEMENTS.map(a => {
     const [cur, g] = a.progress(progress.data, progress.streak)
-    return { ...a, cur: Math.min(cur, g), goal: g, done: cur >= g }
-  }),
-)
+    const done = cur >= g
+    return { ...a, cur: Math.min(cur, g), goal: g, done, date: done ? achievedAt(a.id) : null }
+  })
+})
 const doneCount = computed(() => achievements.value.filter(a => a.done).length)
+/** Первый раз, когда бейдж увидели выполненным на этом устройстве, — запоминаем дату (lib/achievedDates.ts, не на сервере). */
+watch(achievements, list => {
+  if (list.some(a => a.done && a.date === null)) {
+    for (const a of list) if (a.done && a.date === null) markAchieved(a.id)
+    dateTick.value++
+  }
+})
+const achDate = (t: number) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(t)
 
 const SOURCES: [string, string][] = [
   ['game', 'Игра «Хлебушек»'],
@@ -195,7 +208,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <span class="pg-ai"><Icon :name="a.icon" /></span>
         <div>
           <b>{{ a.title }}</b>
-          <small>{{ a.desc }}</small>
+          <small>{{ a.date ? `Получено ${achDate(a.date)}` : a.desc }}</small>
           <div class="pg-bar"><i :style="{ width: (a.cur / a.goal) * 100 + '%' }"></i></div>
         </div>
         <span class="pg-an">{{ a.cur }} / {{ a.goal }}</span>

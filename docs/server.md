@@ -21,7 +21,7 @@
 | `images/` | картинки: загрузка, миниатюры (`sharp`), назначение `kind`, очистка ненужных |
 | `siteimg/`, `public/` | замена картинок сайта (режим редактирования); визитка `/me` |
 | `chat/` | помощник-чат (`docs/chat.md`) |
-| `digest/`, `reminders/`, `mail/` | письма: подборка, напоминание; отправка и оформление (SMTP) |
+| `digest/`, `reminders/`, `lesson/`, `mail/` | письма: подборка, напоминание заниматься (свои дни недели в `days`), напоминание о созвоне с учителем (день недели + время, не смотрит на ответы за день); отправка и оформление (SMTP) |
 | `admin/`, `logs/`, `events/` | просмотр базы, архив на почту и статус копий (`docs/backup.md`), журналы, журнал событий |
 
 ## Таблицы базы
@@ -35,7 +35,9 @@
 - `GET /api/progress`, `POST /api/ops` (пачка до 500 действий: `answer`, `profile`, `settings`, `time`, `round`, `mood`, `reset`, `import`; любое неверное отменяет пачку, 400;
   `reset`, `import` требуют `X-Confirm-Token`).
 - `/api/notes`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
-- `/api/shop*`, `/api/chat`, `/api/digest`, `/api/reminder`, `/api/backup/*`, `/api/logs/app|caddy`, `/api/db/tables`, `/api/site-images*`, `/api/public/*`, `/api/2fa/*`.
+- `/api/shop*`, `/api/chat`, `/api/digest`, `/api/reminder` (свои дни недели `days`), `/api/lesson` (напоминание о созвоне: день недели + время, не смотрит на ответы за день), `/api/backup/*`, `/api/logs/app|caddy`, `/api/db/tables`, `/api/site-images*`, `/api/public/*`, `/api/2fa/*`.
+- `GET /api/report/clock?days=`, `GET /api/report/weeks`: ответы по часу дня и «эта неделя vs прошлая» (владелец, для «Прогресс и аналитика» в кабинете).
+  `GET /api/report/answers` без `source` — ответы по всем разделам сразу (общий «Дневник ошибок»).
 
 ## Защита
 - Заголовки безопасности на каждый ответ (`nosniff`, `DENY`, CSP `default-src 'none'`, HSTS), `X-Powered-By` выключен.

@@ -28,6 +28,8 @@
 .game .item.bad .mk{color:var(--bad)}
 .game .item .ko{font-family:var(--ko);font-weight: 500}
 .game .item .you{color:var(--bad);font-size:12px}
+.game .item.rec .mk{display:inline-flex;align-items:center}
+.game .item .recbest{font-size:12px;font-weight:600;color:var(--accent-ink,var(--ink));white-space:nowrap}
 .game .empty{color:var(--muted);font-size:13px;padding:14px 4px}
 .game .modes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .game .chip{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:7px 13px;font-size:13px;white-space:nowrap}

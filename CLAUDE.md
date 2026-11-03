@@ -50,6 +50,7 @@
 - Сочетания клавиш: заняты ⌘/Ctrl+K и «/» (поиск), F (меню), Esc, 1–4 и Enter в заданиях. Новую клавишу сначала допиши в `src/lib/shortcuts.ts`.
 - ✳ пиши с селектором `U+FE0E` (`✳︎`), иначе iOS рисует зелёный смайлик. `KNOWN_STREAK` живёт в `stores/progress.ts` и `backend/src/progress/progress.service.ts`: менять в обоих.
 - Новый режим игры добавляй в `MODES` и `MODE_HELP` (`src/game/engine.ts`, тест следит).
+- **Перед новым режимом игры/тренажёром сначала прочитай `docs/games-catalog.md`** (что уже есть, чем реализовано, что переиспользовать вместо дублирования); сделал новый режим или изменил — обнови каталог.
 - Предметы магазина получает сам любой новый режим на `TaskSession.vue`; цены и условия менять только в `backend/src/progress/coins.ts` и `COINS` (сайт держит копию в `src/data/coins.ts`, `shop.ts`), потом перезапустить сервер.
 - **Новая страница** = файл в `src/pages/` (закрытая токеном: `definePageMeta({ private: true })`) + запись в `src/data/seo.ts` (заголовок до 75 знаков, описание 60–190, закрытая `noindex`)
   + пункт в `src/data/korean/crumbs.ts` (хлебные крошки) + в шторку «Что здесь есть» (`src/data/guide.ts`). Sitemap и robots Nuxt строит сам по `seo.ts`. Тег `yandex-verification` в `nuxt.config.ts` не удалять.
@@ -72,8 +73,8 @@
 
 ## Маршруты
 
-`/` главная · `/about` · `/history` · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/game` игра · `/korean/...`: `home`, `today`, `words`, `grammar`, `trainers` (→ `/game/home`), `cabinet` (`?tab=repeat|week|history|notes|images|db|logs|settings`),
-`review`, `shop`, `chat` (только владелец), `garden`, `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `quick`, `mistakes`, `marks`, `particles`, `pairs`, `translate`, `syllables`, `forms`.
+`/` главная · `/about` · `/history` · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/game` игра · `/korean/...`: `home`, `today`, `words`, `grammar`, `trainers` (→ `/game/home`), `cabinet` (`?tab=repeat|week|history|notes|images|notifications|db|logs|settings`),
+`review`, `shop`, `chat` (только владелец), `garden`, `culture` (мини-уроки культуры Кореи), `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `quick`, `mistakes`, `marks`, `particles`, `pairs`, `translate`, `syllables`, `forms`.
 Открыты всем: справочники, слова, грамматика, главная, история, «О платформе»; остальное по токену (замок в меню, `AuthGate`). Список разделов `src/data/korean/sections.ts`.
 
 ## Структура `frontend/src`
@@ -90,6 +91,7 @@
 | `docs/progress.md` | тренажёры, «Сегодня», прогресс, кабинет, заметки, доступ по токену, гости, сад |
 | `docs/data.md` | словарь, грамматика, Notion, переводы, разбор предложений |
 | `docs/game.md` | игра «Хлебушек» |
+| `docs/games-catalog.md` | **читай перед новой игрой/режимом/тренажёром**: что из этого уже есть, чем реализовано, что переиспользовать вместо дублирования |
 | `docs/shop.md` | монетки Юны и магазин |
 | `docs/chat.md` | помощник-чат (OpenRouter) |
 | `docs/server.md` | сервер: таблицы, API, защита, двухфакторный вход |

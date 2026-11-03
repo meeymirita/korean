@@ -88,6 +88,7 @@ const PAGES: Record<string, Seo> = {
   '/upload': { title: `Массовая загрузка картинок · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/notebook': { title: `Тетрадь · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/garden': { title: `Сад воспоминаний · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/korean/culture': { title: `Культура Кореи · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/game/home': { title: `Игры на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },
 }
 

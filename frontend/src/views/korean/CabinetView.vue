@@ -8,6 +8,7 @@ import Avatar from '@/components/Avatar.vue'
 import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
+import NotificationsTab from '@/components/cabinet/NotificationsTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
@@ -62,15 +63,15 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'shop' | 'settings'
+type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'shop' | 'notifications' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
 /** Старые адреса ?tab=db и ?tab=logs: База и Журналы переехали в «Настройки». */
 const moved = (v: unknown) => (v === 'db' || v === 'logs' ? 'settings' : v)
 const q = moved(route.query.tab)
-const OWNER_ONLY = ['images', 'report', 'shop']
-const TABS = ['repeat', 'week', 'history', 'report', 'shop', 'notes', 'images', 'settings']
+const OWNER_ONLY = ['images', 'report', 'shop', 'notifications']
+const TABS = ['repeat', 'week', 'history', 'report', 'shop', 'notes', 'images', 'notifications', 'settings']
 const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -94,8 +95,8 @@ const tabs = computed<[Tab, string][]>(() => [
   ['history', 'История'],
   ...(progress.isGuest ? [] : ([['report', 'Отчёт'], ['shop', 'Магазин']] as [Tab, string][])),
   ['notes', 'Заметки'],
-  // картинки и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
-  ...(progress.isGuest ? [] : ([['images', 'Картинки']] as [Tab, string][])),
+  // картинки, уведомления и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
+  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['notifications', 'Уведомления']] as [Tab, string][])),
   ['settings', 'Настройки'],
 ])
 </script>
@@ -142,6 +143,7 @@ const tabs = computed<[Tab, string][]>(() => [
     <ShopTab v-else-if="tab === 'shop'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
+    <NotificationsTab v-else-if="tab === 'notifications'" />
     <SettingsTab v-else />
   </div>
 </template>

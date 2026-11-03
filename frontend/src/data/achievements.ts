@@ -12,6 +12,12 @@ export interface Achievement {
 
 const correct = (p: ProgressData) => Object.values(p.sources).reduce((n, s) => n + s.ok, 0)
 const known = (p: ProgressData) => Object.values(p.words).filter(w => w.streak >= KNOWN_STREAK).length
+/** Верных ответов в текущем календарном месяце (ключи days — «ГГГГ-ММ-ДД» по местному времени, как dayKey()). */
+const correctThisMonth = (p: ProgressData) => {
+  const d = new Date()
+  const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  return Object.entries(p.days).reduce((n, [k, v]) => (k.startsWith(prefix) ? n + v : n), 0)
+}
 
 const A = (id: string, icon: string, title: string, desc: string, progress: Achievement['progress']): Achievement => ({
   id, icon, title, desc, progress,
@@ -29,6 +35,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   A('d3', 'fire', 'Три дня подряд', 'Заниматься 3 дня подряд', (_p, s) => [s, 3]),
   A('d7', 'comet', 'Неделя', 'Заниматься 7 дней подряд', (_p, s) => [s, 7]),
   A('d30', 'moon', 'Месяц', 'Заниматься 30 дней подряд', (_p, s) => [s, 30]),
+  A('d100', 'party', 'Сто дней без пропуска', 'Заниматься 100 дней подряд', (_p, s) => [s, 100]),
+  A('m1000', 'target', 'Тысяча за месяц', '1000 верных ответов за календарный месяц', p => [correctThisMonth(p), 1000]),
   A('l5', 'star', 'Огонёк', 'Дойти до 5 уровня', p => [levelOf(p.xp), 5]),
   A('l10', 'bulb', 'Свеча', 'Дойти до 10 уровня', p => [levelOf(p.xp), 10]),
   A('l20', 'sparkle', 'Звезда', 'Дойти до 20 уровня', p => [levelOf(p.xp), 20]),

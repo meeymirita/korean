@@ -14,8 +14,6 @@ import { GOAL_OPTIONS } from '@/data/levels'
 import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
-import DigestBlock from '@/components/cabinet/DigestBlock.vue'
-import ReminderBlock from '@/components/cabinet/ReminderBlock.vue'
 import { usePersisted } from '@/composables/usePersisted'
 import { canInstall, installApp, isInstalled } from '@/lib/pwa'
 import { studyTime } from '@/data/weeks'
@@ -305,8 +303,6 @@ async function refreshPublic() {
 
     <KeysBlock />
 
-    <ReminderBlock v-if="progress.unlocked && !progress.isGuest" />
-    <DigestBlock v-if="progress.unlocked && !progress.isGuest" />
     <div v-if="!progress.isGuest && progress.unlocked" class="st-tabs" role="tablist">
       <button v-for="t in SYS_TABS" :key="t.id" role="tab" type="button" :aria-selected="sysTab === t.id" :class="{ on: sysTab === t.id }" @click="sysTab = t.id">{{ t.label }}</button>
     </div>

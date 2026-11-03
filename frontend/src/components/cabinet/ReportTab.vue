@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import AnalyticsPanel from '@/components/cabinet/AnalyticsPanel.vue'
 import ReportChartModal from '@/components/cabinet/ReportChartModal.vue'
 import { usePersisted } from '@/composables/usePersisted'
 import { groupReport, percent, spent, type ReportRow } from '@/data/report'
@@ -97,6 +98,8 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
         </table>
       </section>
       <p class="rp-note">Время по режимам примерное: считается по промежуткам между ответами. Время «по таймеру» точное, но общее.</p>
+
+      <AnalyticsPanel :groups="groups" :days="days" />
     </template>
     <ReportChartModal v-if="chart" :source="chart.source" :mode="chart.mode" :title="chart.title" :days="days" @close="chart = null" />
   </div>
