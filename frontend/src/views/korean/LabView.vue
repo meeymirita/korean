@@ -4,11 +4,11 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G } from '@/data/korean/grammar'
-import { build, DEPS, NOUNS, PARTICLES, treeLevels, VERB_FORMS, VERBS, type VerbForm } from '@/data/korean/lab'
+import { build, DEPS, NOUNS, PARTICLES, STYLE_RULES, STYLES, treeLevels, VERB_FORMS, VERBS, WHY, type VerbForm } from '@/data/korean/lab'
 
-const TABS = ['build', 'tree'] as const
+const TABS = ['build', 'tree', 'why', 'style'] as const
 const tab = useQueryParam<(typeof TABS)[number]>('tab', 'build', TABS)
-const TAB_LABEL: Record<(typeof TABS)[number], string> = { build: 'Конструктор', tree: 'Дерево тем' }
+const TAB_LABEL: Record<(typeof TABS)[number], string> = { build: 'Конструктор', tree: 'Дерево тем', why: 'Почему так', style: 'Два стиля' }
 
 /* Дерево тем */
 const { open } = useGrammarModal()
@@ -80,6 +80,32 @@ const gloss = computed(() => {
         </div>
       </div>
     </section>
+
+    <section v-else-if="tab === 'why'" class="lab-pane">
+      <p class="intro">Не только «как», но и «почему»: короткая логика за правилом помогает запомнить его без зубрёжки.</p>
+      <div class="why-list">
+        <article v-for="w in WHY" :key="w.id" class="why">
+          <h3>{{ w.q }}</h3>
+          <p>{{ w.a }}</p>
+          <button type="button" class="chip" @click="open(w.id)">Открыть карточку: {{ card(w.id)?.ko }}</button>
+        </article>
+      </div>
+    </section>
+
+    <section v-else class="lab-pane">
+      <p class="intro">Одни и те же фразы в вежливом стиле (해요체) и в разговорном (반말) рядом: видно, что именно меняется.</p>
+      <ul class="rules"><li v-for="r in STYLE_RULES" :key="r">{{ r }}</li></ul>
+      <div class="styles">
+        <div class="shead"><span>Вежливо</span><span>Разговорно</span></div>
+        <div v-for="p in STYLES" :key="p.pol" class="srow">
+          <div class="pair">
+            <div class="ko pol">{{ p.pol }}</div>
+            <div class="ko cas">{{ p.cas }}</div>
+          </div>
+          <div class="sru">{{ p.ru }} <span class="snote">· {{ p.note }}</span></div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -104,5 +130,19 @@ const gloss = computed(() => {
 .tnode b { font-family: var(--ko); font-size: 16px; }
 .tru { font-size: 12.5px; color: var(--muted); }
 .tdep { margin-top: 4px; font-size: 11.5px; color: var(--muted); }
+.why-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 16px; }
+.why { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.why h3 { margin: 0; font-size: 16px; line-height: 1.3; }
+.why p { margin: 0; font-size: 14px; line-height: 1.55; }
+.rules { margin: 14px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.55; display: flex; flex-direction: column; gap: 4px; }
+.styles { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.shead, .srow .pair { display: grid; grid-template-columns: 1fr 1fr; }
+.shead span { padding: 0 4px 2px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.srow { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.srow .ko { padding: 10px 14px; font-family: var(--ko); font-size: 18px; font-weight: 600; }
+.srow .cas { background: var(--gold-soft); }
+.srow .sru { padding: 6px 14px 9px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line-soft); }
+.snote { opacity: .85; }
+@media (max-width: 560px) { .shead, .srow .pair { grid-template-columns: 1fr; } .shead span:last-child { display: none; } }
 .note { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }
 </style>

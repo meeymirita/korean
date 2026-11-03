@@ -55,3 +55,27 @@ describe('мастерская: дерево тем', () => {
     assert.ok(lab.depthOf('past_i') > lab.depthOf('past'))
   })
 })
+
+describe('мастерская: «Почему так» и два стиля', () => {
+  test('объяснения привязаны к существующим пройденным карточкам', async () => {
+    const { G } = await load('/src/data/korean/grammar.ts')
+    for (const w of lab.WHY) {
+      const g = G.find(x => x.id === w.id)
+      assert.ok(g, `нет карточки ${w.id}`)
+      assert.ok(w.q.trim() && w.a.length > 40, w.id)
+    }
+    assert.equal(new Set(lab.WHY.map(w => w.id)).size, lab.WHY.length)
+  })
+  test('пары стилей полные, разговорная форма отличается от вежливой', () => {
+    assert.ok(lab.STYLES.length >= 10)
+    for (const s of lab.STYLES) {
+      assert.ok(s.pol && s.cas && s.ru && s.note)
+      assert.notEqual(s.pol, s.cas)
+    }
+  })
+  test('нет будущего времени и японских/китайских знаков', () => {
+    const all = JSON.stringify([lab.WHY, lab.STYLES, lab.STYLE_RULES])
+    assert.ok(!/[぀-ヿ一-鿿]/.test(all))
+    assert.ok(!/ㄹ 거예요|ㄹ까요/.test(all))
+  })
+})
