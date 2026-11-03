@@ -16,11 +16,12 @@ import { SiteImgModule } from './siteimg/siteimg.module'
 import { PublicModule } from './public/public.module'
 import { DigestModule } from './digest/digest.module'
 import { ReminderModule } from './reminders/reminder.module'
+import { LessonModule } from './lesson/lesson.module'
 import { SetsModule } from './sets/sets.module'
 import { ProgressModule } from './progress/progress.module'
 
 @Module({
-  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, DigestModule, AdminModule],
+  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }],
 })

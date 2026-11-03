@@ -65,6 +65,26 @@ describe('сервер: напоминание заниматься', () => {
     assert.equal((await mails(path.join(off, 'm.jsonl'), 1, 8)).length, 0)
   })
 
+  test('свои дни недели: вне списка письма нет, даже если время пришло и сегодня не занимался', async () => {
+    const other = await mkdtemp(path.join(tmpdir(), 'rm-f-'))
+    const s = await start({ dir: other, env: env(other) })
+    const notToday = (new Date().getDay() + 3) % 7
+    const set = await (await s.call('PUT', '/api/reminder', OWNER, { enabled: true, time: '00:00', days: [notToday] })).json()
+    assert.deepEqual(set.days, [notToday])
+    assert.equal((await mails(path.join(other, 'm.jsonl'), 1, 8)).length, 0)
+
+    for (const bad of [{ days: [7] }, { days: [-1] }, { days: 'sat' }, { days: [1, 'tue'] }])
+      assert.equal((await s.call('PUT', '/api/reminder', OWNER, bad)).status, 400, JSON.stringify(bad))
+  })
+
+  test('пустой список дней — каждый день (как раньше)', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'rm-g-'))
+    const s = await start({ dir, env: env(dir) })
+    const set = await (await s.call('PUT', '/api/reminder', OWNER, { enabled: true, time: '00:00', days: [] })).json()
+    assert.deepEqual(set.days, [])
+    assert.equal((await mails(path.join(dir, 'm.jsonl'), 1)).length, 1)
+  })
+
   test('проверочное письмо по кнопке уходит сразу и без расписания', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'rm-e-'))
     const s = await start({ dir, env: { ...env(dir), REMINDER_TICK_MS: '100000' } })

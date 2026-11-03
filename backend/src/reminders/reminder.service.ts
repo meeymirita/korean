@@ -15,10 +15,13 @@ export interface ReminderSettings {
   time: string
   /** день (ГГГГ-ММ-ДД), когда письмо уже отправлено */
   lastSent: string
+  /** дни недели, когда письмо может прийти: 0 — воскресенье … 6 — суббота; пусто — каждый день */
+  days: number[]
 }
 
-const DEFAULT: ReminderSettings = { enabled: false, time: '19:00', lastSent: '' }
+const DEFAULT: ReminderSettings = { enabled: false, time: '19:00', lastSent: '', days: [] }
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
+const isDays = (v: unknown): v is number[] => Array.isArray(v) && v.every(d => Number.isInteger(d) && d >= 0 && d <= 6)
 
 const pad = (n: number) => String(n).padStart(2, '0')
 export const dayOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -50,6 +53,7 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
         enabled: v.enabled === true,
         time: typeof v.time === 'string' && TIME.test(v.time) ? v.time : DEFAULT.time,
         lastSent: typeof v.lastSent === 'string' ? v.lastSent : '',
+        days: isDays(v.days) ? [...new Set(v.days)].sort() : [],
       }
     } catch {
       return { ...DEFAULT }
@@ -60,7 +64,7 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
     this.db.setMeta('reminder', JSON.stringify(s))
   }
 
-  set(body: { enabled?: unknown; time?: unknown }) {
+  set(body: { enabled?: unknown; time?: unknown; days?: unknown }) {
     const cur = this.get()
     if (body.enabled !== undefined) {
       if (typeof body.enabled !== 'boolean') throw new BadRequestException({ error: 'invalid enabled' })
@@ -70,6 +74,10 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
       if (typeof body.time !== 'string' || !TIME.test(body.time)) throw new BadRequestException({ error: 'invalid time' })
       if (body.time !== cur.time) cur.lastSent = '' // новое время: сегодня ещё можно напомнить
       cur.time = body.time
+    }
+    if (body.days !== undefined) {
+      if (!isDays(body.days)) throw new BadRequestException({ error: 'invalid days' })
+      cur.days = [...new Set(body.days)].sort()
     }
     this.save(cur)
     return this.status()
@@ -110,6 +118,7 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
   async tick(now = new Date()): Promise<Tick> {
     const s = this.get()
     if (!s.enabled) return 'off'
+    if (s.days.length && !s.days.includes(now.getDay())) return 'off'
     const day = dayOf(now)
     if (`${pad(now.getHours())}:${pad(now.getMinutes())}` < s.time) return 'early'
     if (s.lastSent === day) return 'already'

@@ -474,6 +474,10 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .rm-time input.rm-num { width: 72px; }
 .study .rm-row .plain { padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
 .study .rm-row .plain:disabled { opacity: .5; cursor: default; }
+.study .rm-days { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.study .daychip { padding: 7px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.study .daychip.on { color: #fff; background: var(--pink); border-color: var(--pink); }
+.study .daychip:disabled { opacity: .5; cursor: default; }
 
 /* настроение занятий */
 .study .md { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 14px; }

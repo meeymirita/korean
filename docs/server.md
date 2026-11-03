@@ -37,7 +37,8 @@
 | `siteimg/` | подмена картинок сайта (режим редактирования): таблица `site_images`, файлы в `data/site/`; чтение открыто всем, менять только владелец |
 | `public/` | публичная визитка `/me` и её картинка для соцсетей |
 | `digest/` | письмо-подборка по времени (`meta.digest`, `GET/PUT /api/digest`, `POST /api/digest/test`); слова и предложения в `pool.ts` создаёт `node scripts/digest-pool.mjs` (после правки словаря или переводов), тест `digest-pool` следит |
-| `reminders/` | письмо-напоминание заниматься (`meta.reminder`, проверка раз в минуту, `GET/PUT /api/reminder`, `POST /api/reminder/test`) |
+| `reminders/` | письмо-напоминание заниматься (`meta.reminder`, проверка раз в минуту, `GET/PUT /api/reminder`, `POST /api/reminder/test`); свои дни недели в `days` |
+| `lesson/` | письмо-напоминание о созвоне с учителем (`meta.lesson`, проверка раз в минуту, `GET/PUT /api/lesson`, `POST /api/lesson/test`); день недели + время, не смотрит на ответы за день |
 | `logs/` | журналы Node и Caddy для вкладки «Журналы» |
 | `mail/` | отправка писем (`mail.service.ts`, SMTP) и оформление писем (`templates.ts`: код входа, резервная копия) |
 | `tags.ts` | разбор тегов `#тег` в заметках и картинках |
@@ -70,7 +71,8 @@
 - `GET/POST/PATCH/DELETE /api/plans`, `/api/plans/:id/files`, `/api/plans/files/:fid/file|thumb`: записи календаря и файлы к ним; `GET/POST/DELETE /api/sets`: наборы «Сегодня».
 - `GET /api/logs/app|caddy`: журналы (владелец). `GET /api/public/me|og.png|cover` открыты без токена, `GET/PUT /api/public/settings` и `POST /api/public/og` только владельцу.
 - `GET/PUT /api/digest` (`{enabled, time ЧЧ:ММ, words 0–30, sentences 0–15}`), `POST /api/digest/test`: подборка слов и предложений на почту каждый день в своё время (владелец); время по часам сервера (часовой пояс: `timedatectl set-timezone Asia/Novosibirsk` и `systemctl restart progress`).
-- `GET/PUT /api/reminder` (`{enabled, time ЧЧ:ММ}`), `POST /api/reminder/test`: напоминание заниматься (владелец); письмо одно в день, если до выбранного времени нет ответов; адрес `REMINDER_MAIL_TO` или почта защиты кодом.
+- `GET/PUT /api/reminder` (`{enabled, time ЧЧ:ММ, days [0–6], 0 — воскресенье}`), `POST /api/reminder/test`: напоминание заниматься (владелец); письмо одно в день, если до выбранного времени нет ответов, и только по отмеченным дням недели (пусто — каждый день); адрес `REMINDER_MAIL_TO` или почта защиты кодом.
+- `GET/PUT /api/lesson` (`{enabled, weekday 0–6, time ЧЧ:ММ}`), `POST /api/lesson/test`: напоминание о созвоне с учителем (владелец); письмо в выбранный день недели в выбранное время, не смотрит на ответы за день; тот же адрес, что у напоминания заниматься.
 - `POST /api/backup/run` (202), `POST /api/backup/test`, `GET /api/backup/status`: полный архив на почту и статус копий (владелец, см. `docs/backup.md`).
 - `GET /api/db/tables`, `GET /api/db/tables/:name?limit&offset&q`: просмотр базы (хэши скрыты, длинные значения обрезаны).
 - Роли: владелец делает всё; гость получает пустые ответы и его записи игнорируются, а картинки, база и токены ему закрыты (403).
