@@ -229,8 +229,18 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .game-top.gx-top { position: relative; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px; }
 .gh .gx-tools { flex: none; }
 /* игра открыта: список слева свёрнут, страница занимает всю ширину */
-.gh.folded.game.gx { grid-template-columns: minmax(0, 1fr); }
-.gh.folded .gx-nav { display: none; }
+/* плавно: колонка списка сужается до нуля, сам список уезжает влево и гаснет */
+.gh.game.gx { transition: grid-template-columns .45s cubic-bezier(.4, 0, .2, 1), column-gap .45s cubic-bezier(.4, 0, .2, 1); }
+.gh.folded.game.gx { grid-template-columns: 0px minmax(0, 1fr); column-gap: 0; }
+.gh .gx-nav { min-width: 0; overflow: hidden; transition: opacity .3s ease, transform .45s cubic-bezier(.4, 0, .2, 1), visibility .45s; }
+.gh.folded .gx-nav { opacity: 0; transform: translateX(-28px); visibility: hidden; pointer-events: none; }
+@media (max-width: 1100px) {
+  /* узкий экран: список над игрой плавно сворачивается по высоте */
+  .gh.folded.game.gx { grid-template-columns: minmax(0, 1fr); }
+  .gh .gx-nav { max-height: 1800px; transition: max-height .45s ease, opacity .3s ease, padding .45s ease, border-width .45s ease; }
+  .gh.folded .gx-nav { max-height: 0; padding-top: 0; padding-bottom: 0; border-width: 0; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .gh.game.gx, .gh .gx-nav { transition: none; } }
 .gh .game-title { flex: 1; min-width: 0; }
 .gh .gh-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
 .gh .gh-groups { display: grid; gap: 6px; align-content: start; min-height: 0; overflow-y: auto; padding-right: 2px; }
