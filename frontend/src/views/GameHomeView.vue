@@ -110,6 +110,9 @@ onMounted(async () => {
 onBeforeUnmount(stopEngine)
 
 const q = ref('')
+/** Пока открыта игра, список игр слева свёрнут: больше места под задание. Кнопка «☰» в шапке показывает его (помнится до закрытия вкладки). */
+const navOpen = usePersisted('gh_nav_open', false, v => typeof v === 'boolean')
+const folded = computed(() => !!game.value && !navOpen.value)
 /** Что показывать: все группы, одна группа или «Микс». Запоминается при обновлении страницы. */
 const view = usePersisted('gh_view', 'all', v => typeof v === 'string')
 /** Свёрнутые группы: отдельно в каталоге и в боковом меню (по умолчанию все свёрнуты, под Юной остаётся место). */
@@ -135,7 +138,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 </script>
 
 <template>
-  <div class="study game sky gx gh" :style="bgStyle">
+  <div class="study game sky gx gh" :class="{ folded }" :style="bgStyle">
     <GrammarModal />
     <aside class="gx-nav">
       <RouterLink to="/korean/home" class="gx-brand" title="На платформу">
@@ -180,6 +183,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           <p class="gh-sub">Игры, тренажёры и задания для изучения корейского ♡</p>
         </div>
         <div class="gx-tools">
+          <button v-if="game" type="button" class="gx-round" :title="folded ? 'Показать список игр' : 'Спрятать список игр'" :aria-label="folded ? 'Показать список игр' : 'Спрятать список игр'" :aria-expanded="!folded" @click="navOpen = !navOpen">☰</button>
           <button type="button" class="gx-round" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" aria-label="Поиск" @click="openSearch()">⌕</button>
           <button type="button" class="gx-round" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()">{{ themeDark ? '☀' : '☾' }}</button>
           <RouterLink to="/korean/cabinet" class="gx-ava" aria-label="Кабинет"><Avatar :avatar="progress.data.profile.avatar" :size="40" /></RouterLink>
@@ -224,6 +228,9 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gh-sit { position: absolute; z-index: 1; right: var(--sit-right); top: var(--sit-top); height: var(--sit-h); width: auto; pointer-events: none; user-select: none; }
 .gh .game-top.gx-top { position: relative; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px; }
 .gh .gx-tools { flex: none; }
+/* игра открыта: список слева свёрнут, страница занимает всю ширину */
+.gh.folded.game.gx { grid-template-columns: minmax(0, 1fr); }
+.gh.folded .gx-nav { display: none; }
 .gh .game-title { flex: 1; min-width: 0; }
 .gh .gh-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
 .gh .gh-groups { display: grid; gap: 6px; align-content: start; min-height: 0; overflow-y: auto; padding-right: 2px; }
