@@ -90,6 +90,7 @@ const PAGES: Record<string, Seo> = {
   '/korean/garden': { title: `Сад воспоминаний · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/culture': { title: `Культура Кореи · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/know': { title: `Что я уже знаю · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/korean/lab': { title: `Мастерская грамматики · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/game/home': { title: `Игры на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },
 }
 

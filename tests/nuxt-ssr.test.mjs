@@ -90,7 +90,7 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
 
 describe('Nuxt: закрытые страницы, ошибки, перенаправления', () => {
   test('закрытые токеном страницы не рисуются на сервере (только оболочка приложения) и закрыты от индексации', async () => {
-    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/forms', '/korean/garden', '/korean/know', '/korean/marks', '/korean/mistakes', '/korean/review', '/korean/shop', '/korean/today', '/notebook', '/upload'])
+    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/forms', '/korean/garden', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/review', '/korean/shop', '/korean/today', '/notebook', '/upload'])
     for (const p of privatePaths()) {
       const res = await get(p)
       assert.equal(res.status, 200, p)
