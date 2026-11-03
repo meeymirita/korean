@@ -131,6 +131,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </template>
 
 <style scoped>
+.study.sky .greet { padding-right: 0; } /* справа сверху осталась одна кнопка-колокольчик выше этой строки: отступ под поиск не нужен, плашки идут к самому краю */
 .greet { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin: 8px 4px 6px; }
 .greet h1 { font-size: 25px; margin: 0 0 6px; }
 .greet p { margin: 0; color: var(--muted); font-size: 14px; }

@@ -27,7 +27,7 @@ export function enterPage(root: ParentNode = document) {
   if (calm()) return
   // страницы раздела: блоки внутри .wrap; главная: рамка, заметки и подвал
   const found = root.querySelectorAll<HTMLElement>('.wrap > *')
-  const blocks = [...(found.length ? found : root.querySelectorAll<HTMLElement>('.home .nav, .home .stage > *, .home .note, .home .footer'))].filter(el => !el.matches(SKIP) && getComputedStyle(el).position !== 'fixed').slice(0, 14)
+  const blocks = [...(found.length ? found : root.querySelectorAll<HTMLElement>('.home .nav, .home .stage > *, .home .note, .home .footer'))].filter(el => !el.matches(SKIP) && !el.closest('[data-no-motion]') && getComputedStyle(el).position !== 'fixed').slice(0, 14)
   if (!blocks.length) return
   blocks.forEach(el => el.setAttribute(SHOWN, '1'))
   const back = stillCss(blocks)

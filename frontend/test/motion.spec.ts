@@ -20,6 +20,14 @@ afterEach(() => {
 })
 
 describe('анимации сайта (GSAP)', () => {
+  it('вкладки справочника (data-no-motion) не выезжают при смене страницы, а содержимое выезжает', () => {
+    document.body.innerHTML = '<nav class="wrap ref-tabs" data-no-motion><a class="chip">Числа</a></nav><div class="wrap"><h2>Содержимое</h2><p>текст</p></div>'
+    enterPage()
+    expect(document.querySelector('.ref-tabs .chip')!.hasAttribute('data-m')).toBe(false)
+    expect(document.querySelector('.wrap:not(.ref-tabs) h2')!.hasAttribute('data-m')).toBe(true)
+    finish()
+  })
+
   it('окно с role=dialog появляется плавно и после анимации не остаётся прозрачным или сдвинутым', async () => {
     stop = initMotion()
     document.body.innerHTML = '<div class="back"><div role="dialog" class="box">окно</div></div>'

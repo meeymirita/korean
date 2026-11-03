@@ -21,7 +21,8 @@ watch(
 
 <template>
   <div>
-    <nav class="wrap ref-tabs chips" aria-label="Справочник">
+    <!-- вкладки не анимируются при переходе: при смене вкладки появляется только содержимое -->
+    <nav class="wrap ref-tabs chips" data-no-motion aria-label="Справочник">
       <RouterLink v-for="t in refTabs" :key="t.id" :to="`/korean/ref/${t.id}`" class="chip">{{ t.menu }}</RouterLink>
     </nav>
     <NuxtPage />
