@@ -8,7 +8,9 @@ import { useHomePicks } from '@/composables/useHome'
 import { withSeed } from '@/lib/seeded'
 import { shuffle } from '@/data/korean/tasks'
 import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
+import DayStatsModal from '@/components/korean/DayStatsModal.vue'
 import { useSiteImagesStore } from '@/stores/siteImages'
+import { useQueryParam } from '@/composables/useQueryParam'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import catWave from '@/assets/home/dash/cat-wave.webp'
 import bgYuna from '@/assets/home/dash/bg-yuna.webp'
@@ -56,14 +58,17 @@ const quick = [
 /* календарь: только текущая неделя (Пн–Вс), дни с верными ответами закрашены */
 const now = new Date()
 const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(now)
-const week = computed(() => {
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
-  return Array.from({ length: 7 }, (_, i) => {
+const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
+const week = computed(() =>
+  Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
-    return { d: d.getDate(), done: (progress.data.days[dayKey(d)] ?? 0) > 0, today: d.toDateString() === now.toDateString() }
-  })
-})
+    return { d: d.getDate(), key: dayKey(d), done: (progress.data.days[dayKey(d)] ?? 0) > 0, today: d.toDateString() === now.toDateString() }
+  }),
+)
 const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+/** День, открытый в окне статистики (`?day=`): только дни этой недели, дальше в адрес не пишем. */
+const openDay = useQueryParam('day', '', week.value.map(c => c.key))
 </script>
 
 <template>
@@ -139,7 +144,15 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         <div class="month">{{ monthLabel }}</div>
         <div class="cal">
           <span v-for="d in WD" :key="d">{{ d }}</span>
-          <i v-for="c in week" :key="c.d" :class="{ done: c.done, today: c.today }">{{ c.d }}</i>
+          <button
+            v-for="c in week"
+            :key="c.key"
+            type="button"
+            class="cell"
+            :class="{ done: c.done, today: c.today }"
+            :aria-label="`Статистика за ${c.key}`"
+            @click="openDay = c.key"
+          >{{ c.d }}</button>
         </div>
       </section>
 
@@ -150,6 +163,8 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         <RouterLink to="/korean/today">Всё получится →</RouterLink>
       </section>
     </div>
+
+    <DayStatsModal v-if="openDay" :day="openDay" @close="openDay = ''" />
   </div>
 </template>
 
@@ -244,9 +259,11 @@ const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 .month { font-size: 11px; color: var(--muted); margin-bottom: 10px; text-transform: capitalize; }
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 9px 7px; text-align: center; }
 .cal span { font-size: 10px; color: var(--muted); padding: 4px 0; }
-.cal i { display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; background: #f3efff; color: #8a83c8; font-size: 11px; font-style: normal; }
-.cal i.done { background: linear-gradient(135deg, #a8c7ff, #c3a7ff); color: #fff; }
-.cal i.today { outline: 2px solid #ed9fe1; outline-offset: 2px; }
+.cal .cell { display: grid; place-items: center; aspect-ratio: 1; border: 0; border-radius: 50%; background: #f3efff; color: #8a83c8; font: inherit; font-size: 11px; cursor: pointer; transition: transform .15s; }
+.cal .cell:hover, .cal .cell:focus-visible { transform: scale(1.1); }
+.cal .cell:hover:not(.done), .cal .cell:focus-visible:not(.done) { background: #e7defb; }
+.cal .cell.done { background: linear-gradient(135deg, #a8c7ff, #c3a7ff); color: #fff; }
+.cal .cell.today { outline: 2px solid #ed9fe1; outline-offset: 2px; }
 
 /* ===== «Корея — это не только язык…» ===== */
 .quote { min-height: 150px; background: linear-gradient(120deg, #7f78d8, #a8a0ee 55%, #e3b4ea); color: #fff; position: relative; overflow: hidden; }
