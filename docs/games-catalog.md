@@ -37,9 +37,10 @@
 - **Блиц 60 секунд** — `S.blitz` в `engine.ts`, рекорд `S.all.bestBlitz`
 - **На выживание** (3 жизни) — `S.surv`, рекорд `S.all.bestSurv`
 
-Рекорды сейчас **общие на всю игру**, не по режимам: `S.all{ok,bad,best,bestBlitz,bestSurv,xp}` и
-`S.ses{ok,bad,streak,best}` в `engine.ts`. «Рекорд-лист по каждому режиму» (идея из бэклога) — это расширение
-той же структуры (например карта `S.all.byMode[id]`), не новая система учёта.
+Общие на всю игру рекорды: `S.all{ok,bad,best,bestBlitz,bestSurv,xp}` и `S.ses{ok,bad,streak,best}` в `engine.ts`.
+Рекорды по каждому режиму — `S.all.byMode[id]{ok,bad,best}`, обновляются в `finish()`, показываются вкладкой
+«Рекорды» (`#tabRecords`) рядом с «История» / «Слабые слова» / «Слова» в `markup.html`. Обнуляются вместе с
+остальной статистикой игры кнопкой «Сбросить статистику игры».
 
 Подсказка по режиму (кнопка «?» на экране задания) — `MODE_HELP` в `engine.ts`; тест `tests/grammar-data.test.mjs`
 следит, что у каждого `id` из `MODES` есть запись в `MODE_HELP`.

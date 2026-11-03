@@ -80,7 +80,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 const LS='hleb_game_v1';
 const S={
   mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0},reading:true,tense:'both',
-  ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0},miss:{},hints:3,
+  ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
   blitz:{on:false,left:60,ok:0,bad:0,iv:null}
@@ -578,7 +578,9 @@ function answerChoice(i){
 function finish(ok,chosen){
   S.answered=true;const q=S.cur;
   const A=S.all,B=S.ses;
+  const bm=A.byMode[S.mode]||(A.byMode[S.mode]={ok:0,bad:0,best:0});
   if(ok){B.ok++;A.ok++;B.streak++;if(B.streak>B.best)B.best=B.streak;if(B.streak>A.best)A.best=B.streak;
+    bm.ok++;if(B.streak>bm.best)bm.best=B.streak;
     const m=S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
     const pr=hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr},xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
@@ -590,7 +592,7 @@ function finish(ok,chosen){
     if(A.ok%10===0){msgs.push('🍞 Испёкся ещё один хлебушек!');const l=$('#nLoaf');l.classList.remove('pop');void l.offsetWidth;l.classList.add('pop');}
     if(msgs.length)toast(msgs[0]);
     if(S.surv.on)S.surv.ok++;
-  }else{B.bad++;A.bad++;B.streak=0;
+  }else{B.bad++;A.bad++;B.streak=0;bm.bad++;
     hooks.record({word:q.word||null,ok:false,mode:S.mode,detail:{q:q.hp,a:q.hr,y:chosen}});
     const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}
   if(S.blitz.on){if(ok)S.blitz.ok++;else S.blitz.bad++;}
@@ -646,8 +648,21 @@ function updateStats(){
 }
 function renderList(){
   const list=$('#list');list.innerHTML='';
-  $('#tabHist').classList.toggle('on',S.tab==='hist');$('#tabWeak').classList.toggle('on',S.tab==='weak');$('#tabWords').classList.toggle('on',S.tab==='words');
+  $('#tabHist').classList.toggle('on',S.tab==='hist');$('#tabWeak').classList.toggle('on',S.tab==='weak');$('#tabWords').classList.toggle('on',S.tab==='words');$('#tabRecords').classList.toggle('on',S.tab==='records');
   $('#wq').hidden=S.tab!=='words';
+  if(S.tab==='records'){
+    MODES.forEach(m=>{
+      const r=S.all.byMode[m.id];
+      const it=el('div','item rec');it.style.gridTemplateColumns='28px 1fr auto';
+      const mk=el('span','mk');mk.innerHTML=iconImg(MODE_ICON[m.id]);it.appendChild(mk);
+      const b=el('div');b.appendChild(el('div','',m.name));
+      b.appendChild(el('div','muted',r?('верно '+r.ok+', неверно '+r.bad):'ещё не играл(а)'));
+      it.appendChild(b);
+      it.appendChild(el('div','recbest',r&&r.best?('рекорд '+r.best):'—'));
+      list.appendChild(it);
+    });
+    return;
+  }
   if(S.tab==='words'){
     const w=$('#wq').value.trim().toLowerCase();
     const hit=w?ALLW.filter(x=>[x.ko,x.rd,x.ru].some(s=>s.toLowerCase().includes(w))):ALLW;
@@ -734,11 +749,12 @@ $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
 $('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
 $('#tabWords').addEventListener('click',()=>{S.tab='words';renderList();$('#wq').focus({preventScroll:true});});
+$('#tabRecords').addEventListener('click',()=>{S.tab='records';renderList();});
 $('#wq').addEventListener('input',renderList);
 $('#resetBtn').addEventListener('click',async()=>{
   const yes=await askConfirm({title:'Сбросить статистику игры?',text:'Сбросится только прогресс этой игры: счёт, рекорды, испечённые хлебушки, слабые слова и история ответов. Уровень, цель дня, слова и остальной прогресс сайта останутся как есть.',ok:'Сбросить статистику игры',danger:true});
   if(!yes)return;
-  S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
+  S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
   save();updateStats();renderList();next();
 });
 
