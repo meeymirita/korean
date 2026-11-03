@@ -113,7 +113,7 @@ const gloss = computed(() => {
 .intro { margin: 14px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .lab-pane { margin-top: 6px; }
 .tight { margin-top: 8px; }
-.slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+.slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; margin-top: 16px; }
 .slot { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .slot label { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .slot select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--ink); font: inherit; font-size: 14px; }
@@ -122,7 +122,7 @@ const gloss = computed(() => {
 .gloss { margin-top: 4px; font-size: 14px; color: var(--muted); }
 .steps { margin: 14px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.45; }
 .level h3 { margin: 22px 0 8px; font-size: 14px; letter-spacing: .03em; color: var(--muted); }
-.tree-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.tree-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 10px; }
 .tnode { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
   color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform .15s, border-color .15s; }
 .tnode:hover { transform: translateY(-2px); border-color: var(--gold); }
@@ -130,7 +130,7 @@ const gloss = computed(() => {
 .tnode b { font-family: var(--ko); font-size: 16px; }
 .tru { font-size: 12.5px; color: var(--muted); }
 .tdep { margin-top: 4px; font-size: 11.5px; color: var(--muted); }
-.why-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 16px; }
+.why-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 12px; margin-top: 16px; }
 .why { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .why h3 { margin: 0; font-size: 16px; line-height: 1.3; }
 .why p { margin: 0; font-size: 14px; line-height: 1.55; }

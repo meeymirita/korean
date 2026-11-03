@@ -72,8 +72,8 @@ describe('analyze: примеры из словаря', () => {
     for (const s of sentences) assert.doesNotThrow(() => analyze(s), s)
   })
 
-  test('покрытие не падает ниже достигнутого (было 490 из 517)', () => {
+  test('покрытие не падает ниже достигнутого (было 518 из 544)', () => {
     const full = sentences.filter(s => analyze(s).every(x => x.type !== 'unknown')).length
-    assert.ok(full >= 485, `целиком разбирается ${full} из ${sentences.length}`)
+    assert.ok(full >= 515, `целиком разбирается ${full} из ${sentences.length}`)
   })
 })

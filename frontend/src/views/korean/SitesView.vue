@@ -22,7 +22,7 @@ import { SITE_GROUPS } from '@/data/korean/sites'
 <style scoped>
 .intro { margin: 10px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .grp h2 { margin: 24px 0 10px; font-size: 15px; letter-spacing: .03em; color: var(--muted); }
-.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
 .site { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: inherit; text-decoration: none; transition: transform .15s, border-color .15s; }
 .site:hover { transform: translateY(-2px); border-color: var(--gold); }
 .site b { font-size: 16px; }

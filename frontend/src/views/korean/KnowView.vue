@@ -43,7 +43,7 @@ function digest(g: Gram) {
 <style scoped>
 .intro { margin: 10px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .empty { margin-top: 20px; color: var(--muted); }
-.know-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 18px; }
+.know-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; margin-top: 18px; }
 .know-item { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px;
   background: var(--surface); color: inherit; text-decoration: none; transition: transform .15s, border-color .15s; }
 .know-item:hover { transform: translateY(-2px); border-color: var(--gold); }

@@ -5,12 +5,12 @@
  *   node scripts/check-links.mjs                                   — http://localhost:5198, только открытые страницы
  *   BASE=https://korean.meeymirita.ru node scripts/check-links.mjs — боевой сайт
  *   TOKEN=токен-демо-сервера node scripts/check-links.mjs          — с закрытыми страницами (токен демо-сервера, не владельца)
- * Переменные: BASE, TOKEN, START (адреса для начала через запятую, по умолчанию / и всё из public/sitemap.xml), MAX (страниц, 300),
+ * Переменные: BASE, TOKEN, START (адреса для начала через запятую, по умолчанию / и всё из /sitemap.xml сайта), MAX (страниц, 300),
  * WAIT (мс на страницу, 1500), EXTERNAL=1 (проверить и внешние ссылки), CHROME (путь к браузеру), DEBUG.
  * Печатает только найденные ошибки и строку «checked N»; код выхода 1, если есть ошибки. Нужен Node 24 (WebSocket).
  */
 import { spawn, execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -33,10 +33,10 @@ function findChrome() {
   console.error('Не найден Chromium: задайте CHROME=путь'); process.exit(2)
 }
 
-/** Начальные адреса: / и всё из sitemap.xml (на своём BASE). */
-function startPaths() {
+/** Начальные адреса: / и всё из /sitemap.xml, который отдаёт сам сайт (Nuxt строит его по data/seo.ts). */
+async function startPaths() {
   if (process.env.START) return process.env.START.split(',')
-  const xml = readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8')
+  const xml = await fetch(BASE + '/sitemap.xml').then(r => (r.ok ? r.text() : ''), () => '')
   return ['/', ...[...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => new URL(m[1]).pathname)]
 }
 
@@ -106,7 +106,7 @@ if (TOKEN) {
 
 const origin = new URL(BASE).origin
 const key = u => u.pathname.replace(/\/$/, '') + u.search || '/' // одна страница = путь + ?параметры, без #якоря
-const queue = startPaths().map(p => ({ url: new URL(p, BASE), from: '(старт)' }))
+const queue = (await startPaths()).map(p => ({ url: new URL(p, BASE), from: '(старт)' }))
 const seen = new Set(queue.map(q => key(q.url)))
 const external = new Map() // адрес → откуда ссылка
 const problems = []

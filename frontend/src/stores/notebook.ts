@@ -11,7 +11,6 @@ export interface NbSheet extends NbItem { text: string; strokes: Stroke[] }
 
 /** Те же ограничения, что на сервере (backend/src/config.ts). */
 export const MAX_NB_NAME = 100
-export const MAX_NB_TEXT = 20_000
 
 function apiError(status: number, body: { error?: string } | null): string {
   if (status === 401) return 'нужно войти по токену'

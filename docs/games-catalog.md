@@ -11,7 +11,7 @@
 
 ## Встроенная игра «Хлебушек» — `/game/home?game=<id>`
 
-Один движок на все 14 режимов: `src/game/engine.ts` (`initGame()`, без типов — `@ts-nocheck`, чистый DOM
+Один движок на все 24 режима (14 общих и 10 по темам грамматики): `src/game/engine.ts` (`initGame()`, без типов — `@ts-nocheck`, чистый DOM
 без Vue), разметка `src/game/markup.html`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
 и переключение режимов — `GameHomeView.vue`. Слова движка свои (`src/game/words.ts`), это не тот же массив,
 что общий словарь `data/korean/words.ts`.
@@ -32,6 +32,16 @@
 | ord | Порядок слов | Слово нужно поставить на место | — |
 | dlg | Диалог | Реплика → подходящий ответ из 3 | данные — `src/game/dialogs.ts` (`EXCHANGES`). **Уже реализован**, это не пустышка |
 | han | Хангыль-блиц | Собери слог из букв / прочитай слог | данные — `data/alphabet.ts` |
+| days | Дни недели | Перевод, «какой день завтра или был вчера», будни или выходные | `genDays` |
+| when | Когда? (에) | Нужна ли частица времени, исключения 오늘, 내일, 지금, 언제 | `genWhen` |
+| too | Тоже (도) | 도, 에도, 에서도 | `genToo` |
+| num | Числа | Число и цифра, корейский и китайский счёт | `genNum` |
+| price | Сколько стоит? | Прочитать цену в вонах | `genPrice`, `sinoNum` |
+| count | Счётные слова | Вставь счётное слово или число (병, 잔, 개, 명…) | `genCount`, банк `D.PB` |
+| neg | Это или не это | 이에요/예요 и 이/가 아니에요 по 받침 | `genNeg` |
+| place | Куда, где | 에 или 에서 при месте | `genPlace` |
+| dem | Этот, тот, вон тот | 이/그/저, 이것/그것/저것, 여기/거기/저기 | `genDem` |
+| polite | Уровень вежливости | «Спасибо» от 고마워 до 감사합니다 | `genPolite` |
 
 Оверлеи поверх любого режима (не отдельные `id`, переключаются кнопками в `GameHomeView.vue`):
 - **Блиц 60 секунд** — `S.blitz` в `engine.ts`, рекорд `S.all.bestBlitz`
@@ -57,6 +67,7 @@
 | particles | `korean/ParticlesView.vue` | Частицы и окончания, 9 правил, свой набор под каждое | `data/korean/particles.ts` (`particleSets`, `particleTasks`) |
 | pairs | `korean/PairsView.vue` | «Похожие, но разные»: слово среди похожих | `data/korean/pairs.ts` — `similarWords()` из `words.ts`, приоритет по `mistakes.ts` |
 | translate | `korean/TranslateView.vue` | «Переведи предложение», 3 направления | `data/korean/translate.ts` + переводы примеров `data/korean/translations.ts` |
+| rule | `korean/RuleView.vue` | «Потренировать правило»: 10 заданий из примеров выбранной карточки грамматики (`?game=rule&g=<id>`) | `data/korean/rule-tasks.ts` (`ruleSession`) |
 | syllables | `korean/SyllablesView.vue` | «Собери по слогам»: слово из слогов-плиток, своя DnD-разметка (`vuedraggable`) | `data/korean/syllables.ts`, приоритет по `mistakes.ts` (`mistakeWords`) |
 | keyboard | `korean/KeyboardView.vue` | «Печать на корейском»: 4 уровня (буквы, слоги, слова, предложения), подсветка клавиши на экранной клавиатуре, скорость и точность, рекорд уровня в `localStorage` (`kb_best`) | `lib/hangulKeys.ts` (раскладка 두벌식, разложение слога на клавиши, `matches`) + `data/korean/keyboard.ts` (уровни из словаря). Нажатия сверяются по `KeyboardEvent.code`, корейская раскладка в системе не нужна |
 
@@ -81,17 +92,18 @@
 - **Разбор слова по составу / морфология** → уже есть, `data/korean/parse.ts` (`analyze`); используется и в
   режиме `build`, и в разборе примеров словаря (`SentenceBreakdown.vue`). Не писать новый парсер.
 - **Диалоги** → данные уже есть, `game/dialogs.ts`, подключены как режим `dlg`. Расширять — там же.
-- **Объяснение «почему так» у грамматики** → это блок `['tip', текст]` в `Gram.b` (`data/korean/grammar.ts`),
-  не новое поле. Просто дописать карточке ещё один `tip`.
+- **Объяснение «почему так» у грамматики** → короткие тексты `WHY` в `data/korean/lab.ts` (вкладка «Почему так»
+  в «Мастерской») и блоки `['tip', текст]` в `Gram.b` (`data/korean/grammar.ts`). Не заводить третье место.
+- **Зависимости тем, конструктор, вежливый и разговорный стиль** → уже есть, `data/korean/lab.ts` (`DEPS`, `build`, `STYLES`).
 - **Готовая выжимка по пройденному** → шаблон уже есть, `data/korean/pages.ts` (`cheatHtml` / `talkHtml` / …),
   рисуется `RichView.vue` во вкладках `ref/*`.
 - **Личная статистика / графики** → в кабинете уже есть вкладка отчётов: `ReportTab.vue` + `ReportChartModal.vue`
   + `data/report.ts`, сервер — `GET /api/report/*`. Расширять её, не заводить вторую вкладку аналитики.
 - **Напоминание на своё время** → готовый паттерн `{enabled, time, lastSent}` в
   `backend/src/reminders/reminder.service.ts` и `backend/src/digest/digest.service.ts` (оба тикают раз в минуту).
-  Дней недели там пока нет — расширять тот же сервис, не заводить третий.
-- **Отметка «когда достигнуто»** → нигде, кроме `WordStat.kd` (дата, когда слово стало выученным,
-  `stores/progress.ts`), такого поля нет. Для дат у достижений заводить по этому образцу.
+  Свои дни недели (`days`) уже есть; напоминание о созвоне с учителем (`backend/src/lesson/`) устроено так же. Расширять эти сервисы, не заводить новые.
+- **Отметка «когда достигнуто»** → у слов `WordStat.kd` (`stores/progress.ts`), у достижений `lib/achievedDates.ts`
+  (только в браузере).
 
 Названия, иконки и маршруты для пользователя отдельно поддерживаются в `src/data/games.ts` (каталог
 `/game/home`) и `src/data/guide.ts` (шторка «Что здесь есть») — этот файл их не заменяет, а добавляет

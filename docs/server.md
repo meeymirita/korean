@@ -17,7 +17,7 @@
 | `db/` | соединение, **все таблицы (`SCHEMA`) и миграции**, ежедневная копия базы |
 | `auth/` | вход по токену (`auth.guard.ts`, `@Public()`, `@Owner()`), повторный токен (`confirm.service.ts`), двухфакторный вход |
 | `progress/` | прогресс: `POST /api/ops`, `GET /api/progress`; монетки и магазин (`coins.ts`, `shop.service.ts`, `docs/shop.md`) |
-| `guests/`, `notes/`, `plans/`, `sets/` | гостевые токены, заметки, календарь и файлы, наборы «Сегодня» |
+| `guests/`, `notes/`, `plans/`, `sets/`, `notebook/` | гостевые токены, заметки, календарь и файлы, наборы «Сегодня», тетрадь (папки и листы с рисунками) |
 | `images/` | картинки: загрузка, миниатюры (`sharp`), назначение `kind`, очистка ненужных |
 | `siteimg/`, `public/` | замена картинок сайта (режим редактирования); визитка `/me` |
 | `chat/` | помощник-чат (`docs/chat.md`) |
@@ -26,7 +26,7 @@
 
 ## Таблицы базы
 `meta` (очки, профиль, настройки, метки), `answers` (каждый ответ, `detail` JSON `{q, a, y}`), `words` (статистика слова), `days`, `study_time`, `guests` (хэши токенов),
-`notes`, `images`, `plans`, `plan_files`, `today_sets`, `sessions` (сеансы после кода из письма), `site_images`, `coin_log` (уникальный `ref` против двойных выплат), `events` (последние 2000).
+`notes`, `images`, `plans`, `plan_files`, `today_sets`, `sessions` (сеансы после кода из письма), `site_images`, `coin_log` (уникальный `ref` против двойных выплат), `nb_items` (тетрадь), `events` (последние 2000).
 К старым базам недостающие столбцы добавляет `Db.migrate` при запуске, руками базу трогать не нужно.
 
 ## API
@@ -34,7 +34,7 @@
 его записи игнорируются, картинки, база и токены ему закрыты (403); просроченный гостевой токен даёт 401 `expired`. Полный список со схемами: Swagger.
 - `GET /api/progress`, `POST /api/ops` (пачка до 500 действий: `answer`, `profile`, `settings`, `time`, `round`, `mood`, `reset`, `import`; любое неверное отменяет пачку, 400;
   `reset`, `import` требуют `X-Confirm-Token`).
-- `/api/notes`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
+- `/api/notes`, `/api/notebook`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
 - `/api/shop*`, `/api/chat`, `/api/digest`, `/api/reminder` (свои дни недели `days`), `/api/lesson` (напоминание о созвоне: день недели + время, не смотрит на ответы за день), `/api/backup/*`, `/api/logs/app|caddy`, `/api/db/tables`, `/api/site-images*`, `/api/public/*`, `/api/2fa/*`.
 - `GET /api/report/clock?days=`, `GET /api/report/weeks`: ответы по часу дня и «эта неделя vs прошлая» (владелец, для «Прогресс и аналитика» в кабинете).
   `GET /api/report/answers` без `source` — ответы по всем разделам сразу (общий «Дневник ошибок»).

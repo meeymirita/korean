@@ -10,7 +10,7 @@ Ubuntu (`root@se-40678`), проект в `/var/sites/korean`, сайт `https:/
 | API | служба `progress` (`ExecStart=/usr/bin/node backend/dist/main.js`, порт 3001) |
 | Данные | `backend/data/` (база, картинки, копии), токен и ключи `backend/.env` (права 600), оба вне git |
 | Видео | `/var/sites/korean-video/` (вне git, `deploy.sh` не трогает), Caddy отдаёт `/video/*` |
-| Node | 24 (NodeSource, `/usr/bin/node`); нужен 22.22+ или 24.15+ |
+| Node | 24 (NodeSource, `/usr/bin/node`); нужен 22.18+ или 24.12+ (`engines` в package.json) |
 
 ## Обновление
 `cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт отказывается работать при несохранённых правках, делает `git pull --ff-only`, ставит пакеты корня, `frontend/` и `backend/` если менялись их `package*.json`,
@@ -85,7 +85,7 @@ korean.meeymirita.ru {
 пользователя службы в группу `caddy` (`usermod -aG caddy <пользователь>`), `CADDY_LOG_FILE=/var/log/caddy/korean.log` в `backend/.env`, перезапуск службы. Если файл не читается, вкладка пишет почему.
 
 ## Приложение и видео
-- `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` грузится только по кнопке.
+- `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` открывается на главной сам один раз за открытое окно браузера (`sessionStorage['demo_auto_shown']`), файл тяжёлый, поэтому в тестах размера он исключён.
 - **Видеоуроки** (44 файла, уроки 1–30 курса 양쌤의 한국어 교실, AV1 + Opus, 7,8 ГБ): `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`, `part2-01.mp4` … `part2-13.mp4`.
   Сайт берёт файл по подписи карточки («Урок N», `videoOf` в `src/data/korean/course.ts`); нет файла: заглушка. Заливка с Mac:
   `rsync -avP ~/Movies/Korean-videos/upload/ root@<сервер>:/var/sites/korean-video/` (единственная копия видео у владельца в `~/Movies/Korean-videos/`).

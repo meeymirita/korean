@@ -174,4 +174,5 @@ const setLevel = (id: KbLevel) => {
 .key.hit small { color: #fff; }
 .key.space { width: 240px; font-size: 13px; font-family: inherit; }
 @media (max-width: 560px) { .key { width: 30px; height: 36px; font-size: 14px; } .krow { gap: 4px; } .key.space { width: 160px; } .target { font-size: 34px; } }
+@media (max-width: 380px) { .key { width: 26px; } .krow { padding-left: 0 !important; gap: 3px; } .stage { padding: 16px 12px; } }
 </style>

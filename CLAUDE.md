@@ -64,7 +64,7 @@
 
 ## Стек и запуск
 
-Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + SQLite `node:sqlite`, Node 22.18+ или 24), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
+Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + SQLite `node:sqlite`, Node 22.18+ или 24.12+), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
 (три отдельных `node_modules`; корневой нужен тестам, `scripts/link-test-deps.mjs` делает `vue` и `pinia` ссылками на копии из `frontend/`). **Пути `src/...` везде считай от `frontend/`.**
 
 - Установка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci`.
@@ -73,8 +73,8 @@
 
 ## Маршруты
 
-`/` главная · `/about` · `/history` · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/game` игра · `/korean/...`: `home`, `today`, `words`, `grammar`, `trainers` (→ `/game/home`), `cabinet` (`?tab=repeat|week|history|notes|images|notifications|db|logs|settings`),
-`review`, `shop`, `chat` (только владелец), `garden`, `culture` (мини-уроки культуры Кореи), `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `quick`, `mistakes`, `marks`, `particles`, `pairs`, `translate`, `syllables`, `forms`.
+`/` главная · `/about` · `/history` · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/notebook` (тетрадь с рисунками, только владелец) · `/game/home` игры (`?game=<id>`, `/game` и `/korean/trainers` ведут сюда) · `/korean/...`: `home`, `today`, `words`, `grammar`, `cabinet` (`?tab=repeat|week|history|report|shop|notes|images|notifications|settings`; «База» и «Журналы» живут внутри «Настроек»),
+`review`, `shop`, `chat` (только владелец), `garden`, `culture` (мини-уроки культуры Кореи), `know` («что я уже знаю» перед созвоном), `lab` (мастерская грамматики: конструктор, дерево тем, «почему так», два стиля), `sites` (полезные сайты), `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `mistakes`, `marks`, `forms`; тренажёры `quick`, `particles`, `pairs`, `translate`, `syllables`, `keyboard` (печать на корейском) открываются только как `/game/home?game=<id>`.
 Открыты всем: справочники, слова, грамматика, главная, история, «О платформе»; остальное по токену (замок в меню, `AuthGate`). Список разделов `src/data/korean/sections.ts`.
 
 ## Структура `frontend/src`
@@ -102,7 +102,7 @@
 ## Как проверять
 
 - CI на GitHub (типы, сборка, тесты, `npm audit`, Node 22 и 24) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
-- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 600 тестов). Отдельно `npm run test:nest`, `npm run test:nuxt`.
+- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 600 тестов: 580+ в `tests/` и около 60 во фреймворках). Отдельно `npm run test:nest`, `npm run test:nuxt`.
 - Типы и сборка: `npm run type-check`, `npm run build`. Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`).
 - Визуально: headless Chromium из кэша Playwright (`~/Library/Caches/ms-playwright/chromium_headless_shell-*/…/chrome-headless-shell`), `--screenshot` или `--remote-debugging-port`.
 - Демо-сервер: `DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node backend/dist/main.js`, сайт `API_PORT=3002 npx --prefix frontend nuxt dev --port 5198`,
@@ -114,11 +114,11 @@
 ## Что осталось (идеи, ещё не сделано)
 
 - Новый материал от Леры: клади PDF и картинки в локальную `материалы/ГГГГ-ММ-ДД/` (не в git), ЗАДАНИЕ.md там описывает формат; слова и правила вноси в сайт и в Notion (словарь и «Правила»). Новая тема = группа слов и группа игр (`docs/game.md`).
-
 - Грамматика: заполнить пустые карточки уроков 11–30 и части 2 (`st: 'soon'`), когда владелец принесёт конспекты; заголовки части 2 взяты из имён видео, сверить с конспектом.
-- Слайды «О платформе» и README не показывают крошки, клавиши, перетаскивание, окно грамматики с видео, историю с окном, магазин, помощника: обновить пачкой.
+- Слайды «О платформе» и README не показывают крошки, клавиши, перетаскивание, окно грамматики с видео, историю с окном, магазин, помощника, колокольчик, «Культуру», «Что я знаю», «Мастерскую», печать, «Сайты», ночную тему: обновить пачкой.
+- Проверки «Мастерской»: тексты «Почему так» и разговорные формы в «Двух стилях» написаны мной, учитель их не видела.
 - Предметы магазина не работают в «Найди пару», «Слоги» и игре «Хлебушек». «Собери предложение» в игре без перетаскивания (нужен `sortablejs` или перепись игры на Vue).
 - Переводы предложений (`translations.ts`) мои, учитель их не проверял. Автосинхронизации словаря из Notion нет.
-- Проверки на устройствах: перо и ✳ на iPad, Safari, письма (архив, подборка). Анимации «Повторения», остаток эмодзи.
+- Проверки на устройствах: перо и ✳ на iPad, Safari, письма (архив, подборка). Анимации «Повторения», остаток эмодзи (уведомления, значок режима в истории ответов, огонёк в разборе).
 - Хостинг: CSP для сайта, служба `progress` не от root, брандмауэр, SSH по ключу, fail2ban, копии вне сервера, Яндекс.Вебмастер и Search Console (`docs/hosting.md`).
 - Перенос видео в Яндекс Object Storage (21,38 ₽/мес за 10 ГБ) владелец обдумывает, пока не нужен.
