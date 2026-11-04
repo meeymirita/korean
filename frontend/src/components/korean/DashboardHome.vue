@@ -96,6 +96,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
           <RouterLink v-for="q in quick" :key="q.to + q.title" :to="q.to">
             <img class="qi" :src="q.img" alt="" aria-hidden="true" draggable="false" />
             <b>{{ q.title }}</b>
+            <Icon v-if="!progress.unlocked" name="lock" class="qlock" title="Нужен токен" />
           </RouterLink>
         </div>
       </section>
@@ -237,11 +238,12 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
 
 /* ===== Быстрый доступ: стикеры ===== */
 .quick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-.quick a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px 6px 12px; border-radius: 22px;
+.quick a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px 6px 12px; border-radius: 22px;
   background: rgba(255, 255, 255, .6); border: 1px solid #fff; font-size: 12px; text-align: center; transition: .2s; }
 .quick a:hover { background: rgba(255, 255, 255, .95); }
 .quick .qi { width: 54px; height: 54px; object-fit: contain; }
 .quick b { font-weight: 600; line-height: 1.25; }
+.quick .qlock { position: absolute; top: 8px; right: 8px; width: 14px; height: 14px; opacity: .7; }
 
 .phrase { position: relative; overflow: hidden; }
 .phrase-cat { position: absolute; right: 8px; top: 6px; width: 104px; height: auto; pointer-events: none; user-select: none; }
