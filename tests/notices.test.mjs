@@ -51,7 +51,7 @@ describe('колокольчик уведомлений', () => {
   })
 
   test('скрытое напоминание не возвращается несколько дней, потом появляется снова', () => {
-    const base = now
+    const base = Date.now() // dismissNotice запоминает настоящее время, поэтому и отсчёт от него
     assert.equal(computeNotices(owner, base).length, 1, 'ни разу не заходил в сад — напоминает')
     dismissNotice('garden')
     assert.deepEqual(computeNotices(owner, base + DAY), [])
