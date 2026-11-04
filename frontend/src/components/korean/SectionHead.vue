@@ -11,7 +11,7 @@ const s = computed(() => sectionById(props.id))
     <div>
       <div class="kicker">{{ s.num }} — {{ s.kicker }}</div>
       <h1>{{ s.title }}</h1>
-      <div class="sub">{{ sub ?? s.sub }}</div>
+      <div class="sub">{{ sub ?? s.sub }}<slot name="sub-extra" /></div>
     </div>
     <div v-if="big !== undefined" class="big">{{ big }}</div>
   </header>

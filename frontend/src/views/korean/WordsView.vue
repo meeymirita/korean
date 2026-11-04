@@ -97,7 +97,11 @@ const shareWord = (d: Word) =>
     <Teleport to="body">
       <img class="words-yuna" :src="yunaBook" alt="" aria-hidden="true" draggable="false" />
     </Teleport>
-    <SectionHead id="words" :sub="`словарь корейского · ${D.length} слов`" :big="D.length" />
+    <SectionHead id="words" :sub="`словарь корейского · ${D.length} слов`" :big="D.length">
+      <template #sub-extra>
+        · <a class="words-json" href="/words.json" target="_blank" rel="noopener" title="Весь словарь одним файлом, только чтение">словарь в JSON ↗</a>
+      </template>
+    </SectionHead>
     <div class="searchbar">
       <div class="sb">
         <input
@@ -169,6 +173,8 @@ const shareWord = (d: Word) =>
 </template>
 
 <style>
+.words-json { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+.words-json:hover { text-decoration-style: solid; }
 /* Кнопка «Показать ещё» под списком слов */
 .words-more { display: block; margin: 18px auto 6px; padding: 12px 28px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--pink); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .2s, background .2s; }
 .words-more small { color: var(--muted); font-weight: 500; }
