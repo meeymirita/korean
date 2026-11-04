@@ -61,12 +61,12 @@ describe('карточки от Леры и вкладки грамматики'
   const ids = ['when_e', 'too_do']
   const marks = g => g.b.filter(b => b[0] === 'ex').flatMap(b => b[1]).filter(([ko]) => /\{k\|/.test(ko))
 
-  test('две новые карточки есть, свои (без номера урока), владелец отмечает пройденными сам (st soon)', () => {
+  test('две карточки от Леры есть, свои (без номера урока), владелец отметил их пройденными (st ok)', () => {
     for (const id of ids) {
       const g = G.find(x => x.id === id)
       assert.ok(g, id)
       assert.ok(!g.l, `${id}: у своей карточки нет подписи урока`)
-      assert.equal(g.st, 'soon', `${id}: пройденной её отмечает владелец`)
+      assert.equal(g.st, 'ok', `${id}: владелец отметил её пройденной`)
       assert.ok(marks(g).length >= 4, `${id}: мало примеров с выделенной частицей`)
     }
   })
