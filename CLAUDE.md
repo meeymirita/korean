@@ -57,7 +57,7 @@
 - Заметное изменение: запись в начало `HISTORY` (`src/data/history.ts`, тест следит за форматом). Изменил страницу: обнови слайд и скриншот в «О платформе» (`src/data/about.ts`, `src/assets/about/`)
   и **галерею в `README.md`** (заголовки, описания, картинки один в один, `tests/readme.test.mjs`).
 - Менял `dark.css`: `node scripts/build-night.mjs` (собирает `night.css`, тест следит).
-- Менял словарь или `translations.ts`: `node scripts/digest-pool.mjs`; менял словарь или пройденные темы: `node scripts/chat-curriculum.mjs`. Тесты следят.
+- Менял словарь или `translations.ts`: `node scripts/digest-pool.mjs` и `node scripts/build-words-json.mjs` (публичный `/words.json` для сверки на дубли); менял словарь или пройденные темы: `node scripts/chat-curriculum.mjs`. Тесты следят.
 - Поменял сервер: перезапусти локальный (`pkill -f "node dist/main.js"; npm run server`), иначе сайт «не видит» новых возможностей.
 - **Коммить только при зелёных тестах:** смотри строку `ℹ fail 0` до `git commit` (`npm test | grep …` возвращает код `grep`, а не тестов).
 - Тесты, которым нужен `tests/_load.mjs`, обязаны вызывать `after(close)`, иначе `npm test` зависает. Таймеры двигай по секунде (`mock.timers.tick(1000)` в цикле).
