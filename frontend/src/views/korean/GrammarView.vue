@@ -24,6 +24,8 @@ const PARTS = [
   { id: 1, label: 'Часть 1', sub: 'Видеокурс · уроки 1–30' },
   { id: 2, label: 'Часть 2', sub: 'Видеокурс · 13 уроков' },
 ] as const
+/** «Мои карточки» (вкладка 0) видны только по токену; части 1 и 2 открыты всем */
+const parts = computed(() => PARTS.filter(p => p.id !== 0 || progress.unlocked))
 const photo = ref<string | null>(null)
 /** Иконки вкладок-тем (имена из src/lib/icons.ts) */
 const SEC_ICON: Record<string, string> = {
@@ -31,25 +33,28 @@ const SEC_ICON: Record<string, string> = {
   'Вежливость': 'heart', 'Произношение': 'speech', 'Числительные': 'chart', 'Время': 'clock', 'Желание и предложение': 'star', 'Связки': 'arrows',
 }
 const part = usePersisted<0 | 1 | 2>('grammar_tab', 0, v => v === 0 || v === 1 || v === 2)
+/** Открытая вкладка: без токена «Мои карточки» недоступны, показываем часть 1 */
+const cur = computed<0 | 1 | 2>(() => (part.value === 0 && !progress.unlocked ? 1 : part.value))
 const partCount = (n: number) => G.filter(g => tabOf(g) === n).length
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
 const list = computed(() => {
   const w = q.value.trim().toLowerCase()
   return G.filter(g =>
+    (progress.unlocked || tabOf(g) !== 0) &&
     (!sec.value || g.s === sec.value) &&
     (!onlyDone.value || isOk(g) || passed(g.id)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
 })
 /** Карточки выбранной вкладки. В разметку попадают все вкладки (скрытые через v-show): поисковики видят все карточки, а не одну вкладку. */
-const shown = computed(() => list.value.filter(g => tabOf(g) === part.value))
+const shown = computed(() => list.value.filter(g => tabOf(g) === cur.value))
 const { open } = useGrammarModal()
 const route = useRoute()
 /** /korean/grammar?g=ayo сразу открывает карточку */
 onMounted(() => {
   const g = String(route.query.g ?? '')
   const card = G.find(x => x.id === g)
-  if (card) {
+  if (card && (progress.unlocked || tabOf(card) !== 0)) {
     part.value = tabOf(card)
     open(g)
   }
@@ -78,17 +83,17 @@ onMounted(() => {
       </div>
       <label class="gdone"><input v-model="onlyDone" type="checkbox" /> показывать только пройденное</label>
     </div>
-    <p v-if="part === 0" class="gcourse">
+    <p v-if="cur === 0" class="gcourse">
       Здесь правила, которые разбирали с Лерой по учебнику 서울대 한국어+, и свои карточки. Номера урока у них нет: видео к ним не привязано, а темы могут повторяться с видеоуроками.
     </p>
     <div class="gparts" role="tablist">
-      <button v-for="p in PARTS" :key="p.id" role="tab" :aria-selected="part === p.id" class="gpart" :class="{ on: part === p.id }" @click="part = p.id">
+      <button v-for="p in parts" :key="p.id" role="tab" :aria-selected="cur === p.id" class="gpart" :class="{ on: cur === p.id }" @click="part = p.id">
         <b>{{ p.label }}</b><small>{{ p.sub }} · {{ partCount(p.id) }} карточек</small>
       </button>
     </div>
     <p v-if="!shown.length" class="gempty">Ничего не найдено.</p>
     <div class="gg">
-      <button v-for="g in list" v-show="tabOf(g) === part" :key="g.id" class="gc" @click="open(g.id)">
+      <button v-for="g in list" v-show="tabOf(g) === cur" :key="g.id" class="gc" @click="open(g.id)">
         <h3 v-html="F(g.ko)"></h3>
         <div class="rn">{{ g.ru }}</div>
         <div class="d">{{ g.d }}</div>
