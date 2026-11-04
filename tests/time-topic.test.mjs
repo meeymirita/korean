@@ -11,7 +11,7 @@ const { EXCHANGES } = await load('/src/game/dialogs.ts')
 after(close)
 
 const DAYS = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
-const NEW = RAW.filter(w => w.n > 530)
+const NEW = RAW.filter(w => w.n > 530 && w.n <= 555)
 
 describe('тема «Время и дни»: слова', () => {
   test('25 новых слов с чтением, переводом и примером, дней недели семь', () => {
