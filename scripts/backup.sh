@@ -24,7 +24,7 @@
 set -euo pipefail
 
 ROOT=${ROOT:-$(cd "$(dirname "$0")/.." && pwd)}
-if [ -f "$ROOT/.env" ]; then
+if [ -r "$ROOT/.env" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     line=${line%$'\r'}
     case "$line" in ''|'#'*) continue ;; esac
@@ -107,7 +107,7 @@ for d in uploads docs thumbs public site; do
 done
 
 # 3. настройки: секреты и конфиги, без которых заново не поднять (права только для владельца)
-if [ -f "$ROOT/.env" ]; then
+if [ -r "$ROOT/.env" ]; then
   cp "$ROOT/.env" "$WORK/config/server.env"
 elif [ -f "$ROOT/backend/.env" ]; then
   cp "$ROOT/backend/.env" "$WORK/config/server.env"

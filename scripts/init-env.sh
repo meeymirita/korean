@@ -67,6 +67,8 @@ if [ -d /var/log/caddy ]; then
 fi
 
 chmod 600 "$OUT"
+# в Docker .env монтируется в контейнер, где приложение работает от пользователя node (uid 1000): отдаём файл ему, права остаются 600
+[ "$(id -u)" = 0 ] && chown 1000:1000 "$OUT" 2>/dev/null || true
 echo "Готово: $OUT (права 600)."
 [ -z "$CARRIED" ] || echo "Перенесено из $FROM:$CARRIED"
 grep -q '^PROGRESS_TOKEN=.\{20,\}' "$OUT" || echo "ВНИМАНИЕ: токен короче 20 знаков, замени PROGRESS_TOKEN."

@@ -225,7 +225,11 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         child.once('close', code => code === 0 ? resolve() : reject(new Error(`pg_dump: ${stderr.trim().slice(0, 200) || `код ${code}`}`)))
       })
       // .env рядом с backend/ (в Docker корневой .env проекта смонтирован как /app/.env): без него на новом сервере не будет токена и ключей
-      if (existsSync(path.join(ROOT, '.env'))) writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, '.env')), { mode: 0o600 })
+      try {
+        writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, '.env')), { mode: 0o600 })
+      } catch {
+        /* .env нет или он не читается этим пользователем: архив всё равно собирается (в Docker файл должен принадлежать uid 1000, это делает scripts/init-env.sh) */
+      }
       // конфиги сервера, без которых заново не поднять (если процесс может их прочитать)
       const cfg = path.join(stage, 'config')
       const have: string[] = []
