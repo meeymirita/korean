@@ -52,7 +52,10 @@ export interface SearchServiceStatus {
 }
 
 export interface MeiliTask {
-  taskUid: number
+  /** номер задачи в ответе на запись (POST/PATCH/DELETE) */
+  taskUid?: number
+  /** то же число в ответе на GET /tasks/{номер}: там поле называется uid */
+  uid?: number
   status?: 'enqueued' | 'processing' | 'succeeded' | 'failed' | string
   error?: { message?: string }
 }

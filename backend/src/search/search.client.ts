@@ -239,11 +239,13 @@ export class SearchClient {
     if (!task) return
     const end = Date.now() + TASK_WAIT_MS
     let current = task
+    // номер берём один раз: в ответе на GET /tasks/N он лежит в поле uid, а не taskUid (из-за этого уходил запрос /tasks/undefined и пересборка падала с HTTP 400)
+    const uid = task.taskUid ?? task.uid
     while (current.status !== 'succeeded') {
       if (current.status === 'failed') throw new ServiceUnavailableException({ error: current.error?.message || 'задача Meilisearch завершилась ошибкой' })
       if (Date.now() >= end) throw new ServiceUnavailableException({ error: 'Meilisearch не завершил задачу вовремя' })
       await new Promise(resolve => setTimeout(resolve, 250))
-      const next = await this.request<MeiliTask>(`/tasks/${current.taskUid}`)
+      const next = await this.request<MeiliTask>(`/tasks/${uid}`)
       if (next) current = next
     }
   }

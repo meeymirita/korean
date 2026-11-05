@@ -112,4 +112,15 @@ BLOCKS
 caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy
 ```
 В старом Caddy (до 2.8) директива называется `basicauth` вместо `basic_auth`. У Grafana свой вход (`admin` и `GRAFANA_PASSWORD` из `.env`). У Meilisearch в боевом режиме нет веб-панели: адрес `/health` показывает состояние, а API требует ключ `MEILI_MASTER_KEY`.
+**Swagger** (`https://swagger.korean.meeymirita.ru/api/docs`): нужна A-запись `swagger.korean` в DNS, строка `SWAGGER=1` в `.env` (`docker compose up -d backend`) и блок в Caddy. Страница документации отдаётся без токена, поэтому её закрываем паролем Caddy, а остальной API на этом адресе остаётся под обычным токеном (кнопка «Try it out» работает с вашим токеном):
+```
+swagger.korean.meeymirita.ru {
+	@docs path /api/docs*
+	basicauth @docs {
+		korean ТУТ_ХЭШ_ПАРОЛЯ
+	}
+	reverse_proxy 127.0.0.1:3001
+}
+```
+Хэш тот же, что в блоках Prometheus и поиска (строка после `korean ` в `/etc/caddy/Caddyfile`). Без `SWAGGER=1` страницы нет, ссылка отдаст 404.
 PostgreSQL и Redis наружу не открываем никогда: их смотрят через SSH-туннель.

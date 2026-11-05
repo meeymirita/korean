@@ -14,7 +14,7 @@ describe('отчёт для разбора неполадок', () => {
   it('собирает отчёт со службами, нагрузкой и ошибками из журналов', async () => {
     const ops = {
       services: async () => ({ services: [{ name: 'backend', state: 'running', health: 'healthy', status: 'Up' }, { name: 'redis', state: 'exited', health: 'unknown', status: 'Exited (1)' }] }),
-      logs: async () => ({ logs: 'всё хорошо\nERROR: что-то сломалось token=zzzzzzzzzzzzzzzzzzzz\nещё строка' }),
+      logs: async () => ({ logs: 'всё хорошо\nERROR: что-то сломалось token=zzzzzzzzzzzzzzzzzzzz\n INFO A batch of tasks was completed with 1 successful tasks and 0 failed tasks.\nlevel=info msg="Request Completed" status=404\nещё строка' }),
     }
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { result: [{ value: [0, '42'] }] } }))))
     const db = { orm: async () => ({ event: { findMany: async () => [{ t: BigInt(1793900000000), type: 'bad_token', info: '1.2.3.4' }] } }) }
@@ -25,5 +25,7 @@ describe('отчёт для разбора неполадок', () => {
     expect(text).toContain('bad_token: 1.2.3.4')
     expect(text).toContain('ERROR: что-то сломалось')
     expect(text).not.toContain('zzzzzzzz')
+    expect(text).not.toContain('0 failed tasks')
+    expect(text).not.toContain('Request Completed')
   })
 })

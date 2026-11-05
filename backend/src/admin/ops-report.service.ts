@@ -6,7 +6,9 @@ import { Db } from '../db/db.service.js'
 import { OpsService } from './ops.service.js'
 
 const PROMETHEUS = (process.env.PROMETHEUS_URL || 'http://prometheus:9090').replace(/\/$/, '')
-const BAD_LINE = /error|warn|fail|exception|fatal|unhandled|ошибк|не удал|timeout|refused|denied/i
+/** Настоящие ошибки и предупреждения: уровень в журнале (ERROR, WARN, level=error) или явные слова; обычные строки INFO и «0 failed tasks» не считаются. */
+const BAD_LINE = /\b(ERROR|FATAL|WARN(ING)?)\b|level=(error|warn)|unhandled|exception|ошибк|не удал|timed? ?out|connection refused|permission denied/i
+const NOT_BAD = /level=info|\bINFO\b(?!.*\b(ERROR|FATAL)\b)|\b0 failed\b/i
 /** Секреты в отчёт попасть не должны: длинные случайные строки и пары «ключ=значение» с паролями заменяются. */
 const SECRET = /((?:token|passw\w*|secret|key|authorization|bearer)\W{0,3})([A-Za-z0-9+/_=-]{12,})/gi
 
@@ -94,7 +96,7 @@ export class OpsReportService {
     for (const s of services.filter(x => x.state === 'running' && x.name !== 'caddy-host')) {
       try {
         const { logs } = await this.ops.logs(s.name, 300)
-        const lines = logs.split('\n').filter(l => BAD_LINE.test(l)).slice(-12)
+        const lines = logs.split('\n').filter(l => BAD_LINE.test(l) && !NOT_BAD.test(l)).slice(-12)
         if (!lines.length) continue
         any = true
         out.push('', `### ${s.name}`, '```', ...lines.map(l => hide(l).slice(0, 300)), '```')
