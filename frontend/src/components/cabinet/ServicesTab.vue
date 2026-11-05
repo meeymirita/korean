@@ -110,7 +110,7 @@ async function rebuildPrivateSearchIndex() {
 }
 
 function serviceName(name: string) {
-  return ({ backend: 'Сервер', frontend: 'Сайт', caddy: 'Caddy', prometheus: 'Prometheus', grafana: 'Grafana', 'node-exporter': 'node-exporter', 'docker-proxy': 'Docker proxy', postgres: 'PostgreSQL', redis: 'Redis', meilisearch: 'Meilisearch' } as Record<string, string>)[name] || name
+  return ({ backend: 'Сервер', frontend: 'Сайт', 'caddy-host': 'Caddy на сервере', caddy: 'Caddy в Docker (edge)', prometheus: 'Prometheus', grafana: 'Grafana', 'node-exporter': 'node-exporter', 'docker-proxy': 'Docker proxy', postgres: 'PostgreSQL', redis: 'Redis', meilisearch: 'Meilisearch' } as Record<string, string>)[name] || name
 }
 
 function healthName(service: OpsServiceState) {
@@ -169,7 +169,7 @@ onBeforeUnmount(() => clearInterval(timer))
         type="button"
         class="ops-service"
         :class="{ selected: selected === service.name, down: service.state !== 'running' || service.health === 'unhealthy' }"
-        @click="selected = service.name; loadLogs()"
+        @click="if (!service.external) { selected = service.name; loadLogs() }"
       >
         <span class="ops-service-top"><b>{{ serviceName(service.name) }}</b><i :class="service.state === 'running' && service.health !== 'unhealthy' ? 'up' : 'down'" /></span>
         <span>{{ healthName(service) }}</span>
@@ -182,7 +182,7 @@ onBeforeUnmount(() => clearInterval(timer))
       <label>
         <span class="sr-only">Выбрать сервис</span>
         <select v-model="selected" @change="loadLogs">
-          <option v-for="service in state?.services || []" :key="service.name" :value="service.name">{{ serviceName(service.name) }}</option>
+          <option v-for="service in (state?.services || []).filter(item => !item.external)" :key="service.name" :value="service.name">{{ serviceName(service.name) }}</option>
         </select>
       </label>
     </div>

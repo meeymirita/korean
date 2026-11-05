@@ -18,12 +18,21 @@ export class OpsService {
   private readonly base = (process.env.DOCKER_API_URL || '').replace(/\/$/, '')
   private readonly project = process.env.COMPOSE_PROJECT_NAME || 'korean'
 
-  async services() {
+  /** viaProxy: запрос пришёл через обратный прокси (есть X-Forwarded-For), значит Caddy сервера работает: напрямую из контейнера он не виден. */
+  async services(viaProxy = false) {
     const containers = await this.listContainers()
+    const hostCaddy = {
+      name: 'caddy-host',
+      state: viaProxy ? 'running' : 'unknown',
+      health: viaProxy ? 'healthy' : 'unknown',
+      status: viaProxy ? 'Этот запрос пришёл через него' : 'Запрос пришёл мимо Caddy (напрямую)',
+      replicas: 1,
+      external: true,
+    }
     return {
       project: this.project,
       checkedAt: new Date().toISOString(),
-      services: SERVICES.filter(service => service !== 'caddy' || containers.some(c => c.Labels?.['com.docker.compose.service'] === 'caddy')).map(service => {
+      services: [hostCaddy, ...SERVICES.filter(service => service !== 'caddy' || containers.some(c => c.Labels?.['com.docker.compose.service'] === 'caddy')).map(service => {
         const matches = containers
           .filter(container => container.Labels?.['com.docker.compose.service'] === service)
           .sort((a, b) => b.Created - a.Created)
@@ -38,7 +47,7 @@ export class OpsService {
           ip: Object.values(container.NetworkSettings?.Networks || {}).map(network => network.IPAddress).find(Boolean) || null,
           replicas: matches.length,
         } : { name: service, state: 'not_found', health: 'unknown', status: 'Container is not running or is not in this Compose project', replicas: 0 }
-      }),
+      })],
     }
   }
 

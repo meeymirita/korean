@@ -1,4 +1,5 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common'
+import { Controller, Get, Param, ParseIntPipe, Query, Req } from '@nestjs/common'
+import type { Request } from 'express'
 import { Owner } from '../auth/auth.js'
 import { OpsService } from './ops.service.js'
 
@@ -10,7 +11,7 @@ export class OpsController {
 
   /** GET /api/ops/services — статусы контейнеров текущего Compose-проекта. */
   @Get('services')
-  services() { return this.ops.services() }
+  services(@Req() req: Request) { return this.ops.services(!!req.headers['x-forwarded-for']) }
 
   /** GET /api/ops/logs/:service?tail=100 — stdout/stderr выбранного сервиса. */
   @Get('logs/:service')

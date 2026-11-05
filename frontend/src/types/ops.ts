@@ -8,6 +8,8 @@ export interface OpsServiceState {
   createdAt?: string
   ip?: string | null
   replicas: number
+  /** живёт вне Docker (Caddy сервера): журнала контейнера у него нет */
+  external?: boolean
 }
 
 export interface OpsServicesReply {
