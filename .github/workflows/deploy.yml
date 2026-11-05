@@ -3,11 +3,18 @@
 # VPS_SSH_KEY
 name: Deploy
 
+# Пуш в main → CI (типы, сборка, все тесты, Docker) → при зелёном CI сайт на сервере обновляется сам (scripts/deploy.sh: копия базы, сборка, запуск, откат при ошибке).
+# Вручную: вкладка Actions → Deploy → Run workflow.
 on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -16,8 +23,9 @@ permissions:
 jobs:
   deploy:
     if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
 
     runs-on: ubuntu-latest
 
@@ -28,6 +36,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 25m
           script: |
             cd /var/sites/korean
             bash scripts/deploy.sh

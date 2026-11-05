@@ -19,6 +19,7 @@ import { LessonModule } from './lesson/lesson.module.js'
 import { SetsModule } from './sets/sets.module.js'
 import { ProgressModule } from './progress/progress.module.js'
 import { MetricsController } from './metrics.controller.js'
+import { ContainerMetrics } from './container-metrics.service.js'
 import { MetricsService } from './metrics.service.js'
 import { SearchModule } from './search/search.module.js'
 import { JobsModule } from './jobs/jobs.module.js'
@@ -26,6 +27,6 @@ import { JobsModule } from './jobs/jobs.module.js'
 @Module({
   imports: [JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
   controllers: [HealthController, MetricsController],
-  providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService],
+  providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })
 export class AppModule {}

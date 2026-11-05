@@ -188,28 +188,6 @@ services:
       timeout: 5s
       retries: 3
 
-  # нагрузка по контейнерам (процессор, память) для панели Grafana
-  cadvisor:
-    image: ${CADVISOR_IMAGE:-gcr.io/cadvisor/cadvisor:v0.52.1}
-    restart: unless-stopped
-    command:
-      - --docker_only=true
-      - --housekeeping_interval=30s
-      - --store_container_labels=false
-      - --whitelisted_container_labels=com.docker.compose.service
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    expose: ["8080"]
-    networks: [monitoring]
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz >/dev/null"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   docker-proxy:
     image: ${DOCKER_PROXY_IMAGE}
     restart: unless-stopped

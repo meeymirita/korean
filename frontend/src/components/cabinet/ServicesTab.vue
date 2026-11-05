@@ -82,8 +82,8 @@ async function rebuildSearchIndex() {
       headers: { ...headers(), 'Content-Type': 'application/json' },
       body: JSON.stringify(searchDocuments()),
     }, 120_000)
-    const reply = await response.json().catch(() => ({})) as { documents?: number; error?: string }
-    if (!response.ok) throw new Error(reply.error || `Сервер ответил кодом ${response.status}.`)
+    const reply = await response.json().catch(() => ({})) as { documents?: number; error?: string; detail?: string }
+    if (!response.ok) throw new Error([reply.error || `Сервер ответил кодом ${response.status}.`, reply.detail].filter(Boolean).join(': '))
     searchMessage.value = `Индекс обновлён: ${reply.documents || 0} документов.`
     await loadSearchStatus()
   } catch (cause) {

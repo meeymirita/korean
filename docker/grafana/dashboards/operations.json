@@ -31,7 +31,7 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Сайт и API",
+      "title": "Сайт",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -110,7 +110,7 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "Процессор",
+      "title": "Процессор занят",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -178,7 +178,7 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Память",
+      "title": "Память занята",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -246,8 +246,8 @@
     {
       "id": 5,
       "type": "stat",
-      "title": "Диск сервера",
-      "description": "Самый заполненный раздел",
+      "title": "Диск занят",
+      "description": "Самый заполненный раздел диска",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -314,7 +314,7 @@
     {
       "id": 6,
       "type": "stat",
-      "title": "Запросов в минуту",
+      "title": "Обращений к сайту в минуту",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -374,7 +374,7 @@
     {
       "id": 7,
       "type": "stat",
-      "title": "Работает без перезагрузки",
+      "title": "Сервер работает уже",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -433,7 +433,7 @@
     {
       "id": 8,
       "type": "row",
-      "title": "Сервер и сайт",
+      "title": "Сервер",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -446,8 +446,8 @@
     {
       "id": 9,
       "type": "timeseries",
-      "title": "Процессор по видам работы, %",
-      "description": "user — программы, system — ядро, iowait — ожидание диска",
+      "title": "Что делает процессор",
+      "description": "Из чего сложена нагрузка. Чем выше линии, тем больше занят процессор",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -500,9 +500,36 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 * sum by (mode) (rate(node_cpu_seconds_total{mode!=\"idle\"}[2m])) / scalar(count(count by (cpu) (node_cpu_seconds_total)))",
-          "legendFormat": "{{mode}}",
+          "expr": "100 * sum(rate(node_cpu_seconds_total{mode=~\"user|nice\"}[2m])) / scalar(count(count by (cpu) (node_cpu_seconds_total)))",
+          "legendFormat": "Работают программы",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * sum(rate(node_cpu_seconds_total{mode=~\"system|irq|softirq\"}[2m])) / scalar(count(count by (cpu) (node_cpu_seconds_total)))",
+          "legendFormat": "Работает сама система",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * sum(rate(node_cpu_seconds_total{mode=\"iowait\"}[2m])) / scalar(count(count by (cpu) (node_cpu_seconds_total)))",
+          "legendFormat": "Ждёт диск",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * sum(rate(node_cpu_seconds_total{mode=\"steal\"}[2m])) / scalar(count(count by (cpu) (node_cpu_seconds_total)))",
+          "legendFormat": "Забирает хостинг",
+          "refId": "D"
         }
       ]
     },
@@ -549,9 +576,7 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
@@ -565,7 +590,7 @@
             "uid": "prometheus"
           },
           "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
-          "legendFormat": "занято программами",
+          "legendFormat": "Занято",
           "refId": "A"
         },
         {
@@ -574,7 +599,7 @@
             "uid": "prometheus"
           },
           "expr": "node_memory_MemAvailable_bytes - node_memory_MemFree_bytes",
-          "legendFormat": "кэш (освободится при нехватке)",
+          "legendFormat": "Кэш (можно освободить)",
           "refId": "B"
         },
         {
@@ -583,7 +608,7 @@
             "uid": "prometheus"
           },
           "expr": "node_memory_MemFree_bytes",
-          "legendFormat": "свободно",
+          "legendFormat": "Свободно",
           "refId": "C"
         }
       ]
@@ -591,7 +616,7 @@
     {
       "id": 11,
       "type": "timeseries",
-      "title": "Сеть, байт в секунду",
+      "title": "Интернет",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -630,9 +655,7 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
@@ -646,7 +669,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|br-.*\"}[2m]))",
-          "legendFormat": "получено",
+          "legendFormat": "Приходит на сервер",
           "refId": "A"
         },
         {
@@ -655,7 +678,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br-.*\"}[2m]))",
-          "legendFormat": "отправлено",
+          "legendFormat": "Уходит с сервера",
           "refId": "B"
         }
       ]
@@ -663,7 +686,7 @@
     {
       "id": 12,
       "type": "timeseries",
-      "title": "Диск: чтение и запись",
+      "title": "Диск",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -702,9 +725,7 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
@@ -718,7 +739,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(node_disk_read_bytes_total[2m]))",
-          "legendFormat": "чтение",
+          "legendFormat": "Читает с диска",
           "refId": "A"
         },
         {
@@ -727,7 +748,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(node_disk_written_bytes_total[2m]))",
-          "legendFormat": "запись",
+          "legendFormat": "Пишет на диск",
           "refId": "B"
         }
       ]
@@ -735,8 +756,8 @@
     {
       "id": 13,
       "type": "timeseries",
-      "title": "Средняя загрузка (load average)",
-      "description": "Если держится выше числа ядер, процессору тесно",
+      "title": "Очередь у процессора",
+      "description": "Сколько задач одновременно ждут процессор. Если стабильно больше числа ядер, серверу тесно",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -775,9 +796,7 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
@@ -791,7 +810,7 @@
             "uid": "prometheus"
           },
           "expr": "node_load1",
-          "legendFormat": "за 1 мин",
+          "legendFormat": "Сейчас (за минуту)",
           "refId": "A"
         },
         {
@@ -800,7 +819,7 @@
             "uid": "prometheus"
           },
           "expr": "node_load5",
-          "legendFormat": "за 5 мин",
+          "legendFormat": "За 5 минут",
           "refId": "B"
         },
         {
@@ -809,15 +828,104 @@
             "uid": "prometheus"
           },
           "expr": "node_load15",
-          "legendFormat": "за 15 мин",
+          "legendFormat": "За 15 минут",
           "refId": "C"
         }
       ]
     },
     {
       "id": 14,
+      "type": "timeseries",
+      "title": "Обращения к сайту",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: в сек",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1.5,
+            "fillOpacity": 45,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(http_requests_total{status=~\"2..\"}[5m]))",
+          "legendFormat": "Всё хорошо",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(http_requests_total{status=~\"3..\"}[5m]))",
+          "legendFormat": "Перенаправления",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(http_requests_total{status=~\"4..\"}[5m]))",
+          "legendFormat": "Запрос отклонён",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
+          "legendFormat": "Сбой сервера",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 15,
       "type": "row",
-      "title": "Контейнеры",
+      "title": "Службы (контейнеры)",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -828,10 +936,10 @@
       "panels": []
     },
     {
-      "id": 15,
+      "id": 16,
       "type": "timeseries",
-      "title": "Процессор по контейнерам, %",
-      "description": "100% = одно ядро целиком",
+      "title": "Нагрузка по службам, %",
+      "description": "100% — это одно ядро процессора целиком",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -883,16 +991,16 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 * sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[2m]))",
-          "legendFormat": "{{name}}",
+          "expr": "sum by (title) (service_cpu_percent)",
+          "legendFormat": "{{title}}",
           "refId": "A"
         }
       ]
     },
     {
-      "id": 16,
+      "id": 17,
       "type": "timeseries",
-      "title": "Память по контейнерам",
+      "title": "Память по службам",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -945,16 +1053,16 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
-          "legendFormat": "{{name}}",
+          "expr": "sum by (title) (service_memory_bytes)",
+          "legendFormat": "{{title}}",
           "refId": "A"
         }
       ]
     },
     {
-      "id": 17,
+      "id": 18,
       "type": "row",
-      "title": "Сайт и API",
+      "title": "Как работает сайт",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -965,71 +1073,9 @@
       "panels": []
     },
     {
-      "id": 18,
-      "type": "timeseries",
-      "title": "Запросы в секунду по кодам ответа",
-      "description": "",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 12
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "lineWidth": 1.5,
-            "fillOpacity": 45,
-            "gradientMode": "opacity",
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "mode": "normal",
-              "group": "A"
-            }
-          },
-          "color": {
-            "mode": "palette-classic"
-          },
-          "min": 0
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true,
-          "calcs": []
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum by (status) (rate(http_requests_total[5m]))",
-          "legendFormat": "{{status}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
       "id": 19,
       "type": "timeseries",
-      "title": "Время ответа",
+      "title": "Как быстро отвечает сайт",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -1069,9 +1115,7 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
@@ -1085,7 +1129,7 @@
             "uid": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "обычный (p50)",
+          "legendFormat": "Обычный ответ",
           "refId": "A"
         },
         {
@@ -1094,7 +1138,7 @@
             "uid": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "медленные (p95)",
+          "legendFormat": "Медленный (1 из 20)",
           "refId": "B"
         },
         {
@@ -1103,7 +1147,7 @@
             "uid": "prometheus"
           },
           "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "самые медленные (p99)",
+          "legendFormat": "Самый медленный (1 из 100)",
           "refId": "C"
         }
       ]
@@ -1111,7 +1155,7 @@
     {
       "id": 20,
       "type": "timeseries",
-      "title": "Ошибки в секунду",
+      "title": "Ошибки",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -1125,7 +1169,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "suffix: в сек",
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1151,9 +1195,7 @@
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true,
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
@@ -1167,7 +1209,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(http_requests_total{status=~\"4..\"}[5m]))",
-          "legendFormat": "4xx (запрос не принят)",
+          "legendFormat": "Запрос отклонён (например, неверный токен)",
           "refId": "A"
         },
         {
@@ -1176,7 +1218,7 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
-          "legendFormat": "5xx (сбой сервера)",
+          "legendFormat": "Сбой сервера",
           "refId": "B"
         }
       ]
@@ -1197,8 +1239,8 @@
     {
       "id": 22,
       "type": "stat",
-      "title": "Последняя копия была",
-      "description": "Зелёный до 28 часов, красный после 37 часов",
+      "title": "Последняя копия сделана",
+      "description": "Зелёный до 28 часов назад, красный после 37",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1264,7 +1306,7 @@
     {
       "id": 23,
       "type": "stat",
-      "title": "Результат последней попытки",
+      "title": "Последняя копия получилась?",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -1300,12 +1342,12 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "Не удалась",
+                  "text": "Нет",
                   "color": "red",
                   "index": 1
                 },
                 "1": {
-                  "text": "Удалась",
+                  "text": "Да",
                   "color": "green",
                   "index": 0
                 }
@@ -1343,8 +1385,8 @@
     {
       "id": 24,
       "type": "stat",
-      "title": "Состояние сборщиков метрик",
-      "description": "Backend, сервер, контейнеры и сам Prometheus",
+      "title": "Мониторинг в порядке",
+      "description": "Все программы, которые собирают данные для этой панели",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1379,12 +1421,12 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "Есть недоступные",
+                  "text": "Нет",
                   "color": "red",
                   "index": 1
                 },
                 "1": {
-                  "text": "Все на связи",
+                  "text": "Да",
                   "color": "green",
                   "index": 0
                 }
