@@ -69,3 +69,16 @@ Prometheus собирает метрики `backend` (`/api/metrics`: запро
 ## Данные для тестов и локальной проверки
 
 Тесты (`npm test`) ходят в PostgreSQL по `TEST_DATABASE_URL` (у каждого теста своя схема) и в Redis, Meilisearch по `REDIS_URL`, `MEILISEARCH_URL`. Быстро поднять всё нужное: `docker run -d --name kt-pg -e POSTGRES_PASSWORD=pg -e POSTGRES_DB=korean_test -p 55432:5432 postgres:17-alpine` и аналогично `redis:7.4-alpine`, `getmeili/meilisearch:v1.12` (`MEILI_MASTER_KEY`), для тестов копий нужен `pg_dump` 17+ (`brew install libpq`). Переменные как в `.github/workflows/ci.yml`.
+
+## Свои адреса для сервисов (Grafana и другие)
+
+Сервисы слушают только `127.0.0.1`, наружу их открывает хостовый Caddy. Для каждого нужна A-запись в DNS на сервер (например `grafana.korean.meeymirita.ru`) и блок в `/etc/caddy/Caddyfile`; сертификат Caddy выпустит сам.
+Grafana (порт `GRAFANA_PORT`, по умолчанию 3002) имеет свой вход (`admin` и `GRAFANA_PASSWORD`), её можно открывать так:
+```
+grafana.korean.meeymirita.ru {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3002
+}
+```
+Prometheus, Meilisearch, Redis и PostgreSQL **своего входа не имеют**, открывать их без пароля нельзя; Prometheus и Meilisearch сейчас не публикуют порт на хост вовсе. Если понадобится Prometheus снаружи: в compose добавить `ports: ["127.0.0.1:9090:9090"]` и закрыть блок в Caddy через `basic_auth` (хэш пароля: `caddy hash-password`). Redis и PostgreSQL наружу не нужны никогда, смотреть их удобнее через SSH-туннель.
+После правки Caddyfile: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`.
