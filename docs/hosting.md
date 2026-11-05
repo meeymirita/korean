@@ -60,24 +60,17 @@ korean.meeymirita.ru {
 ```
 После правки: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. `/api/*` и `/video/*` должны стоять выше общего `handle`. Content-Security-Policy для сайта пока не включён (см. ниже).
 
-## Откат на прежнюю версию (Vue SPA, ветка `main_old`)
-`systemctl stop korean-web`; `git checkout -B main origin/main_old`; `mv backend/.env server/.env && mv backend/data server/data`; в `progress.service` вернуть `server/dist/main.js`;
-в Caddy прежний `handle` с `root * /var/sites/korean/dist` и `try_files {path} {path}/index.html /index.html`; `npm ci && npm --prefix server ci && npm run build && npm --prefix server run build`; `systemctl daemon-reload && systemctl restart progress`.
-Дальше на сервере делали бы обычный деплой из `main_old`. Нужно это только если Nuxt-версия окажется неработоспособной.
-
 ## Dependabot
 Раз в неделю открывает pull request-ы (`dependabot/...`), CI показывает, ничего ли не сломалось. Крупные обновления (смена первой цифры: TypeScript 7, `@types/node` 26, `actions/checkout` 7) не сливай вслепую;
 мелкие (`minor-and-patch`) обычно безопасны. Слил: на сервере `bash scripts/deploy.sh`. Сомневаешься: закрой, Dependabot предложит снова.
 
 ## Усиление защиты (делает владелец, всё ещё открыто)
-1. **Служба `progress`** в `[Service]`: `NoNewPrivileges=true`, `PrivateTmp=true`, `ProtectSystem=strict`, `ProtectHome=true`, `ReadWritePaths=/var/sites/korean/backend/data`, `ProtectKernelTunables=true`, `ProtectKernelModules=true`,
-   `ProtectControlGroups=true`, `RestrictSUIDSGID=true`, `RestrictNamespaces=true`, `LockPersonality=true`, `MemoryMax=512M`, `TasksMax=200`, `Restart=always`, `RestartSec=3`; `User=` обычный пользователь, не root.
-   Потом `systemctl daemon-reload && systemctl restart progress`. Не стартует: `journalctl -u progress -n 50` (скорее всего, путь в `ReadWritePaths` не совпал с `DATA_DIR`).
+1. **Контейнеры:** приложение работает не от root (пользователь `node`), порты сайта и API слушают только `127.0.0.1`, база, Redis и поиск во внутренней сети Docker без выхода наружу, Docker-сокет доступен только через read-only прокси (`docs/docker.md`). Делать здесь больше нечего.
 2. **CSP в Caddy:** `Content-Security-Policy "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"`.
    Nuxt добавляет свои инлайн-скрипты, поэтому проверяй в консоли браузера, что не заблокировано (возможно, понадобится `'unsafe-inline'` в `script-src`).
 3. **Брандмауэр и SSH:** `ufw allow 22,80,443/tcp && ufw enable` (порты 3000 и 3001 наружу не открывать), SSH только по ключу (`PasswordAuthentication no`), `apt install fail2ban`.
-4. **Токен:** длинный случайный, только в `backend/.env`. Подозрение на утечку: сменить токен, `systemctl restart progress`, гостевые отозвать в кабинете.
-5. **Копии:** база копируется сама раз в день на том же диске; полный архив уходит на почту, ночная копия `scripts/backup.sh`: `docs/backup.md`. Копии вне сервера ещё не настроены (`OFFSITE_RSYNC` или `OFFSITE_RCLONE`).
+4. **Токен:** длинный случайный, только в `.env` проекта (права 600). Подозрение на утечку: сменить `PROGRESS_TOKEN` в `.env`, `docker compose up -d`, гостевые токены отозвать в кабинете.
+5. **Копии:** ночной `pg_dump` внутри `backend`, копия на хост (`scripts/backup-docker.sh`, таймер) и полный архив на почту: `docs/backup.md`. Копии вне сервера не настроены (`OFFSITE_RSYNC` в `.env`, если понадобится).
 6. **Обновления системы:** `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades`. Яндекс.Вебмастер и Google Search Console: добавить сайт и `https://korean.meeymirita.ru/sitemap.xml`.
 
 ## Приложение и видео

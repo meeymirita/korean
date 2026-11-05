@@ -20,9 +20,7 @@ skills-lock.json
 !.env.example
 backend/src/generated
 gpt/data
-docker/caddy/logs/*
 docker/caddy/video/*
-!docker/caddy/logs/.gitkeep
 !docker/caddy/video/.gitkeep
 gpt/
 ВОПРОСЫ.md

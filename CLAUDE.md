@@ -54,7 +54,7 @@
 - **Новая страница** = файл в `src/pages/` (закрытая токеном: `definePageMeta({ private: true })`) + запись в `src/data/seo.ts` (заголовок до 75 знаков, описание 60–190, закрытая `noindex`)
   + пункт в `src/data/korean/crumbs.ts` (хлебные крошки) + в шторку «Что здесь есть» (`src/data/guide.ts`). Sitemap и robots Nuxt строит сам по `seo.ts`. Тег `yandex-verification` в `nuxt.config.ts` не удалять.
 - Заметное изменение: запись в начало `HISTORY` (`src/data/history.ts`, тест следит за форматом). Изменил страницу: обнови слайд и скриншот в «О платформе» (`src/data/about.ts`, `src/assets/about/`)
-  и **галерею в `README.md`** (заголовки, описания, картинки один в один, `tests/readme.test.mjs`).
+  (README без скриншотов; число слов и правил в нём сверяет `tests/readme.test.mjs`).
 - Менял `dark.css`: `node scripts/build-night.mjs` (собирает `night.css`, тест следит).
 - Менял словарь или `translations.ts`: `node scripts/digest-pool.mjs` и `node scripts/build-words-json.mjs` (публичный `/words.json` для сверки на дубли); менял словарь или пройденные темы: `node scripts/chat-curriculum.mjs`. Тесты следят.
 - Поменял сервер: пересобери и перезапусти локальный (`npm run server:build`, затем `pkill -f "node dist/main.js"; npm run server`; в Docker `docker compose up -d --build backend`), иначе сайт «не видит» новых возможностей. Всё, что вызывает async-методы сервера (в том числе проверки `confirm.require`), обязательно с `await`: без него защита молча не срабатывает.
@@ -110,14 +110,12 @@
 | `docs/server.md` | сервер: таблицы, API, защита, двухфакторный вход |
 | `docs/docker.md` | **Docker-стек**: сервисы, первый запуск, перенос SQLite → PostgreSQL, обновление, копии, мониторинг, поиск |
 | `docs/hosting.md` | боевой сервер: Caddy, защита, диагностика |
-| `docs/stack-ideas.md` | заметка: какие модные технологии стоит брать (основа решения про Docker, Prometheus, PostgreSQL) |
 | `docs/backup.md` | резервные копии |
-| `docs/changelog.md` | краткая хронология |
 
 ## Как проверять
 
 - CI на GitHub (типы, сборка, тесты, `npm audit`, Node 22 как в образах Docker) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
-- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 600 тестов: 580+ в `tests/` и около 60 во фреймворках). Отдельно `npm run test:nest`, `npm run test:nuxt`.
+- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 700 тестов: 580+ в `tests/` и около 100 во фреймворках). Отдельно `npm run test:nest`, `npm run test:nuxt`.
 - Типы и сборка: `npm run type-check`, `npm run build`. Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`).
 - Визуально: headless Chromium из кэша Playwright (`~/Library/Caches/ms-playwright/chromium_headless_shell-*/…/chrome-headless-shell`), `--screenshot` или `--remote-debugging-port`.
 - Демо-сервер: `DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node backend/dist/main.js`, сайт `API_PORT=3002 npx --prefix frontend nuxt dev --port 5198`,
@@ -134,5 +132,6 @@
 - Предметы магазина не работают в «Найди пару», «Слоги» и игре «Хлебушек». «Собери предложение» в игре без перетаскивания (нужен `sortablejs` или перепись игры на Vue).
 - Переводы предложений (`translations.ts`) мои, учитель их не проверял.
 - Проверки владельца на устройствах (сам Claude не может): «Найди пару» с Pencil на iPad (экран не дёргается), ✳ розовая на iPad, видео в Safari и на iPad (если нет, перекодировать в H.264, команда в `docs/hosting.md`), письмо с архивом после 4:00, смена «Сегодня» в полночь, выезд свёрнутого меню, кнопка «?» в «Найди ошибку», после деплоя `/words.json` и ссылка на странице «Слова». Результат владелец сообщает сам. Анимации «Повторения», остаток эмодзи (уведомления, значок режима в истории ответов, огонёк в разборе).
-- Хостинг: CSP для сайта, брандмауэр, SSH по ключу, fail2ban, копии вне сервера, Яндекс.Вебмастер и Search Console (`docs/hosting.md`).
+- Хостинг: CSP для сайта, брандмауэр, SSH по ключу, fail2ban, Яндекс.Вебмастер и Search Console (`docs/hosting.md`).
+- Выкладка: ключ `VPS_SSH_KEY` в секретах GitHub должен быть без парольной фразы (отдельный ключ только для выкладки), иначе Deploy падает на входе по SSH. Проверка: Actions → Deploy → Run workflow.
 - Перенос видео в Яндекс Object Storage (21,38 ₽/мес за 10 ГБ) владелец обдумывает, пока не нужен.
