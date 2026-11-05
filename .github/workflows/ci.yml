@@ -67,7 +67,7 @@ jobs:
         # Node 22: ровно та версия, что в образах Docker на сервере (docker/*/Dockerfile).
         node: [22]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Проверка docker-compose.yml с образцом настроек
         run: |
