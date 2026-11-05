@@ -24,6 +24,16 @@ cd "$ROOT"
 
 say() { printf '\n== %s\n' "$*"; }
 
+# Конвертер читает КОПИЮ app.db внутри контейнера (от root, в /tmp): так не мешают ни права файла (cp -a сохраняет root и 600),
+# ни режим WAL (для чтения базы нужна запись рядом). Исходная папка монтируется только на чтение и не меняется.
+convert() { # аргументы конвертера (--replace, --check-only)
+  $COMPOSE run --rm --no-deps --user root -v "$SRC:/import:ro" --entrypoint sh backend -c '
+    set -e
+    mkdir -p /tmp/db && cp /import/app.db* /tmp/db/
+    exec node scripts/sqlite-to-postgres.mjs /tmp/db/app.db "$@"
+  ' sh "$@"
+}
+
 say "Запускаю стек (миграции создадут таблицы)"
 $COMPOSE up -d --build
 for i in $(seq 1 60); do
@@ -35,7 +45,7 @@ say "Останавливаю сайт и API на время переноса"
 $COMPOSE stop frontend backend
 
 say "База: SQLite → PostgreSQL"
-$COMPOSE run --rm --no-deps -v "$SRC:/import:ro" backend node scripts/sqlite-to-postgres.mjs /import/app.db $REPLACE
+convert $REPLACE
 
 say "Файлы: картинки, миниатюры, файлы календаря, обложка визитки, заменённые картинки сайта"
 $COMPOSE run --rm --no-deps --user root -v "$SRC:/import:ro" --entrypoint sh backend -c '
@@ -52,10 +62,10 @@ $COMPOSE up -d
 
 say "Проверка: база совпадает с app.db, файлы на месте"
 $COMPOSE stop backend >/dev/null
-$COMPOSE run --rm --no-deps -v "$SRC:/import:ro" backend node scripts/sqlite-to-postgres.mjs /import/app.db --check-only
-$COMPOSE run --rm --no-deps --entrypoint node -v "$SRC:/import:ro" backend -e '
+convert --check-only
+$COMPOSE run --rm --no-deps --user root -v "$SRC:/import:ro" --entrypoint sh backend -c 'mkdir -p /tmp/db && cp /import/app.db* /tmp/db/ && exec node -e "$0"' '
 const { DatabaseSync } = require("node:sqlite"); const fs = require("fs")
-const db = new DatabaseSync("/import/app.db", { readOnly: true })
+const db = new DatabaseSync("/tmp/db/app.db", { readOnly: true })
 let miss = 0, total = 0
 for (const r of db.prepare("SELECT id, ext FROM images").all()) { total++; if (!fs.existsSync(`/data/uploads/${r.id}.${r.ext}`)) { miss++; console.log("нет файла картинки", r.id) } }
 for (const r of db.prepare("SELECT ref FROM site_images WHERE kind = \x27file\x27").all()) { total++; if (!fs.existsSync(`/data/site/${r.ref}`)) { miss++; console.log("нет заменённой картинки сайта", r.ref) } }
