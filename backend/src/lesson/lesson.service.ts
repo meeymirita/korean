@@ -5,11 +5,11 @@
  * Адрес — тот же, что у напоминания заниматься: REMINDER_MAIL_TO в server/.env, иначе почта из двухфакторной защиты.
  */
 import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { TwoFaService, maskEmail } from '../auth/twofa.service'
-import { Db } from '../db/db.service'
-import { MailService } from '../mail/mail.service'
-import { lessonMail } from '../mail/templates'
-import { dayOf } from '../reminders/reminder.service'
+import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
+import { Db } from '../db/db.service.js'
+import { MailService } from '../mail/mail.service.js'
+import { lessonMail } from '../mail/templates.js'
+import { dayOf } from '../reminders/reminder.service.js'
 
 export interface LessonSettings {
   enabled: boolean
@@ -44,9 +44,9 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
     clearInterval(this.timer)
   }
 
-  get(): LessonSettings {
+  async get(): Promise<LessonSettings> {
     try {
-      const v = JSON.parse(this.db.getMeta('lesson') ?? '{}') as Partial<LessonSettings>
+      const v = JSON.parse(await this.db.getMeta('lesson') ?? '{}') as Partial<LessonSettings>
       return {
         enabled: v.enabled === true,
         weekday: Number.isInteger(v.weekday) && v.weekday! >= 0 && v.weekday! <= 6 ? v.weekday! : DEFAULT.weekday,
@@ -58,12 +58,12 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private save(s: LessonSettings) {
-    this.db.setMeta('lesson', JSON.stringify(s))
+  private async save(s: LessonSettings) {
+    await this.db.setMeta('lesson', JSON.stringify(s))
   }
 
-  set(body: { enabled?: unknown; weekday?: unknown; time?: unknown }) {
-    const cur = this.get()
+  async set(body: { enabled?: unknown; weekday?: unknown; time?: unknown }) {
+    const cur = await this.get()
     if (body.enabled !== undefined) {
       if (typeof body.enabled !== 'boolean') throw new BadRequestException({ error: 'invalid enabled' })
       cur.enabled = body.enabled
@@ -77,49 +77,49 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
       if (body.time !== cur.time) cur.lastSent = '' // новое время: сегодня ещё можно напомнить
       cur.time = body.time
     }
-    this.save(cur)
-    return this.status()
+    await this.save(cur)
+    return await this.status()
   }
 
-  to() {
-    return process.env.REMINDER_MAIL_TO || this.twofa.email()
+  async to() {
+    return process.env.REMINDER_MAIL_TO || await this.twofa.email()
   }
 
-  status() {
-    const to = this.to()
-    return { ...this.get(), mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '' }
+  async status() {
+    const [to, settings] = await Promise.all([this.to(), this.get()])
+    return { ...settings, mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '' }
   }
 
   private async deliver() {
-    const m = lessonMail({ time: this.get().time, site: process.env.SITE_URL })
-    await this.mail.send(this.to(), m.subject, m.text, m.html)
+    const m = lessonMail({ time: (await this.get()).time, site: process.env.SITE_URL })
+    await this.mail.send(await this.to(), m.subject, m.text, m.html)
   }
 
   /** Одна проверка (раз в минуту). Возвращает, что сделано: для тестов. */
   async tick(now = new Date()): Promise<Tick> {
-    const s = this.get()
+    const s = await this.get()
     if (!s.enabled) return 'off'
     if (now.getDay() !== s.weekday) return 'off'
     const day = dayOf(now)
     const pad = (n: number) => String(n).padStart(2, '0')
     if (`${pad(now.getHours())}:${pad(now.getMinutes())}` < s.time) return 'early'
     if (s.lastSent === day) return 'already'
-    if (!this.mail.configured() || !this.to()) return 'nomail'
+    if (!this.mail.configured() || !await this.to()) return 'nomail'
     // метка ставится до отправки: если почта медленная, следующая проверка не пошлёт второе письмо
-    this.save({ ...s, lastSent: day })
+    await this.save({ ...s, lastSent: day })
     try {
       await this.deliver()
       return 'sent'
     } catch (e) {
       console.error('письмо-напоминание о созвоне не отправилось:', (e as Error).message)
-      this.save({ ...s, lastSent: '' })
+      await this.save({ ...s, lastSent: '' })
       return 'failed'
     }
   }
 
   /** Проверочное письмо по кнопке: не зависит ни от дня, ни от времени. */
   async test() {
-    if (!this.mail.configured() || !this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
+    if (!this.mail.configured() || !await this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
     try {
       await this.deliver()
       return { ok: true, message: '' }

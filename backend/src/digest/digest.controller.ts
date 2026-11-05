@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { DigestService } from './digest.service'
+import { Owner } from '../auth/auth.js'
+import { DigestService } from './digest.service.js'
 
 /** /api/digest: настройки письма-подборки (только владельцу). */
 @Owner()

@@ -12,6 +12,7 @@ import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
 import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
+import { resultFromSearchReply, searchRemote } from '@/data/korean/search'
 import yunaBook from '@/assets/home/yuna-book.webp'
 
 const progress = useProgressStore()
@@ -25,6 +26,12 @@ const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
 const picked = ref<Word | null>(null)
+const remoteRows = ref<Word[] | null>(null)
+const remoteTotal = ref(0)
+const remoteOffset = ref(0)
+const remoteLoading = ref(false)
+let remoteTimer: ReturnType<typeof setTimeout> | undefined
+let remoteRequest = 0
 const openN = ref<number | null>(null)
 const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null))
 /** Для какого слова показаны «похожие» */
@@ -40,7 +47,7 @@ function openWord(d: Word) {
 const input = ref<HTMLInputElement>()
 
 const qs = computed(() => parseQuery(q.value))
-const pool = computed(() => D.filter(d => (!cat.value || d.c.includes(cat.value)) && (!fav.value || markedWords.value.has(d.k))))
+const pool = computed(() => (remoteRows.value ?? D).filter(d => (!cat.value || d.c.includes(cat.value)) && (!fav.value || markedWords.value.has(d.k))))
 
 const rows = computed(() => {
   if (picked.value) return [picked.value]
@@ -55,8 +62,42 @@ const rows = computed(() => {
 /** Сначала видны первые 100 слов, остальные открываются кнопкой «Показать ещё». В разметке (и для поисковиков) остаются все слова. */
 const PAGE = 100
 const limit = ref(PAGE)
-const more = () => (limit.value += PAGE)
+async function more() {
+  if (remoteRows.value !== null && remoteOffset.value < remoteTotal.value && !remoteLoading.value) {
+    remoteLoading.value = true
+    const request = remoteRequest
+    try {
+      const page = await searchRemote(q.value, remoteOffset.value, 'word')
+      if (page && request === remoteRequest) {
+        remoteRows.value = [...remoteRows.value, ...resultFromSearchReply(page).words]
+        remoteOffset.value = page.offset + page.hits.length
+        remoteTotal.value = page.total
+      }
+    } finally {
+      remoteLoading.value = false
+    }
+  }
+  limit.value += PAGE
+}
 watch([q, cat, fav, picked], () => (limit.value = PAGE))
+
+function requestRemoteWords(value: string) {
+  clearTimeout(remoteTimer)
+  const request = ++remoteRequest
+  remoteRows.value = null
+  remoteTotal.value = 0
+  remoteOffset.value = 0
+  if (!value.trim()) return
+  remoteTimer = setTimeout(async () => {
+    const page = await searchRemote(value, 0, 'word')
+    if (page && request === remoteRequest) {
+      remoteRows.value = resultFromSearchReply(page).words
+      remoteTotal.value = page.total
+      remoteOffset.value = page.offset + page.hits.length
+    }
+  }, 180)
+}
+watch(q, requestRemoteWords)
 
 const counter = computed(() => {
   if (picked.value) return 'Случайное слово'
@@ -84,7 +125,12 @@ function onKey(e: KeyboardEvent) {
   }
 }
 onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onMounted(() => { if (q.value) requestRemoteWords(q.value) })
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  clearTimeout(remoteTimer)
+  remoteRequest++
+})
 
 const { share, busy: sharing } = useShareCard()
 const shareWord = (d: Word) =>
@@ -161,8 +207,10 @@ const shareWord = (d: Word) =>
         </div>
       </template>
     </div>
-    <button v-if="rows.length > limit" type="button" class="words-more" @click="more">
-      Показать ещё {{ Math.min(PAGE, rows.length - limit) }} <small>(осталось {{ rows.length - limit }})</small>
+    <button v-if="rows.length > limit || (remoteRows !== null && remoteOffset < remoteTotal)" type="button" class="words-more" :disabled="remoteLoading" @click="more">
+      {{ remoteLoading ? 'Загружаю…' : remoteRows !== null && remoteOffset < remoteTotal ? 'Показать ещё результаты' : `Показать ещё ${Math.min(PAGE, rows.length - limit)}` }}
+      <small v-if="remoteRows !== null && remoteOffset < remoteTotal">(в индексе осталось {{ remoteTotal - remoteOffset }})</small>
+      <small v-else>(осталось {{ rows.length - limit }})</small>
     </button>
     <div v-if="!rows.length" class="empty">
       <Cat :name="fav && !q ? 'read' : 'think'" />

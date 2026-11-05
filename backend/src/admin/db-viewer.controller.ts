@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { DbViewerService } from './db-viewer.service'
+import { Owner } from '../auth/auth.js'
+import { DbViewerService } from './db-viewer.service.js'
 
 /** /api/db: просмотр базы только для владельца (вкладка «База» в кабинете). Менять данные здесь нельзя. */
 @Owner()

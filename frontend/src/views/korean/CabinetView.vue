@@ -13,6 +13,7 @@ import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
+import ServicesTab from '@/components/cabinet/ServicesTab.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
 import WeekTab from '@/components/cabinet/WeekTab.vue'
 import { dueWords } from '@/data/review'
@@ -21,6 +22,7 @@ import { fetchT } from '@/lib/http'
 import { sectionById } from '@/data/korean/sections'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
+import type { CabinetTab } from '@/types/cabinet'
 
 const progress = useProgressStore()
 const levelsOpen = ref(false)
@@ -62,7 +64,6 @@ watch(
   },
   { immediate: true },
 )
-type Tab = 'overview' | 'repeat' | 'week' | 'history' | 'notes' | 'images' | 'report' | 'notifications' | 'settings'
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
@@ -72,8 +73,8 @@ const q = moved(route.query.tab)
 // магазин из кабинета убран: старый адрес ?tab=shop ведёт на страницу магазина
 if (route.query.tab === 'shop') void router.replace('/korean/shop')
 const OWNER_ONLY = ['images', 'report', 'notifications']
-const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'notifications', 'settings']
-const tab = ref<Tab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as Tab) : 'overview')
+const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'notifications', 'settings', 'services']
+const tab = ref<CabinetTab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as CabinetTab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
   const { tab: _old, ...rest } = route.query
@@ -84,21 +85,22 @@ watch(
   () => route.query.tab,
   raw => {
     const v = moved(raw)
-    const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as Tab
+    const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as CabinetTab
     if (next !== tab.value) tab.value = next
   },
 )
 const dueCount = computed(() => dueWords(progress.data).length)
-const tabs = computed<[Tab, string][]>(() => [
+const tabs = computed<[CabinetTab, string][]>(() => [
   ['overview', 'Обзор'],
   ['repeat', `Повторить${dueCount.value ? ' · ' + dueCount.value : ''}`],
   ['week', 'Неделя'],
   ['history', 'История'],
-  ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [Tab, string][])),
+  ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [CabinetTab, string][])),
   ['notes', 'Заметки'],
   // картинки, уведомления и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
-  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['notifications', 'Уведомления']] as [Tab, string][])),
+  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['notifications', 'Уведомления']] as [CabinetTab, string][])),
   ['settings', 'Настройки'],
+  ...(progress.isGuest ? [] : ([['services', 'Сервисы']] as [CabinetTab, string][])),
 ])
 </script>
 
@@ -144,6 +146,7 @@ const tabs = computed<[Tab, string][]>(() => [
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <NotificationsTab v-else-if="tab === 'notifications'" />
+    <ServicesTab v-else-if="tab === 'services'" />
     <SettingsTab v-else />
   </div>
 </template>

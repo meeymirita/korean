@@ -1,6 +1,7 @@
 /** Настройки сервера: файл backend/.env, переменные окружения и константы. */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 /** Читает backend/.env: строки вида КЛЮЧ=значение, # — комментарий. Уже заданные переменные не трогает. */
 function loadEnv(file: string) {
@@ -23,7 +24,7 @@ function loadEnv(file: string) {
 }
 
 /** backend/dist/config.js → backend/ */
-export const ROOT = path.join(__dirname, '..')
+export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 loadEnv(path.join(ROOT, '.env'))
 
 export const PORT = Number(process.env.PORT || 3001)
@@ -33,7 +34,6 @@ export const TOKEN = process.env.PROGRESS_TOKEN || ''
 export const SWAGGER = process.env.SWAGGER === '1'
 export const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data')
 
-export const DB_FILE = path.join(DATA_DIR, 'app.db')
 export const BACKUPS = path.join(DATA_DIR, 'backups')
 export const UPLOADS = path.join(DATA_DIR, 'uploads')
 export const THUMBS = path.join(DATA_DIR, 'thumbs')

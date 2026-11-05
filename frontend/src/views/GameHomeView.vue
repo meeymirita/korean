@@ -8,6 +8,7 @@ import Avatar from '@/components/Avatar.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
 import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
+import { searchGamesRemote } from '@/data/korean/search'
 import { initGame } from '@/game/engine'
 import markupRaw from '@/game/markup.html?raw'
 import { iconImg } from '@/game/icons'
@@ -110,6 +111,22 @@ onMounted(async () => {
 onBeforeUnmount(stopEngine)
 
 const q = ref('')
+const remoteGameIds = ref<string[] | null>(null)
+let gameSearchTimer: ReturnType<typeof setTimeout> | undefined
+let gameSearchVersion = 0
+watch(q, value => {
+  clearTimeout(gameSearchTimer)
+  const version = ++gameSearchVersion
+  if (!value.trim()) { remoteGameIds.value = null; return }
+  gameSearchTimer = setTimeout(async () => {
+    const ids = await searchGamesRemote(value)
+    if (version === gameSearchVersion) remoteGameIds.value = ids
+  }, 220)
+})
+onBeforeUnmount(() => clearTimeout(gameSearchTimer))
+const findCatalogGames = (games: typeof ALL_GAMES) => remoteGameIds.value === null
+  ? findGames(games, q.value)
+  : games.filter(game => remoteGameIds.value?.includes(game.id))
 /** Пока открыта игра, список игр слева свёрнут: больше места под задание. Кнопка «☰» в шапке показывает его (помнится до закрытия вкладки). */
 const navOpen = usePersisted('gh_nav_open', false, v => typeof v === 'boolean')
 const folded = computed(() => !!game.value && !navOpen.value)
@@ -126,13 +143,13 @@ const hasActive = (g: { games: { id: string; to: string }[] }) => g.games.some(i
 const sideOpen = (id: string) => hasActive(GAME_GROUPS.find(g => g.id === id)!) || !sideClosed.value.includes(id)
 const sideToggle = (id: string) => (sideClosed.value = sideOpen(id) ? [...sideClosed.value, id] : sideClosed.value.filter(x => x !== id))
 
-const found = computed(() => findGames(ALL_GAMES, q.value).length)
+const found = computed(() => findCatalogGames(ALL_GAMES).length)
 const groups = computed(() =>
   GAME_GROUPS.filter(g => view.value === 'all' || view.value === g.id)
-    .map(g => ({ ...g, list: findGames(g.games, q.value) }))
+    .map(g => ({ ...g, list: findCatalogGames(g.games) }))
     .filter(g => g.list.length),
 )
-const mix = computed(() => (view.value === 'all' || view.value === 'mix' ? findGames(GAME_MIX, q.value) : []))
+const mix = computed(() => (view.value === 'all' || view.value === 'mix' ? findCatalogGames(GAME_MIX) : []))
 const icon = (n: string) => ICON[n] ?? ICON.star
 const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' }, ...GAME_GROUPS.map(g => ({ id: g.id, t: g.title }))]
 </script>

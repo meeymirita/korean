@@ -1,8 +1,8 @@
 import { ForbiddenException, Injectable } from '@nestjs/common'
 import type { Request } from 'express'
-import { Events } from '../events/events.service'
-import { RateLimiter, clientIp } from '../security'
-import { AuthService } from './auth.service'
+import { Events } from '../events/events.service.js'
+import { RateLimiter, clientIp } from '../security.js'
+import { AuthService } from './auth.service.js'
 
 /**
  * Повторный ввод токена для опасных действий (сброс прогресса, загрузка копии, создание гостевого токена).
@@ -17,12 +17,12 @@ export class ConfirmService {
     private readonly events: Events,
   ) {}
 
-  require(req: Request) {
+  async require(req: Request) {
     const given = String(req.headers['x-confirm-token'] ?? '')
     if (given && this.auth.isOwnerToken(given)) return
     const ip = clientIp(req)
     const locked = this.limiter.fail(ip, 'confirm')
-    this.events.log(locked ? 'ip_locked' : 'bad_confirm', ip)
+    await this.events.log(locked ? 'ip_locked' : 'bad_confirm', ip)
     throw new ForbiddenException({ error: 'confirm required' })
   }
 }

@@ -1,7 +1,7 @@
 /** Помощник-чат: пересылает вопросы в OpenRouter и возвращает ответ. Историю переписки хранит браузер, сервер её не сохраняет. */
 import { BadGatewayException, BadRequestException, HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common'
-import { CHAT_DAILY_LIMIT, CHAT_MAX_HISTORY, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config'
-import { SYSTEM_PROMPT } from './prompt'
+import { CHAT_DAILY_LIMIT, CHAT_MAX_HISTORY, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
+import { SYSTEM_PROMPT } from './prompt.js'
 
 export interface ChatMsg {
   role: 'user' | 'assistant'

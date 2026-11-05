@@ -6,7 +6,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import DashboardHome from '@/components/korean/DashboardHome.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { hl } from '@/data/korean/render'
-import { search, snippet } from '@/data/korean/search'
+import { appendSearchResults, resultFromSearchReply, search, searchRemote, snippet, type SearchResult } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
 import { parseQuery } from '@/data/korean/words'
 import { useGrammarModal } from '@/composables/useGrammarModal'
@@ -18,7 +18,13 @@ const { open } = useGrammarModal()
 
 const q = ref(String(useRoute().query.q ?? ''))
 const input = ref<HTMLInputElement>()
-const result = computed(() => search(q.value))
+const result = ref<SearchResult | null>(search(q.value))
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+let searchRequest = 0
+let remoteOffset = 0
+let remoteTotal = 0
+const loadingMore = ref(false)
+const hasMoreRemote = computed(() => remoteOffset < remoteTotal)
 const qs = computed(() => parseQuery(q.value))
 const h = (t: string) => hl(t, qs.value)
 
@@ -39,8 +45,43 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('keydown', onKey)
   input.value?.focus()
+  watch(q, value => {
+    result.value = search(value)
+    remoteOffset = 0
+    remoteTotal = 0
+    clearTimeout(searchTimer)
+    const request = ++searchRequest
+    searchTimer = setTimeout(async () => {
+      const remote = await searchRemote(value)
+      if (request === searchRequest && remote) {
+        result.value = resultFromSearchReply(remote)
+        remoteOffset = remote.offset + remote.hits.length
+        remoteTotal = remote.total
+      }
+    }, 180)
+  }, { immediate: true })
 })
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+
+async function loadMoreRemote() {
+  if (loadingMore.value || !hasMoreRemote.value) return
+  loadingMore.value = true
+  const request = searchRequest
+  try {
+    const page = await searchRemote(q.value, remoteOffset)
+    if (page && request === searchRequest) {
+      result.value = appendSearchResults(result.value ?? search(q.value)!, resultFromSearchReply(page))
+      remoteOffset = page.offset + page.hits.length
+      remoteTotal = page.total
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  clearTimeout(searchTimer)
+  searchRequest++
+})
 </script>
 
 <template>
@@ -116,6 +157,16 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <button v-if="rest('s', result.sentences.length)" class="chip" @click="more.s = true">ещё {{ rest('s', result.sentences.length) }}</button>
       </section>
 
+      <section v-if="result.forms.length" class="ov-g">
+        <h2 class="today-h">Формы слов <small>{{ result.forms.length }}</small></h2>
+        <RouterLink v-for="c in take('f', result.forms)" :key="c.k" class="ov-r" :to="{ path: '/korean/forms', query: { q: c.k } }">
+          <span class="k ko" v-html="h(c.k)"></span>
+          <span class="rd" v-html="h(c.r)"></span>
+          <span class="tr">{{ c.present }} · {{ c.past }} · {{ c.neg }}</span>
+        </RouterLink>
+        <button v-if="rest('f', result.forms.length)" class="chip" @click="more.f = true">ещё {{ rest('f', result.forms.length) }}</button>
+      </section>
+
       <section v-if="result.letters.length" class="ov-g">
         <h2 class="today-h">Буквы <small>{{ result.letters.length }}</small></h2>
         <RouterLink v-for="l in take('l', result.letters)" :key="l.char" class="ov-r" to="/korean/ref/alphabet">
@@ -124,6 +175,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         </RouterLink>
         <button v-if="rest('l', result.letters.length)" class="chip" @click="more.l = true">ещё {{ rest('l', result.letters.length) }}</button>
       </section>
+      <button v-if="hasMoreRemote" class="chip" :disabled="loadingMore" @click="loadMoreRemote">{{ loadingMore ? 'Загружаю…' : 'Показать ещё результаты' }}</button>
     </template>
 
     <DashboardHome v-else />

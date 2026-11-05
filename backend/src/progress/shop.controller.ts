@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { ShopService } from './shop.service'
+import { Owner } from '../auth/auth.js'
+import { ShopService } from './shop.service.js'
 
 /** Магазин Юны: только владельцу. */
 @Controller('shop')

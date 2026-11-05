@@ -1,20 +1,66 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { usePersisted } from '@/composables/usePersisted'
 import { CONJUGATIONS } from '@/data/korean/conjugation'
 import { norm } from '@/data/korean/render'
+import { resultFromSearchReply, searchRemote } from '@/data/korean/search'
+import type { Conjugation } from '@/data/korean/conjugation'
 
 type Kind = '' | 'verb' | 'adj'
 const kind = usePersisted<Kind>('forms_kind', '', v => v === '' || v === 'verb' || v === 'adj')
 const q = usePersisted('forms_q', '', v => typeof v === 'string')
+const remoteRows = ref<Conjugation[] | null>(null)
+const remoteOffset = ref(0)
+const remoteTotal = ref(0)
+const loadingMore = ref(false)
+let timer: ReturnType<typeof setTimeout> | undefined
+let requestId = 0
 const { open } = useGrammarModal()
 
 const rows = computed(() => {
   const s = norm(q.value)
-  return CONJUGATIONS.filter(c => (!kind.value || c.kind === kind.value) && (!s || c.k.includes(q.value.trim()) || norm(c.t).includes(s) || norm(c.r).includes(s) || c.present.includes(q.value.trim())))
+  const source = remoteRows.value ?? CONJUGATIONS
+  return source.filter(c => (!kind.value || c.kind === kind.value) && (!s || remoteRows.value !== null || c.k.includes(q.value.trim()) || norm(c.t).includes(s) || norm(c.r).includes(s) || c.present.includes(q.value.trim())))
 })
+
+function requestForms(value: string) {
+  remoteRows.value = null
+  remoteOffset.value = 0
+  remoteTotal.value = 0
+  clearTimeout(timer)
+  const request = ++requestId
+  if (!value.trim()) return
+  timer = setTimeout(async () => {
+    const reply = await searchRemote(value, 0, 'form')
+    if (request === requestId && reply) {
+      remoteRows.value = resultFromSearchReply(reply).forms
+      remoteOffset.value = reply.offset + reply.hits.length
+      remoteTotal.value = reply.total
+    }
+  }, 180)
+}
+
+async function loadMoreForms() {
+  if (loadingMore.value || remoteOffset.value >= remoteTotal.value) return
+  loadingMore.value = true
+  const request = requestId
+  try {
+    const reply = await searchRemote(q.value, remoteOffset.value, 'form')
+    if (request === requestId && reply) {
+      remoteRows.value = [...(remoteRows.value ?? []), ...resultFromSearchReply(reply).forms]
+      remoteOffset.value = reply.offset + reply.hits.length
+      remoteTotal.value = reply.total
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+watch(q, requestForms)
+onMounted(() => { if (q.value) requestForms(q.value) })
+onBeforeUnmount(() => { clearTimeout(timer); requestId++ })
 </script>
 
 <template>
@@ -46,6 +92,7 @@ const rows = computed(() => {
         <span class="ko">{{ c.neg }}</span>
       </div>
     </div>
-    <p v-else class="cb-empty">Ничего не нашлось. Попробуй другое слово или перевод.</p>
+    <p v-if="!rows.length" class="cb-empty">Ничего не нашлось. Попробуй другое слово или перевод.</p>
+    <button v-if="remoteRows !== null && remoteOffset < remoteTotal" class="chip" :disabled="loadingMore" @click="loadMoreForms">{{ loadingMore ? 'Загружаю…' : 'Показать ещё формы' }}</button>
   </div>
 </template>

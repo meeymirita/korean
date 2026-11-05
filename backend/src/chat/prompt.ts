@@ -1,4 +1,4 @@
-import { KNOWN_GRAMMAR, KNOWN_WORDS } from './curriculum'
+import { KNOWN_GRAMMAR, KNOWN_WORDS } from './curriculum.js'
 
 /**
  * Инструкция помощнику. Пройденные темы и слова подставляются из данных сайта (curriculum.ts, его создаёт

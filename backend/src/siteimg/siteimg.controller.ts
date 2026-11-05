@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, Header, Param, Post, Put, StreamableFile
 import { FileInterceptor } from '@nestjs/platform-express'
 import { createReadStream } from 'node:fs'
 import { memoryStorage } from 'multer'
-import { Owner, Public } from '../auth/auth'
-import { MAX_SITE_IMAGE } from '../config'
-import { SiteImgService } from './siteimg.service'
+import { Owner, Public } from '../auth/auth.js'
+import { MAX_SITE_IMAGE } from '../config.js'
+import { SiteImgService } from './siteimg.service.js'
 
 /** /api/site-images: подмена картинок сайта. Читать может любой посетитель, менять только владелец. */
 @Controller('site-images')
@@ -22,8 +22,8 @@ export class SiteImgController {
   @Get('file/:key')
   @Header('Cache-Control', 'public, max-age=31536000, immutable')
   @Header('X-Content-Type-Options', 'nosniff')
-  file(@Param('key') key: string) {
-    const f = this.svc.open(key)
+  async file(@Param('key') key: string) {
+    const f = await this.svc.open(key)
     return new StreamableFile(createReadStream(f.path), { type: f.mime })
   }
 

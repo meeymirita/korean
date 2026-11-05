@@ -1,20 +1,34 @@
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DatabaseSync } from 'node:sqlite'
+import { createPrismaClient } from './_db.mjs'
 
 const script = fileURLToPath(new URL('../scripts/backup.sh', import.meta.url))
-let root, out
+let root, out, schema, databaseUrl, prisma
 const data = () => path.join(root, 'backend/data')
-const run = (env = {}) => spawnSync('bash', [script], { env: { ...process.env, ROOT: root, BACKUP_DIR: out, ...env }, encoding: 'utf8' })
+const run = (env = {}) => spawnSync('bash', [script], {
+  env: { ...process.env, ROOT: root, BACKUP_DIR: out, DATA_DIR: data(), DATABASE_URL: databaseUrl, PG_DUMP_DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL, PG_DUMP_SCHEMA: schema, ...env },
+  encoding: 'utf8',
+})
 const snaps = () => readdirSync(out).filter(n => /^20\d\d-\d\d-\d\d_\d{6}$/.test(n)).sort()
-const sleep = ms => new Promise(r => setTimeout(r, ms))
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-before(() => {
+before(async () => {
+  const base = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
+  assert.ok(base, 'для проверки бэкапа нужен PostgreSQL URL')
+  schema = `backup_test_${process.pid}_${Math.random().toString(36).slice(2, 8)}`
+  const cleanUrl = new URL(base)
+  cleanUrl.searchParams.delete('schema')
+  databaseUrl = new URL(cleanUrl)
+  databaseUrl.searchParams.set('schema', schema)
+  prisma = createPrismaClient({ datasources: { db: { url: cleanUrl.toString() } } })
+  await prisma.$executeRawUnsafe(`CREATE SCHEMA "${schema}"`)
+  await prisma.$executeRawUnsafe(`CREATE TABLE "${schema}"."backup_notes" (id TEXT PRIMARY KEY, title TEXT NOT NULL)`)
+  await prisma.$executeRawUnsafe(`INSERT INTO "${schema}"."backup_notes" VALUES ('1', 'Важная заметка')`)
   root = mkdtempSync(path.join(tmpdir(), 'bk-root-'))
   out = path.join(mkdtempSync(path.join(tmpdir(), 'bk-out-')), 'backups')
   mkdirSync(path.join(data(), 'uploads'), { recursive: true })
@@ -23,75 +37,80 @@ before(() => {
   writeFileSync(path.join(data(), 'uploads/a.png'), 'картинка')
   writeFileSync(path.join(data(), 'docs/d.pdf'), '%PDF-1.4')
   writeFileSync(path.join(data(), 'thumbs/a.webp'), 'миниатюра')
-  writeFileSync(path.join(root, 'backend/.env'), 'PROGRESS_TOKEN=секрет\n')
-  const db = new DatabaseSync(path.join(data(), 'app.db'))
-  db.exec('PRAGMA journal_mode = WAL; CREATE TABLE notes (id TEXT, title TEXT); INSERT INTO notes VALUES (\'1\', \'Важная заметка\');')
-  db.close()
+  writeFileSync(path.join(root, 'backend/.env'), 'DATABASE_URL=скрытый-секрет\n')
 })
-after(() => rmSync(root, { recursive: true, force: true }))
 
-describe('резервная копия (scripts/backup.sh)', () => {
-  test('копия содержит целую базу, файлы, настройки и описание; лишнего нет', () => {
-    const r = run()
-    assert.equal(r.status, 0, r.stderr)
-    const [snap] = snaps()
-    const dir = path.join(out, snap)
-    const copy = new DatabaseSync(path.join(dir, 'app.db'), { readOnly: true })
-    assert.equal(copy.prepare('SELECT title FROM notes').get().title, 'Важная заметка')
-    assert.equal(Object.values(copy.prepare('PRAGMA integrity_check').get())[0], 'ok')
-    copy.close()
+after(async () => {
+  if (prisma) {
+    await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`)
+    await prisma.$disconnect()
+  }
+  if (root) rmSync(root, { recursive: true, force: true })
+  if (out) rmSync(path.dirname(out), { recursive: true, force: true })
+})
+
+describe('резервная копия PostgreSQL (scripts/backup.sh)', () => {
+  test('копия содержит восстанавливаемый дамп, файлы, настройки и описание', () => {
+    const result = run()
+    assert.equal(result.status, 0, result.stderr)
+    const [snapshot] = snaps()
+    const dir = path.join(out, snapshot)
+    const restored = spawnSync('pg_restore', ['--list', path.join(dir, 'app.dump')], { encoding: 'utf8' })
+    assert.equal(restored.status, 0, restored.stderr)
+    assert.match(restored.stdout, /backup_notes/)
     assert.equal(readFileSync(path.join(dir, 'files/uploads/a.png'), 'utf8'), 'картинка')
     assert.ok(existsSync(path.join(dir, 'files/docs/d.pdf')))
-    assert.equal(readFileSync(path.join(dir, 'files/thumbs/a.webp'), 'utf8'), 'миниатюра', 'миниатюры тоже в копии: после восстановления превью на месте')
-    assert.equal(readFileSync(path.join(dir, 'config/server.env'), 'utf8'), 'PROGRESS_TOKEN=секрет\n')
-    assert.equal(statSync(path.join(dir, 'config/server.env')).mode & 0o077, 0, '.env в копии закрыт для остальных пользователей')
+    assert.equal(readFileSync(path.join(dir, 'files/thumbs/a.webp'), 'utf8'), 'миниатюра')
+    assert.equal(readFileSync(path.join(dir, 'config/server.env'), 'utf8'), 'DATABASE_URL=скрытый-секрет\n')
+    assert.equal(statSync(path.join(dir, 'config/server.env')).mode & 0o077, 0, '.env закрыт для остальных пользователей')
     assert.match(readFileSync(path.join(dir, 'manifest.txt'), 'utf8'), /sha256 [a-f0-9]{64}/)
   })
 
   test('статус записан для кабинета', () => {
-    const s = JSON.parse(readFileSync(path.join(data(), 'backup-status.json'), 'utf8'))
-    assert.equal(s.ok, true)
-    assert.ok(Math.abs(Date.now() - s.time) < 60_000)
-    assert.equal(s.offsite, false)
-    assert.ok(s.sizeKb > 0)
+    const status = JSON.parse(readFileSync(path.join(data(), 'backup-status.json'), 'utf8'))
+    assert.equal(status.ok, true)
+    assert.ok(Math.abs(Date.now() - status.time) < 60_000)
+    assert.equal(status.offsite, false)
+    assert.ok(status.sizeKb > 0)
   })
 
-  test('неизменённые файлы за разные дни хранятся один раз (жёсткие ссылки)', async () => {
+  test('неизменённые файлы хранятся один раз через жёсткие ссылки', async () => {
     await sleep(1100)
     assert.equal(run().status, 0)
-    const [a, b] = snaps()
-    assert.equal(statSync(path.join(out, a, 'files/uploads/a.png')).ino, statSync(path.join(out, b, 'files/uploads/a.png')).ino)
+    const [first, second] = snaps()
+    assert.equal(statSync(path.join(out, first, 'files/uploads/a.png')).ino, statSync(path.join(out, second, 'files/uploads/a.png')).ino)
   })
 
-  test('новая запись в базе попадает в следующую копию, пока сервер «работает»', async () => {
-    const live = new DatabaseSync(path.join(data(), 'app.db'))
-    live.exec("INSERT INTO notes VALUES ('2', 'Свежая')") // база открыта на запись, как у работающего сервера
+  test('новые записи базы попадают в следующую копию работающей PostgreSQL', async () => {
+    await prisma.$executeRawUnsafe(`INSERT INTO "${schema}"."backup_notes" VALUES ('2', 'Свежая запись')`)
     await sleep(1100)
-    assert.equal(run({ KEEP: '14' }).status, 0)
+    assert.equal(run().status, 0)
     const last = snaps().at(-1)
-    const copy = new DatabaseSync(path.join(out, last, 'app.db'), { readOnly: true })
-    assert.equal(copy.prepare('SELECT COUNT(*) AS n FROM notes').get().n, 2)
-    copy.close()
-    live.close()
+    const restored = spawnSync('pg_restore', ['--list', path.join(out, last, 'app.dump')], { encoding: 'utf8' })
+    assert.equal(restored.status, 0, restored.stderr)
+    const dbArchive = path.join(out, last, 'app.dump')
+    const cleanUrl = new URL(process.env.TEST_DATABASE_URL || process.env.DATABASE_URL)
+    cleanUrl.searchParams.delete('schema')
+    const restore = spawnSync('pg_restore', ['--clean', '--if-exists', '--no-owner', '--dbname', cleanUrl.toString(), dbArchive], { encoding: 'utf8' })
+    assert.equal(restore.status, 0, restore.stderr)
+    const count = await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "${schema}"."backup_notes"`)
+    assert.equal(count[0].n, 2)
   })
 
-  test('хранятся только последние KEEP копий', async () => {
+  test('хранятся только последние копии из лимита', async () => {
     await sleep(1100)
     assert.equal(run({ KEEP: '2' }).status, 0)
     assert.equal(snaps().length, 2)
   })
 
-  test('повреждённая база: копия не создаётся, в статусе ошибка, старые копии целы', () => {
+  test('ошибка pg_dump пишет неуспешный статус и не оставляет временный каталог', () => {
     const before = snaps()
-    writeFileSync(path.join(data(), 'app.db'), 'это не база данных'.repeat(500))
-    rmSync(path.join(data(), 'app.db-wal'), { force: true })
-    rmSync(path.join(data(), 'app.db-shm'), { force: true })
-    const r = run()
-    assert.notEqual(r.status, 0)
+    const result = run({ PG_DUMP_BIN: '/не/существует/pg_dump' })
+    assert.notEqual(result.status, 0)
     assert.deepEqual(snaps(), before)
-    assert.ok(!readdirSync(out).some(n => n.endsWith('.tmp')), 'временные папки убраны')
-    const s = JSON.parse(readFileSync(path.join(data(), 'backup-status.json'), 'utf8'))
-    assert.equal(s.ok, false)
+    assert.ok(!readdirSync(out).some(name => name.endsWith('.tmp')))
+    const status = JSON.parse(readFileSync(path.join(data(), 'backup-status.json'), 'utf8'))
+    assert.equal(status.ok, false)
   })
 })
 
@@ -100,16 +119,16 @@ describe('установка ночного таймера (scripts/install-back
 
   test('синтаксис верный, --print показывает службу и таймер и ничего не устанавливает', () => {
     assert.equal(spawnSync('bash', ['-n', installer]).status, 0)
-    const r = spawnSync('bash', [installer, '--print'], { encoding: 'utf8', env: { ...process.env, ROOT: '/var/sites/korean' } })
-    assert.equal(r.status, 0, r.stderr)
-    assert.match(r.stdout, /ExecStart=\/bin\/bash \/var\/sites\/korean\/scripts\/backup\.sh/)
-    assert.match(r.stdout, /OnCalendar=\*-\*-\* 03:30:00/)
-    assert.match(r.stdout, /Persistent=true/)
+    const result = spawnSync('bash', [installer, '--print'], { encoding: 'utf8', env: { ...process.env, ROOT: '/var/sites/korean' } })
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /ExecStart=\/bin\/bash \/var\/sites\/korean\/scripts\/backup\.sh/)
+    assert.match(result.stdout, /OnCalendar=\*-\*-\* 03:30:00/)
+    assert.match(result.stdout, /Persistent=true/)
   })
 
-  test('без root ничего не ставит', { skip: process.getuid?.() === 0 }, () => {
-    const r = spawnSync('bash', [installer], { encoding: 'utf8' })
-    assert.notEqual(r.status, 0)
-    assert.match(r.stderr, /root/)
+  test('без root таймер не устанавливается', { skip: process.getuid?.() === 0 }, () => {
+    const result = spawnSync('bash', [installer], { encoding: 'utf8' })
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /root/)
   })
 })

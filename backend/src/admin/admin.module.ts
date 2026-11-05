@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common'
-import { BackupArchiveService } from './backup-archive.service'
-import { BackupStatusController } from './backup-status.controller'
-import { DbViewerController } from './db-viewer.controller'
-import { DbViewerService } from './db-viewer.service'
-import { LogsController } from '../logs/logs.controller'
-import { LogsService } from '../logs/logs.service'
+import { BackupArchiveService } from './backup-archive.service.js'
+import { BackupStatusController } from './backup-status.controller.js'
+import { DbViewerController } from './db-viewer.controller.js'
+import { DbViewerService } from './db-viewer.service.js'
+import { LogsController } from '../logs/logs.controller.js'
+import { LogsService } from '../logs/logs.service.js'
+import { OpsController } from './ops.controller.js'
+import { OpsService } from './ops.service.js'
 
-@Module({ controllers: [DbViewerController, LogsController, BackupStatusController], providers: [DbViewerService, LogsService, BackupArchiveService] })
+@Module({ controllers: [DbViewerController, LogsController, BackupStatusController, OpsController], providers: [DbViewerService, LogsService, BackupArchiveService, OpsService] })
 export class AdminModule {}

@@ -19,10 +19,52 @@ jobs:
     name: Проверка (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/korean_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/korean_test
+      REDIS_URL: redis://localhost:6379
+      MEILISEARCH_URL: http://localhost:7700
+      MEILISEARCH_MASTER_KEY: ci-meilisearch-master-key
+      RUN_SMTP_INTEGRATION: '1'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: korean_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d korean_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping | grep -q PONG"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      meilisearch:
+        image: getmeili/meilisearch:v1.12
+        env:
+          MEILI_ENV: development
+          MEILI_MASTER_KEY: ci-meilisearch-master-key
+        ports:
+          - 7700:7700
+        options: >-
+          --health-cmd "wget -qO- http://127.0.0.1:7700/health | grep -q available"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     strategy:
       fail-fast: false
       matrix:
-        # серверу нужен Node 22.18 или новее (встроенная база node:sqlite); на хостинге сейчас 22.x, локально 24
+        # Поддерживаемые версии Node.js для приложения и CI.
         node: [22, 24]
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +84,25 @@ jobs:
           npm --prefix frontend ci
           npm --prefix backend ci
           node scripts/link-test-deps.mjs
+
+      - name: Клиент и схема Prisma
+        run: |
+          npm --prefix backend run db:generate
+          npm --prefix backend run db:migrate
+
+      - name: Клиент PostgreSQL для проверки резервных копий
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Проверка готовности Meilisearch
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent -H "Authorization: Bearer $MEILISEARCH_MASTER_KEY" "$MEILISEARCH_URL/health"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Meilisearch не ответил вовремя" >&2
+          exit 1
 
       - name: Типы сайта
         run: npm --prefix frontend run type-check

@@ -5,10 +5,10 @@
  */
 import { BadRequestException, HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
-import { Db } from '../db/db.service'
-import { Events } from '../events/events.service'
-import { MailService } from '../mail/mail.service'
-import { codeMail } from '../mail/templates'
+import { Db } from '../db/db.service.js'
+import { Events } from '../events/events.service.js'
+import { MailService } from '../mail/mail.service.js'
+import { codeMail } from '../mail/templates.js'
 
 const SESSION_DAYS = 30
 const CODE_TTL = 10 * 60_000
@@ -47,9 +47,9 @@ export class TwoFaService {
     private readonly events: Events,
   ) {}
 
-  private read(): Settings {
+  private async read(): Promise<Settings> {
     try {
-      const v = JSON.parse(this.db.getMeta('twofa') ?? '{}') as Partial<Settings>
+      const v = JSON.parse(await this.db.getMeta('twofa') ?? '{}') as Partial<Settings>
       return { enabled: v.enabled === true && typeof v.email === 'string' && !!v.email, email: typeof v.email === 'string' ? v.email : '' }
     } catch {
       return { enabled: false, email: '' }
@@ -57,32 +57,33 @@ export class TwoFaService {
   }
 
   /** Почта владельца для кода входа (пусто, если защита не настраивалась): сюда же по умолчанию уходят копии. */
-  email() {
-    return this.read().email
+  async email() {
+    return (await this.read()).email
   }
 
   /** Требуется ли второй шаг прямо сейчас (с учётом аварийного выключателя). */
-  required() {
-    return this.read().enabled && process.env.DISABLE_2FA !== '1'
+  async required() {
+    return (await this.read()).enabled && process.env.DISABLE_2FA !== '1'
   }
 
-  status() {
-    const s = this.read()
+  async status() {
+    const s = await this.read()
     return { enabled: s.enabled, bypassed: s.enabled && process.env.DISABLE_2FA === '1', email: s.email ? maskEmail(s.email) : '', mailConfigured: this.mail.configured() }
   }
 
   /* ---------- сеансы ---------- */
-  validSession(id: string): boolean {
+  async validSession(id: string): Promise<boolean> {
     if (!/^[a-f0-9]{32}$/.test(id)) return false
-    const row = this.db.get<{ expires: number }>('SELECT expires FROM sessions WHERE hash = ?', sha(id))
-    return !!row && row.expires > Date.now()
+    const row = await (await this.db.orm()).session.findUnique({ where: { hash: sha(id) }, select: { expires: true } })
+    return !!row && Number(row.expires) > Date.now()
   }
 
-  private createSession(): string {
+  private async createSession(): Promise<string> {
     const id = randomBytes(16).toString('hex')
     const now = Date.now()
-    this.db.run('DELETE FROM sessions WHERE expires < ?', now)
-    this.db.run('INSERT INTO sessions (hash, created, expires) VALUES (?, ?, ?)', sha(id), now, now + SESSION_DAYS * 86_400_000)
+    const sessions = (await this.db.orm()).session
+    await sessions.deleteMany({ where: { expires: { lt: BigInt(now) } } })
+    await sessions.create({ data: { hash: sha(id), created: BigInt(now), expires: BigInt(now + SESSION_DAYS * 86_400_000) } })
     return id
   }
 
@@ -97,11 +98,11 @@ export class TwoFaService {
       await this.mail.send(email, mail.subject, mail.text, mail.html)
     } catch (e) {
       console.error(`Письмо с кодом не отправилось (${kind}): ${(e as Error).message}`) // видно во вкладке «Журналы»: чаще всего неверный пароль приложения или не включён SMTP
-      this.events.log('2fa_mail_failed', kind)
+      await this.events.log('2fa_mail_failed', kind)
       throw new ServiceUnavailableException({ error: 'mail failed' })
     }
     this.pending.set(kind, { hash: sha(code), email, expires: Date.now() + CODE_TTL, sent: Date.now(), tries: 0 })
-    this.events.log('2fa_sent', kind)
+    await this.events.log('2fa_sent', kind)
   }
 
   /** Проверяет код; верный сгорает. false — неверный; исчерпанные попытки и срок сжигают код. */
@@ -118,16 +119,17 @@ export class TwoFaService {
   }
 
   async sendLogin() {
-    if (!this.required()) throw new BadRequestException({ error: '2fa off' })
-    await this.issue('login', this.read().email)
-    return { ok: true, email: maskEmail(this.read().email) }
+    if (!await this.required()) throw new BadRequestException({ error: '2fa off' })
+    const email = (await this.read()).email
+    await this.issue('login', email)
+    return { ok: true, email: maskEmail(email) }
   }
 
   /** Верный код входа: выдаёт сеанс. Неверный возвращает null (вызывающий считает попытку подбора). */
-  verifyLogin(code: unknown): { session: string } | null {
+  async verifyLogin(code: unknown): Promise<{ session: string } | null> {
     if (!this.check('login', code)) return null
-    this.events.log('2fa_login', '')
-    return { session: this.createSession() }
+    await this.events.log('2fa_login', '')
+    return { session: await this.createSession() }
   }
 
   async startEnable(email: unknown) {
@@ -138,26 +140,26 @@ export class TwoFaService {
   }
 
   /** Подтверждение адреса: защита включается только после того, как код дошёл. Текущее устройство остаётся в системе (получает сеанс). */
-  confirmEnable(code: unknown): { session: string } | null {
+  async confirmEnable(code: unknown): Promise<{ session: string } | null> {
     const p = this.check('enable', code)
     if (!p) return null
-    this.db.setMeta('twofa', JSON.stringify({ enabled: true, email: p.email }))
-    this.events.log('2fa_on', maskEmail(p.email))
-    return { session: this.createSession() }
+    await this.db.setMeta('twofa', JSON.stringify({ enabled: true, email: p.email }))
+    await this.events.log('2fa_on', maskEmail(p.email))
+    return { session: await this.createSession() }
   }
 
-  disable() {
-    this.db.setMeta('twofa', JSON.stringify({ enabled: false, email: this.read().email }))
-    this.db.run('DELETE FROM sessions')
+  async disable() {
+    await this.db.setMeta('twofa', JSON.stringify({ enabled: false, email: (await this.read()).email }))
+    await (await this.db.orm()).session.deleteMany()
     this.pending.clear()
-    this.events.log('2fa_off', '')
+    await this.events.log('2fa_off', '')
     return { ok: true }
   }
 
   /** Выход со всех устройств: все сеансы сгорают, на каждом нужен новый код. */
-  revokeSessions() {
-    this.db.run('DELETE FROM sessions')
-    this.events.log('2fa_sessions_revoked', '')
+  async revokeSessions() {
+    await (await this.db.orm()).session.deleteMany()
+    await this.events.log('2fa_sessions_revoked', '')
     return { ok: true }
   }
 }

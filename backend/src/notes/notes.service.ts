@@ -1,9 +1,10 @@
 /** Заметки владельца: название и описание. Список целиком заменяется одним запросом. */
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { MAX_NOTES, MAX_NOTE_IMAGES, MAX_NOTE_TEXT, MAX_NOTE_TITLE } from '../config'
-import { Db } from '../db/db.service'
-import { pruneImages } from '../images/images.service'
-import { parseTags, readTags } from '../tags'
+import { MAX_NOTES, MAX_NOTE_IMAGES, MAX_NOTE_TEXT, MAX_NOTE_TITLE } from '../config.js'
+import { Db } from '../db/db.service.js'
+import { pruneImages } from '../images/images.service.js'
+import { parseTags, readTags } from '../tags.js'
+import { SearchClient } from '../search/search.client.js'
 
 export interface Note {
   id: string
@@ -23,14 +24,14 @@ const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinit
 
 @Injectable()
 export class NotesService {
-  constructor(private readonly db: Db) {}
+  constructor(private readonly db: Db, private readonly search: SearchClient) {}
 
   /** Заметки владельца; пустой объект, пока ничего не сохраняли. */
-  read() {
-    const updated = this.db.getMeta('notes_updated')
+  async read() {
+    const updated = await this.db.getMeta('notes_updated')
     if (updated === undefined) return {}
-    const rows = this.db.all<Omit<Note, 'images' | 'tags'> & { images: string; tags: string }>('SELECT id, title, text, images, tags, created, updated FROM notes ORDER BY created DESC')
-    return { v: 1, updated: Number(updated), notes: rows.map(r => ({ ...r, images: this.parseImages(r.images), tags: readTags(r.tags) })) }
+    const rows = await (await this.db.orm()).note.findMany({ orderBy: { created: 'desc' } })
+    return { v: 1, updated: Number(updated), notes: rows.map(r => ({ ...r, created: Number(r.created), updated: Number(r.updated), images: this.parseImages(r.images), tags: readTags(r.tags) })) }
   }
 
   private parseImages(raw: string): string[] {
@@ -68,14 +69,16 @@ export class NotesService {
   }
 
   /** Заменяет все заметки; при ошибке проверки старые заметки остаются. */
-  replace(body: unknown) {
+  async replace(body: unknown) {
     const { updated, notes } = this.validate(body)
-    this.db.tx(() => {
-      this.db.run('DELETE FROM notes')
-      for (const n of notes) this.db.run('INSERT INTO notes (id, title, text, images, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?)', n.id, n.title, n.text, JSON.stringify(n.images), JSON.stringify(n.tags), n.created, n.updated)
-      this.db.setMeta('notes_updated', String(updated))
+    await this.db.tx(async () => {
+      const db = await this.db.orm()
+      await db.note.deleteMany()
+      if (notes.length) await db.note.createMany({ data: notes.map(n => ({ ...n, images: JSON.stringify(n.images), tags: JSON.stringify(n.tags), created: BigInt(n.created), updated: BigInt(n.updated) })) })
+      await this.db.setMeta('notes_updated', String(updated))
     })
-    pruneImages(this.db) // картинки, убранные из заметок, удаляются через час
+    await pruneImages(this.db) // картинки, убранные из заметок, удаляются через час
+    this.search.schedulePrivateReindex()
     return { ok: true, updated }
   }
 }

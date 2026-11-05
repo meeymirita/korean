@@ -6,7 +6,7 @@
  */
 import { BRAND, SITE, indexablePaths, privatePaths } from './src/data/seo'
 
-const API = `http://127.0.0.1:${process.env.API_PORT || 3001}`
+const API = process.env.API_BASE || `http://${process.env.API_HOST || '127.0.0.1'}:${process.env.API_PORT || 3001}`
 const pub = indexablePaths()
 const priv = privatePaths()
 

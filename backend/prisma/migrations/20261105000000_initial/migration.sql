@@ -1,0 +1,154 @@
+CREATE TABLE meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE answers (
+  id BIGSERIAL PRIMARY KEY,
+  t BIGINT NOT NULL,
+  word TEXT,
+  ok SMALLINT NOT NULL,
+  source TEXT NOT NULL,
+  mode TEXT NOT NULL DEFAULT '',
+  xp INTEGER NOT NULL DEFAULT 0,
+  detail TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX answers_t ON answers (t);
+
+CREATE TABLE words (
+  word TEXT PRIMARY KEY,
+  ok INTEGER NOT NULL DEFAULT 0,
+  bad INTEGER NOT NULL DEFAULT 0,
+  streak INTEGER NOT NULL DEFAULT 0,
+  last BIGINT NOT NULL DEFAULT 0,
+  kd BIGINT
+);
+
+CREATE TABLE days (
+  day TEXT PRIMARY KEY,
+  ok INTEGER NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE study_time (
+  day TEXT PRIMARY KEY,
+  seconds BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE guests (
+  id TEXT PRIMARY KEY,
+  hash TEXT NOT NULL,
+  label TEXT NOT NULL DEFAULT '',
+  created BIGINT NOT NULL,
+  expires BIGINT NOT NULL
+);
+CREATE INDEX guests_hash ON guests (hash);
+
+CREATE TABLE notes (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  text TEXT NOT NULL,
+  images TEXT NOT NULL DEFAULT '[]',
+  tags TEXT NOT NULL DEFAULT '[]',
+  created BIGINT NOT NULL,
+  updated BIGINT NOT NULL
+);
+
+CREATE TABLE images (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  caption TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '[]',
+  kind TEXT NOT NULL DEFAULT 'gallery',
+  mime TEXT NOT NULL,
+  ext TEXT NOT NULL,
+  size BIGINT NOT NULL,
+  width INTEGER NOT NULL DEFAULT 0,
+  height INTEGER NOT NULL DEFAULT 0,
+  created BIGINT NOT NULL
+);
+
+CREATE TABLE plans (
+  id TEXT PRIMARY KEY,
+  day TEXT NOT NULL,
+  time TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL,
+  text TEXT NOT NULL DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '[]',
+  kind TEXT NOT NULL DEFAULT 'own',
+  created BIGINT NOT NULL,
+  updated BIGINT NOT NULL
+);
+CREATE INDEX plans_day ON plans (day);
+
+CREATE TABLE plan_files (
+  id TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  ext TEXT NOT NULL,
+  size BIGINT NOT NULL,
+  thumb SMALLINT NOT NULL DEFAULT 0,
+  created BIGINT NOT NULL
+);
+CREATE INDEX plan_files_plan ON plan_files (plan_id);
+
+CREATE TABLE today_sets (
+  id TEXT PRIMARY KEY,
+  day TEXT NOT NULL,
+  right_n INTEGER NOT NULL,
+  total_n INTEGER NOT NULL,
+  data TEXT NOT NULL,
+  created BIGINT NOT NULL
+);
+CREATE INDEX today_sets_created ON today_sets (created);
+
+CREATE TABLE site_images (
+  key TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  ref TEXT NOT NULL,
+  mime TEXT NOT NULL DEFAULT '',
+  x REAL NOT NULL DEFAULT 50,
+  y REAL NOT NULL DEFAULT 50,
+  zoom REAL NOT NULL DEFAULT 1,
+  v INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE sessions (
+  hash TEXT PRIMARY KEY,
+  created BIGINT NOT NULL,
+  expires BIGINT NOT NULL
+);
+
+CREATE TABLE coin_log (
+  id BIGSERIAL PRIMARY KEY,
+  t BIGINT NOT NULL,
+  day TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  reason TEXT NOT NULL DEFAULT '',
+  ref TEXT UNIQUE
+);
+CREATE INDEX coin_log_day ON coin_log (day, kind);
+
+CREATE TABLE nb_items (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  name TEXT NOT NULL,
+  parent TEXT,
+  tpl TEXT NOT NULL DEFAULT 'blank',
+  text TEXT NOT NULL DEFAULT '',
+  strokes TEXT NOT NULL DEFAULT '[]',
+  fav SMALLINT NOT NULL DEFAULT 0,
+  created BIGINT NOT NULL,
+  updated BIGINT NOT NULL
+);
+CREATE INDEX nb_items_parent ON nb_items (parent);
+
+CREATE TABLE events (
+  id BIGSERIAL PRIMARY KEY,
+  t BIGINT NOT NULL,
+  type TEXT NOT NULL,
+  info TEXT NOT NULL DEFAULT ''
+);

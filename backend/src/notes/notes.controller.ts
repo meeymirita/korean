@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Put } from '@nestjs/common'
-import { CurrentWho, Who } from '../auth/auth'
-import { NotesService } from './notes.service'
+import { CurrentWho, Who } from '../auth/auth.js'
+import { NotesService } from './notes.service.js'
 
 /** GET и PUT /api/notes. Гость заметок не видит и не сохраняет: ему пустой ответ, его запись игнорируется. */
 @Controller('notes')

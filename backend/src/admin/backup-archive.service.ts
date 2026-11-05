@@ -8,11 +8,11 @@ import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import path from 'node:path'
-import { TwoFaService } from '../auth/twofa.service'
-import { DATA_DIR, ROOT } from '../config'
-import { Db } from '../db/db.service'
-import { MailService } from '../mail/mail.service'
-import { backupMail } from '../mail/templates'
+import { TwoFaService } from '../auth/twofa.service.js'
+import { DATA_DIR, ROOT } from '../config.js'
+import { postgresDumpConfig } from '../db/postgres-dump.js'
+import { MailService } from '../mail/mail.service.js'
+import { backupMail } from '../mail/templates.js'
 
 /** Конфиги сервера, которые кладём в архив (что не прочиталось, пропускается). */
 const CONFIG_FILES = [
@@ -86,19 +86,20 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   job: Job = { running: false, step: -1, percent: 0, started: 0 }
 
   constructor(
-    private readonly db: Db,
     private readonly mail: MailService,
     private readonly twofa: TwoFaService,
   ) {}
 
   /** Раз в час: раз в сутки собирает архив сам (после 4 утра по времени сервера, если есть пароль и куда отправлять) и следит за ночной копией. */
   onModuleInit() {
-    this.timer = setInterval(() => {
-      const last = this.last()
-      if (process.env.BACKUP_AUTO !== '0' && !this.problems().length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > everyMs() - SLACK) void this.start()
-      void this.watchNightly()
-    }, Number(process.env.BACKUP_WATCH_MS) || 3600_000)
+    this.timer = setInterval(() => void this.watch(), Number(process.env.BACKUP_WATCH_MS) || 3600_000)
     this.timer.unref()
+  }
+
+  private async watch() {
+    const last = this.last()
+    if (process.env.BACKUP_AUTO !== '0' && !(await this.problems()).length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > everyMs() - SLACK) void this.start()
+    await this.watchNightly()
   }
 
   onModuleDestroy() {
@@ -120,7 +121,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     const failed = s.ok === false
     const stale = !failed && now - time > STALE_MS
     if (!failed && !stale) return 'ok'
-    if (!this.mailOn()) return 'quiet'
+    if (!await this.mailOn()) return 'quiet'
     const key = failed ? `fail-${time}` : `stale-${new Date(now).toISOString().slice(0, 10)}`
     let seen = ''
     try {
@@ -136,7 +137,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
           ? { kind: 'nightly-fail', detail: typeof s.message === 'string' ? s.message.slice(0, 200) : '' }
           : { kind: 'stale', detail: time ? `уже ${hours} ч` : undefined },
       )
-      await this.mail.send(this.mailTo(), m.subject, m.text, m.html)
+      await this.mail.send(await this.mailTo(), m.subject, m.text, m.html)
       writeFileSync(ALERT, JSON.stringify({ key, time: now }))
       return 'sent'
     } catch (e) {
@@ -153,24 +154,24 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private mailTo() {
-    return process.env.BACKUP_MAIL_TO || this.twofa.email()
+  private async mailTo() {
+    return process.env.BACKUP_MAIL_TO || await this.twofa.email()
   }
-  private mailOn() {
-    return this.mail.configured() && !!this.mailTo()
+  private async mailOn() {
+    return this.mail.configured() && !!await this.mailTo()
   }
 
   /** Чего не хватает для запуска (пусто — можно запускать). */
-  problems(): string[] {
+  async problems(): Promise<string[]> {
     const p: string[] = []
     if (!process.env.BACKUP_PASSPHRASE) p.push('не задан пароль архива BACKUP_PASSPHRASE в backend/.env')
-    if (!this.mailOn()) p.push('некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO')
+    if (!await this.mailOn()) p.push('некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO')
     return p
   }
 
   /** Куда уйдёт архив: показывает кабинет до запуска. */
-  targets() {
-    return { mail: this.mailOn(), passphrase: !!process.env.BACKUP_PASSPHRASE }
+  async targets() {
+    return { mail: await this.mailOn(), passphrase: !!process.env.BACKUP_PASSPHRASE }
   }
 
   /** Запуск в фоне; false, если уже идёт. */
@@ -199,7 +200,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async build(): Promise<ArchiveResult> {
-    const bad = this.problems()
+    const bad = await this.problems()
     if (bad.length) throw new Error(bad[0]!)
     const pass = process.env.BACKUP_PASSPHRASE!
     mkdirSync(OUT, { recursive: true, mode: 0o700 })
@@ -212,8 +213,18 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       // 1. снимок базы (можно, пока сервер работает)
       this.set(0, 2)
       mkdirSync(stage, { recursive: true, mode: 0o700 })
-      this.db.sql.exec(`VACUUM INTO '${path.join(stage, 'app.db').replace(/'/g, "''")}'`)
-      if (existsSync(path.join(ROOT, '.env'))) writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, '.env')), { mode: 0o600 })
+      const dump = postgresDumpConfig(path.join(stage, 'app.dump'))
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(process.env.PG_DUMP_BIN || 'pg_dump', dump.args, {
+          env: { ...process.env, ...dump.env },
+          stdio: ['ignore', 'ignore', 'pipe'],
+        })
+        let stderr = ''
+        child.stderr.on('data', chunk => { stderr += chunk })
+        child.once('error', reject)
+        child.once('close', code => code === 0 ? resolve() : reject(new Error(`pg_dump: ${stderr.trim().slice(0, 200) || `код ${code}`}`)))
+      })
+      if (existsSync(path.join(ROOT, 'backend', '.env'))) writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, 'backend', '.env')), { mode: 0o600 })
       // конфиги сервера, без которых заново не поднять (если процесс может их прочитать)
       const cfg = path.join(stage, 'config')
       const have: string[] = []
@@ -241,7 +252,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         }
       }
       // инструкция восстановления лежит рядом с архивом: на новом сервере репозитория ещё нет
-      const guide = [path.join(ROOT, '..', 'docs', 'backup.md'), path.join(ROOT, 'docs', 'backup.md')].find(existsSync)
+      const guide = path.join(ROOT, 'gpt', 'implementation-notes.md')
       if (guide) writeFileSync(path.join(stage, 'backup.md'), readFileSync(guide))
       const sizes = ['uploads', 'docs', 'thumbs', 'public', 'site'].map(d => {
         const dir = path.join(DATA_DIR, d)
@@ -251,13 +262,13 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         path.join(stage, 'manifest.txt'),
         [
           `дата: ${new Date().toISOString()}`,
-          `база: app.db, ${Math.round(statSync(path.join(stage, 'app.db')).size / 1024)} КБ`,
+          `база: app.dump, ${Math.round(statSync(path.join(stage, 'app.dump')).size / 1024)} КБ`,
           'папки:',
           ...sizes,
           '  (docs — файлы, приложенные к планам в календаре; пуста, пока ничего не прикрепляли)',
           `конфиги: ${have.length ? have.join(', ') : 'не прочитались (нет прав), их нужно сохранить отдельно'}`,
           `секреты: server.env`,
-          guide ? 'восстановление: backup.md в этом архиве' : 'восстановление: docs/backup.md в репозитории',
+          guide ? 'восстановление: implementation-notes.md в архиве; подробная инструкция будет добавлена после завершения работ' : 'восстановление: смотрите документацию проекта',
           '',
         ].join('\n'),
       )
@@ -291,7 +302,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       // 4. почта: одно письмо или несколько частей
       let mail: ArchiveResult['mail'] = 'off'
       let parts = 0
-      if (this.mailOn()) {
+      if (await this.mailOn()) {
         this.set(3, 60)
         try {
           parts = await this.sendMail(enc, name, size)
@@ -321,10 +332,10 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
   /** Проверка почты без сборки архива: короткое письмо. Пароль архива не нужен. */
   async test() {
-    if (!this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO' }
+    if (!await this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO' }
     try {
       const m = backupMail({ kind: 'test' })
-      await this.mail.send(this.mailTo(), m.subject, m.text, m.html)
+      await this.mail.send(await this.mailTo(), m.subject, m.text, m.html)
       return { mail: 'ok' as const, message: '' }
     } catch (e) {
       const message = 'Почта: ' + (e as Error).message.slice(0, 120)
@@ -336,7 +347,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   /* ---------- почта ---------- */
   /** Возвращает число писем; 0 — архив слишком велик для почты, ушло письмо без вложения. */
   private async sendMail(enc: string, name: string, size: number) {
-    const to = this.mailTo()
+    const to = await this.mailTo()
     const mb = (size / 1048576).toFixed(1)
     const n = Math.ceil(size / PART)
     if (n > MAX_PARTS) {

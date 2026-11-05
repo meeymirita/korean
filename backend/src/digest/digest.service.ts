@@ -5,12 +5,12 @@
  * Адрес: REMINDER_MAIL_TO в backend/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
  */
 import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { TwoFaService, maskEmail } from '../auth/twofa.service'
-import { Db } from '../db/db.service'
-import { MailService } from '../mail/mail.service'
-import { digestMail } from '../mail/templates'
-import { dayOf } from '../reminders/reminder.service'
-import { DIGEST_SENTENCES, DIGEST_WORDS } from './pool'
+import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
+import { Db } from '../db/db.service.js'
+import { MailService } from '../mail/mail.service.js'
+import { digestMail } from '../mail/templates.js'
+import { dayOf } from '../reminders/reminder.service.js'
+import { DIGEST_SENTENCES, DIGEST_WORDS } from './pool.js'
 
 export interface DigestSettings {
   enabled: boolean
@@ -61,9 +61,9 @@ export class DigestService implements OnModuleInit, OnModuleDestroy {
     clearInterval(this.timer)
   }
 
-  get(): DigestSettings {
+  async get(): Promise<DigestSettings> {
     try {
-      const v = JSON.parse(this.db.getMeta('digest') ?? '{}') as Partial<DigestSettings>
+      const v = JSON.parse(await this.db.getMeta('digest') ?? '{}') as Partial<DigestSettings>
       return {
         enabled: v.enabled === true,
         time: typeof v.time === 'string' && TIME.test(v.time) ? v.time : DEFAULT.time,
@@ -76,12 +76,12 @@ export class DigestService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private save(s: DigestSettings) {
-    this.db.setMeta('digest', JSON.stringify(s))
+  private async save(s: DigestSettings) {
+    await this.db.setMeta('digest', JSON.stringify(s))
   }
 
-  set(body: { enabled?: unknown; time?: unknown; words?: unknown; sentences?: unknown }, now = new Date()) {
-    const cur = this.get()
+  async set(body: { enabled?: unknown; time?: unknown; words?: unknown; sentences?: unknown }, now = new Date()) {
+    const cur = await this.get()
     const was = cur.enabled
     if (body.enabled !== undefined) {
       if (typeof body.enabled !== 'boolean') throw new BadRequestException({ error: 'invalid enabled' })
@@ -100,48 +100,48 @@ export class DigestService implements OnModuleInit, OnModuleDestroy {
     if (cur.enabled && cur.words + cur.sentences === 0) throw new BadRequestException({ error: 'empty digest' })
     // включили или сдвинули время, когда сегодняшнее время уже прошло: первое письмо завтра, а не сразу (проверка есть кнопкой)
     if ((body.enabled === true && !was) || body.time !== undefined) cur.lastSent = hhmm(now) >= cur.time ? dayOf(now) : ''
-    this.save(cur)
-    return this.status()
+    await this.save(cur)
+    return await this.status()
   }
 
-  to() {
-    return process.env.REMINDER_MAIL_TO || this.twofa.email()
+  async to() {
+    return process.env.REMINDER_MAIL_TO || await this.twofa.email()
   }
 
-  status() {
-    const to = this.to()
-    return { ...this.get(), mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '', maxWords: MAX_WORDS, maxSentences: MAX_SENTENCES }
+  async status() {
+    const [to, settings] = await Promise.all([this.to(), this.get()])
+    return { ...settings, mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '', maxWords: MAX_WORDS, maxSentences: MAX_SENTENCES }
   }
 
   private async deliver(s: DigestSettings) {
     const m = digestMail({ words: sample(DIGEST_WORDS, s.words), sentences: sample(DIGEST_SENTENCES, s.sentences), time: s.time, site: process.env.SITE_URL })
-    await this.mail.send(this.to(), m.subject, m.text, m.html)
+    await this.mail.send(await this.to(), m.subject, m.text, m.html)
   }
 
   /** Одна проверка (раз в минуту). Возвращает, что сделано: для тестов. */
   async tick(now = new Date()): Promise<DigestTick> {
-    const s = this.get()
+    const s = await this.get()
     if (!s.enabled) return 'off'
     const day = dayOf(now)
     if (hhmm(now) < s.time) return 'early'
     if (s.lastSent === day) return 'already'
-    if (!this.mail.configured() || !this.to()) return 'nomail'
+    if (!this.mail.configured() || !await this.to()) return 'nomail'
     // метка ставится до отправки: если почта медленная, следующая проверка не пошлёт второе письмо
-    this.save({ ...s, lastSent: day })
+    await this.save({ ...s, lastSent: day })
     try {
       await this.deliver(s)
       return 'sent'
     } catch (e) {
       console.error('письмо-подборка не отправилось:', (e as Error).message)
-      this.save({ ...s, lastSent: '' })
+      await this.save({ ...s, lastSent: '' })
       return 'failed'
     }
   }
 
   /** Проверочное письмо по кнопке: не зависит от времени и от того, включена ли подборка. */
   async test() {
-    if (!this.mail.configured() || !this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
-    const s = this.get()
+    if (!this.mail.configured() || !await this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
+    const s = await this.get()
     if (s.words + s.sentences === 0) return { ok: false, message: 'В подборке нет ни слов, ни предложений' }
     try {
       await this.deliver(s)

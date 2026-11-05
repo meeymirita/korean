@@ -1,9 +1,9 @@
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readdir } from 'node:fs/promises'
-import { DatabaseSync } from 'node:sqlite'
 import path from 'node:path'
 import { OWNER, cleanup, start } from './_server.mjs'
+import { withDb } from './_db.mjs'
 
 after(cleanup)
 
@@ -24,10 +24,11 @@ describe('сервер: вход по токену', () => {
     assert.equal(res.headers.get('x-role'), 'owner')
   })
 
-  test('база создаётся сама, ежедневная копия базы лежит в backups', async () => {
-    const files = await readdir(path.join(s.dir, 'backups'))
-    assert.ok(files.some(f => /^app-\d{4}-\d\d-\d\d\.db$/.test(f)), files.join(', '))
-    assert.ok((await readdir(s.dir)).includes('app.db'))
+  test('сервис подключился к изолированной схеме PostgreSQL', async () => {
+    const rows = await withDb(s, db => db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() ORDER BY table_name"))
+    assert.ok(rows.some(row => row.table_name === 'meta'))
+    assert.ok(rows.some(row => row.table_name === 'guests'))
+    assert.ok(!(await readdir(s.dir)).includes('app.db'))
   })
 })
 
@@ -42,9 +43,7 @@ describe('сервер: гостевые токены', () => {
     assert.ok(g.token && g.token.length >= 20)
     assert.equal(g.label, 'Лера')
     assert.ok(Math.abs(g.expires - g.created - 3600_000) < 1000)
-    const db = new DatabaseSync(path.join(s.dir, 'app.db'), { readOnly: true })
-    const row = db.prepare('SELECT * FROM guests WHERE id = ?').get(g.id)
-    db.close()
+    const row = await withDb(s, db => db.get('SELECT * FROM guests WHERE id = $1', g.id))
     assert.ok(!JSON.stringify(row).includes(g.token), 'сам токен в базу не пишется')
     assert.equal(row.hash.length, 64)
     const list = await (await s.call('GET', '/api/guests', OWNER)).json()
@@ -101,9 +100,7 @@ describe('сервер: гостевые токены', () => {
 
   test('срок вышел: 401 «expired», неизвестный токен — «unauthorized», в списке просроченных нет', async () => {
     const g = await create()
-    const db = new DatabaseSync(path.join(s.dir, 'app.db'))
-    db.prepare('UPDATE guests SET expires = ? WHERE id = ?').run(Date.now() - 3600_000, g.id)
-    db.close()
+    await withDb(s, db => db.run('UPDATE guests SET expires = $1 WHERE id = $2', Date.now() - 3600_000, g.id))
     const old = await s.call('GET', '/api/notes', g.token)
     assert.equal(old.status, 401)
     assert.equal((await old.json()).error, 'expired')
@@ -117,9 +114,7 @@ describe('сервер: гостевые токены', () => {
     const g = await (await t.call('POST', '/api/guests', OWNER, { hours: 1, label: 'Журнал' })).json()
     await t.call('DELETE', `/api/guests/${g.id}`, OWNER)
     await t.call('GET', '/api/notes', 'bad-token')
-    const db = new DatabaseSync(path.join(t.dir, 'app.db'), { readOnly: true })
-    const types = db.prepare('SELECT type FROM events ORDER BY id').all().map(r => r.type)
-    db.close()
+    const types = await withDb(t, async db => (await db.all('SELECT type FROM events ORDER BY id')).map(r => r.type))
     assert.deepEqual(types, ['guest_created', 'guest_revoked', 'bad_token'])
   })
 })
@@ -206,67 +201,13 @@ describe('сервер: заметки', () => {
   })
 })
 
-describe('сервер: база старой версии обновляется сама', () => {
-  test('в старой базе нет новых столбцов: после запуска заметки с картинками и описания картинок работают, старые данные целы', async () => {
-    const { mkdtemp, rm } = await import('node:fs/promises')
-    const { tmpdir } = await import('node:os')
-    const dir = await mkdtemp(path.join(tmpdir(), 'server-old-'))
-    try {
-      const old = new DatabaseSync(path.join(dir, 'app.db'))
-      old.exec(`
-        CREATE TABLE notes (id TEXT PRIMARY KEY, title TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL);
-        CREATE TABLE images (id TEXT PRIMARY KEY, name TEXT NOT NULL, caption TEXT NOT NULL DEFAULT '', mime TEXT NOT NULL, ext TEXT NOT NULL,
-          size INTEGER NOT NULL, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL);
-        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-        INSERT INTO notes VALUES ('old', 'Старая', 'текст', 1, 1);
-        INSERT INTO meta VALUES ('notes_updated', '5');
-        INSERT INTO images VALUES ('0123456789abcdef', 'a.png', 'Кот', 'image/png', 'png', 10, 1, 1, 1);
-      `)
-      old.close()
-      const s = await start({ dir })
-      const notes = (await (await s.call('GET', '/api/notes', OWNER)).json()).notes
-      assert.deepEqual(notes.map(n => [n.id, n.images]), [['old', []]])
-      const imgs = (await (await s.call('GET', '/api/images', OWNER)).json()).items
-      assert.deepEqual([imgs[0].caption, imgs[0].description], ['Кот', ''])
-      assert.equal((await s.call('PATCH', '/api/images/0123456789abcdef', OWNER, { description: 'новое' })).status, 200)
-    } finally {
-      await rm(dir, { recursive: true, force: true })
-    }
-  })
-})
-
-describe('сервер: разнос старых картинок по назначению', () => {
-  test('картинки из заметок и обложка кабинета уходят из общего списка при первом запуске новой версии', async () => {
-    const { mkdtemp, rm } = await import('node:fs/promises')
-    const { tmpdir } = await import('node:os')
-    const dir = await mkdtemp(path.join(tmpdir(), 'server-kind-'))
-    try {
-      const old = new DatabaseSync(path.join(dir, 'app.db'))
-      old.exec(`
-        CREATE TABLE notes (id TEXT PRIMARY KEY, title TEXT NOT NULL, text TEXT NOT NULL, images TEXT NOT NULL DEFAULT '[]', created INTEGER NOT NULL, updated INTEGER NOT NULL);
-        CREATE TABLE images (id TEXT PRIMARY KEY, name TEXT NOT NULL, caption TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', mime TEXT NOT NULL, ext TEXT NOT NULL,
-          size INTEGER NOT NULL, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL);
-        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-        INSERT INTO notes VALUES ('n1', 'С картинкой', '', '["aaaaaaaaaaaaaaaa"]', 1, 1);
-        INSERT INTO notes VALUES ('n2', 'Битая', '', 'не json', 1, 1);
-        INSERT INTO meta VALUES ('notes_updated', '5');
-        INSERT INTO meta VALUES ('profile', '{"name":"","avatar":"🌸","cover":"cccccccccccccccc"}');
-        INSERT INTO images VALUES ('aaaaaaaaaaaaaaaa', 'в-заметке.png', '', '', 'image/png', 'png', 10, 1, 1, 1);
-        INSERT INTO images VALUES ('bbbbbbbbbbbbbbbb', 'в-галерее.png', 'Кот', '', 'image/png', 'png', 10, 1, 1, 2);
-        INSERT INTO images VALUES ('cccccccccccccccc', 'обложка.png', '', '', 'image/png', 'png', 10, 1, 1, 3);
-      `)
-      old.close()
-      const s = await start({ dir })
-      const list = async kind => (await (await s.call('GET', '/api/images' + (kind ? `?kind=${kind}` : ''), OWNER)).json()).items.map(i => i.id)
-      assert.deepEqual(await list(), ['bbbbbbbbbbbbbbbb'], 'в «Картинках» осталась только своя')
-      assert.deepEqual(await list('note'), ['aaaaaaaaaaaaaaaa'])
-      assert.deepEqual(await list('cover'), ['cccccccccccccccc'])
-      await s.stop()
-      const again = await start({ dir }) // повторный запуск ничего не двигает
-      assert.deepEqual(await (await again.call('GET', '/api/images', OWNER)).json().then(d => d.items.map(i => i.id)), ['bbbbbbbbbbbbbbbb'])
-    } finally {
-      await rm(dir, { recursive: true, force: true })
-    }
+describe('сервер: новая схема PostgreSQL', () => {
+  test('Prisma создал таблицы и новые поля в изолированной схеме', async () => {
+    const t = await start()
+    const columns = await withDb(t, db => db.all("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = current_schema()"))
+    assert.ok(columns.some(row => row.table_name === 'notes' && row.column_name === 'images'))
+    assert.ok(columns.some(row => row.table_name === 'images' && row.column_name === 'description'))
+    assert.ok(columns.some(row => row.table_name === 'plan_files' && row.column_name === 'plan_id'))
   })
 })
 

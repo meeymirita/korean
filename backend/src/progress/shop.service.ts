@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
-import { Db } from '../db/db.service'
-import { ACHIEVEMENTS, DAILY, DAILY_ALL, ITEM_IDS, ITEMS, SURPRISES, WEEKLY, type ItemId, type SurpriseId } from './coins'
-import { ProgressService } from './progress.service'
+import { Db } from '../db/db.service.js'
+import { ACHIEVEMENTS, DAILY, DAILY_ALL, ITEM_IDS, ITEMS, SURPRISES, WEEKLY, type ItemId, type SurpriseId } from './coins.js'
+import { ProgressService } from './progress.service.js'
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const bad = (m: string): never => {
@@ -17,15 +17,15 @@ export class ShopService {
     private readonly progress: ProgressService,
   ) {}
 
-  private inv(): Record<string, number> {
+  private async inv(): Promise<Record<string, number>> {
     try {
-      return JSON.parse(this.db.getMeta('inv') ?? '{}') as Record<string, number>
+      return JSON.parse(await this.db.getMeta('inv') ?? '{}') as Record<string, number>
     } catch {
       return {}
     }
   }
-  private setInv(inv: Record<string, number>) {
-    this.db.setMeta('inv', JSON.stringify(inv))
+  private async setInv(inv: Record<string, number>) {
+    await this.db.setMeta('inv', JSON.stringify(inv))
   }
   private day(v: unknown) {
     if (typeof v === 'string' && DAY.test(v)) return v
@@ -34,15 +34,15 @@ export class ShopService {
   }
 
   /** Всё для вкладки «Магазин»: баланс, инвентарь, включённые предметы, задания и достижения. */
-  state(dayRaw?: string) {
+  async state(dayRaw?: string) {
     const day = this.day(dayRaw)
-    const st = this.progress.rewardState(day)
-    const rw = new Map(this.progress.rewards(day).map(r => [r.ref, r]))
+    const st = await this.progress.rewardState(day)
+    const rw = new Map((await this.progress.rewards(day)).map(r => [r.ref, r]))
     const mark = (ref: string) => ({ ref, ready: !!rw.get(ref)?.done && !rw.get(ref)?.paid, paid: !!rw.get(ref)?.paid })
     return {
-      ...this.progress.coinState(day),
-      inv: this.inv(),
-      active: this.progress.active(),
+      ...await this.progress.coinState(day),
+      inv: await this.inv(),
+      active: await this.progress.active(),
       daily: DAILY.map(d => ({ ...d, ...st.daily[d.id]!, ...mark(`task:${d.id}:${day}`) })),
       dailyAll: { name: 'Все задания дня', coins: DAILY_ALL, ...mark(`task:all:${day}`) },
       week: { ...WEEKLY, ...st.week, ...mark(`week:${st.week.from}`) },
@@ -51,31 +51,31 @@ export class ShopService {
   }
 
   /** Забрать награду за выполненное задание или достижение. */
-  claim(body: unknown) {
+  async claim(body: unknown) {
     const b = (body ?? {}) as Record<string, unknown>
     const day = this.day(b.day)
-    if (typeof b.ref !== 'string' || !this.progress.claim(b.ref, day)) bad('nothing to claim')
-    return this.state(day)
+    if (typeof b.ref !== 'string' || !await this.progress.claim(b.ref, day)) bad('nothing to claim')
+    return await this.state(day)
   }
 
   /** Покупка предмета или сюрприза. Сюрприз открывается сразу: в ответе `got` (предметы) или `won` (монетки). */
-  buy(body: unknown) {
+  async buy(body: unknown) {
     const b = (body ?? {}) as Record<string, unknown>
     const id = String(b.id ?? '')
     const day = this.day(b.day)
     const now = Date.now()
     let got: Record<string, number> | undefined
     let won: number | undefined
-    this.db.tx(() => {
+    await this.db.tx(async () => {
       const isItem = (ITEM_IDS as string[]).includes(id)
       const sur = SURPRISES[id as SurpriseId]
       if (!isItem && !sur) return bad('unknown item')
       const price = isItem ? ITEMS[id as ItemId].price : sur.price
       const name = isItem ? ITEMS[id as ItemId].name : sur.name
-      const coins = Number(this.db.getMeta('coins') ?? 0)
+      const coins = Number(await this.db.getMeta('coins') ?? 0)
       if (coins < price) return bad('not enough coins')
-      this.progress.coin(now, day, 'buy', -price, `Покупка: ${name}`)
-      const inv = this.inv()
+      await this.progress.coin(now, day, 'buy', -price, `Покупка: ${name}`)
+      const inv = await this.inv()
       const add = (k: string, n: number) => (inv[k] = (inv[k] ?? 0) + n)
       if (isItem) add(id, 1)
       else if (id === 'hints') add('hint', SURPRISES.hints.count)
@@ -88,44 +88,45 @@ export class ShopService {
         }
       } else if (id === 'chest') {
         won = SURPRISES.chest.min + pick(SURPRISES.chest.max - SURPRISES.chest.min + 1)
-        this.progress.coin(now, day, 'chest', won, 'Сундук с монетками')
+        await this.progress.coin(now, day, 'chest', won, 'Сундук с монетками')
       }
-      this.setInv(inv)
+      await this.setInv(inv)
     })
-    return { ...this.state(day), ...(got ? { got } : {}), ...(won ? { won } : {}) }
+    return { ...await this.state(day), ...(got ? { got } : {}), ...(won ? { won } : {}) }
   }
 
   /** Использование предмета: количество уменьшается на единицу, защита и двойная награда включаются. */
-  use(body: unknown) {
+  async use(body: unknown) {
     const b = (body ?? {}) as Record<string, unknown>
     const id = String(b.id ?? '') as ItemId
     if (!(ITEM_IDS as string[]).includes(id)) bad('unknown item')
     const day = this.day(b.day)
-    this.db.tx(() => {
-      const inv = this.inv()
+    await this.db.tx(async () => {
+      const inv = await this.inv()
       if ((inv[id] ?? 0) < 1) return bad('no such item')
       inv[id]! -= 1
-      this.setInv(inv)
-      const a = this.progress.active()
+      await this.setInv(inv)
+      const a = await this.progress.active()
       if (id === 'shield') {
         if (a.shield) return bad('already active')
-        this.progress.setActive({ ...a, shield: true })
+        await this.progress.setActive({ ...a, shield: true })
       } else if (id === 'double') {
         if (a.double) return bad('already active')
-        this.progress.setActive({ ...a, double: true })
+        await this.progress.setActive({ ...a, double: true })
       }
       // использование без монеток тоже попадает в историю (сумма 0)
-      this.db.run('INSERT INTO coin_log (t, day, kind, amount, reason) VALUES (?, ?, ?, 0, ?)', Date.now(), day, 'use', `Использовано: ${ITEMS[id].name}`)
+      await (await this.db.orm()).coinLog.create({ data: { t: BigInt(Date.now()), day, kind: 'use', amount: 0, reason: `Использовано: ${ITEMS[id].name}` } })
     })
-    return this.state(day)
+    return await this.state(day)
   }
 
   /** История операций: новые сверху, можно по типу (earn — все начисления, buy, use, task, achievement). */
-  log(kind?: string, limit = 100) {
+  async log(kind?: string, limit = 100) {
     const lim = Math.max(1, Math.min(500, limit | 0 || 100))
-    const where =
-      kind === 'earn' ? "WHERE amount > 0 AND kind NOT IN ('task', 'achievement')" : kind && /^[a-z]+$/.test(kind) ? 'WHERE kind = ?' : ''
-    const args = kind && kind !== 'earn' && /^[a-z]+$/.test(kind) ? [kind] : []
-    return this.db.all<{ t: number; day: string; kind: string; amount: number; reason: string }>(`SELECT t, day, kind, amount, reason FROM coin_log ${where} ORDER BY id DESC LIMIT ${lim}`, ...args)
+    const where = kind === 'earn'
+      ? { amount: { gt: 0 }, kind: { notIn: ['task', 'achievement'] } }
+      : kind && /^[a-z]+$/.test(kind) ? { kind } : undefined
+    return (await (await this.db.orm()).coinLog.findMany({ where, orderBy: { id: 'desc' }, take: lim, select: { t: true, day: true, kind: true, amount: true, reason: true } }))
+      .map(row => ({ ...row, t: Number(row.t) }))
   }
 }

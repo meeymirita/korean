@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { SetsService } from './sets.service'
+import { Owner } from '../auth/auth.js'
+import { SetsService } from './sets.service.js'
 
 /** /api/sets: сохранённые наборы «Сегодня», только для владельца. */
 @Owner()

@@ -1,9 +1,9 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { Events } from '../events/events.service'
-import { RateLimiter, clientIp } from '../security'
-import { ALLOW_PENDING, OWNER, PUBLIC } from './auth'
-import { AuthService } from './auth.service'
+import { Events } from '../events/events.service.js'
+import { RateLimiter, clientIp } from '../security.js'
+import { ALLOW_PENDING, OWNER, PUBLIC } from './auth.js'
+import { AuthService } from './auth.service.js'
 
 /** Проверяет токен на каждом запросе (кроме помеченных @Public) и кладёт в запрос `who`. */
 @Injectable()
@@ -15,19 +15,19 @@ export class AuthGuard implements CanActivate {
     private readonly limiter: RateLimiter,
   ) {}
 
-  canActivate(ctx: ExecutionContext) {
+  async canActivate(ctx: ExecutionContext) {
     const targets = [ctx.getHandler(), ctx.getClass()]
     if (this.reflector.getAllAndOverride<boolean>(PUBLIC, targets)) return true
 
     const req = ctx.switchToHttp().getRequest()
-    const who = this.auth.whoIs(req.headers.authorization)
+    const who = await this.auth.whoIs(req.headers.authorization)
     const ip = clientIp(req)
     if (who === 'expired') throw new UnauthorizedException({ error: 'expired' })
     if (!who) {
       if (req.headers.authorization) {
         // неверный токен: пишем в журнал и считаем попытку; после нескольких подряд адрес блокируется
         const locked = this.limiter.fail(ip)
-        this.events.log(locked ? 'ip_locked' : 'bad_token', ip)
+        await this.events.log(locked ? 'ip_locked' : 'bad_token', ip)
       }
       throw new UnauthorizedException({ error: 'unauthorized' })
     }

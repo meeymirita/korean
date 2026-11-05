@@ -2,11 +2,15 @@
   "name": "korean-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Сервер сайта «Хлебушек»: NestJS + SQLite (встроенный node:sqlite)",
+  "type": "module",
+  "description": "Сервер сайта «Хлебушек»: NestJS + Prisma + PostgreSQL",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
     "dev": "nest start --watch",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
     "mail:check": "node scripts/mail-check.cjs",
     "test": "vitest run"
   },
@@ -19,6 +23,11 @@
     "@nestjs/platform-express": "^12.3.2",
     "@nestjs/swagger": "^12.0.5",
     "nodemailer": "^10.3.1",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^16.6.1",
+    "pg": "^8.16.3",
+    "prisma": "^7.10.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.35.5"

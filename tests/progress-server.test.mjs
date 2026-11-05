@@ -1,6 +1,7 @@
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { OWNER, cleanup, start } from './_server.mjs'
+import { withDb } from './_db.mjs'
 
 after(cleanup)
 
@@ -234,10 +235,7 @@ describe('сервер: прогресс в базе', () => {
     const g = await (await t.call('POST', '/api/guests', OWNER, { hours: 1, label: 'Лера' })).json()
     assert.equal((await t.call('POST', '/api/session', OWNER)).status, 200)
     assert.equal((await (await t.call('POST', '/api/session', g.token)).json()).role, 'guest')
-    const { DatabaseSync } = await import('node:sqlite')
-    const db = new DatabaseSync(`${t.dir}/app.db`, { readOnly: true })
-    const rows = db.prepare("SELECT type, info FROM events WHERE type LIKE '%login'").all()
-    db.close()
+    const rows = await withDb(t, db => db.all("SELECT type, info FROM events WHERE type LIKE '%login'"))
     assert.deepEqual(rows.map(r => [r.type, r.info]), [['login', 'владелец'], ['guest_login', 'Лера']])
   })
 })

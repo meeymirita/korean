@@ -1,8 +1,8 @@
 import { Body, Controller, Get, HttpCode, Post, Query, Req } from '@nestjs/common'
 import type { Request } from 'express'
-import { CurrentWho, Owner, Who } from '../auth/auth'
-import { ConfirmService } from '../auth/confirm.service'
-import { ProgressService } from './progress.service'
+import { CurrentWho, Owner, Who } from '../auth/auth.js'
+import { ConfirmService } from '../auth/confirm.service.js'
+import { ProgressService } from './progress.service.js'
 
 /** Гость прогресс не видит и не сохраняет: ему пустой ответ, а его действия игнорируются. */
 @Controller()

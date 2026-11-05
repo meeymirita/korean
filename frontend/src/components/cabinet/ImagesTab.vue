@@ -7,8 +7,11 @@ import { useAllTags } from '@/composables/useAllTags'
 import { useToastStore } from '@/stores/toast'
 import { askConfirm } from '@/composables/useConfirm'
 import { ALLOWED, MAX_CAPTION, MAX_DESCRIPTION, formatSize, useImagesStore, type ImageItem } from '@/stores/images'
+import { useProgressStore } from '@/stores/progress'
+import { searchPrivateRemote } from '@/data/korean/search'
 
 const store = useImagesStore()
+const progress = useProgressStore()
 const toast = useToastStore()
 const allTags = useAllTags()
 const uploadTags = ref<string[]>([])
@@ -40,8 +43,6 @@ onMounted(async () => {
     errors.value = [errText(e)]
   }
 })
-onBeforeUnmount(() => store.release())
-
 /** Загрузка по очереди: сначала проверка на сайте, потом отправка; ошибки по каждому файлу отдельно. */
 async function upload(list: FileList | File[] | null) {
   const files = [...(list ?? [])]
@@ -81,6 +82,9 @@ function onDrop(e: DragEvent) {
 
 /* ---------- поиск и фильтр по дате ---------- */
 const query = ref('')
+const remoteImageIds = ref<string[] | null>(null)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+let searchRequest = 0
 const from = ref('')
 const to = ref('')
 const startOf = (d: string) => new Date(d + 'T00:00:00').getTime()
@@ -88,12 +92,27 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   const a = from.value ? startOf(from.value) : -Infinity
   const b = to.value ? startOf(to.value) + 86_400_000 : Infinity
-  return store.items.filter(it => it.created >= a && it.created < b && (!tagFilter.value || it.tags.includes(tagFilter.value)) && (!q || `${it.caption} ${it.description} ${it.name} ${it.tags.join(' ')}`.toLowerCase().includes(q)))
+  const items = q && remoteImageIds.value !== null
+    ? remoteImageIds.value.map(id => store.items.find(item => item.id === id)).filter((item): item is ImageItem => !!item)
+    : store.items
+  return items.filter(it => it.created >= a && it.created < b && (!tagFilter.value || it.tags.includes(tagFilter.value)) && (!q || remoteImageIds.value !== null || `${it.caption} ${it.description} ${it.name} ${it.tags.join(' ')}`.toLowerCase().includes(q)))
 })
 const filtering = computed(() => !!(query.value.trim() || from.value || to.value || tagFilter.value))
 function resetFilter() {
   query.value = from.value = to.value = tagFilter.value = ''
 }
+
+watch(query, value => {
+  clearTimeout(searchTimer)
+  remoteImageIds.value = null
+  const request = ++searchRequest
+  if (!value.trim()) return
+  searchTimer = setTimeout(async () => {
+    const reply = await searchPrivateRemote(value, 'image', progress.bearer)
+    if (request === searchRequest && reply) remoteImageIds.value = reply.hits.map(hit => hit.id.slice('image:'.length))
+  }, 180)
+})
+onBeforeUnmount(() => { store.release(); clearTimeout(searchTimer); searchRequest++ })
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 

@@ -8,10 +8,11 @@ import { existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp, { type Metadata } from 'sharp'
-import { MAX_CAPTION, MAX_DESCRIPTION, MAX_IMAGE, MAX_IMAGES_TOTAL, THUMBS, UPLOADS } from '../config'
-import { Db } from '../db/db.service'
-import { Events } from '../events/events.service'
-import { parseTags, readTags } from '../tags'
+import { MAX_CAPTION, MAX_DESCRIPTION, MAX_IMAGE, MAX_IMAGES_TOTAL, THUMBS, UPLOADS } from '../config.js'
+import { Db } from '../db/db.service.js'
+import { Events } from '../events/events.service.js'
+import { parseTags, readTags } from '../tags.js'
+import { SearchClient } from '../search/search.client.js'
 
 /** Назначение картинки: «Картинки» в кабинете (gallery), вложение заметки (note), обложка кабинета (cover). Списки у каждого свои. */
 export const KINDS = ['gallery', 'note', 'cover'] as const
@@ -38,9 +39,9 @@ export interface ImageRow {
 const ID = /^[a-f0-9]{16}$/
 
 /** Удаляет картинки заметок и обложки, которыми никто не пользуется (файлы и миниатюры тоже). */
-export function pruneImages(db: Db) {
+export async function pruneImages(db: Db) {
   const used = new Set<string>()
-  for (const n of db.all<{ images: string }>('SELECT images FROM notes')) {
+  for (const n of await (await db.orm()).note.findMany({ select: { images: true } }) as { images: string }[]) {
     try {
       for (const id of JSON.parse(n.images) as string[]) used.add(id)
     } catch {
@@ -48,15 +49,15 @@ export function pruneImages(db: Db) {
     }
   }
   try {
-    const cover = (JSON.parse(db.getMeta('profile') ?? '{}') as { cover?: string }).cover
+    const cover = (JSON.parse(await db.getMeta('profile') ?? '{}') as { cover?: string }).cover
     if (cover) used.add(cover)
   } catch {
     /* нет профиля */
   }
-  const old = db.all<{ id: string; ext: string }>("SELECT id, ext FROM images WHERE kind != 'gallery' AND created < ?", Date.now() - ORPHAN_AFTER)
+  const old = await (await db.orm()).image.findMany({ where: { kind: { not: 'gallery' }, created: { lt: BigInt(Date.now() - ORPHAN_AFTER) } }, select: { id: true, ext: true } }) as { id: string; ext: string }[]
   for (const r of old) {
     if (used.has(r.id)) continue
-    db.run('DELETE FROM images WHERE id = ?', r.id)
+    await (await db.orm()).image.delete({ where: { id: r.id } })
     for (const p of [path.join(UPLOADS, `${r.id}.${r.ext}`), path.join(THUMBS, `${r.id}.webp`)]) {
       try {
         unlinkSync(p)
@@ -91,6 +92,7 @@ export class ImagesService {
   constructor(
     private readonly db: Db,
     private readonly events: Events,
+    private readonly search: SearchClient,
   ) {
     mkdirSync(UPLOADS, { recursive: true })
     mkdirSync(THUMBS, { recursive: true })
@@ -100,19 +102,16 @@ export class ImagesService {
   private thumb = (id: string) => path.join(THUMBS, `${id}.webp`)
 
   /** Занятое место считается по всем картинкам, а в списке только выбранного назначения (по умолчанию «Картинки»). */
-  list(kind: unknown = 'gallery') {
+  async list(kind: unknown = 'gallery') {
     const k: Kind = KINDS.includes(kind as Kind) ? (kind as Kind) : 'gallery'
-    const items = this.db
-      .all<Omit<ImageRow, 'tags'> & { tags: string }>(
-        'SELECT id, kind, name, caption, description, tags, mime, ext, size, width, height, created FROM images WHERE kind = ? ORDER BY created DESC, id DESC',
-        k,
-      )
-      .map(r => ({ ...r, tags: readTags(r.tags) }))
-    return { items, used: this.usedBytes(), limit: MAX_IMAGES_TOTAL, maxFile: MAX_IMAGE }
+    const items = (await (await this.db.orm()).image.findMany({ where: { kind: k }, orderBy: [{ created: 'desc' }, { id: 'desc' }] }) as (Omit<ImageRow, 'tags' | 'size' | 'created'> & { tags: string; size: bigint; created: bigint })[])
+      .map(r => ({ ...r, size: Number(r.size), created: Number(r.created), tags: readTags(r.tags) }))
+    return { items, used: await this.usedBytes(), limit: MAX_IMAGES_TOTAL, maxFile: MAX_IMAGE }
   }
 
-  private usedBytes() {
-    return this.db.get<{ n: number | null }>('SELECT SUM(size) AS n FROM images')?.n ?? 0
+  private async usedBytes() {
+    const result = await (await this.db.orm()).image.aggregate({ _sum: { size: true } }) as { _sum: { size: bigint | null } }
+    return Number(result._sum.size ?? 0n)
   }
 
   /** Сохраняет загруженный файл: проверка типа и целостности, миниатюра, запись в базу. */
@@ -120,7 +119,7 @@ export class ImagesService {
     if (!file?.buffer?.length) throw new BadRequestException({ error: 'no file' })
     const type = sniff(file.buffer)
     if (!type) throw new BadRequestException({ error: 'unsupported type' })
-    const used = this.usedBytes()
+    const used = await this.usedBytes()
     if (used + file.size > MAX_IMAGES_TOTAL) throw new PayloadTooLargeException({ error: 'quota exceeded' })
 
     let meta: Metadata
@@ -151,54 +150,57 @@ export class ImagesService {
     }
     await writeFile(this.file(row), file.buffer)
     await writeFile(this.thumb(id), thumb)
-    this.db.run(
-      'INSERT INTO images (id, kind, name, caption, description, tags, mime, ext, size, width, height, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      row.id, row.kind, row.name, row.caption, row.description, JSON.stringify(row.tags), row.mime, row.ext, row.size, row.width, row.height, row.created,
-    )
-    this.events.log('image_added', `${name}, ${Math.round(file.size / 1024)} КБ`)
+    await (await this.db.orm()).image.create({ data: { ...row, tags: JSON.stringify(row.tags), size: BigInt(row.size), created: BigInt(row.created) } })
+    await this.events.log('image_added', `${name}, ${Math.round(file.size / 1024)} КБ`)
+    this.search.schedulePrivateReindex()
     return row
   }
 
-  private find(id: string): ImageRow {
-    const row = ID.test(id) ? this.db.get<ImageRow>('SELECT * FROM images WHERE id = ?', id) : undefined
+  private async find(id: string): Promise<ImageRow> {
+    const raw = ID.test(id) ? await (await this.db.orm()).image.findUnique({ where: { id } }) : null
+    const row = raw ? { ...raw, size: Number(raw.size), created: Number(raw.created), tags: readTags(raw.tags) } as ImageRow : undefined
     if (!row) throw new NotFoundException({ error: 'not found' })
     return row
   }
 
   /** Путь к оригиналу или миниатюре и тип для ответа. */
-  open(id: string, kind: 'file' | 'thumb') {
-    const row = this.find(id)
+  async open(id: string, kind: 'file' | 'thumb') {
+    const row = await this.find(id)
     const p = kind === 'file' ? this.file(row) : this.thumb(row.id)
     if (!existsSync(p)) throw new NotFoundException({ error: 'file missing' })
     return { path: p, mime: kind === 'file' ? row.mime : 'image/webp', name: row.name }
   }
 
   /** Меняет название (caption), описание и/или теги; передавать можно любое из полей. */
-  update(id: string, body: { caption?: unknown; description?: unknown; tags?: unknown }) {
-    this.find(id)
+  async update(id: string, body: { caption?: unknown; description?: unknown; tags?: unknown }) {
+    await this.find(id)
     const { caption, description, tags } = body ?? {}
     if (caption === undefined && description === undefined && tags === undefined) throw new BadRequestException({ error: 'invalid caption' })
+    const data: { caption?: string; description?: string; tags?: string } = {}
     if (caption !== undefined) {
       if (typeof caption !== 'string' || caption.length > MAX_CAPTION) throw new BadRequestException({ error: 'invalid caption' })
-      this.db.run('UPDATE images SET caption = ? WHERE id = ?', caption.trim(), id)
+      data.caption = caption.trim()
     }
     if (description !== undefined) {
       if (typeof description !== 'string' || description.length > MAX_DESCRIPTION) throw new BadRequestException({ error: 'invalid description' })
-      this.db.run('UPDATE images SET description = ? WHERE id = ?', description.trim(), id)
+      data.description = description.trim()
     }
     if (tags !== undefined) {
       const list = parseTags(tags)
       if (!list) throw new BadRequestException({ error: 'invalid tags' })
-      this.db.run('UPDATE images SET tags = ? WHERE id = ?', JSON.stringify(list), id)
+      data.tags = JSON.stringify(list)
     }
+    await (await this.db.orm()).image.update({ where: { id }, data })
+    this.search.schedulePrivateReindex()
     return { ok: true }
   }
 
   async remove(id: string) {
-    const row = this.find(id)
-    this.db.run('DELETE FROM images WHERE id = ?', id)
+    const row = await this.find(id)
+    await (await this.db.orm()).image.delete({ where: { id } })
     await Promise.all([this.file(row), this.thumb(id)].map(p => unlink(p).catch(() => undefined)))
-    this.events.log('image_deleted', row.name)
+    await this.events.log('image_deleted', row.name)
+    this.search.schedulePrivateReindex()
     return { ok: true }
   }
 }

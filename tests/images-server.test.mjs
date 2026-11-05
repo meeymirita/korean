@@ -2,8 +2,8 @@ import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { access, readdir } from 'node:fs/promises'
 import path from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
 import { OWNER, cleanup, start } from './_server.mjs'
+import { withDb } from './_db.mjs'
 
 after(cleanup)
 
@@ -76,9 +76,7 @@ describe('сервер: картинки', () => {
   test('старая картинка заметки без заметки удаляется вместе с файлами, а используемая остаётся', async () => {
     const kept = await (await s.upload(OWNER, PNG, 'a.png', '', { kind: 'note' })).json()
     const gone = await (await s.upload(OWNER, PNG, 'b.png', '', { kind: 'note' })).json()
-    const db = new DatabaseSync(path.join(s.dir, 'app.db'))
-    db.prepare('UPDATE images SET created = 1 WHERE id IN (?, ?)').run(kept.id, gone.id)
-    db.close()
+    await withDb(s, db => db.run('UPDATE images SET created = 1 WHERE id IN ($1, $2)', kept.id, gone.id))
     const note = { id: 'n', title: 'T', text: '', images: [kept.id], created: 1, updated: 1 }
     assert.equal((await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 2, notes: [note] })).status, 200)
     assert.equal((await s.call('GET', `/api/images/${kept.id}/file`, OWNER)).status, 200)

@@ -1,8 +1,8 @@
 /** «Тетрадь»: папки (любая вложенность до MAX_NB_DEPTH) и листы с рисунком, текстом и шаблоном фона. Штрихи лежат в базе как JSON. */
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { randomBytes } from 'node:crypto'
-import { MAX_NB_DEPTH, MAX_NB_ITEMS, MAX_NB_NAME, MAX_NB_STROKES, MAX_NB_TEXT } from '../config'
-import { Db } from '../db/db.service'
+import { MAX_NB_DEPTH, MAX_NB_ITEMS, MAX_NB_NAME, MAX_NB_STROKES, MAX_NB_TEXT } from '../config.js'
+import { Db } from '../db/db.service.js'
 
 export const TEMPLATES = ['blank', 'grid', 'lines', 'dots', 'hangul'] as const
 
@@ -48,27 +48,29 @@ export class NotebookService {
     return m
   }
 
-  list() {
-    const items = this.db.all<Meta>('SELECT id, kind, name, parent, tpl, fav, created, updated FROM nb_items ORDER BY kind DESC, name COLLATE NOCASE, created')
+  async list() {
+    const items = (await (await this.db.orm()).nbItem.findMany({ select: { id: true, kind: true, name: true, parent: true, tpl: true, fav: true, created: true, updated: true }, orderBy: [{ kind: 'desc' }, { name: 'asc' }, { created: 'asc' }] }) as (Omit<Meta, 'created' | 'updated'> & { created: bigint; updated: bigint })[])
+      .map(item => ({ ...item, created: Number(item.created), updated: Number(item.updated) }))
     return { items }
   }
 
-  private row(id: string): Row {
-    const r = ID.test(id) ? this.db.get<Row>('SELECT * FROM nb_items WHERE id = ?', id) : undefined
+  private async row(id: string): Promise<Row> {
+    const raw = ID.test(id) ? await (await this.db.orm()).nbItem.findUnique({ where: { id } }) : null
+    const r = raw ? { ...raw, created: Number(raw.created), updated: Number(raw.updated) } as Row : undefined
     if (!r) throw new NotFoundException({ error: 'not found' })
     return r
   }
 
-  one(id: string) {
-    const r = this.row(id)
+  async one(id: string) {
+    const r = await this.row(id)
     return { ...this.meta(r), text: r.text, strokes: JSON.parse(r.strokes) as unknown[] }
   }
 
   /** Сколько папок над элементом, включая саму папку. 0 для корня. */
-  private depth(id: string | null): number {
+  private async depth(id: string | null): Promise<number> {
     let n = 0
     while (id) {
-      const r = this.db.get<{ parent: string | null }>('SELECT parent FROM nb_items WHERE id = ?', id)
+      const r = await (await this.db.orm()).nbItem.findUnique({ where: { id }, select: { parent: true } })
       if (!r) break
       n++
       id = r.parent
@@ -77,17 +79,18 @@ export class NotebookService {
     return n
   }
 
-  private checkParent(parent: unknown, selfId?: string): string | null {
+  private async checkParent(parent: unknown, selfId?: string): Promise<string | null> {
     if (parent === null || parent === '') return null
     if (typeof parent !== 'string' || !ID.test(parent)) throw bad('invalid parent')
-    const p = this.db.get<Row>('SELECT * FROM nb_items WHERE id = ?', parent)
+    const p = await (await this.db.orm()).nbItem.findUnique({ where: { id: parent } }) as Row | null
     if (!p || p.kind !== 'folder') throw bad('invalid parent')
     if (selfId) {
-      for (let id: string | null = parent; id; id = this.db.get<{ parent: string | null }>('SELECT parent FROM nb_items WHERE id = ?', id)?.parent ?? null) {
+      for (let id: string | null = parent; id;) {
         if (id === selfId) throw bad('folder inside itself')
+        id = (await (await this.db.orm()).nbItem.findUnique({ where: { id }, select: { parent: true } }))?.parent ?? null
       }
     }
-    if (this.depth(parent) >= MAX_NB_DEPTH) throw bad('too deep')
+    if (await this.depth(parent) >= MAX_NB_DEPTH) throw bad('too deep')
     return parent
   }
 
@@ -103,55 +106,54 @@ export class NotebookService {
     return v
   }
 
-  create(body: Record<string, unknown> | undefined) {
+  async create(body: Record<string, unknown> | undefined) {
     const b = body ?? {}
     if (b.kind !== 'folder' && b.kind !== 'sheet') throw bad('invalid kind')
-    if (this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM nb_items')!.n >= MAX_NB_ITEMS) throw bad('too many items')
+    if (await (await this.db.orm()).nbItem.count() >= MAX_NB_ITEMS) throw bad('too many items')
     const name = this.name(b.name ?? (b.kind === 'folder' ? 'Новая папка' : 'Новый лист'))
-    const parent = this.checkParent(b.parent ?? null)
+    const parent = await this.checkParent(b.parent ?? null)
     const tpl = b.tpl === undefined ? 'blank' : this.tpl(b.tpl)
     const id = randomBytes(8).toString('hex')
     const now = Date.now()
-    this.db.run('INSERT INTO nb_items (id, kind, name, parent, tpl, text, strokes, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', id, b.kind, name, parent, tpl, '', '[]', now, now)
-    return this.one(id)
+    await (await this.db.orm()).nbItem.create({ data: { id, kind: b.kind, name, parent, tpl, text: '', strokes: '[]', fav: 0, created: BigInt(now), updated: BigInt(now) } })
+    return await this.one(id)
   }
 
-  update(id: string, body: Record<string, unknown> | undefined) {
-    const r = this.row(id)
+  async update(id: string, body: Record<string, unknown> | undefined) {
+    const r = await this.row(id)
     const b = body ?? {}
-    const sets: string[] = []
-    const vals: (string | number | null)[] = []
-    const put = (col: string, v: string | number | null) => { sets.push(`${col} = ?`); vals.push(v) }
-    if (b.name !== undefined) put('name', this.name(b.name))
-    if (b.parent !== undefined) put('parent', this.checkParent(b.parent, r.kind === 'folder' ? id : undefined))
+    const data: Record<string, string | number | null> = {}
+    if (b.name !== undefined) data.name = this.name(b.name)
+    if (b.parent !== undefined) data.parent = await this.checkParent(b.parent, r.kind === 'folder' ? id : undefined)
     if (b.fav !== undefined) {
       if (typeof b.fav !== 'boolean') throw bad('invalid fav')
-      put('fav', b.fav ? 1 : 0)
+      data.fav = b.fav ? 1 : 0
     }
     if (r.kind === 'sheet') {
-      if (b.tpl !== undefined) put('tpl', this.tpl(b.tpl))
+      if (b.tpl !== undefined) data.tpl = this.tpl(b.tpl)
       if (b.text !== undefined) {
         if (typeof b.text !== 'string' || b.text.length > MAX_NB_TEXT) throw bad('invalid text')
-        put('text', b.text)
+        data.text = b.text
       }
-      if (b.strokes !== undefined) put('strokes', checkStrokes(b.strokes))
+      if (b.strokes !== undefined) data.strokes = checkStrokes(b.strokes)
     } else if (b.tpl !== undefined || b.text !== undefined || b.strokes !== undefined) {
       throw bad('folder has no drawing')
     }
-    if (!sets.length) throw bad('empty patch')
-    this.db.run(`UPDATE nb_items SET ${sets.join(', ')}, updated = ? WHERE id = ?`, ...vals, Date.now(), id)
-    return this.meta(this.row(id))
+    if (!Object.keys(data).length) throw bad('empty patch')
+    await (await this.db.orm()).nbItem.update({ where: { id }, data: { ...data, updated: BigInt(Date.now()) } })
+    return this.meta(await this.row(id))
   }
 
   /** Удаляет элемент; у папки вместе со всем содержимым. */
-  remove(id: string) {
-    this.row(id)
-    this.db.tx(() => {
-      const kill = (x: string) => {
-        for (const c of this.db.all<{ id: string }>('SELECT id FROM nb_items WHERE parent = ?', x)) kill(c.id)
-        this.db.run('DELETE FROM nb_items WHERE id = ?', x)
+  async remove(id: string) {
+    await this.row(id)
+    await this.db.tx(async () => {
+      const kill = async (x: string): Promise<void> => {
+        const db = await this.db.orm()
+        for (const c of await db.nbItem.findMany({ where: { parent: x }, select: { id: true } })) await kill(c.id)
+        await db.nbItem.delete({ where: { id: x } })
       }
-      kill(id)
+      await kill(id)
     })
     return { ok: true }
   }

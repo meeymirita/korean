@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, Header, Param, Patch, Post, StreamableFi
 import { FileInterceptor } from '@nestjs/platform-express'
 import { createReadStream } from 'node:fs'
 import { memoryStorage } from 'multer'
-import { Owner } from '../auth/auth'
-import { MAX_DOC } from '../config'
-import { PlansService } from './plans.service'
+import { Owner } from '../auth/auth.js'
+import { MAX_DOC } from '../config.js'
+import { PlansService } from './plans.service.js'
 
 /** /api/plans: записи календаря с файлами, только для владельца. Файлы сайт запрашивает с токеном и открывает через blob. */
 @Owner()
@@ -42,16 +42,16 @@ export class PlansController {
   @Get('files/:fid/file')
   @Header('Cache-Control', 'private, max-age=3600')
   @Header('X-Content-Type-Options', 'nosniff')
-  file(@Param('fid') fid: string) {
-    const f = this.plans.open(fid, 'file')
+  async file(@Param('fid') fid: string) {
+    const f = await this.plans.open(fid, 'file')
     return new StreamableFile(createReadStream(f.path), { type: f.mime, disposition: `${f.image ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(f.name)}` })
   }
 
   @Get('files/:fid/thumb')
   @Header('Cache-Control', 'private, max-age=3600')
   @Header('X-Content-Type-Options', 'nosniff')
-  thumb(@Param('fid') fid: string) {
-    const f = this.plans.open(fid, 'thumb')
+  async thumb(@Param('fid') fid: string) {
+    const f = await this.plans.open(fid, 'thumb')
     return new StreamableFile(createReadStream(f.path), { type: f.mime })
   }
 

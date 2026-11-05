@@ -1,6 +1,7 @@
 import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { OWNER, cleanup, start } from './_server.mjs'
+import { withDb } from './_db.mjs'
 
 after(cleanup)
 
@@ -31,11 +32,7 @@ describe('сервер: защита', () => {
   test('неверные попытки пишутся в журнал событий вместе с блокировкой', async () => {
     const s = await start({ env: { RATE_BAD_LIMIT: '3' } })
     for (let i = 0; i < 3; i++) await s.call('GET', '/api/progress', 'x-' + i)
-    const { DatabaseSync } = await import('node:sqlite')
-    const path = await import('node:path')
-    const db = new DatabaseSync(path.join(s.dir, 'app.db'), { readOnly: true })
-    const types = db.prepare('SELECT type FROM events').all().map(r => r.type)
-    db.close()
+    const types = await withDb(s, async db => (await db.all('SELECT type FROM events')).map(r => r.type))
     assert.deepEqual([types.filter(t => t === 'bad_token').length, types.includes('ip_locked')], [2, true])
   })
 

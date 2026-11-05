@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { LessonService } from './lesson.service'
+import { Owner } from '../auth/auth.js'
+import { LessonService } from './lesson.service.js'
 
 /** /api/lesson: настройки письма-напоминания о созвоне с учителем (только владельцу). */
 @Owner()

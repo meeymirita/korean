@@ -1,14 +1,14 @@
 import { Global, Module } from '@nestjs/common'
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
-import { AuthGuard } from './auth.guard'
-import { AuthService } from './auth.service'
-import { ConfirmService } from './confirm.service'
-import { RateLimiter } from '../security'
-import { RoleHeadersInterceptor } from './role-headers.interceptor'
-import { SessionController } from './session.controller'
-import { MailService } from '../mail/mail.service'
-import { TwoFaController } from './twofa.controller'
-import { TwoFaService } from './twofa.service'
+import { AuthGuard } from './auth.guard.js'
+import { AuthService } from './auth.service.js'
+import { ConfirmService } from './confirm.service.js'
+import { RateLimiter } from '../security.js'
+import { RoleHeadersInterceptor } from './role-headers.interceptor.js'
+import { SessionController } from './session.controller.js'
+import { MailService } from '../mail/mail.service.js'
+import { TwoFaController } from './twofa.controller.js'
+import { TwoFaService } from './twofa.service.js'
 
 @Global()
 @Module({

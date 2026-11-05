@@ -1,7 +1,7 @@
 /** Журналы для кабинета: сервер (Node) из памяти процесса и Caddy из файла журнала доступа (путь в CADDY_LOG_FILE). */
 import { Injectable } from '@nestjs/common'
 import { closeSync, existsSync, fstatSync, openSync, readSync } from 'node:fs'
-import { recent, type LogLine } from './log-buffer'
+import { recent, type LogLine } from './log-buffer.js'
 
 const MAX_LIMIT = 500
 const TAIL_BYTES = 512 * 1024

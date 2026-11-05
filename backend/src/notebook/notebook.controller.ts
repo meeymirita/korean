@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { NotebookService } from './notebook.service'
+import { Owner } from '../auth/auth.js'
+import { NotebookService } from './notebook.service.js'
 
 /** /api/notebook: «Тетрадь» (папки и листы с рисунками), только для владельца. */
 @Owner()

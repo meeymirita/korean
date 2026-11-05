@@ -4,10 +4,10 @@
  * Адрес: REMINDER_MAIL_TO в backend/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
  */
 import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { TwoFaService, maskEmail } from '../auth/twofa.service'
-import { Db } from '../db/db.service'
-import { MailService } from '../mail/mail.service'
-import { reminderMail } from '../mail/templates'
+import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
+import { Db } from '../db/db.service.js'
+import { MailService } from '../mail/mail.service.js'
+import { reminderMail } from '../mail/templates.js'
 
 export interface ReminderSettings {
   enabled: boolean
@@ -46,9 +46,9 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
     clearInterval(this.timer)
   }
 
-  get(): ReminderSettings {
+  async get(): Promise<ReminderSettings> {
     try {
-      const v = JSON.parse(this.db.getMeta('reminder') ?? '{}') as Partial<ReminderSettings>
+      const v = JSON.parse(await this.db.getMeta('reminder') ?? '{}') as Partial<ReminderSettings>
       return {
         enabled: v.enabled === true,
         time: typeof v.time === 'string' && TIME.test(v.time) ? v.time : DEFAULT.time,
@@ -60,12 +60,12 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private save(s: ReminderSettings) {
-    this.db.setMeta('reminder', JSON.stringify(s))
+  private async save(s: ReminderSettings) {
+    await this.db.setMeta('reminder', JSON.stringify(s))
   }
 
-  set(body: { enabled?: unknown; time?: unknown; days?: unknown }) {
-    const cur = this.get()
+  async set(body: { enabled?: unknown; time?: unknown; days?: unknown }) {
+    const cur = await this.get()
     if (body.enabled !== undefined) {
       if (typeof body.enabled !== 'boolean') throw new BadRequestException({ error: 'invalid enabled' })
       cur.enabled = body.enabled
@@ -79,59 +79,59 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
       if (!isDays(body.days)) throw new BadRequestException({ error: 'invalid days' })
       cur.days = [...new Set(body.days)].sort()
     }
-    this.save(cur)
-    return this.status()
+    await this.save(cur)
+    return await this.status()
   }
 
-  to() {
-    return process.env.REMINDER_MAIL_TO || this.twofa.email()
+  async to() {
+    return process.env.REMINDER_MAIL_TO || await this.twofa.email()
   }
 
-  status() {
-    const to = this.to()
-    return { ...this.get(), mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '' }
+  async status() {
+    const [to, settings] = await Promise.all([this.to(), this.get()])
+    return { ...settings, mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '' }
   }
 
   /** Ответов сегодня (всего). */
-  private answersToday(day: string) {
-    return this.db.get<{ total: number }>('SELECT total FROM days WHERE day = ?', day)?.total ?? 0
+  private async answersToday(day: string) {
+    return (await (await this.db.orm()).day.findUnique({ where: { day }, select: { total: true } }))?.total ?? 0
   }
 
   /** Серия дней с верными ответами, оканчивающаяся вчера: именно её письмо просит не прерывать. */
-  private streakBefore(day: string) {
+  private async streakBefore(day: string) {
     const d = new Date(day + 'T12:00:00')
     let n = 0
     for (;;) {
       d.setDate(d.getDate() - 1)
-      const ok = this.db.get<{ ok: number }>('SELECT ok FROM days WHERE day = ?', dayOf(d))?.ok ?? 0
+      const ok = (await (await this.db.orm()).day.findUnique({ where: { day: dayOf(d) }, select: { ok: true } }))?.ok ?? 0
       if (ok <= 0) return n
       n++
     }
   }
 
   private async deliver(day: string) {
-    const m = reminderMail({ streak: this.streakBefore(day), site: process.env.SITE_URL })
-    await this.mail.send(this.to(), m.subject, m.text, m.html)
+    const m = reminderMail({ streak: await this.streakBefore(day), site: process.env.SITE_URL })
+    await this.mail.send(await this.to(), m.subject, m.text, m.html)
   }
 
   /** Одна проверка (раз в минуту). Возвращает, что сделано: для тестов. */
   async tick(now = new Date()): Promise<Tick> {
-    const s = this.get()
+    const s = await this.get()
     if (!s.enabled) return 'off'
     if (s.days.length && !s.days.includes(now.getDay())) return 'off'
     const day = dayOf(now)
     if (`${pad(now.getHours())}:${pad(now.getMinutes())}` < s.time) return 'early'
     if (s.lastSent === day) return 'already'
-    if (this.answersToday(day) > 0) return 'studied'
-    if (!this.mail.configured() || !this.to()) return 'nomail'
+    if (await this.answersToday(day) > 0) return 'studied'
+    if (!this.mail.configured() || !await this.to()) return 'nomail'
     // метка ставится до отправки: если почта медленная, следующая проверка не пошлёт второе письмо
-    this.save({ ...s, lastSent: day })
+    await this.save({ ...s, lastSent: day })
     try {
       await this.deliver(day)
       return 'sent'
     } catch (e) {
       console.error('письмо-напоминание не отправилось:', (e as Error).message)
-      this.save({ ...s, lastSent: '' })
+      await this.save({ ...s, lastSent: '' })
       return 'failed'
     }
   }

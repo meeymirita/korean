@@ -1,16 +1,17 @@
 /**
- * Сервер сайта: NestJS + SQLite. Токен владельца берётся из backend/.env (PROGRESS_TOKEN=секрет) или из переменной окружения.
+ * Сервер сайта: NestJS + Prisma + PostgreSQL. Токен владельца берётся из backend/.env (PROGRESS_TOKEN=секрет) или из переменной окружения.
  * Слушает только 127.0.0.1: наружу его выставляет Caddy (reverse_proxy /api/* → порт сервера).
  * Запуск: npm run build, затем npm start (в разработке npm run dev).
  */
 import 'reflect-metadata'
 import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
-import { AppModule } from './app.module'
-import { DATA_DIR, MAX_JSON, PORT, SWAGGER, TOKEN } from './config'
-import { accessLogger, startLogCapture } from './logs/log-buffer'
-import { RateLimiter, requestTimeout, securityHeaders } from './security'
-import { DOCS_PATH, setupSwagger } from './swagger'
+import { AppModule } from './app.module.js'
+import { DATA_DIR, MAX_JSON, PORT, SWAGGER, TOKEN } from './config.js'
+import { accessLogger, startLogCapture } from './logs/log-buffer.js'
+import { RateLimiter, requestTimeout, securityHeaders } from './security.js'
+import { DOCS_PATH, setupSwagger } from './swagger.js'
+import { MetricsService } from './metrics.service.js'
 
 startLogCapture() // журнал для кабинета: копим всё, что пишет сервер
 
@@ -28,11 +29,12 @@ async function bootstrap() {
   app.use(accessLogger)
   app.use(app.get(RateLimiter).middleware)
   app.use(requestTimeout)
+  app.use(app.get(MetricsService).middleware)
   app.useBodyParser('json', { limit: MAX_JSON })
   app.setGlobalPrefix('api')
   app.enableShutdownHooks()
   if (SWAGGER) setupSwagger(app)
-  const server = await app.listen(PORT, '127.0.0.1')
+  const server = await app.listen(PORT, process.env.HOST || '127.0.0.1')
   // медленные и зависшие соединения закрываются (защита от «медленных» атак)
   server.headersTimeout = 15_000
   server.requestTimeout = 190_000

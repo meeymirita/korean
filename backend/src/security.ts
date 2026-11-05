@@ -4,7 +4,7 @@
  */
 import { Injectable } from '@nestjs/common'
 import type { NextFunction, Request, Response } from 'express'
-import { SWAGGER } from './config'
+import { SWAGGER } from './config.js'
 
 const num = (name: string, fallback: number) => {
   const v = Number(process.env[name])

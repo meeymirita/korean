@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { LogsService } from './logs.service'
+import { Owner } from '../auth/auth.js'
+import { LogsService } from './logs.service.js'
 
 /** /api/logs: журналы сервера и Caddy, только для владельца (вкладка «Журналы» в кабинете). */
 @Owner()

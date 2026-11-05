@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { OWNER, cleanup, start } from './_server.mjs'
+import { withDb } from './_db.mjs'
 
 after(cleanup)
 
@@ -34,6 +35,7 @@ describe('сервер: полный архив по кнопке', () => {
     await mkdir(path.join(dir, 'uploads'))
     await writeFile(path.join(dir, 'uploads', 'cat.png'), 'не-совсем-картинка')
     const s = await start({ dir, env: { BACKUP_AUTO: '0', BACKUP_PASSPHRASE: 'секретная фраза 123', MAIL_DUMP_FILE: mailFile, BACKUP_MAIL_TO: 'me@example.org' } })
+    await withDb(s, db => db.run("INSERT INTO notes (id, title, text, images, tags, created, updated) VALUES ('backup-note', 'Восстановленная заметка', 'данные', '[]', '[]', 1, 1)"))
     const r = await s.call('POST', '/api/backup/run', OWNER)
     assert.equal(r.status, 202)
     assert.equal((await r.json()).started, true)
@@ -57,13 +59,24 @@ describe('сервер: полный архив по кнопке', () => {
     })
     execFileSync('openssl', dec('секретная фраза 123'))
     const list = execFileSync('tar', ['-tzf', path.join(out, 'ok.tar.gz')]).toString()
-    assert.match(list, /app\.db/)
+    assert.match(list, /app\.dump/)
     assert.match(list, /uploads\/cat\.png/)
     assert.match(list, /manifest\.txt/)
     const manifest = execFileSync('tar', ['-xzOf', path.join(out, 'ok.tar.gz'), './manifest.txt']).toString()
     assert.match(manifest, /папки:/)
     assert.match(manifest, /uploads: \d+ КБ/)
     assert.match(manifest, /docs — файлы, приложенные к планам/)
+
+    const dump = path.join(out, 'app.dump')
+    await writeFile(dump, execFileSync('tar', ['-xOf', path.join(out, 'ok.tar.gz'), './app.dump']))
+    const restoredList = execFileSync('pg_restore', ['--list', dump]).toString()
+    assert.match(restoredList, /notes/)
+    await s.stop()
+    const databaseUrl = new URL(process.env.TEST_DATABASE_URL || process.env.DATABASE_URL)
+    databaseUrl.searchParams.delete('schema')
+    execFileSync('pg_restore', ['--clean', '--if-exists', '--no-owner', '--dbname', databaseUrl.toString(), '--schema', s.schema, dump])
+    const restored = await withDb(s, db => db.get("SELECT title, text FROM notes WHERE id = 'backup-note'"))
+    assert.deepEqual(restored, { title: 'Восстановленная заметка', text: 'данные' }, 'после pg_restore строка доступна в восстановленной схеме')
 
     // письмо ушло получателю с вложением, пароль в письме не упоминается
     const mails = (await readFile(mailFile, 'utf8')).trim().split('\n').map(l => JSON.parse(l))

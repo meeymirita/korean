@@ -4,13 +4,19 @@ import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { closeSearch, searchOpen, searchQuery as q, toggleSearch } from '@/composables/useSearchWindow'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { hl } from '@/data/korean/render'
-import { search, snippet } from '@/data/korean/search'
+import { appendSearchResults, resultFromSearchReply, search, searchRemote, snippet, type SearchResult } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
 import { parseQuery } from '@/data/korean/words'
 
 const { open: openGrammar } = useGrammarModal()
 const input = ref<HTMLInputElement>()
-const result = computed(() => search(q.value))
+const result = ref<SearchResult | null>(search(q.value))
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+let searchRequest = 0
+let remoteOffset = 0
+let remoteTotal = 0
+const loadingMore = ref(false)
+const hasMoreRemote = computed(() => remoteOffset < remoteTotal)
 const qs = computed(() => parseQuery(q.value))
 const h = (t: string) => hl(t, qs.value)
 
@@ -33,7 +39,39 @@ watch(searchOpen, async o => {
     input.value?.select()
   } else opened.value = null
 })
-watch(q, () => ((opened.value = null), Object.keys(more).forEach(k => delete more[k])))
+watch(q, value => {
+  opened.value = null
+  Object.keys(more).forEach(k => delete more[k])
+  result.value = search(value)
+  remoteOffset = 0
+  remoteTotal = 0
+  clearTimeout(searchTimer)
+  const request = ++searchRequest
+  searchTimer = setTimeout(async () => {
+    const remote = await searchRemote(value)
+    if (request === searchRequest && remote) {
+      result.value = resultFromSearchReply(remote)
+      remoteOffset = remote.offset + remote.hits.length
+      remoteTotal = remote.total
+    }
+  }, 180)
+})
+
+async function loadMoreRemote() {
+  if (loadingMore.value || !hasMoreRemote.value) return
+  loadingMore.value = true
+  const request = searchRequest
+  try {
+    const page = await searchRemote(q.value, remoteOffset)
+    if (page && request === searchRequest) {
+      result.value = appendSearchResults(result.value ?? search(q.value)!, resultFromSearchReply(page))
+      remoteOffset = page.offset + page.hits.length
+      remoteTotal = page.total
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
 
 function onKey(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -54,6 +92,8 @@ function canOpenByKey(target: EventTarget | null) {
 }
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  searchRequest++
   document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
 })
@@ -125,6 +165,16 @@ onBeforeUnmount(() => {
               <button v-if="rest('s', result.sentences.length)" class="chip" @click="more.s = true">ещё {{ rest('s', result.sentences.length) }}</button>
             </section>
 
+            <section v-if="result.forms.length" class="sw-g">
+              <h3>Формы слов <small>{{ result.forms.length }}</small></h3>
+              <div v-for="c in take('f', result.forms)" :key="c.k" class="sw-r static">
+                <span class="k ko" v-html="h(c.k)"></span>
+                <span class="rd" v-html="h(c.r)"></span>
+                <span class="tr">{{ c.present }} · {{ c.past }} · {{ c.neg }}</span>
+              </div>
+              <button v-if="rest('f', result.forms.length)" class="chip" @click="more.f = true">ещё {{ rest('f', result.forms.length) }}</button>
+            </section>
+
             <section v-if="result.letters.length" class="sw-g">
               <h3>Буквы <small>{{ result.letters.length }}</small></h3>
               <div v-for="l in take('l', result.letters)" :key="l.char" class="sw-r static">
@@ -133,6 +183,7 @@ onBeforeUnmount(() => {
               </div>
               <button v-if="rest('l', result.letters.length)" class="chip" @click="more.l = true">ещё {{ rest('l', result.letters.length) }}</button>
             </section>
+            <button v-if="hasMoreRemote" class="chip" :disabled="loadingMore" @click="loadMoreRemote">{{ loadingMore ? 'Загружаю…' : 'Показать ещё результаты' }}</button>
           </div>
         </section>
       </div>

@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Strea
 import { FileInterceptor } from '@nestjs/platform-express'
 import { createReadStream } from 'node:fs'
 import { memoryStorage } from 'multer'
-import { Owner } from '../auth/auth'
-import { MAX_IMAGE } from '../config'
-import { ImagesService } from './images.service'
+import { Owner } from '../auth/auth.js'
+import { MAX_IMAGE } from '../config.js'
+import { ImagesService } from './images.service.js'
 
 /** /api/images: картинки только для владельца. Файлы отдаются по токену (сайт запрашивает их с заголовком и показывает через blob). */
 @Owner()
@@ -28,16 +28,16 @@ export class ImagesController {
   @Get(':id/file')
   @Header('Cache-Control', 'private, max-age=3600')
   @Header('X-Content-Type-Options', 'nosniff')
-  file(@Param('id') id: string) {
-    const f = this.images.open(id, 'file')
+  async file(@Param('id') id: string) {
+    const f = await this.images.open(id, 'file')
     return new StreamableFile(createReadStream(f.path), { type: f.mime })
   }
 
   @Get(':id/thumb')
   @Header('Cache-Control', 'private, max-age=3600')
   @Header('X-Content-Type-Options', 'nosniff')
-  thumb(@Param('id') id: string) {
-    const f = this.images.open(id, 'thumb')
+  async thumb(@Param('id') id: string) {
+    const f = await this.images.open(id, 'thumb')
     return new StreamableFile(createReadStream(f.path), { type: f.mime })
   }
 

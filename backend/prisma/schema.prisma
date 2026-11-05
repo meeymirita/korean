@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Meta {
+  key   String @id
+  value String
+  @@map("meta")
+}
+
+model Answer {
+  id     BigInt @id @default(autoincrement())
+  t      BigInt
+  word   String?
+  ok     Int
+  source String
+  mode   String @default("")
+  xp     Int    @default(0)
+  detail String @default("")
+  @@index([t], map: "answers_t")
+  @@map("answers")
+}
+
+model Word {
+  word   String @id
+  ok     Int    @default(0)
+  bad    Int    @default(0)
+  streak Int    @default(0)
+  last   BigInt @default(0)
+  kd     BigInt?
+  @@map("words")
+}
+
+model Day {
+  day   String @id
+  ok    Int    @default(0)
+  total Int    @default(0)
+  @@map("days")
+}
+
+model StudyTime {
+  day     String @id
+  seconds BigInt @default(0)
+  @@map("study_time")
+}
+
+model Guest {
+  id      String @id
+  hash    String
+  label   String @default("")
+  created BigInt
+  expires BigInt
+  @@index([hash], map: "guests_hash")
+  @@map("guests")
+}
+
+model Note {
+  id      String @id
+  title   String
+  text    String
+  images  String @default("[]")
+  tags    String @default("[]")
+  created BigInt
+  updated BigInt
+  @@map("notes")
+}
+
+model Image {
+  id          String @id
+  name        String
+  caption     String @default("")
+  description String @default("")
+  tags        String @default("[]")
+  kind        String @default("gallery")
+  mime        String
+  ext         String
+  size        BigInt
+  width       Int    @default(0)
+  height      Int    @default(0)
+  created     BigInt
+  @@map("images")
+}
+
+model Plan {
+  id      String @id
+  day     String
+  time    String @default("")
+  title   String
+  text    String @default("")
+  tags    String @default("[]")
+  kind    String @default("own")
+  created BigInt
+  updated BigInt
+  @@index([day], map: "plans_day")
+  @@map("plans")
+}
+
+model PlanFile {
+  id      String @id
+  plan_id String
+  name    String
+  mime    String
+  ext     String
+  size    BigInt
+  thumb   Int    @default(0)
+  created BigInt
+  @@index([plan_id], map: "plan_files_plan")
+  @@map("plan_files")
+}
+
+model TodaySet {
+  id      String @id
+  day     String
+  right_n Int
+  total_n Int
+  data    String
+  created BigInt
+  @@index([created], map: "today_sets_created")
+  @@map("today_sets")
+}
+
+model SiteImage {
+  key  String @id
+  kind String
+  ref  String
+  mime String @default("")
+  x    Float  @default(50)
+  y    Float  @default(50)
+  zoom Float  @default(1)
+  v    Int    @default(1)
+  @@map("site_images")
+}
+
+model Session {
+  hash    String @id
+  created BigInt
+  expires BigInt
+  @@map("sessions")
+}
+
+model CoinLog {
+  id     BigInt @id @default(autoincrement())
+  t      BigInt
+  day    String
+  kind   String
+  amount Int
+  reason String @default("")
+  ref    String? @unique
+  @@index([day, kind], map: "coin_log_day")
+  @@map("coin_log")
+}
+
+model NbItem {
+  id      String @id
+  kind    String
+  name    String
+  parent  String?
+  tpl     String @default("blank")
+  text    String @default("")
+  strokes String @default("[]")
+  fav     Int    @default(0)
+  created BigInt
+  updated BigInt
+  @@index([parent], map: "nb_items_parent")
+  @@map("nb_items")
+}
+
+model Event {
+  id   BigInt @id @default(autoincrement())
+  t    BigInt
+  type String
+  info String @default("")
+  @@map("events")
+}

@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post, Req } from '@nestjs/common'
 import type { Request } from 'express'
-import { Owner } from '../auth/auth'
-import { ConfirmService } from '../auth/confirm.service'
-import { GuestsService } from './guests.service'
+import { Owner } from '../auth/auth.js'
+import { ConfirmService } from '../auth/confirm.service.js'
+import { GuestsService } from './guests.service.js'
 
 /** /api/guests: только для владельца. */
 @Owner()

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { ReminderService } from './reminder.service'
+import { Owner } from '../auth/auth.js'
+import { ReminderService } from './reminder.service.js'
 
 /** /api/reminder: настройки письма-напоминания (только владельцу). */
 @Owner()

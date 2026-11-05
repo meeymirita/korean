@@ -2,7 +2,7 @@
 # Резервная копия платформы:  bash scripts/backup.sh
 #
 # Что кладёт в копию (папка BACKUP_DIR/ГГГГ-ММ-ДД_ЧЧММСС):
-#   app.db           целостный снимок базы (VACUUM INTO: можно делать, пока сервер работает), с проверкой integrity_check
+#   app.dump         целостный снимок PostgreSQL в custom-формате, с проверкой списка объектов через pg_restore
 #   files/           картинки, файлы календаря и обложка визитки; одинаковые файлы за разные дни хранятся один раз (жёсткие ссылки)
 #   config/          backend/.env (секреты, права 600), а также Caddyfile и служба progress, если их можно прочитать
 #   manifest.txt     дата, версия кода, размеры, контрольная сумма базы
@@ -14,6 +14,9 @@
 # Переменные (необязательные; на сервере можно положить в /etc/korean-backup.env):
 #   ROOT             папка проекта (по умолчанию: папка над scripts/)
 #   BACKUP_DIR       куда класть копии (по умолчанию /var/backups/korean)
+#   DATABASE_URL     адрес PostgreSQL из backend/.env
+#   PG_DUMP_DATABASE_URL  адрес подключения без Prisma-параметров (необязательно)
+#   PG_DUMP_SCHEMA   имя схемы PostgreSQL для резервной копии (необязательно)
 #   KEEP             сколько последних копий хранить (по умолчанию 14)
 #   OFFSITE_RSYNC    user@host:/путь   отправить все копии на другой сервер по ssh (rsync, только новое)
 #   OFFSITE_RCLONE   remote:папка      отправить архив копии через rclone (Яндекс Диск, Google Drive, S3...)
@@ -34,30 +37,47 @@ FINAL="$BACKUP_DIR/$STAMP"
 json_escape() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\n' ' '; }
 write_status() { # ok(true/false) сообщение
   mkdir -p "$DATA"
+  local last_success=0
+  if [ -f "$DATA/backup.prom" ]; then
+    last_success=$(awk '$1 == "backup_last_success_timestamp_seconds" {print $2}' "$DATA/backup.prom" | tail -1)
+    last_success=${last_success:-0}
+  fi
   printf '{"ok":%s,"time":%s000,"dir":"%s","sizeKb":%s,"offsite":%s,"message":"%s"}\n' \
     "$1" "$(date +%s)" "$(json_escape "${FINAL:-}")" "${SIZE_KB:-0}" "${OFFSITE_DONE:-false}" "$(json_escape "$2")" > "$STATUS.tmp"
   mv "$STATUS.tmp" "$STATUS"
+  local ok=0
+  [ "$1" = true ] && ok=1
+  printf 'backup_last_attempt_timestamp_seconds %s\nbackup_last_success %s\n' "$(date +%s)" "$ok" > "$DATA/backup.prom.tmp"
+  if [ "$ok" = 1 ]; then last_success=$(date +%s); fi
+  printf 'backup_last_success_timestamp_seconds %s\n' "$last_success" >> "$DATA/backup.prom.tmp"
+  mv "$DATA/backup.prom.tmp" "$DATA/backup.prom"
 }
 SIZE_KB=0
 OFFSITE_DONE=false
 trap 'code=$?; [ $code -ne 0 ] && { rm -rf "$WORK"; write_status false "копия не удалась (код $code)"; echo "ОШИБКА: копия не удалась" >&2; }; exit $code' EXIT
 
 [ -d "$DATA" ] || { echo "Нет папки данных: $DATA" >&2; exit 2; }
-[ -f "$DATA/app.db" ] || { echo "Нет базы: $DATA/app.db" >&2; exit 2; }
+[ -n "${DATABASE_URL:-}" ] || { echo "Не задан DATABASE_URL" >&2; exit 2; }
+command -v "${PG_DUMP_BIN:-pg_dump}" >/dev/null || { echo "Не найдена команда pg_dump" >&2; exit 2; }
+command -v "${PG_RESTORE_BIN:-pg_restore}" >/dev/null || { echo "Не найдена команда pg_restore" >&2; exit 2; }
+PARSED_DUMP=$(PG_DUMP_DATABASE_URL="${PG_DUMP_DATABASE_URL:-$DATABASE_URL}" PG_DUMP_SCHEMA="${PG_DUMP_SCHEMA:-}" node -e '
+const url = new URL(process.env.PG_DUMP_DATABASE_URL)
+const schema = process.env.PG_DUMP_SCHEMA || url.searchParams.get("schema") || ""
+url.searchParams.delete("schema")
+if (schema && !/^[a-zA-Z_][a-zA-Z0-9_$]{0,62}$/.test(schema)) process.exit(2)
+process.stdout.write(url.toString() + "\t" + schema)
+') || { echo "Параметры подключения для pg_dump некорректны" >&2; exit 2; }
+IFS=$'\t' read -r PGDATABASE DUMP_SCHEMA <<< "$PARSED_DUMP"
 mkdir -p "$WORK/files" "$WORK/config"
 chmod 700 "$BACKUP_DIR" "$WORK"
 
-# 1. база: целостный снимок через SQLite, а не копирование файла «на ходу»
-DB_SRC="$DATA/app.db" DB_DST="$WORK/app.db" node -e "
-const { DatabaseSync } = require('node:sqlite')
-const src = new DatabaseSync(process.env.DB_SRC, { readOnly: true })
-src.exec('VACUUM INTO ' + \"'\" + process.env.DB_DST.replace(/'/g, \"''\") + \"'\")
-src.close()
-const copy = new DatabaseSync(process.env.DB_DST, { readOnly: true })
-const r = copy.prepare('PRAGMA integrity_check').get()
-copy.close()
-if (Object.values(r)[0] !== 'ok') { console.error('integrity_check:', JSON.stringify(r)); process.exit(1) }
-" 2>/dev/null || { echo "Снимок базы не получился или база повреждена" >&2; exit 3; }
+# 1. база: pg_dump создаёт согласованный снимок работающей PostgreSQL
+if [ -n "$DUMP_SCHEMA" ]; then
+  PGDATABASE="$PGDATABASE" "${PG_DUMP_BIN:-pg_dump}" --format=custom --no-owner --schema="$DUMP_SCHEMA" --file="$WORK/app.dump" || { echo "Снимок PostgreSQL не получился" >&2; exit 3; }
+else
+  PGDATABASE="$PGDATABASE" "${PG_DUMP_BIN:-pg_dump}" --format=custom --no-owner --file="$WORK/app.dump" || { echo "Снимок PostgreSQL не получился" >&2; exit 3; }
+fi
+"${PG_RESTORE_BIN:-pg_restore}" --list "$WORK/app.dump" >/dev/null || { echo "Проверка архива PostgreSQL не прошла" >&2; exit 3; }
 
 # 2. файлы: картинки, документы, обложка визитки; неизменённые за прошлые дни берутся ссылками
 PREV=$(ls -d "$BACKUP_DIR"/20??-??-??_?????? 2>/dev/null | sort | tail -1 || true)
@@ -81,7 +101,7 @@ chmod -R go-rwx "$WORK/config"
 {
   echo "дата: $(date '+%Y-%m-%d %H:%M:%S %z')"
   echo "код: $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo неизвестно)"
-  echo "база: $(du -k "$WORK/app.db" | cut -f1) КБ, sha256 $(shasum -a 256 "$WORK/app.db" | cut -d' ' -f1)"
+  echo "база: $(du -k "$WORK/app.dump" | cut -f1) КБ, sha256 $(sha256sum "$WORK/app.dump" | cut -d' ' -f1)"
   echo "файлов: $(find "$WORK/files" -type f | wc -l | tr -d ' ')"
 } > "$WORK/manifest.txt"
 

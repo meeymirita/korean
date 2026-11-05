@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
 import NoteModal from '@/components/cabinet/NoteModal.vue'
@@ -11,6 +11,7 @@ import { askConfirm } from '@/composables/useConfirm'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
+import { searchPrivateRemote } from '@/data/korean/search'
 
 const store = useNotesStore()
 const images = useImagesStore()
@@ -30,6 +31,9 @@ const uploading = ref(false)
 const title = ref('')
 const text = ref('')
 const query = ref('')
+const remoteNoteIds = ref<string[] | null>(null)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+let searchRequest = 0
 const editing = ref<string | null>(null)
 const editTitle = ref('')
 const editText = ref('')
@@ -43,8 +47,25 @@ onMounted(() => {
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
   const byTag = tagFilter.value ? store.notes.filter(n => n.tags.includes(tagFilter.value)) : store.notes
-  return q ? byTag.filter(n => (n.title + ' ' + n.text + ' ' + n.tags.join(' ')).toLowerCase().includes(q)) : byTag
+  if (!q) return byTag
+  if (remoteNoteIds.value !== null) {
+    const positions = new Map(remoteNoteIds.value.map((id, index) => [id, index]))
+    return byTag.filter(note => positions.has(note.id)).sort((a, b) => positions.get(a.id)! - positions.get(b.id)!)
+  }
+  return byTag.filter(n => (n.title + ' ' + n.text + ' ' + n.tags.join(' ')).toLowerCase().includes(q))
 })
+
+watch(query, value => {
+  clearTimeout(searchTimer)
+  remoteNoteIds.value = null
+  const request = ++searchRequest
+  if (!value.trim()) return
+  searchTimer = setTimeout(async () => {
+    const reply = await searchPrivateRemote(value, 'note', progress.bearer)
+    if (request === searchRequest && reply) remoteNoteIds.value = reply.hits.map(hit => hit.id.slice('note:'.length))
+  }, 180)
+})
+onBeforeUnmount(() => { clearTimeout(searchTimer); searchRequest++ })
 
 const noteTags = computed(() => [...store.tagCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).map(([t]) => t))
 const toggleTag = (t: string) => (tagFilter.value = tagFilter.value === t ? '' : t)

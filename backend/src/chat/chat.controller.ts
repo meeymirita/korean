@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common'
-import { Owner } from '../auth/auth'
-import { ChatService } from './chat.service'
+import { Owner } from '../auth/auth.js'
+import { ChatService } from './chat.service.js'
 
 /** /api/chat: помощник по корейскому (OpenRouter), только для владельца. */
 @Owner()

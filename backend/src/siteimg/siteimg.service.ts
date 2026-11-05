@@ -3,13 +3,13 @@ import { BadRequestException, Injectable, NotFoundException, PayloadTooLargeExce
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
-import { MAX_SITE_IMAGE, MAX_SITE_IMAGES, SITE_DIR } from '../config'
-import { Db } from '../db/db.service'
-import { sniff } from '../images/images.service'
+import { MAX_SITE_IMAGE, MAX_SITE_IMAGES, SITE_DIR } from '../config.js'
+import { Db } from '../db/db.service.js'
+import { sniff } from '../images/images.service.js'
 
 interface Row {
   key: string
-  kind: string // file | url | none (исходная картинка, меняется только положение)
+  kind: string
   ref: string // имя файла в SITE_DIR или внешняя ссылка
   mime: string
   x: number
@@ -38,14 +38,14 @@ export class SiteImgService {
   }
 
   /** Все подмены для сайта: открыто всем (картинки видят и посетители без токена). */
-  list() {
+  async list() {
     const items: Record<string, { src: string; x: number; y: number; zoom: number }> = {}
-    for (const r of this.db.all<Row>('SELECT key, kind, ref, mime, x, y, zoom, v FROM site_images ORDER BY key')) items[r.key] = { src: this.src(r), x: r.x, y: r.y, zoom: r.zoom }
+    for (const r of await (await this.db.orm()).siteImage.findMany({ orderBy: { key: 'asc' } }) as Row[]) items[r.key] = { src: this.src(r), x: r.x, y: r.y, zoom: r.zoom }
     return { items }
   }
 
-  private row(key: string) {
-    return this.db.get<Row>('SELECT key, kind, ref, mime, x, y, zoom, v FROM site_images WHERE key = ?', key)
+  private async row(key: string) {
+    return (await (await this.db.orm()).siteImage.findUnique({ where: { key } }) as Row | null) ?? undefined
   }
 
   private dropFile(r: Row | undefined) {
@@ -58,8 +58,8 @@ export class SiteImgService {
     }
   }
 
-  private guardCount(key: string) {
-    if (!this.row(key) && this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM site_images')!.n >= MAX_SITE_IMAGES) throw new BadRequestException({ error: 'too many images' })
+  private async guardCount(key: string) {
+    if (!(await this.row(key)) && await (await this.db.orm()).siteImage.count() >= MAX_SITE_IMAGES) throw new BadRequestException({ error: 'too many images' })
   }
 
   /** Загрузка файла: тип по содержимому, сжимается до 1600 px и сохраняется как webp (картинки с прозрачностью остаются прозрачными). */
@@ -68,60 +68,62 @@ export class SiteImgService {
     if (!file) throw new BadRequestException({ error: 'no file' })
     if (file.size > MAX_SITE_IMAGE) throw new PayloadTooLargeException({ error: 'file too large' })
     if (!sniff(file.buffer)) throw new BadRequestException({ error: 'not an image' })
-    this.guardCount(key)
+    await this.guardCount(key)
     let out: Buffer
     try {
       out = await sharp(file.buffer, { failOn: 'error', limitInputPixels: 80_000_000 }).rotate().resize(SIDE, SIDE, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 88 }).toBuffer()
     } catch {
       throw new BadRequestException({ error: 'bad image' })
     }
-    const prev = this.row(key)
+    const prev = await this.row(key)
     const v = (prev?.v ?? 0) + 1
     const name = `${key}-${v}.webp`
     writeFileSync(path.join(SITE_DIR, name), out)
     this.dropFile(prev)
-    this.db.run(
-      'INSERT INTO site_images (key, kind, ref, mime, x, y, zoom, v) VALUES (?, ?, ?, ?, 50, 50, 1, ?) ON CONFLICT(key) DO UPDATE SET kind = excluded.kind, ref = excluded.ref, mime = excluded.mime, x = 50, y = 50, zoom = 1, v = excluded.v',
-      key, 'file', name, 'image/webp', v,
-    )
-    return this.list().items[key]
+    await (await this.db.orm()).siteImage.upsert({
+      where: { key },
+      create: { key, kind: 'file', ref: name, mime: 'image/webp', x: 50, y: 50, zoom: 1, v },
+      update: { kind: 'file', ref: name, mime: 'image/webp', x: 50, y: 50, zoom: 1, v },
+    })
+    return (await this.list()).items[key]
   }
 
   /** Ссылка на картинку (только https) и/или положение: x, y в процентах, zoom от 1 до 3. */
-  set(key: string, body: { url?: unknown; x?: unknown; y?: unknown; zoom?: unknown } | undefined) {
+  async set(key: string, body: { url?: unknown; x?: unknown; y?: unknown; zoom?: unknown } | undefined) {
     this.check(key)
     const b = body ?? {}
-    const prev = this.row(key)
+    const prev = await this.row(key)
     if (b.url !== undefined) {
       if (typeof b.url !== 'string' || b.url.length > 600 || !/^https:\/\/[^\s]+$/i.test(b.url)) throw new BadRequestException({ error: 'invalid url' })
-      this.guardCount(key)
+      await this.guardCount(key)
       this.dropFile(prev)
-      this.db.run(
-        'INSERT INTO site_images (key, kind, ref, mime, x, y, zoom, v) VALUES (?, ?, ?, ?, ?, ?, ?, 1) ON CONFLICT(key) DO UPDATE SET kind = excluded.kind, ref = excluded.ref, mime = excluded.mime, x = excluded.x, y = excluded.y, zoom = excluded.zoom, v = site_images.v + 1',
-        key, 'url', b.url, '', num(b.x, 0, 100, 50), num(b.y, 0, 100, 50), num(b.zoom, 1, 3, 1),
-      )
+      await (await this.db.orm()).siteImage.upsert({
+        where: { key },
+        create: { key, kind: 'url', ref: b.url, mime: '', x: num(b.x, 0, 100, 50), y: num(b.y, 0, 100, 50), zoom: num(b.zoom, 1, 3, 1), v: 1 },
+        update: { kind: 'url', ref: b.url, mime: '', x: num(b.x, 0, 100, 50), y: num(b.y, 0, 100, 50), zoom: num(b.zoom, 1, 3, 1), v: { increment: 1 } },
+      })
     } else if (!prev) {
-      this.guardCount(key)
-      this.db.run('INSERT INTO site_images (key, kind, ref, mime, x, y, zoom, v) VALUES (?, ?, ?, ?, ?, ?, ?, 1)', key, 'none', '', '', num(b.x, 0, 100, 50), num(b.y, 0, 100, 50), num(b.zoom, 1, 3, 1))
+      await this.guardCount(key)
+      await (await this.db.orm()).siteImage.create({ data: { key, kind: 'none', ref: '', mime: '', x: num(b.x, 0, 100, 50), y: num(b.y, 0, 100, 50), zoom: num(b.zoom, 1, 3, 1), v: 1 } })
     } else {
-      this.db.run('UPDATE site_images SET x = ?, y = ?, zoom = ? WHERE key = ?', num(b.x, 0, 100, prev.x), num(b.y, 0, 100, prev.y), num(b.zoom, 1, 3, prev.zoom), key)
+      await (await this.db.orm()).siteImage.update({ where: { key }, data: { x: num(b.x, 0, 100, prev.x), y: num(b.y, 0, 100, prev.y), zoom: num(b.zoom, 1, 3, prev.zoom) } })
     }
-    return this.list().items[key]
+    return (await this.list()).items[key]
   }
 
   /** Вернуть исходную картинку сайта. */
-  remove(key: string) {
+  async remove(key: string) {
     this.check(key)
-    const prev = this.row(key)
+    const prev = await this.row(key)
     if (!prev) throw new NotFoundException({ error: 'not found' })
     this.dropFile(prev)
-    this.db.run('DELETE FROM site_images WHERE key = ?', key)
+    await (await this.db.orm()).siteImage.delete({ where: { key } })
     return { ok: true }
   }
 
-  open(key: string) {
+  async open(key: string) {
     this.check(key)
-    const r = this.row(key)
+    const r = await this.row(key)
     const p = r && r.kind === 'file' ? path.join(SITE_DIR, r.ref) : ''
     if (!r || !p || !existsSync(p)) throw new NotFoundException({ error: 'not found' })
     return { path: p, mime: r.mime }

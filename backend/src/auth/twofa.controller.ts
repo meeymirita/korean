@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Post, Req, UnauthorizedException } from '@nestjs/common'
 import type { Request } from 'express'
-import { Events } from '../events/events.service'
-import { RateLimiter, clientIp } from '../security'
-import { AllowPending, Owner } from './auth'
-import { ConfirmService } from './confirm.service'
-import { TwoFaService } from './twofa.service'
+import { Events } from '../events/events.service.js'
+import { RateLimiter, clientIp } from '../security.js'
+import { AllowPending, Owner } from './auth.js'
+import { ConfirmService } from './confirm.service.js'
+import { TwoFaService } from './twofa.service.js'
 
 /**
  * /api/2fa: двухфакторная защита (код из 4 цифр на почту). Шаги входа (`status`, `send`, `verify`) доступны владельцу, который ещё не ввёл код;
@@ -20,10 +20,10 @@ export class TwoFaController {
     private readonly events: Events,
   ) {}
 
-  private wrong(req: Request): never {
+  private async wrong(req: Request): Promise<never> {
     const ip = clientIp(req)
     const locked = this.limiter.fail(ip, 'confirm')
-    this.events.log(locked ? 'ip_locked' : '2fa_bad_code', ip)
+    await this.events.log(locked ? 'ip_locked' : '2fa_bad_code', ip)
     throw new UnauthorizedException({ error: 'wrong code' })
   }
 
@@ -45,8 +45,8 @@ export class TwoFaController {
   @AllowPending()
   @Post('verify')
   @HttpCode(200)
-  verify(@Req() req: Request, @Body() body: { code?: unknown }) {
-    return this.twofa.verifyLogin(body?.code) ?? this.wrong(req)
+  async verify(@Req() req: Request, @Body() body: { code?: unknown }) {
+    return (await this.twofa.verifyLogin(body?.code)) ?? this.wrong(req)
   }
 
   @Post('enable/start')
@@ -57,19 +57,19 @@ export class TwoFaController {
 
   @Post('enable/confirm')
   @HttpCode(200)
-  confirmEnable(@Req() req: Request, @Body() body: { code?: unknown }) {
-    return this.twofa.confirmEnable(body?.code) ?? this.wrong(req)
+  async confirmEnable(@Req() req: Request, @Body() body: { code?: unknown }) {
+    return (await this.twofa.confirmEnable(body?.code)) ?? this.wrong(req)
   }
 
   @Delete()
-  disable(@Req() req: Request) {
-    this.confirm.require(req) // повторный токен: как у остальных опасных действий
+  async disable(@Req() req: Request) {
+    await this.confirm.require(req) // повторный токен: как у остальных опасных действий
     return this.twofa.disable()
   }
 
   @Delete('sessions')
-  revoke(@Req() req: Request) {
-    this.confirm.require(req)
+  async revoke(@Req() req: Request) {
+    await this.confirm.require(req)
     return this.twofa.revokeSessions()
   }
 }

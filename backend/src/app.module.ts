@@ -1,28 +1,31 @@
 import { Module } from '@nestjs/common'
 import { APP_FILTER } from '@nestjs/core'
-import { AdminModule } from './admin/admin.module'
-import { AuthModule } from './auth/auth.module'
-import { ChatModule } from './chat/chat.module'
-import { DbModule } from './db/db.module'
-import { ErrorFilter } from './error.filter'
-import { EventsModule } from './events/events.module'
-import { GuestsModule } from './guests/guests.module'
-import { HealthController } from './health.controller'
-import { ImagesModule } from './images/images.module'
-import { NotesModule } from './notes/notes.module'
-import { NotebookModule } from './notebook/notebook.module'
-import { PlansModule } from './plans/plans.module'
-import { SiteImgModule } from './siteimg/siteimg.module'
-import { PublicModule } from './public/public.module'
-import { DigestModule } from './digest/digest.module'
-import { ReminderModule } from './reminders/reminder.module'
-import { LessonModule } from './lesson/lesson.module'
-import { SetsModule } from './sets/sets.module'
-import { ProgressModule } from './progress/progress.module'
+import { AdminModule } from './admin/admin.module.js'
+import { AuthModule } from './auth/auth.module.js'
+import { ChatModule } from './chat/chat.module.js'
+import { DbModule } from './db/db.module.js'
+import { ErrorFilter } from './error.filter.js'
+import { EventsModule } from './events/events.module.js'
+import { GuestsModule } from './guests/guests.module.js'
+import { HealthController } from './health.controller.js'
+import { ImagesModule } from './images/images.module.js'
+import { NotesModule } from './notes/notes.module.js'
+import { NotebookModule } from './notebook/notebook.module.js'
+import { PlansModule } from './plans/plans.module.js'
+import { SiteImgModule } from './siteimg/siteimg.module.js'
+import { PublicModule } from './public/public.module.js'
+import { DigestModule } from './digest/digest.module.js'
+import { ReminderModule } from './reminders/reminder.module.js'
+import { LessonModule } from './lesson/lesson.module.js'
+import { SetsModule } from './sets/sets.module.js'
+import { ProgressModule } from './progress/progress.module.js'
+import { MetricsController } from './metrics.controller.js'
+import { MetricsService } from './metrics.service.js'
+import { SearchModule } from './search/search.module.js'
 
 @Module({
-  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule],
-  controllers: [HealthController],
-  providers: [{ provide: APP_FILTER, useClass: ErrorFilter }],
+  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
+  controllers: [HealthController, MetricsController],
+  providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService],
 })
 export class AppModule {}

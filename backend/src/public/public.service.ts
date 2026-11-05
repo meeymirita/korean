@@ -8,29 +8,10 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
-import { MAX_OG, PUBLIC_DIR, UPLOADS } from '../config'
-import { Db } from '../db/db.service'
-import { Events } from '../events/events.service'
-
-export interface Card {
-  name: string
-  avatar: string
-  level: number
-  title: string
-  streak: number
-  learned: number
-  answers: number
-  /** дней с начала пути */
-  days: number
-}
-
-interface Settings {
-  enabled: boolean
-  /** id обложки кабинета, которую разрешено показывать всем; пусто — не показывать */
-  cover: string
-  card: Card | null
-  updated: number
-}
+import { MAX_OG, PUBLIC_DIR, UPLOADS } from '../config.js'
+import { Db } from '../db/db.service.js'
+import { Events } from '../events/events.service.js'
+import { Card, Settings } from './public.types.js'
 
 const ID = /^[a-f0-9]{16}$/
 const OG_FILE = path.join(PUBLIC_DIR, 'og.png')
@@ -63,9 +44,9 @@ export class PublicService {
     mkdirSync(PUBLIC_DIR, { recursive: true })
   }
 
-  private read(): Settings {
+  private async read(): Promise<Settings> {
     try {
-      const v = JSON.parse(this.db.getMeta('public') ?? '{}') as Partial<Settings>
+      const v = JSON.parse(await this.db.getMeta('public') ?? '{}') as Partial<Settings>
       return { enabled: v.enabled === true, cover: typeof v.cover === 'string' && ID.test(v.cover) ? v.cover : '', card: v.card ? cleanCard(v.card) : null, updated: Number(v.updated) || 0 }
     } catch {
       return { enabled: false, cover: '', card: null, updated: 0 }
@@ -73,23 +54,26 @@ export class PublicService {
   }
 
   /** Для владельца: что включено и есть ли картинка превью. */
-  settings() {
-    const s = this.read()
+  async settings() {
+    const s = await this.read()
     return { enabled: s.enabled, cover: s.cover, hasOg: existsSync(OG_FILE), updated: s.updated }
   }
 
-  save(body: { enabled?: unknown; cover?: unknown; card?: unknown } | undefined) {
+  async save(body: { enabled?: unknown; cover?: unknown; card?: unknown } | undefined) {
     const b = body ?? {}
     if (typeof b.enabled !== 'boolean') throw new BadRequestException({ error: 'invalid settings' })
-    const was = this.read()
+    const was = await this.read()
     let cover = ''
     if (b.cover !== undefined && b.cover !== '') {
-      if (typeof b.cover !== 'string' || !ID.test(b.cover) || !this.db.get("SELECT 1 AS x FROM images WHERE id = ? AND kind = 'cover'", b.cover)) throw new BadRequestException({ error: 'invalid cover' })
-      cover = b.cover
+      const coverImage = typeof b.cover === 'string' && ID.test(b.cover)
+        ? await (await this.db.orm()).image.findFirst({ where: { id: b.cover, kind: 'cover' }, select: { id: true } })
+        : null
+      if (!coverImage) throw new BadRequestException({ error: 'invalid cover' })
+      cover = b.cover as string
     }
     const next: Settings = { enabled: b.enabled, cover, card: b.card === undefined ? was.card : cleanCard(b.card), updated: Date.now() }
-    this.db.setMeta('public', JSON.stringify(next))
-    if (was.enabled !== next.enabled) this.events.log(next.enabled ? 'public_on' : 'public_off', '/me')
+    await this.db.setMeta('public', JSON.stringify(next))
+    if (was.enabled !== next.enabled) await this.events.log(next.enabled ? 'public_on' : 'public_off', '/me')
     return this.settings()
   }
 
@@ -107,22 +91,22 @@ export class PublicService {
   }
 
   /** Открытые данные визитки; пока закрыта — 404. */
-  publicCard() {
-    const s = this.read()
+  async publicCard() {
+    const s = await this.read()
     if (!s.enabled || !s.card) throw new NotFoundException({ error: 'closed' })
     return { ...s.card, cover: !!s.cover, hasOg: existsSync(OG_FILE), updated: s.updated }
   }
 
-  publicOg() {
-    if (!this.read().enabled || !existsSync(OG_FILE)) throw new NotFoundException({ error: 'closed' })
+  async publicOg() {
+    if (!(await this.read()).enabled || !existsSync(OG_FILE)) throw new NotFoundException({ error: 'closed' })
     return OG_FILE
   }
 
   /** Обложка: только та, что владелец явно разрешил, и только пока визитка включена. */
-  publicCover() {
-    const s = this.read()
+  async publicCover() {
+    const s = await this.read()
     if (!s.enabled || !s.cover) throw new NotFoundException({ error: 'closed' })
-    const row = this.db.get<{ ext: string; mime: string }>("SELECT ext, mime FROM images WHERE id = ? AND kind = 'cover'", s.cover)
+    const row = await (await this.db.orm()).image.findFirst({ where: { id: s.cover, kind: 'cover' }, select: { ext: true, mime: true } })
     const p = row ? path.join(UPLOADS, `${s.cover}.${row.ext}`) : ''
     if (!row || !existsSync(p)) throw new NotFoundException({ error: 'closed' })
     return { path: p, mime: row.mime }
