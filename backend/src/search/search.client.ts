@@ -11,6 +11,15 @@ const MAX_QUERY = 160
 const SEARCH_LIMIT = 100
 const TASK_WAIT_MS = 30_000
 
+/** Meilisearch document IDs exclude punctuation such as ':'. Encode it losslessly and restore the app ID on reads. */
+function encodeDocumentId(id: string) {
+  return id.replace(/[^a-zA-Z0-9-]/g, char => `_x${char.codePointAt(0)!.toString(16)}_`)
+}
+
+function decodeDocumentId(id: string) {
+  return id.replace(/_x([0-9a-f]+)_/gi, (_match, point: string) => String.fromCodePoint(Number.parseInt(point, 16)))
+}
+
 export class SearchClient {
   private reindexing = false
   private privateReindexing = false
@@ -95,7 +104,7 @@ export class SearchClient {
       body: JSON.stringify({ q: query, limit: SEARCH_LIMIT, offset, ...(category ? { filter: `category = ${category}` } : {}), attributesToRetrieve: ['id', 'category', 'title', 'text', 'target', 'group'] }),
     })
     const hits = (result?.hits ?? []).map(hit => ({
-      id: hit.id,
+      id: decodeDocumentId(hit.id),
       category: hit.category,
       title: hit.title,
       text: hit.text,
@@ -124,7 +133,7 @@ export class SearchClient {
       if (documents.length) {
         await this.task(await this.request<MeiliTask>(`/indexes/${INDEX}/documents?primaryKey=id`, {
           method: 'POST',
-          body: JSON.stringify(documents),
+          body: JSON.stringify(documents.map(document => ({ ...document, id: encodeDocumentId(document.id) }))),
         }))
       }
       return { ok: true, documents: documents.length }
@@ -174,7 +183,7 @@ export class SearchClient {
       const documents = [
         ...notes.map(note => ({ id: `note:${note.id}`, category: 'note', title: note.title, text: [note.title, note.text, note.tags].join(' ') })),
         ...images.map(image => ({ id: `image:${image.id}`, category: 'image', title: image.caption || image.name, text: [image.name, image.caption, image.description, image.tags].join(' ') })),
-      ]
+      ].map(document => ({ ...document, id: encodeDocumentId(document.id) }))
       await this.ensureIndex(PRIVATE_INDEX)
       await this.task(await this.request<MeiliTask>(`/indexes/${PRIVATE_INDEX}/settings`, {
         method: 'PATCH',
@@ -208,7 +217,7 @@ export class SearchClient {
       method: 'POST',
       body: JSON.stringify({ q: query, filter: `category = ${category}`, limit: SEARCH_LIMIT, attributesToRetrieve: ['id', 'category'] }),
     })
-    const hits = (result?.hits ?? []).filter(hit => hit.category === category).map(hit => ({ id: hit.id, category: hit.category }))
+    const hits = (result?.hits ?? []).filter(hit => hit.category === category).map(hit => ({ id: decodeDocumentId(hit.id), category: hit.category }))
     return { query, hits, total: Math.max(0, Number(result?.estimatedTotalHits) || hits.length), limit: SEARCH_LIMIT }
   }
 

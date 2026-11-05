@@ -25,7 +25,7 @@ async function release(files) {
   await sh(work, 'git add -A && git commit -q -m release && git push -q origin main')
 }
 
-/** Запуск deploy.sh на «сервере» с подставными командами вместо npm и systemctl. */
+/** Запуск deploy.sh на «сервере» с подставными командами вместо Docker Compose. */
 async function deploy(args = [], env = {}) {
   try {
     const r = await run('bash', [path.join(srv, 'scripts/deploy.sh'), ...args], {
@@ -34,15 +34,11 @@ async function deploy(args = [], env = {}) {
         ...process.env,
         GIT_TERMINAL_PROMPT: '0',
         HEALTH_URL: `http://127.0.0.1:${port}/health`,
-        HEALTH_TRIES: '2',
-        INSTALL_ROOT_CMD: `${tmp}/call.sh root-install`,
-        INSTALL_SITE_CMD: `${tmp}/call.sh site-install`,
-        INSTALL_SERVER_CMD: `${tmp}/call.sh server-install`,
-        BUILD_SERVER_CMD: `${tmp}/call.sh server-build`,
-        BUILD_SITE_CMD: `${tmp}/call.sh site-build`,
-        RESTART_CMD: `${tmp}/restart.sh`,
-        SITE_RESTART_CMD: `${tmp}/call.sh site-restart`,
         SITE_HEALTH_URL: `http://127.0.0.1:${port}/health`,
+        HEALTH_TRIES: '2',
+        BACKUP_CMD: `${tmp}/call.sh backup`,
+        BUILD_CMD: `${tmp}/call.sh build`,
+        UP_CMD: `${tmp}/up.sh`,
         ...env,
       },
     })
@@ -57,14 +53,14 @@ before(async () => {
   origin = path.join(tmp, 'origin.git')
   work = path.join(tmp, 'work')
   srv = path.join(tmp, 'srv')
-  // подставные команды: пишут в calls.log; «перезапуск» делает сервер нездоровым, если в backend/a.txt есть BAD
+  // подставные команды: пишут в calls.log; «запуск» делает сервер нездоровым, если в backend/a.txt есть BAD
   writeFileSync(path.join(tmp, 'call.sh'), '#!/bin/bash\necho "$1" >> "$(dirname "$0")/calls.log"\n')
   writeFileSync(
-    path.join(tmp, 'restart.sh'),
-    `#!/bin/bash\necho restart >> ${tmp}/calls.log\nif grep -q BAD ${srv}/backend/a.txt; then echo down > ${tmp}/health.state; else echo up > ${tmp}/health.state; fi\n`,
+    path.join(tmp, 'up.sh'),
+    `#!/bin/bash\necho up >> ${tmp}/calls.log\nif grep -q BAD ${srv}/backend/a.txt; then echo down > ${tmp}/health.state; else echo up > ${tmp}/health.state; fi\n`,
   )
   chmodSync(path.join(tmp, 'call.sh'), 0o755)
-  chmodSync(path.join(tmp, 'restart.sh'), 0o755)
+  chmodSync(path.join(tmp, 'up.sh'), 0o755)
   writeFileSync(path.join(tmp, 'health.state'), 'up')
   httpServer = http.createServer((req, res) => {
     const up = readFileSync(path.join(tmp, 'health.state'), 'utf8').trim() === 'up'
@@ -101,38 +97,30 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.deepEqual(calls(), [])
   })
 
-  test('изменился только сайт: собирается сайт, сервер и пакеты не трогаются, перезапуска нет', async () => {
+  test('есть изменения: копия базы, сборка образов, запуск, сайт и сервер отвечают', async () => {
     await release({ 'src/a.txt': '2' })
     resetCalls()
     const r = await deploy()
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['site-build', 'site-restart'])
-    assert.match(r.out, /перезапуск не нужен/)
-  })
-
-  test('изменился сервер: ставятся пакеты сервера, собирается сервер и сайт, служба перезапускается, сервер отвечает', async () => {
-    await release({ 'backend/a.txt': '2' })
-    resetCalls()
-    const r = await deploy()
-    assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['server-install', 'server-build', 'site-build', 'restart', 'site-restart'])
+    assert.deepEqual(calls(), ['backup', 'build', 'up'])
     assert.match(r.out, /Сайт и сервер отвечают/)
   })
 
-  test('изменились пакеты корня (тесты): ставятся они, сайт пересобирается', async () => {
-    await release({ 'package-lock.json': '{"v":2}' })
+  test('--no-backup пропускает копию, --no-restart только собирает', async () => {
+    await release({ 'src/a.txt': '3' })
     resetCalls()
-    const r = await deploy()
+    const r = await deploy(['--no-backup', '--no-restart'])
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['root-install', 'site-build', 'site-restart'])
+    assert.deepEqual(calls(), ['build'])
   })
 
-  test('изменились пакеты сайта (frontend/): перед сборкой ставятся они', async () => {
-    await release({ 'frontend/package-lock.json': '{"v":2}' })
+  test('копия не получилась: громкое предупреждение, но обновление идёт дальше', async () => {
+    await release({ 'src/a.txt': '4' })
     resetCalls()
-    const r = await deploy()
+    const r = await deploy([], { BACKUP_CMD: 'false' })
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['site-install', 'site-build', 'site-restart'])
+    assert.match(r.out, /копия не получилась/)
+    assert.deepEqual(calls(), ['build', 'up'])
   })
 
   test('неудачный выпуск: сервер не ответил, скрипт сам откатывается на прошлую версию и заканчивается ошибкой', async () => {
@@ -144,7 +132,8 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.match(r.out, /ОТКАТ/)
     assert.match(r.out, /сервер не ответил/)
     assert.equal(await sh(srv, 'git rev-parse HEAD'), before, 'код вернулся на прошлую версию')
-    assert.equal(calls().filter(c => c === 'restart').length, 2, 'служба перезапущена и после отката')
+    assert.equal(calls().filter(c => c === 'up').length, 2, 'стек запущен и после отката')
+    assert.equal(calls().filter(c => c === 'build').length, 2, 'образы пересобраны и после отката')
     assert.match(r.out, /Откат выполнен, сервер отвечает/)
     // после отката следующий выпуск (исправленный) ставится нормально
     await release({ 'backend/a.txt': '3' })
@@ -153,26 +142,13 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.equal(ok.code, 0, ok.out)
   })
 
-  test('сборка сайта не удалась: откат, ошибка', async () => {
+  test('сборка не удалась: откат, ошибка', async () => {
     const before = await sh(srv, 'git rev-parse HEAD')
     await release({ 'src/a.txt': '5' })
-    const r = await deploy([], { BUILD_SITE_CMD: 'false' })
+    const r = await deploy([], { BUILD_CMD: 'false' })
     assert.notEqual(r.code, 0)
-    assert.match(r.out, /не удалось собрать сайт/)
+    assert.match(r.out, /не удалось собрать образы/)
     assert.equal(await sh(srv, 'git rev-parse HEAD'), before)
-  })
-
-  test('файл блокировки, переписанный npm на сервере, возвращается как в git, и обновление идёт дальше', async () => {
-    writeFileSync(path.join(srv, 'package-lock.json'), '{"переписал":"npm"}')
-    writeFileSync(path.join(srv, 'frontend/package-lock.json'), '{"переписал":"npm"}')
-    writeFileSync(path.join(srv, 'backend/package-lock.json'), '{"переписал":"npm"}')
-    await release({ 'src/c.txt': 'y' })
-    resetCalls()
-    const r = await deploy()
-    assert.equal(r.code, 0, r.out)
-    assert.match(r.out, /Возвращаю package-lock\.json как в git/)
-    assert.ok(calls().includes('site-build'))
-    assert.equal(await sh(srv, 'git status --porcelain'), '', 'рабочая папка снова чистая')
   })
 
   test('в папке проекта несохранённые правки: скрипт отказывается и ничего не делает', async () => {
@@ -186,12 +162,12 @@ describe('скрипт обновления на сервере (scripts/deploy.
     await sh(srv, 'git checkout -q -- src/a.txt')
   })
 
-  test('--force собирает и перезапускает, даже если изменений нет', async () => {
+  test('--force собирает и запускает, даже если изменений нет', async () => {
     await deploy() // подтянуть всё
     resetCalls()
     const r = await deploy(['--force'])
     assert.equal(r.code, 0, r.out)
-    assert.deepEqual(calls(), ['root-install', 'site-install', 'server-install', 'server-build', 'site-build', 'restart', 'site-restart'])
+    assert.deepEqual(calls(), ['backup', 'build', 'up'])
   })
 
   test('неизвестный параметр отклоняется', async () => {

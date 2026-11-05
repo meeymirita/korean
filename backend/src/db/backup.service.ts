@@ -1,25 +1,18 @@
 /** Периодический дамп PostgreSQL: DATA_DIR/backups/app-ГГГГ-ММ-ДД.dump, хранятся последние 30. */
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnModuleInit } from '@nestjs/common'
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs'
 import path from 'node:path'
 import { BACKUPS, KEEP_BACKUPS } from '../config.js'
 import { postgresDumpConfig } from './postgres-dump.js'
+import { BackgroundJobs } from '../jobs/background-jobs.service.js'
 
 @Injectable()
-export class BackupService implements OnModuleInit, OnModuleDestroy {
-  private timer?: NodeJS.Timeout
-
-  constructor() {}
+export class BackupService implements OnModuleInit {
+  constructor(private readonly jobs: BackgroundJobs) {}
 
   onModuleInit() {
-    void this.backup()
-    this.timer = setInterval(() => void this.backup(), 6 * 3600 * 1000)
-    this.timer.unref()
-  }
-
-  onModuleDestroy() {
-    clearInterval(this.timer)
+    this.jobs.register('backup.run', () => this.backup())
   }
 
   async backup() {
@@ -39,6 +32,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       for (const old of files.slice(0, Math.max(0, files.length - KEEP_BACKUPS))) unlinkSync(path.join(BACKUPS, old))
     } catch (e) {
       console.error('копия базы не создалась:', (e as Error).message) // копия — страховка, на работу сервера не влияет
+      throw e // BullMQ повторит попытку с backoff и запишет исчерпанные попытки в failed jobs.
     }
   }
 }

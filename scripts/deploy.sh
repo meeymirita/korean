@@ -1,44 +1,45 @@
 #!/usr/bin/env bash
 # Обновление сайта на сервере одной командой:  bash scripts/deploy.sh
 #
-# Что делает: забирает свежий код (git pull), ставит пакеты, если они менялись, собирает сайт (Nuxt) и перезапускает его службу,
-# при изменении сервера API собирает и перезапускает и его, проверяет, что оба отвечают, и, если нет, сам возвращает прежнюю версию.
+# Что делает: проверяет, что в папке проекта нет чужих правок, забирает свежий код (git pull), делает копию базы,
+# собирает образы Docker (сайт и сервер), перезапускает изменившиеся службы, ждёт ответа сайта и API
+# и, если не ответили, сам возвращает прежнюю версию и пересобирает её. Данные (тома PostgreSQL, app-data) не трогаются.
 #
 # Параметры (необязательные):
-#   --force        собрать и перезапустить сервер, даже если в backend/ ничего не менялось
-#   --no-restart   не перезапускать службу (только собрать)
+#   --force        собрать и перезапустить, даже если в git ничего не менялось
+#   --no-restart   только собрать образы, службы не перезапускать
+#   --no-backup    не делать копию базы перед обновлением
 # Переменные окружения (нужны тестам, на сервере обычно не трогаешь):
-#   RESTART_CMD         как перезапускать сервер (по умолчанию: systemctl restart progress)
-#   HEALTH_URL          адрес проверки (по умолчанию: http://127.0.0.1:3001/api/health)
-#   HEALTH_TRIES        сколько секунд ждать ответа (по умолчанию 20)
-#   SITE_RESTART_CMD    как перезапускать сайт (по умолчанию: systemctl restart korean-web; пусто — не перезапускать)
-#   SITE_HEALTH_URL     адрес проверки сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
+#   COMPOSE_CMD         команда Compose (по умолчанию: docker compose)
+#   BUILD_CMD / UP_CMD  свои команды сборки и запуска вместо Compose
+#   BACKUP_CMD          команда копии перед обновлением (по умолчанию: bash scripts/backup-docker.sh)
+#   HEALTH_URL          проверка API (по умолчанию: http://127.0.0.1:3001/api/health)
+#   SITE_HEALTH_URL     проверка сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
+#   HEALTH_TRIES        сколько секунд ждать ответа (по умолчанию 60: после миграций backend стартует не сразу)
 #   GIT_PULL=0          не делать git pull (код уже на месте)
-#   INSTALL_ROOT_CMD, INSTALL_SITE_CMD, INSTALL_SERVER_CMD, BUILD_SERVER_CMD, BUILD_SITE_CMD — свои команды вместо npm
 #   NOTIFY_TELEGRAM_TOKEN и NOTIFY_TELEGRAM_CHAT — отправить результат в Telegram (по желанию; задать в /etc/korean-deploy.env)
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
 [ -f /etc/korean-deploy.env ] && . /etc/korean-deploy.env
 
-RESTART_CMD=${RESTART_CMD:-systemctl restart progress}
+COMPOSE=${COMPOSE_CMD:-docker compose}
+BUILD_CMD=${BUILD_CMD:-$COMPOSE build}
+UP_CMD=${UP_CMD:-$COMPOSE up -d --remove-orphans}
+BACKUP_CMD=${BACKUP_CMD:-bash scripts/backup-docker.sh}
 HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:3001/api/health}
-HEALTH_TRIES=${HEALTH_TRIES:-20}
-SITE_RESTART_CMD=${SITE_RESTART_CMD-systemctl restart korean-web}
 SITE_HEALTH_URL=${SITE_HEALTH_URL:-http://127.0.0.1:3000/robots.txt}
-INSTALL_ROOT_CMD=${INSTALL_ROOT_CMD:-npm ci}
-INSTALL_SITE_CMD=${INSTALL_SITE_CMD:-npm --prefix frontend ci}
-INSTALL_SERVER_CMD=${INSTALL_SERVER_CMD:-npm --prefix backend ci}
-BUILD_SERVER_CMD=${BUILD_SERVER_CMD:-npm --prefix backend run build}
-BUILD_SITE_CMD=${BUILD_SITE_CMD:-npm --prefix frontend run build}
+HEALTH_TRIES=${HEALTH_TRIES:-60}
 
 FORCE=0
 RESTART=1
+BACKUP=1
 for a in "$@"; do
   case "$a" in
     --force) FORCE=1 ;;
     --no-restart) RESTART=0 ;;
-    *) echo "Неизвестный параметр: $a (есть --force и --no-restart)"; exit 2 ;;
+    --no-backup) BACKUP=0 ;;
+    *) echo "Неизвестный параметр: $a (есть --force, --no-restart и --no-backup)"; exit 2 ;;
   esac
 done
 
@@ -50,33 +51,16 @@ notify() {
 }
 fail() { echo "ОШИБКА: $*" >&2; notify "우리말: деплой не удался: $*"; exit 1; }
 
-# сервер отвечает? (ждём до HEALTH_TRIES секунд)
-healthy() {
+# адрес отвечает? (ждём до HEALTH_TRIES секунд)
+wait_for() { # url [шаблон ответа]
   local i
   for i in $(seq 1 "$HEALTH_TRIES"); do
-    if curl -fsS -m 3 "$HEALTH_URL" 2>/dev/null | grep -q '"ok":true'; then return 0; fi
+    if curl -fsS -m 3 "$1" 2>/dev/null | grep -q "${2:-.}"; then return 0; fi
     sleep 1
   done
   return 1
 }
-
-# сайт (Nuxt) отвечает?
-site_healthy() {
-  local i
-  for i in $(seq 1 "$HEALTH_TRIES"); do
-    if curl -fsS -m 3 -o /dev/null "$SITE_HEALTH_URL" 2>/dev/null; then return 0; fi
-    sleep 1
-  done
-  return 1
-}
-
-# npm на сервере (особенно старый) любит переписать package-lock.json: это не правки владельца, возвращаем файлы блокировки как в git
-for f in package-lock.json frontend/package-lock.json backend/package-lock.json; do
-  if git ls-files --error-unmatch "$f" >/dev/null 2>&1 && ! git diff --quiet -- "$f"; then
-    echo "Возвращаю $f как в git (его изменил npm на сервере)"
-    git checkout -- "$f"
-  fi
-done
+healthy() { wait_for "$HEALTH_URL" '"ok":true' && wait_for "$SITE_HEALTH_URL"; }
 
 # рабочая папка должна быть чистой: иначе обновление и откат могут затереть чьи-то правки
 if [ -n "$(git status --porcelain)" ]; then
@@ -97,63 +81,39 @@ if [ "$PREV" = "$NEW" ] && [ "$FORCE" = 0 ]; then
   say "Новых изменений нет ($(git rev-parse --short HEAD)). Нечего обновлять; для принудительной сборки: --force"
   exit 0
 fi
+echo "Было $(git rev-parse --short "$PREV"), стало $(git rev-parse --short "$NEW"); изменено файлов: $(git diff --name-only "$PREV" "$NEW" | grep -c . || true)"
 
-CHANGED=$(git diff --name-only "$PREV" "$NEW")
-changed() { echo "$CHANGED" | grep -Eq "$1"; }
-echo "Было $(git rev-parse --short "$PREV"), стало $(git rev-parse --short "$NEW"); изменено файлов: $(echo "$CHANGED" | grep -c . || true)"
-
-# откат: прежний код, прежняя сборка и перезапуск
+# откат: прежний код, прежние образы (слои в кэше, это быстро) и запуск
 rollback() {
   say "ОТКАТ на $(git rev-parse --short "$PREV")"
   git reset --hard "$PREV" >/dev/null
-  { $INSTALL_SERVER_CMD && $BUILD_SERVER_CMD; } >/dev/null 2>&1 || echo "(пересборка сервера при откате не удалась)"
-  { $INSTALL_SITE_CMD && $BUILD_SITE_CMD; } >/dev/null 2>&1 || echo "(пересборка сайта при откате не удалась)"
-  [ "$RESTART" = 1 ] && $RESTART_CMD
-  [ "$RESTART" = 1 ] && [ -n "$SITE_RESTART_CMD" ] && $SITE_RESTART_CMD
-  if healthy; then echo "Откат выполнен, сервер отвечает."; else echo "ВНИМАНИЕ: после отката сервер не отвечает, смотри: journalctl -u progress -n 30 --no-pager"; fi
+  $BUILD_CMD >/dev/null 2>&1 || echo "(пересборка при откате не удалась)"
+  [ "$RESTART" = 1 ] && $UP_CMD
+  if [ "$RESTART" = 1 ] && healthy; then echo "Откат выполнен, сервер отвечает."; elif [ "$RESTART" = 1 ]; then echo "ВНИМАНИЕ: после отката сервер не отвечает, смотри: docker compose logs --tail 50 backend frontend"; fi
 }
 
-if [ "$FORCE" = 1 ] || changed '^(package\.json|package-lock\.json)$'; then
-  say "Пакеты тестов (корень)"
-  $INSTALL_ROOT_CMD || { rollback; fail "не удалось поставить пакеты корня"; }
-fi
-
-if [ "$FORCE" = 1 ] || changed '^frontend/(package\.json|package-lock\.json)$'; then
-  say "Пакеты сайта (frontend/)"
-  $INSTALL_SITE_CMD || { rollback; fail "не удалось поставить пакеты сайта"; }
-fi
-
-SERVER_CHANGED=0
-if [ "$FORCE" = 1 ] || changed '^backend/'; then SERVER_CHANGED=1; fi
-
-if [ "$SERVER_CHANGED" = 1 ]; then
-  say "Сервер: пакеты и сборка"
-  $INSTALL_SERVER_CMD && $BUILD_SERVER_CMD || { rollback; fail "не удалось собрать сервер"; }
-fi
-
-say "Сборка сайта"
-$BUILD_SITE_CMD || { rollback; fail "не удалось собрать сайт"; }
-
-
-if [ "$RESTART" = 1 ] && [ "$SERVER_CHANGED" = 1 ]; then
-  say "Перезапуск сервера"
-  $RESTART_CMD || { rollback; fail "не удалось перезапустить службу"; }
-  if ! healthy; then
-    rollback
-    fail "сервер не ответил после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV"))"
+if [ "$BACKUP" = 1 ]; then
+  say "Копия базы перед обновлением"
+  if ! $BACKUP_CMD; then
+    # без копии откат кода всё равно возможен; но предупреждаем громко
+    echo "ВНИМАНИЕ: копия не получилась, обновление продолжается без неё (--no-backup скрывает это предупреждение)" >&2
+    notify "우리말: перед деплоем не удалось сделать копию базы"
   fi
-elif [ "$RESTART" = 1 ]; then
-  say "Код сервера не менялся: перезапуск не нужен"
-  healthy || fail "сервер не отвечает (обновление его не трогало; смотри journalctl -u progress -n 30 --no-pager)"
 fi
 
-# сайт рисуется на сервере (Nuxt, служба korean-web): новая сборка заработает только после перезапуска
-if [ "$RESTART" = 1 ] && [ -n "$SITE_RESTART_CMD" ]; then
-  say "Перезапуск сайта"
-  $SITE_RESTART_CMD || { rollback; fail "не удалось перезапустить сайт (служба korean-web)"; }
-  if ! site_healthy; then
+say "Сборка образов (сайт и сервер)"
+$BUILD_CMD || { rollback; fail "не удалось собрать образы"; }
+
+if [ "$RESTART" = 1 ]; then
+  say "Перезапуск изменившихся служб"
+  $UP_CMD || { rollback; fail "не удалось запустить стек"; }
+  if ! wait_for "$HEALTH_URL" '"ok":true'; then
     rollback
-    fail "сайт не ответил после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри journalctl -u korean-web -n 30 --no-pager"
+    fail "сервер не ответил после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри: docker compose logs --tail 50 backend"
+  fi
+  if ! wait_for "$SITE_HEALTH_URL"; then
+    rollback
+    fail "сайт не ответил после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри: docker compose logs --tail 50 frontend"
   fi
 fi
 

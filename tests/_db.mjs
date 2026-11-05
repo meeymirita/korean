@@ -1,11 +1,18 @@
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import { PrismaClient } from '../backend/dist/generated/prisma/client.js'
 
 const backendRequire = createRequire(fileURLToPath(new URL('../backend/package.json', import.meta.url)))
 
 export function createPrismaClient(options) {
-  const { PrismaClient } = backendRequire('@prisma/client')
-  return new PrismaClient(options)
+  const { PrismaPg } = backendRequire('@prisma/adapter-pg')
+  const connectionString = options?.datasources?.db?.url || process.env.DATABASE_URL
+  if (!connectionString) throw new Error('Не задан DATABASE_URL для тестового Prisma Client')
+  const url = new URL(connectionString)
+  const schema = url.searchParams.get('schema') || undefined
+  url.searchParams.delete('schema')
+  if (schema) url.searchParams.set('options', `-c search_path=${schema}`)
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }, schema ? { schema } : undefined) })
 }
 
 const numberify = value => {

@@ -24,11 +24,30 @@
 set -euo pipefail
 
 ROOT=${ROOT:-$(cd "$(dirname "$0")/.." && pwd)}
+if [ -f "$ROOT/.env" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    line=${line%$'\r'}
+    case "$line" in ''|'#'*) continue ;; esac
+    case "$line" in *=*) ;; *) continue ;; esac
+    key=${line%%=*}
+    value=${line#*=}
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    if [[ "$value" == \"*\" && "$value" == *\" ]]; then value=${value:1:-1}; fi
+    if [[ "$value" == \'*\' && "$value" == *\' ]]; then value=${value:1:-1}; fi
+    export "$key=$value"
+  done < "$ROOT/.env"
+fi
 [ -f /etc/korean-backup.env ] && . /etc/korean-backup.env
-BACKUP_DIR=${BACKUP_DIR:-/var/backups/korean}
+if [ -n "${DATA_DIR:-}" ]; then
+  DATA=$DATA_DIR
+elif [ -n "${APP_DATA_DIR:-}" ]; then
+  case "$APP_DATA_DIR" in /*) DATA=$APP_DATA_DIR ;; *) DATA="$ROOT/$APP_DATA_DIR" ;; esac
+else
+  DATA="$ROOT/backend/data"
+fi
+BACKUP_DIR=${BACKUP_DIR:-$DATA/backups}
 KEEP=${KEEP:-14}
 KEEP_OFFSITE_DAYS=${KEEP_OFFSITE_DAYS:-30}
-DATA=${DATA_DIR:-$ROOT/backend/data}
 STATUS="$DATA/backup-status.json"
 STAMP=$(date +%Y-%m-%d_%H%M%S)
 WORK="$BACKUP_DIR/$STAMP.tmp"
@@ -72,11 +91,11 @@ mkdir -p "$WORK/files" "$WORK/config"
 chmod 700 "$BACKUP_DIR" "$WORK"
 
 # 1. база: pg_dump создаёт согласованный снимок работающей PostgreSQL
+DUMP_ARGS=(--format=custom --no-owner --file="$WORK/app.dump" --dbname="$PGDATABASE")
 if [ -n "$DUMP_SCHEMA" ]; then
-  PGDATABASE="$PGDATABASE" "${PG_DUMP_BIN:-pg_dump}" --format=custom --no-owner --schema="$DUMP_SCHEMA" --file="$WORK/app.dump" || { echo "Снимок PostgreSQL не получился" >&2; exit 3; }
-else
-  PGDATABASE="$PGDATABASE" "${PG_DUMP_BIN:-pg_dump}" --format=custom --no-owner --file="$WORK/app.dump" || { echo "Снимок PostgreSQL не получился" >&2; exit 3; }
+  DUMP_ARGS+=(--schema="$DUMP_SCHEMA")
 fi
+"${PG_DUMP_BIN:-pg_dump}" "${DUMP_ARGS[@]}" || { echo "Снимок PostgreSQL не получился" >&2; exit 3; }
 "${PG_RESTORE_BIN:-pg_restore}" --list "$WORK/app.dump" >/dev/null || { echo "Проверка архива PostgreSQL не прошла" >&2; exit 3; }
 
 # 2. файлы: картинки, документы, обложка визитки; неизменённые за прошлые дни берутся ссылками
@@ -88,7 +107,11 @@ for d in uploads docs thumbs public site; do
 done
 
 # 3. настройки: секреты и конфиги, без которых заново не поднять (права только для владельца)
-[ -f "$ROOT/backend/.env" ] && cp "$ROOT/backend/.env" "$WORK/config/server.env"
+if [ -f "$ROOT/.env" ]; then
+  cp "$ROOT/.env" "$WORK/config/server.env"
+elif [ -f "$ROOT/backend/.env" ]; then
+  cp "$ROOT/backend/.env" "$WORK/config/server.env"
+fi
 for f in /etc/caddy/Caddyfile /etc/systemd/system/progress.service /etc/systemd/system/korean-backup.service /etc/systemd/system/korean-backup.timer /etc/korean-backup.env; do
   [ -r "$f" ] && cp "$f" "$WORK/config/$(basename "$f")" || true
 done

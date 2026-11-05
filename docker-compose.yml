@@ -1,8 +1,10 @@
 services:
   backend:
-    build: ./backend
+    image: ${BACKEND_IMAGE}
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
     restart: unless-stopped
-    env_file: ./backend/.env
     depends_on:
       docker-proxy:
         condition: service_healthy
@@ -13,19 +15,56 @@ services:
       meilisearch:
         condition: service_healthy
     volumes:
-      - ${APP_DATA_DIR:-./backend/data}:/data
-    expose: ["3001"]
+      - app-data:/data
+      # .env и инструкции попадают в полный архив (секреты, как вернуть на новом сервере)
+      - ./.env:/app/.env:ro
+      - ./docs:/app/docs:ro
+      - ${CADDY_LOG_DIR:-./docker/caddy/logs}:/var/log/caddy:ro
+    # наружу только на loopback: сайт открывает Caddy (хостовый или профиль edge), напрямую API из интернета не виден
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-3001}:3001"
     networks: [app, data, monitoring, docker-ops]
     environment:
       HOST: 0.0.0.0
       PORT: 3001
+      TZ: ${TZ}
       DATA_DIR: /data
+      TRUST_PROXY: ${TRUST_PROXY:-loopback, linklocal, uniquelocal}
       DOCKER_API_URL: http://docker-proxy:2375
-      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-korean}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-korean}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-korean}
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       MEILISEARCH_URL: http://meilisearch:7700
-      MEILISEARCH_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILISEARCH_MASTER_KEY: ${MEILI_MASTER_KEY:?Set MEILI_MASTER_KEY in .env}
+      PROGRESS_TOKEN: ${PROGRESS_TOKEN:?Set PROGRESS_TOKEN in .env}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      CHAT_MODEL: ${CHAT_MODEL:-}
+      CHAT_BASE: ${CHAT_BASE:-https://openrouter.ai/api/v1}
+      CHAT_DAILY_LIMIT: ${CHAT_DAILY_LIMIT:-40}
+      SITE_URL: ${SITE_URL:-https://localhost}
+      SWAGGER: ${SWAGGER:-0}
+      DISABLE_2FA: ${DISABLE_2FA:-0}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      REMINDER_MAIL_TO: ${REMINDER_MAIL_TO:-}
+      BACKUP_MAIL_TO: ${BACKUP_MAIL_TO:-}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:-}
+      BACKUP_AUTO: ${BACKUP_AUTO:-1}
+      BACKUP_EVERY_DAYS: ${BACKUP_EVERY_DAYS:-1}
+      BACKUP_WATCH_MS: ${BACKUP_WATCH_MS:-3600000}
+      BACKUP_DIR: ${BACKUP_DIR:-}
+      KEEP: ${KEEP:-14}
+      KEEP_OFFSITE_DAYS: ${KEEP_OFFSITE_DAYS:-30}
+      OFFSITE_RSYNC: ${OFFSITE_RSYNC:-}
+      OFFSITE_RCLONE: ${OFFSITE_RCLONE:-}
+      LESSON_TICK_MS: ${LESSON_TICK_MS:-60000}
+      MAIL_DUMP_FILE: ${MAIL_DUMP_FILE:-}
+      CADDY_LOG_FILE: ${CADDY_LOG_FILE:-}
+      DOCS_QUOTA_MB: ${DOCS_QUOTA_MB:-1024}
+      IMAGES_QUOTA_MB: ${IMAGES_QUOTA_MB:-1024}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -34,15 +73,18 @@ services:
       start_period: 20s
 
   frontend:
+    image: ${FRONTEND_IMAGE}
     build:
       context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
       args:
-        API_HOST: backend
+        API_HOST: ${FRONTEND_API_HOST}
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
-    expose: ["3000"]
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     networks: [app]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/robots.txt').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -51,8 +93,11 @@ services:
       retries: 3
       start_period: 30s
 
+  # Необязательный вход «всё в одном» (HTTPS, заголовки, видео): docker compose --profile edge up -d.
+  # На сервере, где уже стоит свой Caddy, не нужен: он сам ходит на 127.0.0.1:3000 и :3001.
   caddy:
-    image: caddy:2-alpine
+    image: ${CADDY_IMAGE}
+    profiles: [edge]
     restart: unless-stopped
     depends_on:
       frontend:
@@ -60,13 +105,15 @@ services:
       backend:
         condition: service_healthy
     environment:
-      DOMAIN: ${DOMAIN:-localhost}
+      DOMAIN: ${DOMAIN}
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${VIDEO_DIR:-./docker/caddy/video}:/srv/video:ro
+      - caddy-logs:/var/log/caddy
       - caddy-data:/data
       - caddy-config:/config
     networks: [app]
@@ -78,14 +125,14 @@ services:
       start_period: 15s
 
   prometheus:
-    image: prom/prometheus:v3.5.0
+    image: ${PROMETHEUS_IMAGE}
     restart: unless-stopped
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION}
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     expose: ["9090"]
     networks: [monitoring]
@@ -96,19 +143,19 @@ services:
       retries: 3
 
   grafana:
-    image: grafana/grafana:12.1.1
+    image: ${GRAFANA_IMAGE}
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD in .env}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
     expose: ["3000"]
     ports:
-      - "127.0.0.1:${GRAFANA_PORT:-3002}:3000"
+      - "127.0.0.1:${GRAFANA_PORT}:3000"
     networks: [monitoring]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null"]
@@ -118,7 +165,7 @@ services:
       start_period: 30s
 
   node-exporter:
-    image: prom/node-exporter:v1.9.1
+    image: ${NODE_EXPORTER_IMAGE}
     restart: unless-stopped
     command:
       - --path.procfs=/host/proc
@@ -130,7 +177,7 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/host:ro
-      - ${APP_DATA_DIR:-./backend/data}:/textfile:ro
+      - app-data:/textfile:ro
     expose: ["9100"]
     networks: [monitoring]
     healthcheck:
@@ -140,7 +187,7 @@ services:
       retries: 3
 
   docker-proxy:
-    image: tecnativa/docker-socket-proxy:0.3.0
+    image: ${DOCKER_PROXY_IMAGE}
     restart: unless-stopped
     environment:
       CONTAINERS: 1
@@ -167,7 +214,7 @@ services:
       TASKS: 0
       VOLUMES: 0
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock:ro
     expose: ["2375"]
     networks: [docker-ops]
     healthcheck:
@@ -177,12 +224,12 @@ services:
       retries: 3
 
   postgres:
-    image: postgres:17-alpine
+    image: ${POSTGRES_IMAGE}
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-korean}
-      POSTGRES_USER: ${POSTGRES_USER:-korean}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     expose: ["5432"]
@@ -194,10 +241,10 @@ services:
     networks: [data]
 
   redis:
-    image: redis:7.4-alpine
+    image: ${REDIS_IMAGE}
     restart: unless-stopped
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     volumes:
       - redis-data:/data
@@ -210,11 +257,11 @@ services:
     networks: [data]
 
   meilisearch:
-    image: getmeili/meilisearch:v1.12
+    image: ${MEILISEARCH_IMAGE}
     restart: unless-stopped
     environment:
-      MEILI_ENV: ${MEILI_ENV:-production}
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?Set MEILI_MASTER_KEY in .env}
+      MEILI_ENV: ${MEILI_ENV}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
     volumes:
       - meilisearch-data:/meili_data
     expose: ["7700"]
@@ -227,6 +274,8 @@ services:
       start_period: 30s
 
 volumes:
+  app-data:
+  caddy-logs:
   caddy-data:
   caddy-config:
   prometheus-data:

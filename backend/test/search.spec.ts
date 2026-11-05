@@ -38,7 +38,7 @@ describe('поиск учебных материалов в Meilisearch', () => 
     const fetch = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ uid: 'study-materials' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ hits: [{
-        id: 'word:1', category: 'word', title: '학교', text: 'школа', target: '/words#학교', private: 'секрет',
+        id: 'word_x3a_1', category: 'word', title: '학교', text: 'школа', target: '/words#학교', private: 'секрет',
       }], estimatedTotalHits: 1 }), { status: 200 }))
     vi.stubGlobal('fetch', fetch)
 
@@ -87,7 +87,7 @@ describe('поиск учебных материалов в Meilisearch', () => 
     expect(calls.some(call => call.url.endsWith('/settings'))).toBe(true)
     expect(calls.some(call => call.url.endsWith('/documents') && call.init.method === 'DELETE')).toBe(true)
     const upload = calls.find(call => call.url.includes('/documents?primaryKey=id'))
-    expect(JSON.parse(String(upload?.init.body))).toEqual(documents)
+    expect(JSON.parse(String(upload?.init.body))).toEqual([{ ...documents[0], id: 'form_x3a_0' }])
     const settings = calls.find(call => call.url.endsWith('/settings'))
     expect(JSON.parse(String(settings?.init.body)).pagination.maxTotalHits).toBe(25_000)
     expect(calls.every(call => new Headers(call.init.headers).get('Authorization') === 'Bearer server-only-test-key')).toBe(true)
@@ -116,10 +116,24 @@ describe('поиск учебных материалов в Meilisearch', () => 
     await expect(new SearchClient(db as unknown as Db).reindexPrivate()).resolves.toEqual({ ok: true, documents: 2 })
     const upload = calls.find(call => call.url.includes('/documents?primaryKey=id'))
     expect(JSON.parse(String(upload?.init.body))).toEqual([
-      { id: 'note:n1', category: 'note', title: 'личное', text: 'личное содержимое ["важно"]' },
-      { id: 'image:i1', category: 'image', title: 'альбом', text: 'photo.webp альбом подробно []' },
+      { id: 'note_x3a_n1', category: 'note', title: 'личное', text: 'личное содержимое ["важно"]' },
+      { id: 'image_x3a_i1', category: 'image', title: 'альбом', text: 'photo.webp альбом подробно []' },
     ])
     expect(upload?.url).toContain('owner-materials')
+  })
+
+  it('кодирует ID для Meilisearch и восстанавливает их в публичной и личной выдаче', async () => {
+    process.env.MEILISEARCH_URL = 'http://meilisearch:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'server-only-test-key'
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ uid: 'study-materials' }))
+      .mockResolvedValueOnce(Response.json({ hits: [{ id: 'word_x3a_1', category: 'word', title: '학교', text: 'школа' }], estimatedTotalHits: 1 }))
+      .mockResolvedValueOnce(Response.json({ uid: 'owner-materials' }))
+      .mockResolvedValueOnce(Response.json({ hits: [{ id: 'note_x3a_n1', category: 'note' }], estimatedTotalHits: 1 }))
+    vi.stubGlobal('fetch', fetch)
+
+    await expect(client().search('школа')).resolves.toMatchObject({ hits: [{ id: 'word:1' }] })
+    await expect(client().searchPrivate('личное', 'note')).resolves.toMatchObject({ hits: [{ id: 'note:n1', category: 'note' }] })
   })
 
   it('возвращает 503 при сетевой ошибке поискового сервиса', async () => {

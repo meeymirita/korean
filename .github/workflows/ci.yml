@@ -118,3 +118,28 @@ jobs:
           npm audit --omit=dev --audit-level=high
           npm --prefix frontend audit --omit=dev --audit-level=high
           npm --prefix backend audit --omit=dev --audit-level=high
+
+  docker:
+    name: Docker (сборка образов и конфигурация стека)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Проверка docker-compose.yml с образцом настроек
+        run: |
+          bash scripts/init-env.sh
+          docker compose config --quiet
+          docker compose --profile edge config --quiet
+
+      - name: Сборка образов сайта и сервера
+        run: docker compose build
+
+      - name: Сервер стартует на пустой базе (миграции, health)
+        run: |
+          docker compose up -d postgres redis meilisearch docker-proxy
+          docker compose up -d --wait backend
+          curl -fsS http://127.0.0.1:3001/api/health
+          docker compose logs --tail 30 backend
+          docker compose down -v
+

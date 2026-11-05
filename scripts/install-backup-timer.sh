@@ -2,7 +2,7 @@
 # Включает ночную копию на сервере (systemd-таймер, каждый день в 03:30):  sudo bash scripts/install-backup-timer.sh
 #   --print   только показать файлы служб, ничего не устанавливая
 #   --now     сразу сделать первую копию после установки
-# Если копия не удастся или таймер встанет, письмо придёт само: служба progress раз в час проверяет DATA/backup-status.json.
+# Если копия не удастся или таймер встанет, письмо придёт само: служба backend раз в час проверяет backup-status.json.
 set -euo pipefail
 
 ROOT=${ROOT:-$(cd "$(dirname "$0")/.." && pwd)}
@@ -15,10 +15,9 @@ Description=Резервная копия платформы 우리말
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash $ROOT/scripts/backup.sh
-Environment=DATA_DIR=$ROOT/backend/data
+WorkingDirectory=$ROOT
+ExecStart=/bin/bash $ROOT/scripts/backup-docker.sh
 EnvironmentFile=-/etc/korean-backup.env
-EnvironmentFile=-$ROOT/backend/.env
 Nice=10
 UNIT
 }
@@ -45,9 +44,7 @@ fi
 [ "$(id -u)" = 0 ] || { echo "Запустите от root: sudo bash scripts/install-backup-timer.sh" >&2; exit 1; }
 command -v systemctl >/dev/null || { echo "Нужен systemd" >&2; exit 1; }
 command -v rsync >/dev/null || { echo "Нужен rsync: apt install rsync" >&2; exit 1; }
-command -v node >/dev/null || { echo "Нужен Node.js для разбора DATABASE_URL" >&2; exit 1; }
-command -v pg_dump >/dev/null || { echo "Нужен клиент PostgreSQL: apt install postgresql-client" >&2; exit 1; }
-command -v pg_restore >/dev/null || { echo "Нужен клиент PostgreSQL: apt install postgresql-client" >&2; exit 1; }
+command -v docker >/dev/null || { echo "Нужен Docker (docker compose)" >&2; exit 1; }
 
 service > /etc/systemd/system/korean-backup.service
 timer > /etc/systemd/system/korean-backup.timer
