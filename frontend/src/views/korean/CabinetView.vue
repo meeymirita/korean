@@ -72,7 +72,7 @@ const moved = (v: unknown) => (v === 'db' || v === 'logs' ? 'settings' : v)
 const q = moved(route.query.tab)
 // магазин из кабинета убран: старый адрес ?tab=shop ведёт на страницу магазина
 if (route.query.tab === 'shop') void router.replace('/korean/shop')
-const OWNER_ONLY = ['images', 'report', 'notifications']
+const OWNER_ONLY = ['images', 'report', 'notifications', 'services']
 const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'notifications', 'settings', 'services']
 const tab = ref<CabinetTab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as CabinetTab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */

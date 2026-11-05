@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resultFromSearchReply, searchDocuments } from '@/data/korean/search'
+import { mergeSearchResults, resultFromSearchReply, search, searchDocuments } from '@/data/korean/search'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { CONJUGATIONS } from '@/data/korean/conjugation'
@@ -37,5 +37,23 @@ describe('публичный индекс поиска', () => {
     expect(result.letters).toHaveLength(1)
     expect(result.chunks.talk).toHaveLength(1)
     expect(result.forms[0]?.k).toBe(CONJUGATIONS[0]!.k)
+  })
+
+  it('индекс только дополняет локальный поиск: порядок и полнота локальных результатов сохраняются, дублей нет', () => {
+    const local = search('дом')!
+    expect(local.words.length).toBeGreaterThan(0)
+    const documents = searchDocuments()
+    // «выдача индекса»: одно слово, которое уже есть локально, и одно, которого нет
+    const have = local.words[0]!
+    const missing = D.find(word => !local.words.some(item => item.n === word.n))!
+    const hits = documents.filter(document => [`word:${have.n}`, `word:${missing.n}`].includes(document.id))
+    const merged = mergeSearchResults(local, resultFromSearchReply({ query: 'дом', hits, total: 2, limit: 100, offset: 0 }))
+    expect(merged.words.slice(0, local.words.length).map(word => word.n)).toEqual(local.words.map(word => word.n))
+    expect(merged.words).toHaveLength(local.words.length + 1)
+    expect(merged.words.at(-1)!.n).toBe(missing.n)
+    expect(new Set(merged.words.map(word => word.n)).size).toBe(merged.words.length)
+    expect(merged.total).toBe(local.total + 1)
+    // пустой локальный результат: берётся выдача индекса целиком
+    expect(mergeSearchResults(null, resultFromSearchReply({ query: 'x', hits, total: 2, limit: 100, offset: 0 })).words).toHaveLength(2)
   })
 })

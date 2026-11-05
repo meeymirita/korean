@@ -6,7 +6,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import DashboardHome from '@/components/korean/DashboardHome.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { hl } from '@/data/korean/render'
-import { appendSearchResults, resultFromSearchReply, search, searchRemote, snippet, type SearchResult } from '@/data/korean/search'
+import { mergeSearchResults, resultFromSearchReply, search, searchRemote, snippet, type SearchResult } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
 import { parseQuery } from '@/data/korean/words'
 import { useGrammarModal } from '@/composables/useGrammarModal'
@@ -21,10 +21,6 @@ const input = ref<HTMLInputElement>()
 const result = ref<SearchResult | null>(search(q.value))
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 let searchRequest = 0
-let remoteOffset = 0
-let remoteTotal = 0
-const loadingMore = ref(false)
-const hasMoreRemote = computed(() => remoteOffset < remoteTotal)
 const qs = computed(() => parseQuery(q.value))
 const h = (t: string) => hl(t, qs.value)
 
@@ -47,36 +43,18 @@ onMounted(() => {
   input.value?.focus()
   watch(q, value => {
     result.value = search(value)
-    remoteOffset = 0
-    remoteTotal = 0
     clearTimeout(searchTimer)
     const request = ++searchRequest
     searchTimer = setTimeout(async () => {
       const remote = await searchRemote(value)
       if (request === searchRequest && remote) {
-        result.value = resultFromSearchReply(remote)
-        remoteOffset = remote.offset + remote.hits.length
-        remoteTotal = remote.total
+        // индекс только дополняет локальный поиск (опечатки), но не заменяет его
+        result.value = mergeSearchResults(search(value), resultFromSearchReply(remote))
       }
     }, 180)
   }, { immediate: true })
 })
 
-async function loadMoreRemote() {
-  if (loadingMore.value || !hasMoreRemote.value) return
-  loadingMore.value = true
-  const request = searchRequest
-  try {
-    const page = await searchRemote(q.value, remoteOffset)
-    if (page && request === searchRequest) {
-      result.value = appendSearchResults(result.value ?? search(q.value)!, resultFromSearchReply(page))
-      remoteOffset = page.offset + page.hits.length
-      remoteTotal = page.total
-    }
-  } finally {
-    loadingMore.value = false
-  }
-}
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
   clearTimeout(searchTimer)
@@ -175,7 +153,6 @@ onBeforeUnmount(() => {
         </RouterLink>
         <button v-if="rest('l', result.letters.length)" class="chip" @click="more.l = true">ещё {{ rest('l', result.letters.length) }}</button>
       </section>
-      <button v-if="hasMoreRemote" class="chip" :disabled="loadingMore" @click="loadMoreRemote">{{ loadingMore ? 'Загружаю…' : 'Показать ещё результаты' }}</button>
     </template>
 
     <DashboardHome v-else />

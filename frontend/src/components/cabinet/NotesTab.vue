@@ -48,11 +48,9 @@ const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
   const byTag = tagFilter.value ? store.notes.filter(n => n.tags.includes(tagFilter.value)) : store.notes
   if (!q) return byTag
-  if (remoteNoteIds.value !== null) {
-    const positions = new Map(remoteNoteIds.value.map((id, index) => [id, index]))
-    return byTag.filter(note => positions.has(note.id)).sort((a, b) => positions.get(a.id)! - positions.get(b.id)!)
-  }
-  return byTag.filter(n => (n.title + ' ' + n.text + ' ' + n.tags.join(' ')).toLowerCase().includes(q))
+  // совпадение по подстроке главное, индекс добавляет найденное с опечатками
+  const remote = new Set(remoteNoteIds.value ?? [])
+  return byTag.filter(n => (n.title + ' ' + n.text + ' ' + n.tags.join(' ')).toLowerCase().includes(q) || remote.has(n.id))
 })
 
 watch(query, value => {

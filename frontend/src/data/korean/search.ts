@@ -194,6 +194,28 @@ export function resultFromSearchReply(reply: SearchReply): SearchResult {
   return { words, grammar, chunks, letters, sentences, forms, total: reply.total }
 }
 
+/** Добавляет к локальной выдаче то, чего в ней нет (индекс нечувствителен к опечаткам), не дублируя и не меняя порядок локальных результатов:
+ * локальный поиск ищет и по части слова, и по переводам, поэтому он главный, а индекс только дополняет. */
+export function mergeSearchResults(local: SearchResult | null, remote: SearchResult): SearchResult {
+  const base: SearchResult = local ?? { words: [], grammar: [], chunks: {}, letters: [], sentences: [], forms: [], total: 0 }
+  const extra = <T>(have: T[], more: T[], key: (item: T) => unknown) => {
+    const seen = new Set(have.map(key))
+    return [...have, ...more.filter(item => !seen.has(key(item)))]
+  }
+  const chunks: Record<string, Chunk[]> = { ...base.chunks }
+  for (const [tab, items] of Object.entries(remote.chunks)) chunks[tab] = extra(chunks[tab] ?? [], items, c => c.text)
+  const merged = {
+    words: extra(base.words, remote.words, w => w.n),
+    grammar: extra(base.grammar, remote.grammar, g => g.g.id),
+    chunks,
+    letters: extra(base.letters, remote.letters, l => l.char),
+    sentences: extra(base.sentences, remote.sentences, e => e.s),
+    forms: extra(base.forms, remote.forms, f => f.k),
+  }
+  const total = merged.words.length + merged.grammar.length + merged.letters.length + merged.sentences.length + merged.forms.length + Object.values(chunks).reduce((n, l) => n + l.length, 0)
+  return { ...merged, total }
+}
+
 /** Склеивает страницы выдачи, не теряя группировку, используемую поисковыми окнами. */
 export function appendSearchResults(current: SearchResult, next: SearchResult): SearchResult {
   const chunks: Record<string, Chunk[]> = { ...current.chunks }
@@ -218,7 +240,9 @@ export async function searchRemote(raw: string, offset = 0, category?: SearchCat
     if (category) params.set('category', category)
     const response = await fetchT(`/api/search?${params}`)
     if (!response.ok) return null
-    return await response.json() as SearchReply
+    const reply = await response.json() as SearchReply
+    // пустая выдача индекса не заменяет локальный поиск: он ищет и по части слова, и по переводам, а индекс пока может быть не собран
+    return reply.hits.length || offset > 0 ? reply : null
   } catch {
     return null
   }

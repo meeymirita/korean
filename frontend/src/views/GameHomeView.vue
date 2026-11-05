@@ -124,9 +124,13 @@ watch(q, value => {
   }, 220)
 })
 onBeforeUnmount(() => clearTimeout(gameSearchTimer))
-const findCatalogGames = (games: typeof ALL_GAMES) => remoteGameIds.value === null
-  ? findGames(games, q.value)
-  : games.filter(game => remoteGameIds.value?.includes(game.id))
+// локальный поиск главный, индекс только добавляет найденное с опечатками
+const findCatalogGames = (games: typeof ALL_GAMES) => {
+  const local = findGames(games, q.value)
+  if (!remoteGameIds.value?.length) return local
+  const have = new Set(local.map(game => game.id))
+  return [...local, ...games.filter(game => remoteGameIds.value!.includes(game.id) && !have.has(game.id))]
+}
 /** Пока открыта игра, список игр слева свёрнут: больше места под задание. Кнопка «☰» в шапке показывает его (помнится до закрытия вкладки). */
 const navOpen = usePersisted('gh_nav_open', false, v => typeof v === 'boolean')
 const folded = computed(() => !!game.value && !navOpen.value)

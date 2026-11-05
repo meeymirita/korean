@@ -92,10 +92,9 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   const a = from.value ? startOf(from.value) : -Infinity
   const b = to.value ? startOf(to.value) + 86_400_000 : Infinity
-  const items = q && remoteImageIds.value !== null
-    ? remoteImageIds.value.map(id => store.items.find(item => item.id === id)).filter((item): item is ImageItem => !!item)
-    : store.items
-  return items.filter(it => it.created >= a && it.created < b && (!tagFilter.value || it.tags.includes(tagFilter.value)) && (!q || remoteImageIds.value !== null || `${it.caption} ${it.description} ${it.name} ${it.tags.join(' ')}`.toLowerCase().includes(q)))
+  // совпадение по подстроке главное, индекс добавляет найденное с опечатками
+  const remote = new Set(q ? remoteImageIds.value ?? [] : [])
+  return store.items.filter(it => it.created >= a && it.created < b && (!tagFilter.value || it.tags.includes(tagFilter.value)) && (!q || remote.has(it.id) || `${it.caption} ${it.description} ${it.name} ${it.tags.join(' ')}`.toLowerCase().includes(q)))
 })
 const filtering = computed(() => !!(query.value.trim() || from.value || to.value || tagFilter.value))
 function resetFilter() {
