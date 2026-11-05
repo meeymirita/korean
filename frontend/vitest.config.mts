@@ -6,6 +6,8 @@ export default defineVitestConfig({
   test: {
     environment: 'nuxt',
     include: ['test/**/*.spec.ts'],
+    // игровые проверки гоняют сотни раундов: на медленном runner GitHub 5 секунд по умолчанию не хватает
+    testTimeout: 30_000,
     environmentOptions: { nuxt: { domEnvironment: 'happy-dom' } },
   },
 })
