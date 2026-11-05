@@ -4,13 +4,14 @@
  * времени сервера, число слов и предложений, день последнего письма) лежат в `meta.digest`; письмо одно в день.
  * Адрес: REMINDER_MAIL_TO в backend/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
  */
-import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common'
 import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
 import { Db } from '../db/db.service.js'
 import { MailService } from '../mail/mail.service.js'
 import { digestMail } from '../mail/templates.js'
 import { dayOf } from '../reminders/reminder.service.js'
 import { DIGEST_SENTENCES, DIGEST_WORDS } from './pool.js'
+import { BackgroundJobs } from '../jobs/background-jobs.service.js'
 
 export interface DigestSettings {
   enabled: boolean
@@ -44,21 +45,20 @@ export function sample<T>(a: readonly T[], n: number): T[] {
 const count = (v: unknown, max: number, def: number) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max ? v : def)
 
 @Injectable()
-export class DigestService implements OnModuleInit, OnModuleDestroy {
-  private timer?: NodeJS.Timeout
-
+export class DigestService implements OnModuleInit {
   constructor(
     private readonly db: Db,
     private readonly mail: MailService,
     private readonly twofa: TwoFaService,
+    private readonly jobs: BackgroundJobs,
   ) {}
 
   onModuleInit() {
-    this.timer = setInterval(() => void this.tick(), Number(process.env.REMINDER_TICK_MS) || 60_000)
-    this.timer.unref()
-  }
-  onModuleDestroy() {
-    clearInterval(this.timer)
+    this.jobs.register('digest.tick', async () => {
+      const result = await this.tick()
+      if (result === 'failed') throw new Error('Не удалось отправить подборку')
+      return result
+    })
   }
 
   async get(): Promise<DigestSettings> {

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPrismaClient } from './_db.mjs'
+import { dropSchema } from './_server.mjs'
 
 const script = fileURLToPath(new URL('../scripts/backup.sh', import.meta.url))
 let root, out, schema, databaseUrl, prisma
@@ -42,7 +43,7 @@ before(async () => {
 
 after(async () => {
   if (prisma) {
-    await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`)
+    await dropSchema(prisma, schema)
     await prisma.$disconnect()
   }
   if (root) rmSync(root, { recursive: true, force: true })
@@ -121,7 +122,7 @@ describe('установка ночного таймера (scripts/install-back
     assert.equal(spawnSync('bash', ['-n', installer]).status, 0)
     const result = spawnSync('bash', [installer, '--print'], { encoding: 'utf8', env: { ...process.env, ROOT: '/var/sites/korean' } })
     assert.equal(result.status, 0, result.stderr)
-    assert.match(result.stdout, /ExecStart=\/bin\/bash \/var\/sites\/korean\/scripts\/backup\.sh/)
+    assert.match(result.stdout, /ExecStart=\/bin\/bash \/var\/sites\/korean\/scripts\/backup-docker\.sh/)
     assert.match(result.stdout, /OnCalendar=\*-\*-\* 03:30:00/)
     assert.match(result.stdout, /Persistent=true/)
   })

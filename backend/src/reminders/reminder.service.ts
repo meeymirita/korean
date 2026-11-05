@@ -3,11 +3,12 @@
  * Настройки (включено, время ЧЧ:ММ по времени сервера, день последнего письма) лежат в `meta.reminder`; письмо одно в день.
  * Адрес: REMINDER_MAIL_TO в backend/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
  */
-import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common'
 import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
 import { Db } from '../db/db.service.js'
 import { MailService } from '../mail/mail.service.js'
 import { reminderMail } from '../mail/templates.js'
+import { BackgroundJobs } from '../jobs/background-jobs.service.js'
 
 export interface ReminderSettings {
   enabled: boolean
@@ -29,21 +30,20 @@ export const dayOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-$
 export type Tick = 'off' | 'early' | 'studied' | 'sent' | 'already' | 'nomail' | 'failed'
 
 @Injectable()
-export class ReminderService implements OnModuleInit, OnModuleDestroy {
-  private timer?: NodeJS.Timeout
-
+export class ReminderService implements OnModuleInit {
   constructor(
     private readonly db: Db,
     private readonly mail: MailService,
     private readonly twofa: TwoFaService,
+    private readonly jobs: BackgroundJobs,
   ) {}
 
   onModuleInit() {
-    this.timer = setInterval(() => void this.tick(), Number(process.env.REMINDER_TICK_MS) || 60_000)
-    this.timer.unref()
-  }
-  onModuleDestroy() {
-    clearInterval(this.timer)
+    this.jobs.register('reminder.tick', async () => {
+      const result = await this.tick()
+      if (result === 'failed') throw new Error('Не удалось отправить напоминание')
+      return result
+    })
   }
 
   async get(): Promise<ReminderSettings> {
@@ -138,7 +138,7 @@ export class ReminderService implements OnModuleInit, OnModuleDestroy {
 
   /** Проверочное письмо по кнопке: не зависит ни от времени, ни от того, занимался ли сегодня. */
   async test() {
-    if (!this.mail.configured() || !this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
+    if (!this.mail.configured() || !await this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
     try {
       await this.deliver(dayOf(new Date()))
       return { ok: true, message: '' }

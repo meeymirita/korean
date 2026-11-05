@@ -38,6 +38,18 @@ const migrate = (url) => new Promise((resolve, reject) => {
   child.once('close', code => code === 0 ? resolve() : reject(new Error(`Prisma migrate deploy завершился с кодом ${code}: ${output.slice(-2000)}`)))
 })
 
+/** Параллельные тесты удаляют свои схемы одновременно: PostgreSQL иногда отвечает «deadlock detected» (40P01), тогда повторяем. */
+export async function dropSchema(client, schema) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await client.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`)
+    } catch (e) {
+      if (attempt >= 8 || !/deadlock|40P01|tuple concurrently updated/i.test(String(e?.message))) throw e
+      await new Promise(r => setTimeout(r, 100 * attempt + Math.random() * 100))
+    }
+  }
+}
+
 const freePort = () =>
   new Promise(resolve => {
     const s = net.createServer().listen(0, '127.0.0.1', () => {
@@ -76,13 +88,14 @@ export async function start({ dir, env = {} } = {}) {
       DATABASE_URL: databaseUrl.toString(),
       PG_DUMP_DATABASE_URL: dumpUrl.toString(),
       PG_DUMP_SCHEMA: schema,
+      REDIS_URL: '', // фоновые задачи в тестах идут на таймерах (REMINDER_TICK_MS), общую очередь Redis тесты не делят
       ...env,
     },
     stdio: ['ignore', 'pipe', 'inherit'],
   })
   children.push(child)
   await new Promise((resolve, reject) => {
-    child.stdout.once('data', resolve)
+    child.stdout.on('data', d => { if (String(d).includes('Сервер: http')) resolve() }) // Nest пишет предупреждения в stdout раньше, чем сервер слушает порт
     child.once('exit', code => reject(new Error('сервер не запустился, код ' + code)))
   })
   const base = `http://127.0.0.1:${port}`
@@ -125,7 +138,7 @@ export async function cleanup() {
     child.kill()
   })))
   if (adminPrisma) {
-    for (const schema of new Set(schemas.values())) await adminPrisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`)
+    for (const schema of new Set(schemas.values())) await dropSchema(adminPrisma, schema)
     await adminPrisma.$disconnect()
     adminPrisma = undefined
   }

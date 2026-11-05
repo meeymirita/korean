@@ -57,11 +57,11 @@ export class ProgressController {
   /** POST /api/ops: пачка действий { ops: [{ type: 'answer' | 'reset' | 'profile' | 'settings' | 'import', … }] }. */
   @Post('ops')
   @HttpCode(200)
-  ops(@CurrentWho() who: Who, @Req() req: Request, @Body() body: unknown) {
+  async ops(@CurrentWho() who: Who, @Req() req: Request, @Body() body: unknown) {
     if (who.role === 'guest') return { ok: true, guest: true }
     // сброс прогресса и загрузка копии стирают данные: только с повторным вводом токена
     const list = (body as { ops?: unknown })?.ops
-    if (Array.isArray(list) && list.some(o => o?.type === 'reset' || o?.type === 'import')) this.confirm.require(req)
+    if (Array.isArray(list) && list.some(o => o?.type === 'reset' || o?.type === 'import')) await this.confirm.require(req)
     return this.progress.apply(body)
   }
 }

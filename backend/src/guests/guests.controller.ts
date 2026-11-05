@@ -19,14 +19,14 @@ export class GuestsController {
   }
 
   @Post()
-  create(@Req() req: Request, @Body() body: { hours?: unknown; label?: unknown }) {
-    this.confirm.require(req) // гостевой токен даёт доступ ко всему: создаётся только с повторным вводом токена владельца
+  async create(@Req() req: Request, @Body() body: { hours?: unknown; label?: unknown }) {
+    await this.confirm.require(req) // гостевой токен даёт доступ ко всему: создаётся только с повторным вводом токена владельца
     return this.guests.create(body?.hours, body?.label)
   }
 
   @Delete(':id')
-  revoke(@Param('id') id: string) {
-    this.guests.revoke(id)
+  async revoke(@Param('id') id: string) {
+    await this.guests.revoke(id)
     return { ok: true }
   }
 }

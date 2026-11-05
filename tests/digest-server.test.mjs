@@ -15,7 +15,7 @@ function fake({ configured = true, to = 'me@example.org', fail = false } = {}) {
   const sent = []
   const db = { getMeta: k => meta.get(k) ?? null, setMeta: (k, v) => meta.set(k, v) }
   const mail = { configured: () => configured, send: async (...a) => { if (fail) throw new Error('smtp'); sent.push(a) } }
-  const svc = new DigestService(db, mail, { email: () => to })
+  const svc = new DigestService(db, mail, { email: async () => to }, { register() {} })
   return { svc, sent }
 }
 const at = (h, m) => new Date(2026, 10, 2, h, m)
@@ -24,7 +24,7 @@ describe('письмо-подборка: расписание', () => {
   test('выключено и рано — письма нет; в своё время — одно, второе в тот же день не уходит', async () => {
     const { svc, sent } = fake()
     assert.equal(await svc.tick(at(13, 0)), 'off')
-    svc.set({ enabled: true, time: '12:00' }, at(9, 0))
+    await svc.set({ enabled: true, time: '12:00' }, at(9, 0))
     assert.equal(await svc.tick(at(11, 59)), 'early')
     assert.equal(await svc.tick(at(12, 0)), 'sent')
     assert.equal(await svc.tick(at(12, 1)), 'already')
@@ -34,7 +34,7 @@ describe('письмо-подборка: расписание', () => {
 
   test('включили после выбранного времени — первое письмо завтра, а не сразу', async () => {
     const { svc, sent } = fake()
-    svc.set({ enabled: true, time: '12:00' }, at(15, 0))
+    await svc.set({ enabled: true, time: '12:00' }, at(15, 0))
     assert.equal(await svc.tick(at(15, 1)), 'already')
     assert.equal(sent.length, 0)
     assert.equal(await svc.tick(new Date(2026, 10, 3, 12, 0)), 'sent')
@@ -42,7 +42,7 @@ describe('письмо-подборка: расписание', () => {
 
   test('письмо содержит 10 слов и 5 предложений по умолчанию, числа настраиваются', async () => {
     const { svc, sent } = fake()
-    svc.set({ enabled: true, time: '12:00', words: 3, sentences: 2 }, at(9, 0))
+    await svc.set({ enabled: true, time: '12:00', words: 3, sentences: 2 }, at(9, 0))
     await svc.tick(at(12, 0))
     const [to, subject, text, html] = sent[0]
     assert.equal(to, 'me@example.org')
@@ -51,21 +51,22 @@ describe('письмо-подборка: расписание', () => {
     assert.equal((html.match(/font-size:17px;font-weight:700/g) ?? []).length, 2)
     assert.ok(text.includes('Слова:') && text.includes('Предложения:'))
     const def = fake()
-    assert.deepEqual([def.svc.get().words, def.svc.get().sentences], [10, 5])
+    const defs = await def.svc.get()
+    assert.deepEqual([defs.words, defs.sentences], [10, 5])
     assert.equal(digestMail({ words: [['a', 'б']], sentences: [], time: '12:00' }).subject, 'Повторение: 12:00 · 1 слово')
   })
 
   test('почты нет — письма нет; сбой отправки не съедает день', async () => {
     const none = fake({ configured: false })
-    none.svc.set({ enabled: true, time: '12:00' }, at(9, 0))
+    await none.svc.set({ enabled: true, time: '12:00' }, at(9, 0))
     assert.equal(await none.svc.tick(at(12, 0)), 'nomail')
     const bad = fake({ fail: true })
-    bad.svc.set({ enabled: true, time: '12:00' }, at(9, 0))
+    await bad.svc.set({ enabled: true, time: '12:00' }, at(9, 0))
     const log = console.error
     console.error = () => {}
     assert.equal(await bad.svc.tick(at(12, 0)), 'failed')
     console.error = log
-    assert.equal(bad.svc.get().lastSent, '', 'следующая проверка попробует снова')
+    assert.equal((await bad.svc.get()).lastSent, '', 'следующая проверка попробует снова')
   })
 
   test('sample берёт разные элементы и не больше, чем есть', () => {

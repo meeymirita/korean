@@ -23,8 +23,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: ['error', 'warn'], bodyParser: false })
   if (TOKEN.length < 20) console.warn('ВНИМАНИЕ: токен короче 20 символов, его легко подобрать. Замени: openssl rand -base64 24')
   app.disable('x-powered-by')
-  // за Caddy на этом же компьютере: настоящий адрес берётся из X-Forwarded-For только если запрос пришёл с loopback
-  app.set('trust proxy', 'loopback')
+  // за Caddy (на сервере или в Docker-сети): настоящий адрес берётся из X-Forwarded-For только от своих прокси (loopback и частные сети Docker).
+  // Без этого все посетители выглядели бы одним адресом, а неверные попытки одного блокировали бы всех, включая владельца.
+  app.set('trust proxy', (process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal').split(',').map(x => x.trim()).filter(Boolean))
   app.use(securityHeaders)
   app.use(accessLogger)
   app.use(app.get(RateLimiter).middleware)

@@ -224,7 +224,8 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         child.once('error', reject)
         child.once('close', code => code === 0 ? resolve() : reject(new Error(`pg_dump: ${stderr.trim().slice(0, 200) || `код ${code}`}`)))
       })
-      if (existsSync(path.join(ROOT, 'backend', '.env'))) writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, 'backend', '.env')), { mode: 0o600 })
+      // .env рядом с backend/ (в Docker корневой .env проекта смонтирован как /app/.env): без него на новом сервере не будет токена и ключей
+      if (existsSync(path.join(ROOT, '.env'))) writeFileSync(path.join(stage, 'server.env'), readFileSync(path.join(ROOT, '.env')), { mode: 0o600 })
       // конфиги сервера, без которых заново не поднять (если процесс может их прочитать)
       const cfg = path.join(stage, 'config')
       const have: string[] = []
@@ -251,9 +252,11 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
           /* папки нет или нет прав */
         }
       }
-      // инструкция восстановления лежит рядом с архивом: на новом сервере репозитория ещё нет
-      const guide = path.join(ROOT, 'gpt', 'implementation-notes.md')
+      // инструкция восстановления лежит рядом с архивом: на новом сервере репозитория ещё нет (в Docker папка docs смонтирована в /app/docs)
+      const guide = [path.join(ROOT, '..', 'docs', 'backup.md'), path.join(ROOT, 'docs', 'backup.md')].find(existsSync)
       if (guide) writeFileSync(path.join(stage, 'backup.md'), readFileSync(guide))
+      const stack = [path.join(ROOT, '..', 'docs', 'docker.md'), path.join(ROOT, 'docs', 'docker.md')].find(existsSync)
+      if (stack) writeFileSync(path.join(stage, 'docker.md'), readFileSync(stack))
       const sizes = ['uploads', 'docs', 'thumbs', 'public', 'site'].map(d => {
         const dir = path.join(DATA_DIR, d)
         return `  ${d}: ${existsSync(dir) ? Math.round(dirSize(dir) / 1024) + ' КБ' : 'нет папки'}`
@@ -268,7 +271,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
           '  (docs — файлы, приложенные к планам в календаре; пуста, пока ничего не прикрепляли)',
           `конфиги: ${have.length ? have.join(', ') : 'не прочитались (нет прав), их нужно сохранить отдельно'}`,
           `секреты: server.env`,
-          guide ? 'восстановление: implementation-notes.md в архиве; подробная инструкция будет добавлена после завершения работ' : 'восстановление: смотрите документацию проекта',
+          guide ? 'восстановление: backup.md и docker.md в этом архиве' : 'восстановление: docs/backup.md и docs/docker.md в репозитории',
           '',
         ].join('\n'),
       )

@@ -54,8 +54,15 @@ function numbers<T>(value: T): T {
 
 @Injectable()
 export class Db implements OnModuleDestroy {
+  private readonly connection = new URL(process.env.DATABASE_URL || 'postgresql://localhost/app')
+  private readonly schema = this.connection.searchParams.get('schema') || undefined
+  private readonly connectionString = (() => {
+    this.connection.searchParams.delete('schema')
+    if (this.schema) this.connection.searchParams.set('options', `-c search_path=${this.schema}`)
+    return this.connection.toString()
+  })()
   private readonly prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    adapter: new PrismaPg({ connectionString: this.connectionString }, this.schema ? { schema: this.schema } : undefined),
   })
   private readonly transaction = new AsyncLocalStorage<Client>()
   private readonly ready = this.prisma.$connect()
@@ -84,7 +91,7 @@ export class Db implements OnModuleDestroy {
   /** Запросы внутри callback используют одну транзакцию Prisma. */
   async tx<T>(fn: () => Promise<T> | T): Promise<T> {
     await this.ready
-    return this.prisma.$transaction(async tx => this.transaction.run(tx, fn))
+    return this.prisma.$transaction(async tx => this.transaction.run(tx, fn), { maxWait: 10_000, timeout: 120_000 })
   }
 
   async getMeta(key: string): Promise<string | undefined> {
