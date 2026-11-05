@@ -33,6 +33,25 @@ describe('analyze: частицы по 받침', () => {
   })
 })
 
+describe('analyze: частица 에 ведёт на нужную карточку', () => {
+  const gOf = (sentence, text = '에') => analyze(sentence).find(x => x.text === text && x.type === 'particle')?.g
+  test('время: после слов «когда» это карточка «에 (когда)», а не «место»', () => {
+    assert.equal(gOf('금요일에 학교에 가요', '에'), 'when_e')
+    assert.equal(gOf('주말에 집에 있어요'), 'when_e')
+    assert.equal(gOf('아침에 공부해요'), 'when_e')
+  })
+  test('направление: с глаголом движения это «에 가다», с 있다 — место нахождения', () => {
+    const goes = analyze('학교에 가요').find(x => x.text === '에')
+    assert.equal(goes.g, 'gada')
+    assert.match(goes.gloss, /куда/)
+    assert.equal(analyze('집에 있어요').find(x => x.text === '에').g, 'iss')
+  })
+  test('в одном предложении у времени и места разные карточки', () => {
+    const marks = analyze('주말에 학교에 가요').filter(x => x.text === '에').map(x => x.g)
+    assert.deepEqual(marks, ['when_e', 'gada'])
+  })
+})
+
 describe('analyze: слова и формы', () => {
   test('глаголы настоящего и прошедшего времени, -해요', () => {
     assert.equal(parts('버스를 타요').at(-1)[1], 'verb')

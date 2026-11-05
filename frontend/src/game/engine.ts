@@ -712,7 +712,7 @@ function renderQuestion(q){
     card.appendChild(tiles);
     const acts=el('div','acts');
     const chk=el('button','primary','Проверить');chk.type='button';chk.id='chk';chk.addEventListener('click',checkBuild);
-    const clr=el('button','ghost','Очистить');clr.type='button';clr.id='clr';clr.addEventListener('click',()=>{q.sel=[];drawBuild();});
+    const clr=el('button','ghost','Очистить');clr.type='button';clr.id='clr';clr.addEventListener('click',()=>{if(S.answered)return;q.sel=[];drawBuild();});
     const hb=el('button','ghost hint');hb.innerHTML=iconImg('sparkle')+' Подсказка · '+S.hints;hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0||S.blitz.on;
     hb.addEventListener('click',buildHint);
     const gb=el('button','ghost hint','🔤 '+(S.gloss?'Скрыть переводы':'Показать переводы'));gb.type='button';gb.id='glossBtn';
@@ -784,6 +784,9 @@ function checkBuild(){
     const canon=q.right.split(' ');
     slots.querySelectorAll('.slot').forEach((b,k)=>b.classList.add(canon[k]===words[k]?'ok':'bad'));
   }
+  // после проверки «Проверить» и «Очистить» выключены, а фокус уходит с кнопки: иначе Enter нажимал бы её снова, а не шёл «Дальше»
+  ['chk','clr','hintBtn'].forEach(id=>{const x=$('#'+id);if(x)x.disabled=true;});
+  if(document.activeElement&&document.activeElement.tagName==='BUTTON')document.activeElement.blur();
   finish(ok,ans);
 }
 function answerChoice(i){

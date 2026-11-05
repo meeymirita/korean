@@ -240,6 +240,28 @@ function analyzeToken(tok: string, depth = 0): Segment[] | null {
   return null
 }
 
+/** Слова времени из словаря: после них 에 отвечает на вопрос «когда?» (금요일에), а не «где?». */
+const TIME_WORDS = new Set(D.filter(w => w.c.includes('время') && w.k !== '언제').map(w => clean(w.k)).filter(Boolean))
+const TIME_PATTERN = /^(\d+(시|월|일|분)|오전|오후|새벽|낮|방학|휴일)$/
+const MOTION_PATTERN = /(가요|갔어요|갑니다|가다|와요|왔어요|옵니다|오다)$/
+
+/**
+ * Частица 에 одна, а правил у неё три: время («금요일에» — когда), направление («학교에 가요» — куда) и место нахождения («집에 있어요» — где).
+ * Карточку и подсказку выбираем по соседним словам, иначе у предложения про время была бы ссылка на «место».
+ */
+function refineE(segs: Segment[]): Segment[] {
+  const motion = segs.some(x => x.type !== 'particle' && MOTION_PATTERN.test(x.text))
+  return segs.map((x, i) => {
+    if (x.type !== 'particle' || x.text !== '에') return x
+    const prev = segs[i - 1]?.text ?? ''
+    if (TIME_WORDS.has(prev) || TIME_PATTERN.test(prev)) {
+      return { ...x, g: 'when_e', gloss: 'когда (частица времени)', explain: `«${prev}» отвечает на вопрос «когда?», поэтому к нему добавляется 에` }
+    }
+    if (motion) return { ...x, g: 'gada', gloss: 'куда (направление движения)', explain: `Глагол движения (идти, приходить): 에 показывает, куда` }
+    return { ...x, g: 'iss', gloss: 'где находится', explain: `После слова места 에 вместе с 있다 / 없다 говорит, где что-то находится` }
+  })
+}
+
 /** Разбирает предложение на слова, частицы и окончания. */
 export function analyze(sentence: string): Segment[] {
   const tokens = sentence.split(/\s+/).map(clean).filter(Boolean)
@@ -277,5 +299,5 @@ export function analyze(sentence: string): Segment[] {
     if (segs) out.push(...segs)
     else out.push({ text: tok, type: 'unknown', gloss: 'нет в словаре' })
   }
-  return out
+  return refineE(out)
 }
