@@ -1,3 +1,4 @@
+-
 # 우리말 — корейский язык
 
 > **Живой сайт:** https://korean.meeymirita.ru
