@@ -4,7 +4,7 @@
 Репозиторий `github.com/meeymirita/korean`, ветка `main` (прежний Vue SPA хранится в `main_old`), локально `/Users/mira/Documents/projects/git_korean`.
 Общение с владельцем по-русски. Главная `meeymirita.ru` это другой проект (`github.com/meeymirita/me`).
 
-**Состояние:** платформа готова и работает на боевом сервере (Nuxt SSR + NestJS + SQLite). Переделок архитектуры и дизайна не планируется:
+**Состояние:** платформа готова и работает на боевом сервере (Nuxt SSR + NestJS + PostgreSQL, всё в Docker Compose, `docs/docker.md`). Переделок архитектуры и дизайна не планируется:
 дальше только расширение (новые слова, уроки, режимы, страницы). Стек не менять без причины.
 
 ## Владелец и как с ним работать
@@ -57,12 +57,12 @@
   и **галерею в `README.md`** (заголовки, описания, картинки один в один, `tests/readme.test.mjs`).
 - Менял `dark.css`: `node scripts/build-night.mjs` (собирает `night.css`, тест следит).
 - Менял словарь или `translations.ts`: `node scripts/digest-pool.mjs` и `node scripts/build-words-json.mjs` (публичный `/words.json` для сверки на дубли); менял словарь или пройденные темы: `node scripts/chat-curriculum.mjs`. Тесты следят.
-- Поменял сервер: перезапусти локальный (`pkill -f "node dist/main.js"; npm run server`), иначе сайт «не видит» новых возможностей.
+- Поменял сервер: пересобери и перезапусти локальный (`npm run server:build`, затем `pkill -f "node dist/main.js"; npm run server`; в Docker `docker compose up -d --build backend`), иначе сайт «не видит» новых возможностей. Всё, что вызывает async-методы сервера (в том числе проверки `confirm.require`), обязательно с `await`: без него защита молча не срабатывает.
 - **Коммить только при зелёных тестах:** смотри строку `ℹ fail 0` до `git commit` (`npm test | grep …` возвращает код `grep`, а не тестов).
 - Тесты, которым нужен `tests/_load.mjs`, обязаны вызывать `after(close)`, иначе `npm test` зависает. Таймеры двигай по секунде (`mock.timers.tick(1000)` в цикле).
 - Пакеты ставить можно любые, если дают пользу и не тяжелят сборку (смотри размер, свежесть, `npm audit`; тяжёлое грузи лениво): `npm install <пакет>`, затем `npm test` и `npm run build`; серверные в `backend/`.
-- Гость ничего не сохраняет, картинки и база только у владельца: любая новая «личная» вещь это уважает. Миграции базы только через `Db.migrate` с тестом на «старой» базе; всё, что стирает данные, просит токен ещё раз.
-- Токен (`PROGRESS_TOKEN`) и ключи никогда не вставляй в чат и репозиторий; для проверки читай `backend/.env` прямо в скрипте.
+- Гость ничего не сохраняет, картинки и база только у владельца: любая новая «личная» вещь это уважает. Миграции базы только через Prisma (`backend/prisma/migrations`, `npm --prefix backend run db:dev`), обратимо для прежнего кода (только добавлять столбцы и таблицы); всё, что стирает данные, просит токен ещё раз.
+- Токен (`PROGRESS_TOKEN`) и ключи никогда не вставляй в чат и репозиторий; для проверки читай `.env` прямо в скрипте.
 
 ## Порядок работы с материалами (так договорились с владельцем, 2026-11-04)
 
@@ -77,12 +77,12 @@
 
 ## Стек и запуск
 
-Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + SQLite `node:sqlite`, Node 22.18+ или 24.12+), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
+Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + Prisma + PostgreSQL, Node 22.18+ или 24.12+), `docker/` (Dockerfile, Caddyfile, Prometheus, Grafana), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
 (три отдельных `node_modules`; корневой нужен тестам, `scripts/link-test-deps.mjs` делает `vue` и `pinia` ссылками на копии из `frontend/`). **Пути `src/...` везде считай от `frontend/`.**
 
-- Установка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci`.
+- Установка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci && npm --prefix backend run db:generate` (Prisma Client; тестам нужны PostgreSQL, Redis, Meilisearch и `pg_dump` 17+: как поднять, в `docs/docker.md`, последний раздел).
 - Из корня: `npm run dev` (сайт, порт 3000, `/api` → `API_PORT`), `npm run server:dev` (API, порт 3001), `npm run build`, `npm run type-check`, `npm test`.
-- Хостинг: службы `korean-web` (Nuxt, 3000) и `progress` (`backend/dist/main.js`, 3001), Caddy проксирует на обе. Обновление: `bash scripts/deploy.sh` (откатывается само). Подробности `docs/hosting.md`.
+- Хостинг: Docker Compose (`docker-compose.yml`): сайт `127.0.0.1:3000`, API `127.0.0.1:3001`, PostgreSQL, Redis, Meilisearch, Prometheus, Grafana; боевой Caddy сервера остаётся прежним и ходит на эти порты. Обновление: `bash scripts/deploy.sh` (копия базы, сборка, откат сам). Перенос данных, копии, мониторинг: `docs/docker.md`; Caddy, защита, диагностика: `docs/hosting.md`.
 
 ## Маршруты
 
@@ -108,7 +108,9 @@
 | `docs/shop.md` | монетки Юны и магазин |
 | `docs/chat.md` | помощник-чат (OpenRouter) |
 | `docs/server.md` | сервер: таблицы, API, защита, двухфакторный вход |
-| `docs/hosting.md` | боевой сервер: службы, Caddy, деплой, откат, защита |
+| `docs/docker.md` | **Docker-стек**: сервисы, первый запуск, перенос SQLite → PostgreSQL, обновление, копии, мониторинг, поиск |
+| `docs/hosting.md` | боевой сервер: Caddy, защита, диагностика |
+| `docs/stack-ideas.md` | заметка: какие модные технологии стоит брать (основа решения про Docker, Prometheus, PostgreSQL) |
 | `docs/backup.md` | резервные копии |
 | `docs/changelog.md` | краткая хронология |
 
@@ -132,5 +134,5 @@
 - Предметы магазина не работают в «Найди пару», «Слоги» и игре «Хлебушек». «Собери предложение» в игре без перетаскивания (нужен `sortablejs` или перепись игры на Vue).
 - Переводы предложений (`translations.ts`) мои, учитель их не проверял.
 - Проверки владельца на устройствах (сам Claude не может): «Найди пару» с Pencil на iPad (экран не дёргается), ✳ розовая на iPad, видео в Safari и на iPad (если нет, перекодировать в H.264, команда в `docs/hosting.md`), письмо с архивом после 4:00, смена «Сегодня» в полночь, выезд свёрнутого меню, кнопка «?» в «Найди ошибку», после деплоя `/words.json` и ссылка на странице «Слова». Результат владелец сообщает сам. Анимации «Повторения», остаток эмодзи (уведомления, значок режима в истории ответов, огонёк в разборе).
-- Хостинг: CSP для сайта, служба `progress` не от root, брандмауэр, SSH по ключу, fail2ban, копии вне сервера, Яндекс.Вебмастер и Search Console (`docs/hosting.md`).
+- Хостинг: CSP для сайта, брандмауэр, SSH по ключу, fail2ban, копии вне сервера, Яндекс.Вебмастер и Search Console (`docs/hosting.md`).
 - Перенос видео в Яндекс Object Storage (21,38 ₽/мес за 10 ГБ) владелец обдумывает, пока не нужен.

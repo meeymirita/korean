@@ -4,19 +4,19 @@ Ubuntu (`root@se-40678`), проект в `/var/sites/korean`, сайт `https:/
 Владелец заходит по SSH сам, Claude доступа не имеет: команды даём текстом, короткие (терминал владельца портит длинные строки), перед правкой конфига просим показать его (`cat`).
 
 ## Как это работает
+Подробно про стек, перенос данных, копии и мониторинг: `docs/docker.md`. Здесь: сервер, Caddy, защита, диагностика.
 | Что | Как |
 |---|---|
-| Сайт | служба `korean-web` (`scripts/korean-web.service`: Nuxt из `frontend/.output`, порт 3000) |
-| API | служба `progress` (`ExecStart=/usr/bin/node backend/dist/main.js`, порт 3001) |
-| Данные | `backend/data/` (база, картинки, копии), токен и ключи `backend/.env` (права 600), оба вне git |
-| Видео | `/var/sites/korean-video/` (вне git, `deploy.sh` не трогает), Caddy отдаёт `/video/*` |
-| Node | 24 (NodeSource, `/usr/bin/node`); нужен 22.18+ или 24.12+ (`engines` в package.json) |
+| Сайт и API | контейнеры `frontend` (`127.0.0.1:3000`) и `backend` (`127.0.0.1:3001`) из `docker-compose.yml`, `restart: unless-stopped` |
+| Данные | том `app-data` (картинки, копии), база в томе PostgreSQL; секреты в `.env` проекта (права 600), оба вне git |
+| Видео | `/var/sites/korean-video/` (вне git, `deploy.sh` не трогает), хостовый Caddy отдаёт `/video/*` |
+| Вход | хостовый Caddy сервера (`/etc/caddy/Caddyfile`, ниже блок сайта), он же обслуживает остальные сайты; Caddy из compose (профиль `edge`) на сервере не включают |
+| Docker | Docker Engine и Compose v2 (`docker compose version`) |
 
 ## Обновление
-`cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт отказывается работать при несохранённых правках, делает `git pull --ff-only`, ставит пакеты корня, `frontend/` и `backend/` если менялись их `package*.json`,
-собирает сервер (при изменениях в `backend/`) и сайт, перезапускает `progress` и `korean-web`, ждёт ответа `/api/health` и сайта до 20 секунд. **Если что-то не ответило или сборка упала, возвращает прежнюю версию.**
-`package-lock.json`, переписанные npm на сервере, возвращает как в git. Параметры: `--force`, `--no-restart`. Telegram-уведомление по желанию: `/etc/korean-deploy.env` с `NOTIFY_TELEGRAM_TOKEN` и `NOTIFY_TELEGRAM_CHAT` (права 600).
-Тест: `tests/deploy.test.mjs`. После смены Node: `bash scripts/deploy.sh --force`. Диагностика: `journalctl -u progress -n 30 --no-pager`, `journalctl -u korean-web -n 30 --no-pager`, `curl http://127.0.0.1:3001/api/health`.
+`cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт отказывается работать при несохранённых правках, делает `git pull --ff-only`, копию базы, собирает образы, запускает изменившиеся службы и ждёт ответа `/api/health` и сайта до 60 секунд. **Если что-то не ответило или сборка упала, возвращает прежнюю версию.**
+Параметры: `--force`, `--no-restart`, `--no-backup`. Telegram-уведомление по желанию: `/etc/korean-deploy.env` с `NOTIFY_TELEGRAM_TOKEN` и `NOTIFY_TELEGRAM_CHAT` (права 600).
+Тест: `tests/deploy.test.mjs`. Диагностика: `docker compose ps`, `docker compose logs --tail 50 backend`, `docker compose logs --tail 50 frontend`, `curl http://127.0.0.1:3001/api/health`; то же без консоли в «Кабинет → Сервисы».
 
 ## Caddy (`/etc/caddy/Caddyfile`, блок сайта)
 ```

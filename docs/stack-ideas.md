@@ -5,7 +5,9 @@ Loki+OpenTelemetry, Kubernetes+Helm, Terraform+Ansible, Prisma, MinIO, Sentry, k
 этого даёт реальную пользу для **личного** проекта на одном VPS с одним-двумя пользователями, а что не нужно и только
 добавит работы. Это не подтверждённый план, а честная сверка «хочу → надо ли».
 
-Текущее состояние (на 2026-11-05): Nuxt SSR + NestJS + SQLite (`node:sqlite`), один VPS, Caddy + systemd,
+**Статус на 2026-11-05: внедрено Docker Compose, Prometheus + Grafana, PostgreSQL (Prisma), Redis + BullMQ, Meilisearch; подробности и запуск в `docs/docker.md`. Остальное ниже остаётся заметкой.**
+
+Состояние на момент написания заметки: Nuxt SSR + NestJS + SQLite (`node:sqlite`), один VPS, Caddy + systemd,
 `scripts/deploy.sh`, CI и автодеплой через GitHub Actions уже есть (`.github/workflows/ci.yml`, `deploy.yml`).
 В кабинете уже есть своя аналитика: `AnalyticsPanel.vue`, `ReportTab.vue`, `ReportChartModal.vue`, `LineChart.vue`
 (данные из `backend/src/progress/progress.service.ts`).

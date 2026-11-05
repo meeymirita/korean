@@ -1,10 +1,10 @@
-# Сервер: NestJS + SQLite (`backend/`)
+# Сервер: NestJS + PostgreSQL (`backend/`)
 
-База встроенная (`node:sqlite`, нужен Node 22.18+ или 24.12+), обычный SQL без ORM, файл `backend/data/app.db` (в git не попадает). Слушает только `127.0.0.1:3001`, наружу его выставляет Caddy.
+База PostgreSQL 17 (`DATABASE_URL`), доступ через Prisma Client (`backend/prisma/schema.prisma`, миграции `backend/prisma/migrations/`, применяются при старте контейнера `prisma migrate deploy`); простые чтения и записи через модели, прежние запросы идут через `Db.all/get/run` (параметры `?` переводятся в `$1…`). Нужен Node 22.18+ или 24.12+. Слушает `127.0.0.1:3001` (в Docker `0.0.0.0` внутри контейнера, наружу только на loopback), его выставляет Caddy. Стек, запуск и перенос данных: `docs/docker.md`.
 
 ## Запуск и настройки
 - `npm run server:build`, `npm run server`; в разработке `npm run server:dev`. Тесты сервера: `npm run test:nest` (и общие `tests/*.test.mjs` на настоящем сервере через `tests/_server.mjs`).
-- `backend/.env` (образец `.env.example`) или переменные окружения: `PROGRESS_TOKEN` (обязателен, `openssl rand -base64 24`), `PORT`, `DATA_DIR`, почта `SMTP_*`,
+- В Docker настройки берутся из корневого `.env` (`bash scripts/init-env.sh`), при прямом запуске из `backend/.env` или окружения: `DATABASE_URL`, `REDIS_URL` (необязателен), `MEILISEARCH_URL` и `MEILISEARCH_MASTER_KEY` (необязательны), `TRUST_PROXY`, `PROGRESS_TOKEN` (обязателен, `openssl rand -base64 24`), `PORT`, `DATA_DIR`, почта `SMTP_*`,
   `BACKUP_*`, `REMINDER_MAIL_TO`, `CADDY_LOG_FILE`, `OPENROUTER_API_KEY`, `DISABLE_2FA`, `SWAGGER`.
 - **`/api/health`** открыт: проверяет, что база читается (`200 {"ok":true}`, иначе `503`). На нём держится откат в `scripts/deploy.sh`.
 - **Swagger:** `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs`. Только локально: страница отдаётся мимо проверки токена, на боевом сервере `SWAGGER` не ставить.
@@ -27,7 +27,7 @@
 ## Таблицы базы
 `meta` (очки, профиль, настройки, метки), `answers` (каждый ответ, `detail` JSON `{q, a, y}`), `words` (статистика слова), `days`, `study_time`, `guests` (хэши токенов),
 `notes`, `images`, `plans`, `plan_files`, `today_sets`, `sessions` (сеансы после кода из письма), `site_images`, `coin_log` (уникальный `ref` против двойных выплат), `nb_items` (тетрадь), `events` (последние 2000).
-К старым базам недостающие столбцы добавляет `Db.migrate` при запуске, руками базу трогать не нужно.
+Структуру меняют только миграцией Prisma (`npm --prefix backend run db:dev`, потом тест на копии данных), руками базу трогать не нужно. Старую SQLite-базу в PostgreSQL переносит `backend/scripts/sqlite-to-postgres.mjs` (с сверкой, `docs/docker.md`).
 
 ## API
 Все запросы с `Authorization: Bearer токен`, кроме `/api/health`, `GET /api/public/*` и чтения `/api/site-images`. Роли: владелец делает всё; гость получает пустые ответы,
@@ -58,4 +58,4 @@
 - Код: `auth/twofa.service.ts`, `mail/mail.service.ts`; сайт `composables/useTwoFa.ts`, `AuthGate.vue`, `cabinet/TwoFaBlock.vue`.
 
 ## Как смотреть, что в базе
-Вкладка «База» в кабинете (только просмотр, хэши скрыты); на сервере `sqlite3 backend/data/app.db`; ежедневные копии в `backend/data/backups/` (30 штук).
+Вкладка «База» в кабинете (только просмотр, хэши скрыты); на сервере `docker compose exec postgres psql -U korean korean`; ночные дампы в томе `app-data` (`/data/backups`, 30 штук).
