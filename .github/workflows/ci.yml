@@ -64,8 +64,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Поддерживаемые версии Node.js для приложения и CI.
-        node: [22, 24]
+        # Node 22: ровно та версия, что в образах Docker на сервере (docker/*/Dockerfile).
+        node: [22]
     steps:
       - uses: actions/checkout@v4
 

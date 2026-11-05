@@ -19,6 +19,8 @@ const searchMessage = ref('')
 const searchState = ref<SearchServiceStatus | null>(null)
 const privateIndexing = ref(false)
 const privateIndexMessage = ref('')
+const reporting = ref(false)
+const reportMessage = ref('')
 let timer: ReturnType<typeof setInterval> | undefined
 
 const headers = () => ({ Authorization: `Bearer ${progress.bearer}` })
@@ -69,6 +71,30 @@ async function loadSearchStatus() {
   } catch (cause) {
     searchState.value = null
     searchMessage.value = errText(cause)
+  }
+}
+
+/** Отчёт для разбора неполадок: собирается на сервере, копируется в буфер и скачивается файлом (без паролей и токенов). */
+async function makeReport() {
+  if (reporting.value) return
+  reporting.value = true
+  reportMessage.value = ''
+  try {
+    const response = await fetchT('/api/ops/report', { headers: headers() }, 60_000)
+    if (!response.ok) throw new Error(`Сервер ответил кодом ${response.status}.`)
+    const text = await response.text()
+    let copied = false
+    try { await navigator.clipboard.writeText(text); copied = true } catch { /* буфер недоступен: останется файл */ }
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }))
+    link.download = `otchet-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.md`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    reportMessage.value = copied ? 'Отчёт скопирован и скачан файлом: пришли его целиком.' : 'Отчёт скачан файлом: пришли его целиком.'
+  } catch (cause) {
+    reportMessage.value = errText(cause)
+  } finally {
+    reporting.value = false
   }
 }
 
@@ -134,8 +160,12 @@ onBeforeUnmount(() => clearInterval(timer))
         <h2>Сервисы и контейнеры</h2>
         <p class="muted">Статусы и последние журналы текущего Docker Compose проекта.</p>
       </div>
-      <button type="button" class="chip" :disabled="refreshing" @click="refresh">{{ refreshing ? 'Обновляю…' : 'Обновить' }}</button>
+      <div class="ops-btns">
+        <button type="button" class="chip" :disabled="reporting" title="Состояние, нагрузка, ошибки и копии одним файлом" @click="makeReport">{{ reporting ? 'Собираю…' : 'Отчёт для разбора' }}</button>
+        <button type="button" class="chip" :disabled="refreshing" @click="refresh">{{ refreshing ? 'Обновляю…' : 'Обновить' }}</button>
+      </div>
     </div>
+    <p v-if="reportMessage" class="muted" role="status">{{ reportMessage }}</p>
 
     <p v-if="error" class="ops-error" role="alert">{{ error }}</p>
     <p v-else-if="!state && loading" class="muted">Загружаю состояния…</p>
@@ -196,6 +226,7 @@ onBeforeUnmount(() => clearInterval(timer))
 .ops-head, .ops-service-top, .ops-logs-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
 .ops-head h2, .ops-logs-head h3 { margin: 0; }
 .ops-head p { margin: .35rem 0 0; }
+.ops-btns { display: flex; flex-wrap: wrap; gap: .5rem; }
 .ops-meta { font-size: .9rem; }
 .ops-search-index { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--line, #ddd); border-radius: 12px; }
 .ops-search-index p { margin: .35rem 0 0; }

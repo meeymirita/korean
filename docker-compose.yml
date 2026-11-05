@@ -30,6 +30,7 @@ services:
       DATA_DIR: /data
       TRUST_PROXY: ${TRUST_PROXY:-loopback, linklocal, uniquelocal}
       DOCKER_API_URL: http://docker-proxy:2375
+      PROMETHEUS_URL: http://prometheus:9090
       COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379

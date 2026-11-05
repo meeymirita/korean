@@ -116,7 +116,7 @@
 
 ## Как проверять
 
-- CI на GitHub (типы, сборка, тесты, `npm audit`, Node 22 и 24) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
+- CI на GitHub (типы, сборка, тесты, `npm audit`, Node 22 как в образах Docker) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
 - Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 600 тестов: 580+ в `tests/` и около 60 во фреймворках). Отдельно `npm run test:nest`, `npm run test:nuxt`.
 - Типы и сборка: `npm run type-check`, `npm run build`. Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`).
 - Визуально: headless Chromium из кэша Playwright (`~/Library/Caches/ms-playwright/chromium_headless_shell-*/…/chrome-headless-shell`), `--screenshot` или `--remote-debugging-port`.
