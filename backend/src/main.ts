@@ -8,12 +8,9 @@ import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module.js'
 import { DATA_DIR, MAX_JSON, PORT, SWAGGER, TOKEN } from './config.js'
-import { accessLogger, startLogCapture } from './logs/log-buffer.js'
 import { RateLimiter, requestTimeout, securityHeaders } from './security.js'
 import { DOCS_PATH, setupSwagger } from './swagger.js'
 import { MetricsService } from './metrics.service.js'
-
-startLogCapture() // журнал для кабинета: копим всё, что пишет сервер
 
 async function bootstrap() {
   if (!TOKEN) {
@@ -27,7 +24,6 @@ async function bootstrap() {
   // Без этого все посетители выглядели бы одним адресом, а неверные попытки одного блокировали бы всех, включая владельца.
   app.set('trust proxy', (process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal').split(',').map(x => x.trim()).filter(Boolean))
   app.use(securityHeaders)
-  app.use(accessLogger)
   app.use(app.get(RateLimiter).middleware)
   app.use(requestTimeout)
   app.use(app.get(MetricsService).middleware)

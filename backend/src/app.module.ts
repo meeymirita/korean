@@ -10,7 +10,6 @@ import { GuestsModule } from './guests/guests.module.js'
 import { HealthController } from './health.controller.js'
 import { ImagesModule } from './images/images.module.js'
 import { NotesModule } from './notes/notes.module.js'
-import { NotebookModule } from './notebook/notebook.module.js'
 import { PlansModule } from './plans/plans.module.js'
 import { SiteImgModule } from './siteimg/siteimg.module.js'
 import { PublicModule } from './public/public.module.js'
@@ -25,7 +24,7 @@ import { SearchModule } from './search/search.module.js'
 import { JobsModule } from './jobs/jobs.module.js'
 
 @Module({
-  imports: [JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
+  imports: [JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
   controllers: [HealthController, MetricsController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService],
 })

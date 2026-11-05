@@ -86,11 +86,11 @@ const PAGES: Record<string, Seo> = {
   '/korean/review': { title: `Повторение · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/shop': { title: `Магазин Юны · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/upload': { title: `Массовая загрузка картинок · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/notebook': { title: `Тетрадь · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/garden': { title: `Сад воспоминаний · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/culture': { title: `Культура Кореи · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/know': { title: `Что я уже знаю · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/lab': { title: `Мастерская грамматики · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/korean/services': { title: `Сервисы · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/sites': { title: `Полезные сайты · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/game/home': { title: `Игры на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },
 }

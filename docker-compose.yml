@@ -19,7 +19,6 @@ services:
       # .env и инструкции попадают в полный архив (секреты, как вернуть на новом сервере)
       - ./.env:/app/.env:ro
       - ./docs:/app/docs:ro
-      - ${CADDY_LOG_DIR:-./docker/caddy/logs}:/var/log/caddy:ro
     # наружу только на loopback: сайт открывает Caddy (хостовый или профиль edge), напрямую API из интернета не виден
     ports:
       - "127.0.0.1:${BACKEND_PORT:-3001}:3001"
@@ -62,7 +61,6 @@ services:
       OFFSITE_RCLONE: ${OFFSITE_RCLONE:-}
       LESSON_TICK_MS: ${LESSON_TICK_MS:-60000}
       MAIL_DUMP_FILE: ${MAIL_DUMP_FILE:-}
-      CADDY_LOG_FILE: ${CADDY_LOG_FILE:-}
       DOCS_QUOTA_MB: ${DOCS_QUOTA_MB:-1024}
       IMAGES_QUOTA_MB: ${IMAGES_QUOTA_MB:-1024}
     healthcheck:
@@ -134,7 +132,8 @@ services:
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    expose: ["9090"]
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     networks: [monitoring]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/healthy >/dev/null"]
@@ -149,6 +148,7 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_URL:-http://localhost:3002}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -264,8 +264,10 @@ services:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
     volumes:
       - meilisearch-data:/meili_data
-    expose: ["7700"]
-    networks: [data]
+    # порт на loopback нужен только для поддомена search.korean… за паролем Caddy (docs/docker.md); приложение ходит по сети data
+    ports:
+      - "127.0.0.1:${MEILI_PORT:-7700}:7700"
+    networks: [data, monitoring]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- --header='Authorization: Bearer '$$MEILI_MASTER_KEY http://127.0.0.1:7700/health >/dev/null"]
       interval: 30s

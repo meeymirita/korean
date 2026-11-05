@@ -44,7 +44,7 @@ useSchemaOrg([
 <template>
   <NuxtPage />
   <!-- в разделе корейского (/korean/…) кнопка и окно поиска есть в самом разделе; на самой главной поиска нет (так решил владелец) -->
-  <GlobalSearch v-if="route.path !== '/' && route.path !== '/notebook' && route.path !== '/upload' && !route.path.startsWith('/korean')" />
+  <GlobalSearch v-if="route.path !== '/' && route.path !== '/upload' && !route.path.startsWith('/korean')" />
   <ClientOnly>
     <StudyTimer />
     <SiteImageEditor />

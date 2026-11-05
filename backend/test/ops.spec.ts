@@ -20,6 +20,7 @@ describe('состояние Docker-сервисов в кабинете', () =>
 
     const response = await new OpsService().services()
     expect(response.project).toBe('korean')
+    expect(response.services.some(service => service.name === 'caddy')).toBe(false) // Caddy в профиле edge: без его контейнера в списке нет
     expect(response.services.find(service => service.name === 'backend')).toMatchObject({
       container: 'korean-backend-1', state: 'running', health: 'healthy', replicas: 1,
     })

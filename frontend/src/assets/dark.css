@@ -52,6 +52,8 @@ html[data-theme='dark'] .study .nt input, html[data-theme='dark'] .study .nt tex
 html[data-theme='dark'] .study input, html[data-theme='dark'] .study textarea, html[data-theme='dark'] .study select { color: var(--ink); }
 html[data-theme='dark'] .study input::placeholder, html[data-theme='dark'] .study textarea::placeholder { color: #7f83b8; }
 html[data-theme='dark'] .study .cb-note { background: rgba(240, 170, 60, .14); border-color: rgba(240, 170, 60, .4); color: #f2cf8e; }
+html[data-theme='dark'] .study .cb-note button { color: #f2cf8e; background: rgba(240, 170, 60, .12); border-color: rgba(240, 170, 60, .45); }
+html[data-theme='dark'] .study .cb-note button:hover { background: rgba(240, 170, 60, .24); }
 html[data-theme='dark'] .study .bk-warn { color: #f2cf8e; }
 html[data-theme='dark'] .study .pc-empty { color: var(--muted); }
 html[data-theme='dark'] .study .share-btn { color: #cbbfff; }

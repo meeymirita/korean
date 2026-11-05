@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import DbTab from '@/components/cabinet/DbTab.vue'
-import LogsTab from '@/components/cabinet/LogsTab.vue'
-import KeysBlock from '@/components/cabinet/KeysBlock.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
 import Avatar from '@/components/Avatar.vue'
@@ -188,8 +185,6 @@ const SYS_TABS = [
   { id: 'data', label: 'Прогресс и копии' },
   { id: 'access', label: 'Защита и доступ' },
   { id: 'card', label: 'Визитка' },
-  { id: 'db', label: 'База' },
-  { id: 'logs', label: 'Журналы' },
 ] as const
 const sysTab = usePersisted<string>('settings_sys_tab', 'data', v => SYS_TABS.some(t => t.id === v))
 
@@ -301,8 +296,6 @@ async function refreshPublic() {
       </div>
     </div>
 
-    <KeysBlock />
-
     <div v-if="!progress.isGuest && progress.unlocked" class="st-tabs" role="tablist">
       <button v-for="t in SYS_TABS" :key="t.id" role="tab" type="button" :aria-selected="sysTab === t.id" :class="{ on: sysTab === t.id }" @click="sysTab = t.id">{{ t.label }}</button>
     </div>
@@ -334,8 +327,6 @@ async function refreshPublic() {
       <TwoFaBlock v-if="progress.unlocked && !progress.isGuest" />
       <GuestAccess v-if="progress.unlocked && !progress.isGuest" />
     </div>
-    <DbTab v-if="progress.unlocked && !progress.isGuest && sysTab === 'db'" />
-    <LogsTab v-if="progress.unlocked && !progress.isGuest && sysTab === 'logs'" />
     <div v-show="sysTab === 'card'">
       <div v-if="progress.unlocked && !progress.isGuest" class="st-block">
         <h3>Публичная визитка</h3>

@@ -80,10 +80,6 @@ korean.meeymirita.ru {
 5. **Копии:** база копируется сама раз в день на том же диске; полный архив уходит на почту, ночная копия `scripts/backup.sh`: `docs/backup.md`. Копии вне сервера ещё не настроены (`OFFSITE_RSYNC` или `OFFSITE_RCLONE`).
 6. **Обновления системы:** `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades`. Яндекс.Вебмастер и Google Search Console: добавить сайт и `https://korean.meeymirita.ru/sitemap.xml`.
 
-## Журналы в кабинете
-Вкладка «Журналы» (владелец) показывает журнал сервера (в памяти, до 2000 строк; полный `journalctl -u progress`) и доступ Caddy. Для Caddy: блок `log` выше, `chmod 640 /var/log/caddy/korean.log`,
-пользователя службы в группу `caddy` (`usermod -aG caddy <пользователь>`), `CADDY_LOG_FILE=/var/log/caddy/korean.log` в `backend/.env`, перезапуск службы. Если файл не читается, вкладка пишет почему.
-
 ## Приложение и видео
 - `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` открывается на главной сам один раз за открытое окно браузера (`sessionStorage['demo_auto_shown']`), файл тяжёлый, поэтому в тестах размера он исключён.
 - **Видеоуроки** (44 файла, уроки 1–30 курса 양쌤의 한국어 교실, AV1 + Opus, 7,8 ГБ): `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`, `part2-01.mp4` … `part2-13.mp4`.

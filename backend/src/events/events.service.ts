@@ -2,15 +2,14 @@
 import { Injectable } from '@nestjs/common'
 import { MAX_EVENTS } from '../config.js'
 import { Db } from '../db/db.service.js'
-import { push } from '../logs/log-buffer.js'
 
 @Injectable()
 export class Events {
   constructor(private readonly db: Db) {}
 
   async log(type: string, info = '') {
-    // то же событие видно во вкладке «Журналы»; подозрительные (неверный токен и код, блокировка) отмечены как предупреждение
-    push(`событие ${type}${info ? ': ' + info : ''}`, 'out', /bad|locked|failed/.test(type) ? 'warn' : 'info')
+    // подозрительные события (неверный токен и код, блокировка) пишем как предупреждение
+    console[/bad|locked|failed/.test(type) ? 'warn' : 'log'](`событие ${type}${info ? ': ' + info : ''}`) // видно в «Сервисы → Журнал»
     const events = await this.db.orm()
     await events.event.create({ data: { t: BigInt(Date.now()), type, info: info.slice(0, 200) } })
     const latest = await events.event.aggregate({ _max: { id: true } })

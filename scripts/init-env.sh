@@ -46,7 +46,7 @@ done
 CARRIED=""
 if [ -n "$FROM" ]; then
   for key in PROGRESS_TOKEN SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_FROM BACKUP_PASSPHRASE BACKUP_MAIL_TO REMINDER_MAIL_TO \
-             OPENROUTER_API_KEY CHAT_MODEL CHAT_BASE CHAT_DAILY_LIMIT DISABLE_2FA BACKUP_AUTO BACKUP_EVERY_DAYS CADDY_LOG_FILE SITE_URL; do
+             OPENROUTER_API_KEY CHAT_MODEL CHAT_BASE CHAT_DAILY_LIMIT DISABLE_2FA BACKUP_AUTO BACKUP_EVERY_DAYS SITE_URL; do
     line=$(grep -E "^$key=" "$FROM" | tail -1 || true)
     [ -n "$line" ] || continue
     value=${line#*=}
@@ -59,12 +59,8 @@ if [ -n "$FROM" ]; then
   done
 fi
 
-# 3. на сервере: папки видео и журнала Caddy лежат на своих местах
+# 3. на сервере: папка видео лежит на своём месте
 [ -d /var/sites/korean-video ] && set_var VIDEO_DIR /var/sites/korean-video
-if [ -d /var/log/caddy ]; then
-  set_var CADDY_LOG_DIR /var/log/caddy
-  grep -q '^CADDY_LOG_FILE=.\+' "$OUT" || set_var CADDY_LOG_FILE /var/log/caddy/korean.log
-fi
 
 chmod 600 "$OUT"
 # в Docker .env монтируется в контейнер, где приложение работает от пользователя node (uid 1000): отдаём файл ему, права остаются 600

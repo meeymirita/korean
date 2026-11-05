@@ -5,7 +5,6 @@ import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import Avatar from '@/components/Avatar.vue'
-import HistoryTab from '@/components/cabinet/HistoryTab.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import NotificationsTab from '@/components/cabinet/NotificationsTab.vue'
@@ -13,7 +12,7 @@ import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
-import ServicesTab from '@/components/cabinet/ServicesTab.vue'
+import ServiceLinks from '@/components/cabinet/ServiceLinks.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
 import WeekTab from '@/components/cabinet/WeekTab.vue'
 import { dueWords } from '@/data/review'
@@ -67,13 +66,11 @@ watch(
 const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
-/** Старые адреса ?tab=db и ?tab=logs: База и Журналы переехали в «Настройки». */
-const moved = (v: unknown) => (v === 'db' || v === 'logs' ? 'settings' : v)
-const q = moved(route.query.tab)
+const q = route.query.tab
 // магазин из кабинета убран: старый адрес ?tab=shop ведёт на страницу магазина
 if (route.query.tab === 'shop') void router.replace('/korean/shop')
 const OWNER_ONLY = ['images', 'report', 'notifications', 'services']
-const TABS = ['repeat', 'week', 'history', 'report', 'notes', 'images', 'notifications', 'settings', 'services']
+const TABS = ['repeat', 'week', 'report', 'notes', 'images', 'notifications', 'settings', 'services']
 const tab = ref<CabinetTab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as CabinetTab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -84,7 +81,7 @@ watch(tab, t => {
 watch(
   () => route.query.tab,
   raw => {
-    const v = moved(raw)
+    const v = raw
     const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as CabinetTab
     if (next !== tab.value) tab.value = next
   },
@@ -94,7 +91,6 @@ const tabs = computed<[CabinetTab, string][]>(() => [
   ['overview', 'Обзор'],
   ['repeat', `Повторить${dueCount.value ? ' · ' + dueCount.value : ''}`],
   ['week', 'Неделя'],
-  ['history', 'История'],
   ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [CabinetTab, string][])),
   ['notes', 'Заметки'],
   // картинки, уведомления и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
@@ -141,12 +137,15 @@ const tabs = computed<[CabinetTab, string][]>(() => [
     <OverviewTab v-if="tab === 'overview'" />
     <RepeatTab v-else-if="tab === 'repeat'" />
     <WeekTab v-else-if="tab === 'week'" />
-    <HistoryTab v-else-if="tab === 'history'" />
     <ReportTab v-else-if="tab === 'report'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <NotificationsTab v-else-if="tab === 'notifications'" />
-    <ServicesTab v-else-if="tab === 'services'" />
+    <section v-else-if="tab === 'services'" class="cb-services">
+      <h2>Сервисы</h2>
+      <p class="muted">Состояние контейнеров, журналы и поисковый индекс собраны на отдельной странице. Отсюда можно сразу открыть Grafana, Prometheus и Meilisearch.</p>
+      <ServiceLinks to-page />
+    </section>
     <SettingsTab v-else />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import Icon from '@/components/Icon.vue'
 import LineChart from '@/components/charts/LineChart.vue'
 import { ACHIEVEMENTS } from '@/data/achievements'
@@ -101,6 +101,9 @@ async function loadDiary() {
 }
 onMounted(loadDiary)
 const diaryCat = ref('Все')
+const DIARY_PAGE = 20
+const diaryLimit = ref(DIARY_PAGE)
+watch(diaryCat, () => (diaryLimit.value = DIARY_PAGE))
 const diaryFiltered = computed(() => {
   const items = diary.value ?? []
   return diaryCat.value === 'Все' ? items : items.filter(i => mistakeCatOf(i.mode) === diaryCat.value)
@@ -176,14 +179,17 @@ const print = () => window.print()
       <p v-else-if="!diary" class="an-empty">Загружаю…</p>
       <p v-else-if="!diaryFiltered.length" class="an-empty">Ошибок по этому фильтру за период нет.</p>
       <ul v-else class="an-diary">
-        <li v-for="(a, i) in diaryFiltered.slice(0, 60)" :key="i">
+        <li v-for="(a, i) in diaryFiltered.slice(0, diaryLimit)" :key="i">
           <b class="ko">{{ a.d?.q ?? a.w ?? 'без слова' }}</b>
           <span v-if="a.d?.a" class="an-ans">верно: <i class="ko">{{ a.d.a }}</i></span>
           <span v-if="a.d?.y" class="an-ans wrong">ты ответил: <i class="ko">{{ a.d.y }}</i></span>
           <time>{{ when(a.t) }}</time>
         </li>
       </ul>
-      <p v-if="diaryFiltered.length > 60" class="an-leg">Показаны последние 60 из {{ diaryFiltered.length }}.</p>
+      <div v-if="diaryFiltered.length > diaryLimit" class="an-more">
+        <button type="button" class="chip" @click="diaryLimit += DIARY_PAGE">Показать ещё {{ Math.min(DIARY_PAGE, diaryFiltered.length - diaryLimit) }}</button>
+        <span class="an-leg">показано {{ diaryLimit }} из {{ diaryFiltered.length }}</span>
+      </div>
     </section>
 
     <section class="an-s">
@@ -224,7 +230,9 @@ const print = () => window.print()
 .an-tile b { margin-left: 4px; }
 .an-leg { display: flex; align-items: center; gap: 4px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 .an-leg .an-tile { width: 18px; height: 12px; padding: 0; }
-.an-chips { margin-bottom: 10px; }
+.study .an-chips { margin-bottom: 16px; }
+.an-more { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.an-more .an-leg { margin: 0; }
 .an-diary { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-width: 640px; }
 .an-diary li { padding: 8px 10px; border-radius: 12px; background: #fff6fa; border: 1px solid rgba(214, 77, 169, .18); font-size: 13.5px; }
 .an-diary b { display: block; }

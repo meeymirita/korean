@@ -5,7 +5,7 @@
 ## Запуск и настройки
 - `npm run server:build`, `npm run server`; в разработке `npm run server:dev`. Тесты сервера: `npm run test:nest` (и общие `tests/*.test.mjs` на настоящем сервере через `tests/_server.mjs`).
 - В Docker настройки берутся из корневого `.env` (`bash scripts/init-env.sh`), при прямом запуске из `backend/.env` или окружения: `DATABASE_URL`, `REDIS_URL` (необязателен), `MEILISEARCH_URL` и `MEILISEARCH_MASTER_KEY` (необязательны), `TRUST_PROXY`, `PROGRESS_TOKEN` (обязателен, `openssl rand -base64 24`), `PORT`, `DATA_DIR`, почта `SMTP_*`,
-  `BACKUP_*`, `REMINDER_MAIL_TO`, `CADDY_LOG_FILE`, `OPENROUTER_API_KEY`, `DISABLE_2FA`, `SWAGGER`.
+  `BACKUP_*`, `REMINDER_MAIL_TO`, `OPENROUTER_API_KEY`, `DISABLE_2FA`, `SWAGGER`.
 - **`/api/health`** открыт: проверяет, что база читается (`200 {"ok":true}`, иначе `503`). На нём держится откат в `scripts/deploy.sh`.
 - **Swagger:** `SWAGGER=1 npm run server` → `http://127.0.0.1:3001/api/docs`. Только локально: страница отдаётся мимо проверки токена, на боевом сервере `SWAGGER` не ставить.
 
@@ -17,7 +17,7 @@
 | `db/` | соединение, **все таблицы (`SCHEMA`) и миграции**, ежедневная копия базы |
 | `auth/` | вход по токену (`auth.guard.ts`, `@Public()`, `@Owner()`), повторный токен (`confirm.service.ts`), двухфакторный вход |
 | `progress/` | прогресс: `POST /api/ops`, `GET /api/progress`; монетки и магазин (`coins.ts`, `shop.service.ts`, `docs/shop.md`) |
-| `guests/`, `notes/`, `plans/`, `sets/`, `notebook/` | гостевые токены, заметки, календарь и файлы, наборы «Сегодня», тетрадь (папки и листы с рисунками) |
+| `guests/`, `notes/`, `plans/`, `sets/` | гостевые токены, заметки, календарь и файлы, наборы «Сегодня» |
 | `images/` | картинки: загрузка, миниатюры (`sharp`), назначение `kind`, очистка ненужных |
 | `siteimg/`, `public/` | замена картинок сайта (режим редактирования); визитка `/me` |
 | `chat/` | помощник-чат (`docs/chat.md`) |
@@ -26,7 +26,7 @@
 
 ## Таблицы базы
 `meta` (очки, профиль, настройки, метки), `answers` (каждый ответ, `detail` JSON `{q, a, y}`), `words` (статистика слова), `days`, `study_time`, `guests` (хэши токенов),
-`notes`, `images`, `plans`, `plan_files`, `today_sets`, `sessions` (сеансы после кода из письма), `site_images`, `coin_log` (уникальный `ref` против двойных выплат), `nb_items` (тетрадь), `events` (последние 2000).
+`notes`, `images`, `plans`, `plan_files`, `today_sets`, `sessions` (сеансы после кода из письма), `site_images`, `coin_log` (уникальный `ref` против двойных выплат), `nb_items` (прежняя «Тетрадь», раздел убран 2026-11-05, данные в базе сохранены и ничем не используются), `events` (последние 2000).
 Структуру меняют только миграцией Prisma (`npm --prefix backend run db:dev`, потом тест на копии данных), руками базу трогать не нужно. Старую SQLite-базу в PostgreSQL переносит `backend/scripts/sqlite-to-postgres.mjs` (с сверкой, `docs/docker.md`).
 
 ## API
@@ -34,7 +34,7 @@
 его записи игнорируются, картинки, база и токены ему закрыты (403); просроченный гостевой токен даёт 401 `expired`. Полный список со схемами: Swagger.
 - `GET /api/progress`, `POST /api/ops` (пачка до 500 действий: `answer`, `profile`, `settings`, `time`, `round`, `mood`, `reset`, `import`; любое неверное отменяет пачку, 400;
   `reset`, `import` требуют `X-Confirm-Token`).
-- `/api/notes`, `/api/notebook`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
+- `/api/notes`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
 - `/api/shop*`, `/api/chat`, `/api/digest`, `/api/reminder` (свои дни недели `days`), `/api/lesson` (напоминание о созвоне: день недели + время, не смотрит на ответы за день), `/api/backup/*`, `/api/logs/app|caddy`, `/api/db/tables`, `/api/site-images*`, `/api/public/*`, `/api/2fa/*`.
 - `GET /api/report/clock?days=`, `GET /api/report/weeks`: ответы по часу дня и «эта неделя vs прошлая» (владелец, для «Прогресс и аналитика» в кабинете).
   `GET /api/report/answers` без `source` — ответы по всем разделам сразу (общий «Дневник ошибок»).
@@ -58,4 +58,4 @@
 - Код: `auth/twofa.service.ts`, `mail/mail.service.ts`; сайт `composables/useTwoFa.ts`, `AuthGate.vue`, `cabinet/TwoFaBlock.vue`.
 
 ## Как смотреть, что в базе
-Вкладка «База» в кабинете (только просмотр, хэши скрыты); на сервере `docker compose exec postgres psql -U korean korean`; ночные дампы в томе `app-data` (`/data/backups`, 30 штук).
+На сервере `docker compose exec postgres psql -U korean korean`; ночные дампы в томе `app-data` (`/data/backups`, 30 штук).

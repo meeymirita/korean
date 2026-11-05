@@ -164,8 +164,9 @@
 .study .nt-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .study .nt-count, .study .nt-total { font-size: 13px; color: var(--muted); }
 /* счётчик символов и «упёрлись в лимит»: красная рамка и красная цифра */
-.study .cb-note { margin: 0 0 14px; padding: 10px 14px; border-radius: 14px; background: #fff6e0; border: 1px solid #f1d9a0; color: #7a5200; font-size: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.study .cb-note button { padding: 4px 12px; font-size: 13px; }
+.study .cb-note { margin: 18px 0 14px; padding: 10px 14px; border-radius: 14px; background: #fff6e0; border: 1px solid #f1d9a0; color: #7a5200; font-size: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.study .cb-note button { padding: 5px 14px; font-size: 13px; font-weight: 600; color: #7a5200; background: #fff; border: 1px solid #e6c66e; border-radius: 999px; cursor: pointer; transition: background .15s, border-color .15s; }
+.study .cb-note button:hover { background: #fff1cc; border-color: #d9a93a; }
 .study .cb-count { display: block; text-align: right; font-size: 12px; color: var(--muted); }
 .study .cb-count.at { color: #c0364f; font-weight: 600; }
 .study input.at, .study textarea.at { border-color: #d6455d; box-shadow: 0 0 0 2px rgba(214, 69, 93, 0.15); }
@@ -484,27 +485,9 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 @media (max-width: 860px) { .study .cb-cover { min-height: 250px; } }
 @media (max-width: 560px) { .study .cb-cover .cb-head { padding-right: 0; } .study .cb-lvl { top: 16px; bottom: auto; right: 16px; padding: 6px 12px; min-width: 0; } }
 
-/* настройки: блок «Клавиши» */
-.study .kb-group { margin-top: 18px; }
-.study .kb-group h4 { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.study .kb-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-.study .kb-list li { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
-.study .kb-list li.rec { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(139, 124, 240, .18); }
-.study .kb-list.locked li { opacity: .75; }
-.study .kb-name { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
-.study .kb-combo { padding: 3px 9px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; white-space: nowrap; }
-.study .kb-none { font-size: 13px; color: var(--muted); white-space: nowrap; }
-.study .kb-wait { font-size: 13px; font-weight: 600; color: var(--gold); white-space: nowrap; }
-.study .kb-wait small { font-weight: 400; color: var(--muted); }
-.study .kb-acts { display: flex; gap: 6px; }
-.study .kb-acts .plain, .study .kb-foot .plain { padding: 6px 12px; font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
-.study .kb-acts .plain:hover, .study .kb-foot .plain:hover { border-color: var(--gold); }
-.study .kb-hint { margin-top: 12px; color: var(--bad, #a4402f); }
-.study .kb-foot { margin-top: 18px; }
 /* подсказка сочетания рядом с пунктом меню и вкладкой кабинета */
 .study kbd.kb { margin-left: 8px; padding: 1px 6px; font: inherit; font-size: 11px; font-weight: 600; color: var(--muted); background: rgba(255, 255, 255, .7); border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
 .study .chip kbd.kb { margin-left: 6px; }
-@media (max-width: 860px) { .study .kb-list { grid-template-columns: 1fr; } .study .kb-list li { flex-wrap: wrap; } }
 
 .study .hs-click { width: 100%; border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .study .hs-click:hover { background: var(--surface); }

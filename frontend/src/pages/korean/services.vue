@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import NotebookView from '@/views/NotebookView.vue'
+import ServicesView from '@/views/korean/ServicesView.vue'
 definePageMeta({ private: true })
 </script>
 
 <template>
-  <NotebookView />
+  <ServicesView />
 </template>

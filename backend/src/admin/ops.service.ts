@@ -23,7 +23,7 @@ export class OpsService {
     return {
       project: this.project,
       checkedAt: new Date().toISOString(),
-      services: SERVICES.map(service => {
+      services: SERVICES.filter(service => service !== 'caddy' || containers.some(c => c.Labels?.['com.docker.compose.service'] === 'caddy')).map(service => {
         const matches = containers
           .filter(container => container.Labels?.['com.docker.compose.service'] === service)
           .sort((a, b) => b.Created - a.Created)

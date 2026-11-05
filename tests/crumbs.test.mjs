@@ -44,7 +44,7 @@ describe('хлебные крошки', () => {
     assert.equal(labels(c), 'Главная › Кабинет › Заметки')
     assert.equal(c[1].to, '/korean/cabinet')
     assert.equal(labels(crumbsFor('/korean/cabinet', { tab: 'мусор' })), 'Главная › Кабинет')
-    assert.equal(Object.keys(CABINET_TABS).length, 8)
+    assert.equal(Object.keys(CABINET_TABS).length, 7)
     assert.ok(!('shop' in CABINET_TABS), 'магазин из кабинета убран')
   })
 
