@@ -22,9 +22,10 @@ import { ProgressModule } from './progress/progress.module.js'
 import { MetricsController } from './metrics.controller.js'
 import { MetricsService } from './metrics.service.js'
 import { SearchModule } from './search/search.module.js'
+import { JobsModule } from './jobs/jobs.module.js'
 
 @Module({
-  imports: [DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
+  imports: [JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, NotebookModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
   controllers: [HealthController, MetricsController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService],
 })
