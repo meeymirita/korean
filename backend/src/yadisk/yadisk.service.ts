@@ -55,11 +55,13 @@ export class YaDiskService {
   /** Создаёт папку и все родительские (если уже есть, ничего не делает). */
   async mkdir(dir: string) {
     if (process.env.YADISK_DUMP_DIR) return void mkdirSync(this.dump(dir), { recursive: true })
-    const parts = dir.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean)
-    let cur = ''
+    const root = (process.env.YADISK_ROOT ?? '').replace(/^\/+|\/+$/g, '').split('/').filter(Boolean)
+    const parts = [...root, ...dir.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean)]
+    let cur = 'app:'
     for (const part of parts) {
-      cur = cur ? `${cur}/${part}` : part
-      await this.api('PUT', '/resources', { path: this.full(cur) }) // 409 = уже есть
+      cur += `/${part}`
+      const r = (await this.api('PUT', '/resources', { path: cur })) as { __status?: number }
+      if (r.__status === 404) throw new Error(`yadisk: не создалась папка ${cur}`) // 409 = уже есть
     }
   }
 

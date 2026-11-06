@@ -10,6 +10,7 @@ interface ArchiveLast {
   time: number
   sizeKb: number
   mail: 'ok' | 'off' | 'fail' | 'big'
+  disk?: 'ok' | 'off' | 'fail'
   parts: number
   message: string
 }
@@ -17,7 +18,7 @@ interface Archive {
   steps: string[]
   job: { running: boolean; step: number; percent: number }
   last: ArchiveLast | null
-  targets: { mail: boolean; passphrase: boolean }
+  targets: { mail: boolean; disk?: boolean; passphrase: boolean }
   problems: string[]
 }
 interface Status {
@@ -86,8 +87,8 @@ async function check() {
   try {
     const res = await fetchT('/api/backup/test', { method: 'POST', headers: { Authorization: `Bearer ${progress.bearer}` } }, 60_000)
     if (!res.ok) throw new Error(`сервер ответил ${res.status}`)
-    const r = (await res.json()) as { mail: string; message: string }
-    if (r.mail === 'ok') toast.ok('Письмо отправлено, проверьте ящик.')
+    const r = (await res.json()) as { mail: string; disk?: string; message: string }
+    if (r.mail === 'ok') toast.ok(r.disk === 'ok' ? 'Файл проверки лёг на Диск.' : 'Письмо отправлено, проверьте ящик.')
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
     toast.error('Не получилось проверить: ' + errText(e))
@@ -122,7 +123,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
     <h3>Резервные копии</h3>
     <div v-if="status.archive" class="bk-arc">
       <p class="st-sub">Полный архив (база, картинки, файлы календаря, настройки) шифруется вашим паролем и отправляется
-        {{ status.archive.targets.mail ? 'на почту' : 'никуда (почта не настроена)' }}.
+        {{ status.archive.targets.disk ? 'на Яндекс.Диск (папки «Копия сайта» и «База и env»)' : status.archive.targets.mail ? 'на почту' : 'никуда (ни Диск, ни почта не настроены)' }}.
         Сам каждый день, а здесь можно запустить в любой момент.</p>
       <ul v-if="status.archive.problems.length" class="bk-prob"><li v-for="p in status.archive.problems" :key="p">⚠ {{ p }}</li></ul>
       <p v-if="reminder" class="bk-warn" role="status">⚠ {{ reminder }}</p>
@@ -138,6 +139,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
         <small>{{ job.percent }}%</small>
       </div>
       <p v-else-if="lastArc?.ok" class="bk-ok">✓ Последний архив: {{ arcWhen }}, {{ (lastArc.sizeKb / 1024).toFixed(1) }} МБ.
+        {{ lastArc.disk === 'ok' ? 'Диск ✓' : lastArc.disk === 'fail' ? 'Диск ✗' : '' }}
         {{ lastArc.mail === 'ok' ? `Почта ✓${lastArc.parts > 1 ? ' (' + lastArc.parts + ' письма)' : ''}` : lastArc.mail === 'fail' ? 'Почта ✗' : lastArc.mail === 'big' ? 'Почта: архив слишком большой, письмо без вложения' : '' }}
         <span v-if="lastArc.message" class="bk-warn"> {{ lastArc.message }}</span></p>
       <p v-else-if="lastArc" class="bk-bad">✗ Последний архив {{ arcWhen }} не удался: {{ lastArc.message }}</p>

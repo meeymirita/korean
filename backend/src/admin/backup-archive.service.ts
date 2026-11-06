@@ -12,6 +12,7 @@ import { TwoFaService } from '../auth/twofa.service.js'
 import { DATA_DIR, ROOT } from '../config.js'
 import { postgresDumpConfig } from '../db/postgres-dump.js'
 import { MailService } from '../mail/mail.service.js'
+import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
 import { backupMail } from '../mail/templates.js'
 
 /** Конфиги сервера, которые кладём в архив (что не прочиталось, пропускается). */
@@ -29,6 +30,8 @@ const FILE = path.join(DATA_DIR, 'backup-archive.json')
 const PART = 18 * 1024 * 1024
 const MAX_PARTS = 5
 const KEEP_LOCAL = 2
+/** На Диске в каждой папке остаются последние архивы. */
+const KEEP_DISK = Number(process.env.YADISK_KEEP) > 0 ? Number(process.env.YADISK_KEEP) : 14
 /** Как часто собирать архив сам: по умолчанию каждый день (`BACKUP_EVERY_DAYS=7` вернёт раз в неделю). */
 const everyMs = () => (Number(process.env.BACKUP_EVERY_DAYS) > 0 ? Number(process.env.BACKUP_EVERY_DAYS) : 1) * 86_400_000
 /** запас на разброс по часам: вчерашний архив в 4:05 не должен мешать сегодняшнему в 4:00 */
@@ -37,7 +40,7 @@ const SLACK = 4 * 3_600_000
 export const STALE_MS = 36 * 3600_000
 const SCRIPT_STATUS = path.join(DATA_DIR, 'backup-status.json')
 const ALERT = path.join(DATA_DIR, 'backup-alert.json')
-export const STEPS = ['Снимок базы', 'Сжатие файлов', 'Шифрование', 'Почта'] as const
+export const STEPS = ['Снимок базы', 'Сжатие файлов', 'Шифрование', 'Отправка'] as const
 
 export interface Job {
   running: boolean
@@ -54,6 +57,8 @@ export interface ArchiveResult {
   name: string
   sizeKb: number
   mail: 'ok' | 'off' | 'fail' | 'big'
+  /** Яндекс.Диск: ok — загружено (тогда почта не нужна), off — не настроен */
+  disk?: 'ok' | 'off' | 'fail'
   parts: number
   message: string
 }
@@ -88,6 +93,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly mail: MailService,
     private readonly twofa: TwoFaService,
+    private readonly disk: YaDiskService,
   ) {}
 
   /** Раз в час: раз в сутки собирает архив сам (после 4 утра по времени сервера, если есть пароль и куда отправлять) и следит за ночной копией. */
@@ -165,13 +171,13 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   async problems(): Promise<string[]> {
     const p: string[] = []
     if (!process.env.BACKUP_PASSPHRASE) p.push('не задан пароль архива BACKUP_PASSPHRASE в backend/.env')
-    if (!await this.mailOn()) p.push('некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO')
+    if (!this.disk.configured() && !await this.mailOn()) p.push('некуда отправлять: подключите Яндекс.Диск (YADISK_TOKEN) или почту (SMTP_* и BACKUP_MAIL_TO) в .env')
     return p
   }
 
   /** Куда уйдёт архив: показывает кабинет до запуска. */
   async targets() {
-    return { mail: await this.mailOn(), passphrase: !!process.env.BACKUP_PASSPHRASE }
+    return { mail: await this.mailOn(), disk: this.disk.configured(), passphrase: !!process.env.BACKUP_PASSPHRASE }
   }
 
   /** Запуск в фоне; false, если уже идёт. */
@@ -280,6 +286,12 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         ].join('\n'),
       )
 
+      // база и .env отдельным маленьким архивом (на Диск в «База и env»): чтобы достать их, не качая весь сайт
+      const dbName = `db-env-${stamp}.tar.gz.enc`
+      const dbTar = path.join(OUT, `db-env-${stamp}.tar.gz`)
+      const dbEnc = path.join(OUT, dbName)
+      const dbFiles = ['app.dump', 'server.env'].filter(f => existsSync(path.join(stage, f)))
+
       // 2. сжатие: процент считаем по размеру готового файла относительно исходных данных
       this.set(1, 8)
       const dirs = ['uploads', 'docs', 'thumbs', 'public', 'site'].filter(d => existsSync(path.join(DATA_DIR, d)))
@@ -306,10 +318,32 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
       const notes: string[] = []
 
+      // 4а. Яндекс.Диск: полный архив в «Копия сайта», база и .env в «База и env»
+      let disk: NonNullable<ArchiveResult['disk']> = 'off'
+      if (this.disk.configured()) {
+        this.set(3, 58)
+        try {
+          await run('tar', ['-czf', dbTar, '-C', stage, ...dbFiles])
+          await run('openssl', ['enc', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-salt', '-in', dbTar, '-out', dbEnc, '-pass', 'env:BACKUP_PASSPHRASE'], { BACKUP_PASSPHRASE: pass })
+          await this.disk.upload(`${DISK_DIRS.db}/${dbName}`, dbEnc)
+          this.set(3, 70)
+          await this.disk.upload(`${DISK_DIRS.site}/${name}`, enc)
+          await this.pruneDisk()
+          disk = 'ok'
+        } catch (e) {
+          disk = 'fail'
+          notes.push('Диск: ' + (e as Error).message.slice(0, 150))
+        } finally {
+          rmSync(dbTar, { force: true })
+          rmSync(dbEnc, { force: true })
+        }
+      }
+
       // 4. почта: одно письмо или несколько частей
       let mail: ArchiveResult['mail'] = 'off'
       let parts = 0
-      if (await this.mailOn()) {
+      // почта остаётся запасным путём: письмо уходит, только если Диск не настроен или не принял архив
+      if (disk !== 'ok' && await this.mailOn()) {
         this.set(3, 60)
         try {
           parts = await this.sendMail(enc, name, size)
@@ -321,13 +355,14 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.prune()
-      const sent = mail === 'ok'
+      const sent = mail === 'ok' || disk === 'ok'
       return {
         ok: sent,
         time: Date.now(),
         name,
         sizeKb: Math.round(size / 1024),
         mail,
+        disk,
         parts,
         message: sent ? notes.join('; ') : notes.join('; ') || 'архив собран, но не отправлен',
       }
@@ -339,6 +374,14 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
   /** Проверка почты без сборки архива: короткое письмо. Пароль архива не нужен. */
   async test() {
+    if (this.disk.configured()) {
+      try {
+        await this.disk.put(`${DISK_DIRS.site}/проверка.txt`, Buffer.from(`Проверка связи: ${new Date().toISOString()}\n`))
+        return { mail: 'ok' as const, disk: 'ok' as const, message: '' }
+      } catch (e) {
+        return { mail: 'fail' as const, disk: 'fail' as const, message: 'Диск: ' + (e as Error).message.slice(0, 120) }
+      }
+    }
     if (!await this.mailOn()) return { mail: 'off' as const, message: 'некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес BACKUP_MAIL_TO' }
     try {
       const m = backupMail({ kind: 'test' })
@@ -384,6 +427,18 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       await fh.close()
     }
     return n
+  }
+
+  /** На Диске в каждой папке остаются последние KEEP_DISK архивов. */
+  private async pruneDisk() {
+    for (const dir of [DISK_DIRS.site, DISK_DIRS.db]) {
+      try {
+        const files = (await this.disk.list(dir)).filter(i => i.type === 'file' && /\.enc$/.test(i.name)).map(i => i.name).sort()
+        for (const f of files.slice(0, Math.max(0, files.length - KEEP_DISK))) await this.disk.remove(`${dir}/${f}`)
+      } catch {
+        /* чистка не критична */
+      }
+    }
   }
 
   /** На сервере остаются последние KEEP_LOCAL архивов. */
