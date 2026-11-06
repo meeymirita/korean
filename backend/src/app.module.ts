@@ -23,9 +23,10 @@ import { ContainerMetrics } from './container-metrics.service.js'
 import { MetricsService } from './metrics.service.js'
 import { SearchModule } from './search/search.module.js'
 import { JobsModule } from './jobs/jobs.module.js'
+import { YaDiskModule } from './yadisk/yadisk.module.js'
 
 @Module({
-  imports: [JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
+  imports: [YaDiskModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
   controllers: [HealthController, MetricsController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })
