@@ -24,3 +24,6 @@ docker/caddy/video/*
 !docker/caddy/video/.gitkeep
 gpt/
 ВОПРОСЫ.md
+
+# local notes with secrets
+/план.md
