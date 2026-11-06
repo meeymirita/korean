@@ -9,6 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { MAX_OG, PUBLIC_DIR, UPLOADS } from '../config.js'
+import { YaDiskService } from '../yadisk/yadisk.service.js'
 import { Db } from '../db/db.service.js'
 import { Events } from '../events/events.service.js'
 import { Card, Settings } from './public.types.js'
@@ -40,6 +41,7 @@ export class PublicService {
   constructor(
     private readonly db: Db,
     private readonly events: Events,
+    private readonly disk: YaDiskService,
   ) {
     mkdirSync(PUBLIC_DIR, { recursive: true })
   }
@@ -87,6 +89,7 @@ export class PublicService {
       throw new BadRequestException({ error: 'invalid image' })
     }
     await writeFile(OG_FILE, file.buffer)
+    this.disk.mirror(OG_FILE)
     return this.settings()
   }
 

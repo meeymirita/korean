@@ -13,6 +13,7 @@ import { Db } from '../db/db.service.js'
 import { Events } from '../events/events.service.js'
 import { parseTags, readTags } from '../tags.js'
 import { SearchClient } from '../search/search.client.js'
+import { YaDiskService } from '../yadisk/yadisk.service.js'
 
 /** Назначение картинки: «Картинки» в кабинете (gallery), вложение заметки (note), обложка кабинета (cover). Списки у каждого свои. */
 export const KINDS = ['gallery', 'note', 'cover'] as const
@@ -93,6 +94,7 @@ export class ImagesService {
     private readonly db: Db,
     private readonly events: Events,
     private readonly search: SearchClient,
+    private readonly disk: YaDiskService,
   ) {
     mkdirSync(UPLOADS, { recursive: true })
     mkdirSync(THUMBS, { recursive: true })
@@ -150,6 +152,7 @@ export class ImagesService {
     }
     await writeFile(this.file(row), file.buffer)
     await writeFile(this.thumb(id), thumb)
+    this.disk.mirror(this.file(row))
     await (await this.db.orm()).image.create({ data: { ...row, tags: JSON.stringify(row.tags), size: BigInt(row.size), created: BigInt(row.created) } })
     await this.events.log('image_added', `${name}, ${Math.round(file.size / 1024)} КБ`)
     this.search.schedulePrivateReindex()
@@ -167,7 +170,7 @@ export class ImagesService {
   async open(id: string, kind: 'file' | 'thumb') {
     const row = await this.find(id)
     const p = kind === 'file' ? this.file(row) : this.thumb(row.id)
-    if (!existsSync(p)) throw new NotFoundException({ error: 'file missing' })
+    if (!existsSync(p) && !(kind === 'file' && await this.disk.restore(p))) throw new NotFoundException({ error: 'file missing' })
     return { path: p, mime: kind === 'file' ? row.mime : 'image/webp', name: row.name }
   }
 
@@ -199,6 +202,7 @@ export class ImagesService {
     const row = await this.find(id)
     await (await this.db.orm()).image.delete({ where: { id } })
     await Promise.all([this.file(row), this.thumb(id)].map(p => unlink(p).catch(() => undefined)))
+    this.disk.unmirror(this.file(row))
     await this.events.log('image_deleted', row.name)
     this.search.schedulePrivateReindex()
     return { ok: true }

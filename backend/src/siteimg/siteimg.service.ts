@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 import { MAX_SITE_IMAGE, MAX_SITE_IMAGES, SITE_DIR } from '../config.js'
+import { YaDiskService } from '../yadisk/yadisk.service.js'
 import { Db } from '../db/db.service.js'
 import { sniff } from '../images/images.service.js'
 
@@ -24,7 +25,10 @@ const num = (v: unknown, min: number, max: number, def: number) => (typeof v ===
 
 @Injectable()
 export class SiteImgService {
-  constructor(private readonly db: Db) {
+  constructor(
+    private readonly db: Db,
+    private readonly disk: YaDiskService,
+  ) {
     mkdirSync(SITE_DIR, { recursive: true })
   }
 
@@ -52,6 +56,7 @@ export class SiteImgService {
     if (r?.kind === 'file') {
       try {
         unlinkSync(path.join(SITE_DIR, r.ref))
+        this.disk.unmirror(r.ref)
       } catch {
         /* уже нет */
       }
@@ -79,6 +84,7 @@ export class SiteImgService {
     const v = (prev?.v ?? 0) + 1
     const name = `${key}-${v}.webp`
     writeFileSync(path.join(SITE_DIR, name), out)
+    this.disk.mirror(path.join(SITE_DIR, name))
     this.dropFile(prev)
     await (await this.db.orm()).siteImage.upsert({
       where: { key },

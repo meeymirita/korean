@@ -10,6 +10,7 @@ import { unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { DOCS, MAX_DOCS_TOTAL, MAX_PLANS, MAX_PLAN_FILES, MAX_PLAN_TEXT, MAX_PLAN_TITLE, THUMBS } from '../config.js'
+import { YaDiskService } from '../yadisk/yadisk.service.js'
 import { Db } from '../db/db.service.js'
 import { Events } from '../events/events.service.js'
 import { sniff } from '../images/images.service.js'
@@ -59,6 +60,7 @@ export class PlansService {
   constructor(
     private readonly db: Db,
     private readonly events: Events,
+    private readonly disk: YaDiskService,
   ) {
     mkdirSync(DOCS, { recursive: true })
     mkdirSync(THUMBS, { recursive: true })
@@ -155,6 +157,7 @@ export class PlansService {
   }
 
   private unlinkFiles(f: PlanFile) {
+    this.disk.unmirror(this.filePath(f))
     return [this.filePath(f), this.thumbPath(f.id)].map(p => unlink(p).catch(() => undefined))
   }
 
@@ -182,6 +185,7 @@ export class PlansService {
     }
     const row: PlanFile = { id, plan_id: planId, name, mime: type.mime, ext: type.ext, size: file.size, thumb, created: Date.now() }
     await writeFile(this.filePath(row), file.buffer)
+    this.disk.mirror(this.filePath(row))
     await (await this.db.orm()).planFile.create({ data: { ...row, size: BigInt(row.size), created: BigInt(row.created) } })
     await this.events.log('plan_file_added', `${name}, ${Math.round(file.size / 1024)} КБ`)
     const { plan_id: _p, ...out } = row

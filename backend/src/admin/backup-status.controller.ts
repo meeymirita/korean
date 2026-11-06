@@ -3,13 +3,17 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { Owner } from '../auth/auth.js'
 import { DATA_DIR } from '../config.js'
+import { YaDiskService } from '../yadisk/yadisk.service.js'
 import { BackupArchiveService, STEPS } from './backup-archive.service.js'
 
 /** GET /api/backup/status: итог последнего запуска scripts/backup.sh (он пишет DATA/backup-status.json). Только владельцу: кабинет показывает, свежая ли копия. */
 @Owner()
 @Controller('backup')
 export class BackupStatusController {
-  constructor(private readonly archive: BackupArchiveService) {}
+  constructor(
+    private readonly archive: BackupArchiveService,
+    private readonly disk: YaDiskService,
+  ) {}
 
   /** POST /api/backup/run: собрать полный архив, зашифровать и отправить на почту; идёт в фоне, ход виден в status. */
   @Post('run')
@@ -25,6 +29,14 @@ export class BackupStatusController {
   @HttpCode(200)
   test() {
     return this.archive.test()
+  }
+
+  /** POST /api/backup/media-sync: залить на Диск все картинки и файлы, которых там ещё нет (первый перенос). */
+  @Post('media-sync')
+  @HttpCode(200)
+  async mediaSync() {
+    if (!this.disk.configured()) return { ok: false, message: 'Диск не подключён (YADISK_TOKEN)' }
+    return { ok: true, ...(await this.disk.syncMedia()) }
   }
 
   @Get('status')

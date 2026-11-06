@@ -9,6 +9,7 @@ import { createReadStream, existsSync, mkdirSync, readdirSync, statSync, createW
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import path from 'node:path'
+import { DATA_DIR } from '../config.js'
 
 const API = 'https://cloud-api.yandex.net/v1/disk'
 
@@ -17,8 +18,15 @@ export const DISK_DIRS = {
   site: 'Копия сайта',
   db: 'База и env',
   video: 'Видео',
-  media: 'Картинки и файлы',
+  media: 'Картинки',
 } as const
+
+/** Папка копии внутри основной, с датой в конце названия: «Копия сайта/Копия 2026-11-06». */
+export const SUB_LABEL: Record<string, string> = { 'Копия сайта': 'Копия', 'База и env': 'База' }
+export const datedDir = (base: string, now = new Date()) => `${base}/${SUB_LABEL[base] ?? 'Копия'} ${now.toISOString().slice(0, 10)}`
+
+/** Папки сервера, чьи файлы лежат на Диске одной плоской папкой «Картинки» (имена файлов уникальны: id или ключ с версией). */
+export const MEDIA_SOURCES = ['uploads', 'docs', 'public', 'site']
 
 export interface DiskItem {
   name: string
@@ -150,5 +158,54 @@ export class YaDiskService {
   async space() {
     const r = (await this.api('GET', '', {})) as { total_space?: number; used_space?: number }
     return { total: r.total_space ?? 0, used: r.used_space ?? 0 }
+  }
+
+  /* ---------- картинки и файлы: всё одной папкой ---------- */
+
+  /** Копирует файл в папку «Картинки» на Диске в фоне; ошибка только в лог (локальный файл остаётся главным). */
+  mirror(file: string) {
+    if (!this.configured()) return
+    void this.upload(`${DISK_DIRS.media}/${path.basename(file)}`, file).catch(e => console.error('Диск: не загрузился', path.basename(file), (e as Error).message))
+  }
+
+  unmirror(file: string) {
+    if (!this.configured()) return
+    void this.remove(`${DISK_DIRS.media}/${path.basename(file)}`).catch(() => undefined)
+  }
+
+  /** Локального файла нет (диск сервера пересоздан): берёт его с Диска. Возвращает, получилось ли. */
+  async restore(file: string) {
+    if (!this.configured()) return false
+    try {
+      await this.download(`${DISK_DIRS.media}/${path.basename(file)}`, file)
+      return true
+    } catch {
+      rmSync(file, { force: true })
+      return false
+    }
+  }
+
+  /** Загружает на Диск всё, чего там ещё нет (или размер другой). Для первого переноса и страховки. */
+  async syncMedia() {
+    const have = new Map((await this.list(DISK_DIRS.media)).map(i => [i.name, i.size]))
+    let sent = 0
+    let failed = 0
+    for (const dir of MEDIA_SOURCES) {
+      const d = path.join(DATA_DIR, dir)
+      if (!existsSync(d)) continue
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        if (!e.isFile()) continue
+        const f = path.join(d, e.name)
+        if (have.get(e.name) === statSync(f).size) continue
+        try {
+          await this.upload(`${DISK_DIRS.media}/${e.name}`, f)
+          sent++
+        } catch (err) {
+          failed++
+          console.error('Диск: не загрузился', e.name, (err as Error).message)
+        }
+      }
+    }
+    return { sent, failed, already: have.size }
   }
 }

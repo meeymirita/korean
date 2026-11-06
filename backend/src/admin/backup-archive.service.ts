@@ -12,7 +12,7 @@ import { TwoFaService } from '../auth/twofa.service.js'
 import { DATA_DIR, ROOT } from '../config.js'
 import { postgresDumpConfig } from '../db/postgres-dump.js'
 import { MailService } from '../mail/mail.service.js'
-import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
+import { DISK_DIRS, datedDir, YaDiskService } from '../yadisk/yadisk.service.js'
 import { backupMail } from '../mail/templates.js'
 
 /** Конфиги сервера, которые кладём в архив (что не прочиталось, пропускается). */
@@ -100,11 +100,14 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.timer = setInterval(() => void this.watch(), Number(process.env.BACKUP_WATCH_MS) || 3600_000)
     this.timer.unref()
+    // через минуту после старта: докладываем на Диск картинки и файлы, которых там нет (после загрузки пачкой или сбоя связи)
+    if (this.disk.configured()) setTimeout(() => void this.disk.syncMedia().catch(e => console.error('Диск: синхронизация картинок', (e as Error).message)), Number(process.env.YADISK_SYNC_DELAY_MS) || 60_000).unref()
   }
 
   private async watch() {
     const last = this.last()
     if (process.env.BACKUP_AUTO !== '0' && !(await this.problems()).length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > everyMs() - SLACK) void this.start()
+    if (this.disk.configured()) void this.disk.syncMedia().catch(() => undefined)
     await this.watchNightly()
   }
 
@@ -325,9 +328,9 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         try {
           await run('tar', ['-czf', dbTar, '-C', stage, ...dbFiles])
           await run('openssl', ['enc', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-salt', '-in', dbTar, '-out', dbEnc, '-pass', 'env:BACKUP_PASSPHRASE'], { BACKUP_PASSPHRASE: pass })
-          await this.disk.upload(`${DISK_DIRS.db}/${dbName}`, dbEnc)
+          await this.disk.upload(`${datedDir(DISK_DIRS.db)}/${dbName}`, dbEnc)
           this.set(3, 70)
-          await this.disk.upload(`${DISK_DIRS.site}/${name}`, enc)
+          await this.disk.upload(`${datedDir(DISK_DIRS.site)}/${name}`, enc)
           await this.pruneDisk()
           disk = 'ok'
         } catch (e) {
@@ -376,7 +379,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   async test() {
     if (this.disk.configured()) {
       try {
-        await this.disk.put(`${DISK_DIRS.site}/проверка.txt`, Buffer.from(`Проверка связи: ${new Date().toISOString()}\n`))
+        await this.disk.put(`${datedDir(DISK_DIRS.site)}/проверка.txt`, Buffer.from(`Проверка связи: ${new Date().toISOString()}\n`))
         return { mail: 'ok' as const, disk: 'ok' as const, message: '' }
       } catch (e) {
         return { mail: 'fail' as const, disk: 'fail' as const, message: 'Диск: ' + (e as Error).message.slice(0, 120) }
@@ -431,10 +434,10 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
   /** На Диске в каждой папке остаются последние KEEP_DISK архивов. */
   private async pruneDisk() {
-    for (const dir of [DISK_DIRS.site, DISK_DIRS.db]) {
+    for (const base of [DISK_DIRS.site, DISK_DIRS.db]) {
       try {
-        const files = (await this.disk.list(dir)).filter(i => i.type === 'file' && /\.enc$/.test(i.name)).map(i => i.name).sort()
-        for (const f of files.slice(0, Math.max(0, files.length - KEEP_DISK))) await this.disk.remove(`${dir}/${f}`)
+        const dirs = (await this.disk.list(base)).filter(i => i.type === 'dir' && /\d{4}-\d{2}-\d{2}$/.test(i.name)).map(i => i.name).sort()
+        for (const d of dirs.slice(0, Math.max(0, dirs.length - KEEP_DISK))) await this.disk.remove(`${base}/${d}`)
       } catch {
         /* чистка не критична */
       }
