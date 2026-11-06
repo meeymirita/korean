@@ -52,11 +52,11 @@ const revoke = () => askTokenDo({ title: 'Выйти на всех устрой�
 
 <template>
   <div v-if="loaded && tf.status.value" class="st-block">
-    <h3>Защита кодом из письма</h3>
-    <p>После токена сайт просит ещё код из 4 цифр, который приходит на вашу почту. Токен без почты уже не откроет кабинет.</p>
+    <h3>Защита кодом из Telegram</h3>
+    <p>После токена сайт просит ещё код из 4 цифр, который приходит вам в Telegram (или на почту, если бот не подключён). Без доступа к нему токен кабинет не откроет.</p>
 
     <template v-if="tf.status.value.enabled">
-      <p class="tf-on">✓ Включена. Коды приходят на <b>{{ tf.status.value.email }}</b>.</p>
+      <p class="tf-on">✓ Включена. Коды приходят: <b>{{ tf.status.value.email }}</b>.</p>
       <p v-if="tf.status.value.bypassed" class="tf-warn">Сейчас защита отключена аварийным выключателем на сервере (DISABLE_2FA=1 в backend/.env). Уберите строку и перезапустите службу, чтобы вернуть её.</p>
       <div class="pg-btns">
         <button class="plain" @click="revoke">Выйти на всех устройствах</button>
@@ -67,16 +67,16 @@ const revoke = () => askTokenDo({ title: 'Выйти на всех устрой�
     <template v-else>
       <p v-if="!tf.status.value.mailConfigured" class="tf-warn">На сервере не настроена почта: добавьте SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS и SMTP_FROM в backend/.env и перезапустите службу (см. docs/server.md).</p>
       <form v-else-if="!sentTo" class="pg-form" @submit.prevent="start">
-        <input v-model="email" type="email" placeholder="почта для кодов" autocomplete="email" aria-label="Почта для кодов" />
-        <button type="submit" :disabled="busy || !email.trim()">Отправить код</button>
+        <input v-if="!tf.status.value.telegram" v-model="email" type="email" placeholder="почта для кодов" autocomplete="email" aria-label="Почта для кодов" />
+        <button type="submit" :disabled="busy || (!tf.status.value.telegram && !email.trim())">Отправить код{{ tf.status.value.telegram ? ' в Telegram' : '' }}</button>
       </form>
       <form v-else class="pg-form" @submit.prevent="confirm">
-        <input v-model="code" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="код из письма" autocomplete="one-time-code" aria-label="Код из письма" />
+        <input v-model="code" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="код из сообщения" autocomplete="one-time-code" aria-label="Код из сообщения" />
         <button type="submit" :disabled="busy || code.trim().length !== 4">Включить защиту</button>
         <button type="button" class="plain" :disabled="busy" @click="sentTo = ''; code = ''">Другой адрес</button>
       </form>
-      <p v-if="sentTo" class="st-sub">Письмо ушло на {{ sentTo }}. Защита включится, только когда код подойдёт: так вы не потеряете доступ из-за опечатки в адресе.</p>
-      <p v-else class="st-sub">Защита включается кодом, присланным на этот же адрес. Если письма перестанут приходить, на сервере есть аварийный выключатель (DISABLE_2FA=1 в backend/.env).</p>
+      <p v-if="sentTo" class="st-sub">Код ушёл: {{ sentTo }}. Защита включится, только когда код подойдёт: так вы не потеряете доступ из-за опечатки в адресе.</p>
+      <p v-else class="st-sub">Защита включается кодом, присланным туда же. Если сообщения перестанут приходить, на сервере есть аварийный выключатель (DISABLE_2FA=1 в backend/.env).</p>
     </template>
   </div>
 </template>

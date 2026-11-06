@@ -9,6 +9,8 @@ export interface TwoFaStatus {
   /** адрес со звёздочками */
   email: string
   mailConfigured: boolean
+  /** коды идут в Telegram */
+  telegram?: boolean
 }
 
 /** Двухфакторная защита: шаги входа (код из письма) и включение или выключение в кабинете. */

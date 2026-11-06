@@ -57,7 +57,7 @@ async function test() {
   try {
     const res = await fetchT('/api/reminder/test', { method: 'POST', headers: headers() }, 60_000)
     const r = (await res.json()) as { ok: boolean; message: string }
-    if (r.ok) toast.ok('Письмо отправлено, проверьте ящик.')
+    if (r.ok) toast.ok('Отправлено, проверьте Telegram или почту.')
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
     toast.error('Не получилось: ' + errText(e))
@@ -70,8 +70,8 @@ async function test() {
 <template>
   <div v-if="st && !failed" class="st-block">
     <h3>Напоминание заниматься</h3>
-    <p class="st-sub">В выбранное время приходит письмо, если за день ещё не было ни одного ответа. Время по часам сервера. Если уже позанимался, письма не будет.</p>
-    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес защиты кодом или REMINDER_MAIL_TO.</p>
+    <p class="st-sub">В выбранное время приходит сообщение в Telegram, если за день ещё не было ни одного ответа. Время по часам сервера. Если уже позанимался, ничего не придёт.</p>
+    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: подключите Telegram (TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env) или почту (SMTP_*).</p>
     <div class="rm-row">
       <label class="rm-on"><input type="checkbox" :checked="st.enabled" :disabled="busy || !st.mailReady" @change="save({ enabled: ($event.target as HTMLInputElement).checked })" /> Напоминать</label>
       <label class="rm-time">в <input type="time" :value="st.time" :disabled="busy" aria-label="Время напоминания" @change="save({ time: ($event.target as HTMLInputElement).value })" /></label>
@@ -81,6 +81,6 @@ async function test() {
       <button v-for="(d, i) in WD" :key="i" type="button" class="daychip" :class="{ on: st.days.includes(i) }" :disabled="busy" :aria-pressed="st.days.includes(i)" @click="toggleDay(i)">{{ d }}</button>
     </div>
     <p class="st-sub">{{ st.days.length ? 'Только по отмеченным дням.' : 'Каждый день.' }} Отметь дни — «только когда могу».</p>
-    <p v-if="st.mailReady" class="st-sub">Письмо придёт на {{ st.to }}.</p>
+    <p v-if="st.mailReady" class="st-sub">Придёт: {{ st.to }}.</p>
   </div>
 </template>

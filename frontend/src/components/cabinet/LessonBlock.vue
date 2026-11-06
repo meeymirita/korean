@@ -51,7 +51,7 @@ async function test() {
   try {
     const res = await fetchT('/api/lesson/test', { method: 'POST', headers: headers() }, 60_000)
     const r = (await res.json()) as { ok: boolean; message: string }
-    if (r.ok) toast.ok('Письмо отправлено, проверьте ящик.')
+    if (r.ok) toast.ok('Отправлено, проверьте Telegram или почту.')
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
     toast.error('Не получилось: ' + errText(e))
@@ -87,8 +87,8 @@ const countdown = computed(() => {
 <template>
   <div v-if="st && !failed" class="st-block">
     <h3>Созвон с учителем</h3>
-    <p class="st-sub">В выбранный день недели и время приходит письмо «Сегодня созвон» — независимо от того, занимался ли уже.</p>
-    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: настройте почту (SMTP_* в server/.env) и адрес защиты кодом или REMINDER_MAIL_TO.</p>
+    <p class="st-sub">В выбранный день недели и время приходит сообщение «Сегодня созвон» — независимо от того, занимался ли уже.</p>
+    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: подключите Telegram (TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env) или почту (SMTP_*).</p>
     <div class="rm-row">
       <label class="rm-on"><input type="checkbox" :checked="st.enabled" :disabled="busy || !st.mailReady" @change="save({ enabled: ($event.target as HTMLInputElement).checked })" /> Напоминать</label>
       <label class="rm-time">в <input type="time" :value="st.time" :disabled="busy" aria-label="Время напоминания о созвоне" @change="save({ time: ($event.target as HTMLInputElement).value })" /></label>
@@ -98,6 +98,6 @@ const countdown = computed(() => {
       <button v-for="(d, i) in WD" :key="i" type="button" class="daychip" :class="{ on: st.weekday === i }" :disabled="busy" :aria-pressed="st.weekday === i" @click="save({ weekday: i })">{{ d }}</button>
     </div>
     <p v-if="st.enabled" class="st-sub">Ближайший созвон {{ countdown }}.</p>
-    <p v-if="st.mailReady" class="st-sub">Письмо придёт на {{ st.to }}.</p>
+    <p v-if="st.mailReady" class="st-sub">Придёт: {{ st.to }}.</p>
   </div>
 </template>

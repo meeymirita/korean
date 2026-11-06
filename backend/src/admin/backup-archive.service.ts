@@ -12,6 +12,7 @@ import { TwoFaService } from '../auth/twofa.service.js'
 import { DATA_DIR, ROOT } from '../config.js'
 import { postgresDumpConfig } from '../db/postgres-dump.js'
 import { MailService } from '../mail/mail.service.js'
+import { NotifyService } from '../notify/notify.service.js'
 import { DISK_DIRS, datedDir, YaDiskService } from '../yadisk/yadisk.service.js'
 import { backupMail } from '../mail/templates.js'
 
@@ -94,6 +95,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     private readonly mail: MailService,
     private readonly twofa: TwoFaService,
     private readonly disk: YaDiskService,
+    private readonly notify: NotifyService,
   ) {}
 
   /** Раз в час: раз в сутки собирает архив сам (после 4 утра по времени сервера, если есть пароль и куда отправлять) и следит за ночной копией. */
@@ -130,7 +132,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     const failed = s.ok === false
     const stale = !failed && now - time > STALE_MS
     if (!failed && !stale) return 'ok'
-    if (!await this.mailOn()) return 'quiet'
+    if (!this.notify.ready(await this.mailTo())) return 'quiet'
     const key = failed ? `fail-${time}` : `stale-${new Date(now).toISOString().slice(0, 10)}`
     let seen = ''
     try {
@@ -146,7 +148,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
           ? { kind: 'nightly-fail', detail: typeof s.message === 'string' ? s.message.slice(0, 200) : '' }
           : { kind: 'stale', detail: time ? `уже ${hours} ч` : undefined },
       )
-      await this.mail.send(await this.mailTo(), m.subject, m.text, m.html)
+      await this.notify.send(m, await this.mailTo())
       writeFileSync(ALERT, JSON.stringify({ key, time: now }))
       return 'sent'
     } catch (e) {
@@ -336,6 +338,12 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         } catch (e) {
           disk = 'fail'
           notes.push('Диск: ' + (e as Error).message.slice(0, 150))
+          try {
+            const m = backupMail({ kind: 'disk-fail', detail: (e as Error).message.slice(0, 150) })
+            await this.notify.send(m, await this.mailTo())
+          } catch {
+            /* некуда слать: ошибка видна в кабинете */
+          }
         } finally {
           rmSync(dbTar, { force: true })
           rmSync(dbEnc, { force: true })

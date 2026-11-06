@@ -8,6 +8,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { Db } from '../db/db.service.js'
 import { Events } from '../events/events.service.js'
 import { MailService } from '../mail/mail.service.js'
+import { NotifyService } from '../notify/notify.service.js'
 import { codeMail } from '../mail/templates.js'
 
 const SESSION_DAYS = 30
@@ -28,6 +29,8 @@ interface Pending {
   tries: number
 }
 
+/** Вместо адреса почты: коды приходят в Telegram. */
+const TG = 'telegram'
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 const same = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
 
@@ -44,6 +47,7 @@ export class TwoFaService {
   constructor(
     private readonly db: Db,
     private readonly mail: MailService,
+    private readonly notify: NotifyService,
     private readonly events: Events,
   ) {}
 
@@ -68,7 +72,7 @@ export class TwoFaService {
 
   async status() {
     const s = await this.read()
-    return { enabled: s.enabled, bypassed: s.enabled && process.env.DISABLE_2FA === '1', email: s.email ? maskEmail(s.email) : '', mailConfigured: this.mail.configured() }
+    return { enabled: s.enabled, bypassed: s.enabled && process.env.DISABLE_2FA === '1', email: s.email === TG ? 'Telegram' : s.email ? maskEmail(s.email) : '', mailConfigured: this.notify.ready('x@x') || this.mail.configured(), telegram: this.notify.telegram() }
   }
 
   /* ---------- сеансы ---------- */
@@ -95,7 +99,7 @@ export class TwoFaService {
     const code = String(randomInt(0, 10_000)).padStart(4, '0')
     try {
       const mail = codeMail(code, kind, CODE_TTL / 60_000)
-      await this.mail.send(email, mail.subject, mail.text, mail.html)
+      await this.notify.send(mail, email === TG ? undefined : email)
     } catch (e) {
       console.error(`Письмо с кодом не отправилось (${kind}): ${(e as Error).message}`) // видно во вкладке «Журналы»: чаще всего неверный пароль приложения или не включён SMTP
       await this.events.log('2fa_mail_failed', kind)
@@ -122,7 +126,7 @@ export class TwoFaService {
     if (!await this.required()) throw new BadRequestException({ error: '2fa off' })
     const email = (await this.read()).email
     await this.issue('login', email)
-    return { ok: true, email: maskEmail(email) }
+    return { ok: true, email: email === TG ? 'Telegram' : maskEmail(email) }
   }
 
   /** Верный код входа: выдаёт сеанс. Неверный возвращает null (вызывающий считает попытку подбора). */
@@ -133,10 +137,14 @@ export class TwoFaService {
   }
 
   async startEnable(email: unknown) {
-    if (typeof email !== 'string' || !EMAIL.test(email.trim())) throw new BadRequestException({ error: 'invalid email' })
-    if (!this.mail.configured()) throw new ServiceUnavailableException({ error: 'mail not configured' })
-    await this.issue('enable', email.trim())
-    return { ok: true, email: maskEmail(email.trim()) }
+    const tg = this.notify.telegram()
+    const given = typeof email === 'string' ? email.trim() : ''
+    // с подключённым Telegram адрес почты не нужен: коды придут туда
+    if (!(tg && !given) && !EMAIL.test(given)) throw new BadRequestException({ error: 'invalid email' })
+    if (!tg && !this.mail.configured()) throw new ServiceUnavailableException({ error: 'mail not configured' })
+    const to = tg ? TG : given
+    await this.issue('enable', to)
+    return { ok: true, email: tg ? 'Telegram' : maskEmail(to) }
   }
 
   /** Подтверждение адреса: защита включается только после того, как код дошёл. Текущее устройство остаётся в системе (получает сеанс). */
@@ -144,7 +152,7 @@ export class TwoFaService {
     const p = this.check('enable', code)
     if (!p) return null
     await this.db.setMeta('twofa', JSON.stringify({ enabled: true, email: p.email }))
-    await this.events.log('2fa_on', maskEmail(p.email))
+    await this.events.log('2fa_on', p.email === TG ? 'Telegram' : maskEmail(p.email))
     return { session: await this.createSession() }
   }
 

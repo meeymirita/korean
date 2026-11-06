@@ -60,7 +60,7 @@ async function test() {
   try {
     const res = await fetchT('/api/digest/test', { method: 'POST', headers: headers() }, 60_000)
     const r = (await res.json()) as { ok: boolean; message: string }
-    if (r.ok) toast.ok('Письмо отправлено, проверьте ящик.')
+    if (r.ok) toast.ok('Отправлено, проверьте Telegram или почту.')
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
     toast.error('Не получилось: ' + errText(e))
@@ -73,8 +73,8 @@ async function test() {
 <template>
   <div v-if="st && !failed" class="st-block">
     <h3>Подборка на повторение</h3>
-    <p class="st-sub">Каждый день в выбранное время приходит письмо со случайными словами и предложениями из пройденного, занимались вы в этот день или нет. Время по часам сервера.</p>
-    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: настройте почту (SMTP_* в backend/.env) и адрес защиты кодом или REMINDER_MAIL_TO.</p>
+    <p class="st-sub">Каждый день в выбранное время приходит сообщение в Telegram со случайными словами и предложениями из пройденного, занимались вы в этот день или нет. Время по часам сервера.</p>
+    <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: подключите Telegram (TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env) или почту (SMTP_*).</p>
     <div class="rm-row">
       <label class="rm-on"><input type="checkbox" :checked="st.enabled" :disabled="busy || !st.mailReady" @change="save({ enabled: ($event.target as HTMLInputElement).checked })" /> Присылать</label>
       <label class="rm-time">в <input type="time" :value="st.time" :disabled="busy" aria-label="Время подборки" @change="save({ time: ($event.target as HTMLInputElement).value })" /></label>
@@ -84,6 +84,6 @@ async function test() {
       <label class="rm-time">предложений <input class="rm-num" type="number" min="0" :max="st.maxSentences" :value="st.sentences" :disabled="busy" aria-label="Сколько предложений" @change="save({ sentences: num($event) })" /></label>
       <button type="button" class="plain" :disabled="busy || !st.mailReady" @click="test">Отправить пробное</button>
     </div>
-    <p v-if="st.mailReady" class="st-sub">Письмо придёт на {{ st.to }}. Если включить после выбранного времени, первое письмо придёт завтра.</p>
+    <p v-if="st.mailReady" class="st-sub">Придёт: {{ st.to }}. Если включить после выбранного времени, первое сообщение придёт завтра.</p>
   </div>
 </template>

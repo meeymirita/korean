@@ -6,6 +6,7 @@ import path from 'node:path'
 import { OWNER, cleanup, start } from './_server.mjs'
 import { DigestService, sample } from '../backend/dist/digest/digest.service.js'
 import { digestMail } from '../backend/dist/mail/templates.js'
+import { NotifyService } from '../backend/dist/notify/notify.service.js'
 
 after(cleanup)
 
@@ -15,7 +16,7 @@ function fake({ configured = true, to = 'me@example.org', fail = false } = {}) {
   const sent = []
   const db = { getMeta: k => meta.get(k) ?? null, setMeta: (k, v) => meta.set(k, v) }
   const mail = { configured: () => configured, send: async (...a) => { if (fail) throw new Error('smtp'); sent.push(a) } }
-  const svc = new DigestService(db, mail, { email: async () => to }, { register() {} })
+  const svc = new DigestService(db, new NotifyService(mail), { email: async () => to }, { register() {} })
   return { svc, sent }
 }
 const at = (h, m) => new Date(2026, 10, 2, h, m)

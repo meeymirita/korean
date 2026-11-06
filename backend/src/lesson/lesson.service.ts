@@ -5,9 +5,9 @@
  * Адрес — тот же, что у напоминания заниматься: REMINDER_MAIL_TO в server/.env, иначе почта из двухфакторной защиты.
  */
 import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
+import { TwoFaService } from '../auth/twofa.service.js'
 import { Db } from '../db/db.service.js'
-import { MailService } from '../mail/mail.service.js'
+import { NotifyService } from '../notify/notify.service.js'
 import { lessonMail } from '../mail/templates.js'
 import { dayOf } from '../reminders/reminder.service.js'
 
@@ -32,7 +32,7 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly db: Db,
-    private readonly mail: MailService,
+    private readonly notify: NotifyService,
     private readonly twofa: TwoFaService,
   ) {}
 
@@ -87,12 +87,12 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
 
   async status() {
     const [to, settings] = await Promise.all([this.to(), this.get()])
-    return { ...settings, mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '' }
+    return { ...settings, mailReady: this.notify.ready(to), to: this.notify.label(to) }
   }
 
   private async deliver() {
     const m = lessonMail({ time: (await this.get()).time, site: process.env.SITE_URL })
-    await this.mail.send(await this.to(), m.subject, m.text, m.html)
+    await this.notify.send(m, await this.to())
   }
 
   /** Одна проверка (раз в минуту). Возвращает, что сделано: для тестов. */
@@ -104,7 +104,7 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
     const pad = (n: number) => String(n).padStart(2, '0')
     if (`${pad(now.getHours())}:${pad(now.getMinutes())}` < s.time) return 'early'
     if (s.lastSent === day) return 'already'
-    if (!this.mail.configured() || !await this.to()) return 'nomail'
+    if (!this.notify.ready(await this.to())) return 'nomail'
     // метка ставится до отправки: если почта медленная, следующая проверка не пошлёт второе письмо
     await this.save({ ...s, lastSent: day })
     try {
@@ -119,12 +119,12 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
 
   /** Проверочное письмо по кнопке: не зависит ни от дня, ни от времени. */
   async test() {
-    if (!this.mail.configured() || !await this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
+    if (!this.notify.ready(await this.to())) return { ok: false, message: 'некуда отправлять: подключите Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) или почту' }
     try {
       await this.deliver()
       return { ok: true, message: '' }
     } catch (e) {
-      return { ok: false, message: 'Почта: ' + (e as Error).message.slice(0, 120) }
+      return { ok: false, message: 'Отправка: ' + (e as Error).message.slice(0, 120) }
     }
   }
 }

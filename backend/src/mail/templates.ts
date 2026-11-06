@@ -3,9 +3,27 @@ export interface Mail {
   subject: string
   text: string
   html: string
+  /** версия для Telegram: HTML-разметка Telegram (b, i, code, blockquote, a) и кнопка-ссылка под сообщением */
+  tg?: { html: string; button?: { text: string; url: string } }
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+
+/** Сообщение Telegram в духе письма: шапка ✳︎ 우리말, заголовок, текст, блок-врезка (розовая полоса письма) и подпись. */
+function tgCard(o: { kicker?: string; title: string; lead?: string; body?: string; note?: string; foot: string; button?: { text: string; url: string } }) {
+  const html = [
+    '✳︎ <b>우리말</b>',
+    '━━━━━━━━━━━━━━',
+    '',
+    o.kicker ? `<i>${esc(o.kicker)}</i>` : '',
+    `<b>${esc(o.title)}</b>`,
+    o.lead ? `\n${esc(o.lead)}` : '',
+    o.body ? `\n${o.body}` : '',
+    o.note ? `\n<blockquote>${esc(o.note)}</blockquote>` : '',
+    `\n<i>${esc(o.foot)}</i>`,
+  ].filter((l, i, a) => l !== '' || (a[i - 1] !== '' && i > 0)).join('\n')
+  return { html, button: o.button }
+}
 
 /** Письмо с кодом. login — вход на сайт, enable — подтверждение адреса при включении защиты. */
 export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10): Mail {
@@ -46,11 +64,18 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
 </td></tr></table>
 </body></html>`
   const text = `${title} для 우리말: ${code}\n\n${lead}\nКод действует ${minutes} минут и подходит один раз.\n\nЕсли вы не входили на сайт, никому не называйте код и смените токен в файле backend/.env.\n\nЭто служебное письмо платформы 우리말 (korean.meeymirita.ru), отвечать на него не нужно.`
-  return { subject: `${title}: ${code}`, text, html }
+  const tg = tgCard({
+    title,
+    lead,
+    body: `<b>Ваш код:</b>\n<code>${esc(code)}</code>\n<i>нажмите на код, чтобы скопировать · действует ${minutes} минут, один раз</i>`,
+    note: 'Если вы не входили на сайт, никому не называйте код и смените токен в файле backend/.env.',
+    foot: 'Служебное сообщение платформы 우리말 (korean.meeymirita.ru).',
+  })
+  return { subject: `${title}: ${code}`, text, html, tg }
 }
 
 export interface BackupMailOptions {
-  kind: 'archive' | 'big' | 'test' | 'nightly-fail' | 'stale'
+  kind: 'archive' | 'big' | 'test' | 'nightly-fail' | 'stale' | 'disk-fail'
   /** пояснение для тревожных писем (что сказал скрипт) или число часов без свежей копии */
   detail?: string
   /** имя файла-вложения (для archive) */
@@ -77,15 +102,16 @@ export function backupMail(o: BackupMailOptions): Mail {
   const listCmd = 'tar -tzf korean.tar.gz | head'
   const unpackCmd = 'mkdir korean-restore && tar -xzf korean.tar.gz -C korean-restore'
 
-  const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки', 'nightly-fail': 'Ночная копия не удалась', stale: 'Ночная копия давно не делалась' }
+  const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки', 'nightly-fail': 'Ночная копия не удалась', 'disk-fail': 'Копия не легла на Яндекс.Диск', stale: 'Ночная копия давно не делалась' }
   const leads = {
     archive: `Во вложении полный архив: база, картинки, файлы календаря и настройки${o.mb ? ` (${o.mb} МБ)` : ''}. Он зашифрован вашим паролем, поэтому открыть его без пароля нельзя.`,
     big: `Полный архив${o.mb ? ` (${o.mb} МБ)` : ''} не помещается в письма и остался на сервере в папке backend/data/export. Скачайте его оттуда вручную.`,
     test: 'Это проверочное письмо из «Настроек». Если оно пришло, почта для резервных копий настроена верно.',
     'nightly-fail': `Скрипт scripts/backup.sh завершился с ошибкой${o.detail ? `: ${o.detail}` : ''}. Последняя хорошая копия осталась на месте, но новой нет.`,
+    'disk-fail': `Архив собран, но не загрузился на Диск${o.detail ? `: ${o.detail}` : ''}. Проверьте YADISK_TOKEN в .env и свободное место на Диске. Архив лежит на сервере в backend/data/export.`,
     stale: `Свежей ночной копии нет ${o.detail ?? 'больше суток'}: скрипт не запускался или завис. Проверьте таймер на сервере.`,
   }
-  const alert = o.kind === 'nightly-fail' || o.kind === 'stale'
+  const alert = o.kind === 'nightly-fail' || o.kind === 'stale' || o.kind === 'disk-fail'
   const notice = alert
     ? 'Что сделать: на сервере выполните «systemctl status korean-backup.timer» и «bash scripts/backup.sh», посмотрите вывод. Подробности: docs/backup.md.'
     : 'Храните пароль архива отдельно от сервера: без него копию не открыть. Пароль в письме не указан намеренно.'
@@ -140,7 +166,14 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
       ? `\n\nКак открыть (терминал в папке с файлом):\n${part ? `1. Склейте все части: ${joinCmd}\n2.` : '1.'} Расшифруйте (спросит пароль BACKUP_PASSPHRASE): ${openCmd}\n${part ? '3.' : '2.'} Посмотрите: ${listCmd}\n${part ? '4.' : '3.'} Распакуйте: ${unpackCmd}\nПосле проверки удалите распакованное: в server.env лежат пароли.`
       : ''
   const text = `${title} (우리말, ${when})\n\n${lead}${textHow}\n\n${alert ? notice : 'Храните пароль архива отдельно от сервера. Подробности: docs/backup.md.'}`
-  return { subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
+  const tg = tgCard({
+    kicker: when,
+    title,
+    lead,
+    note: notice,
+    foot: 'Служебное сообщение платформы 우리말. Подробности: docs/backup.md.',
+  })
+  return { tg, subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
 }
 
 export interface ReminderMailOptions {
@@ -181,7 +214,8 @@ export function reminderMail(o: ReminderMailOptions = {}): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Пора заниматься (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nВремя и включение: кабинет, «Настройки».`
-  return { subject: '우리말: пора заниматься', text, html }
+  const tg = tgCard({ title: 'Пора заниматься', lead, foot: 'Время и включение: кабинет, «Настройки».', button: { text: 'Пять минут', url: link } })
+  return { subject: '우리말: пора заниматься', text, html, tg }
 }
 
 export interface LessonMailOptions {
@@ -220,7 +254,8 @@ export function lessonMail(o: LessonMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Сегодня созвон (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nДень, время и включение: кабинет, «Уведомления».`
-  return { subject: '우리말: сегодня созвон', text, html }
+  const tg = tgCard({ title: 'Сегодня созвон', lead, foot: 'День, время и включение: кабинет, «Уведомления».', button: { text: 'Открыть кабинет', url: link } })
+  return { subject: '우리말: сегодня созвон', text, html, tg }
 }
 
 export interface DigestMailOptions {
@@ -277,5 +312,8 @@ export function digestMail(o: DigestMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
-  return { subject: `Повторение: ${o.time} · ${what}`, text, html }
+  const wordsTg = nw ? `<b>СЛОВА</b>\n<blockquote>${o.words.map(([k, r]) => `<b>${esc(k)}</b> — ${esc(r)}`).join('\n')}</blockquote>` : ''
+  const sentTg = ns ? `<b>ПРЕДЛОЖЕНИЯ</b>\n<blockquote>${o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}</blockquote>` : ''
+  const tg = tgCard({ title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
+  return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg }
 }

@@ -4,9 +4,9 @@
  * Адрес: REMINDER_MAIL_TO в backend/.env, иначе почта из двухфакторной защиты. Раз в минуту (REMINDER_TICK_MS для тестов) сервис проверяет, не пора ли.
  */
 import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common'
-import { TwoFaService, maskEmail } from '../auth/twofa.service.js'
+import { TwoFaService } from '../auth/twofa.service.js'
 import { Db } from '../db/db.service.js'
-import { MailService } from '../mail/mail.service.js'
+import { NotifyService } from '../notify/notify.service.js'
 import { reminderMail } from '../mail/templates.js'
 import { BackgroundJobs } from '../jobs/background-jobs.service.js'
 
@@ -33,7 +33,7 @@ export type Tick = 'off' | 'early' | 'studied' | 'sent' | 'already' | 'nomail' |
 export class ReminderService implements OnModuleInit {
   constructor(
     private readonly db: Db,
-    private readonly mail: MailService,
+    private readonly notify: NotifyService,
     private readonly twofa: TwoFaService,
     private readonly jobs: BackgroundJobs,
   ) {}
@@ -89,7 +89,7 @@ export class ReminderService implements OnModuleInit {
 
   async status() {
     const [to, settings] = await Promise.all([this.to(), this.get()])
-    return { ...settings, mailReady: this.mail.configured() && !!to, to: to ? maskEmail(to) : '' }
+    return { ...settings, mailReady: this.notify.ready(to), to: this.notify.label(to) }
   }
 
   /** Ответов сегодня (всего). */
@@ -111,7 +111,7 @@ export class ReminderService implements OnModuleInit {
 
   private async deliver(day: string) {
     const m = reminderMail({ streak: await this.streakBefore(day), site: process.env.SITE_URL })
-    await this.mail.send(await this.to(), m.subject, m.text, m.html)
+    await this.notify.send(m, await this.to())
   }
 
   /** Одна проверка (раз в минуту). Возвращает, что сделано: для тестов. */
@@ -123,7 +123,7 @@ export class ReminderService implements OnModuleInit {
     if (`${pad(now.getHours())}:${pad(now.getMinutes())}` < s.time) return 'early'
     if (s.lastSent === day) return 'already'
     if (await this.answersToday(day) > 0) return 'studied'
-    if (!this.mail.configured() || !await this.to()) return 'nomail'
+    if (!this.notify.ready(await this.to())) return 'nomail'
     // метка ставится до отправки: если почта медленная, следующая проверка не пошлёт второе письмо
     await this.save({ ...s, lastSent: day })
     try {
@@ -138,12 +138,12 @@ export class ReminderService implements OnModuleInit {
 
   /** Проверочное письмо по кнопке: не зависит ни от времени, ни от того, занимался ли сегодня. */
   async test() {
-    if (!this.mail.configured() || !await this.to()) return { ok: false, message: 'некуда отправлять: настройте почту (SMTP_*) и адрес' }
+    if (!this.notify.ready(await this.to())) return { ok: false, message: 'некуда отправлять: подключите Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) или почту' }
     try {
       await this.deliver(dayOf(new Date()))
       return { ok: true, message: '' }
     } catch (e) {
-      return { ok: false, message: 'Почта: ' + (e as Error).message.slice(0, 120) }
+      return { ok: false, message: 'Отправка: ' + (e as Error).message.slice(0, 120) }
     }
   }
 }

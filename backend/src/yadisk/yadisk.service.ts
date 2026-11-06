@@ -88,7 +88,7 @@ export class YaDiskService {
       headers: { 'Content-Length': String(size) },
       body: Readable.toWeb(createReadStream(file)) as ReadableStream,
       duplex: 'half',
-      signal: AbortSignal.timeout(Math.max(120_000, size / 100_000 * 1000)), // не быстрее ~100 КБ/с
+      signal: AbortSignal.timeout(Math.max(120_000, Math.ceil(size / 100_000) * 1000)), // не быстрее ~100 КБ/с
     } as RequestInit)
     if (!res.ok) throw new Error(`yadisk upload ${res.status}`)
   }
