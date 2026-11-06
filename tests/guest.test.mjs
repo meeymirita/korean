@@ -55,7 +55,7 @@ describe('гостевой режим: ничего не сохраняется'
     assert.equal(real().has('hleb_game_v1'), false, 'статистика игры не сохранена')
     assert.equal(real().has('progress_outbox'), false, 'очередь действий не создана')
     assert.equal(store.data.xp, 50, 'но в самой сессии всё считается')
-    assert.deepEqual(calls, ['GET /api/progress', 'POST /api/session'], 'на сервер ушли только вход и запись о входе, ни одного действия')
+    assert.deepEqual(calls, ['POST /api/session', 'GET /api/progress'], 'на сервер ушли только вход и запись о входе, ни одного действия')
   })
 
   test('вход переживает перезагрузку, прогресс гостя нет', async () => {

@@ -4,6 +4,7 @@ import { Events } from '../events/events.service.js'
 import { RateLimiter, clientIp } from '../security.js'
 import { ALLOW_PENDING, OWNER, PUBLIC } from './auth.js'
 import { AuthService } from './auth.service.js'
+import { TwoFaService } from './twofa.service.js'
 
 /** Проверяет токен на каждом запросе (кроме помеченных @Public) и кладёт в запрос `who`. */
 @Injectable()
@@ -13,6 +14,7 @@ export class AuthGuard implements CanActivate {
     private readonly auth: AuthService,
     private readonly events: Events,
     private readonly limiter: RateLimiter,
+    private readonly twofa: TwoFaService,
   ) {}
 
   async canActivate(ctx: ExecutionContext) {
@@ -31,7 +33,7 @@ export class AuthGuard implements CanActivate {
       }
       throw new UnauthorizedException({ error: 'unauthorized' })
     }
-    if (who.role === 'owner' && who.pending && !this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING, targets)) throw new UnauthorizedException({ error: '2fa' })
+    if (who.role === 'owner' && who.pending && !this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING, targets)) throw new UnauthorizedException({ error: (await this.twofa.required()) ? '2fa' : 'session' })
     this.limiter.ok(ip)
     if (who.role !== 'owner' && this.reflector.getAllAndOverride<boolean>(OWNER, targets)) throw new ForbiddenException({ error: 'forbidden' })
     req.who = who

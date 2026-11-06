@@ -492,6 +492,7 @@ export const useProgressStore = defineStore('progress', () => {
     } catch {
       /* без тела */
     }
+    if (error === 'session') return lock('сеанс закончился, введите токен снова')
     if (error !== '2fa') return lock(error === 'expired' ? 'срок гостевого доступа закончился' : 'неверный токен')
     session.value = ''
     write(SESSION_KEY, null)
@@ -635,8 +636,15 @@ export const useProgressStore = defineStore('progress', () => {
     token.value = value
     verified.value = false
     write(TOKEN_KEY, value)
+    // вход попадает в журнал событий; если на сервере включены сеансы по времени (OWNER_SESSION_HOURS), здесь же приходит сеанс
+    try {
+      const res = await fetchT('/api/session', { method: 'POST', headers: headers() })
+      const r = res.ok ? ((await res.json().catch(() => null)) as { session?: string } | null) : null
+      if (r?.session) setSession(r.session)
+    } catch {
+      /* без связи: init() ниже разберётся сам */
+    }
     await init()
-    if (unlocked.value) void fetchT('/api/session', { method: 'POST', headers: headers() }).catch(() => undefined) // вход попадает в журнал событий
     return unlocked.value
   }
 

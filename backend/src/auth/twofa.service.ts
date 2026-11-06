@@ -12,6 +12,9 @@ import { NotifyService } from '../notify/notify.service.js'
 import { codeMail } from '../mail/templates.js'
 
 const SESSION_DAYS = 30
+/** OWNER_SESSION_HOURS=4: вход по токену живёт 4 часа, потом токен нужно вводить заново (0 или пусто: сеанс только после кода, 30 дней). */
+export const ownerSessionHours = () => Math.max(0, Math.min(Number(process.env.OWNER_SESSION_HOURS) || 0, 24 * 30))
+const sessionMs = () => (ownerSessionHours() > 0 ? ownerSessionHours() * 3_600_000 : SESSION_DAYS * 86_400_000)
 const CODE_TTL = 10 * 60_000
 const RESEND_AFTER = 30_000
 const MAX_TRIES = 5
@@ -82,12 +85,12 @@ export class TwoFaService {
     return !!row && Number(row.expires) > Date.now()
   }
 
-  private async createSession(): Promise<string> {
+  async createSession(): Promise<string> {
     const id = randomBytes(16).toString('hex')
     const now = Date.now()
     const sessions = (await this.db.orm()).session
     await sessions.deleteMany({ where: { expires: { lt: BigInt(now) } } })
-    await sessions.create({ data: { hash: sha(id), created: BigInt(now), expires: BigInt(now + SESSION_DAYS * 86_400_000) } })
+    await sessions.create({ data: { hash: sha(id), created: BigInt(now), expires: BigInt(now + sessionMs()) } })
     return id
   }
 

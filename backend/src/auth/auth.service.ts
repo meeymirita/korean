@@ -3,7 +3,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import { TOKEN } from '../config.js'
 import { Db } from '../db/db.service.js'
 import type { Who } from './auth.js'
-import { TwoFaService } from './twofa.service.js'
+import { TwoFaService, ownerSessionHours } from './twofa.service.js'
 
 const sha = (text: string) => createHash('sha256').update(text).digest()
 const same = (a: Buffer, b: Buffer) => a.length === b.length && timingSafeEqual(a, b)
@@ -30,7 +30,7 @@ export class AuthService {
     if (TOKEN && given.length >= TOKEN.length && same(Buffer.from(given.slice(0, TOKEN.length)), Buffer.from(TOKEN))) {
       const rest = given.slice(TOKEN.length)
       if (rest === '' || rest.startsWith(' ')) {
-        if (!await this.twofa.required() || await this.twofa.validSession(rest.slice(1))) return { role: 'owner' }
+        if ((!await this.twofa.required() && ownerSessionHours() === 0) || await this.twofa.validSession(rest.slice(1))) return { role: 'owner' }
         return { role: 'owner', pending: true }
       }
     }
