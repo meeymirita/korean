@@ -1,18 +1,23 @@
 /**
  * Фото Юны на карточках грамматики (инфографики владельца).
- * Файлы лежат в `src/assets/grammar/`: `lesson-N.webp` для пройденных уроков 1–10 части 1 и `own-<id>.webp` для своих карточек (без подписи урока).
- * Новое фото: положи файл с таким именем, больше нигде ничего менять не нужно.
+ * Файлы лежат на Яндекс.Диске в папке `korean_grammar` (в корне папки приложения): `lesson-N.webp` для пройденных уроков 1–10 части 1
+ * и `own-<id>.webp` для своих карточек (без подписи урока). Сервер отдаёт их по `/api/pic/grammar/<имя>` (перенаправление на ссылку Диска).
+ * Заменить фото: положи файл с тем же именем в папку на Диске (виден через 10–20 минут). Новое фото: ещё допиши его имя в KEYS.
  */
-const FILES = import.meta.glob('../../assets/grammar/*.webp', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
+const KEYS = new Set([
+  'lesson-1', 'lesson-2', 'lesson-3', 'lesson-4', 'lesson-5', 'lesson-6', 'lesson-7', 'lesson-8', 'lesson-9', 'lesson-10',
+  'own-adj', 'own-deul', 'own-hago', 'own-here', 'own-ijeo', 'own-juse', 'own-mor', 'own-nuga', 'own-pos', 'own-thanks', 'own-too_do', 'own-when_e', 'own-yeon',
+])
 
-const BY_KEY: Record<string, string> = {}
-for (const [path, url] of Object.entries(FILES)) BY_KEY[path.split('/').pop()!.replace(/\.webp$/, '')] = url
+const url = (key: string) => `/api/pic/grammar/${key}.webp`
 
 /** Фото карточки: у урока части 1 по номеру («Урок 3» → lesson-3), у своей карточки по её id; у остальных нет. */
 export function photoOf(g: { id: string; l?: string; st: string }): string | undefined {
   if (g.l) {
     const m = /^Урок (\d+)$/.exec(g.l)
-    return m && g.st === 'ok' ? BY_KEY[`lesson-${m[1]}`] : undefined
+    const key = m && g.st === 'ok' ? `lesson-${m[1]}` : ''
+    return KEYS.has(key) ? url(key) : undefined
   }
-  return BY_KEY[`own-${g.id}`]
+  const key = `own-${g.id}`
+  return KEYS.has(key) ? url(key) : undefined
 }
