@@ -9,7 +9,7 @@ Ubuntu (`root@se-40678`), проект в `/var/sites/korean`, сайт `https:/
 |---|---|
 | Сайт и API | контейнеры `frontend` (`127.0.0.1:3000`) и `backend` (`127.0.0.1:3001`) из `docker-compose.yml`, `restart: unless-stopped` |
 | Данные | том `app-data` (картинки, копии), база в томе PostgreSQL; секреты в `.env` проекта (права 600), оба вне git |
-| Видео | `/var/sites/korean-video/` (вне git, `deploy.sh` не трогает), хостовый Caddy отдаёт `/video/*` |
+| Видео | на Яндекс.Диске, папка `korean_video`; хостовый Caddy шлёт `/video/*` на `/api/video/*` (`docs/disk-and-telegram.md`). Старая `/var/sites/korean-video/` не нужна |
 | Вход | хостовый Caddy сервера (`/etc/caddy/Caddyfile`, ниже блок сайта), он же обслуживает остальные сайты; Caddy из compose (профиль `edge`) на сервере не включают |
 | Docker | Docker Engine и Compose v2 (`docker compose version`) |
 
@@ -81,20 +81,5 @@ korean.meeymirita.ru {
   AV1 не везде играет (Safari, часть iPad); перекодировать: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`.
 
 
-## Яндекс.Диск и Telegram (с 2026-11-06)
-Переменные в корневом `.env` (в `docker-compose.yml` они уже проброшены в `backend`; после правки `docker compose up -d`):
-`YADISK_TOKEN` (OAuth-токен с правом `cloud_api:disk.app_folder`; получить: `https://oauth.yandex.ru/authorize?response_type=token&client_id=<ClientID>`), `YADISK_ROOT` (папка внутри «Приложения/<название>», пусто = корень),
-`YADISK_KEEP=14` (сколько дат копий хранить), `TELEGRAM_BOT_TOKEN` (@BotFather), `TELEGRAM_CHAT_ID` (написать боту `/start`, открыть `https://api.telegram.org/bot<токен>/getUpdates`, взять `message.chat.id`).
-Структура Диска (внутри папки приложения): одна папка на копию `Копия ГГГГ-ММ-ДД ЧЧ-ММ/` с тремя вложенными: `Весь сайт/korean-….tar.gz.enc` (полный архив, шифрование `BACKUP_PASSPHRASE`), `База и env/db-env-….tar.gz.enc`, `Картинки/` (копия живой папки прямо на Диске);
-рядом живая папка `Картинки/` (картинки, файлы календаря, картинки сайта, обложка визитки одной плоской папкой; нужна для автовосстановления) и `korean_video/lesson-01.mp4` … (видео в корне, не внутри копий)
-- Архив после сборки уходит на Диск; почта нужна только как запасной путь. Картинки зеркалятся при загрузке, при старте сервера и раз в час (`POST /api/backup/media-sync` запускает вручную).
-- Видео: `node scripts/upload-videos.mjs` (с Mac, продолжает с места остановки; `YADISK_TOKEN` берёт из окружения или `.env`). Чтобы сайт отдавал их с Диска, в Caddy вместо блока `/video/*` с `file_server`:
-```
-handle_path /video/* {
-    rewrite * /api/video{path}
-    reverse_proxy 127.0.0.1:3001
-}
-```
-  `/api/video/<имя>.mp4` отвечает 302 на временную ссылку Диска (перемотка работает). Перед переключением убедись, что все 44 файла на Диске.
-- Уведомления (код входа, напоминание, подборка, «Сегодня созвон», тревоги копий): Telegram, при сбое или без него почта (`SMTP_*`). Двухфакторная защита с Telegram не требует адреса почты.
-- **Время жизни входа:** `OWNER_SESSION_HOURS=4` (в `docker-compose.yml` по умолчанию 4; `0` отключает). Токен сам по себе кабинет не открывает: при входе сервер выдаёт сеанс на эти часы (таблица сессий), после срока сайт просит ввести токен заново. С двухфакторной защитой сеанс выдаётся за код и живёт столько же. Скрипты с голым токеном (`demo-seed`, `check-layout`) при включённой настройке не работают: для них запускай сервер без `OWNER_SESSION_HOURS`.
+## Яндекс.Диск, Telegram, вход на 4 часа
+Полностью описано в `docs/disk-and-telegram.md` (переменные, что лежит на Диске, раздача видео через Caddy, уведомления, сеанс входа, поломки).
