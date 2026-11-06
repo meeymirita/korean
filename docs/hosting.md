@@ -79,3 +79,20 @@ korean.meeymirita.ru {
   Сайт берёт файл по подписи карточки («Урок N», `videoOf` в `src/data/korean/course.ts`); нет файла: заглушка. Заливка с Mac:
   `rsync -avP ~/Movies/Korean-videos/upload/ root@<сервер>:/var/sites/korean-video/` (единственная копия видео у владельца в `~/Movies/Korean-videos/`).
   AV1 не везде играет (Safari, часть iPad); перекодировать: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`.
+
+
+## Яндекс.Диск и Telegram (с 2026-11-06)
+Переменные в корневом `.env` (в `docker-compose.yml` они уже проброшены в `backend`; после правки `docker compose up -d`):
+`YADISK_TOKEN` (OAuth-токен с правом `cloud_api:disk.app_folder`; получить: `https://oauth.yandex.ru/authorize?response_type=token&client_id=<ClientID>`), `YADISK_ROOT` (папка внутри «Приложения/<название>», пусто = корень),
+`YADISK_KEEP=14` (сколько дат копий хранить), `TELEGRAM_BOT_TOKEN` (@BotFather), `TELEGRAM_CHAT_ID` (написать боту `/start`, открыть `https://api.telegram.org/bot<токен>/getUpdates`, взять `message.chat.id`).
+Структура Диска: `Копия сайта/Копия ГГГГ-ММ-ДД/korean-….tar.gz.enc` (полный архив, шифрование `BACKUP_PASSPHRASE`), `База и env/База ГГГГ-ММ-ДД/db-env-….tar.gz.enc`, `Картинки/` (картинки, файлы календаря, картинки сайта, обложка визитки одной плоской папкой), `Видео/lesson-01.mp4` …
+- Архив после сборки уходит на Диск; почта нужна только как запасной путь. Картинки зеркалятся при загрузке, при старте сервера и раз в час (`POST /api/backup/media-sync` запускает вручную).
+- Видео: `node scripts/upload-videos.mjs` (с Mac, продолжает с места остановки; `YADISK_TOKEN` берёт из окружения или `.env`). Чтобы сайт отдавал их с Диска, в Caddy вместо блока `/video/*` с `file_server`:
+```
+handle_path /video/* {
+    rewrite * /api/video{path}
+    reverse_proxy 127.0.0.1:3001
+}
+```
+  `/api/video/<имя>.mp4` отвечает 302 на временную ссылку Диска (перемотка работает). Перед переключением убедись, что все 44 файла на Диске.
+- Уведомления (код входа, напоминание, подборка, «Сегодня созвон», тревоги копий): Telegram, при сбое или без него почта (`SMTP_*`). Двухфакторная защита с Telegram не требует адреса почты.
