@@ -1,4 +1,4 @@
-// Заливает видеоуроки на Яндекс.Диск в папку «Видео»: node scripts/upload-videos.mjs [папка]
+// Заливает видеоуроки на Яндекс.Диск в папку korean_video: node scripts/upload-videos.mjs [папка]
 // Папка по умолчанию ~/Movies/Korean-videos/upload. Токен: YADISK_TOKEN в окружении или в .env проекта (YADISK_ROOT — папка внутри приложения, по умолчанию корень).
 // Уже загруженные файлы того же размера пропускаются, можно прерывать и запускать снова. Нужна собранная серверная часть (npm run server:build).
 import { readFileSync, readdirSync, statSync } from 'node:fs'

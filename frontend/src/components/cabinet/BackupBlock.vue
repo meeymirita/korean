@@ -123,7 +123,7 @@ const size = computed(() => ((status.value?.sizeKb ?? 0) / 1024).toFixed(1))
     <h3>Резервные копии</h3>
     <div v-if="status.archive" class="bk-arc">
       <p class="st-sub">Полный архив (база, картинки, файлы календаря, настройки) шифруется вашим паролем и отправляется
-        {{ status.archive.targets.disk ? 'на Яндекс.Диск (папки «Копия сайта» и «База и env»)' : status.archive.targets.mail ? 'на почту' : 'никуда (ни Диск, ни почта не настроены)' }}.
+        {{ status.archive.targets.disk ? 'на Яндекс.Диск (папка «Копия» с датой: весь сайт, база и env, картинки)' : status.archive.targets.mail ? 'на почту' : 'никуда (ни Диск, ни почта не настроены)' }}.
         Сам каждый день, а здесь можно запустить в любой момент.</p>
       <ul v-if="status.archive.problems.length" class="bk-prob"><li v-for="p in status.archive.problems" :key="p">⚠ {{ p }}</li></ul>
       <p v-if="reminder" class="bk-warn" role="status">⚠ {{ reminder }}</p>

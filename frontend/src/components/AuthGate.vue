@@ -78,7 +78,7 @@ async function submit() {
       <template v-if="progress.needs2fa">
         <div class="gate-ico"><Icon name="mail" /></div>
         <h2>Код входа</h2>
-        <p>Токен подошёл. Мы отправили код из 4 цифр: {{ sentTo || 'проверьте Telegram или почту' }}. Он действует 10 минут.</p>
+        <p>Токен подошёл. Мы отправили код из 4 цифр: {{ sentTo || '…' }}. Он действует 10 минут.</p>
         <form class="gate-form" @submit.prevent="submitCode">
           <input v-model="code" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="0000" autocomplete="one-time-code" aria-label="Код входа" autofocus @input="code.length === 4 && submitCode()" />
           <button type="submit" :disabled="busy || code.trim().length !== 4">{{ busy ? 'Проверяю…' : 'Войти' }}</button>

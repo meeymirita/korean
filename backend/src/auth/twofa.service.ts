@@ -75,7 +75,7 @@ export class TwoFaService {
 
   async status() {
     const s = await this.read()
-    return { enabled: s.enabled, bypassed: s.enabled && process.env.DISABLE_2FA === '1', email: s.email === TG ? 'Telegram' : s.email ? maskEmail(s.email) : '', mailConfigured: this.notify.ready('x@x') || this.mail.configured(), telegram: this.notify.telegram() }
+    return { enabled: s.enabled, bypassed: s.enabled && process.env.DISABLE_2FA === '1', email: this.notify.telegram() && s.email ? 'Telegram' : s.email === TG ? 'Telegram' : s.email ? maskEmail(s.email) : '', mailConfigured: this.notify.ready('x@x') || this.mail.configured(), telegram: this.notify.telegram() }
   }
 
   /* ---------- сеансы ---------- */
@@ -129,7 +129,7 @@ export class TwoFaService {
     if (!await this.required()) throw new BadRequestException({ error: '2fa off' })
     const email = (await this.read()).email
     await this.issue('login', email)
-    return { ok: true, email: email === TG ? 'Telegram' : maskEmail(email) }
+    return { ok: true, email: this.notify.telegram() || email === TG ? 'Telegram' : maskEmail(email) }
   }
 
   /** Верный код входа: выдаёт сеанс. Неверный возвращает null (вызывающий считает попытку подбора). */

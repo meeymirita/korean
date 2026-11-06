@@ -13,7 +13,7 @@ import { DATA_DIR, ROOT } from '../config.js'
 import { postgresDumpConfig } from '../db/postgres-dump.js'
 import { MailService } from '../mail/mail.service.js'
 import { NotifyService } from '../notify/notify.service.js'
-import { DISK_DIRS, datedDir, YaDiskService } from '../yadisk/yadisk.service.js'
+import { BACKUP_FOLDER_RE, DISK_DIRS, YaDiskService, backupFolder } from '../yadisk/yadisk.service.js'
 import { backupMail } from '../mail/templates.js'
 
 /** Конфиги сервера, которые кладём в архив (что не прочиталось, пропускается). */
@@ -330,9 +330,14 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
         try {
           await run('tar', ['-czf', dbTar, '-C', stage, ...dbFiles])
           await run('openssl', ['enc', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-salt', '-in', dbTar, '-out', dbEnc, '-pass', 'env:BACKUP_PASSPHRASE'], { BACKUP_PASSPHRASE: pass })
-          await this.disk.upload(`${datedDir(DISK_DIRS.db)}/${dbName}`, dbEnc)
-          this.set(3, 70)
-          await this.disk.upload(`${datedDir(DISK_DIRS.site)}/${name}`, enc)
+          const folder = backupFolder()
+          await this.disk.upload(`${folder}/${DISK_DIRS.db}/${dbName}`, dbEnc)
+          this.set(3, 66)
+          await this.disk.upload(`${folder}/${DISK_DIRS.site}/${name}`, enc)
+          this.set(3, 82)
+          // картинки: сначала живая папка догоняет сервер, потом копия внутрь этой папки прямо на Диске
+          await this.disk.syncMedia()
+          await this.disk.copy(DISK_DIRS.media, `${folder}/${DISK_DIRS.media}`)
           await this.pruneDisk()
           disk = 'ok'
         } catch (e) {
@@ -387,7 +392,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   async test() {
     if (this.disk.configured()) {
       try {
-        await this.disk.put(`${datedDir(DISK_DIRS.site)}/проверка.txt`, Buffer.from(`Проверка связи: ${new Date().toISOString()}\n`))
+        await this.disk.put('проверка связи.txt', Buffer.from(`Проверка связи: ${new Date().toISOString()}\n`))
         return { mail: 'ok' as const, disk: 'ok' as const, message: '' }
       } catch (e) {
         return { mail: 'fail' as const, disk: 'fail' as const, message: 'Диск: ' + (e as Error).message.slice(0, 120) }
@@ -442,13 +447,11 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
 
   /** На Диске в каждой папке остаются последние KEEP_DISK архивов. */
   private async pruneDisk() {
-    for (const base of [DISK_DIRS.site, DISK_DIRS.db]) {
-      try {
-        const dirs = (await this.disk.list(base)).filter(i => i.type === 'dir' && /\d{4}-\d{2}-\d{2}$/.test(i.name)).map(i => i.name).sort()
-        for (const d of dirs.slice(0, Math.max(0, dirs.length - KEEP_DISK))) await this.disk.remove(`${base}/${d}`)
-      } catch {
-        /* чистка не критична */
-      }
+    try {
+      const dirs = (await this.disk.list('')).filter(i => i.type === 'dir' && BACKUP_FOLDER_RE.test(i.name)).map(i => i.name).sort()
+      for (const d of dirs.slice(0, Math.max(0, dirs.length - KEEP_DISK))) await this.disk.remove(d)
+    } catch {
+      /* чистка не критична */
     }
   }
 

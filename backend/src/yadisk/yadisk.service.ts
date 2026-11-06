@@ -5,7 +5,7 @@
  * Для тестов: YADISK_DUMP_DIR=путь — вместо сети файлы пишутся в эту папку.
  */
 import { Injectable } from '@nestjs/common'
-import { createReadStream, existsSync, mkdirSync, readdirSync, statSync, createWriteStream, rmSync } from 'node:fs'
+import { cpSync, createReadStream, existsSync, mkdirSync, readdirSync, statSync, createWriteStream, rmSync } from 'node:fs'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import path from 'node:path'
@@ -15,15 +15,21 @@ const API = 'https://cloud-api.yandex.net/v1/disk'
 
 /** Три основные папки на Диске (внутри папки приложения). */
 export const DISK_DIRS = {
-  site: 'Копия сайта',
+  /** внутри папки копии: весь сайт одним архивом */
+  site: 'Весь сайт',
+  /** внутри папки копии: база и .env */
   db: 'База и env',
-  video: 'Видео',
+  /** внутри папки копии и отдельная живая папка в корне: картинки и файлы */
   media: 'Картинки',
+  video: 'korean_video',
 } as const
 
-/** Папка копии внутри основной, с датой в конце названия: «Копия сайта/Копия 2026-11-06». */
-export const SUB_LABEL: Record<string, string> = { 'Копия сайта': 'Копия', 'База и env': 'База' }
-export const datedDir = (base: string, now = new Date()) => `${base}/${SUB_LABEL[base] ?? 'Копия'} ${now.toISOString().slice(0, 10)}`
+/** Папка одной копии в корне: «Копия 2026-11-06 21-03» (дата и время в конце названия; внутри Весь сайт, База и env, Картинки). */
+export const backupFolder = (now = new Date()) => {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `Копия ${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())} ${p(now.getHours())}-${p(now.getMinutes())}`
+}
+export const BACKUP_FOLDER_RE = /^Копия \d{4}-\d{2}-\d{2} \d{2}-\d{2}$/
 
 /** Папки сервера, чьи файлы лежат на Диске одной плоской папкой «Картинки» (имена файлов уникальны: id или ключ с версией). */
 export const MEDIA_SOURCES = ['uploads', 'docs', 'public', 'site']
@@ -152,6 +158,30 @@ export class YaDiskService {
     if (process.env.YADISK_DUMP_DIR) return void rmSync(this.dump(remote), { recursive: true, force: true })
     const r = (await this.api('DELETE', '/resources', { path: this.full(remote), permanently: true })) as { __status?: number }
     void r // 404 — файла уже нет
+  }
+
+  /** Копирует файл или папку на самом Диске (без скачивания); ждёт окончания операции. */
+  async copy(from: string, to: string) {
+    if (process.env.YADISK_DUMP_DIR) {
+      const src = this.dump(from)
+      if (!existsSync(src)) return false
+      mkdirSync(path.dirname(this.dump(to)), { recursive: true })
+      cpSync(src, this.dump(to), { recursive: true })
+      return true
+    }
+    await this.mkdir(path.posix.dirname(to))
+    const r = (await this.api('POST', '/resources/copy', { from: this.full(from), path: this.full(to), overwrite: true })) as { __status?: number; href?: string }
+    if (r.__status === 404) return false
+    if (r.__status === 202 && r.href) {
+      for (let i = 0; i < 120; i++) {
+        await new Promise(res => setTimeout(res, 2000))
+        const op = await fetch(r.href, { headers: { Authorization: `OAuth ${process.env.YADISK_TOKEN}` }, signal: AbortSignal.timeout(15_000) }).then(x => x.json()).catch(() => ({})) as { status?: string }
+        if (op.status === 'success') return true
+        if (op.status === 'failed') throw new Error('yadisk: копирование не удалось')
+      }
+      throw new Error('yadisk: копирование заняло слишком много времени')
+    }
+    return true
   }
 
   /** Сколько занято и сколько всего (байты). */
