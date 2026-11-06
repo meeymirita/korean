@@ -22,6 +22,8 @@ export const DISK_DIRS = {
   /** внутри папки копии и отдельная живая папка в корне: картинки и файлы */
   media: 'Картинки',
   video: 'korean_video',
+  /** картинки карточек грамматики: lesson-N.webp и own-<id>.webp */
+  grammar: 'korean_grammar',
 } as const
 
 /** Папка одной копии в корне: «Копия 2026-11-06 21-03» (дата и время в конце названия; внутри Весь сайт, База и env, Картинки). */
@@ -110,6 +112,17 @@ export class YaDiskService {
     if (!link.href) throw new Error('yadisk: нет ссылки для загрузки')
     const res = await fetch(link.href, { method: 'PUT', body: new Uint8Array(data), signal: AbortSignal.timeout(120_000) })
     if (!res.ok) throw new Error(`yadisk upload ${res.status}`)
+  }
+
+  private links = new Map<string, { href: string; until: number }>()
+
+  /** Ссылка на скачивание с памятью на 20 минут (сама живёт около 30): для видео и картинок, которые отдаём перенаправлением. */
+  async cachedLink(remote: string): Promise<string> {
+    const hit = this.links.get(remote)
+    if (hit && hit.until > Date.now()) return hit.href
+    const href = await this.link(remote)
+    this.links.set(remote, { href, until: Date.now() + 20 * 60_000 })
+    return href
   }
 
   /** Временная ссылка на скачивание (живёт около 30 минут): для видео и больших файлов. */
