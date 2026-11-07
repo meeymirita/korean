@@ -1,4 +1,4 @@
-# Docker: стек, запуск, перенос данных, мониторинг
+# Docker: стек, запуск, обновление, мониторинг
 
 С 2026-11-05 платформа работает в Docker Compose. Один файл `docker-compose.yml` в корне, настройки сервисов в `docker/<сервис>/`, секреты только в `.env` (в git не попадает, образец `.env.example`).
 
@@ -28,18 +28,14 @@ docker compose up -d --build
 ```
 Проверка: `docker compose ps` (все `healthy`), `curl http://127.0.0.1:3001/api/health`. Состояние служб и журналы смотрит владелец в «Кабинет → Сервисы».
 
-## Перенос с SQLite
-
-Перенос прежнего сайта (SQLite) на PostgreSQL выполнен 2026-11-05 и проверен, скрипт переноса удалён как ненужный (подробные шаги и сам скрипт остались в истории git: `git log --all -- scripts/import-dump.sh backend/scripts/sqlite-to-postgres.mjs`). Новые архивы содержат `app.dump` (PostgreSQL); восстановление по ним: `docs/backup.md`. Видео и картинки грамматики лежат на Яндекс.Диске (`docs/disk-and-telegram.md`).
-
 ## Обновление
 
-`cd /var/sites/korean && bash scripts/deploy.sh` (или автодеплой из GitHub Actions после зелёного CI). Скрипт проверяет, что в папке нет правок, делает `git pull --ff-only`, **копию базы**, собирает образы, перезапускает изменившиеся службы и ждёт ответа API и сайта. Не ответили: `git reset --hard` на прежний коммит, пересборка и запуск прежней версии, ошибка в конце. Параметры `--force`, `--no-restart`, `--no-backup`. Тест `tests/deploy.test.mjs`.
+**Обычно ничего делать не нужно:** пуш в `main` запускает CI, при зелёном CI сам запускается Deploy (`.github/workflows/deploy.yml`, по SSH выполняет `scripts/deploy.sh` на сервере); при красном CI деплоя нет. Руками на сервере нужно только то, что не лежит в git (правка `.env`, затем `docker compose up -d`). Вручную: `cd /var/sites/korean && bash scripts/deploy.sh` или Actions → Deploy → Run workflow. Скрипт проверяет, что в папке нет правок, делает `git pull --ff-only`, **копию базы**, собирает образы, перезапускает изменившиеся службы и ждёт ответа API и сайта. Не ответили: `git reset --hard` на прежний коммит, пересборка и запуск прежней версии, ошибка в конце. Параметры `--force`, `--no-restart`, `--no-backup`. Тест `tests/deploy.test.mjs`.
 Миграции базы идут вперёд при старте `backend` (`prisma migrate deploy`). Откат кода не откатывает схему: новую миграцию делай так, чтобы прежний код с ней работал (только добавлять столбцы и таблицы), а восстановление базы при крайней необходимости из копии.
 
 ## Резервные копии и восстановление
 
-- Внутри `backend`: ночной `pg_dump` в `/data/backups/app-ДАТА.dump` (30 штук) и полный зашифрованный архив на почту (как раньше, `docs/backup.md`; архив теперь содержит `pg_dump` вместо `app.db`).
+- Внутри `backend`: ночной `pg_dump` в `/data/backups/app-ДАТА.dump` (30 штук) и полный зашифрованный архив на Яндекс.Диск (почта только запасной путь, `docs/backup.md`; внутри `pg_dump`).
 - На хосте: `bash scripts/backup-docker.sh` (таймер: `scripts/install-backup-timer.sh`) делает снимок базы с проверкой, файлы жёсткими ссылками, копию `.env`, складывает в `/var/backups/korean` (14 штук), пишет `backup-status.json` и `backup.prom` для Grafana; `OFFSITE_RSYNC=user@host:/путь` в `.env` отправляет копии на другой сервер.
 - Восстановление базы из `app.dump`: `docker compose stop backend frontend`, `docker compose exec -T postgres pg_restore --clean --if-exists --no-owner -U korean -d korean < app.dump`, `docker compose up -d`. Файлы вернуть в том `app-data`: `docker compose cp ПАПКА/files/. backend:/data/` (потом `docker compose exec -u root backend chown -R node:node /data`).
 - Репетируй восстановление в отдельном проекте (`COMPOSE_PROJECT_NAME=проба`, другие порты в `.env`), а не на боевом.
@@ -58,7 +54,17 @@ Grafana (`admin` и `GRAFANA_PASSWORD` из `.env`) уже настроена: �
 
 ## Данные для тестов и локальной проверки
 
-Тесты (`npm test`) ходят в PostgreSQL по `TEST_DATABASE_URL` (у каждого теста своя схема) и в Redis, Meilisearch по `REDIS_URL`, `MEILISEARCH_URL`. Быстро поднять всё нужное: `docker run -d --name kt-pg -e POSTGRES_PASSWORD=pg -e POSTGRES_DB=korean_test -p 55432:5432 postgres:17-alpine` и аналогично `redis:7.4-alpine`, `getmeili/meilisearch:v1.12` (`MEILI_MASTER_KEY`), для тестов копий нужен `pg_dump` 17+ (`brew install libpq`). Переменные как в `.github/workflows/ci.yml`.
+`npm test` нужны PostgreSQL, Redis, Meilisearch и `pg_dump` 17+ (на macOS `brew install libpq`, путь `/opt/homebrew/opt/libpq/bin`). Настройки как в `.github/workflows/ci.yml`. Поднять временные службы, прогнать, убрать:
+```
+docker run -d --rm --name kt-pg -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=korean_test -p 5432:5432 postgres:17-alpine
+docker run -d --rm --name kt-redis -p 6379:6379 redis:7.4-alpine
+docker run -d --rm --name kt-meili -e MEILI_ENV=development -e MEILI_MASTER_KEY=ci-meilisearch-master-key -p 7700:7700 getmeili/meilisearch:v1.12
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH" DATABASE_URL=postgresql://postgres:postgres@localhost:5432/korean_test TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/korean_test REDIS_URL=redis://localhost:6379 MEILISEARCH_URL=http://localhost:7700 MEILISEARCH_MASTER_KEY=ci-meilisearch-master-key
+npm --prefix backend run db:migrate    # обязательно: иначе тесты сервера падают с «relation … does not exist»
+npm test
+docker stop kt-pg kt-redis kt-meili
+```
+Редкая нестабильность: `tests/reminder-server.test.mjs` (таймеры) иногда падает один раз; перезапусти только его (`node --test tests/reminder-server.test.mjs`), затем весь набор.
 
 ## Свои адреса для сервисов (Grafana, Prometheus, Meilisearch)
 

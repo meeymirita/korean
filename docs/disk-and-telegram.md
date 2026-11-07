@@ -1,6 +1,6 @@
-# Яндекс.Диск, Telegram и вход на 4 часа
+# Яндекс.Диск и вход на 4 часа
 
-Сделано 2026-11-06. Здесь собрано, что где лежит, как устроено и что делать при поломке. Ключи и токены в документ и в репозиторий не вносятся (только имена переменных).
+Сделано 2026-11-06. Здесь собрано, что где лежит на Диске, как устроен вход на 4 часа и что делать при поломке. **Уведомления в Telegram (группа с темами, баннеры, вкладка в кабинете): `docs/telegram.md`.** Ключи и токены в документ и в репозиторий не вносятся (только имена переменных).
 
 ## 1. Переменные (корневой `.env` на сервере, `/var/sites/korean/.env`)
 
@@ -11,11 +11,7 @@
 | `YADISK_TOKEN` | OAuth-токен Яндекса (начинается с `y0__`) с правом `cloud_api:disk.app_folder`. Получить: `https://oauth.yandex.ru/authorize?response_type=token&client_id=<ClientID приложения korean>` и взять значение после `#access_token=`. Client secret для работы не нужен. |
 | `YADISK_ROOT` | папка внутри «Приложения/korean»; **пусто** (всё лежит в корне) |
 | `YADISK_KEEP` | сколько последних копий хранить, по умолчанию 14 |
-| `TELEGRAM_BOT_TOKEN` | токен бота `@yunaYrima_bot` (из @BotFather, перевыпуск командой `/revoke`) |
-| `TELEGRAM_CHAT_ID` | число, чат владельца (узнать: написать боту `/start`, открыть `https://api.telegram.org/bot<токен>/getUpdates`, взять `message.chat.id`) |
-| `TELEGRAM_GROUP_ID` | число `-100…`, группа с темами (форум); бот в ней администратор с правом «Управление темами». Пусто = всё в личный чат; с группой личный чат не используется вовсе (код входа тоже в тему «Вход»), в группе должны быть только владелец и бот |
-| `TELEGRAM_TOPIC_LOGIN`, `_REMIND`, `_DIGEST`, `_LESSON`, `_BACKUP`, `_ALERT` | номера тем группы (Вход 3, Напоминания 9, Подборка слов 11, Созвон 13, Копии 15, Тревоги 17) |
-| `TELEGRAM_BANNER_BASE` | откуда Telegram берёт баннеры, по умолчанию `https://korean.meeymirita.ru` |
+| переменные `TELEGRAM_*` | описаны в `docs/telegram.md` |
 | `OWNER_SESSION_HOURS` | сколько часов живёт вход по токену, по умолчанию 4, `0` выключает |
 | `BACKUP_PASSPHRASE` | пароль шифрования архивов (хранить отдельно от сервера, без него архив не открыть) |
 | `SMTP_*`, `BACKUP_MAIL_TO`, `REMINDER_MAIL_TO` | почта, теперь только запасной путь |
@@ -61,23 +57,13 @@ handle_path /video/* {
 Заменить картинку: положить на Диск в `korean_grammar` файл с тем же именем (`own-<id>.webp`, `lesson-N.webp`, ширина около 1200, формат webp); сменится через 10–20 минут, деплой не нужен.
 Новая картинка к новой карточке: файл в `korean_grammar` и имя в `KEYS`, потом пуш. Картинку «하고» заменили так: PNG → webp через `sharp` (`resize width 1280`, `quality 82`) → в `korean_grammar/own-hago.webp`.
 
-**Уведомления в Telegram (`backend/src/notify/notify.service.ts`).**
-Код входа, напоминание, подборка слов, «Сегодня созвон», тревоги о копиях. Каждое письмо в `backend/src/mail/templates.ts` возвращает и версию для Telegram (поле `tg`: шапка `✳︎ 우리말`, заголовок, текст, врезка, кнопка-ссылка; код входа в `<code>` копируется нажатием).
-Порядок: Telegram; если он не отвечает или не настроен, письмо (нужны `SMTP_*` и адрес). Письма с вложением (архив при запасной почте) идут только по почте.
-Двухфакторная защита с Telegram не просит адрес почты: сохраняется метка `telegram`, на экране входа пишется «Telegram».
-**Группа с темами.** Каждое письмо отдаёт `topic` (`login`, `remind`, `digest`, `lesson`, `backup`, `alert`; тревоги о копиях и «архив слишком большой» идут в `alert`). Если заданы `TELEGRAM_GROUP_ID` и номер темы, сообщение уходит в эту тему (`message_thread_id`) фото-баннером `/tg/tg-<тема>.png` с подписью и кнопкой (подпись до 1000 знаков, длиннее: баннер отдельно, потом текст). Нет баннера на сайте или Telegram его не скачал: уходит обычное текстовое сообщение. Нет номера темы для этого вида: Telegram пропускается, письмо уйдёт на почту (если настроена). Группа не задана: личный чат, как раньше.
-**Анимированные эмодзи.** Bot API разрешает премиум-эмодзи (`<tg-emoji emoji-id="…">`) и иконку на кнопке (`icon_custom_emoji_id`), если у владельца бота есть Telegram Premium. Номера лежат в `TG_CUSTOM_EMOJI` (`templates.ts`, набор `lolityanmur1_by_fStikBot`): белая бабочка у «Копий», фиолетовая у «Подборки слов», котик у «Напоминаний»; у остальных тем обычные сердечки. Внутри тега всегда обычное сердечко темы: его видят те, у кого нет Premium. Telegram не принял эмодзи: `tgRaw` повторяет запрос без них (`stripCustom`). Выключить совсем: `TELEGRAM_CUSTOM_EMOJI=0`. Новый номер узнать: написать сообщение с нужным эмодзи в группу и прочитать `custom_emoji_id` из `getUpdates`.
-**Подборка слов** в Telegram: «Проверь себя», слово жирным, перевод под спойлером (нажми на закрашенное), без значков перед словами.
-Telegram запоминает картинку по адресу, поэтому в адрес баннера добавлен `?v=<BANNER_VERSION>` (`notify.service.ts`): **заменил баннеры в `frontend/public/tg`, увеличь `BANNER_VERSION`**, иначе какое-то время придут старые. Цветной блок-цитаты нет: цвет полосы цитаты Telegram не даёт менять, поэтому заметки и списки идут строками с сердечком темы. Кнопка: сердечко темы в тексте, плюс цвет Telegram (`style`: синяя у входа и созвона, красная у тревог; у остальных обычная). Баннеры (1280×640) лежат в `frontend/public/tg/` (`tg-login.png`, `tg-remind.png`, `tg-digest.png`, `tg-lesson.png`, `tg-backup.png`, `tg-alert.png`) и появляются после деплоя. Номера тем узнать: написать название в каждую тему и прочитать `getUpdates` (поле `message_thread_id`; название темы в нём устаревает после переименования). Оформление: шапка `<сердечко> 우리말 <сердечко>`, линия из чёрточек, заголовок и подпись с сердечком темы (`TG_HEART` в `templates.ts`: вход 💙, напоминания 🩷, подборка 💜, созвон 🩵, копии 🤍, тревоги ❤️). Проверка тем из кабинета: вкладка «Telegram» (`/korean/cabinet?tab=telegram`): у каждой темы кнопка «Пример сообщения» (`POST /api/notify/sample`, настоящий шаблон с выдуманными данными, `sampleMail` в `templates.ts`) и поле для своего текста.
-Очистка из кабинета (вкладка «Telegram», `POST /api/notify/clear`, **только с повторным вводом токена**, `ConfirmService.require`): «Очистить тему» удаляет сообщения, которые сайт отправил в эту тему (номера хранятся в `meta` под ключом `tg:sent:<тема>`, последние 500; твои записи, например закреплённое описание, остаются), «Очистить все темы» удаляет вообще всё во всех темах и в General (перебором номеров от 1 до последнего). Закреплённое сообщение General после полной очистки отправляется заново кнопкой редактора.
-**Сообщение в General** (`TelegramGuide.vue`, `GET/POST /api/notify/guide`, `GET /api/notify/guide/banner`): редактор целого сообщения, текст (разрешённые теги Telegram b, i, u, s, code, a), баннер (файл загружается прямо в Telegram, у нас хранится только `file_id` в `meta.tg:guide`), предпросмотр. Пока свой баннер не загружен, используется стандартный `frontend/public/tg/tg-banner.png` (адрес `/tg/tg-banner.png?v=<BANNER_VERSION>`; если его ещё нет на сайте, сообщение уходит текстом). Под сообщением сами добавляются кнопки-переходы по темам (`https://t.me/c/<группа без -100>/<номер темы>`) с сердечками. «Сохранить и отправить» правит уже отправленное сообщение на месте (`editMessageText`, `editMessageCaption`, `editMessageMedia`), иначе отправляет новое и закрепляет (боту нужно право «Закрепление сообщений»); «Отправить заново» удаляет старое и шлёт новое. С баннером текст не длиннее 1024 знаков.
-Для тестов: `TELEGRAM_DUMP_FILE=путь` вместо отправки пишет JSON в файл.
+**Уведомления в Telegram:** см. `docs/telegram.md`.
 
 **Вход на 4 часа (`backend/src/auth/`).**
 При `OWNER_SESSION_HOURS` > 0 один токен кабинет не открывает: сервер на `POST /api/session` выдаёт сеанс (таблица сессий) на эти часы, дальше каждый запрос идёт с «токен сеанс» (`bearer` в `progress.ts`). Истёк сеанс: сервер отвечает `{error:'session'}`, сайт закрывает доступ с сообщением «сеанс закончился, введите токен снова». С включённой защитой кодом сеанс выдаётся за код и живёт столько же, по истечении сайт просит новый код.
 Гостевые токены не затронуты. Скрипты с голым токеном (`scripts/demo-seed.mjs`, `check-layout.mjs`) не работают на сервере с этой настройкой: для них запускай локальный сервер без `OWNER_SESSION_HOURS` (по умолчанию `0` вне Docker).
 
-**Прочее, сделанное в тот же день.**
+**Прочее.**
 - Из Caddy убрана строка `@assets … immutable`: Caddy навешивал её и на 404/502 во время деплоя, браузеры запоминали ошибку на год. Nuxt сам ставит правильный заголовок на найденные файлы.
 - `frontend/src/plugins/chunk-reload.client.ts`: при ошибке «Failed to fetch dynamically imported module» после выкладки страница один раз перезагружается.
 
@@ -88,18 +74,15 @@ Telegram запоминает картинку по адресу, поэтому
 | в кабинете «Диск ✗» или в Telegram «Копия не легла на Яндекс.Диск» | `YADISK_TOKEN` (проверка: `curl -s -H "Authorization: OAuth $Y" https://cloud-api.yandex.net/v1/disk`, `$Y` из `.env`), место на Диске (112 ГБ), `docker compose logs backend --tail 50 \| grep -i диск` |
 | `/api/video/…` или `/api/pic/grammar/…` отвечает 404 | нет файла или папка названа не так (`korean_video`, `korean_grammar`, в корне, без вложенной папки), не выложен свежий деплой |
 | `/video/…` 404 или не играет | блок `handle_path /video/*` в Caddyfile, `caddy validate`, `systemctl reload caddy`; откат на `Caddyfile.bak2` |
-| уведомление не пришло в Telegram | `getMe` с токеном бота, `TELEGRAM_CHAT_ID`, написан ли боту `/start`; сообщение уйдёт письмом, если настроена почта |
 | после деплоя «500 … dynamically imported module» | старая вкладка; обновить страницу, плагин `chunk-reload` делает это сам |
 | после деплоя пришлось вводить токен | так задумано: сеансы вне срока не живут, а новая сборка перезапускает вход |
 
-Проверить Диск и бота без вывода значений:
+Проверить Диск без вывода значений (бота: `docs/telegram.md`):
 ```
 Y=$(grep '^YADISK_TOKEN=' .env | cut -d= -f2-)
-B=$(grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2-)
 curl -s -H "Authorization: OAuth $Y" https://cloud-api.yandex.net/v1/disk | grep -o '"total_space":[0-9]*'
-curl -s "https://api.telegram.org/bot$B/getMe" | grep -o '"username":"[^"]*"'
 ```
-Проверить, что переменные дошли до контейнера: `docker compose exec backend sh -c 'for v in YADISK_TOKEN TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID; do [ -n "$(printenv $v)" ] && echo "$v задан" || echo "$v ПУСТО"; done'`.
+Проверить, что переменные дошли до контейнера: `docker compose exec backend sh -c 'for v in YADISK_TOKEN TELEGRAM_BOT_TOKEN TELEGRAM_GROUP_ID; do [ -n "$(printenv $v)" ] && echo "$v задан" || echo "$v ПУСТО"; done'`.
 
 ## 5. Где код
 
@@ -108,9 +91,8 @@ curl -s "https://api.telegram.org/bot$B/getMe" | grep -o '"username":"[^"]*"'
 | работа с Диском (загрузка, скачивание, копирование, список, удаление, зеркало, `syncMedia`) | `backend/src/yadisk/yadisk.service.ts` |
 | копии на Диск, чистка старых | `backend/src/admin/backup-archive.service.ts`, `backup-status.controller.ts` |
 | видео, картинки грамматики | `backend/src/video/`, `backend/src/pic/` |
-| Telegram и запасная почта | `backend/src/notify/notify.service.ts`, `backend/src/mail/templates.ts` |
 | сеансы входа | `backend/src/auth/` (`auth.service.ts`, `auth.guard.ts`, `session.controller.ts`, `twofa.service.ts`) |
 | блоки кабинета | `frontend/src/components/cabinet/` (`BackupBlock`, `TwoFaBlock`, `ReminderBlock`, `DigestBlock`, `LessonBlock`), окно входа `frontend/src/components/AuthGate.vue` |
 | список картинок грамматики | `frontend/src/data/korean/grammarPhotos.ts` |
 | загрузка видео с компьютера | `scripts/upload-videos.mjs` (токен из окружения или `.env`) |
-| тесты | `backend/test/yadisk.service.spec.ts`, `notify.service.spec.ts`, `pic.controller.spec.ts`, `tests/owner-session.test.mjs` |
+| тесты | `backend/test/yadisk.service.spec.ts`, `pic.controller.spec.ts`, `tests/owner-session.test.mjs` (Telegram: `docs/telegram.md`) |

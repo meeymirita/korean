@@ -4,7 +4,7 @@ Ubuntu (`root@se-40678`), проект в `/var/sites/korean`, сайт `https:/
 Владелец заходит по SSH сам, Claude доступа не имеет: команды даём текстом, короткие (терминал владельца портит длинные строки), перед правкой конфига просим показать его (`cat`).
 
 ## Как это работает
-Подробно про стек, перенос данных, копии и мониторинг: `docs/docker.md`. Здесь: сервер, Caddy, защита, диагностика.
+Подробно про стек, обновление, копии и мониторинг: `docs/docker.md`. Здесь: сервер, Caddy, защита, диагностика.
 | Что | Как |
 |---|---|
 | Сайт и API | контейнеры `frontend` (`127.0.0.1:3000`) и `backend` (`127.0.0.1:3001`) из `docker-compose.yml`, `restart: unless-stopped` |
@@ -14,7 +14,7 @@ Ubuntu (`root@se-40678`), проект в `/var/sites/korean`, сайт `https:/
 | Docker | Docker Engine и Compose v2 (`docker compose version`) |
 
 ## Обновление
-`cd /var/sites/korean && bash scripts/deploy.sh`. Скрипт отказывается работать при несохранённых правках, делает `git pull --ff-only`, копию базы, собирает образы, запускает изменившиеся службы и ждёт ответа `/api/health` и сайта до 60 секунд. **Если что-то не ответило или сборка упала, возвращает прежнюю версию.**
+**Обычно автоматически:** пуш в `main` → CI → при зелёном CI сам запускается Deploy (GitHub Actions, по SSH выполняет `scripts/deploy.sh`); при красном CI деплоя нет. Вручную: `cd /var/sites/korean && bash scripts/deploy.sh` (или Actions → Deploy → Run workflow). Скрипт отказывается работать при несохранённых правках, делает `git pull --ff-only`, копию базы, собирает образы, запускает изменившиеся службы и ждёт ответа `/api/health` и сайта до 60 секунд. **Если что-то не ответило или сборка упала, возвращает прежнюю версию.**
 Параметры: `--force`, `--no-restart`, `--no-backup`. Telegram-уведомление по желанию: `/etc/korean-deploy.env` с `NOTIFY_TELEGRAM_TOKEN` и `NOTIFY_TELEGRAM_CHAT` (права 600).
 Тест: `tests/deploy.test.mjs`. Диагностика: `docker compose ps`, `docker compose logs --tail 50 backend`, `docker compose logs --tail 50 frontend`, `curl http://127.0.0.1:3001/api/health`; то же без консоли в «Кабинет → Сервисы».
 
@@ -41,28 +41,25 @@ korean.meeymirita.ru {
     request_body {
         max_size 60MB
     }
-    @assets path /_nuxt/*
-    header @assets Cache-Control "public, max-age=31536000, immutable"
     @pages path / /index.html /sitemap.xml /robots.txt /manifest.webmanifest
     header @pages Cache-Control "no-cache"
     handle /api/* {
         reverse_proxy 127.0.0.1:3001
     }
     handle_path /video/* {
-        root * /var/sites/korean-video
-        header Cache-Control "public, max-age=86400"
-        file_server
+        rewrite * /api/video{path}
+        reverse_proxy 127.0.0.1:3001
     }
     handle {
         reverse_proxy 127.0.0.1:3000
     }
 }
 ```
-После правки: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. `/api/*` и `/video/*` должны стоять выше общего `handle`. Content-Security-Policy для сайта пока не включён (см. ниже).
+После правки: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. `/api/*` и `/video/*` должны стоять выше общего `handle`. Content-Security-Policy для сайта пока не включён (см. ниже). Строку `@assets … immutable` не добавляй: Caddy навешивал её и на 404 и 502 во время деплоя, и браузеры запоминали ошибку на год (Nuxt сам ставит нужный заголовок на найденные файлы).
 
 ## Dependabot
 Раз в неделю открывает pull request-ы (`dependabot/...`), CI показывает, ничего ли не сломалось. Крупные обновления (смена первой цифры: TypeScript 7, `@types/node` 26, `actions/checkout` 7) не сливай вслепую;
-мелкие (`minor-and-patch`) обычно безопасны. Слил: на сервере `bash scripts/deploy.sh`. Сомневаешься: закрой, Dependabot предложит снова.
+мелкие (`minor-and-patch`) обычно безопасны. Слил в `main`: выкладка пойдёт сама после зелёного CI. Сомневаешься: закрой, Dependabot предложит снова.
 
 ## Усиление защиты (делает владелец, всё ещё открыто)
 1. **Контейнеры:** приложение работает не от root (пользователь `node`), порты сайта и API слушают только `127.0.0.1`, база, Redis и поиск во внутренней сети Docker без выхода наружу, Docker-сокет доступен только через read-only прокси (`docs/docker.md`). Делать здесь больше нечего.
@@ -70,16 +67,15 @@ korean.meeymirita.ru {
    Nuxt добавляет свои инлайн-скрипты, поэтому проверяй в консоли браузера, что не заблокировано (возможно, понадобится `'unsafe-inline'` в `script-src`).
 3. **Брандмауэр и SSH:** `ufw allow 22,80,443/tcp && ufw enable` (порты 3000 и 3001 наружу не открывать), SSH только по ключу (`PasswordAuthentication no`), `apt install fail2ban`.
 4. **Токен:** длинный случайный, только в `.env` проекта (права 600). Подозрение на утечку: сменить `PROGRESS_TOKEN` в `.env`, `docker compose up -d`, гостевые токены отозвать в кабинете.
-5. **Копии:** ночной `pg_dump` внутри `backend`, копия на хост (`scripts/backup-docker.sh`, таймер) и полный архив на почту: `docs/backup.md`. Копии вне сервера не настроены (`OFFSITE_RSYNC` в `.env`, если понадобится).
+5. **Копии:** ночной `pg_dump` внутри `backend`, копия на хост (`scripts/backup-docker.sh`, таймер) и полный архив на Яндекс.Диск: `docs/backup.md`. Копии вне сервера не настроены (`OFFSITE_RSYNC` в `.env`, если понадобится).
 6. **Обновления системы:** `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades`. Яндекс.Вебмастер и Google Search Console: добавить сайт и `https://korean.meeymirita.ru/sitemap.xml`.
 
 ## Приложение и видео
 - `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` открывается на главной сам один раз за открытое окно браузера (`sessionStorage['demo_auto_shown']`), файл тяжёлый, поэтому в тестах размера он исключён.
-- **Видеоуроки** (44 файла, уроки 1–30 курса 양쌤의 한국어 교실, AV1 + Opus, 7,8 ГБ): `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`, `part2-01.mp4` … `part2-13.mp4`.
-  Сайт берёт файл по подписи карточки («Урок N», `videoOf` в `src/data/korean/course.ts`); нет файла: заглушка. Заливка с Mac:
-  `rsync -avP ~/Movies/Korean-videos/upload/ root@<сервер>:/var/sites/korean-video/` (единственная копия видео у владельца в `~/Movies/Korean-videos/`).
+- **Видеоуроки** (44 файла, уроки 1–30 курса 양쌤의 한국어 교실, AV1 + Opus, 7,8 ГБ) лежат на Яндекс.Диске в папке `korean_video`: `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`, `part2-01.mp4` … `part2-13.mp4`.
+  Сайт берёт файл по подписи карточки («Урок N», `videoOf` в `src/data/korean/course.ts`); нет файла: заглушка. Новое видео: положить на Диск в `korean_video` руками или `node scripts/upload-videos.mjs [папка]` (копия видео у владельца в `~/Movies/Korean-videos/`).
   AV1 не везде играет (Safari, часть iPad); перекодировать: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`.
 
 
 ## Яндекс.Диск, Telegram, вход на 4 часа
-Полностью описано в `docs/disk-and-telegram.md` (переменные, что лежит на Диске, раздача видео через Caddy, уведомления, сеанс входа, поломки).
+Диск, раздача видео через Caddy, сеанс входа, поломки: `docs/disk-and-telegram.md`. Уведомления в Telegram: `docs/telegram.md`.

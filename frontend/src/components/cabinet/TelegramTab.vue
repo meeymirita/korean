@@ -102,7 +102,7 @@ function sample(t: Topic) {
       <div v-if="info && !failed" class="st-block">
         <h3>Telegram: темы группы</h3>
         <p class="st-sub">Каждый вид уведомлений приходит в свою тему группы с баннером и сердечком своего цвета. «Пример сообщения» отправляет настоящее сообщение этой темы с выдуманными данными, ровно такое, как придёт на самом деле. Поле ниже отправляет любой свой текст. В обоих случаях сообщение уходит строго в эту тему, не на почту.</p>
-        <p v-if="!info.group" class="bk-warn">⚠ Группа не подключена: нужны TELEGRAM_BOT_TOKEN и TELEGRAM_GROUP_ID в .env, номера тем TELEGRAM_TOPIC_… (см. docs/disk-and-telegram.md).</p>
+        <p v-if="!info.group" class="bk-warn">⚠ Группа не подключена: нужны TELEGRAM_BOT_TOKEN и TELEGRAM_GROUP_ID в .env, номера тем TELEGRAM_TOPIC_… (см. docs/telegram.md).</p>
         <p class="st-sub">В личный чат бота ничего не приходит: всё, включая код входа, идёт только в темы группы. Следи, чтобы в группе были только ты и бот.</p>
         <div class="tg-tools">
           <button type="button" class="tg-btn danger" :disabled="busy !== '' || !info.group" @click="clear(null)">{{ busy === 'all' ? 'Очищаю…' : 'Очистить все темы' }}</button>
