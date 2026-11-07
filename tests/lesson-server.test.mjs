@@ -29,22 +29,27 @@ describe('сервер: напоминание о созвоне', () => {
     assert.equal((await s.call('GET', '/api/lesson', g.token)).status, 403)
 
     const st = await (await s.call('GET', '/api/lesson', OWNER)).json()
-    assert.deepEqual([st.enabled, st.weekday, st.time, st.mailReady], [false, 6, '19:30', true])
+    assert.deepEqual([st.enabled, st.weekday, st.time, st.callTime, st.mailReady], [false, 6, '19:30', '19:30', true])
 
-    for (const bad of [{ time: '25:00' }, { weekday: 7 }, { weekday: -1 }, { weekday: 'sat' }, { enabled: 'yes' }])
+    for (const bad of [{ time: '25:00' }, { callTime: '25:00' }, { callTime: 'вечером' }, { weekday: 7 }, { weekday: -1 }, { weekday: 'sat' }, { enabled: 'yes' }])
       assert.equal((await s.call('PUT', '/api/lesson', OWNER, bad)).status, 400, JSON.stringify(bad))
     const ok = await (await s.call('PUT', '/api/lesson', OWNER, { enabled: true, weekday: 3, time: '08:30' })).json()
     assert.deepEqual([ok.enabled, ok.weekday, ok.time], [true, 3, '08:30'])
+    // время созвона хранится отдельно от времени сообщения
+    const call = await (await s.call('PUT', '/api/lesson', OWNER, { callTime: '21:15' })).json()
+    assert.deepEqual([call.time, call.callTime], ['08:30', '21:15'])
   })
 
   test('сегодняшний день недели и время пришло: одно письмо, повторов нет', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'ls-b-'))
     const s = await start({ dir, env: env(dir) })
-    await s.call('PUT', '/api/lesson', OWNER, { enabled: true, weekday: today, time: '00:00' })
+    // сообщение приходит в `time` (00:00), а в тексте стоит время созвона `callTime`
+    await s.call('PUT', '/api/lesson', OWNER, { enabled: true, weekday: today, time: '00:00', callTime: '21:45' })
     const rows = await mails(path.join(dir, 'm.jsonl'), 1)
     assert.equal(rows.length, 1)
     assert.equal(rows[0].to, 'me@example.org')
     assert.match(rows[0].subject, /созвон/)
+    assert.match(rows[0].text, /созвон в 21:45/)
     await new Promise(r => setTimeout(r, 600))
     assert.equal((await readFile(path.join(dir, 'm.jsonl'), 'utf8')).trim().split('\n').length, 1)
   })

@@ -14,7 +14,7 @@ export class LessonController {
   }
 
   @Put()
-  set(@Body() body: { enabled?: unknown; weekday?: unknown; time?: unknown }) {
+  set(@Body() body: { enabled?: unknown; weekday?: unknown; time?: unknown; callTime?: unknown }) {
     return this.lesson.set(body ?? {})
   }
 

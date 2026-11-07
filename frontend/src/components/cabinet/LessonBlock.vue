@@ -8,7 +8,10 @@ interface Status {
   enabled: boolean
   /** 0 — воскресенье … 6 — суббота */
   weekday: number
+  /** во сколько приходит сообщение */
   time: string
+  /** во сколько сам созвон */
+  callTime: string
   mailReady: boolean
   to: string
 }
@@ -32,13 +35,13 @@ onMounted(async () => {
   }
 })
 
-async function save(patch: { enabled?: boolean; weekday?: number; time?: string }) {
+async function save(patch: { enabled?: boolean; weekday?: number; time?: string; callTime?: string }) {
   busy.value = true
   try {
     const res = await fetchT('/api/lesson', { method: 'PUT', headers: headers(), body: JSON.stringify(patch) })
     if (!res.ok) throw new Error(res.status === 400 ? 'неверное значение' : `сервер ответил ${res.status}`)
     st.value = (await res.json()) as Status
-    if (patch.enabled !== undefined) toast.ok(st.value.enabled ? `Напомню ${WD_IN[st.value.weekday]} в ${st.value.time}` : 'Напоминание о созвоне выключено')
+    if (patch.enabled !== undefined) toast.ok(st.value.enabled ? `Напомню ${WD_IN[st.value.weekday]} в ${st.value.time}, созвон в ${st.value.callTime}` : 'Напоминание о созвоне выключено')
   } catch (e) {
     toast.error(errText(e))
   } finally {
@@ -60,7 +63,7 @@ async function test() {
   }
 }
 
-/** Обратный отсчёт до ближайшего созвона: считается в браузере от дня недели и времени, обновляется раз в минуту. */
+/** Обратный отсчёт до ближайшего созвона: считается в браузере от дня недели и времени созвона, обновляется раз в минуту. */
 const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
@@ -69,7 +72,7 @@ onMounted(() => {
 onUnmounted(() => clearInterval(timer))
 const countdown = computed(() => {
   if (!st.value) return null
-  const [h, m] = st.value.time.split(':').map(Number)
+  const [h, m] = st.value.callTime.split(':').map(Number)
   const d = new Date(now.value)
   const delta = (st.value.weekday - d.getDay() + 7) % 7
   const target = new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta, h, m, 0, 0)
@@ -87,16 +90,18 @@ const countdown = computed(() => {
 <template>
   <div v-if="st && !failed" class="st-block">
     <h3>Созвон с учителем</h3>
-    <p class="st-sub">В выбранный день недели и время приходит сообщение «Сегодня созвон» — независимо от того, занимался ли уже.</p>
+    <p class="st-sub">В выбранный день недели и в первое время приходит сообщение «Сегодня созвон», в нём стоит время самого созвона (второе поле), независимо от того, занимался ли уже.</p>
     <p v-if="!st.mailReady" class="bk-warn">⚠ Некуда отправлять: подключите Telegram (TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env) или почту (SMTP_*).</p>
     <div class="rm-row">
       <label class="rm-on"><input type="checkbox" :checked="st.enabled" :disabled="busy || !st.mailReady" @change="save({ enabled: ($event.target as HTMLInputElement).checked })" /> Напоминать</label>
-      <label class="rm-time">в <input type="time" :value="st.time" :disabled="busy" aria-label="Время напоминания о созвоне" @change="save({ time: ($event.target as HTMLInputElement).value })" /></label>
+      <label class="rm-time">Прислать в <input type="time" :value="st.time" :disabled="busy" aria-label="Во сколько прислать сообщение о созвоне" @change="save({ time: ($event.target as HTMLInputElement).value })" /></label>
+      <label class="rm-time">Созвон в <input type="time" :value="st.callTime" :disabled="busy" aria-label="Во сколько сам созвон" @change="save({ callTime: ($event.target as HTMLInputElement).value })" /></label>
       <button type="button" class="plain" :disabled="busy || !st.mailReady" @click="test">Отправить пробное</button>
     </div>
     <div class="rm-days" role="group" aria-label="День недели">
       <button v-for="(d, i) in WD" :key="i" type="button" class="daychip" :class="{ on: st.weekday === i }" :disabled="busy" :aria-pressed="st.weekday === i" @click="save({ weekday: i })">{{ d }}</button>
     </div>
+    <p v-if="st.time > st.callTime" class="bk-warn">⚠ Сообщение придёт ({{ st.time }}) позже самого созвона ({{ st.callTime }}). Поставь время сообщения раньше.</p>
     <p v-if="st.enabled" class="st-sub">Ближайший созвон {{ countdown }}.</p>
     <p v-if="st.mailReady" class="st-sub">Придёт: {{ st.to }}.</p>
   </div>
