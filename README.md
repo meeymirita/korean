@@ -76,6 +76,7 @@ docs/       документация по темам
 | [`docs/docker.md`](docs/docker.md) | Docker-стек, запуск, перенос данных, обновление, копии, мониторинг, поиск, поддомены |
 | [`docs/hosting.md`](docs/hosting.md) | боевой сервер: Caddy, защита, диагностика |
 | [`docs/backup.md`](docs/backup.md) | резервные копии и восстановление |
+| [`docs/disk-and-telegram.md`](docs/disk-and-telegram.md) | Яндекс.Диск (копии, картинки, видео), уведомления в Telegram и группу с темами, вход на 4 часа |
 | [`docs/server.md`](docs/server.md) | сервер: модули, таблицы, API, защита, двухфакторный вход |
 | [`docs/data.md`](docs/data.md) | словарь, грамматика, переводы, разбор предложений |
 | [`docs/progress.md`](docs/progress.md) | тренажёры, «Сегодня», прогресс, кабинет, заметки, гости |
