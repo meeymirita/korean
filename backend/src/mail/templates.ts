@@ -11,6 +11,8 @@ export interface Mail {
 
 export const TG_TOPICS = ['login', 'remind', 'digest', 'lesson', 'backup', 'alert'] as const
 export type TgTopic = (typeof TG_TOPICS)[number]
+/** Названия тем группы, как в Telegram и на вкладке «Telegram» кабинета. */
+export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remind: 'Напоминания', digest: 'Подборка слов', lesson: 'Созвон', backup: 'Копии', alert: 'Тревоги' }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
@@ -321,4 +323,10 @@ export function digestMail(o: DigestMailOptions): Mail {
   const sentTg = ns ? `<b>ПРЕДЛОЖЕНИЯ</b>\n<blockquote>${o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}</blockquote>` : ''
   const tg = tgCard({ title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
   return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg, topic: 'digest' }
+}
+
+/** Пробное сообщение в тему группы: свой текст в оформлении писем (шапка ✳︎ 우리말, название темы, текст). */
+export function topicTestMail(topic: TgTopic, text: string): Mail {
+  const tg = tgCard({ title: TG_TOPIC_NAMES[topic], lead: text, foot: 'Пробное сообщение из кабинета (вкладка «Telegram»).' })
+  return { subject: `우리말: проба, тема «${TG_TOPIC_NAMES[topic]}»`, text, html: esc(text), tg, topic }
 }

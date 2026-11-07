@@ -8,6 +8,7 @@ import Avatar from '@/components/Avatar.vue'
 import ImagesTab from '@/components/cabinet/ImagesTab.vue'
 import NotesTab from '@/components/cabinet/NotesTab.vue'
 import NotificationsTab from '@/components/cabinet/NotificationsTab.vue'
+import TelegramTab from '@/components/cabinet/TelegramTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import ReportTab from '@/components/cabinet/ReportTab.vue'
@@ -69,8 +70,8 @@ const shortcuts = useShortcutsStore()
 const q = route.query.tab
 // магазин из кабинета убран: старый адрес ?tab=shop ведёт на страницу магазина
 if (route.query.tab === 'shop') void router.replace('/korean/shop')
-const OWNER_ONLY = ['images', 'report', 'notifications', 'services']
-const TABS = ['repeat', 'week', 'report', 'notes', 'images', 'notifications', 'settings', 'services']
+const OWNER_ONLY = ['images', 'report', 'notifications', 'telegram', 'services']
+const TABS = ['repeat', 'week', 'report', 'notes', 'images', 'notifications', 'telegram', 'settings', 'services']
 const tab = ref<CabinetTab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as CabinetTab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -94,7 +95,7 @@ const tabs = computed<[CabinetTab, string][]>(() => [
   ...(progress.isGuest ? [] : ([['report', 'Отчёт']] as [CabinetTab, string][])),
   ['notes', 'Заметки'],
   // картинки, уведомления и база только у владельца: гость их не видит (сервер тоже отвечает ему 403)
-  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['notifications', 'Уведомления']] as [CabinetTab, string][])),
+  ...(progress.isGuest ? [] : ([['images', 'Картинки'], ['notifications', 'Уведомления'], ['telegram', 'Telegram']] as [CabinetTab, string][])),
   ['settings', 'Настройки'],
   ...(progress.isGuest ? [] : ([['services', 'Сервисы']] as [CabinetTab, string][])),
 ])
@@ -141,6 +142,7 @@ const tabs = computed<[CabinetTab, string][]>(() => [
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <NotificationsTab v-else-if="tab === 'notifications'" />
+    <TelegramTab v-else-if="tab === 'telegram'" />
     <section v-else-if="tab === 'services'" class="cb-services">
       <h2>Сервисы</h2>
       <p class="muted">Состояние контейнеров, журналы и поисковый индекс собраны на отдельной странице. Отсюда можно сразу открыть Grafana, Prometheus и Meilisearch.</p>

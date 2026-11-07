@@ -2,13 +2,13 @@
  * Уведомления: Telegram (основной путь) с запасом на почту.
  * .env: TELEGRAM_BOT_TOKEN (из @BotFather), TELEGRAM_CHAT_ID (число; узнать: написать боту /start и открыть getUpdates).
  * Группа с темами: TELEGRAM_GROUP_ID (число -100…), TELEGRAM_TOPIC_LOGIN|REMIND|DIGEST|LESSON|BACKUP|ALERT (номера тем), каждое уведомление уходит
- * в свою тему с баннером (<TELEGRAM_BANNER_BASE>/tg/tg-<тема>.png, файлы лежат в frontend/public/tg). Код входа остаётся в личном чате, пока не TELEGRAM_LOGIN_TO_GROUP=1.
+ * в свою тему с баннером (<TELEGRAM_BANNER_BASE>/tg/tg-<тема>.png, файлы лежат в frontend/public/tg). С группой личный чат (TELEGRAM_CHAT_ID) не используется вовсе, код входа тоже идёт в тему «Вход».
  * Для тестов: TELEGRAM_DUMP_FILE=путь — сообщения не уходят, а дописываются строками JSON в файл.
  */
 import { Injectable } from '@nestjs/common'
 import { appendFileSync } from 'node:fs'
 import { MailService } from '../mail/mail.service.js'
-import type { Mail } from '../mail/templates.js'
+import { TG_TOPICS, TG_TOPIC_NAMES, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
 
 const plain = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
 
@@ -55,14 +55,14 @@ export class NotifyService {
     throw tgError ?? new Error('некуда отправлять: настройте Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) или почту')
   }
 
-  /** Куда слать: тема группы (если группа и номер темы заданы) или личный чат. Код входа остаётся в личном чате, пока не включён TELEGRAM_LOGIN_TO_GROUP=1. */
+  /** Куда слать: если задана группа, только в тему группы (личный чат бота не используется, даже для кода входа); иначе личный чат. Нет номера темы: не отправляем (запасная почта). */
   private route(m: Mail): { chat_id: string; message_thread_id?: number; banner?: string } | undefined {
     const env = process.env
-    const thread = m.topic ? Number(env[`TELEGRAM_TOPIC_${m.topic.toUpperCase()}`]) : NaN
-    const toGroup = !!env.TELEGRAM_GROUP_ID && Number.isInteger(thread) && thread > 0 && (m.topic !== 'login' || env.TELEGRAM_LOGIN_TO_GROUP === '1')
-    if (toGroup) {
+    if (env.TELEGRAM_GROUP_ID) {
+      const thread = m.topic ? Number(env[`TELEGRAM_TOPIC_${m.topic.toUpperCase()}`]) : NaN
+      if (!Number.isInteger(thread) || thread <= 0) return undefined
       const base = (env.TELEGRAM_BANNER_BASE || 'https://korean.meeymirita.ru').replace(/\/$/, '')
-      return { chat_id: env.TELEGRAM_GROUP_ID!, message_thread_id: thread, banner: `${base}/tg/tg-${m.topic}.png` }
+      return { chat_id: env.TELEGRAM_GROUP_ID, message_thread_id: thread, banner: `${base}/tg/tg-${m.topic}.png` }
     }
     return env.TELEGRAM_CHAT_ID ? { chat_id: env.TELEGRAM_CHAT_ID } : undefined
   }
@@ -83,6 +83,22 @@ export class NotifyService {
       const r = (await res.json().catch(() => ({}))) as { description?: string }
       throw new Error(`Telegram ${res.status}: ${r.description ?? 'ошибка'}`.replace(token!, '***'))
     }
+  }
+
+  /** Темы группы и настроены ли они (для вкладки «Telegram» в кабинете). */
+  topics() {
+    const env = process.env
+    return {
+      group: !!env.TELEGRAM_GROUP_ID && (!!env.TELEGRAM_BOT_TOKEN || !!env.TELEGRAM_DUMP_FILE),
+      topics: TG_TOPICS.map(id => ({ id, name: TG_TOPIC_NAMES[id], ready: Number(env[`TELEGRAM_TOPIC_${id.toUpperCase()}`]) > 0 })),
+    }
+  }
+
+  /** Пробное сообщение строго в тему группы (без запасного пути в личный чат и на почту). Ошибка с пояснением, если тема не настроена или Telegram не принял. */
+  async sendToTopic(topic: TgTopic, text: string) {
+    const m = topicTestMail(topic, text)
+    if (!this.route(m)?.message_thread_id) throw new Error(`тема «${TG_TOPIC_NAMES[topic]}» не настроена: нужны TELEGRAM_GROUP_ID и TELEGRAM_TOPIC_${topic.toUpperCase()} в .env`)
+    await this.sendTelegram(m)
   }
 
   private async sendTelegram(m: Mail) {

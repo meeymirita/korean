@@ -17,6 +17,7 @@ export const CABINET_TABS: Record<string, string> = {
   notes: 'Заметки',
   images: 'Картинки',
   notifications: 'Уведомления',
+  telegram: 'Telegram',
   settings: 'Настройки',
 }
 

@@ -63,7 +63,6 @@ describe('уведомления: Telegram с запасом на почту', (
       vi.stubEnv('TELEGRAM_TOPIC_REMIND', '9')
       vi.stubEnv('TELEGRAM_TOPIC_BACKUP', '15')
       vi.stubEnv('TELEGRAM_TOPIC_ALERT', '17')
-      vi.stubEnv('TELEGRAM_LOGIN_TO_GROUP', '')
       const read = () => readFileSync(file, 'utf8').trim().split('\n').map(l => JSON.parse(l))
       return { n: new NotifyService(mail() as never), read }
     }
@@ -77,14 +76,11 @@ describe('уведомления: Telegram с запасом на почту', (
       expect(sent.reply_markup.inline_keyboard[0][0].url).toBe('https://x.test/korean/quick')
     })
 
-    it('код входа остаётся в личном чате, пока не включён TELEGRAM_LOGIN_TO_GROUP', async () => {
+    it('с группой код входа идёт в тему «Вход», а в личный чат не уходит ничего', async () => {
       const { n, read } = setup()
       await n.send(codeMail('0427', 'login'))
-      expect(read()[0]).toMatchObject({ chat_id: '1' })
-      expect(read()[0].message_thread_id).toBeUndefined()
-      vi.stubEnv('TELEGRAM_LOGIN_TO_GROUP', '1')
-      await n.send(codeMail('0428', 'login'))
-      expect(read()[1]).toMatchObject({ chat_id: '-100500', message_thread_id: 3 })
+      expect(read()).toHaveLength(1)
+      expect(read()[0]).toMatchObject({ chat_id: '-100500', message_thread_id: 3 })
     })
 
     it('тревоги о копиях и обычные копии идут в разные темы', async () => {
@@ -94,11 +90,39 @@ describe('уведомления: Telegram с запасом на почту', (
       expect(read().map(r => r.message_thread_id)).toEqual([17, 15])
     })
 
-    it('без номера темы уведомление идёт в личный чат', async () => {
+    it('без номера темы с группой Telegram пропускается: личный чат не используется, уходит письмо', async () => {
+      const file = path.join(mkdtempSync(path.join(tmpdir(), 'tg-')), 'tg.jsonl')
+      vi.stubEnv('TELEGRAM_DUMP_FILE', file)
+      vi.stubEnv('TELEGRAM_CHAT_ID', '1')
+      vi.stubEnv('TELEGRAM_GROUP_ID', '-100500')
+      vi.stubEnv('TELEGRAM_TOPIC_DIGEST', '')
+      const m = mail(true)
+      await new NotifyService(m as never).send(digestMail({ words: [['a', 'b']], sentences: [], time: '09:00' }), 'a@b.c')
+      expect(() => readFileSync(file, 'utf8')).toThrow()
+      expect(m.send).toHaveBeenCalledOnce()
+    })
+
+    it('проба из кабинета идёт строго в тему', async () => {
       const { n, read } = setup()
-      await n.send(digestMail({ words: [['a', 'b']], sentences: [], time: '09:00' }))
-      expect(read()[0]).toMatchObject({ chat_id: '1' })
-      expect(read()[0].photo).toBeUndefined()
+      await n.sendToTopic('login', 'проверка <b>')
+      const [sent] = read()
+      expect(sent).toMatchObject({ method: 'sendPhoto', chat_id: '-100500', message_thread_id: 3 })
+      expect(sent.caption).toContain('проверка &lt;b&gt;')
+    })
+
+    it('проба в ненастроенную тему даёт понятную ошибку, а не уходит в личный чат', async () => {
+      const { n, read } = setup()
+      await expect(n.sendToTopic('digest', 'x')).rejects.toThrow(/не настроена/)
+      expect(() => read()).toThrow()
+    })
+
+    it('topics() показывает, какие темы подключены', () => {
+      const { n } = setup()
+      vi.stubEnv('TELEGRAM_BOT_TOKEN', 't')
+      const t = n.topics()
+      expect(t.group).toBe(true)
+      expect(t.topics.find(x => x.id === 'remind')?.ready).toBe(true)
+      expect(t.topics.find(x => x.id === 'digest')?.ready).toBe(false)
     })
   })
 })
