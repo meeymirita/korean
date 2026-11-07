@@ -71,9 +71,11 @@ describe('уведомления: Telegram с запасом на почту', (
       const { n, read } = setup()
       await n.send(reminderMail({ site: 'https://x.test' }))
       const [sent] = read()
-      expect(sent).toMatchObject({ method: 'sendPhoto', chat_id: '-100500', message_thread_id: 9, photo: 'https://korean.meeymirita.ru/tg/tg-remind.png' })
+      expect(sent).toMatchObject({ method: 'sendPhoto', chat_id: '-100500', message_thread_id: 9, photo: expect.stringContaining('/tg/tg-remind.png') })
       expect(sent.caption).toContain('우리말')
       expect(sent.reply_markup.inline_keyboard[0][0].url).toBe('https://x.test/korean/quick')
+      expect(sent.reply_markup.inline_keyboard[0][0].text).toBe('🩷 Пять минут')
+      expect(sent.photo).toContain('tg-remind.png?v=')
     })
 
     it('с группой код входа идёт в тему «Вход», а в личный чат не уходит ничего', async () => {
@@ -149,6 +151,17 @@ describe('уведомления: Telegram с запасом на почту', (
     it('пример в ненастроенную тему даёт понятную ошибку', async () => {
       const { n } = setup()
       await expect(n.sendSample('lesson')).rejects.toThrow(/не настроена/)
+    })
+
+    it('цвет кнопки: синяя у созвона, а у остальных цвет даёт сердечко в тексте', () => {
+      expect(sampleMail('lesson').tg?.button).toMatchObject({ style: 'primary', text: '🩵 Открыть кабинет' })
+      expect(sampleMail('digest').tg?.button).toMatchObject({ style: undefined, text: '💜 Повторить на сайте' })
+    })
+
+    it('заметка и списки без цитаты: с сердечком темы', () => {
+      expect(sampleMail('digest').tg?.html).not.toContain('<blockquote>')
+      expect(sampleMail('digest').tg?.html).toContain('💜 <b>안녕하세요</b> — здравствуйте')
+      expect(sampleMail('login').tg?.html).toContain('💙 <i>Если вы не входили')
     })
   })
 })

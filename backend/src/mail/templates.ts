@@ -4,7 +4,7 @@ export interface Mail {
   text: string
   html: string
   /** версия для Telegram: HTML-разметка Telegram (b, i, code, blockquote, a) и кнопка-ссылка под сообщением */
-  tg?: { html: string; button?: { text: string; url: string } }
+  tg?: { html: string; button?: { text: string; url: string; style?: 'primary' | 'success' | 'danger' } }
   /** тема в Telegram-группе (и имя баннера tg-<тема>.png в frontend/public/tg) */
   topic?: TgTopic
 }
@@ -16,6 +16,9 @@ export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remi
 
 /** Сердечко темы: по нему сразу видно, откуда сообщение. */
 export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️' }
+
+/** Цвет кнопки под сообщением: Telegram знает только синюю (primary), зелёную (success) и красную (danger); остальным цвет даёт сердечко в тексте кнопки. */
+const TG_BUTTON_STYLE: Partial<Record<TgTopic, 'primary' | 'success' | 'danger'>> = { login: 'primary', lesson: 'primary', alert: 'danger' }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
@@ -30,10 +33,10 @@ function tgCard(o: { topic: TgTopic; kicker?: string; title: string; lead?: stri
     `${h} <b>${esc(o.title)}</b>`,
     o.lead ? `\n${esc(o.lead)}` : '',
     o.body ? `\n${o.body}` : '',
-    o.note ? `\n<blockquote>${esc(o.note)}</blockquote>` : '',
+    o.note ? `\n${h} <i>${esc(o.note)}</i>` : '',
     `\n<i>${h} ${esc(o.foot)}</i>`,
   ].filter((l, i, a) => l !== '' || (a[i - 1] !== '' && i > 0)).join('\n')
-  return { html, button: o.button }
+  return { html, button: o.button && { ...o.button, text: `${h} ${o.button.text}`, style: TG_BUTTON_STYLE[o.topic] } }
 }
 
 /** Письмо с кодом. login — вход на сайт, enable — подтверждение адреса при включении защиты. */
@@ -326,8 +329,8 @@ export function digestMail(o: DigestMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
-  const wordsTg = nw ? `💜 <b>СЛОВА</b>\n<blockquote>${o.words.map(([k, r]) => `<b>${esc(k)}</b> — ${esc(r)}`).join('\n')}</blockquote>` : ''
-  const sentTg = ns ? `💜 <b>ПРЕДЛОЖЕНИЯ</b>\n<blockquote>${o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}</blockquote>` : ''
+  const wordsTg = nw ? `💜 <b>СЛОВА</b>\n${o.words.map(([k, r]) => `💜 <b>${esc(k)}</b> — ${esc(r)}`).join('\n')}\n` : ''
+  const sentTg = ns ? `💜 <b>ПРЕДЛОЖЕНИЯ</b>\n${o.sentences.map(([k, r]) => `💜 <b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}` : ''
   const tg = tgCard({ topic: 'digest', title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
   return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg, topic: 'digest' }
 }

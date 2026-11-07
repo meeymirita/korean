@@ -10,6 +10,9 @@ import { appendFileSync } from 'node:fs'
 import { MailService } from '../mail/mail.service.js'
 import { TG_TOPICS, TG_TOPIC_NAMES, sampleMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
 
+/** Версия баннеров в адресе: Telegram запоминает картинку по адресу, поэтому при замене файлов в frontend/public/tg число надо увеличить. */
+const BANNER_VERSION = '2'
+
 const plain = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
 
 @Injectable()
@@ -62,12 +65,12 @@ export class NotifyService {
       const thread = m.topic ? Number(env[`TELEGRAM_TOPIC_${m.topic.toUpperCase()}`]) : NaN
       if (!Number.isInteger(thread) || thread <= 0) return undefined
       const base = (env.TELEGRAM_BANNER_BASE || 'https://korean.meeymirita.ru').replace(/\/$/, '')
-      return { chat_id: env.TELEGRAM_GROUP_ID, message_thread_id: thread, banner: `${base}/tg/tg-${m.topic}.png` }
+      return { chat_id: env.TELEGRAM_GROUP_ID, message_thread_id: thread, banner: `${base}/tg/tg-${m.topic}.png?v=${BANNER_VERSION}` }
     }
     return env.TELEGRAM_CHAT_ID ? { chat_id: env.TELEGRAM_CHAT_ID } : undefined
   }
 
-  private async tgCall(method: string, body: object) {
+  private async tgCall(method: string, body: object): Promise<void> {
     const token = process.env.TELEGRAM_BOT_TOKEN
     if (process.env.TELEGRAM_DUMP_FILE) {
       appendFileSync(process.env.TELEGRAM_DUMP_FILE, JSON.stringify(method === 'sendMessage' ? body : { method, ...body }) + '\n')
@@ -81,6 +84,11 @@ export class NotifyService {
     })
     if (!res.ok) {
       const r = (await res.json().catch(() => ({}))) as { description?: string }
+      const kb = (body as { reply_markup?: { inline_keyboard: { style?: string }[][] } }).reply_markup
+      // старый сервер Telegram не знает цвет кнопки: повторяем без него, чтобы сообщение всё равно дошло
+      if (kb?.inline_keyboard.some(row => row.some(b => b.style)) && /style|button/i.test(r.description ?? '')) {
+        return this.tgCall(method, { ...body, reply_markup: { inline_keyboard: kb.inline_keyboard.map(row => row.map(({ style: _s, ...b }) => b)) } })
+      }
       throw new Error(`Telegram ${res.status}: ${r.description ?? 'ошибка'}`.replace(token!, '***'))
     }
   }
@@ -116,7 +124,7 @@ export class NotifyService {
     const to = this.route(m)
     if (!to) throw new Error('Telegram: не задан ни чат, ни группа с темой')
     const text = (m.tg?.html ?? plain(m.text)).slice(0, 4000)
-    const markup = m.tg?.button ? { reply_markup: { inline_keyboard: [[{ text: m.tg.button.text, url: m.tg.button.url }]] } } : {}
+    const markup = m.tg?.button ? { reply_markup: { inline_keyboard: [[{ text: m.tg.button.text, url: m.tg.button.url, ...(m.tg.button.style ? { style: m.tg.button.style } : {}) }]] } } : {}
     const { banner, ...target } = to
     if (banner) {
       try {
