@@ -9,7 +9,7 @@ import { Injectable, Optional } from '@nestjs/common'
 import { Db } from '../db/db.service.js'
 import { appendFileSync } from 'node:fs'
 import { MailService } from '../mail/mail.service.js'
-import { TG_HEART, TG_TOPICS, TG_TOPIC_ABOUT, TG_TOPIC_NAMES, sampleMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
+import { tgButtonFor, TG_HEART, TG_TOPICS, TG_TOPIC_ABOUT, TG_TOPIC_NAMES, sampleMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
 
 /** Версия баннеров в адресе: Telegram запоминает картинку по адресу, поэтому при замене файлов в frontend/public/tg число надо увеличить. */
 const BANNER_VERSION = '2'
@@ -287,8 +287,11 @@ export class NotifyService {
 
   /** Кнопки-переходы под сообщением: по две в ряд, с сердечком темы. */
   private guideMarkup() {
-    const buttons = this.guideTopics().map(({ t, url }) => ({ text: `${TG_HEART[t]} ${TG_TOPIC_NAMES[t]}`, url }))
-    const rows: { text: string; url: string }[][] = []
+    const buttons = this.guideTopics().map(({ t, url }) => {
+      const b = tgButtonFor(t, TG_TOPIC_NAMES[t], url)
+      return { text: b.text, url: b.url, style: b.style, ...(b.iconEmojiId ? { icon_custom_emoji_id: b.iconEmojiId } : {}) }
+    })
+    const rows: (typeof buttons)[] = []
     for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2))
     return { inline_keyboard: rows }
   }

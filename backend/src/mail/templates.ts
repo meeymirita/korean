@@ -27,6 +27,12 @@ const customId = (t: TgTopic) => (process.env.TELEGRAM_CUSTOM_EMOJI === '0' ? un
 /** Сердечко темы: анимированное, если для темы выбрано, с обычным сердечком про запас. */
 const heart = (t: TgTopic) => (customId(t) ? `<tg-emoji emoji-id="${customId(t)}">${TG_HEART[t]}</tg-emoji>` : TG_HEART[t])
 
+/** Кнопка темы: красная, с анимированной иконкой темы, а если её нет, с сердечком темы в тексте (так же кнопки-переходы в General). */
+export function tgButtonFor(topic: TgTopic, text: string, url: string) {
+  const icon = customId(topic)
+  return { text: icon ? text : `${TG_HEART[topic]} ${text}`, url, style: TG_BUTTON_STYLE, iconEmojiId: icon }
+}
+
 /** Что приходит в каждую тему (для закреплённого сообщения в «General»). */
 export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
   login: 'коды для входа в кабинет',
@@ -37,8 +43,8 @@ export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
   alert: 'если что-то сломалось или копия не удалась',
 }
 
-/** Цвет кнопки под сообщением: Telegram знает только синюю (primary), зелёную (success) и красную (danger); остальным цвет даёт сердечко в тексте кнопки. */
-const TG_BUTTON_STYLE: Partial<Record<TgTopic, 'primary' | 'success' | 'danger'>> = { login: 'primary', lesson: 'primary', alert: 'danger' }
+/** Цвет всех кнопок: красная (Telegram знает только синюю primary, зелёную success и красную danger). Решение владельца 2026-11-08. */
+const TG_BUTTON_STYLE = 'danger' as const
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
@@ -56,9 +62,7 @@ function tgCard(o: { topic: TgTopic; kicker?: string; title: string; lead?: stri
     o.note ? `\n${h} <i>${esc(o.note)}</i>` : '',
     `\n<i>${h} ${esc(o.foot)}</i>`,
   ].filter((l, i, a) => l !== '' || (a[i - 1] !== '' && i > 0)).join('\n')
-  const icon = customId(o.topic)
-  // анимированная иконка стоит на кнопке сама, а без неё перед текстом обычное сердечко темы
-  return { html, button: o.button && { ...o.button, text: icon ? o.button.text : `${TG_HEART[o.topic]} ${o.button.text}`, style: TG_BUTTON_STYLE[o.topic], iconEmojiId: icon } }
+  return { html, button: o.button && tgButtonFor(o.topic, o.button.text, o.button.url) }
 }
 
 /** Письмо с кодом. login — вход на сайт, enable — подтверждение адреса при включении защиты. */

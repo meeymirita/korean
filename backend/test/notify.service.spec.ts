@@ -159,9 +159,13 @@ describe('уведомления: Telegram с запасом на почту', (
       await expect(n.sendSample('lesson')).rejects.toThrow(/не настроена/)
     })
 
-    it('цвет кнопки: синяя у созвона, у тем с анимированным эмодзи оно стоит иконкой, у остальных сердечко в тексте', () => {
-      expect(sampleMail('lesson').tg?.button).toMatchObject({ style: 'primary', text: '🩵 Открыть кабинет', iconEmojiId: undefined })
-      expect(sampleMail('digest').tg?.button).toMatchObject({ style: undefined, text: 'Повторить на сайте', iconEmojiId: '5262881392114543892' })
+    it('все кнопки красные; у тем с анимированным эмодзи оно стоит иконкой, у остальных сердечко в тексте', () => {
+      for (const t of TG_TOPICS) {
+        const b = sampleMail(t).tg?.button
+        if (b) expect(b.style).toBe('danger')
+      }
+      expect(sampleMail('lesson').tg?.button).toMatchObject({ style: 'danger', text: '🩵 Открыть кабинет', iconEmojiId: undefined })
+      expect(sampleMail('digest').tg?.button).toMatchObject({ style: 'danger', text: 'Повторить на сайте', iconEmojiId: '5262881392114543892' })
     })
 
     it('подборка: «Проверь себя», слово жирным, перевод под спойлером, без значков перед словами', () => {
@@ -258,7 +262,11 @@ describe('уведомления: Telegram с запасом на почту', (
         const [sent, pin] = read()
         expect(sent).toMatchObject({ method: 'sendPhoto', chat_id: '-100500', parse_mode: 'HTML' })
         expect(sent.photo).toContain('/tg/tg-banner.png?v=')
-        expect(sent.reply_markup.inline_keyboard.flat().map((b: { text: string }) => b.text)).toContain('🩷 Напоминания')
+        const buttons = sent.reply_markup.inline_keyboard.flat() as { text: string; style: string; icon_custom_emoji_id?: string }[]
+        expect(buttons.every(b => b.style === 'danger')).toBe(true)
+        expect(buttons.map(b => b.text)).toContain('💙 Вход')
+        // у «Напоминаний» анимированный котик стоит иконкой, поэтому текст без сердечка
+        expect(buttons.find(b => b.text === 'Напоминания')?.icon_custom_emoji_id).toBe('5262906972939756758')
         expect(pin).toMatchObject({ method: 'pinChatMessage', disable_notification: true })
       })
 
