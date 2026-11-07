@@ -30,4 +30,18 @@ export class NotifyController {
       return { ok: false, message: (e as Error).message.slice(0, 160) }
     }
   }
+
+  /** Настоящее сообщение темы с выдуманными данными. Всегда 200: результат в { ok, message }. */
+  @Post('sample')
+  @HttpCode(200)
+  async sample(@Body() body: { topic?: unknown }) {
+    const topic = body?.topic
+    if (typeof topic !== 'string' || !(TG_TOPICS as readonly string[]).includes(topic)) return { ok: false, message: 'неизвестная тема' }
+    try {
+      await this.notify.sendSample(topic as TgTopic)
+      return { ok: true, message: '' }
+    } catch (e) {
+      return { ok: false, message: (e as Error).message.slice(0, 160) }
+    }
+  }
 }

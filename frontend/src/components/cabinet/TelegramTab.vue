@@ -34,20 +34,30 @@ onMounted(async () => {
   }
 })
 
-async function send(t: Topic) {
-  const text = (texts.value[t.id] ?? '').trim()
-  if (!text) return toast.error('Введите текст.')
+async function call(t: Topic, path: string, payload: object, okText: string) {
   busy.value = t.id
   try {
-    const res = await fetchT('/api/notify/topic', { method: 'POST', headers: headers(), body: JSON.stringify({ topic: t.id, text }) }, 60_000)
+    const res = await fetchT(path, { method: 'POST', headers: headers(), body: JSON.stringify(payload) }, 60_000)
     const r = (await res.json()) as { ok: boolean; message: string }
-    if (r.ok) toast.ok(`Отправлено в тему «${t.name}».`)
+    if (r.ok) toast.ok(okText)
     else toast.error(r.message || 'Не получилось отправить.')
   } catch (e) {
     toast.error('Не получилось: ' + errText(e))
   } finally {
     busy.value = ''
   }
+}
+
+/** Свой текст строго в тему. */
+function send(t: Topic) {
+  const text = (texts.value[t.id] ?? '').trim()
+  if (!text) return toast.error('Введите текст.')
+  return call(t, '/api/notify/topic', { topic: t.id, text }, `Отправлено в тему «${t.name}».`)
+}
+
+/** Настоящее сообщение темы с выдуманными данными. */
+function sample(t: Topic) {
+  return call(t, '/api/notify/sample', { topic: t.id }, `Пример отправлен в тему «${t.name}».`)
 }
 </script>
 
@@ -56,28 +66,27 @@ async function send(t: Topic) {
     <template v-if="progress.unlocked && !progress.isGuest">
       <div v-if="info && !failed" class="st-block">
         <h3>Telegram: темы группы</h3>
-        <p class="st-sub">Каждый вид уведомлений приходит в свою тему группы с баннером. Напиши текст и нажми «Отправить»: он уйдёт строго в эту тему (не на почту), так видно, что тема и баннер настроены верно.</p>
+        <p class="st-sub">Каждый вид уведомлений приходит в свою тему группы с баннером и сердечком своего цвета. «Пример сообщения» отправляет настоящее сообщение этой темы с выдуманными данными, ровно такое, как придёт на самом деле. Поле ниже отправляет любой свой текст. В обоих случаях сообщение уходит строго в эту тему, не на почту.</p>
         <p v-if="!info.group" class="bk-warn">⚠ Группа не подключена: нужны TELEGRAM_BOT_TOKEN и TELEGRAM_GROUP_ID в .env, номера тем TELEGRAM_TOPIC_… (см. docs/disk-and-telegram.md).</p>
         <p class="st-sub">В личный чат бота ничего не приходит: всё, включая код входа, идёт только в темы группы. Следи, чтобы в группе были только ты и бот.</p>
-        <form v-for="t in info.topics" :key="t.id" class="tg-row" @submit.prevent="send(t)">
-          <label :for="'tg-' + t.id"><b>{{ t.name }}</b> <small :class="t.ready ? 'tg-ok' : 'tg-no'">{{ t.ready ? 'тема подключена' : 'номер темы не задан' }}</small></label>
-          <div class="tg-line">
-            <input :id="'tg-' + t.id" v-model="texts[t.id]" type="text" maxlength="900" :disabled="busy !== '' || !t.ready" autocomplete="off" />
-            <button type="submit" class="plain" :disabled="busy !== '' || !t.ready || !info.group">{{ busy === t.id ? 'Отправляю…' : 'Отправить' }}</button>
-          </div>
-        </form>
+        <div class="tg-list">
+          <form v-for="t in info.topics" :key="t.id" class="tg-card" @submit.prevent="send(t)">
+            <div class="tg-top">
+              <b class="tg-name">{{ t.name }}</b>
+              <span class="tg-badge" :class="t.ready ? 'ok' : 'no'">{{ t.ready ? 'тема подключена' : 'номер темы не задан' }}</span>
+            </div>
+            <div class="tg-line">
+              <button type="button" class="tg-btn main" :disabled="busy !== '' || !t.ready || !info.group" @click="sample(t)">{{ busy === t.id ? 'Отправляю…' : 'Пример сообщения' }}</button>
+            </div>
+            <div class="tg-line">
+              <input v-model="texts[t.id]" type="text" maxlength="900" :disabled="busy !== '' || !t.ready" autocomplete="off" :aria-label="'Свой текст в тему «' + t.name + '»'" placeholder="Свой текст" />
+              <button type="submit" class="tg-btn soft" :disabled="busy !== '' || !t.ready || !info.group">Отправить</button>
+            </div>
+          </form>
+        </div>
       </div>
       <p v-else-if="failed" class="cb-empty">Не удалось получить настройки Telegram, попробуйте обновить страницу.</p>
     </template>
     <p v-else class="cb-empty">Telegram доступен после входа по токену владельца.</p>
   </div>
 </template>
-
-<style scoped>
-.tg-row { margin-top: 14px; }
-.tg-row label { display: block; margin-bottom: 6px; }
-.tg-line { display: flex; gap: 10px; flex-wrap: wrap; }
-.tg-line input { flex: 1 1 240px; min-width: 0; }
-.tg-ok { color: var(--ok, #2e8b57); }
-.tg-no { color: var(--muted, #8b8fc4); }
-</style>

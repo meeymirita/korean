@@ -572,3 +572,21 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .shp-claim:disabled { opacity: .5; animation: none; }
 @keyframes shp-pulse { 50% { box-shadow: 0 0 0 5px rgba(157, 180, 255, .3); } }
 @media (prefers-reduced-motion: reduce) { .study .shp-claim { animation: none; } }
+
+/* Вкладка «Telegram» */
+.study .tg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 18px; }
+.study .tg-card { padding: 16px 18px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; }
+.study .tg-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.study .tg-name { font-size: 16px; font-weight: 700; }
+.study .tg-badge { padding: 3px 10px; font-size: 12px; font-weight: 600; border-radius: 999px; color: var(--ink); }
+.study .tg-badge.ok { background: color-mix(in srgb, #3fae7a 22%, transparent); }
+.study .tg-badge.no { background: color-mix(in srgb, #e0627a 22%, transparent); }
+.study .tg-line { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.study .tg-line input { flex: 1 1 180px; min-width: 0; padding: 10px 14px; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.study .tg-line input::placeholder { color: var(--muted); }
+.study .tg-line input:focus-visible { outline: none; border-color: var(--pink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink) 22%, transparent); }
+.study .tg-btn { padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; border: 1px solid transparent; border-radius: 12px; cursor: pointer; transition: filter .15s, transform .15s; }
+.study .tg-btn.main { color: #fff; background: var(--pink); }
+.study .tg-btn.soft { color: var(--ink); background: color-mix(in srgb, var(--pink) 16%, transparent); }
+.study .tg-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.study .tg-btn:disabled { opacity: .5; cursor: default; }

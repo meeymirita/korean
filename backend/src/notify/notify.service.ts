@@ -8,7 +8,7 @@
 import { Injectable } from '@nestjs/common'
 import { appendFileSync } from 'node:fs'
 import { MailService } from '../mail/mail.service.js'
-import { TG_TOPICS, TG_TOPIC_NAMES, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
+import { TG_TOPICS, TG_TOPIC_NAMES, sampleMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
 
 const plain = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
 
@@ -96,8 +96,19 @@ export class NotifyService {
 
   /** Пробное сообщение строго в тему группы (без запасного пути в личный чат и на почту). Ошибка с пояснением, если тема не настроена или Telegram не принял. */
   async sendToTopic(topic: TgTopic, text: string) {
-    const m = topicTestMail(topic, text)
-    if (!this.route(m)?.message_thread_id) throw new Error(`тема «${TG_TOPIC_NAMES[topic]}» не настроена: нужны TELEGRAM_GROUP_ID и TELEGRAM_TOPIC_${topic.toUpperCase()} в .env`)
+    await this.deliverToTopic(topicTestMail(topic, text))
+  }
+
+  /** Настоящее сообщение темы с выдуманными данными, как оно придёт на самом деле. */
+  async sendSample(topic: TgTopic) {
+    await this.deliverToTopic(sampleMail(topic))
+  }
+
+  private async deliverToTopic(m: Mail) {
+    if (!this.route(m)?.message_thread_id) {
+      const t = m.topic!
+      throw new Error(`тема «${TG_TOPIC_NAMES[t]}» не настроена: нужны TELEGRAM_GROUP_ID и TELEGRAM_TOPIC_${t.toUpperCase()} в .env`)
+    }
     await this.sendTelegram(m)
   }
 

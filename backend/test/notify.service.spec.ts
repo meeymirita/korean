@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NotifyService } from '../src/notify/notify.service'
-import { backupMail, codeMail, digestMail, reminderMail } from '../src/mail/templates'
+import { TG_HEART, TG_TOPICS, backupMail, codeMail, digestMail, reminderMail, sampleMail } from '../src/mail/templates'
 
 const mail = (configured = false) => ({ configured: () => configured, send: vi.fn() })
 
@@ -123,6 +123,32 @@ describe('уведомления: Telegram с запасом на почту', (
       expect(t.group).toBe(true)
       expect(t.topics.find(x => x.id === 'remind')?.ready).toBe(true)
       expect(t.topics.find(x => x.id === 'digest')?.ready).toBe(false)
+    })
+
+    it('сообщение каждой темы оформлено сердечком своей темы', () => {
+      for (const t of TG_TOPICS) {
+        const m = sampleMail(t)
+        expect(m.topic).toBe(t)
+        expect(m.tg?.html).toContain(`${TG_HEART[t]} <b>우리말</b> ${TG_HEART[t]}`)
+      }
+      expect(new Set(TG_TOPICS.map(t => TG_HEART[t])).size).toBe(6)
+    })
+
+    it('«Пример сообщения» шлёт настоящий шаблон с выдуманными данными строго в тему', async () => {
+      const { n, read } = setup()
+      vi.stubEnv('TELEGRAM_TOPIC_DIGEST', '11')
+      await n.sendSample('digest')
+      await n.sendSample('login')
+      const [digest, login] = read()
+      expect(digest).toMatchObject({ chat_id: '-100500', message_thread_id: 11 })
+      expect(JSON.stringify(digest)).toContain('안녕하세요')
+      expect(login).toMatchObject({ message_thread_id: 3 })
+      expect(JSON.stringify(login)).toContain('<code>4827</code>')
+    })
+
+    it('пример в ненастроенную тему даёт понятную ошибку', async () => {
+      const { n } = setup()
+      await expect(n.sendSample('lesson')).rejects.toThrow(/не настроена/)
     })
   })
 })

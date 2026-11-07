@@ -14,20 +14,24 @@ export type TgTopic = (typeof TG_TOPICS)[number]
 /** Названия тем группы, как в Telegram и на вкладке «Telegram» кабинета. */
 export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remind: 'Напоминания', digest: 'Подборка слов', lesson: 'Созвон', backup: 'Копии', alert: 'Тревоги' }
 
+/** Сердечко темы: по нему сразу видно, откуда сообщение. */
+export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️' }
+
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
-/** Сообщение Telegram в духе письма: шапка ✳︎ 우리말, заголовок, текст, блок-врезка (розовая полоса письма) и подпись. */
-function tgCard(o: { kicker?: string; title: string; lead?: string; body?: string; note?: string; foot: string; button?: { text: string; url: string } }) {
+/** Сообщение Telegram в духе письма: шапка с сердечками темы, заголовок, текст, врезка и подпись. */
+function tgCard(o: { topic: TgTopic; kicker?: string; title: string; lead?: string; body?: string; note?: string; foot: string; button?: { text: string; url: string } }) {
+  const h = TG_HEART[o.topic]
   const html = [
-    '✳︎ <b>우리말</b>',
-    '━━━━━━━━━━━━━━',
+    `${h} <b>우리말</b> ${h}`,
+    `${h} ─ ─ ─ ─ ─ ─ ─ ─ ${h}`,
     '',
     o.kicker ? `<i>${esc(o.kicker)}</i>` : '',
-    `<b>${esc(o.title)}</b>`,
+    `${h} <b>${esc(o.title)}</b>`,
     o.lead ? `\n${esc(o.lead)}` : '',
     o.body ? `\n${o.body}` : '',
     o.note ? `\n<blockquote>${esc(o.note)}</blockquote>` : '',
-    `\n<i>${esc(o.foot)}</i>`,
+    `\n<i>${h} ${esc(o.foot)}</i>`,
   ].filter((l, i, a) => l !== '' || (a[i - 1] !== '' && i > 0)).join('\n')
   return { html, button: o.button }
 }
@@ -72,6 +76,7 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
 </body></html>`
   const text = `${title} для 우리말: ${code}\n\n${lead}\nКод действует ${minutes} минут и подходит один раз.\n\nЕсли вы не входили на сайт, никому не называйте код и смените токен в файле backend/.env.\n\nЭто служебное письмо платформы 우리말 (korean.meeymirita.ru), отвечать на него не нужно.`
   const tg = tgCard({
+    topic: 'login',
     title,
     lead,
     body: `<b>Ваш код:</b>\n<code>${esc(code)}</code>\n<i>нажмите на код, чтобы скопировать · действует ${minutes} минут, один раз</i>`,
@@ -173,14 +178,16 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
       ? `\n\nКак открыть (терминал в папке с файлом):\n${part ? `1. Склейте все части: ${joinCmd}\n2.` : '1.'} Расшифруйте (спросит пароль BACKUP_PASSPHRASE): ${openCmd}\n${part ? '3.' : '2.'} Посмотрите: ${listCmd}\n${part ? '4.' : '3.'} Распакуйте: ${unpackCmd}\nПосле проверки удалите распакованное: в server.env лежат пароли.`
       : ''
   const text = `${title} (우리말, ${when})\n\n${lead}${textHow}\n\n${alert ? notice : 'Храните пароль архива отдельно от сервера. Подробности: docs/backup.md.'}`
+  const topic: TgTopic = alert || o.kind === 'big' ? 'alert' : 'backup'
   const tg = tgCard({
+    topic,
     kicker: when,
     title,
     lead,
     note: notice,
     foot: 'Служебное сообщение платформы 우리말. Подробности: docs/backup.md.',
   })
-  return { tg, topic: alert || o.kind === 'big' ? 'alert' : 'backup', subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
+  return { tg, topic, subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
 }
 
 export interface ReminderMailOptions {
@@ -221,7 +228,7 @@ export function reminderMail(o: ReminderMailOptions = {}): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Пора заниматься (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nВремя и включение: кабинет, «Настройки».`
-  const tg = tgCard({ title: 'Пора заниматься', lead, foot: 'Время и включение: кабинет, «Настройки».', button: { text: 'Пять минут', url: link } })
+  const tg = tgCard({ topic: 'remind', title: 'Пора заниматься', lead, foot: 'Время и включение: кабинет, «Настройки».', button: { text: 'Пять минут', url: link } })
   return { subject: '우리말: пора заниматься', text, html, tg, topic: 'remind' }
 }
 
@@ -261,7 +268,7 @@ export function lessonMail(o: LessonMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Сегодня созвон (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nДень, время и включение: кабинет, «Уведомления».`
-  const tg = tgCard({ title: 'Сегодня созвон', lead, foot: 'День, время и включение: кабинет, «Уведомления».', button: { text: 'Открыть кабинет', url: link } })
+  const tg = tgCard({ topic: 'lesson', title: 'Сегодня созвон', lead, foot: 'День, время и включение: кабинет, «Уведомления».', button: { text: 'Открыть кабинет', url: link } })
   return { subject: '우리말: сегодня созвон', text, html, tg, topic: 'lesson' }
 }
 
@@ -319,14 +326,36 @@ export function digestMail(o: DigestMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
-  const wordsTg = nw ? `<b>СЛОВА</b>\n<blockquote>${o.words.map(([k, r]) => `<b>${esc(k)}</b> — ${esc(r)}`).join('\n')}</blockquote>` : ''
-  const sentTg = ns ? `<b>ПРЕДЛОЖЕНИЯ</b>\n<blockquote>${o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}</blockquote>` : ''
-  const tg = tgCard({ title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
+  const wordsTg = nw ? `💜 <b>СЛОВА</b>\n<blockquote>${o.words.map(([k, r]) => `<b>${esc(k)}</b> — ${esc(r)}`).join('\n')}</blockquote>` : ''
+  const sentTg = ns ? `💜 <b>ПРЕДЛОЖЕНИЯ</b>\n<blockquote>${o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}</blockquote>` : ''
+  const tg = tgCard({ topic: 'digest', title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
   return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg, topic: 'digest' }
 }
 
-/** Пробное сообщение в тему группы: свой текст в оформлении писем (шапка ✳︎ 우리말, название темы, текст). */
+/** Пробное сообщение в тему группы: свой текст в оформлении писем (шапка с сердечками темы, название темы, текст). */
 export function topicTestMail(topic: TgTopic, text: string): Mail {
-  const tg = tgCard({ title: TG_TOPIC_NAMES[topic], lead: text, foot: 'Пробное сообщение из кабинета (вкладка «Telegram»).' })
+  const tg = tgCard({ topic, title: TG_TOPIC_NAMES[topic], lead: text, foot: 'Пробное сообщение из кабинета (вкладка «Telegram»).' })
   return { subject: `우리말: проба, тема «${TG_TOPIC_NAMES[topic]}»`, text, html: esc(text), tg, topic }
+}
+
+/** Настоящее сообщение темы с выдуманными данными: по кнопке «Пример сообщения» в кабинете видно, как оно придёт на самом деле. */
+export function sampleMail(topic: TgTopic): Mail {
+  switch (topic) {
+    case 'login':
+      return codeMail('4827', 'login')
+    case 'remind':
+      return reminderMail({ streak: 6 })
+    case 'digest':
+      return digestMail({
+        words: [['안녕하세요', 'здравствуйте'], ['감사합니다', 'спасибо'], ['학교', 'школа'], ['친구', 'друг'], ['물', 'вода']],
+        sentences: [['저는 학생이에요.', 'Я студент(ка).'], ['이것은 물이에요.', 'Это вода.']],
+        time: '09:00',
+      })
+    case 'lesson':
+      return lessonMail({ time: '19:30' })
+    case 'backup':
+      return backupMail({ kind: 'test' })
+    case 'alert':
+      return backupMail({ kind: 'disk-fail', detail: 'пример: на Диске закончилось место' })
+  }
 }
