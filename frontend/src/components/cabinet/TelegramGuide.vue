@@ -19,8 +19,10 @@ const published = ref(false)
 const loaded = ref(false)
 const busy = ref(false)
 const file = ref<File | null>(null)
-/** показанный баннер: выбранный файл или тот, что уже отправлен (скачан у сервера) */
-const shown = ref('')
+/** баннер по умолчанию (public/tg/tg-banner.png): пока свой не загружен */
+const DEFAULT_BANNER = '/tg/tg-banner.png'
+/** показанный баннер: выбранный файл, уже отправленный (скачан у сервера) или стандартный */
+const shown = ref(DEFAULT_BANNER)
 let serverUrl = ''
 let pickedUrl = ''
 
@@ -62,11 +64,11 @@ function dropPick() {
   if (pickedUrl) URL.revokeObjectURL(pickedUrl)
   pickedUrl = ''
   file.value = null
-  shown.value = serverUrl
+  shown.value = serverUrl || DEFAULT_BANNER
 }
 
-const withBanner = computed(() => hasBanner.value || !!file.value)
-const limit = computed(() => (withBanner.value ? 1024 : 4000))
+/** баннер у сообщения есть всегда (свой или стандартный), поэтому текст не длиннее 1024 знаков */
+const limit = computed(() => 1024)
 const visible = computed(() => text.value.replace(/<[^>]*>/g, '').length)
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -117,17 +119,17 @@ async function publish(mode: 'send' | 'new') {
       <div class="tg-col">
         <label class="tg-label" for="tg-guide-text">Текст сообщения</label>
         <textarea id="tg-guide-text" v-model="text" rows="12" :disabled="busy" spellcheck="false"></textarea>
-        <div class="tg-count" :class="{ over: visible > limit }">знаков: {{ visible }} из {{ limit }}{{ withBanner ? ' (с баннером короче)' : '' }}</div>
+        <div class="tg-count" :class="{ over: visible > limit }">знаков: {{ visible }} из {{ limit }} (у сообщения с баннером Telegram разрешает не больше)</div>
         <p class="st-sub">Можно: <code>&lt;b&gt;жирный&lt;/b&gt;</code>, <code>&lt;i&gt;курсив&lt;/i&gt;</code>, <code>&lt;a href="https://…"&gt;ссылка&lt;/a&gt;</code>, <code>&lt;code&gt;код&lt;/code&gt;</code>. Сердечки и любые значки можно вставлять прямо в текст.</p>
         <div class="tg-line">
           <label class="tg-btn soft tg-file">
-            {{ hasBanner || file ? 'Заменить баннер' : 'Выбрать баннер' }}
+            {{ hasBanner || file ? 'Заменить баннер' : 'Загрузить свой баннер' }}
             <input type="file" accept="image/jpeg,image/png,image/webp" :disabled="busy" @change="pick" />
           </label>
           <button v-if="file" type="button" class="tg-btn soft" :disabled="busy" @click="dropPick">Не менять баннер</button>
           <button type="button" class="tg-btn soft" :disabled="busy" @click="text = defaultText">Сбросить текст</button>
         </div>
-        <p class="st-sub">Баннер: JPG, PNG или WebP до 8 МБ, лучше 1280×640. Он загружается прямо в Telegram, на сайте файл не хранится. Без баннера придёт только текст.</p>
+        <p class="st-sub">Баннер: JPG, PNG или WebP до 8 МБ, лучше 1280×640. Он загружается прямо в Telegram, на сайте файл не хранится. Пока свой не загружен, используется стандартный баннер (tg-banner.png).</p>
         <div class="tg-line">
           <button type="button" class="tg-btn main" :disabled="busy || !group" @click="publish('send')">{{ busy ? 'Отправляю…' : 'Сохранить и отправить' }}</button>
           <button type="button" class="tg-btn soft" :disabled="busy || !group" @click="publish('new')">Отправить заново</button>
@@ -137,8 +139,7 @@ async function publish(mode: 'send' | 'new') {
       <div class="tg-col">
         <div class="tg-label">Так будет выглядеть</div>
         <div class="tg-bubble">
-          <img v-if="shown" :src="shown" alt="Баннер сообщения" />
-          <div v-else class="tg-nobanner">баннер не выбран</div>
+          <img :src="shown" alt="Баннер сообщения" />
           <div class="tg-bubble-text" v-html="preview"></div>
           <div class="tg-bubble-btns">
             <span v-for="t in topics.filter(x => x.ready)" :key="t.id">{{ HEART[t.id] }} {{ t.name }}</span>

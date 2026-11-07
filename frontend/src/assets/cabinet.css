@@ -606,7 +606,6 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .tg-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
 .study .tg-bubble { max-width: 400px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
 .study .tg-bubble img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; }
-.study .tg-nobanner { display: grid; place-items: center; aspect-ratio: 2 / 1; font-size: 13px; color: var(--muted); background: color-mix(in srgb, var(--pink) 8%, transparent); }
 .study .tg-bubble-text { padding: 12px 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .study .tg-bubble-text a { color: var(--pink); text-decoration: underline; }
 .study .tg-bubble-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px 10px; }

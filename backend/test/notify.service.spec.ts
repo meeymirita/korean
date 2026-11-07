@@ -202,7 +202,7 @@ describe('уведомления: Telegram с запасом на почту', (
         expect(store.get('tg:sent:remind')).toBe('[]')
       })
 
-      it('General: текст по умолчанию со ссылками на темы, без баннера уходит текстом и закрепляется', async () => {
+      it('General: текст по умолчанию со ссылками на темы, баннер по умолчанию tg-banner.png, сообщение закрепляется', async () => {
         const { n, read } = withDb()
         const st = await n.guideState()
         expect(st.hasBanner).toBe(false)
@@ -210,7 +210,8 @@ describe('уведомления: Telegram с запасом на почту', (
         const r = await n.publishGuide({ text: st.text })
         expect(r).toMatchObject({ edited: false, pinned: true })
         const [sent, pin] = read()
-        expect(sent).toMatchObject({ chat_id: '-100500', parse_mode: 'HTML' })
+        expect(sent).toMatchObject({ method: 'sendPhoto', chat_id: '-100500', parse_mode: 'HTML' })
+        expect(sent.photo).toContain('/tg/tg-banner.png?v=')
         expect(sent.reply_markup.inline_keyboard.flat().map((b: { text: string }) => b.text)).toContain('🩷 Напоминания')
         expect(pin).toMatchObject({ method: 'pinChatMessage', disable_notification: true })
       })
@@ -220,7 +221,7 @@ describe('уведомления: Telegram с запасом на почту', (
         await n.publishGuide({ text: 'первый' })
         const r = await n.publishGuide({ text: 'второй' })
         expect(r.edited).toBe(true)
-        expect(read().at(-1)).toMatchObject({ method: 'editMessageText', text: 'второй' })
+        expect(read().at(-1)).toMatchObject({ method: 'editMessageCaption', caption: 'второй' })
         expect((await n.guideState()).text).toBe('второй')
       })
 
@@ -241,7 +242,6 @@ describe('уведомления: Telegram с запасом на почту', (
 
       it('General: слишком длинный текст с баннером отклоняется', async () => {
         const { n } = withDb()
-        await n.publishGuide({ text: 'a', file: { buffer: Buffer.from('x'), mimetype: 'image/png' } })
         await expect(n.publishGuide({ text: 'я'.repeat(1100) })).rejects.toThrow(/1024/)
       })
     })

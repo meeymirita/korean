@@ -307,7 +307,9 @@ export class NotifyService {
     const text = o.text.trim()
     if (!text) throw new Error('введите текст сообщения')
     const st = await this.guideLoad()
-    const wantPhoto = !!o.file || !!st.fileId
+    // свой баннер не загружен: берём tg-banner.png с сайта (frontend/public/tg)
+    const defaultBanner = `${(process.env.TELEGRAM_BANNER_BASE || 'https://korean.meeymirita.ru').replace(/\/$/, '')}/tg/tg-banner.png?v=${BANNER_VERSION}`
+    const wantPhoto = true
     const visible = text.replace(/<[^>]*>/g, '').length
     if (visible > (wantPhoto ? 1024 : 4000)) throw new Error(wantPhoto ? `с баннером текст не длиннее 1024 знаков, сейчас ${visible}` : `текст не длиннее 4000 знаков, сейчас ${visible}`)
     const reply_markup = this.guideMarkup()
@@ -347,13 +349,21 @@ export class NotifyService {
     let r: TgResult
     let next: GuideState
     if (wantPhoto) {
-      r = o.file
-        ? await this.tgRaw('sendPhoto', form({ chat_id: chat, caption: text, parse_mode: 'HTML', reply_markup: markup }, 'photo'))
-        : await this.tgRaw('sendPhoto', { chat_id: chat, photo: st.fileId, caption: text, parse_mode: 'HTML', reply_markup })
-      next = { ...st, kind: 'photo', fileId: fileIdOf(r) ?? st.fileId }
+      try {
+        r = o.file
+          ? await this.tgRaw('sendPhoto', form({ chat_id: chat, caption: text, parse_mode: 'HTML', reply_markup: markup }, 'photo'))
+          : await this.tgRaw('sendPhoto', { chat_id: chat, photo: st.fileId ?? defaultBanner, caption: text, parse_mode: 'HTML', reply_markup })
+        next = { ...st, kind: 'photo', fileId: fileIdOf(r) ?? st.fileId }
+      } catch (e) {
+        if (o.file || st.fileId) throw e
+        // баннера по умолчанию ещё нет на сайте (до выкладки): отправляем одним текстом
+        console.error('Telegram: баннер по умолчанию не ушёл, шлю текстом:', (e as Error).message)
+        r = await this.tgRaw('sendMessage', { chat_id: chat, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, reply_markup })
+        next = { ...st, kind: 'text' }
+      }
     } else {
-      r = await this.tgRaw('sendMessage', { chat_id: chat, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, reply_markup })
-      next = { ...st, kind: 'text' }
+      r = undefined
+      next = { ...st }
     }
     const id = typeof r === 'object' && r ? r.message_id : undefined
     if (st.messageId) await this.tgCall('deleteMessage', { chat_id: chat, message_id: st.messageId }).catch(() => undefined)
