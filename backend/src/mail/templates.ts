@@ -27,7 +27,7 @@ const customId = (t: TgTopic) => (process.env.TELEGRAM_CUSTOM_EMOJI === '0' ? un
 /** Сердечко темы: анимированное, если для темы выбрано, с обычным сердечком про запас. */
 const heart = (t: TgTopic) => (customId(t) ? `<tg-emoji emoji-id="${customId(t)}">${TG_HEART[t]}</tg-emoji>` : TG_HEART[t])
 
-/** Кнопка темы: красная, с анимированной иконкой темы, а если её нет, с сердечком темы в тексте (так же кнопки-переходы в General). */
+/** Кнопка темы: синяя, с анимированной иконкой темы, а если её нет, с сердечком темы в тексте (так же кнопки-переходы в General). */
 export function tgButtonFor(topic: TgTopic, text: string, url: string) {
   const icon = customId(topic)
   return { text: icon ? text : `${TG_HEART[topic]} ${text}`, url, style: TG_BUTTON_STYLE, iconEmojiId: icon }
@@ -43,8 +43,8 @@ export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
   alert: 'если что-то сломалось или копия не удалась',
 }
 
-/** Цвет всех кнопок: красная (Telegram знает только синюю primary, зелёную success и красную danger). Решение владельца 2026-11-08. */
-const TG_BUTTON_STYLE = 'danger' as const
+/** Цвет всех кнопок: синяя (Telegram знает только синюю primary, зелёную success и красную danger). Решение владельца 2026-11-08. */
+const TG_BUTTON_STYLE = 'primary' as const
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
