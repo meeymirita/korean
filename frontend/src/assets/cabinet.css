@@ -590,3 +590,24 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .tg-btn.soft { color: var(--ink); background: color-mix(in srgb, var(--pink) 16%, transparent); }
 .study .tg-btn:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
 .study .tg-btn:disabled { opacity: .5; cursor: default; }
+.study .tg-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.study .tg-btn.danger { color: var(--ink); background: color-mix(in srgb, #e0627a 20%, transparent); border-color: color-mix(in srgb, #e0627a 45%, transparent); }
+.study .tg-guide { margin-top: 22px; padding: 18px 20px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; }
+.study .tg-guide h4 { margin: 0 0 4px; font-size: 18px; font-weight: 700; }
+.study .tg-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; margin-top: 14px; align-items: start; }
+@media (max-width: 860px) { .study .tg-editor { grid-template-columns: minmax(0, 1fr); } }
+.study .tg-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.study .tg-guide textarea { width: 100%; padding: 12px 14px; font: inherit; font-size: 14px; line-height: 1.5; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; resize: vertical; }
+.study .tg-guide textarea:focus-visible { outline: none; border-color: var(--pink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink) 22%, transparent); }
+.study .tg-count { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+.study .tg-count.over { color: #d0405e; font-weight: 700; }
+.study .tg-guide code { padding: 1px 6px; font-size: 12.5px; background: color-mix(in srgb, var(--pink) 12%, transparent); border-radius: 6px; }
+.study .tg-file { display: inline-block; position: relative; overflow: hidden; }
+.study .tg-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+.study .tg-bubble { max-width: 400px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.study .tg-bubble img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; }
+.study .tg-nobanner { display: grid; place-items: center; aspect-ratio: 2 / 1; font-size: 13px; color: var(--muted); background: color-mix(in srgb, var(--pink) 8%, transparent); }
+.study .tg-bubble-text { padding: 12px 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.study .tg-bubble-text a { color: var(--pink); text-decoration: underline; }
+.study .tg-bubble-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px 10px; }
+.study .tg-bubble-btns span { padding: 8px 6px; font-size: 13px; font-weight: 600; text-align: center; background: color-mix(in srgb, var(--pink) 14%, transparent); border-radius: 10px; }

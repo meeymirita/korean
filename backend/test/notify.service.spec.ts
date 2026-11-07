@@ -163,5 +163,87 @@ describe('уведомления: Telegram с запасом на почту', (
       expect(sampleMail('digest').tg?.html).toContain('💜 <b>안녕하세요</b> — здравствуйте')
       expect(sampleMail('login').tg?.html).toContain('💙 <i>Если вы не входили')
     })
+
+    describe('очистка и General', () => {
+      const withDb = () => {
+        const { read } = setup()
+        const store = new Map<string, string>()
+        const db = { getMeta: async (k: string) => store.get(k), setMeta: async (k: string, v: string) => void store.set(k, v) }
+        return { n: new NotifyService(mail() as never, db as never), read, store }
+      }
+
+      it('номера отправленных в тему сообщений запоминаются, тема чистится только ими', async () => {
+        const { n, read, store } = withDb()
+        await n.send(reminderMail({ site: 'https://x.test' }))
+        await n.send(reminderMail({ site: 'https://x.test' }))
+        expect(JSON.parse(store.get('tg:sent:remind')!)).toHaveLength(2)
+        const before = read().length
+        const removed = await n.clearTopic('remind')
+        expect(removed).toBe(2)
+        expect(read().slice(before)[0]).toMatchObject({ method: 'deleteMessages', chat_id: '-100500' })
+        expect(store.get('tg:sent:remind')).toBe('[]')
+      })
+
+      it('пустая тема: удалять нечего, запросов нет', async () => {
+        const { n, read } = withDb()
+        expect(await n.clearTopic('digest')).toBe(0)
+        expect(() => read()).toThrow()
+      })
+
+      it('очистка всей группы удаляет номера от 1 до последнего и обнуляет записи тем', async () => {
+        const { n, read, store } = withDb()
+        await n.send(reminderMail({ site: 'https://x.test' }))
+        const removed = await n.clearAll()
+        const rows = read()
+        const del = rows.filter(r => r.method === 'deleteMessages')
+        expect(del.length).toBeGreaterThan(0)
+        expect(del[0].message_ids[0]).toBe(1)
+        expect(removed).toBeGreaterThan(0)
+        expect(store.get('tg:sent:remind')).toBe('[]')
+      })
+
+      it('General: текст по умолчанию со ссылками на темы, без баннера уходит текстом и закрепляется', async () => {
+        const { n, read } = withDb()
+        const st = await n.guideState()
+        expect(st.hasBanner).toBe(false)
+        expect(st.text).toContain('https://t.me/c/500/9')
+        const r = await n.publishGuide({ text: st.text })
+        expect(r).toMatchObject({ edited: false, pinned: true })
+        const [sent, pin] = read()
+        expect(sent).toMatchObject({ chat_id: '-100500', parse_mode: 'HTML' })
+        expect(sent.reply_markup.inline_keyboard.flat().map((b: { text: string }) => b.text)).toContain('🩷 Напоминания')
+        expect(pin).toMatchObject({ method: 'pinChatMessage', disable_notification: true })
+      })
+
+      it('General: повторная отправка правит сообщение на месте, а не шлёт новое', async () => {
+        const { n, read } = withDb()
+        await n.publishGuide({ text: 'первый' })
+        const r = await n.publishGuide({ text: 'второй' })
+        expect(r.edited).toBe(true)
+        expect(read().at(-1)).toMatchObject({ method: 'editMessageText', text: 'второй' })
+        expect((await n.guideState()).text).toBe('второй')
+      })
+
+      it('General: новый баннер загружается файлом, а потом используется file_id; «заново» удаляет старое', async () => {
+        const { n, read } = withDb()
+        const file = { buffer: Buffer.from('png'), mimetype: 'image/png' }
+        await n.publishGuide({ text: 'с баннером', file })
+        const up = read().find(r => r.method === 'sendPhoto')
+        expect(up.form.photo).toMatchObject({ file: 'banner.png', type: 'image/png' })
+        expect((await n.guideState()).hasBanner).toBe(true)
+        await n.publishGuide({ text: 'без нового файла' })
+        expect(read().at(-1)).toMatchObject({ method: 'editMessageCaption', caption: 'без нового файла' })
+        await n.publishGuide({ text: 'заново', forceNew: true })
+        const rows = read()
+        expect(rows.some(r => r.method === 'deleteMessage')).toBe(true)
+        expect(rows.filter(r => r.method === 'sendPhoto').at(-1)).toMatchObject({ photo: expect.stringMatching(/^f\d+$/), caption: 'заново' })
+      })
+
+      it('General: слишком длинный текст с баннером отклоняется', async () => {
+        const { n } = withDb()
+        await n.publishGuide({ text: 'a', file: { buffer: Buffer.from('x'), mimetype: 'image/png' } })
+        await expect(n.publishGuide({ text: 'я'.repeat(1100) })).rejects.toThrow(/1024/)
+      })
+    })
   })
 })

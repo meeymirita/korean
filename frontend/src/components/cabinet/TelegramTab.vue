@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import TelegramGuide from '@/components/cabinet/TelegramGuide.vue'
+import { askTokenDo } from '@/composables/useConfirm'
 import { errText, fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
@@ -48,6 +50,39 @@ async function call(t: Topic, path: string, payload: object, okText: string) {
   }
 }
 
+/** Очистка опасна: окно просит ввести токен ещё раз, и только потом сервер удаляет сообщения. Ошибка остаётся внутри окна. */
+async function clear(t: Topic | null) {
+  let removed = 0
+  const done = await askTokenDo(
+    t
+      ? {
+          title: `Очистить тему «${t.name}»?`,
+          text: 'Удалятся сообщения, которые сайт отправил в эту тему. Твои записи, например закреплённое описание, останутся. Введи свой токен, чтобы подтвердить.',
+          ok: 'Очистить тему',
+        }
+      : {
+          title: 'Очистить все темы?',
+          text: 'Удалятся все сообщения во всех темах и в General, вместе с закреплёнными описаниями. Темы останутся. Отменить нельзя. Введи свой токен, чтобы подтвердить.',
+          ok: 'Очистить всё',
+        },
+    async token => {
+      if (!/^[\x20-\x7e]+$/.test(token)) throw new Error('неверный токен подтверждения')
+      busy.value = t?.id ?? 'all'
+      try {
+        const res = await fetchT('/api/notify/clear', { method: 'POST', headers: { ...headers(), 'X-Confirm-Token': token }, body: JSON.stringify({ topic: t?.id ?? 'all' }) }, 120_000)
+        if (res.status === 403) throw new Error('неверный токен подтверждения')
+        if (res.status === 429) throw new Error('слишком много попыток, подождите несколько минут')
+        const r = (await res.json()) as { ok: boolean; message: string; removed: number }
+        if (!r.ok) throw new Error(r.message || 'не получилось очистить')
+        removed = r.removed
+      } finally {
+        busy.value = ''
+      }
+    },
+  )
+  if (done) toast.ok(t ? `Тема «${t.name}» очищена, удалено сообщений: ${removed}.` : `Все темы очищены, обработано сообщений: ${removed}.`)
+}
+
 /** Свой текст строго в тему. */
 function send(t: Topic) {
   const text = (texts.value[t.id] ?? '').trim()
@@ -69,6 +104,11 @@ function sample(t: Topic) {
         <p class="st-sub">Каждый вид уведомлений приходит в свою тему группы с баннером и сердечком своего цвета. «Пример сообщения» отправляет настоящее сообщение этой темы с выдуманными данными, ровно такое, как придёт на самом деле. Поле ниже отправляет любой свой текст. В обоих случаях сообщение уходит строго в эту тему, не на почту.</p>
         <p v-if="!info.group" class="bk-warn">⚠ Группа не подключена: нужны TELEGRAM_BOT_TOKEN и TELEGRAM_GROUP_ID в .env, номера тем TELEGRAM_TOPIC_… (см. docs/disk-and-telegram.md).</p>
         <p class="st-sub">В личный чат бота ничего не приходит: всё, включая код входа, идёт только в темы группы. Следи, чтобы в группе были только ты и бот.</p>
+        <div class="tg-tools">
+          <button type="button" class="tg-btn danger" :disabled="busy !== '' || !info.group" @click="clear(null)">{{ busy === 'all' ? 'Очищаю…' : 'Очистить все темы' }}</button>
+        </div>
+        <p class="st-sub">«Очистить» просит токен ещё раз: удаляются сообщения в темах и в General.</p>
+        <TelegramGuide :group="info.group" :topics="info.topics" />
         <div class="tg-list">
           <form v-for="t in info.topics" :key="t.id" class="tg-card" @submit.prevent="send(t)">
             <div class="tg-top">
@@ -77,6 +117,7 @@ function sample(t: Topic) {
             </div>
             <div class="tg-line">
               <button type="button" class="tg-btn main" :disabled="busy !== '' || !t.ready || !info.group" @click="sample(t)">{{ busy === t.id ? 'Отправляю…' : 'Пример сообщения' }}</button>
+              <button type="button" class="tg-btn danger" :disabled="busy !== '' || !t.ready || !info.group" @click="clear(t)">Очистить тему</button>
             </div>
             <div class="tg-line">
               <input v-model="texts[t.id]" type="text" maxlength="900" :disabled="busy !== '' || !t.ready" autocomplete="off" :aria-label="'Свой текст в тему «' + t.name + '»'" placeholder="Свой текст" />

@@ -17,6 +17,16 @@ export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remi
 /** Сердечко темы: по нему сразу видно, откуда сообщение. */
 export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️' }
 
+/** Что приходит в каждую тему (для закреплённого сообщения в «General»). */
+export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
+  login: 'коды для входа в кабинет',
+  remind: 'пора позаниматься',
+  digest: 'слова и предложения на повторение',
+  lesson: 'напоминание про урок с Лерой',
+  backup: 'отчёты о резервных копиях',
+  alert: 'если что-то сломалось или копия не удалась',
+}
+
 /** Цвет кнопки под сообщением: Telegram знает только синюю (primary), зелёную (success) и красную (danger); остальным цвет даёт сердечко в тексте кнопки. */
 const TG_BUTTON_STYLE: Partial<Record<TgTopic, 'primary' | 'success' | 'danger'>> = { login: 'primary', lesson: 'primary', alert: 'danger' }
 
