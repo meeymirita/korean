@@ -42,7 +42,7 @@ bash scripts/init-env.sh            # создаёт .env со случайны�
 docker compose up -d --build        # сайт http://127.0.0.1:3000, API http://127.0.0.1:3001
 ```
 
-Токен входа лежит в `.env` (`PROGRESS_TOKEN`). Перенос данных старого сайта, копии, мониторинг и поддомены: [`docs/docker.md`](docs/docker.md).
+Токен входа лежит в `.env` (`PROGRESS_TOKEN`). Копии, мониторинг и поддомены: [`docs/docker.md`](docs/docker.md).
 
 Разработка без Docker для сайта: Node 22.18+ или 24.12+, PostgreSQL, Redis (по желанию):
 

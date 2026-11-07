@@ -27,7 +27,7 @@
 ## Таблицы базы
 `meta` (очки, профиль, настройки, метки), `answers` (каждый ответ, `detail` JSON `{q, a, y}`), `words` (статистика слова), `days`, `study_time`, `guests` (хэши токенов),
 `notes`, `images`, `plans`, `plan_files`, `today_sets`, `sessions` (сеансы после кода из письма), `site_images`, `coin_log` (уникальный `ref` против двойных выплат), `nb_items` (прежняя «Тетрадь», раздел убран 2026-11-05, данные в базе сохранены и ничем не используются), `events` (последние 2000).
-Структуру меняют только миграцией Prisma (`npm --prefix backend run db:dev`, потом тест на копии данных), руками базу трогать не нужно. Старую SQLite-базу в PostgreSQL переносит `backend/scripts/sqlite-to-postgres.mjs` (с сверкой, `docs/docker.md`).
+Структуру меняют только миграцией Prisma (`npm --prefix backend run db:dev`, потом тест на копии данных), руками базу трогать не нужно. Перенос со старой SQLite выполнен 2026-11-05, его скрипты удалены (остались в истории git, `docs/docker.md`).
 
 ## API
 Все запросы с `Authorization: Bearer токен`, кроме `/api/health`, `GET /api/public/*` и чтения `/api/site-images`. Роли: владелец делает всё; гость получает пустые ответы,

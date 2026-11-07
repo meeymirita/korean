@@ -20,7 +20,7 @@
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in korean-ДАТА.tar.gz.enc -out korean.tar.gz
 tar -xzf korean.tar.gz
 ```
-Части сначала склей: `cat korean-ДАТА.tar.gz.enc.part* > korean-ДАТА.tar.gz.enc`. Неверный пароль: `bad decrypt`. Внутри `app.dump`, `server.env` (это `.env` проекта), `manifest.txt`, `backup.md`, `docker.md`, `uploads`, `docs`, `thumbs`, `site`, `public`. Архивы, сделанные до перехода на Docker, содержат `app.db` (SQLite): их переносит `scripts/import-dump.sh` (`docs/docker.md`).
+Части сначала склей: `cat korean-ДАТА.tar.gz.enc.part* > korean-ДАТА.tar.gz.enc`. Неверный пароль: `bad decrypt`. Внутри `app.dump`, `server.env` (это `.env` проекта), `manifest.txt`, `backup.md`, `docker.md`, `uploads`, `docs`, `thumbs`, `site`, `public`.
 Проверить базу, не трогая сайт: `pg_restore --list app.dump | head`.
 После проверки **удали распакованное** (в `server.env` токен и пароли).
 
