@@ -5,7 +5,12 @@ export interface Mail {
   html: string
   /** версия для Telegram: HTML-разметка Telegram (b, i, code, blockquote, a) и кнопка-ссылка под сообщением */
   tg?: { html: string; button?: { text: string; url: string } }
+  /** тема в Telegram-группе (и имя баннера tg-<тема>.png в frontend/public/tg) */
+  topic?: TgTopic
 }
+
+export const TG_TOPICS = ['login', 'remind', 'digest', 'lesson', 'backup', 'alert'] as const
+export type TgTopic = (typeof TG_TOPICS)[number]
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
@@ -71,7 +76,7 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
     note: 'Если вы не входили на сайт, никому не называйте код и смените токен в файле backend/.env.',
     foot: 'Служебное сообщение платформы 우리말 (korean.meeymirita.ru).',
   })
-  return { subject: `${title}: ${code}`, text, html, tg }
+  return { subject: `${title}: ${code}`, text, html, tg, topic: 'login' }
 }
 
 export interface BackupMailOptions {
@@ -173,7 +178,7 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
     note: notice,
     foot: 'Служебное сообщение платформы 우리말. Подробности: docs/backup.md.',
   })
-  return { tg, subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
+  return { tg, topic: alert || o.kind === 'big' ? 'alert' : 'backup', subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
 }
 
 export interface ReminderMailOptions {
@@ -215,7 +220,7 @@ export function reminderMail(o: ReminderMailOptions = {}): Mail {
 </body></html>`
   const text = `Пора заниматься (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nВремя и включение: кабинет, «Настройки».`
   const tg = tgCard({ title: 'Пора заниматься', lead, foot: 'Время и включение: кабинет, «Настройки».', button: { text: 'Пять минут', url: link } })
-  return { subject: '우리말: пора заниматься', text, html, tg }
+  return { subject: '우리말: пора заниматься', text, html, tg, topic: 'remind' }
 }
 
 export interface LessonMailOptions {
@@ -255,7 +260,7 @@ export function lessonMail(o: LessonMailOptions): Mail {
 </body></html>`
   const text = `Сегодня созвон (우리말)\n\n${lead}\n\nОткрыть: ${link}\n\nДень, время и включение: кабинет, «Уведомления».`
   const tg = tgCard({ title: 'Сегодня созвон', lead, foot: 'День, время и включение: кабинет, «Уведомления».', button: { text: 'Открыть кабинет', url: link } })
-  return { subject: '우리말: сегодня созвон', text, html, tg }
+  return { subject: '우리말: сегодня созвон', text, html, tg, topic: 'lesson' }
 }
 
 export interface DigestMailOptions {
@@ -315,5 +320,5 @@ export function digestMail(o: DigestMailOptions): Mail {
   const wordsTg = nw ? `<b>СЛОВА</b>\n<blockquote>${o.words.map(([k, r]) => `<b>${esc(k)}</b> — ${esc(r)}`).join('\n')}</blockquote>` : ''
   const sentTg = ns ? `<b>ПРЕДЛОЖЕНИЯ</b>\n<blockquote>${o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}</blockquote>` : ''
   const tg = tgCard({ title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
-  return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg }
+  return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg, topic: 'digest' }
 }
