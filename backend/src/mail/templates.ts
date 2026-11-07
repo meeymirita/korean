@@ -4,7 +4,7 @@ export interface Mail {
   text: string
   html: string
   /** версия для Telegram: HTML-разметка Telegram (b, i, code, blockquote, a) и кнопка-ссылка под сообщением */
-  tg?: { html: string; button?: { text: string; url: string; style?: 'primary' | 'success' | 'danger' } }
+  tg?: { html: string; button?: { text: string; url: string; style?: 'primary' | 'success' | 'danger'; iconEmojiId?: string } }
   /** тема в Telegram-группе (и имя баннера tg-<тема>.png в frontend/public/tg) */
   topic?: TgTopic
 }
@@ -16,6 +16,16 @@ export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remi
 
 /** Сердечко темы: по нему сразу видно, откуда сообщение. */
 export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️' }
+
+/**
+ * Анимированные (премиум) эмодзи тем из набора lolityanmur1_by_fStikBot: белая бабочка у «Копий», фиолетовая у «Подборки слов», котик у «Напоминаний».
+ * Показываются, пока у владельца бота есть Telegram Premium (правило Bot API); у остальных видно обычное сердечко темы. Выключить: TELEGRAM_CUSTOM_EMOJI=0.
+ */
+export const TG_CUSTOM_EMOJI: Partial<Record<TgTopic, string>> = { backup: '5262671930854486540', digest: '5262881392114543892', remind: '5262906972939756758' }
+
+const customId = (t: TgTopic) => (process.env.TELEGRAM_CUSTOM_EMOJI === '0' ? undefined : TG_CUSTOM_EMOJI[t])
+/** Сердечко темы: анимированное, если для темы выбрано, с обычным сердечком про запас. */
+const heart = (t: TgTopic) => (customId(t) ? `<tg-emoji emoji-id="${customId(t)}">${TG_HEART[t]}</tg-emoji>` : TG_HEART[t])
 
 /** Что приходит в каждую тему (для закреплённого сообщения в «General»). */
 export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
@@ -34,7 +44,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt
 
 /** Сообщение Telegram в духе письма: шапка с сердечками темы, заголовок, текст, врезка и подпись. */
 function tgCard(o: { topic: TgTopic; kicker?: string; title: string; lead?: string; body?: string; note?: string; foot: string; button?: { text: string; url: string } }) {
-  const h = TG_HEART[o.topic]
+  const h = heart(o.topic)
   const html = [
     `${h} <b>우리말</b> ${h}`,
     `${h} ─ ─ ─ ─ ─ ─ ─ ─ ${h}`,
@@ -46,7 +56,9 @@ function tgCard(o: { topic: TgTopic; kicker?: string; title: string; lead?: stri
     o.note ? `\n${h} <i>${esc(o.note)}</i>` : '',
     `\n<i>${h} ${esc(o.foot)}</i>`,
   ].filter((l, i, a) => l !== '' || (a[i - 1] !== '' && i > 0)).join('\n')
-  return { html, button: o.button && { ...o.button, text: `${h} ${o.button.text}`, style: TG_BUTTON_STYLE[o.topic] } }
+  const icon = customId(o.topic)
+  // анимированная иконка стоит на кнопке сама, а без неё перед текстом обычное сердечко темы
+  return { html, button: o.button && { ...o.button, text: icon ? o.button.text : `${TG_HEART[o.topic]} ${o.button.text}`, style: TG_BUTTON_STYLE[o.topic], iconEmojiId: icon } }
 }
 
 /** Письмо с кодом. login — вход на сайт, enable — подтверждение адреса при включении защиты. */
@@ -339,9 +351,10 @@ export function digestMail(o: DigestMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
-  const wordsTg = nw ? `💜 <b>СЛОВА</b>\n${o.words.map(([k, r]) => `💜 <b>${esc(k)}</b> — ${esc(r)}`).join('\n')}\n` : ''
-  const sentTg = ns ? `💜 <b>ПРЕДЛОЖЕНИЯ</b>\n${o.sentences.map(([k, r]) => `💜 <b>${esc(k)}</b>\n<i>${esc(r)}</i>`).join('\n\n')}` : ''
-  const tg = tgCard({ topic: 'digest', title: 'Подборка на сегодня', lead, body: [wordsTg, sentTg].filter(Boolean).join('\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
+  // Telegram: «Проверь себя»: слово жирным, перевод под спойлером (сначала вспомни, потом нажми), без значков перед словами
+  const wordsTg = o.words.map(([k, r]) => `<b>${esc(k)}</b> — <tg-spoiler>${esc(r)}</tg-spoiler>`).join('\n')
+  const sentTg = o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<tg-spoiler>${esc(r)}</tg-spoiler>`).join('\n\n')
+  const tg = tgCard({ topic: 'digest', title: 'Проверь себя', lead: 'Вспомни перевод, потом нажми на закрашенное.', body: [wordsTg, sentTg].filter(Boolean).join('\n\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
   return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg, topic: 'digest' }
 }
 

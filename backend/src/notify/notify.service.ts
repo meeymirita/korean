@@ -14,6 +14,16 @@ import { TG_HEART, TG_TOPICS, TG_TOPIC_ABOUT, TG_TOPIC_NAMES, sampleMail, topicT
 /** Версия баннеров в адресе: Telegram запоминает картинку по адресу, поэтому при замене файлов в frontend/public/tg число надо увеличить. */
 const BANNER_VERSION = '2'
 
+/** Без анимированных эмодзи: тег tg-emoji заменяется обычным символом внутри него, иконки кнопок убираются. */
+const stripCustom = (v: unknown): unknown =>
+  typeof v === 'string'
+    ? v.replace(/<tg-emoji emoji-id="\d+">([^<]*)<\/tg-emoji>/g, '$1')
+    : Array.isArray(v)
+      ? v.map(stripCustom)
+      : v && typeof v === 'object'
+        ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== 'icon_custom_emoji_id').map(([k, x]) => [k, stripCustom(x)]))
+        : v
+
 type TgResult = { message_id?: number; photo?: { file_id: string }[]; file_path?: string } | true | undefined
 
 const plain = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
@@ -104,6 +114,10 @@ export class NotifyService {
       if (kb?.inline_keyboard.some(row => row.some(b => b.style)) && /style|button/i.test(r.description ?? '')) {
         return this.tgRaw(method, { ...body, reply_markup: { inline_keyboard: kb.inline_keyboard.map(row => row.map(({ style: _s, ...b }) => b)) } })
       }
+      // анимированные эмодзи не приняты (нет Premium у владельца и т.п.): повторяем с обычными сердечками
+      if (!(body instanceof FormData) && /emoji|entit/i.test(r.description ?? '') && /tg-emoji|icon_custom_emoji_id/.test(JSON.stringify(body))) {
+        return this.tgRaw(method, stripCustom(body) as object)
+      }
       throw new Error(`Telegram ${res.status}: ${r.description ?? 'ошибка'}`.replace(token!, '***'))
     }
     const ok = (await res.json().catch(() => ({}))) as { result?: TgResult }
@@ -147,7 +161,7 @@ export class NotifyService {
     const to = this.route(m)
     if (!to) throw new Error('Telegram: не задан ни чат, ни группа с темой')
     const text = (m.tg?.html ?? plain(m.text)).slice(0, 4000)
-    const markup = m.tg?.button ? { reply_markup: { inline_keyboard: [[{ text: m.tg.button.text, url: m.tg.button.url, ...(m.tg.button.style ? { style: m.tg.button.style } : {}) }]] } } : {}
+    const markup = m.tg?.button ? { reply_markup: { inline_keyboard: [[{ text: m.tg.button.text, url: m.tg.button.url, ...(m.tg.button.style ? { style: m.tg.button.style } : {}), ...(m.tg.button.iconEmojiId ? { icon_custom_emoji_id: m.tg.button.iconEmojiId } : {}) }]] } } : {}
     const { banner, ...target } = to
     const sent: number[] = []
     const keep = (id?: number) => {

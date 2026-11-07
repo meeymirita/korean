@@ -74,7 +74,8 @@ describe('уведомления: Telegram с запасом на почту', (
       expect(sent).toMatchObject({ method: 'sendPhoto', chat_id: '-100500', message_thread_id: 9, photo: expect.stringContaining('/tg/tg-remind.png') })
       expect(sent.caption).toContain('우리말')
       expect(sent.reply_markup.inline_keyboard[0][0].url).toBe('https://x.test/korean/quick')
-      expect(sent.reply_markup.inline_keyboard[0][0].text).toBe('🩷 Пять минут')
+      // у «Напоминаний» анимированный котик стоит иконкой на кнопке, поэтому текст без сердечка
+      expect(sent.reply_markup.inline_keyboard[0][0]).toMatchObject({ text: 'Пять минут', icon_custom_emoji_id: '5262906972939756758' })
       expect(sent.photo).toContain('tg-remind.png?v=')
     })
 
@@ -131,7 +132,9 @@ describe('уведомления: Telegram с запасом на почту', (
       for (const t of TG_TOPICS) {
         const m = sampleMail(t)
         expect(m.topic).toBe(t)
-        expect(m.tg?.html).toContain(`${TG_HEART[t]} <b>우리말</b> ${TG_HEART[t]}`)
+        const fallback = TG_HEART[t]
+        // сердечко темы: обычное или анимированное (с этим же сердечком про запас внутри тега)
+        expect(m.tg?.html).toMatch(new RegExp(`(<tg-emoji emoji-id="\\d+">${fallback}</tg-emoji>|${fallback}) <b>우리말</b>`))
       }
       expect(new Set(TG_TOPICS.map(t => TG_HEART[t])).size).toBe(6)
     })
@@ -141,9 +144,12 @@ describe('уведомления: Telegram с запасом на почту', (
       vi.stubEnv('TELEGRAM_TOPIC_DIGEST', '11')
       await n.sendSample('digest')
       await n.sendSample('login')
-      const [digest, login] = read()
-      expect(digest).toMatchObject({ chat_id: '-100500', message_thread_id: 11 })
-      expect(JSON.stringify(digest)).toContain('안녕하세요')
+      const rows = read()
+      const login = rows.at(-1)
+      expect(rows.filter(r => r.message_thread_id === 11).length).toBeGreaterThan(0)
+      expect(rows.every(r => r.chat_id === '-100500')).toBe(true)
+      // подборка длинная: баннер и текст могут уйти двумя сообщениями, слова есть в одном из них
+      expect(JSON.stringify(rows.filter(r => r.message_thread_id === 11))).toContain('안녕하세요')
       expect(login).toMatchObject({ message_thread_id: 3 })
       expect(JSON.stringify(login)).toContain('<code>4827</code>')
     })
@@ -153,15 +159,55 @@ describe('уведомления: Telegram с запасом на почту', (
       await expect(n.sendSample('lesson')).rejects.toThrow(/не настроена/)
     })
 
-    it('цвет кнопки: синяя у созвона, а у остальных цвет даёт сердечко в тексте', () => {
-      expect(sampleMail('lesson').tg?.button).toMatchObject({ style: 'primary', text: '🩵 Открыть кабинет' })
-      expect(sampleMail('digest').tg?.button).toMatchObject({ style: undefined, text: '💜 Повторить на сайте' })
+    it('цвет кнопки: синяя у созвона, у тем с анимированным эмодзи оно стоит иконкой, у остальных сердечко в тексте', () => {
+      expect(sampleMail('lesson').tg?.button).toMatchObject({ style: 'primary', text: '🩵 Открыть кабинет', iconEmojiId: undefined })
+      expect(sampleMail('digest').tg?.button).toMatchObject({ style: undefined, text: 'Повторить на сайте', iconEmojiId: '5262881392114543892' })
     })
 
-    it('заметка и списки без цитаты: с сердечком темы', () => {
-      expect(sampleMail('digest').tg?.html).not.toContain('<blockquote>')
-      expect(sampleMail('digest').tg?.html).toContain('💜 <b>안녕하세요</b> — здравствуйте')
+    it('подборка: «Проверь себя», слово жирным, перевод под спойлером, без значков перед словами', () => {
+      const html = sampleMail('digest').tg!.html
+      expect(html).not.toContain('<blockquote>')
+      expect(html).toContain('<b>안녕하세요</b> — <tg-spoiler>здравствуйте</tg-spoiler>')
+      expect(html).toContain('<b>저는 학생이에요.</b>\n<tg-spoiler>Я студент(ка).</tg-spoiler>')
+      expect(html).toContain('Проверь себя')
       expect(sampleMail('login').tg?.html).toContain('💙 <i>Если вы не входили')
+    })
+
+    it('анимированные эмодзи можно выключить TELEGRAM_CUSTOM_EMOJI=0: остаются обычные сердечки', () => {
+      vi.stubEnv('TELEGRAM_CUSTOM_EMOJI', '0')
+      const m = sampleMail('digest')
+      expect(m.tg?.html).not.toContain('tg-emoji')
+      expect(m.tg?.html).toContain('💜 <b>우리말</b> 💜')
+      expect(m.tg?.button).toMatchObject({ text: '💜 Повторить на сайте', iconEmojiId: undefined })
+    })
+
+    it('Telegram не принял анимированные эмодзи: повтор с обычными сердечками и без иконки кнопки', async () => {
+      vi.stubEnv('TELEGRAM_DUMP_FILE', '')
+      vi.stubEnv('TELEGRAM_BOT_TOKEN', 'x')
+      vi.stubEnv('TELEGRAM_CHAT_ID', '')
+      vi.stubEnv('TELEGRAM_GROUP_ID', '-100500')
+      vi.stubEnv('TELEGRAM_TOPIC_REMIND', '9')
+      const bodies: string[] = []
+      const fetchMock = vi.fn(async (_url: string, init: { body: string }) => {
+        bodies.push(init.body)
+        // Telegram отказывает, пока в запросе есть анимированные эмодзи или иконка кнопки
+        return /tg-emoji|icon_custom_emoji_id/.test(init.body)
+          ? ({ ok: false, status: 400, json: async () => ({ description: "Bad Request: can't parse entities: custom emoji" }) } as Response)
+          : ({ ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 7 } }) } as Response)
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        await new NotifyService(mail() as never).send(reminderMail({ site: 'https://x.test' }))
+      } finally {
+        vi.unstubAllGlobals()
+      }
+      const first = bodies[0]!
+      const last = bodies.at(-1)!
+      expect(first).toContain('tg-emoji')
+      expect(first).toContain('icon_custom_emoji_id')
+      expect(last).not.toContain('tg-emoji')
+      expect(last).not.toContain('icon_custom_emoji_id')
+      expect(last).toContain('🩷')
     })
 
     describe('очистка и General', () => {
