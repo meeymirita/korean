@@ -42,6 +42,7 @@ export default defineNuxtConfig({
       meta: [
         { name: 'theme-color', content: '#fbf8ff' },
         { name: 'yandex-verification', content: '7e91f055e8c3fe9f' },
+        { name: 'google-site-verification', content: 'gmPNUAXLfo28woGDW-c9NAMEAXEOm15RIeGPajRfETA' },
         { name: 'color-scheme', content: 'light' },
         { name: 'format-detection', content: 'telephone=no' },
         { property: 'og:type', content: 'website' },
