@@ -31,7 +31,6 @@
 .game .item.rec .mk{display:inline-flex;align-items:center}
 .game .item .recbest{font-size:12px;font-weight:600;color:var(--accent-ink,var(--ink));white-space:nowrap}
 .game .empty{color:var(--muted);font-size:13px;padding:14px 4px}
-.game .modes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .game .chip{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:7px 13px;font-size:13px;white-space:nowrap}
 .game .chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .game .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px 20px 20px;box-shadow:var(--shadow);min-height:420px;position:relative}

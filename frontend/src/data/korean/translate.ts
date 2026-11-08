@@ -8,6 +8,21 @@ export const TRANSLATE_DIRS: { id: TranslateDir; label: string }[] = [
   { id: 'mix', label: 'Вперемешку' },
 ]
 
+/** Уровни по длине предложения (считаются слоги хангыля): до 6 (177 предложений), 7–8 (180), 9 и больше (197). */
+export type TranslateLevel = 'any' | 'easy' | 'medium' | 'hard'
+export const TRANSLATE_LEVELS: { id: TranslateLevel; label: string; hint: string; min: number; max: number }[] = [
+  { id: 'any', label: 'Любой', hint: 'Предложения любой длины', min: 0, max: Infinity },
+  { id: 'easy', label: 'Простой', hint: 'Короткие: до 6 слогов', min: 0, max: 6 },
+  { id: 'medium', label: 'Средний', hint: 'Средние: 7–8 слогов', min: 7, max: 8 },
+  { id: 'hard', label: 'Сложный', hint: 'Длинные: от 9 слогов', min: 9, max: Infinity },
+]
+const syllablesIn = (ko: string) => ko.replace(/[^가-힣]/g, '').length
+const inLevel = (ko: string, level: TranslateLevel) => {
+  const l = TRANSLATE_LEVELS.find(x => x.id === level)!
+  const n = syllablesIn(ko)
+  return n >= l.min && n <= l.max
+}
+
 const PAIRS = Object.entries(TRANSLATIONS).filter(([ko, ru]) => ko && ru)
 
 /** Неверные варианты: предложения похожей длины (чтобы ответ не угадывался по размеру), без повторов и без самого ответа. */
@@ -22,10 +37,10 @@ function distractors(idx: number, side: 0 | 1, count = 3): string[] {
     .slice(0, count)
 }
 
-/** Набор «переведи предложение целиком» в одну или обе стороны. Номера заданий подряд. */
-export function translateTasks(dir: TranslateDir = 'mix', n = 10): Task[] {
+/** Набор «переведи предложение целиком» в одну или обе стороны, предложения выбранной длины. Номера заданий подряд. */
+export function translateTasks(dir: TranslateDir = 'mix', n = 10, level: TranslateLevel = 'any'): Task[] {
   const out: Task[] = []
-  for (const idx of shuffle(PAIRS.map((_, i) => i))) {
+  for (const idx of shuffle(PAIRS.map((_, i) => i).filter(i => inLevel(PAIRS[i]![0], level)))) {
     if (out.length >= n) break
     const toRu = dir === 'ko-ru' || (dir === 'mix' && Math.random() < 0.5)
     const [ko, ru] = PAIRS[idx]!

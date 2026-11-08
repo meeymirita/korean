@@ -2,7 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { translateTasks, TRANSLATE_DIRS } = await load('/src/data/korean/translate.ts')
+const { translateTasks, TRANSLATE_DIRS, TRANSLATE_LEVELS } = await load('/src/data/korean/translate.ts')
 const { TRANSLATIONS } = await load('/src/data/korean/translations.ts')
 after(close)
 
@@ -46,5 +46,27 @@ describe('перевод предложений', () => {
   test('вопросы в одном наборе не повторяются', () => {
     const t = translateTasks('mix', 10)
     assert.equal(new Set(t.map(x => x.prompt)).size, t.length)
+  })
+})
+
+describe('перевод предложений: уровни по длине', () => {
+  const syl = ko => ko.replace(/[^가-힣]/g, '').length
+  test('четыре уровня: любой, простой, средний, сложный', () => {
+    assert.deepEqual(TRANSLATE_LEVELS.map(l => l.id), ['any', 'easy', 'medium', 'hard'])
+  })
+  test('предложения задания укладываются в длину уровня, серия полная', () => {
+    for (const l of TRANSLATE_LEVELS.filter(x => x.id !== 'any')) {
+      const tasks = translateTasks('mix', 10, l.id)
+      assert.equal(tasks.length, 10, l.id)
+      for (const t of tasks) {
+        const n = syl(t.sentence)
+        assert.ok(n >= l.min && n <= l.max, `${l.id}: ${t.sentence} (${n})`)
+      }
+    }
+  })
+  test('на каждый уровень хватает предложений', () => {
+    for (const l of TRANSLATE_LEVELS.filter(x => x.id !== 'any')) {
+      assert.ok(Object.keys(TRANSLATIONS).filter(k => syl(k) >= l.min && syl(k) <= l.max).length >= 30, l.id)
+    }
   })
 })

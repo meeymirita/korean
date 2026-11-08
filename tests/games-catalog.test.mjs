@@ -54,3 +54,10 @@ test('группы по разделам грамматики: каждая иг
   const all = GAME_GROUPS.flatMap(g => g.games.map(x => x.id))
   assert.equal(new Set(all).size, all.length)
 })
+
+test('игры: кнопки «Микс» в строке игры больше нет, режимы выбираются в каталоге', () => {
+  const markup = readFileSync(new URL('../frontend/src/game/markup.html', import.meta.url), 'utf8')
+  const engine = readFileSync(new URL('../frontend/src/game/engine.ts', import.meta.url), 'utf8')
+  assert.ok(!markup.includes('id="modes"'))
+  assert.ok(!engine.includes('drawModes'))
+})

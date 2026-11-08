@@ -38,9 +38,8 @@ const progress = useProgressStore()
 onMounted(() => document.body.classList.add('on-game-home'))
 onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
 const bgStyle = { '--gx-bg': `url(${bg})` }
-/** Кнопки режимов игры стоят в своей строке; «← К списку игр», название и кнопки страницы вынесены в общую шапку-строку `.gh-back` (у тренажёров и игр движка одна и та же). */
+/** «← К списку игр», название и кнопки страницы вынесены в общую строку `.gh-back` (у тренажёров и игр движка одна и та же). */
 const markup = markupRaw
-  .replace('<div class="modes" id="modes"></div>', '<div class="gh-modesrow"><div class="modes" id="modes"></div></div>')
   .replace('CAT_SLEEP', catSleep).replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
@@ -301,11 +300,9 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 /* поиск (sw-btn) и кнопки шапки (gx-tools) стоят в одну линию: сначала поиск, справа за ним кнопки */
 body.on-game-home .study.sky .sw-btn { top: 52px; right: 236px; }
 @media (max-width: 860px) { body.on-game-home .study.sky .sw-btn { top: auto; right: auto; } }
-.gh .gh-back { display: flex; align-items: center; gap: 14px; margin: 10px clamp(16px, 2.4vw, 40px) 0; }
+.gh .gh-back { display: flex; align-items: center; gap: 14px; margin: 10px clamp(0px, 1.4vw, 6px) 0; }
 .gh .gh-back .gx-tools { margin-left: auto; flex: none; }
 .gh :is(.gh-backlink, .gh-name) { padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; background: rgba(255, 255, 255, .9); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 6px 18px rgba(100, 87, 170, .16); }
 .gh .gh-backlink:hover { color: var(--pink); }
-.gh .gh-modesrow { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-.gh .gh-modesrow .modes { margin: 0; flex: 1; min-width: 0; }
 .gh .gh-tool { margin-top: 10px; }
 </style>

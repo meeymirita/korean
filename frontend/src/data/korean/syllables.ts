@@ -14,6 +14,19 @@ export interface SyllableTask {
 /** Подходят слова из 2–4 слогов хангылем, без пробелов и знаков. */
 export const SYLLABLE_WORDS = D.filter(d => /^[가-힣]{2,4}$/.test(d.k))
 
+/** Уровни по длине слова: 2 слога (308 слов), 3 слога (108), 4 слога (40); «любой» это все вместе. */
+export type SyllableLevel = 'any' | 'easy' | 'medium' | 'hard'
+export const SYLLABLE_LEVELS: { id: SyllableLevel; label: string; hint: string; len?: number }[] = [
+  { id: 'any', label: 'Любой', hint: 'Слова из 2–4 слогов вперемешку' },
+  { id: 'easy', label: 'Простой', hint: 'Слова из 2 слогов', len: 2 },
+  { id: 'medium', label: 'Средний', hint: 'Слова из 3 слогов', len: 3 },
+  { id: 'hard', label: 'Сложный', hint: 'Слова из 4 слогов', len: 4 },
+]
+const wordsOf = (level: SyllableLevel) => {
+  const len = SYLLABLE_LEVELS.find(l => l.id === level)?.len
+  return len ? SYLLABLE_WORDS.filter(d => d.k.length === len) : SYLLABLE_WORDS
+}
+
 const POOL = [...new Set(SYLLABLE_WORDS.flatMap(d => [...d.k]))]
 
 /** Задание «собери слово по слогам»: плиток на 1–2 больше, чем слогов, лишние берутся из других слов. */
@@ -23,10 +36,11 @@ export function syllableTask(word: Word): SyllableTask {
   return { word, prompt: short(word.t), answer, tiles: shuffle([...answer, ...extra]) }
 }
 
-/** n заданий на разные слова; слова с ошибками (если переданы) идут первыми. */
-export function syllableTasks(n = 10, weak: string[] = []): SyllableTask[] {
-  const first = shuffle(SYLLABLE_WORDS.filter(d => weak.includes(d.k)))
-  const rest = shuffle(SYLLABLE_WORDS.filter(d => !weak.includes(d.k)))
+/** n заданий на разные слова выбранного уровня; слова с ошибками (если переданы) идут первыми. */
+export function syllableTasks(n = 10, weak: string[] = [], level: SyllableLevel = 'any'): SyllableTask[] {
+  const words = wordsOf(level)
+  const first = shuffle(words.filter(d => weak.includes(d.k)))
+  const rest = shuffle(words.filter(d => !weak.includes(d.k)))
   return [...first, ...rest].slice(0, n).map(syllableTask)
 }
 

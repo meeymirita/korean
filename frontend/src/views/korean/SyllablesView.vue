@@ -4,7 +4,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { mistakeWords } from '@/data/mistakes'
-import { isCorrect, syllableTasks, type SyllableTask } from '@/data/korean/syllables'
+import { usePersisted } from '@/composables/usePersisted'
+import { isCorrect, SYLLABLE_LEVELS, syllableTasks, type SyllableLevel, type SyllableTask } from '@/data/korean/syllables'
 import { burst, cascade, pop, shake } from '@/lib/fx'
 import { useProgressStore } from '@/stores/progress'
 
@@ -17,7 +18,9 @@ interface Tile {
 const ROUND = 10
 const progress = useProgressStore()
 const weak = () => mistakeWords(progress.data, 30).map(m => m.word.k)
-const tasks = ref<SyllableTask[]>(syllableTasks(ROUND, weak()))
+/** Уровень по длине слова; помнится после обновления страницы. */
+const level = usePersisted<SyllableLevel>('syl_level', 'any', v => SYLLABLE_LEVELS.some(l => l.id === v))
+const tasks = ref<SyllableTask[]>(syllableTasks(ROUND, weak(), level.value))
 const idx = ref(0)
 /** плитки в слотах по порядку: их можно тянуть в слоты, менять местами и убирать нажатием (в самом наборе плитка затемняется, пока выбрана) */
 const picked = ref<Tile[]>([])
@@ -75,13 +78,17 @@ function next() {
   enter()
 }
 function again() {
-  tasks.value = syllableTasks(ROUND, weak())
+  tasks.value = syllableTasks(ROUND, weak(), level.value)
   idx.value = 0
   picked.value = []
   result.value = null
   right.value = 0
   missed.value = []
   enter()
+}
+const setLevel = (id: SyllableLevel) => {
+  level.value = id
+  again()
 }
 onMounted(enter)
 watch(finished, v => {
@@ -96,6 +103,9 @@ watch(finished, v => {
 <template>
   <div class="wrap">
     <SectionHead id="syllables" />
+    <div class="chips">
+      <button v-for="l in SYLLABLE_LEVELS" :key="l.id" type="button" class="chip" :class="{ on: level === l.id }" :title="l.hint" @click="setLevel(l.id)">{{ l.label }}</button>
+    </div>
     <div class="rs">
       <template v-if="!finished && current">
         <div class="rs-bar"><span>{{ idx + 1 }} из {{ tasks.length }}</span><span>верно: {{ right }}</span></div>

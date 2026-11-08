@@ -931,28 +931,6 @@ function renderList(){
 
 /* ---------- интерфейс ---------- */
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800);}
-function drawModes(){
-  const box=$('#modes');box.innerHTML='';
-  MODES.filter(m=>m.id==='mix').forEach(m=>{
-    const b=el('button','chip'+(S.mode===m.id?' on':''));b.innerHTML=iconImg(MODE_ICON[m.id])+'<span>'+m.name+'</span>';b.type='button';
-    b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
-    box.appendChild(b);
-  });
-  const side=$('#sideModes');
-  if(side){
-    side.innerHTML='';
-    const fq=(($('#gameFind')||{}).value||'').trim().toLowerCase();
-    const found=MODES.filter(m=>!fq||m.name.toLowerCase().includes(fq));
-    if(!found.length)side.appendChild(el('div','empty','Такой игры нет'));
-    found.forEach(m=>{
-      const b=el('button','sm'+(S.mode===m.id?' on':''));b.type='button';
-      {const si=el('span','si');si.innerHTML=iconImg(MODE_ICON[m.id]);b.append(si,el('span','st',m.name));}
-      if(S.mode===m.id)b.appendChild(el('span','sa','›'));
-      b.addEventListener('click',()=>{S.mode=m.id;save();drawModes();next();});
-      side.appendChild(b);
-    });
-  }
-}
 function drawCats(){
   const box=$('#cats');box.innerHTML='';
   CATS.forEach(c=>{
@@ -970,9 +948,6 @@ function syncToggles(){
   $('#cbRead').checked=S.reading;$('#tense').value=S.tense;
   $('#lbRead').classList.toggle('on',S.reading);
 }
-const findBox=$('#gameFind');
-const onFind=()=>drawModes();
-findBox?.addEventListener('input',onFind);
 $('#cbRead').addEventListener('change',e=>{S.reading=e.target.checked;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);});
 $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
@@ -1083,12 +1058,11 @@ const onKeydown=e=>{
 document.addEventListener('keydown',onKeydown);
 
 /* ---------- старт ---------- */
-drawModes();drawCats();syncToggles();updateStats();renderList();drawLives();
+drawCats();syncToggles();updateStats();renderList();drawLives();
 renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();
 return ()=>{
   document.removeEventListener('keydown',onKeydown);
-  findBox?.removeEventListener('input',onFind);
   clearInterval(S.blitz.iv);
   clearTimeout(S.timer);
   clearTimeout(toast.t);

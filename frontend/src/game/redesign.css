@@ -67,7 +67,6 @@
 
 /* тело: режимы-«таблетки», карточка и панель справа */
 .gx-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) clamp(290px, 21vw, 340px); gap: 14px 22px; align-items: start; padding-top: 12px; }
-.game .gx-body .modes { grid-column: 1 / -1; margin: 0; gap: 10px; max-width: calc(100% - clamp(120px, 12vw, 260px)); }
 .game .gx-body .chip { padding: 9px 16px; font-size: 13px; font-weight: 500; color: var(--ink); background: rgba(255, 255, 255, .82); border: 1px solid #fff; box-shadow: 0 6px 16px rgba(100, 87, 170, .12); }
 .game .gx-body .chip.on { color: #fff; background: linear-gradient(90deg, #7d6bf0, #9a86f5); }
 .gx-center { min-width: 0; grid-column: 1; }
@@ -82,7 +81,7 @@
 .game .gx-actions .helpbtn { color: var(--accent); border: 1.5px solid #9a86f5; }
 .game details.set { background: var(--glass); border: 1px solid #fff; border-radius: 18px; margin-top: 14px; }
 
-.game .gx-stats { grid-column: 2; grid-row: 2; position: static; max-height: none; background: var(--panel); border: 1px solid #fff; border-radius: 28px; padding: 18px; }
+.game .gx-stats { grid-column: 2; grid-row: 1; position: static; max-height: none; background: var(--panel); border: 1px solid #fff; border-radius: 28px; padding: 18px; }
 .gx-stats-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 24px; font-weight: 500; font-family: var(--ko); }
 .game .gx-stats .list { max-height: 260px; min-height: 90px; flex: none; }
 .game .gx-stats .empty { padding: 12px; border-radius: 14px; background: rgba(143, 124, 240, .08); }
@@ -100,7 +99,6 @@
   .gx-modes { display: none; }
   .gx-body { grid-template-columns: 1fr; }
   .game .gx-stats { grid-column: 1; grid-row: auto; }
-  .game .gx-body .modes { max-width: none; }
 }
 @media (max-width: 560px) { .gx-tools { gap: 8px; } .game .gx-tools .game-menu { margin-right: 0; } .game .game-top.gx-top { flex-wrap: wrap; } }
 
