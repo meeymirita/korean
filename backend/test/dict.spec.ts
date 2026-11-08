@@ -316,4 +316,18 @@ describe('большой словарь: частотный список и по
     expect(bodies).toHaveLength(1)
     await expect(svc.collection('нет-такой')).rejects.toThrow()
   })
+
+  it('пока идёт сборка индекса, карта сайта, папки и подборки не отдаются и не запоминаются', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    const svc = new DictService() as unknown as { indexing: boolean; sitemap(): Promise<unknown>; folders(): Promise<unknown>; collections(): Promise<unknown>; collection(s: string): Promise<unknown> }
+    svc.indexing = true
+    await expect(svc.sitemap()).rejects.toMatchObject({ status: 503 })
+    await expect(svc.folders()).rejects.toMatchObject({ status: 503 })
+    await expect(svc.collections()).rejects.toMatchObject({ status: 503 })
+    await expect(svc.collection('top-100')).rejects.toMatchObject({ status: 503 })
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })

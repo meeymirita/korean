@@ -132,6 +132,7 @@ export class DictService implements OnApplicationBootstrap {
 
   /** Все слова словаря для карты сайта (sitemap.xml): адреса `/dict/<слово>`, по одному на слово (омонимы сливаются). Кэш на 6 часов. */
   async sitemap(): Promise<{ loc: string }[]> {
+    this.notWhileIndexing()
     const TTL = 6 * 60 * 60_000
     if (this.sitemapCache && Date.now() - this.sitemapCache.at < TTL) return this.sitemapCache.urls
     if (this.sitemapLoading) return this.sitemapLoading
@@ -148,7 +149,7 @@ export class DictService implements OnApplicationBootstrap {
         ...COLLECTIONS.map(c => ({ loc: `/dict/podborki/${c.slug}` })),
         ...[...words].sort().map(w => ({ loc: `/dict/${encodeURIComponent(w)}` })),
       ]
-      if (urls.length) this.sitemapCache = { at: Date.now(), urls }
+      if (urls.length && !this.indexing) this.sitemapCache = { at: Date.now(), urls }
       return urls
     })().finally(() => { this.sitemapLoading = null })
     return this.sitemapLoading
@@ -173,6 +174,7 @@ export class DictService implements OnApplicationBootstrap {
     if (!Array.isArray(parsed.entries)) throw new BadRequestException({ error: 'в файле нет списка entries' })
     const docs = buildDocs(parsed.entries)
     this.indexing = true
+    this.clearCaches()
     await unlink(markFile(file)).catch(() => undefined) // пока идёт сборка, индекс считается неготовым
     try {
       if (!(await this.req(`/indexes/${INDEX}`, {}, [404]))) {
@@ -198,7 +200,20 @@ export class DictService implements OnApplicationBootstrap {
       return { ok: true, documents: docs.length, entries: parsed.entries.length }
     } finally {
       this.indexing = false
+      this.clearCaches() // всё, что успели запомнить на неполном индексе (карта сайта, папки, подборки), выбрасываем
     }
+  }
+
+  /** Сбрасывает запомненные ответы: карту сайта, папки, подборки. */
+  private clearCaches() {
+    this.sitemapCache = null
+    this.foldersCache = null
+    this.collectionCache.clear()
+  }
+
+  /** Пока идёт сборка индекса, в нём только часть слов: такие ответы не отдаём и не запоминаем. */
+  private notWhileIndexing() {
+    if (this.indexing) throw new ServiceUnavailableException({ error: 'словарь сейчас индексируется' })
   }
 
   async search(raw: string, opts: { level?: string; pos?: string; offset?: number } = {}): Promise<DictSearchResult> {
@@ -258,6 +273,7 @@ export class DictService implements OnApplicationBootstrap {
 
   /** Папки меню «Все слова»: сколько слов в каждом уровне и в каждой части речи. Кэш на час (база не меняется). */
   async folders() {
+    this.notWhileIndexing()
     if (this.foldersCache && Date.now() - this.foldersCache.at < 3_600_000) return this.foldersCache.data
     const r = await this.req<MeiliSearch & { facetDistribution?: { level?: Record<string, number>; pos?: Record<string, number> } }>(`/indexes/${INDEX}/search`, {
       method: 'POST',
@@ -288,6 +304,7 @@ export class DictService implements OnApplicationBootstrap {
 
   /** Список подборок для страницы `/dict/podborki`: название, описание и сколько слов в каждой. Кэш на час. */
   async collections() {
+    this.notWhileIndexing()
     const hit = this.collectionCache.get('*')
     if (hit && Date.now() - hit.at < 3_600_000) return hit.data
     const data = await Promise.all(COLLECTIONS.map(async c => {
@@ -300,6 +317,7 @@ export class DictService implements OnApplicationBootstrap {
 
   /** Одна подборка: заголовки, вступление и слова (самые употребительные первыми). Кэш на час. */
   async collection(slug: string) {
+    this.notWhileIndexing()
     const hit = this.collectionCache.get(slug)
     if (hit && Date.now() - hit.at < 3_600_000) return hit.data
     const { c, items } = await this.collectionRows(slug)
