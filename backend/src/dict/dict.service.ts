@@ -3,6 +3,7 @@ import { access, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { buildDocs, type DictDoc, type RawEntry } from './dict.data.js'
 import { dictionaryForms, isPredicate } from './dict.hangul.js'
+import { COLLECTIONS, collectionBySlug } from './dict.collections.js'
 
 const INDEX = 'krdict'
 const BATCH = 4000
@@ -49,11 +50,18 @@ function slim(d: DictDoc): DictHit {
 
 /** Пометка «индекс собран целиком» рядом с файлом словаря: размер и время файла и число документов. Без неё недостроенный индекс (сервер перезапустили на середине) считался бы готовым. */
 /** Версия формата документов и настроек индекса: поменял поля или настройки в dict.data.ts / reindex, подними число, и при следующем старте индекс соберётся заново. */
-export const INDEX_VERSION = 2
+export const INDEX_VERSION = 3
 export interface IndexMark { size: number; mtimeMs: number; documents: number; version?: number }
 export const markFile = (file: string) => file + '.indexed'
 export const isIndexFresh = (mark: IndexMark | null, file: { size: number; mtimeMs: number }, documents: number) =>
   !!mark && mark.version === INDEX_VERSION && mark.size === file.size && mark.mtimeMs === file.mtimeMs && mark.documents === documents && documents > 0
+
+/** Перевод для списка: до трёх разных переводов, длинные описания и повторы отбрасываются. */
+export const shortRu = (ru: string) => {
+  const all = [...new Set(ru.split('; ').map(x => x.trim()).filter(Boolean))]
+  const short = all.filter(x => x.length <= 40)
+  return (short.length ? short : all).slice(0, 3).join('; ')
+}
 
 const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
@@ -135,7 +143,11 @@ export class DictService implements OnApplicationBootstrap {
         for (const r of rows) if (r.word && !/[\s/?#%]/.test(r.word)) words.add(r.word)
         if (rows.length < 1000) break
       }
-      const urls = [...words].sort().map(w => ({ loc: `/dict/${encodeURIComponent(w)}` }))
+      const urls = [
+        { loc: '/dict/podborki' },
+        ...COLLECTIONS.map(c => ({ loc: `/dict/podborki/${c.slug}` })),
+        ...[...words].sort().map(w => ({ loc: `/dict/${encodeURIComponent(w)}` })),
+      ]
       if (urls.length) this.sitemapCache = { at: Date.now(), urls }
       return urls
     })().finally(() => { this.sitemapLoading = null })
@@ -170,8 +182,8 @@ export class DictService implements OnApplicationBootstrap {
         method: 'PATCH',
         body: JSON.stringify({
           searchableAttributes: ['word', 'forms', 'ru', 'def'],
-          filterableAttributes: ['word', 'level', 'pos', 'posKo', 'tr', 'cat'],
-          sortableAttributes: ['levelRank', 'rank', 'hom', 'wordLen', 'word'],
+          filterableAttributes: ['word', 'level', 'pos', 'posKo', 'tr', 'cat', 'freq'],
+          sortableAttributes: ['levelRank', 'rank', 'hom', 'wordLen', 'word', 'freq'],
           rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'rank:desc', 'wordLen:asc', 'hom:asc'],
           pagination: { maxTotalHits: 60000 },
           typoTolerance: { minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 } },
@@ -257,6 +269,45 @@ export class DictService implements OnApplicationBootstrap {
     return data
   }
 
+  private collectionCache = new Map<string, { at: number; data: unknown }>()
+
+  private async collectionRows(slug: string) {
+    const c = collectionBySlug(slug)
+    if (!c) throw new NotFoundException({ error: 'такой подборки нет' })
+    const r = await this.req<MeiliSearch>(`/indexes/${INDEX}/search`, {
+      method: 'POST',
+      body: JSON.stringify({ q: '', limit: c.limit, filter: c.filter, sort: ['freq:asc', 'rank:desc'], attributesToRetrieve: ['id', 'word', 'hom', 'pron', 'pos', 'level', 'ru', 'freq', 'grade'] }),
+    }, [404])
+    if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
+    const seen = new Set<string>()
+    const items = (r.hits ?? []).filter(d => (seen.has(d.id) ? false : (seen.add(d.id), true))).map(d => ({
+      word: d.word, hom: d.hom, pron: d.pron, pos: d.pos, level: d.level, ru: shortRu(d.ru), grade: d.grade,
+    }))
+    return { c, items }
+  }
+
+  /** Список подборок для страницы `/dict/podborki`: название, описание и сколько слов в каждой. Кэш на час. */
+  async collections() {
+    const hit = this.collectionCache.get('*')
+    if (hit && Date.now() - hit.at < 3_600_000) return hit.data
+    const data = await Promise.all(COLLECTIONS.map(async c => {
+      const r = await this.req<MeiliSearch>(`/indexes/${INDEX}/search`, { method: 'POST', body: JSON.stringify({ q: '', limit: 0, filter: c.filter }) }, [404])
+      return { slug: c.slug, title: c.title, description: c.description, count: Math.min(c.limit, Number(r?.estimatedTotalHits) || 0) }
+    }))
+    if (data.every(d => d.count > 0)) this.collectionCache.set('*', { at: Date.now(), data })
+    return data
+  }
+
+  /** Одна подборка: заголовки, вступление и слова (самые употребительные первыми). Кэш на час. */
+  async collection(slug: string) {
+    const hit = this.collectionCache.get(slug)
+    if (hit && Date.now() - hit.at < 3_600_000) return hit.data
+    const { c, items } = await this.collectionRows(slug)
+    const data = { slug: c.slug, title: c.title, seoTitle: c.seoTitle, description: c.description, intro: c.intro, items, others: COLLECTIONS.filter(o => o.slug !== slug).map(o => ({ slug: o.slug, title: o.title })) }
+    if (items.length) this.collectionCache.set(slug, { at: Date.now(), data })
+    return data
+  }
+
   /** Список всех слов для меню слева: по «популярности» или по алфавиту, порциями. */
   async list(opts: { order?: string; level?: string; pos?: string; offset?: number; limit?: number }) {
     if (this.indexing) throw new ServiceUnavailableException({ error: 'словарь сейчас индексируется' })
@@ -271,7 +322,7 @@ export class DictService implements OnApplicationBootstrap {
       body: JSON.stringify({ q: '', limit, offset, filter: filters.join(' AND ') || undefined, sort, attributesToRetrieve: ['id', 'word', 'hom', 'pos', 'level', 'ru'] }),
     }, [404])
     if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
-    const items = (r.hits ?? []).map(d => ({ id: d.id, word: d.word, hom: d.hom, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 2).join('; ') }))
+    const items = (r.hits ?? []).map(d => ({ id: d.id, word: d.word, hom: d.hom, pos: d.pos, level: d.level, ru: shortRu(d.ru).split('; ').slice(0, 2).join('; ') }))
     return { items, total: Math.max(0, Number(r.estimatedTotalHits) || items.length), limit, offset }
   }
 

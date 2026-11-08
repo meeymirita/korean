@@ -1,4 +1,5 @@
 /** Большой словарь: превращает записи krdict_ko_ru.json в документы для Meilisearch (чистые функции, без сети и файлов). */
+import { VOCAB } from './dict.vocab.js'
 
 export const POS_RU: Record<string, string> = {
   명사: 'существительное', 동사: 'глагол', 형용사: 'прилагательное', 부사: 'наречие', 관형사: 'определитель', 어미: 'окончание', 접사: 'аффикс',
@@ -55,6 +56,10 @@ export interface DictDoc {
   /** переводы по одному, строчными (из двух первых, главных значений): по точному совпадению с ними слово поднимается наверх («школа» → 학교) */
   tr: string[]
   senses: DictSense[]
+  /** место слова в частотном списке «한국어 학습용 어휘 목록» (1 = самое частое); у слов вне списка поля нет */
+  freq?: number
+  /** уровень слова в этом списке: A, B или C */
+  grade?: string
 }
 
 const MAX = { sent: 6, phr: 12, dial: 3 }
@@ -115,11 +120,43 @@ export function toDoc(e: RawEntry, index: number): DictDoc | null {
   return doc
 }
 
+/** Части речи списка → части речи krdict, которые считаем тем же словом. */
+const VOCAB_POS: Record<string, string[]> = { 보조: ['보조 동사', '보조 형용사'] }
+
+/**
+ * Проставляет слову место в официальном частотном списке (рейтинг по «현대 국어 사용 빈도 조사»). Сначала по слову и части речи,
+ * что не нашлось, по одному слову. Омонимов с одним написанием много, рейтинг получает только запись с меньшим номером.
+ * Слова из списка поднимаются и в общей «популярности».
+ */
+export function applyVocab(docs: DictDoc[], vocab: readonly (readonly [number, string, string, string])[] = VOCAB): void {
+  const byWord = new Map<string, DictDoc[]>()
+  for (const d of docs) (byWord.get(d.word) ?? byWord.set(d.word, []).get(d.word)!).push(d)
+  const give = (d: DictDoc, rank: number, grade: string) => {
+    d.freq = rank
+    d.grade = grade
+    d.rank += Math.round(Math.max(0, 6000 - rank) / 60)
+  }
+  const rest: (readonly [number, string, string, string])[] = []
+  const matched = new Set<string>()
+  for (const [rank, word, pos, grade] of vocab) {
+    const cands = (byWord.get(word) ?? []).filter(d => d.freq === undefined).sort((a, b) => a.hom - b.hom)
+    const kinds = VOCAB_POS[pos] ?? [pos]
+    const hit = cands.find(d => kinds.includes(d.posKo))
+    if (hit) { give(hit, rank, grade); matched.add(word) } else rest.push([rank, word, pos, grade])
+  }
+  for (const [rank, word, , grade] of rest) {
+    if (matched.has(word)) continue
+    const hit = (byWord.get(word) ?? []).filter(d => d.freq === undefined).sort((a, b) => a.hom - b.hom)[0]
+    if (hit) give(hit, rank, grade)
+  }
+}
+
 export function buildDocs(entries: RawEntry[]): DictDoc[] {
   const out: DictDoc[] = []
   entries.forEach((e, i) => {
     const d = toDoc(e, i)
     if (d) out.push(d)
   })
+  applyVocab(out)
   return out
 }

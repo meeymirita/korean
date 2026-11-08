@@ -233,6 +233,14 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
         </div>
       </section>
 
+      <nav v-show="!active" class="sets" aria-label="Подборки слов">
+        <span>Подборки:</span>
+        <RouterLink to="/dict/podborki/top-100">100 частых слов</RouterLink>
+        <RouterLink to="/dict/podborki/glagoly">Глаголы</RouterLink>
+        <RouterLink to="/dict/podborki/eda">Еда</RouterLink>
+        <RouterLink to="/dict/podborki">Все подборки</RouterLink>
+      </nav>
+
       <section v-if="!hasQuery && !pickedWord && recent.length" class="recent" aria-label="Недавно искал">
         <div class="rhead"><span>Недавно искал</span><button type="button" class="rclear" @click="clearRecent">очистить</button></div>
         <div class="rlist">
@@ -286,6 +294,8 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 .popular h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #3b3f7a; text-shadow: 0 1px 10px rgba(255, 255, 255, .9); }
 .plist { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; max-height: max(0px, calc(100dvh - 590px)); overflow: hidden; }
 .pw { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 13px; border: 1px solid rgba(255, 255, 255, .85); border-radius: 999px; background: rgba(255, 255, 255, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--ink); text-decoration: none; transition: transform .15s, background .15s; }
+.sets { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 14px; font-size: 13px; color: #3b3f7a; text-shadow: 0 1px 10px rgba(255, 255, 255, .9); }
+.sets a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .pw:hover { transform: translateY(-2px); background: rgba(255, 255, 255, .95); }
 .pw b { font-size: 16px; } .pw span { font-size: 12px; color: var(--muted); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent { width: 100%; max-width: 720px; margin-top: 16px; animation: rise .35s ease both; }

@@ -113,6 +113,8 @@ const PAGES: Record<string, Seo> = {
 export const seoFor = (path: string): Seo => {
   const p = path.replace(/\/+$/, '') || '/'
   // страницы слов большого словаря (53 тысячи): открыты для поисковиков, в карту сайта не входят, ссылки на них ведут со страниц слов и из поиска
+  if (p === '/dict/podborki') return { title: `Подборки корейских слов: топ-100, глаголы, темы · ${BRAND}`, description: 'Подборки корейских слов начального уровня с переводом: 100 главных слов, глаголы, прилагательные, еда, время, числа, семья, цвета. Из словаря 한국어기초사전.' }
+  if (p.startsWith('/dict/podborki/')) return { title: `Подборка корейских слов · ${BRAND}`, description: 'Подборка корейских слов начального уровня с переводом на русский, чтением и ссылками на страницы слов.' }
   if (p.startsWith('/dict/')) {
     let word = p.slice('/dict/'.length)
     try { word = decodeURIComponent(word) } catch { /* оставляем как есть */ }

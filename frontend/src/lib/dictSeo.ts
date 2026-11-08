@@ -86,3 +86,34 @@ export function wordJsonLd(e: SeoEntry, url: string) {
     ],
   }
 }
+
+/** JSON-LD подборки слов: страница-коллекция со списком слов и хлебные крошки (в списке первые 50 слов). */
+export function collectionJsonLd(c: { title: string; description: string; items: { word: string }[] }, url: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${url}#page`,
+        name: c.title,
+        description: c.description,
+        url,
+        inLanguage: 'ru',
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: c.items.length,
+          itemListElement: c.items.slice(0, 50).map((w, i) => ({ '@type': 'ListItem', position: i + 1, name: w.word, url: `${SITE}/dict/${encodeURIComponent(w.word)}` })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: BRAND, item: `${SITE}/` },
+          { '@type': 'ListItem', position: 2, name: 'Большой словарь', item: `${SITE}/dict` },
+          { '@type': 'ListItem', position: 3, name: 'Подборки слов', item: `${SITE}/dict/podborki` },
+          { '@type': 'ListItem', position: 4, name: c.title, item: url },
+        ],
+      },
+    ],
+  }
+}

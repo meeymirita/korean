@@ -2,7 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { mainTranslation, translations, wordTitle, wordDescription, wordLead, wordJsonLd } = await load('/src/lib/dictSeo.ts')
+const { mainTranslation, translations, wordTitle, wordDescription, wordLead, wordJsonLd, collectionJsonLd } = await load('/src/lib/dictSeo.ts')
 after(close)
 
 const e = (over = {}) => ({
@@ -55,4 +55,15 @@ describe('SEO страницы слова', () => {
     assert.deepEqual(crumbs.map(c => c.position), [1, 2, 3])
     assert.equal(crumbs[2].item, 'https://korean.meeymirita.ru/dict/%ED%95%99%EA%B5%90')
   })
+})
+
+test('JSON-LD подборки: коллекция со списком слов и крошки из четырёх шагов', () => {
+  const items = Array.from({ length: 80 }, (_, i) => ({ word: `단어${i}` }))
+  const ld = collectionJsonLd({ title: '100 слов', description: 'описание', items }, 'https://korean.meeymirita.ru/dict/podborki/top-100')
+  const page = ld['@graph'][0]
+  assert.equal(page['@type'], 'CollectionPage')
+  assert.equal(page.mainEntity.numberOfItems, 80)
+  assert.equal(page.mainEntity.itemListElement.length, 50)
+  assert.match(page.mainEntity.itemListElement[0].url, /\/dict\/%EB%8B%A8%EC%96%B40$/)
+  assert.deepEqual(ld['@graph'][1].itemListElement.map(c => c.position), [1, 2, 3, 4])
 })

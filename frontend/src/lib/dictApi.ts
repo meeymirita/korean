@@ -102,3 +102,15 @@ export async function loadFolders(): Promise<DictFolders> {
   if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error || `ошибка ${res.status}`)
   return res.json()
 }
+
+export interface DictCollectionItem { word: string; hom: number; pron: string; pos: string; level: string; ru: string; grade?: string }
+export interface DictCollection {
+  slug: string
+  title: string
+  seoTitle: string
+  description: string
+  intro: string
+  items: DictCollectionItem[]
+  others: { slug: string; title: string }[]
+}
+export interface DictCollectionInfo { slug: string; title: string; description: string; count: number }

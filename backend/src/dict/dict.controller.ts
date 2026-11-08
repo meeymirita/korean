@@ -32,6 +32,22 @@ export class DictController {
     return this.dict.folders()
   }
 
+  /** Подборки слов: список. */
+  @Public()
+  @Header('Cache-Control', 'public, max-age=600')
+  @Get('collections')
+  collections() {
+    return this.dict.collections()
+  }
+
+  /** Одна подборка слов (топ-100, глаголы, темы). */
+  @Public()
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+  @Get('collection/:slug')
+  collection(@Param('slug') slug: string) {
+    return this.dict.collection(slug)
+  }
+
   /** Открытая страница слова: все омонимы и слова, где оно встречается. */
   @Public()
   @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')

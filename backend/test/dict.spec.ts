@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildDocs, rankOf, toDoc, type RawEntry } from '../src/dict/dict.data'
+import { applyVocab, buildDocs, rankOf, toDoc, type RawEntry } from '../src/dict/dict.data'
+import { COLLECTIONS } from '../src/dict/dict.collections'
+import { VOCAB } from '../src/dict/dict.vocab'
 import { dictionaryForms } from '../src/dict/dict.hangul'
 import { DictService, INDEX_VERSION, isIndexFresh } from '../src/dict/dict.service'
 
@@ -249,5 +251,69 @@ describe('большой словарь: папки меню', () => {
     expect(a).toEqual({ total: 53149, level: { начальный: 1940 }, pos: { глагол: 6540 } })
     await svc.folders()
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('большой словарь: частотный список и подборки', () => {
+  it('список 국립국어원 загружен целиком и отсортирован по рейтингу частоты', () => {
+    expect(VOCAB.length).toBeGreaterThan(5800)
+    expect(VOCAB[0]).toEqual([1, '것', '의존 명사', 'A'])
+    expect(VOCAB.slice(0, 10).map(v => v[1])).toContain('하다')
+    expect(VOCAB.every(v => v[3] === 'A' || v[3] === 'B' || v[3] === 'C')).toBe(true)
+  })
+
+  it('рейтинг ставится по слову и части речи; омонимы с одним написанием не получают его дважды', () => {
+    const docs = buildDocs([
+      entry({ word: '가다', homonym_number: '1', part_of_speech: '동사' }),
+      entry({ word: '가다', homonym_number: '2', part_of_speech: '동사' }),
+      entry({ word: '학교', part_of_speech: '명사' }),
+      entry({ word: '희귀어', part_of_speech: '명사' }),
+    ])
+    const go = docs.filter(d => d.word === '가다')
+    expect(go.filter(d => d.freq !== undefined)).toHaveLength(1)
+    expect(go[0]!.freq).toBeLessThan(100)
+    expect(go[0]!.grade).toBe('A')
+    expect(docs.find(d => d.word === '희귀어')!.freq).toBeUndefined()
+  })
+
+  it('слово из списка получает прибавку к популярности, редкое нет', () => {
+    const [a, b] = [entry({ word: '학교' }), entry({ word: '희귀어' })].map((e, i) => toDoc(e, i)!)
+    const before = a!.rank
+    applyVocab([a!, b!], [[100, '학교', '명사', 'A']])
+    expect(a!.rank).toBeGreaterThan(before)
+    expect(b!.rank).toBe(b!.rank)
+    expect(b!.freq).toBeUndefined()
+  })
+
+  it('у каждой подборки уникальный адрес, описание нужной длины и фильтр', () => {
+    const slugs = COLLECTIONS.map(c => c.slug)
+    expect(new Set(slugs).size).toBe(slugs.length)
+    for (const c of COLLECTIONS) {
+      expect(c.slug).toMatch(/^[a-z0-9-]+$/)
+      expect(c.description.length).toBeGreaterThanOrEqual(60)
+      expect(c.description.length).toBeLessThanOrEqual(190)
+      expect(c.seoTitle.length).toBeLessThanOrEqual(60)
+      expect(c.filter).toBeTruthy()
+      expect(c.limit).toBeGreaterThan(0)
+    }
+  })
+
+  it('подборка просит у Meilisearch самые частые слова первыми и убирает повторы и длинные описания', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    const bodies: Record<string, unknown>[] = []
+    const hit = (id: string, word: string, ru: string) => ({ id, word, hom: 1, pron: word, pos: 'глагол', level: 'начальный', ru, freq: 1, grade: 'A' })
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (_u: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)))
+      return new Response(JSON.stringify({ hits: [hit('a', '하다', 'делать; делать; ' + 'очень длинное описание значения, которое не годится для списка '.repeat(2)), hit('a', '하다', 'делать'), hit('b', '가다', 'идти')], estimatedTotalHits: 3 }), { status: 200 })
+    }))
+    const svc = new DictService()
+    const c = (await svc.collection('top-100')) as { items: { word: string; ru: string }[]; title: string }
+    expect(bodies[0]).toMatchObject({ limit: 100, sort: ['freq:asc', 'rank:desc'] })
+    expect(c.items.map(i => i.word)).toEqual(['하다', '가다'])
+    expect(c.items[0]!.ru).toBe('делать')
+    await svc.collection('top-100')
+    expect(bodies).toHaveLength(1)
+    await expect(svc.collection('нет-такой')).rejects.toThrow()
   })
 })
