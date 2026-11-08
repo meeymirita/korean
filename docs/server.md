@@ -25,6 +25,7 @@
 | `notify/` | Telegram: отправка в темы группы, очистка, сообщение в General (`docs/telegram.md`) |
 | `yadisk/`, `video/`, `pic/` | Яндекс.Диск (копии, зеркало картинок), раздача видео и картинок грамматики 302-ссылкой на Диск (`docs/disk-and-telegram.md`) |
 | `jobs/`, `search/` | фоновые задачи (BullMQ или таймер), поиск Meilisearch |
+| `dict/` | большой словарь: индекс krdict в Meilisearch, `/api/dict/search`, `/api/dict/word/:слово` (открытые), `/api/dict/status`, `/api/dict/reindex` (владелец); подробно `docs/dict.md` |
 | `admin/`, `logs/`, `events/` | просмотр базы, архив и статус копий (`docs/backup.md`), журналы, журнал событий |
 
 ## Таблицы базы

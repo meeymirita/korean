@@ -23,6 +23,7 @@ import { MetricsController } from './metrics.controller.js'
 import { ContainerMetrics } from './container-metrics.service.js'
 import { MetricsService } from './metrics.service.js'
 import { SearchModule } from './search/search.module.js'
+import { DictModule } from './dict/dict.module.js'
 import { JobsModule } from './jobs/jobs.module.js'
 import { NotifyModule } from './notify/notify.module.js'
 import { PicModule } from './pic/pic.module.js'
@@ -30,7 +31,7 @@ import { VideoModule } from './video/video.module.js'
 import { YaDiskModule } from './yadisk/yadisk.module.js'
 
 @Module({
-  imports: [PicModule, VideoModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule],
+  imports: [PicModule, VideoModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule, DictModule],
   controllers: [HealthController, MetricsController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })
