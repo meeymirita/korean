@@ -80,6 +80,7 @@ docs/       документация по темам
 | [`docs/telegram.md`](docs/telegram.md) | уведомления в Telegram: группа с темами, баннеры, оформление, вкладка в кабинете |
 | [`docs/server.md`](docs/server.md) | сервер: модули, таблицы, API, защита, двухфакторный вход |
 | [`docs/data.md`](docs/data.md) | словарь, грамматика, переводы, разбор предложений |
+| [`docs/dict.md`](docs/dict.md) | большой словарь `/dict`: данные krdict, индекс Meilisearch, поиск, страница слова |
 | [`docs/progress.md`](docs/progress.md) | тренажёры, «Сегодня», прогресс, кабинет, заметки, гости |
 | [`docs/game.md`](docs/game.md), [`docs/games-catalog.md`](docs/games-catalog.md) | игра «Хлебушек» и каталог режимов |
 | [`docs/shop.md`](docs/shop.md) | монетки Юны и магазин |

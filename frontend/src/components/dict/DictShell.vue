@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
-import { DICT_SOURCE } from '@/data/korean/krdictMock'
+import bg from '@/assets/dict/bg.webp'
+import { DICT_SOURCE } from '@/data/korean/dictSource'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 </script>
 
 <template>
-  <div class="ds">
+  <div class="dict-root" :style="{ backgroundImage: `url(${bg})` }">
+  <div class="dict-scroll">
     <header class="top">
       <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span><span class="sub">большой словарь</span></RouterLink>
       <slot name="top" />
@@ -26,19 +28,20 @@ const progress = useProgressStore()
       <span>Лицензия: <a :href="DICT_SOURCE.licenseUrl" target="_blank" rel="noopener noreferrer">{{ DICT_SOURCE.license }}</a>. Переводы и определения не изменены.</span>
     </footer>
   </div>
+  </div>
 </template>
 
 <style scoped>
-.ds { --ink: #1e2350; --muted: #8b8fc4; --line: rgba(120, 110, 200, .16); --accent: #d64da9; --accent2: #6a5cd0; --soft: #f1ecff; --pink: #ffe3f3;
-  --surface: rgba(255, 255, 255, .82); --shadow: 0 18px 45px rgba(100, 87, 170, .12);
-  position: fixed; inset: 0; overflow: auto; display: flex; flex-direction: column; padding: clamp(20px, 3vh, 36px) clamp(16px, 4vw, 64px) 18px;
-  color: var(--ink); background: #fbf8ff; font-family: 'Inter', 'Archivo', 'Noto Sans KR', sans-serif; word-break: keep-all; }
-.ds::before { content: ""; position: fixed; inset: 0; pointer-events: none;
-  background: radial-gradient(circle at 92% 4%, rgba(201, 228, 255, .55) 0, transparent 30%), radial-gradient(circle at 4% 96%, rgba(255, 209, 236, .5) 0, transparent 28%); }
-.ds > * { position: relative; width: 100%; max-width: 1040px; margin-left: auto; margin-right: auto; }
-.ds a { color: inherit; text-decoration: none; }
+.dict-root { position: fixed; inset: 0; background: #d9cdf5 center / cover no-repeat; }
+.dict-root::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(251, 248, 255, .35), rgba(251, 248, 255, .12) 40%, rgba(251, 248, 255, .3)); }
+.dict-scroll { --ink: #1e2350; --muted: #5f649f; --line: rgba(120, 110, 200, .2); --accent: #d64da9; --accent2: #6a5cd0; --soft: #f1ecff; --pink: #ffe3f3;
+  --surface: rgba(255, 255, 255, .86); --shadow: 0 18px 45px rgba(70, 55, 140, .18);
+  position: absolute; inset: 0; z-index: 1; overflow-y: scroll; overflow-x: hidden; display: flex; flex-direction: column; padding: clamp(20px, 3vh, 36px) clamp(16px, 4vw, 64px) 18px;
+  color: var(--ink); font-family: 'Inter', 'Archivo', 'Noto Sans KR', sans-serif; word-break: keep-all; }
+.dict-scroll > * { position: relative; width: 100%; max-width: 1040px; margin-left: auto; margin-right: auto; }
+.dict-scroll a { color: inherit; text-decoration: none; }
 .ko { font-family: 'Noto Sans KR', 'Archivo', sans-serif; }
-.top { display: flex; align-items: center; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.top { display: flex; align-items: center; gap: 20px; padding: 12px 20px; border: 1px solid rgba(255, 255, 255, .7); border-radius: 999px; background: rgba(255, 255, 255, .62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .brand { display: flex; align-items: baseline; gap: 12px; flex: none; }
 .brand .mark { font-size: 26px; color: var(--accent2); line-height: 1; }
 .brand .name { font-size: 18px; letter-spacing: 3px; font-weight: 700; }
@@ -47,7 +50,7 @@ const progress = useProgressStore()
 .mine { display: inline-flex; align-items: center; gap: 6px; }
 .nav a:hover { color: var(--ink); }
 .body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.src { display: flex; flex-direction: column; gap: 2px; margin-top: 36px; font-size: 11.5px; line-height: 1.45; color: var(--muted); text-align: left; }
+.src { display: flex; flex-direction: column; gap: 2px; margin-top: 36px; align-self: flex-end; width: fit-content; max-width: min(100%, 560px); margin-left: 0; margin-right: calc(-1 * clamp(16px, 4vw, 64px) + 16px); padding: 10px 16px; border-radius: 16px; background: rgba(255, 255, 255, .7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 11.5px; line-height: 1.45; color: var(--muted); text-align: left; }
 .src a { text-decoration: underline; text-underline-offset: 2px; }
-@media (max-width: 600px) { .brand .sub { display: none; } .top { flex-wrap: wrap; } }
+@media (max-width: 600px) { .brand .sub { display: none; } .top { flex-wrap: wrap; border-radius: 22px; } }
 </style>
