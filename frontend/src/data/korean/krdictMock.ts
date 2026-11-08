@@ -33,7 +33,7 @@ export const DICT_SOURCE = {
 
 export const DICT_MOCK: DictEntry[] = [
   { id: '1', word: '학생', homonym: 0, pos: 'существительное', level: 'начальный', pron: '학쌩', senses: [
-    { definition: '학교에 다니면서 공부하는 사람.', ru: [{ translation: 'учащийся; ученик; школьник; студент', definition: 'Тот, кто учится где-либо.' }], example: '교수가 강의를 마치자 학생들은 강의실을 빠져 나갔다.' },
+    { definition: '학교에 다니면서 공부하는 사람.', ru: [{ translation: 'учащийся; ученик; школьник; студент', definition: 'Тот, кто учится где-либо.' }], example: '교수가 강의를 마치자 학생들은 강의실을 빠져 나갔다.', exampleRu: 'Когда профессор закончил лекцию, студенты вышли из аудитории.' },
   ] },
   { id: '2', word: '학생복', homonym: 0, pos: 'существительное', level: 'нет', pron: '학쌩복', senses: [
     { definition: '학생들이 입도록 정한 옷.', ru: [{ translation: 'школьная форма', definition: 'Одежда, установленная для учащихся.' }], example: '아이는 새 학생복을 입고 학교에 갔다.' },
