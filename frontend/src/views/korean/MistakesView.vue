@@ -5,7 +5,7 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import TaskSession from '@/components/korean/TaskSession.vue'
 import { mistakeTasks, mistakeWords } from '@/data/mistakes'
 import type { Task } from '@/data/korean/tasks'
-import { useProgressStore } from '@/stores/progress'
+import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
 const rows = computed(() => mistakeWords(progress.data))
@@ -33,7 +33,7 @@ const pct = (r: number) => Math.round(r * 100)
       <div class="tb mk-tb">
         <div class="row h"><span>Слово</span><span>Чтение</span><span>Перевод</span><span>Верно / неверно</span></div>
         <div v-for="m in shown" :key="m.word.n" class="row">
-          <span class="k ko">{{ m.word.k }}<small v-if="m.learned" class="mk-ok" title="Сейчас выучено: три верных ответа подряд"> ✓</small></span>
+          <span class="k ko">{{ m.word.k }}<small v-if="m.learned" class="mk-ok" :title="`Сейчас выучено: ${KNOWN_STREAK} верных ответов подряд`"> ✓</small></span>
           <span class="rd">{{ m.word.r }}</span>
           <span class="tr">{{ m.word.t }}</span>
           <span class="mk-n">{{ m.stat.ok }} / <b>{{ m.stat.bad }}</b> <small>({{ pct(m.rate) }}% ошибок)</small></span>

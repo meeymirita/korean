@@ -9,6 +9,9 @@ type Pair = [string, string]
 const examplesOf = (g: Gram): Pair[] =>
   g.b.filter(b => b[0] === 'ex').flatMap(b => b[1] as Pair[])
 
+/** Все части, которые правило меняет в примерах (выделены {o|…}, {b|…}, {k|…}). */
+const partsOf = (pairs: Pair[]) => pairs.flatMap(([ko]) => [...ko.matchAll(MARK)].map(m => m[1]!))
+
 /** Номера заданий на правило начинаются с 1000, чтобы не пересекаться с остальными заданиями страницы. */
 export const RULE_TASK_BASE = 1000
 
@@ -21,7 +24,6 @@ export function ruleTasks(g: Gram, n = 3): Task[] {
   const own = examplesOf(g)
   const otherGrams = G.filter(x => x.id !== g.id && x.st === 'ok')
   const otherPairs = otherGrams.flatMap(examplesOf)
-  const parts = (pairs: Pair[]) => pairs.flatMap(([ko]) => [...ko.matchAll(MARK)].map(m => m[1]!))
 
   const tasks: Task[] = []
   for (const [ko, ru] of shuffle(own)) {
@@ -30,9 +32,9 @@ export function ruleTasks(g: Gram, n = 3): Task[] {
     const id = RULE_TASK_BASE + tasks.length
     if (marks.length === 1) {
       const answer = marks[0]![1]!
-      const wrong = shuffle([...new Set([...parts(own), ...parts(otherPairs)])].filter(p => p !== answer && p.length <= 8))
+      const wrong = shuffle([...new Set([...partsOf(own), ...partsOf(otherPairs)])].filter(p => p !== answer && p.length <= 8))
       // сначала части этого же правила: они сложнее всего, потом чужие
-      const own1 = wrong.filter(p => parts(own).includes(p)).slice(0, 2)
+      const own1 = wrong.filter(p => partsOf(own).includes(p)).slice(0, 2)
       const rest = wrong.filter(p => !own1.includes(p)).slice(0, 3 - own1.length)
       const options = shuffle([answer, ...own1, ...rest])
       if (options.length < 3) continue
@@ -47,9 +49,6 @@ export function ruleTasks(g: Gram, n = 3): Task[] {
   }
   return tasks
 }
-
-/** Все части, которые правило меняет в примерах (выделены {o|…}, {b|…}, {k|…}). */
-const partsOf = (pairs: Pair[]) => pairs.flatMap(([ko]) => [...ko.matchAll(MARK)].map(m => m[1]!))
 
 /** Из карточки можно сделать серию заданий, если в ней хотя бы три примера. */
 export const trainableRule = (g: Gram) => examplesOf(g).length >= 3
