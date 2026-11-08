@@ -146,6 +146,10 @@ onBeforeUnmount(() => {
             <button type="button" class="x" aria-label="Закрыть" @click="emit('close')">✕</button>
           </header>
 
+          <p class="flow" aria-label="Путь нового слова">
+            <span>Ты записал</span><i aria-hidden="true">→</i><span>Claude смотрит</span><i aria-hidden="true">→</i><span>проверка в словаре krdict</span><i aria-hidden="true">→</i><span>обсуждение</span><i aria-hidden="true">→</i><span>добавление на сайт</span>
+          </p>
+
           <div v-if="tok" class="tokbox">
             <b>Токен для Claude <small>действует ещё {{ mmss(left) }}, только чтение слов</small></b>
             <code>{{ tok.token }}</code>
@@ -242,6 +246,9 @@ onBeforeUnmount(() => {
 .nwd .q:hover, .nwd .q:focus-visible { background: #fff; color: #d64da9; outline: none; }
 .nwd .tipbox { position: absolute; top: calc(100% + 8px); left: 50%; z-index: 2; width: 260px; padding: 10px 12px; border-radius: 14px; background: #fff; color: #20265c; font-size: 13px; font-weight: 500; line-height: 1.4; box-shadow: 0 10px 30px rgba(100, 87, 170, .25); opacity: 0; transform: translate(-50%, -4px); pointer-events: none; transition: opacity .2s, transform .2s; }
 .nwd .tip:hover .tipbox, .nwd .tipbox.show { opacity: 1; transform: translate(-50%, 0); }
+.nwd .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 12px; color: #6c70a8; }
+.nwd .flow span { padding: 2px 9px; border-radius: 999px; background: rgba(255, 255, 255, .7); }
+.nwd .flow i { font-style: normal; color: #d64da9; }
 .nwd .tokbtn { padding: 8px 16px; font-size: 14px; }
 .nwd .tokbox { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 18px; background: rgba(255, 255, 255, .75); border: 1px dashed #d64da9; animation: nwd-in .25s ease; }
 .nwd .tokbox small { font-weight: 400; color: #6c70a8; margin-left: 6px; }
