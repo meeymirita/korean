@@ -125,7 +125,6 @@ html[data-theme='dark'] .gx-di kbd { background: rgba(255, 255, 255, .1); }
 .game .gx-body .chip { display: inline-flex; align-items: center; gap: 8px; }
 .game .gx-body .chip .gi-img { width: 22px; height: 22px; }
 .game .gx-actions .gi-img { width: 26px; height: 26px; }
-.game .gx-hstar { width: 40px; height: 40px; filter: drop-shadow(0 2px 6px rgba(246, 196, 83, .5)); }
 .game .gx-stats-h .gi-img { width: 30px; height: 30px; }
 .game .gx-drop .gx-di .gi-img { width: 24px; height: 24px; }
 .game .gx-level .gi-img { width: 20px; height: 20px; }

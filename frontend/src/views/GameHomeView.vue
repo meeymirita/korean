@@ -201,10 +201,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 
     <div class="gx-main">
       <header class="game-top gx-top">
-        <div class="game-title">
-          <h1><img class="gi-img gx-hstar" :src="ICON.star" alt="" aria-hidden="true" /> Игры на слова</h1>
-          <p class="gh-sub">Игры, тренажёры и задания для изучения корейского ♡</p>
-        </div>
+        <h1 class="gx-sr">Игры на слова</h1>
         <div class="gx-tools">
           <button v-if="game" type="button" class="gx-round" :title="folded ? 'Показать список игр' : 'Спрятать список игр'" :aria-label="folded ? 'Показать список игр' : 'Спрятать список игр'" :aria-expanded="!folded" @click="navOpen = !navOpen">☰</button>
           <button type="button" class="gx-round" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" aria-label="Поиск" @click="openSearch()">⌕</button>
@@ -252,7 +249,9 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh { --sit-h: 220px; --sit-right: 100px; --sit-top: -8px; }
 .gh .gh-sit { position: absolute; z-index: 1; right: var(--sit-right); top: var(--sit-top); height: var(--sit-h); width: auto; pointer-events: none; user-select: none; }
 .gh .game-top.gx-top { position: relative; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px; }
-.gh .gx-tools { flex: none; }
+.gh .gx-tools { flex: none; margin-left: auto; }
+/* заголовок страницы виден только читалкам экрана */
+.gh .gx-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 /* игра открыта: список слева свёрнут, страница занимает всю ширину */
 /* плавно: колонка списка сужается до нуля, сам список уезжает влево и гаснет */
 .gh.game.gx { transition: grid-template-columns .45s cubic-bezier(.4, 0, .2, 1), column-gap .45s cubic-bezier(.4, 0, .2, 1); }
@@ -267,7 +266,6 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 }
 @media (prefers-reduced-motion: reduce) { .gh.game.gx, .gh .gx-nav { transition: none; } }
 .gh .game-title { flex: 1; min-width: 0; }
-.gh .gh-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
 .gh .gh-groups { display: grid; gap: 6px; align-content: start; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .gh .gh-grp { border-radius: 16px; background: rgba(255, 255, 255, .6); }
 .gh .gh-grp.on { background: linear-gradient(90deg, #f7d9f0, #e6e4ff); }
