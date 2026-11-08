@@ -50,10 +50,13 @@ describe('тема «Время и дни»: слова', () => {
     for (const d of DAYS) assert.ok(GAME.W.some(r => r[0] === d), d)
   })
 
-  test('диалог «내일 시간이 있어요?» есть в игре, у реплик разные темы', () => {
+  test('диалог «내일 시간이 있어요?» есть в игре; тег это «семья вопроса» (ответы одного тега друг другу подходят), вопросы не повторяются', () => {
     assert.ok(EXCHANGES.some(x => x[0] === '내일 시간이 있어요?' && x[2] === '미안해요. 시간이 없어요.'))
-    const tags = EXCHANGES.map(x => x[4])
-    assert.equal(new Set(tags).size, tags.length)
+    const free = EXCHANGES.filter(x => x[4] === 'free')
+    assert.equal(free.length, 1, 'у «free» своя тема')
+    const qs = EXCHANGES.map(x => x[0])
+    assert.equal(new Set(qs).size, qs.length, 'вопросы не повторяются')
+    assert.ok(new Set(EXCHANGES.map(x => x[4])).size >= 30, 'тем достаточно')
   })
 })
 
