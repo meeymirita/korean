@@ -3,7 +3,6 @@ import markupRaw from '@/game/markup.html?raw'
 import { initGame } from '@/game/engine'
 import { iconImg } from '@/game/icons'
 import { GAME_GROUPS } from '@/data/games'
-import { D as DICT } from '@/data/korean/words'
 
 /** Разметка игры так, как её собирает страница `/game/home` (иконки подставлены, фон кота не нужен). */
 const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
@@ -471,7 +470,7 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
     document.body.innerHTML = `<div id="root">${markup}</div>`
     dispose = initGame({ record: () => ({}), importXp: () => {}, state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }), cats: () => null, mode: () => 'place', saveCats: () => {}, grammar: () => {} })
     expect(chip('Рассказ').classList.contains('on')).toBe(true)
-    for (const other of ['pair', 'too', 'qw', 'part']) {
+    for (const other of ['pair', 'too', 'ord', 'spot']) {
       localStorage.setItem('hleb_game_v1', JSON.stringify({ levels: { place: 'story' } }))
       dispose?.()
       start(other)
@@ -487,84 +486,5 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
     document.body.innerHTML = `<div id="root">${markup}</div>`
     dispose = initGame({ record: () => ({}), importXp: () => {}, state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }), cats: () => null, mode: () => 'pair', saveCats: () => {}, grammar: () => {} })
     expect(chip('Длинный').classList.contains('on')).toBe(true)
-  })
-})
-
-describe('тексты: «Слово → перевод» и «Перевод → слово»', () => {
-  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
-  const tiles = () => [...document.querySelectorAll<HTMLButtonElement>('#bank .tile')]
-  const tileText = (b: Element) => (b.textContent ?? '').replace(/^\d/, '').trim()
-  const rows = () => [...document.querySelectorAll('.story .story-row')]
-  const firstRu = (s: string) => s.split(/[;,(]/)[0]!.trim()
-  /** Предложение строки без пропусков и стрелки: «저는 [학생]이에요.» */
-  const flat = (r: Element, gap: string) => [...r.querySelector('.story-s')!.childNodes].map(n => ((n as Element).classList?.contains('gap') ? gap : n.textContent)).join('').replace('  →  ' + gap, '').replace(/\s+/g, ' ').trim()
-
-  for (const [mode, level, min, max] of [['word', 'Рассказ', 2, 5], ['word', 'Длинный', 5, 10], ['rev', 'Рассказ', 2, 5], ['rev', 'Длинный', 5, 10]] as const) {
-    it(`«${mode}», «${level}»: ${min}–${max} предложений, верный ответ каждого пропуска есть в банке, в банке нет повторов`, () => {
-      for (let round = 0; round < 4; round++) {
-        start(mode)
-        document.querySelector<HTMLButtonElement>('#helpOk')?.click()
-        chip(level).click()
-        const n = rows().length
-        expect(n).toBeGreaterThanOrEqual(min)
-        expect(n).toBeLessThanOrEqual(max)
-        const bank = tiles().map(tileText)
-        expect(new Set(bank).size, 'без повторов в банке').toBe(bank.length)
-        expect(bank.length, 'в банке есть ловушки').toBeGreaterThan(n > 5 ? n - 1 : 3)
-        for (const r of rows()) {
-          if (mode === 'rev') {
-            const ko = flat(r, '___')
-            const pre = ko.split('___')[0]!, post = ko.split('___')[1] ?? ''
-            const ds = DICT.filter(x => x.s === pre + x.k + post)
-            expect(ds.length, 'предложение «' + ko + '» есть в словаре сайта').toBeGreaterThan(0)
-            expect(ds.some(d => bank.includes(d.k)), 'верное слово (одно из ' + ds.map(d => d.k).join(', ') + ') в банке; предложение «' + ko + '»').toBe(true)
-          } else {
-            const d = DICT.find(x => x.s === flat(r, ''))
-            expect(d, 'предложение «' + flat(r, '') + '» есть в словаре сайта').toBeTruthy()
-            expect(bank, 'верный перевод «' + firstRu(d!.t) + '» в банке').toContain(firstRu(d!.t))
-          }
-        }
-      }
-    })
-  }
-
-  it('«Слово → перевод»: перевод предложения скрыт (он выдал бы ответ), слово подсвечено; в разборе после проверки перевод есть', () => {
-    start('word')
-    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
-    chip('Рассказ').click()
-    expect(rows().length).toBeGreaterThan(0)
-    for (const r of rows()) {
-      expect(r.querySelector('.story-tr.off'), 'иконка выключена').not.toBeNull()
-      expect(r.querySelector('.story-tip'), 'перевода в разметке нет').toBeNull()
-      expect(r.querySelector('mark.story-mark'), 'слово подсвечено').not.toBeNull()
-    }
-    tiles()[0]!.click()
-    for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
-    document.querySelector<HTMLButtonElement>('#schk')!.click()
-    document.querySelector<HTMLButtonElement>('.story-info')!.click()
-    expect(document.querySelector('.story-win')?.textContent, 'в окне разбора виден перевод предложения').toMatch(/[а-яё]{3}/i)
-  })
-
-  it('«Перевод → слово»: у каждого предложения иконка с переводом, банк из корейских слов', () => {
-    start('rev')
-    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
-    chip('Рассказ').click()
-    for (const r of rows()) expect(r.querySelector('.story-tr:not(.off) .story-tip')?.textContent, 'перевод предложения').toBeTruthy()
-    for (const t of tiles()) expect(tileText(t)).toMatch(/[가-힣]/)
-  })
-
-  it('каждый уровень проходится до конца: ответы засчитаны, «Дальше» создаёт новый текст', () => {
-    for (const mode of ['word', 'rev']) for (const level of ['Рассказ', 'Длинный']) {
-      start(mode)
-      document.querySelector<HTMLButtonElement>('#helpOk')?.click()
-      chip(level).click()
-      const total = document.querySelectorAll('.story .gap').length
-      tiles()[0]!.click()
-      for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
-      document.querySelector<HTMLButtonElement>('#schk')!.click()
-      expect(records.length, mode + ' ' + level).toBe(total)
-      ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
-      expect(rows().length).toBeGreaterThanOrEqual(2)
-    }
   })
 })

@@ -197,4 +197,5 @@ html[data-theme='dark'][data-palette='night'] .game .story-win-box{background:#2
 .game .story-tr.off{visibility:hidden;cursor:default}
 .game .story-mark{padding:0 6px;border-radius:8px;background:#ffe3f3;color:#a02f78;font:inherit;font-weight:700}
 html[data-theme='dark'] .game .story-mark{background:rgba(255,128,200,.22);color:#ffc7e8}
+.game .story-ans{color:var(--muted);font-size:.8em}
 .game .story-cue{margin-right:4px;font-family:inherit;font-size:.7em;color:var(--muted)}

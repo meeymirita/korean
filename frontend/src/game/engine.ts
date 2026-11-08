@@ -14,6 +14,9 @@ import { gsap } from 'gsap'
 import { burst, cascade, pop } from '@/lib/fx'
 import { motionCalm } from '@/lib/motion'
 
+/** Тяжёлые наборы предложений для текстов считаются один раз на страницу (данные не меняются), а не при каждом запуске игры. */
+const POOLS={};
+
 /** Запускает игру на уже отрисованной разметке; возвращает функцию очистки. */
 /** hooks: общий прогресс сайта (record, importXp, state) — передаёт GameView. */
 export function initGame(hooks) {
@@ -99,7 +102,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -212,6 +215,7 @@ function genForm(){
     explain:[e.ko+' → '+right,e.note],hp:e.ko+' ('+(tense==='pres'?'наст.':'прош.')+')',hr:right,icon:'🔧'};
 }
 function genQw(){
+  if(storyOn('qw'))return S.levels.qw==='long'?genQwStory(5,10):genQwStory(2,5);
   const i=pickW(D.QB.map((x,k)=>k),k=>'q:'+k);
   const q=D.QB[i];
   const dis=shuffle(D.QPOOL.filter(x=>x!==q[2])).slice(0,3);
@@ -222,6 +226,7 @@ function genQw(){
     hp:q[0].replace('___','…'),hr:q[2],icon:'❓'};
 }
 function genPart(){
+  if(storyOn('part'))return S.levels.part==='long'?genPartStory(5,10):genPartStory(2,5);
   const i=pickW(D.PB.map((x,k)=>k),k=>'p:'+k);
   const p=D.PB[i];
   const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
@@ -339,7 +344,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -352,25 +357,26 @@ function makeStory(mode,label,sents,bank,icon){
     sn.pieces.forEach(function(pc){
       if(typeof pc==='string'){if(pc)parts.push({t:pc});}
       else if(pc.mark!==undefined)parts.push({t:pc.mark,mark:true});
+      else if(pc.ans!==undefined)parts.push({t:pc.ans,ans:true});
       else{
         const k=gaps.length;
-        const hp=sn.pieces.map(function(x){return typeof x==='string'?x:x.mark!==undefined?x.mark:(x===pc?'…':x.right);}).join('');
+        const hp=sn.pieces.map(function(x){return typeof x==='string'?x:x.mark!==undefined?x.mark:x.ans!==undefined?x.ans:(x===pc?'…':x.right);}).join('');
         parts.push({gap:k});gaps.push({right:pc.right,accept:pc.accept||null,why:pc.why||'',hp:hp,picked:null,ok:null});
       }
     });
-    return {ko:sn.ko,ru:sn.ru,noTr:!!sn.noTr,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
+    return {ko:sn.ko,ru:sn.ru,tip:sn.tip||'',noTr:!!sn.noTr,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
   });
   return {type:'story',mode:mode,key:'story:'+mode+':'+sents.map(function(x){return x.ko;}).join('|').slice(0,80),label:label,
     sents:out,gaps:gaps,bank:shuffle(bank),active:null,sel:null,checked:false,bonus:0,right:'',explain:[],hp:'Рассказ',hr:'',icon:icon||'⚖️',level:2};
 }
 /** «Пара или нет». У каждой частицы пара по 받침: 은/는, 이/가, 을/를, 와/과, 으로/로; у места 에/에서. */
 const TWIN={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'을','에':'에서','에서':'에','와':'과','과':'와','으로':'로','로':'으로'};
-let STORY_POOL=null;
+
 /** Все предложения с переводом, где есть частицы из пар и все слова известны разбору; считается один раз при первом тексте. */
 function storyPool(){
-  if(STORY_POOL)return STORY_POOL;
+  if(POOLS.STORY_POOL)return POOLS.STORY_POOL;
   const catOf={};DICT.forEach(d=>{if(d.s)catOf[d.s]=d.c;});
-  STORY_POOL=Object.keys(TRANSLATIONS).map(function(ko){
+  POOLS.STORY_POOL=Object.keys(TRANSLATIONS).map(function(ko){
     const segs=analyze(ko);
     const gaps=[];let cur=0;
     segs.forEach(function(sg){
@@ -379,7 +385,7 @@ function storyPool(){
     });
     return {ko:ko,ru:TRANSLATIONS[ko],gaps:gaps,cats:catOf[ko]||[],ok:!segs.some(function(sg){return sg.type==='unknown';})};
   }).filter(function(x){return x.ok&&x.gaps.length;});
-  return STORY_POOL;
+  return POOLS.STORY_POOL;
 }
 /** Текст из `n` предложений одной темы (если в теме хватает), в каждом до двух пропусков; плитки: частицы и их пары. */
 function genStory(lo,hi){
@@ -429,13 +435,13 @@ function genPlaceStory(lo,hi){
 /** «Тоже»: новое действие → частица темы (은/는, можно и 이/가), то же действие у другого человека → 도. */
 const TOO_SUBJ=[['엄마','мама'],['아빠','папа'],['친구','друг'],['선생님','учитель'],['학생','ученик'],['형','старший брат']];
 const TOO_PRED=[['학교에 가요','идёт в школу'],['공원에 가요','идёт в парк'],['빵을 먹어요','ест хлеб'],['커피를 마셔요','пьёт кофе'],['한국어를 공부해요','учит корейский'],['집에 있어요','дома']];
-let TOO_POOL=null;
+
 /** Слова шаблона, которых нет в разборе, отбрасываются (чтобы в карточках не было «?»). */
 function tooPool(){
-  if(TOO_POOL)return TOO_POOL;
+  if(POOLS.TOO_POOL)return POOLS.TOO_POOL;
   const known=t=>!analyze(t).some(function(sg){return sg.type==='unknown';});
-  TOO_POOL={subj:TOO_SUBJ.filter(function(x){return known(x[0]+'는 집에 있어요.');}),pred:TOO_PRED.filter(function(x){return known('엄마는 '+x[0]+'.');})};
-  return TOO_POOL;
+  POOLS.TOO_POOL={subj:TOO_SUBJ.filter(function(x){return known(x[0]+'는 집에 있어요.');}),pred:TOO_PRED.filter(function(x){return known('엄마는 '+x[0]+'.');})};
+  return POOLS.TOO_POOL;
 }
 function genTooStory(lo,hi){
   const pool=tooPool();
@@ -463,11 +469,11 @@ function genTooStory(lo,hi){
 }
 
 /** «Это или не это»: знакомство с вещами: 이에요 / 예요 / 이 아니에요 / 가 아니에요 по 받침. */
-let NEG_POOL=null;
+
 function negPool(){
-  if(NEG_POOL)return NEG_POOL;
-  NEG_POOL=D.S.filter(function(r){return /^[а-яё]+$/i.test(r[2])&&!analyze(r[0]+'이에요.').some(function(sg){return sg.type==='unknown';});});
-  return NEG_POOL;
+  if(POOLS.NEG_POOL)return POOLS.NEG_POOL;
+  POOLS.NEG_POOL=D.S.filter(function(r){return /^[а-яё]+$/i.test(r[2])&&!analyze(r[0]+'이에요.').some(function(sg){return sg.type==='unknown';});});
+  return POOLS.NEG_POOL;
 }
 function genNegStory(lo,hi){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
@@ -530,16 +536,16 @@ function genDemStory(lo,hi){
 /* ---------- «Слово → перевод» и «Перевод → слово»: слова в предложениях ---------- */
 /** Первый перевод слова: «пить; выпивать» → «пить». */
 const firstRu=t=>String(t||'').split(/[;,(]/)[0].trim();
-let WSENT_POOL=null;
+
 /** Слова сайта с примером и переводом: где слово стоит в предложении (`at`, `len`: само слово или основа глагола) и все слова предложения известны разбору. */
 function wsentPool(){
-  if(WSENT_POOL)return WSENT_POOL;
-  WSENT_POOL=DICT.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
+  if(POOLS.WSENT_POOL)return POOLS.WSENT_POOL;
+  POOLS.WSENT_POOL=DICT.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
     let at=d.s.indexOf(d.k),len=d.k.length;
     if(at<0&&/다$/.test(d.k)&&d.k.length>2){at=d.s.indexOf(d.k.slice(0,-1));len=d.k.length-1;}
     return {k:d.k,ko:d.s,ru:TRANSLATIONS[d.s],t:firstRu(d.t),at:at,len:len,cats:d.c||[],verb:/다$/.test(d.k)};
   }).filter(function(x){return x.at>=0&&x.t&&x.t.length<=24&&!analyze(x.ko).some(function(sg){return sg.type==='unknown';});});
-  return WSENT_POOL;
+  return POOLS.WSENT_POOL;
 }
 /** Слова для текста: разные переводы, из разных предложений; по возможности одной темы. */
 function wsentPick(n){
@@ -586,6 +592,87 @@ function genRevStory(lo,hi){
   const lures=wsentLures(words,hi>5?6:3,function(x){return x.k;}).filter(function(x){return !x.verb;});
   const bank=words.map(function(x){return x.k;}).concat(lures.map(function(x){return x.k;}));
   return makeStory('rev','Перевод → слово ('+plural(sents.length)+'): поставь пропущенное слово',sents,[...new Set(bank)],'🔁');
+}
+/* ---------- «Вопросы», «Частицы и счёт», «Выбери форму»: тексты ---------- */
+const known=ko=>!analyze(ko).some(function(sg){return sg.type==='unknown';});
+/** «Вопросы»: пары «вопрос — ответ» из диалогов; в вопросе пропущено вопросительное слово, подсказка только в переводе ответа (иконка слева). */
+const QW_WORDS=['어디','누구','뭐','얼마','몇','어느','무슨'];
+
+function qwPool(){
+  if(POOLS.QW_POOL)return POOLS.QW_POOL;
+  POOLS.QW_POOL=EXCHANGES.map(function(e){
+    const hit=QW_WORDS.filter(function(w){return e[0].split(/[ ?]/).some(function(t){return t===w||t.startsWith(w+'에')||t.startsWith(w+'예')||t.startsWith(w+'이');});});
+    if(hit.length!==1)return null;
+    const at=e[0].indexOf(hit[0]);
+    if(at<0)return null;
+    return {q:e[0],qru:e[1],a:e[2],aru:e[3],w:hit[0],at:at};
+  }).filter(function(x){return x&&known(x.q);});
+  return POOLS.QW_POOL;
+}
+function genQwStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const picked=shuffle(qwPool()).slice(0,n);
+  const sents=picked.map(function(x){
+    return {ko:x.q,ru:x.qru,tip:'Ответ: «'+x.aru+'»',
+      pieces:[x.q.slice(0,x.at),{right:x.w,why:'Ответ «'+x.a+'» ('+x.aru+') подсказывает вопрос: '+x.w},x.q.slice(x.at+x.w.length),'   →   ',{ans:x.a}]};
+  });
+  const bank=new Set(picked.map(function(x){return x.w;}));
+  shuffle(QW_WORDS).forEach(function(w){if(bank.size<Math.min(QW_WORDS.length,(hi>5?7:5)))bank.add(w);});
+  return makeStory('qw','Вопросы ('+plural(picked.length)+'): поставь вопросительное слово',sents,[...bank],'❓');
+}
+/** «Частицы и счёт»: предложения из банка частиц и счётных слов, в пропуске нужное слово; в банке всё, что встречалось как вариант. */
+
+function partPool(){
+  if(POOLS.PART_POOL)return POOLS.PART_POOL;
+  POOLS.PART_POOL=D.PB.map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);});
+  return POOLS.PART_POOL;
+}
+function genPartStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const picked=shuffle(partPool()).slice(0,n);
+  const sents=picked.map(function(x){return {ko:x.ko,ru:x.ru,pieces:[x.pre,{right:x.right,why:x.why},x.post]};});
+  const bank=new Set(picked.map(function(x){return x.right;}));
+  shuffle(picked.flatMap(function(x){return x.opts;})).forEach(function(t){if(bank.size<picked.length+(hi>5?5:3))bank.add(t);});
+  return makeStory('part','Частицы и счёт ('+plural(picked.length)+'): поставь нужное слово',sents,[...bank],'🧩');
+}
+/** «Выбери форму»: в предложении глагол или прилагательное без окончания (основа), в пропуск нужно поставить окончание: 아요 / 어요 / 았어요 / 었어요. Только слова, где основа и окончание просто склеиваются (без слияния). */
+
+function formPool(){
+  if(POOLS.FORM_POOL)return POOLS.FORM_POOL;
+  const stems=new Set();
+  DICT.forEach(function(d){if(/다$/.test(d.k)&&!/하다$/.test(d.k))stems.add(d.k.slice(0,-1));});
+  [...D.V,...D.A].forEach(function(r){if(/다$/.test(r[0])&&!/하다$/.test(r[0]))stems.add(r[0].slice(0,-1));});
+  const out=[];
+  Object.keys(TRANSLATIONS).forEach(function(ko){
+    const words=ko.replace(/[.?!,]/g,'').split(' ');
+    words.forEach(function(w){
+      for(const e of ['았어요','었어요','아요','어요']){
+        if(!w.endsWith(e))continue;
+        const stem=w.slice(0,-e.length);
+        if(stem&&stems.has(stem)&&jong(stem[stem.length-1])>0){
+          const at=ko.indexOf(w);
+          const a=jung(stem[stem.length-1]);const harmony=a===0||a===8;// ㅏ, ㅗ
+          const past=e[0]==='았'||e[0]==='었';
+          if((e==='아요'||e==='았어요')===harmony&&known(ko))out.push({ko:ko,ru:TRANSLATIONS[ko],stem:stem,e:e,at:at+stem.length,past:past,harmony:harmony});
+        }
+        break;
+      }
+    });
+  });
+  const seen=new Set();
+  POOLS.FORM_POOL=out.filter(function(x){const k=x.stem;if(seen.has(k))return false;seen.add(k);return true;});
+  return POOLS.FORM_POOL;
+}
+function genFormStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const pool=formPool();
+  const picked=shuffle(pool).slice(0,n);
+  const sents=picked.map(function(x){
+    const vow=x.harmony?'ㅏ или ㅗ':'не ㅏ и не ㅗ';
+    const why=x.stem+' + '+x.e+' → '+x.stem+x.e+'. У основы последний гласный '+vow+' → '+(x.harmony?'아':'어')+(x.past?', прошедшее время → '+(x.harmony?'았':'었')+'어요':', настоящее время → '+(x.harmony?'아요':'어요'));
+    return {ko:x.ko,ru:x.ru,cue:x.past?'в прошлом':'',pieces:[x.ko.slice(0,x.at),{right:x.e,why:why},x.ko.slice(x.at+x.e.length)]};
+  });
+  return makeStory('form','Окончания ('+plural(picked.length)+'): добавь окончание к основе',sents,['아요','어요','았어요','었어요'],'🔧');
 }
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
@@ -905,7 +992,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(Math.random()<.5?genForm():genPast()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite};
+const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,5)):(Math.random()<.5?genForm():genPast())),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite};
 function genQuestion(){
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite']);
@@ -1083,13 +1170,13 @@ function drawStory(card,q){
     if(!s.noTr){
       tr.innerHTML=iconImg('speech');
       tr.setAttribute('aria-label','Перевод предложения');
-      tr.appendChild(el('span','story-tip',s.ru||''));
+      tr.appendChild(el('span','story-tip',s.tip||s.ru||''));
       tr.addEventListener('click',function(){tr.classList.toggle('open');});
     }
     const p=el('div','story-s');
     if(s.cue)p.append(el('span','story-cue','('+s.cue+') '));
     s.parts.forEach(function(pt){
-      if(pt.gap===undefined){if(pt.mark)p.append(el('mark','story-mark',pt.t));else p.append(pt.t);}
+      if(pt.gap===undefined){if(pt.mark)p.append(el('mark','story-mark',pt.t));else if(pt.ans)p.append(el('span','story-ans',pt.t));else p.append(pt.t);}
       else{const g=el('button','gap');g.type='button';g.id='sg'+pt.gap;g.addEventListener('click',function(){tapGap(pt.gap);});p.append(g);}
     });
     const info=el('button','story-info','Разбор');info.type='button';info.id='si'+si;info.disabled=true;
