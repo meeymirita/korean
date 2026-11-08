@@ -4,7 +4,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
-import Avatar from '@/components/Avatar.vue'
+import GameTools from '@/components/korean/GameTools.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
 import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
@@ -38,9 +38,9 @@ const progress = useProgressStore()
 onMounted(() => document.body.classList.add('on-game-home'))
 onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
 const bgStyle = { '--gx-bg': `url(${bg})` }
-/** Ссылка «К списку игр» стоит в одной строке с кнопками режимов (внутри разметки игры, перед #modes). */
+/** Кнопки режимов игры стоят в своей строке; «← К списку игр», название и кнопки страницы вынесены в общую шапку-строку `.gh-back` (у тренажёров и игр движка одна и та же). */
 const markup = markupRaw
-  .replace('<div class="modes" id="modes"></div>', '<div class="gh-modesrow"><a href="/game/home" class="gh-backlink" data-back>← К списку игр</a><div class="modes" id="modes"></div></div>')
+  .replace('<div class="modes" id="modes"></div>', '<div class="gh-modesrow"><div class="modes" id="modes"></div></div>')
   .replace('CAT_SLEEP', catSleep).replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
@@ -50,6 +50,8 @@ const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView,
 const tool = computed(() => (TOOL_IDS as readonly string[]).includes(game.value) ? TOOLS[game.value as keyof typeof TOOLS] : null)
 const engineOn = computed(() => !!game.value && !tool.value && ALL_GAMES.some(g => g.id === game.value))
 const current = computed(() => ALL_GAMES.find(g => g.id === game.value))
+/** Открыта игра (тренажёр или режим движка), а не каталог: тогда вместо шапки каталога одна строка `.gh-back`. */
+const inGame = computed(() => !!game.value && (!!tool.value || engineOn.value))
 
 const router = useRouter()
 /** Откуда пришли: страница игры (например «Найди пару»), если мы перешли с неё на другую; иначе «К списку игр» ведёт в каталог. */
@@ -70,13 +72,6 @@ function goBack() {
   const to = backTo.value
   cameFrom.value = ''
   void router.push(to)
-}
-/** «К списку игр» внутри разметки движка: обычная ссылка, переход без перезагрузки страницы. */
-function onMarkupClick(e: MouseEvent) {
-  if ((e.target as HTMLElement).closest?.('[data-back]')) {
-    e.preventDefault()
-    goBack()
-  }
 }
 let dispose: (() => void) | undefined
 function startEngine() {
@@ -200,22 +195,20 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
     </aside>
 
     <div class="gx-main">
-      <header class="game-top gx-top">
+      <template v-if="inGame">
         <h1 class="gx-sr">Игры на слова</h1>
-        <div class="gx-tools">
-          <button v-if="game" type="button" class="gx-round" :title="folded ? 'Показать список игр' : 'Спрятать список игр'" :aria-label="folded ? 'Показать список игр' : 'Спрятать список игр'" :aria-expanded="!folded" @click="navOpen = !navOpen">☰</button>
-          <button type="button" class="gx-round" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" aria-label="Поиск" @click="openSearch()">⌕</button>
-          <button type="button" class="gx-round" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()">{{ themeDark ? '☀' : '☾' }}</button>
-          <RouterLink to="/korean/cabinet" class="gx-ava" aria-label="Кабинет"><Avatar :avatar="progress.data.profile.avatar" :size="40" /></RouterLink>
-        </div>
-        <img v-if="!game" class="gh-sit" :src="yunaSit" alt="" aria-hidden="true" draggable="false" />
+        <div class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="current" class="gh-name">{{ current.name }}</b><GameTools menu :folded="folded" :dark="themeDark" @menu="navOpen = !navOpen" @search="openSearch()" @theme="toggleTheme()" /></div>
+      </template>
+      <header v-else class="game-top gx-top">
+        <h1 class="gx-sr">Игры на слова</h1>
+        <GameTools :menu="false" :folded="folded" :dark="themeDark" @menu="navOpen = !navOpen" @search="openSearch()" @theme="toggleTheme()" />
+        <img class="gh-sit" :src="yunaSit" alt="" aria-hidden="true" draggable="false" />
       </header>
 
       <AuthGate v-if="!progress.unlocked" />
-      <template v-else-if="game && (tool || engineOn)">
-        <div v-if="tool" class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="tool && current">{{ current.name }}</b></div>
+      <template v-else-if="inGame">
         <section v-if="tool" class="gh-panel gh-tool"><component :is="tool" :key="game" /></section>
-        <div v-else v-html="markup" @click="onMarkupClick"></div>
+        <div v-else v-html="markup"></div>
       </template>
       <section v-else class="gh-panel">
         <div class="gh-tabs" role="tablist">
@@ -309,10 +302,10 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 body.on-game-home .study.sky .sw-btn { top: 52px; right: 236px; }
 @media (max-width: 860px) { body.on-game-home .study.sky .sw-btn { top: auto; right: auto; } }
 .gh .gh-back { display: flex; align-items: center; gap: 14px; margin: 10px clamp(16px, 2.4vw, 40px) 0; }
-.gh .gh-backlink { padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; background: rgba(255, 255, 255, .9); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 6px 18px rgba(100, 87, 170, .16); }
+.gh .gh-back .gx-tools { margin-left: auto; flex: none; }
+.gh :is(.gh-backlink, .gh-name) { padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; background: rgba(255, 255, 255, .9); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 6px 18px rgba(100, 87, 170, .16); }
 .gh .gh-backlink:hover { color: var(--pink); }
 .gh .gh-modesrow { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .gh .gh-modesrow .modes { margin: 0; flex: 1; min-width: 0; }
-.gh .gh-modesrow .gh-backlink { flex: none; }
 .gh .gh-tool { margin-top: 10px; }
 </style>
