@@ -1,0 +1,9 @@
+CREATE TABLE new_words (
+  id TEXT PRIMARY KEY,
+  ko TEXT NOT NULL,
+  reading TEXT NOT NULL DEFAULT '',
+  ru TEXT NOT NULL,
+  example TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  created BIGINT NOT NULL
+);

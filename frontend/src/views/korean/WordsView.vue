@@ -12,6 +12,8 @@ import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
 import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
+import NewWordDrawer from '@/components/korean/NewWordDrawer.vue'
+import { useNewWordsStore, type NewWord } from '@/stores/newWords'
 import yunaBook from '@/assets/home/yuna-book.webp'
 
 const progress = useProgressStore()
@@ -25,6 +27,13 @@ const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
 const picked = ref<Word | null>(null)
+/** Вкладка «Не добавленные»: слова из формы, ещё не внесённые в словарь (только владельцу) */
+const newWords = useNewWordsStore()
+const formOpen = ref(false)
+const editing = ref<NewWord | null>(null)
+const openForm = () => ((editing.value = null), (formOpen.value = true))
+watch(() => progress.unlocked, u => u && newWords.load().catch(() => {}))
+onMounted(() => progress.unlocked && newWords.load().catch(() => {}))
 const openN = ref<number | null>(null)
 const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null))
 /** Для какого слова показаны «похожие» */
@@ -78,7 +87,7 @@ function random() {
 }
 function onKey(e: KeyboardEvent) {
   const tag = (e.target as HTMLElement).tagName
-  if (e.key === '/' && tag !== 'INPUT') {
+  if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
     e.preventDefault()
     input.value?.focus()
   }
@@ -97,9 +106,11 @@ const shareWord = (d: Word) =>
     <Teleport to="body">
       <img class="words-yuna" :src="yunaBook" alt="" aria-hidden="true" draggable="false" />
     </Teleport>
-    <SectionHead id="words" :sub="`словарь корейского · ${D.length} слов`" :big="D.length">
+    <SectionHead id="words" :sub="progress.unlocked ? '' : `словарь корейского · ${D.length} слов`" :big="D.length">
       <template #sub-extra>
-        · <a class="words-json" href="/words.json" target="_blank" rel="noopener" title="Весь словарь одним файлом, только чтение">словарь в JSON ↗</a>
+        <template v-if="!progress.unlocked"> · </template>
+        <button v-if="progress.unlocked" type="button" class="nw-add" @click="openForm()">+ Добавить слово</button>
+        <a class="words-json" href="/words.json" target="_blank" rel="noopener" title="Весь словарь одним файлом, только чтение">словарь в JSON ↗</a>
       </template>
     </SectionHead>
     <div class="searchbar">
@@ -136,6 +147,7 @@ const shareWord = (d: Word) =>
       </div>
     </div>
 
+    <NewWordDrawer :open="formOpen" :edit="editing" @close="formOpen = false" />
     <div v-if="rows.length" class="tb">
       <div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
       <template v-for="(d, i) in rows" :key="d.n">
@@ -173,8 +185,10 @@ const shareWord = (d: Word) =>
 </template>
 
 <style>
-.words-json { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
-.words-json:hover { text-decoration-style: solid; }
+.study .page-head .sub .words-json { display: inline-block; margin-left: 8px; padding: 4px 14px; border-radius: 99px; background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9 !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: filter .2s; }
+.study .page-head .sub .nw-add { padding: 4px 14px; opacity: 1; font-size: 14px; color: #fff !important; border: 0; border-radius: 99px; background: linear-gradient(100deg, #e86bc0, #d64da9); color: #fff !important; font: inherit; font-weight: 700; cursor: pointer; transition: filter .2s; }
+.study .page-head .sub .nw-add:hover { filter: brightness(1.06); }
+.study .page-head .sub .words-json:hover { filter: brightness(.97); }
 /* Кнопка «Показать ещё» под списком слов */
 .words-more { display: block; margin: 18px auto 6px; padding: 12px 28px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--pink); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .2s, background .2s; }
 .words-more small { color: var(--muted); font-weight: 500; }

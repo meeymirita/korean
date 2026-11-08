@@ -70,6 +70,17 @@ model Note {
   @@map("notes")
 }
 
+model NewWord {
+  id      String @id
+  ko      String
+  reading String @default("")
+  ru      String
+  example String @default("")
+  note    String @default("")
+  created BigInt
+  @@map("new_words")
+}
+
 model Image {
   id          String @id
   name        String
