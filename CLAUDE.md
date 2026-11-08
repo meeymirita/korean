@@ -96,7 +96,7 @@
 
 `/` главная · `/about` · `/history` · `/dict` и `/dict/<слово>` (большой словарь по krdict, открытый, вне оболочки `/korean`, `docs/dict.md`) · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/korean/services` (сервисы сервера, ссылки на Grafana и Prometheus, только владелец) · `/game/home` игры (`?game=<id>`, `/game` и `/korean/trainers` ведут сюда) · `/words.json` (публичный словарь, только чтение), `/api/new-words` (записанные слова, только владелец и временный токен на чтение) · `/korean/...`: `home`, `today`, `words`, `grammar`, `cabinet` (`?tab=repeat|week|report|notes|images|notifications|telegram|settings|services`; «База» и «Журналы» живут внутри «Настроек»),
 `review`, `shop`, `chat` (только владелец), `garden`, `culture` (мини-уроки культуры Кореи), `know` («что я уже знаю» перед созвоном), `lab` (мастерская грамматики: конструктор, дерево тем, «почему так», два стиля), `sites` (полезные сайты), `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `mistakes`, `marks`, `forms`; тренажёры `quick`, `particles`, `pairs`, `translate`, `syllables`, `keyboard` (печать на корейском) открываются только как `/game/home?game=<id>`.
-Открыты всем: справочники, слова, грамматика, главная, история, «О платформе»; остальное по токену (замок в меню, `AuthGate`). Список разделов `src/data/korean/sections.ts`.
+Открыты всем: главная, `/korean/home`, `/dict` (большой словарь), история, «О платформе», визитка; **всё остальное в `/korean` по токену** (замок в меню, `AuthGate`; решение владельца 2026-11-08: слова, грамматика и справочник тоже закрыты для гостей). Список разделов `src/data/korean/sections.ts`.
 
 ## Структура `frontend/src`
 

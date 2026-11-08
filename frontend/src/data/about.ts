@@ -62,6 +62,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Слова',
     text: 'Словарь корейского: чтение русскими буквами, перевод, пример предложения с разбором и темы. Поиск понимает и корейский, и русский, и чтение.',
     to: '/korean/words',
+    private: true,
   },
   {
     id: 'grammar',
@@ -69,6 +70,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Грамматика',
     text: 'Правила по урокам в виде карточек. Нажми на карточку: откроется объяснение с формулой, таблицей и примерами. Пройденные правила отмечены.',
     to: '/korean/grammar',
+    private: true,
   },
   {
     id: 'cheat',
@@ -76,6 +78,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Шпаргалка',
     text: 'Частицы, формулы и шаблоны предложений на одной странице: быстро вспомнить, как строится фраза.',
     to: '/korean/ref/cheat',
+    private: true,
   },
   {
     id: 'talk',
@@ -83,6 +86,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Разговорник',
     text: 'Живые фразы, диалоги знакомства и слэнг. Подходит, чтобы сразу начать говорить.',
     to: '/korean/ref/talk',
+    private: true,
   },
   {
     id: 'hangul',
@@ -90,6 +94,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Хангыль',
     text: 'Таблица слогов, как читать и как писать корейские буквы.',
     to: '/korean/ref/hangul',
+    private: true,
   },
   {
     id: 'alphabet',
@@ -97,6 +102,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Алфавит',
     text: 'Все буквы и слоги с чтением. Нажми на букву, чтобы увидеть подробности.',
     to: '/korean/ref/alphabet',
+    private: true,
   },
   {
     id: 'reading',
@@ -104,6 +110,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Правила чтения',
     text: 'Как звучит ㄹ, что происходит между гласными, как читается 받침 и другие особые случаи.',
     to: '/korean/ref/reading',
+    private: true,
   },
   {
     id: 'sentences',
@@ -111,6 +118,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Примеры предложений',
     text: 'Все предложения из словаря. Нажми на предложение, и оно разберётся по словам и частицам.',
     to: '/korean/ref/sentences',
+    private: true,
   },
   {
     id: 'numbers',
@@ -118,6 +126,7 @@ export const ABOUT_SLIDES: AboutSlide[] = [
     title: 'Числа и счёт',
     text: 'Цены, количество и счётные слова: два вида счёта и когда какой нужен.',
     to: '/korean/ref/numbers',
+    private: true,
   },
   {
     id: 'trainers',

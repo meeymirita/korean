@@ -33,6 +33,6 @@ describe('«О платформе»: слайды', () => {
 
   test('закрытые токеном страницы помечены, открытые нет', () => {
     const priv = ABOUT_SLIDES.filter(s => s.private).map(s => s.id)
-    assert.deepEqual(priv.sort(), ['cabinet', 'game', 'garden', 'review', 'settings', 'today', 'trainers'])
+    assert.deepEqual(priv.sort(), ['alphabet', 'cabinet', 'cheat', 'game', 'garden', 'grammar', 'hangul', 'numbers', 'reading', 'review', 'sentences', 'settings', 'talk', 'today', 'trainers', 'words'])
   })
 })
