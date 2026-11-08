@@ -188,3 +188,16 @@ model Event {
   info String @default("")
   @@map("events")
 }
+
+/// Заходы на большой словарь и подборки: кто (человек или бот поисковика), на какую страницу, откуда пришёл. Без адресов и cookie.
+model DictVisit {
+  id   BigInt @id @default(autoincrement())
+  t    BigInt
+  day  String
+  kind String
+  ref  String @default("")
+  who  String
+  src  String @default("")
+  @@index([day], map: "dict_visits_day")
+  @@map("dict_visits")
+}

@@ -1,10 +1,11 @@
-import { BadRequestException, Controller, Get, Header, Param, Post, Query } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Header, HttpCode, Param, Post, Query } from '@nestjs/common'
 import { Owner, Public } from '../auth/auth.js'
 import { DictService } from './dict.service.js'
+import { DictVisits } from './dict.visits.service.js'
 
 @Controller('dict')
 export class DictController {
-  constructor(private readonly dict: DictService) {}
+  constructor(private readonly dict: DictService, private readonly visits: DictVisits) {}
 
   /** Открытый поиск по большому словарю (корейский, русский, спряжённые формы). */
   @Public()
@@ -62,6 +63,22 @@ export class DictController {
   @Get('sitemap')
   sitemap() {
     return this.dict.sitemap()
+  }
+
+  /** Учёт захода на страницу словаря или подборки (зовёт серверная часть сайта и браузер при переходе внутри словаря). Всегда отвечает 204: ошибки учёта не должны ломать страницу. */
+  @Public()
+  @HttpCode(204)
+  @Post('visit')
+  async visit(@Body() body: { path?: unknown; ua?: unknown; ref?: unknown }) {
+    await this.visits.record(body ?? {}).catch(() => false)
+  }
+
+  /** Итоги заходов за период (по умолчанию 30 дней): люди и роботы, по дням, страницы, источники. Только владелец. */
+  @Owner()
+  @Get('visits')
+  summary(@Query('days') days = '30') {
+    if (!/^\d{1,3}$/.test(days)) throw new BadRequestException({ error: 'неверное число дней' })
+    return this.visits.summary(Number(days))
   }
 
   @Owner()
