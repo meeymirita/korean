@@ -71,7 +71,7 @@ korean.meeymirita.ru {
 6. **Обновления системы:** `apt update && apt upgrade` раз в месяц, `apt install unattended-upgrades`. Яндекс.Вебмастер и Google Search Console: добавить сайт и `https://korean.meeymirita.ru/sitemap.xml`.
 
 ## Приложение и видео
-- `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` открывается на главной сам один раз за открытое окно браузера (`sessionStorage['demo_auto_shown']`), файл тяжёлый, поэтому в тестах размера он исключён.
+- `frontend/public/sw.js` (приложение, PWA) отдаёт сам Nuxt; поменял логику, подними `VERSION` в файле. Видео-обзор `public/demo.webm` открывается на главной только по ссылке (само при заходе не показывается с 2026-11-09), файл тяжёлый, поэтому в тестах размера он исключён.
 - **Видеоуроки** (44 файла, уроки 1–30 курса 양쌤의 한국어 교실, AV1 + Opus, 7,8 ГБ) лежат на Яндекс.Диске в папке `korean_video`: `lesson-01.mp4` … `lesson-30.mp4`, `lesson-16-1.mp4`, `lesson-16-2.mp4`, `part2-01.mp4` … `part2-13.mp4`.
   Сайт берёт файл по подписи карточки («Урок N», `videoOf` в `src/data/korean/course.ts`); нет файла: заглушка. Новое видео: положить на Диск в `korean_video` руками или `node scripts/upload-videos.mjs [папка]` (копия видео у владельца в `~/Movies/Korean-videos/`).
   AV1 не везде играет (Safari, часть iPad); перекодировать: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`.

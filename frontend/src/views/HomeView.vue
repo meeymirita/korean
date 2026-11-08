@@ -42,18 +42,7 @@ watch(demo, open => {
     }
   })
 })
-/** При заходе на главную видео открывается само, один раз за открытое окно браузера (после закрытия и обновления страницы не навязывается). */
-const AUTO_KEY = 'demo_auto_shown'
-function openOnArrival() {
-  try {
-    if (sessionStorage.getItem(AUTO_KEY)) return
-    sessionStorage.setItem(AUTO_KEY, '1')
-  } catch {
-    /* без запоминания: откроем */
-  }
-  demo.value = true
-}
-onMounted(openOnArrival)
+/** Видео-обзор открывается только по ссылке «посмотреть видео-демонстрацию»: само при заходе не показывается (решение владельца, 2026-11-09). */
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 const toast = useToastStore()
