@@ -23,7 +23,7 @@ describe('SEO', () => {
   })
 
   test('закрытые токеном страницы помечены noindex', () => {
-    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/forms', '/korean/garden', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/upload'])
+    assert.deepEqual(privatePaths().sort(), ['/dict-designs', '/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/forms', '/korean/garden', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/upload'])
     for (const p of privatePaths()) assert.equal(seoFor(p).noindex, true)
   })
 
