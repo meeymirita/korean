@@ -56,11 +56,11 @@ export const markFile = (file: string) => file + '.indexed'
 export const isIndexFresh = (mark: IndexMark | null, file: { size: number; mtimeMs: number }, documents: number) =>
   !!mark && mark.version === INDEX_VERSION && mark.size === file.size && mark.mtimeMs === file.mtimeMs && mark.documents === documents && documents > 0
 
-/** Перевод для списка: до трёх разных переводов, длинные описания и повторы отбрасываются. */
-export const shortRu = (ru: string) => {
+/** Перевод для списка: до двух разных переводов, длинные описания и повторы отбрасываются. */
+export const shortRu = (ru: string, max = 2) => {
   const all = [...new Set(ru.split('; ').map(x => x.trim()).filter(Boolean))]
   const short = all.filter(x => x.length <= 40)
-  return (short.length ? short : all).slice(0, 3).join('; ')
+  return (short.length ? short : all).slice(0, max).join('; ')
 }
 
 const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`

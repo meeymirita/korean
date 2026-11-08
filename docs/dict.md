@@ -41,7 +41,7 @@
 
 - Описание подборок: `backend/src/dict/dict.collections.ts` (адрес, заголовок, описание для поисковика, вступление, фильтр Meilisearch, размер). Сейчас 13: `top-100`, `top-500`, `top-1000` (самые частые по `freq`), `glagoly`, `prilagatelnye`, `narechiya` (начальный уровень по частям речи), темы по категориям базы (`cat`): `vremya`, `chisla`, `eda`, `emocii`, `semya`, `telo`, `cveta`.
 - Порядок в подборке: сначала по `freq` (место в частотном списке), у слов без него по `rank`. Новую подборку добавляй записью в `COLLECTIONS` (тест следит за адресом, длиной описания и фильтром); в карту сайта она попадёт сама (`DictService.sitemap`).
-- API: `GET /api/dict/collections` (список с числом слов) и `GET /api/dict/collection/:slug` (слова, кэш час). Страницы `views/DictCollectionsView.vue` и `DictCollectionView.vue`: заголовок и описание из подборки, JSON-LD `CollectionPage` + `ItemList` + `BreadcrumbList` (`collectionJsonLd` в `lib/dictSeo.ts`), 404 для несуществующей. Со страницы `/dict` ведёт строка ссылок «Подборки».
+- API: `GET /api/dict/collections` (список с числом слов) и `GET /api/dict/collection/:slug` (слова с двумя главными переводами, кэш час). Страницы `views/DictCollectionsView.vue` и `DictCollectionView.vue`: заголовок и описание из подборки, JSON-LD `CollectionPage` + `ItemList` + `BreadcrumbList` (`collectionJsonLd` в `lib/dictSeo.ts`), 404 для несуществующей. Со страницы `/dict` ведёт строка ссылок «Подборки».
 
 ## Страница слова (`views/DictWordView.vue`)
 
