@@ -5,6 +5,8 @@ import DictShell from '@/components/dict/DictShell.vue'
 import { conjugate, withParticles } from '@/lib/conjugate'
 import { mainEntry, type DictWord } from '@/lib/dictApi'
 import { useDictRecent } from '@/composables/useDictRecent'
+import { canonicalOf } from '@/data/seo'
+import { wordDescription, wordJsonLd, wordLead, wordTitle } from '@/lib/dictSeo'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,7 +57,7 @@ const uniq = (l: string[]) => [...new Set(l)]
 /* ---------- вкладки ---------- */
 const TABS = computed(() => [
   { id: 'forms', label: formsTitle.value, on: !!forms.value },
-  { id: 'rel', label: 'Связанные слова', on: !!data.value?.related.length },
+  { id: 'rel', label: 'Связанные слова', on: !!(data.value?.related.length || data.value?.similar?.length) },
   { id: 'ex', label: 'Примеры', on: sentences.value.length > 0 },
   { id: 'phr', label: 'Словосочетания', on: phrases.value.length > 0 },
   { id: 'dial', label: 'Диалоги', on: dialogs.value.length > 0 },
@@ -89,7 +91,23 @@ onMounted(() => {
 watch(main, rememberWord)
 onBeforeUnmount(() => { if (import.meta.client) document.removeEventListener('click', closeOnOutside) })
 
-useHead(() => ({ title: main.value ? `${main.value.word}: перевод и значение · 우리말` : '우리말' }))
+/* ---------- SEO: уникальные заголовок и описание по слову, JSON-LD, настоящий код 404 для несуществующего слова ---------- */
+const seoEntry = computed(() => (main.value ? { ...main.value, senses: main.value.senses } : undefined))
+const pageUrl = computed(() => canonicalOf(route.path))
+if (import.meta.server && !data.value && error.value?.statusCode === 404) setResponseStatus(useRequestEvent()!, 404)
+useSeoMeta({
+  title: () => (seoEntry.value ? wordTitle(seoEntry.value) : 'Такого слова нет · 우리말'),
+  description: () => (seoEntry.value ? wordDescription(seoEntry.value) : 'Такого слова нет в большом корейско-русском словаре.'),
+  ogTitle: () => (seoEntry.value ? wordTitle(seoEntry.value) : 'Такого слова нет · 우리말'),
+  ogDescription: () => (seoEntry.value ? wordDescription(seoEntry.value) : undefined),
+  twitterTitle: () => (seoEntry.value ? wordTitle(seoEntry.value) : undefined),
+  twitterDescription: () => (seoEntry.value ? wordDescription(seoEntry.value) : undefined),
+  robots: () => (seoEntry.value ? 'index, follow, max-image-preview:large, max-snippet:-1' : 'noindex, nofollow'),
+})
+useHead({
+  script: [{ key: 'dict-ld', type: 'application/ld+json', innerHTML: () => (seoEntry.value ? JSON.stringify(wordJsonLd(seoEntry.value, pageUrl.value)) : '') }],
+})
+const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
 </script>
 
 <template>
@@ -118,6 +136,8 @@ useHead(() => ({ title: main.value ? `${main.value.word}: перевод и зн
         <span class="chip lvl">{{ main.level === 'нет' ? 'без уровня' : main.level }}</span>
         <span v-if="main.cat" class="cat" lang="ko">{{ main.cat }}</span>
       </section>
+
+      <p class="lead" lang="ru">{{ lead }}</p>
 
       <section class="meanings">
         <h2>Значения слова</h2>
@@ -156,11 +176,19 @@ useHead(() => ({ title: main.value ? `${main.value.word}: перевод и зн
         </template>
 
         <!-- связанные слова -->
-        <div v-else-if="tab === 'rel' && data?.related.length">
-          <h3 class="ph">Слова, в которых есть «{{ word }}»</h3>
-          <ul class="pairs">
-            <li v-for="p in data.related" :key="p.word"><RouterLink :to="`/dict/${encodeURIComponent(p.word)}`" class="w alt" lang="ko">{{ p.word }}</RouterLink><span class="mu">{{ p.ru }}</span></li>
-          </ul>
+        <div v-else-if="tab === 'rel'" class="two">
+          <div v-if="data?.similar?.length">
+            <h3 class="ph">Слова той же темы<span v-if="data.category" class="cat2" lang="ko"> · {{ data.category }}</span></h3>
+            <ul class="pairs">
+              <li v-for="p in data.similar" :key="p.word"><RouterLink :to="`/dict/${encodeURIComponent(p.word)}`" class="w" lang="ko">{{ p.word }}</RouterLink><span class="mu">{{ p.ru }}</span></li>
+            </ul>
+          </div>
+          <div v-if="data?.related.length">
+            <h3 class="ph">Слова, в которых есть «{{ word }}»</h3>
+            <ul class="pairs">
+              <li v-for="p in data.related" :key="p.word"><RouterLink :to="`/dict/${encodeURIComponent(p.word)}`" class="w alt" lang="ko">{{ p.word }}</RouterLink><span class="mu">{{ p.ru }}</span></li>
+            </ul>
+          </div>
         </div>
 
         <!-- примеры -->
@@ -219,6 +247,9 @@ useHead(() => ({ title: main.value ? `${main.value.word}: перевод и зн
 .lab { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .tag { padding: 4px 12px; border-radius: 999px; background: var(--soft); color: var(--accent2); font-size: 14px; font-weight: 600; }
 .ph { margin: 0 0 10px; font-size: 14px; }
+.cat2 { font-weight: 500; color: var(--muted); font-size: 12px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.lead { width: fit-content; max-width: 100%; margin: 12px 0 0; padding: 8px 16px; border-radius: 16px; background: rgba(255, 255, 255, .72); color: #3b3f7a; font-size: 14px; line-height: 1.5; }
 .pairs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pairs li { display: flex; align-items: center; gap: 14px; }
 .w { flex: none; padding: 6px 16px; border-radius: 999px; background: var(--pink); color: var(--accent); font-weight: 700; font-size: 16px; }

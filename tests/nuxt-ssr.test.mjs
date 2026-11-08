@@ -70,7 +70,7 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
   test('в HTML настоящее содержимое: «О платформе» и большой словарь (слова, грамматика и справочник теперь по токену и на сервере не рисуются)', async () => {
     assert.ok((await page('/about')).includes('Личный кабинет'), 'слайды «О платформе»')
     const dict = await page('/dict')
-    assert.ok(dict.includes('Большой словарь') && dict.includes('name="robots" content="index, follow'), '/dict открыт и индексируется')
+    assert.ok(dict.includes('Большой корейско-русский словарь') && dict.includes('name="robots" content="index, follow'), '/dict открыт и индексируется')
     for (const p of ['/korean/words', '/korean/grammar', '/korean/ref/cheat']) assert.ok((await page(p)).includes('<div id="__nuxt"></div>'), `${p} только оболочка приложения`)
   })
 

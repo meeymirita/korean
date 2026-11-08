@@ -14,7 +14,7 @@ const priv = privatePaths()
  * Открытые страницы, которые одинаковы для всех: готовый HTML при сборке. Остальные открытые рисуются на каждый запрос:
  * /me берёт визитку из API, на главных случайные фраза, правило и слова (новые после каждого обновления, useHomePicks).
  */
-const PER_REQUEST = ['/me', '/', '/korean/home']
+const PER_REQUEST = ['/me', '/', '/korean/home', '/dict']
 const STATIC = pub.filter(p => !PER_REQUEST.includes(p))
 
 export default defineNuxtConfig({
@@ -69,6 +69,9 @@ export default defineNuxtConfig({
     ...Object.fromEntries(STATIC.map(p => [p, { prerender: true }])),
     // визитка: из кэша Nitro (в памяти процесса) до 60 с, потом обновляется в фоне; как прежний Cache-Control у /api/public/me
     '/me': { swr: 60 },
+    // большой словарь: страницы рисуются на сервере из API и кэшируются на час (слова в базе не меняются), поисковик получает быстрый готовый HTML
+    // (в разработке кэш выключен: иначе после правок виден старый HTML и Vue ругается на «Hydration mismatch»)
+    ...(process.env.NODE_ENV === 'development' ? {} : { '/dict': { swr: 3600 }, '/dict/**': { swr: 3600 } }),
     // закрытые страницы и всё, что зависит от localStorage: только в браузере
     ...Object.fromEntries(priv.map(p => [p, { ssr: false }])),
     '/korean/ref': { ssr: false },

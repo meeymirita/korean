@@ -27,7 +27,9 @@ useHead({ link: [{ rel: 'canonical', href: () => canonicalOf(route.path) }] })
 
 // schema.org (nuxt-schema-org): сайт и учебный ресурс, как раньше в index.html
 useSchemaOrg([
-  defineWebSite({ name: BRAND, url: SITE + '/', description: 'Платформа для изучения корейского языка с нуля: словарь, грамматика, справочник, тренажёры и игра на слова.', inLanguage: 'ru-RU' }),
+  defineWebSite({ name: BRAND, url: SITE + '/', description: 'Платформа для изучения корейского языка с нуля: словарь, грамматика, справочник, тренажёры и игра на слова.', inLanguage: 'ru-RU',
+    // строка поиска по большому словарю прямо в выдаче Google и Яндекса
+    potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: SITE + '/dict?q={search_term_string}' }, 'query-input': 'required name=search_term_string' } }),
   {
     '@type': 'LearningResource',
     name: `${BRAND} — корейский язык с нуля`,
