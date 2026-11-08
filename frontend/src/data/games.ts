@@ -43,7 +43,7 @@ export const GAME_GROUPS: GameGroup[] = [
     games: [
       { id: 'han', name: 'Хангыль-блиц', desc: 'Собери слог или узнай, как он читается', icon: 'han', to: '/game/home?game=han' },
       { id: 'syllables', name: 'Собери по слогам', desc: 'Составь слово из слогов', icon: 'board', to: '/game/home?game=syllables' },
-      { id: 'keyboard', name: 'Печать на корейском', desc: 'Буквы, слоги, слова и предложения на клавиатуре', icon: 'pencil', to: '/game/home?game=keyboard' },
+      { id: 'keyboard', name: 'Печать на корейском', desc: 'Буквы, слоги, слова и предложения, а ещё свой набор', icon: 'pencil', to: '/game/home?game=keyboard' },
     ],
   },
   {

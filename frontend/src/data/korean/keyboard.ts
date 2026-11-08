@@ -1,6 +1,10 @@
 import { isTypable, jamoOf } from '@/lib/hangulKeys'
-import { shuffle } from './tasks'
-import { D } from './words'
+import type { ProgressData } from '@/stores/progress'
+import { mistakeWords } from '../mistakes'
+import { dueWords } from '../review'
+import { shuffle, short } from './tasks'
+import { TRANSLATIONS } from './translations'
+import { D, parseQuery, score, type Word } from './words'
 
 export type KbLevel = 'letters' | 'syllables' | 'words' | 'sentences'
 
@@ -48,3 +52,78 @@ export function kbItems(level: KbLevel): string[] {
 
 /** Сколько нажатий в тексте (для скорости). */
 export const keyCount = (items: string[]) => items.reduce((n, t) => n + [...t].reduce((m, c) => m + jamoOf(c).length, 0), 0)
+
+/* ---------- свои слова и предложения ---------- */
+
+/** Пятая вкладка тренажёра: набор собирает сам владелец (из словаря, из ошибок, из «Повторить»). */
+export const KB_CUSTOM = { id: 'custom', label: 'Свои слова и предложения', hint: 'Выбери сам, что печатать' } as const
+
+export type CustomKind = 'words' | 'sentences'
+export type CustomSource = 'dict' | 'mistakes' | 'due'
+
+export const CUSTOM_KINDS: { id: CustomKind; label: string }[] = [
+  { id: 'words', label: 'Слова' },
+  { id: 'sentences', label: 'Предложения' },
+]
+export const CUSTOM_SOURCES: { id: CustomSource; label: string }[] = [
+  { id: 'dict', label: 'Весь словарь' },
+  { id: 'mistakes', label: 'Мои ошибки' },
+  { id: 'due', label: 'Повторить' },
+]
+
+export interface CustomItem {
+  /** что печатать: слово или предложение */
+  text: string
+  /** перевод (для предложения его перевод из `translations.ts`, иначе перевод слова) */
+  ru: string
+  /** чтение слова: по нему тоже работает поиск */
+  r: string
+  word: Word
+}
+
+const itemOf = (w: Word, kind: CustomKind): CustomItem => {
+  const text = kind === 'words' ? w.k : w.s
+  return { text, ru: kind === 'words' ? short(w.t) : (TRANSLATIONS[w.s] ?? short(w.t)), r: w.r, word: w }
+}
+
+/** Слова, из которых выбирают: весь словарь, слова с ошибками или слова «Повторить» (те же, что в кабинете). */
+export function customWords(source: CustomSource, p: ProgressData, now = Date.now()): Word[] {
+  if (source === 'mistakes') return mistakeWords(p).map(m => m.word)
+  if (source === 'due') return dueWords(p, now).map(d => d.word)
+  return D
+}
+
+/** Что можно предложить на выбор: только то, что набирается этими клавишами; без повторов. */
+export function customPool(kind: CustomKind, source: CustomSource, p: ProgressData, now = Date.now()): CustomItem[] {
+  const seen = new Set<string>()
+  const out: CustomItem[] = []
+  for (const w of customWords(source, p, now)) {
+    const it = itemOf(w, kind)
+    if (!it.text || it.text.length > 80 || seen.has(it.text) || !isTypable(it.text)) continue
+    seen.add(it.text)
+    out.push(it)
+  }
+  return out
+}
+
+/** Поиск по корейскому, чтению, переводу и формам («ем» найдёт «есть»); пустой запрос отдаёт начало списка. */
+export function searchCustom(pool: CustomItem[], q: string, limit = 30): CustomItem[] {
+  const qs = parseQuery(q)
+  if (!qs.length) return pool.slice(0, limit)
+  return pool.filter(it => score(it.word, qs) > 0).slice(0, limit)
+}
+
+/** Случайный элемент, которого ещё нет среди выбранных; null, если выбрано всё. */
+export function randomCustom(pool: CustomItem[], taken: string[]): CustomItem | null {
+  const free = pool.filter(it => !taken.includes(it.text))
+  return free.length ? free[Math.floor(Math.random() * free.length)]! : null
+}
+
+/** Подпись выбранного по тексту: слово или предложение из словаря; null, если такого в словаре нет (устаревший выбор). */
+export function customLabel(text: string): CustomItem | null {
+  for (const w of D) {
+    if (w.k === text) return itemOf(w, 'words')
+    if (w.s === text) return itemOf(w, 'sentences')
+  }
+  return null
+}

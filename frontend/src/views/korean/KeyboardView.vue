@@ -2,11 +2,48 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { usePersisted } from '@/composables/usePersisted'
-import { KB_LEVELS, kbItems, keyCount, type KbLevel } from '@/data/korean/keyboard'
+import {
+  CUSTOM_KINDS, CUSTOM_SOURCES, KB_CUSTOM, KB_LEVELS, customLabel, customPool, kbItems, keyCount, randomCustom, searchCustom,
+  type CustomItem, type CustomKind, type CustomSource, type KbLevel,
+} from '@/data/korean/keyboard'
+import { useProgressStore } from '@/stores/progress'
 import { KEY_LABELS, keysOfText, matches, ROWS } from '@/lib/hangulKeys'
 
+type Tab = KbLevel | 'custom'
 const LEVEL_IDS = KB_LEVELS.map(l => l.id)
-const level = usePersisted<KbLevel>('kb_level', 'letters', v => typeof v === 'string' && (LEVEL_IDS as string[]).includes(v))
+const TABS = [...KB_LEVELS, KB_CUSTOM]
+const level = usePersisted<Tab>('kb_level', 'letters', v => typeof v === 'string' && TABS.some(t => t.id === v))
+const isCustom = computed(() => level.value === 'custom')
+
+/* ---------- своя вкладка: набор собирает сам игрок ---------- */
+const MAX_CUSTOM = 100
+const account = useProgressStore()
+const kind = usePersisted<CustomKind>('kb_c_kind', 'words', v => CUSTOM_KINDS.some(k => k.id === v))
+const src = usePersisted<CustomSource>('kb_c_src', 'dict', v => CUSTOM_SOURCES.some(x => x.id === v))
+/** Выбранное: слова и предложения вместе, в порядке добавления */
+const chosen = usePersisted<string[]>('kb_c_items', [], v => Array.isArray(v) && v.every(x => typeof x === 'string'))
+const q = ref('')
+const dropOpen = ref(false)
+const started = ref(false)
+const pool = computed(() => customPool(kind.value, src.value, account.data))
+const found = computed(() => searchCustom(pool.value, q.value))
+const counts = computed(() => Object.fromEntries(CUSTOM_SOURCES.map(x => [x.id, customPool(kind.value, x.id, account.data).length])))
+/** Выбранное с переводом; то, чего уже нет в словаре, молча пропускается */
+const list = computed(() => chosen.value.flatMap(t => { const it = customLabel(t); return it ? [it] : [] }))
+const isChosen = (t: string) => chosen.value.includes(t)
+const add = (it: CustomItem) => {
+  if (!isChosen(it.text) && chosen.value.length < MAX_CUSTOM) chosen.value = [...chosen.value, it.text]
+}
+const remove = (t: string) => (chosen.value = chosen.value.filter(x => x !== t))
+const addRandom = () => {
+  const it = randomCustom(pool.value, chosen.value)
+  if (it) add(it)
+}
+const addAll = () => {
+  const free = pool.value.filter(it => !isChosen(it.text)).slice(0, MAX_CUSTOM - chosen.value.length)
+  chosen.value = [...chosen.value, ...free.map(it => it.text)]
+}
+const clearAll = () => (chosen.value = [])
 
 const items = ref<string[]>([])
 const idx = ref(0)
@@ -46,7 +83,8 @@ function readBest(): Record<string, number> {
 const best = ref<Record<string, number>>({})
 
 function start() {
-  items.value = kbItems(level.value)
+  items.value = level.value === 'custom' ? list.value.map(it => it.text) : kbItems(level.value)
+  started.value = level.value === 'custom' && items.value.length > 0
   idx.value = 0
   pos.value = 0
   errors.value = 0
@@ -61,7 +99,8 @@ function finish() {
   const cpm = Math.round((total / sec) * 60)
   const acc = Math.round((total / (total + errors.value)) * 100)
   const b = readBest()
-  const isBest = cpm > (b[level.value] ?? 0)
+  // у своего набора рекорда нет: он зависит от того, что выбрано
+  const isBest = level.value !== 'custom' && cpm > (b[level.value] ?? 0)
   if (isBest) {
     b[level.value] = cpm
     try {
@@ -98,7 +137,7 @@ onMounted(() => {
   best.value = readBest()
   start()
 })
-const setLevel = (id: KbLevel) => {
+const setLevel = (id: Tab) => {
   level.value = id
   start()
 }
@@ -108,12 +147,57 @@ const setLevel = (id: KbLevel) => {
   <div class="wrap">
     <SectionHead id="keyboard" />
     <div class="chips">
-      <button v-for="l in KB_LEVELS" :key="l.id" type="button" class="chip" :class="{ on: level === l.id }" :title="l.hint" @click="setLevel(l.id)">{{ l.label }}</button>
+      <button v-for="l in TABS" :key="l.id" type="button" class="chip" :class="{ on: level === l.id }" :title="l.hint" @click="setLevel(l.id)">{{ l.label }}</button>
     </div>
-    <p class="intro">{{ KB_LEVELS.find(l => l.id === level)!.hint }}. Нужна обычная клавиатура: печатай по подсказке, раскладку в системе менять не нужно, клавиши совпадают с корейской 두벌식.
-      <template v-if="best[level]"> Рекорд уровня: {{ best[level] }} нажатий в минуту.</template></p>
+    <p class="intro">{{ TABS.find(l => l.id === level)!.hint }}. Нужна обычная клавиатура: печатай по подсказке, раскладку в системе менять не нужно, клавиши совпадают с корейской 두벌식.
+      <template v-if="level !== 'custom' && best[level]"> Рекорд уровня: {{ best[level] }} нажатий в минуту.</template></p>
 
-    <div class="stage" :class="{ bad: flash }" @click="inputEl?.focus()">
+    <div :class="{ cust: isCustom }">
+    <aside v-if="isCustom" class="cl">
+      <div class="cl-head">
+        <b>Выбрано · {{ list.length }}</b>
+        <button v-if="list.length" type="button" class="link" @click="clearAll">Очистить всё</button>
+      </div>
+      <ul v-if="list.length">
+        <li v-for="it in list" :key="it.text">
+          <span class="ko">{{ it.text }}</span><small>{{ it.ru }}</small>
+          <button type="button" aria-label="Убрать из набора" @click="remove(it.text)">✕</button>
+        </li>
+      </ul>
+      <p v-else class="cl-empty">Пока ничего. Найди слово в списке, нажми «Случайное» или добавь слова из ошибок.</p>
+    </aside>
+    <div class="cmain">
+    <div v-if="isCustom" class="cpick">
+      <div class="chips">
+        <button v-for="k in CUSTOM_KINDS" :key="k.id" type="button" class="chip" :class="{ on: kind === k.id }" @click="((kind = k.id), (q = ''))">{{ k.label }}</button>
+        <select v-model="src" aria-label="Откуда брать" @change="q = ''">
+          <option v-for="x in CUSTOM_SOURCES" :key="x.id" :value="x.id">{{ x.label }} · {{ counts[x.id] }}</option>
+        </select>
+      </div>
+      <div class="csearch">
+        <input v-model="q" type="text" autocomplete="off" spellcheck="false" :placeholder="kind === 'words' ? 'Найти слово: ем, есть, 먹다…' : 'Найти предложение…'" aria-label="Поиск" @focus="dropOpen = true" @blur="dropOpen = false" @keydown.esc="dropOpen = false" />
+        <button type="button" class="chip" @click="addRandom">Случайное</button>
+        <button v-if="src !== 'dict'" type="button" class="chip" @click="addAll">Добавить все</button>
+        <ul v-if="dropOpen && found.length" class="cdrop" role="listbox">
+          <li v-for="it in found" :key="it.text">
+            <button type="button" :disabled="isChosen(it.text)" @mousedown.prevent="add(it)">
+              <span class="ko">{{ it.text }}</span><small>{{ it.ru }}</small><i v-if="isChosen(it.text)">✓</i>
+            </button>
+          </li>
+        </ul>
+        <p v-else-if="dropOpen" class="cdrop none">{{ pool.length ? 'Ничего не нашлось' : 'Здесь пока пусто' }}</p>
+      </div>
+      <p v-if="chosen.length >= MAX_CUSTOM" class="intro">Набралось {{ MAX_CUSTOM }}: больше добавить нельзя.</p>
+    </div>
+
+    <div v-if="isCustom && !started" class="stage idle">
+      <template v-if="list.length">
+        <div class="res-title">{{ list.length }} для печати</div>
+        <div class="res-btns"><button type="button" class="chip on" @click="start">Начать</button></div>
+      </template>
+      <p v-else class="cl-empty">Выбери слова или предложения, и здесь появится кнопка «Начать».</p>
+    </div>
+    <div v-else class="stage" :class="{ bad: flash }" @click="inputEl?.focus()">
       <input ref="inputEl" class="catch" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Поле набора" @keydown="onKey" @blur="() => {}" />
       <template v-if="!result">
         <div class="meter"><i :style="{ width: progress + '%' }" /></div>
@@ -129,12 +213,13 @@ const setLevel = (id: KbLevel) => {
         <div class="res-row">Точность <b>{{ result.acc }}%</b> · время <b>{{ result.sec }} с</b> · ошибок <b>{{ errors }}</b></div>
         <div class="res-btns">
           <button type="button" class="chip on" @click.stop="start">Ещё раз</button>
-          <button v-if="level !== 'sentences'" type="button" class="chip" @click.stop="setLevel(LEVEL_IDS[LEVEL_IDS.indexOf(level) + 1]!)">Следующий уровень</button>
+          <button v-if="level === 'custom'" type="button" class="chip" @click.stop="((started = false), (result = null))">Изменить набор</button>
+          <button v-else-if="level !== 'sentences'" type="button" class="chip" @click.stop="setLevel(LEVEL_IDS[LEVEL_IDS.indexOf(level as KbLevel) + 1]!)">Следующий уровень</button>
         </div>
       </template>
     </div>
 
-    <div class="kb" aria-hidden="true">
+    <div v-if="!isCustom || started" class="kb" aria-hidden="true">
       <div v-for="(row, r) in ROWS" :key="r" class="krow" :style="{ paddingLeft: r * 18 + 'px' }">
         <div v-for="k in row" :key="k" class="key" :class="{ hit: !result && nextLetter === k, shift: !result && nextLetter === k && needShift }">
           <span>{{ KEY_LABELS[k]![0] }}</span><small v-if="KEY_LABELS[k]![1]">{{ KEY_LABELS[k]![1] }}</small>
@@ -142,10 +227,38 @@ const setLevel = (id: KbLevel) => {
       </div>
       <div class="krow"><div class="key space" :class="{ hit: !result && next?.key.code === 'Space' }">пробел</div></div>
     </div>
+    </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.cust { display: grid; grid-template-columns: minmax(230px, 300px) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+.cust .stage { margin-top: 14px; }
+.cl { padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.cl-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.cl ul, .cdrop { list-style: none; margin: 0; padding: 0; }
+.cl ul { display: flex; flex-direction: column; gap: 4px; max-height: 420px; overflow-y: auto; }
+.cl li { display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; border-radius: 10px; background: var(--gold-soft); }
+.cl li .ko { font-family: var(--ko); font-weight: 600; }
+.cl li small { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl li button, .link { border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.cl li button:hover, .link:hover { color: var(--pink); }
+.cl-empty { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.cpick .chips select { padding: 6px 10px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 99px; }
+.csearch { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.csearch input { flex: 1 1 220px; min-width: 0; padding: 10px 14px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.csearch input:focus { outline: none; border-color: var(--gold); }
+.cdrop { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 5; max-height: 320px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--bg, #fff); box-shadow: 0 12px 30px rgba(0, 0, 0, .15); }
+.cdrop.none { padding: 12px 14px; color: var(--muted); }
+.cdrop button { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 8px 14px; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.cdrop button:hover:not(:disabled) { background: var(--gold-soft); }
+.cdrop button:disabled { opacity: .55; cursor: default; }
+.cdrop .ko { font-family: var(--ko); font-weight: 600; }
+.cdrop small { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdrop i { font-style: normal; color: var(--ok); }
+.stage.idle { cursor: default; }
+@media (max-width: 820px) { .cust { grid-template-columns: minmax(0, 1fr); } .cl ul { max-height: 220px; } }
 .intro { margin: 12px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .stage { position: relative; margin-top: 16px; padding: 22px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); text-align: center; cursor: text; transition: border-color .12s, background .12s; }
 .stage.bad { border-color: var(--bad); background: var(--bad-bg); }

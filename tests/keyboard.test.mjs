@@ -1,9 +1,13 @@
 import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { close, load } from './_load.mjs'
+import { close, load, stubLocalStorage } from './_load.mjs'
+
+stubLocalStorage()
 
 const hk = await load('/src/lib/hangulKeys.ts')
 const kb = await load('/src/data/korean/keyboard.ts')
+const { normalize } = await load('/src/stores/progress.ts')
+const { D } = await load('/src/data/korean/words.ts')
 after(close)
 
 const letters = text => hk.keysOfText(text).map(k => (k.key.code.startsWith('Key') ? k.key.code.slice(3).toLowerCase() : k.key.code) + (k.key.shift ? '^' : '')).join(' ')
@@ -61,5 +65,54 @@ describe('тренажёр печати: уровни', () => {
   })
   test('число нажатий считается по буквам', () => {
     assert.equal(kb.keyCount(['한', '값']), 7)
+  })
+})
+
+describe('тренажёр печати: свои слова и предложения', () => {
+  const p = normalize({ v: 1 })
+  const weak = D.slice(0, 6).map(d => d.k)
+  for (const k of weak) p.words[k] = { ok: 0, bad: 3, streak: 0, last: 1 }
+
+  test('на выбор только то, что набирается этими клавишами, без повторов', () => {
+    for (const kind of ['words', 'sentences']) {
+      const pool = kb.customPool(kind, 'dict', p)
+      assert.ok(pool.length > 100, kind)
+      assert.equal(new Set(pool.map(i => i.text)).size, pool.length)
+      for (const it of pool) assert.ok(hk.isTypable(it.text), `${kind}: ${it.text}`)
+    }
+  })
+  test('слова и предложения берутся из одного словаря: у слова его пример', () => {
+    const w = kb.customPool('words', 'dict', p).find(i => i.text === D[0].k)
+    const s = kb.customPool('sentences', 'dict', p).find(i => i.text === D[0].s)
+    assert.ok(w && s)
+  })
+  test('«Мои ошибки» и «Повторить» дают только слова из этих списков', () => {
+    const mist = kb.customPool('words', 'mistakes', p).map(i => i.text)
+    assert.ok(mist.length > 0 && mist.every(t => weak.includes(t)))
+    const due = kb.customPool('words', 'due', p).map(i => i.text)
+    assert.ok(due.length > 0 && due.every(t => weak.includes(t)))
+    assert.deepEqual(kb.customPool('words', 'mistakes', normalize({ v: 1 })), [])
+  })
+  test('поиск находит по корейскому, переводу и русской форме', () => {
+    const pool = kb.customPool('words', 'dict', p)
+    assert.ok(kb.searchCustom(pool, D[0].k).some(i => i.text === D[0].k))
+    assert.ok(kb.searchCustom(pool, 'ем').length > 0)
+    assert.equal(kb.searchCustom(pool, '').length, 30)
+    assert.deepEqual(kb.searchCustom(pool, 'zzzzzzzz'), [])
+  })
+  test('случайное не повторяет выбранное и заканчивается, когда выбрано всё', () => {
+    const pool = kb.customPool('words', 'mistakes', p)
+    const taken = []
+    for (let i = 0; i < pool.length; i++) {
+      const it = kb.randomCustom(pool, taken)
+      assert.ok(it && !taken.includes(it.text))
+      taken.push(it.text)
+    }
+    assert.equal(kb.randomCustom(pool, taken), null)
+  })
+  test('подпись выбранного находится по тексту слова или предложения', () => {
+    assert.equal(kb.customLabel(D[0].k)?.word.k, D[0].k)
+    assert.equal(kb.customLabel(D[0].s)?.text, D[0].s)
+    assert.equal(kb.customLabel('нет такого'), null)
   })
 })
