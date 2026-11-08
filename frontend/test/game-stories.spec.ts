@@ -127,7 +127,14 @@ describe('тексты: «Вопросы», «Частицы и счёт», «В
     const text = flat(r)
     if (mode === 'qw') {
       const ans = text.split('→')[1]!.trim()
-      return EXCHANGES.find(e => e[2] === ans)!.slice(0, 1).map(q => ['어디', '누구', '뭐', '얼마', '몇', '어느', '무슨'].find(w => q.includes(w) && text.startsWith(q.slice(0, q.indexOf(w))))!)[0]!
+      const [pre, post] = text.split('→')[0]!.trim().split('___')
+      const words = ['어디', '누구', '뭐', '얼마', '몇', '어느', '무슨']
+      // одному ответу («네. 있어요.») подходят несколько вопросов: берём тот, что совпадает с текстом строки
+      for (const e of EXCHANGES.filter(x => x[2] === ans)) {
+        const w = words.find(q => e[0] === pre + q + (post ?? ''))
+        if (w) return w
+      }
+      return ''
     }
     if (mode === 'part') {
       const [pre, post] = text.split('___')
@@ -311,6 +318,8 @@ describe('уровни: «Диалог», «Найди ошибку», «Най�
         open('dlg', level)
         expect(rows().length).toBeGreaterThanOrEqual(min)
         expect(rows().length).toBeLessThanOrEqual(max)
+        const tags = rows().map(r => EXCHANGES.find(e => rowText(r).startsWith(e[0]))![4])
+        expect(new Set(tags).size, 'у вопросов в тексте разные теги: ответы одного тега друг другу подходят').toBe(tags.length)
         playRight('dlg', r => EXCHANGES.find(e => rowText(r).startsWith(e[0]))![2])
       }
     })

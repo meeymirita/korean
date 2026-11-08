@@ -607,7 +607,7 @@ const QW_WORDS=['어디','누구','뭐','얼마','몇','어느','무슨'];
 function qwPool(){
   if(POOLS.QW_POOL)return POOLS.QW_POOL;
   POOLS.QW_POOL=EXCHANGES.map(function(e){
-    const hit=QW_WORDS.filter(function(w){return e[0].split(/[ ?]/).some(function(t){return t===w||t.startsWith(w+'에')||t.startsWith(w+'예')||t.startsWith(w+'이');});});
+    const hit=QW_WORDS.filter(function(w){return e[0].split(/[ ?]/).some(function(t){return t===w||t.startsWith(w+'에')||t.startsWith(w+'예')||t.startsWith(w+'이')||t.startsWith(w+'의');});});
     if(hit.length!==1)return null;
     const at=e[0].indexOf(hit[0]);
     if(at<0)return null;
@@ -764,6 +764,8 @@ function genNumStory(lo,hi){
 /** «Сколько стоит?»: меню с ценами по-корейски и строка «всего»: нужно прочитать цену китайскими числами. Цифры стоят в иконке, итог надо сложить самому. */
 const PRICE_ITEMS=[['피자','пицца'],['햄버거','гамбургер'],['스파게티','спагетти'],['콜라','кола'],['커피','кофе'],['빵','хлеб'],['주스','сок']];
 const PRICES=[1500,2000,2500,3000,3500,4000,4500,5000,6000,7000,8000,9000,10000,12000,15000,18000,20000];
+/** Цены из меню учебника (снимки 076, 080, 081): пицца 15 000, гамбургер 8 000, спагетти 12 000, кола 2 000; у остальных позиций цена случайная. */
+const PRICE_BOOK={'피자':15000,'햄버거':8000,'스파게티':12000,'콜라':2000};
 const topicP=w=>w+(hasFinal(w[w.length-1])?'은':'는');
 function genPriceStory(lo,hi){
   const n=Math.max(2,lo+Math.floor(Math.random()*(hi-lo+1)));
@@ -772,7 +774,7 @@ function genPriceStory(lo,hi){
   const sents=[];let sum=0;
   const spaced=v=>String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
   for(let i=0;i<rows;i++){
-    const price=rnd(PRICES);sum+=price;
+    const price=PRICE_BOOK[items[i][0]]||rnd(PRICES);sum+=price;
     const r=sinoNum(price);
     sents.push({ko:topicP(items[i][0])+' '+r+' 원이에요.',ru:cap1(items[i][1])+': '+spaced(price)+' вон.',tip:cap1(items[i][1])+': '+spaced(price)+' вон',
       pieces:[topicP(items[i][0])+' ',{right:r,why:spaced(price)+' = '+r+(price>=10000?' (만 = 10 000, перед 만 цифру 일 не говорят)':'')},' 원이에요.']});
@@ -812,12 +814,14 @@ function genPoliteStory(lo,hi){
 /** «Диалог»: вопросы по очереди, на каждый нужен свой ответ из банка (в банке лишние ответы на другие вопросы). */
 function genDlgStory(lo,hi){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
-  const picked=shuffle(EXCHANGES.filter(function(e){return known(e[2]);})).slice(0,n);
+  // у строк разные теги: ответы одного тега подходят друг к другу, и тогда «неверный» ответ был бы обидным
+  const picked=[],tags=new Set();
+  shuffle(EXCHANGES.filter(function(e){return known(e[2]);})).forEach(function(e){if(picked.length<n&&!tags.has(e[4])){picked.push(e);tags.add(e[4]);}});
   const sents=picked.map(function(x){
     return {ko:x[2],ru:x[3],tip:'Вопрос: '+x[1],pieces:[x[0]+'   →   ',{right:x[2],why:'На вопрос «'+x[0]+'» ('+x[1]+') отвечают так: '+x[2]+' ('+x[3]+')'}]};
   });
   const bank=picked.map(function(x){return x[2];});
-  shuffle(EXCHANGES.filter(function(e){return !bank.includes(e[2]);})).slice(0,hi>5?4:2).forEach(function(e){bank.push(e[2]);});
+  shuffle(EXCHANGES.filter(function(e){return !tags.has(e[4])&&!bank.includes(e[2]);})).slice(0,hi>5?4:2).forEach(function(e){bank.push(e[2]);});
   return makeStory('dlg','Диалог ('+plural(sents.length)+'): ответь на каждый вопрос',sents,[...new Set(bank)],'💬');
 }
 /** «Хангыль-блиц»: «Слова» — прочитать слово (выбрать, как оно звучит), «Строки» — прочитать три слова подряд. */

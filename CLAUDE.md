@@ -27,6 +27,8 @@
 - Звука нет и не нужно. Никаких японских и китайских знаков, декоративные надписи только хангылем. Название везде **우리말**.
 - Дизайн пастельный розово-голубой по макетам владельца (шрифты Archivo / Noto Sans KR, вес 600–700; на странице игры мельче на 1–3 px и вес 500).
   Никаких смайликов в строке тренажёров и хлеба 🍞 в меню. Значок вкладки розовая ✳ (`public/favicon.svg`).
+- Видео-обзор платформы на главной **само не открывается** (решение 2026-11-09), только по ссылке «посмотреть видео-демонстрацию».
+- Игры с текстами: перенос плиток **только нажатием** (без перетаскивания), проверка **в конце** по кнопке, перевод предложения в значке слева, бонус за итог (решение 2026-11-08).
 - Картинки заметок и раздел «Картинки» это два разных раздела (у картинки есть назначение `kind`).
 - Вместо `confirm()`/`alert()` свои окна; уведомления свои (`useToastStore`), `vue-toastification` отклонён.
 - Сброс прогресса, загрузка копии и создание гостевого токена защищены повторным вводом токена.
@@ -94,15 +96,15 @@
 
 ## Маршруты
 
-`/` главная · `/about` · `/history` · `/dict` и `/dict/<слово>` (большой словарь по krdict, открытый, вне оболочки `/korean`, `docs/dict.md`) · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/korean/services` (сервисы сервера, ссылки на Grafana и Prometheus, только владелец) · `/game/home` игры (`?game=<id>`, `/game` и `/korean/trainers` ведут сюда) · `/words.json` (публичный словарь, только чтение), `/api/new-words` (записанные слова, только владелец и временный токен на чтение) · `/korean/...`: `home`, `today`, `words`, `grammar`, `cabinet` (`?tab=repeat|week|report|notes|images|notifications|telegram|settings|services`; «База» и «Журналы» живут внутри «Настроек»),
+`/` главная · `/about` · `/history` · `/dict` и `/dict/<слово>` (большой словарь по krdict, открытый, вне оболочки `/korean`, `docs/dict.md`), `/dict/podborki` и `/dict/podborki/<подборка>` (подборки слов: самые частые 100 / 500 / 1000, по частям речи и по темам) · `/me` (публичная визитка) · `/upload` (массовая загрузка картинок) · `/korean/services` (сервисы сервера, ссылки на Grafana и Prometheus, только владелец) · `/game/home` игры (`?game=<id>`, `/game` и `/korean/trainers` ведут сюда) · `/words.json` (публичный словарь, только чтение), `/api/new-words` (записанные слова, только владелец и временный токен на чтение) · `/korean/...`: `home`, `today`, `words`, `grammar`, `cabinet` (`?tab=repeat|week|report|notes|images|notifications|telegram|settings|services`; «База» и «Журналы» живут внутри «Настроек»),
 `review`, `shop`, `chat` (только владелец), `garden`, `culture` (мини-уроки культуры Кореи), `know` («что я уже знаю» перед созвоном), `lab` (мастерская грамматики: конструктор, дерево тем, «почему так», два стиля), `sites` (полезные сайты), `ref/<cheat|talk|hangul|alphabet|reading|sentences|numbers>` (справочник), служебные `mistakes`, `marks`, `forms`; тренажёры `quick`, `particles`, `pairs`, `translate`, `syllables`, `keyboard` (печать на корейском) открываются только как `/game/home?game=<id>`.
-Открыты всем: главная, `/korean/home`, `/dict` (большой словарь), история, «О платформе», визитка; **всё остальное в `/korean` по токену** (замок в меню, `AuthGate`; решение владельца 2026-11-08: слова, грамматика и справочник тоже закрыты для гостей). Список разделов `src/data/korean/sections.ts`.
+Открыты всем: главная, `/korean/home`, `/dict` (большой словарь, слова и подборки), история, «О платформе», визитка; **всё остальное в `/korean` по токену** (замок в меню, `AuthGate`; решение владельца 2026-11-08: слова, грамматика и справочник тоже закрыты для гостей). Список разделов `src/data/korean/sections.ts`.
 
 ## Структура `frontend/src`
 
 `pages/` (файловый роутинг, тонкие обёртки над `views/`) · `views/` (экраны) · `components/` (`cabinet/`, `korean/`, `charts/`, `garden/`, `home/`) · `composables/` · `stores/` (`progress`, `notes`, `images`, `shop`, `timer`, `toast`…) ·
 `lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (игра на чистом DOM: `engine.ts`, `build.ts`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
-Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `logs`, `events`.
+Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `logs`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов).
 
 ## Документация (читай нужный файл перед работой)
 
@@ -127,7 +129,8 @@
 ## Как проверять
 
 - CI на GitHub (типы, сборка, тесты, `npm audit`, Node 22 как в образах Docker) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
-- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 700 тестов: 580 в `tests/` и около 125 во фреймворках). Отдельно `npm run test:nest`, `npm run test:nuxt`.
+- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 880 тестов: 625 в `tests/`, 152 во `frontend/test`, 102 в `backend/test`). Отдельно `npm run test:nest`, `npm run test:nuxt`.
+  **Игровые тесты `frontend/test` разнесены по файлам** (`game.spec.ts`, `game-stories.spec.ts`, `game-variants.spec.ts`): один большой файл упирается в память Node (процесс падает с `SIGABRT`). Новые игровые тесты клади в отдельный файл.
 - Типы и сборка: `npm run type-check`, `npm run build`. Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`).
 - Визуально: headless Chromium из кэша Playwright (`~/Library/Caches/ms-playwright/chromium_headless_shell-*/…/chrome-headless-shell`), `--screenshot` или `--remote-debugging-port`.
 - Демо-сервер: `DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node backend/dist/main.js`, сайт `API_PORT=3002 npx --prefix frontend nuxt dev --port 5198`,
@@ -144,6 +147,8 @@
 - Предметы магазина не работают в «Найди пару», «Слоги» и игре «Хлебушек». «Собери предложение» в игре без перетаскивания (нужен `sortablejs` или перепись игры на Vue).
 - Переводы предложений (`translations.ts`) мои, учитель их не проверял.
 - Проверки владельца на устройствах (сам Claude не может): «Найди пару» с Pencil на iPad (экран не дёргается), ✳ розовая на iPad, видео в Safari и на iPad (если нет, перекодировать в H.264, команда в `docs/hosting.md`), письмо с архивом после 4:00, смена «Сегодня» в полночь, выезд свёрнутого меню, кнопка «?» в «Найди ошибку», после деплоя `/words.json` и ссылка на странице «Слова». Результат владелец сообщает сам. Анимации «Повторения», остаток эмодзи (уведомления, значок режима в истории ответов, огонёк в разборе).
+- Большой словарь: `hreflang` и картинки-превью для слов, раздел «Учить корейский» с публичными страницами (хангыль, числа, частицы: отложено владельцем 2026-11-09), Яндекс.Вебмастер (добавить `sitemap_index.xml`, когда починят «Файлы Sitemap»); план и журнал: `материалы/сео/ПЛАН.md`.
+- Игры: пункты плана `ИДЕИ.md`, которые не сделаны (`build`, `ord`, `typing`, `particles`, `pairs`, `translate`, `rule`, `mistakes`), причины записаны там; в `form` нет слитных форм (가요, 마셔요); диалогов из учебника для `qw` и `dlg` нет (нужны фото учебника).
 - Хостинг: CSP для сайта, брандмауэр, SSH по ключу, fail2ban, Яндекс.Вебмастер и Search Console (`docs/hosting.md`).
 - Видео, картинки и копии лежат на Яндекс.Диске (с 2026-11-06, `docs/disk-and-telegram.md`); Object Storage не нужен. Картинки грамматики берутся с Диска (`korean_grammar`), в репозитории их нет; остальные картинки сайта остаются в `src/assets/`.
 - Не доделано: автовосстановление с Диска только для раздела «Картинки» (файлы календаря, картинки сайта, обложка визитки только зеркалятся); почту и `SMTP_*` можно убрать, когда владелец убедится, что Telegram работает всегда.
