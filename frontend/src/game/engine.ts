@@ -99,7 +99,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -169,6 +169,7 @@ function naive(e,tense){
 
 /* ---------- генераторы вопросов ---------- */
 function genWord(){
+  if(storyOn('word'))return S.levels.word==='long'?genWordStory(5,10):genWordStory(2,5);
   const pool=activePool();
   const w=pickW(pool,x=>'w:'+x.ko);
   const dis=distract(w,pool,3);
@@ -181,6 +182,7 @@ function genWord(){
     hp:w.ko,hr:w.ru,icon:'🔤'};
 }
 function genRev(){
+  if(storyOn('rev'))return S.levels.rev==='long'?genRevStory(5,10):genRevStory(2,5);
   const pool=activePool();
   const w=pickW(pool,x=>'r:'+x.ko);
   const dis=distract(w,pool,3);
@@ -337,7 +339,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -349,13 +351,14 @@ function makeStory(mode,label,sents,bank,icon){
     const parts=[];
     sn.pieces.forEach(function(pc){
       if(typeof pc==='string'){if(pc)parts.push({t:pc});}
+      else if(pc.mark!==undefined)parts.push({t:pc.mark,mark:true});
       else{
         const k=gaps.length;
-        const hp=sn.pieces.map(function(x){return typeof x==='string'?x:(x===pc?'…':x.right);}).join('');
+        const hp=sn.pieces.map(function(x){return typeof x==='string'?x:x.mark!==undefined?x.mark:(x===pc?'…':x.right);}).join('');
         parts.push({gap:k});gaps.push({right:pc.right,accept:pc.accept||null,why:pc.why||'',hp:hp,picked:null,ok:null});
       }
     });
-    return {ko:sn.ko,ru:sn.ru,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
+    return {ko:sn.ko,ru:sn.ru,noTr:!!sn.noTr,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
   });
   return {type:'story',mode:mode,key:'story:'+mode+':'+sents.map(function(x){return x.ko;}).join('|').slice(0,80),label:label,
     sents:out,gaps:gaps,bank:shuffle(bank),active:null,sel:null,checked:false,bonus:0,right:'',explain:[],hp:'Рассказ',hr:'',icon:icon||'⚖️',level:2};
@@ -523,6 +526,66 @@ function genDemStory(lo,hi){
     sents.push({ko:ko,ru:ru,cue:DEM_CUE[dist],pieces:[{right:right,why:right+' — '+DEM_WHY[dist]+' (этот / тот / вон тот)'},post]});
   }
   return makeStory('dem','Этот, тот ('+plural(sents.length)+'): выбери указатель',sents,[...bank],'👉');
+}
+/* ---------- «Слово → перевод» и «Перевод → слово»: слова в предложениях ---------- */
+/** Первый перевод слова: «пить; выпивать» → «пить». */
+const firstRu=t=>String(t||'').split(/[;,(]/)[0].trim();
+let WSENT_POOL=null;
+/** Слова сайта с примером и переводом: где слово стоит в предложении (`at`, `len`: само слово или основа глагола) и все слова предложения известны разбору. */
+function wsentPool(){
+  if(WSENT_POOL)return WSENT_POOL;
+  WSENT_POOL=DICT.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
+    let at=d.s.indexOf(d.k),len=d.k.length;
+    if(at<0&&/다$/.test(d.k)&&d.k.length>2){at=d.s.indexOf(d.k.slice(0,-1));len=d.k.length-1;}
+    return {k:d.k,ko:d.s,ru:TRANSLATIONS[d.s],t:firstRu(d.t),at:at,len:len,cats:d.c||[],verb:/다$/.test(d.k)};
+  }).filter(function(x){return x.at>=0&&x.t&&x.t.length<=24&&!analyze(x.ko).some(function(sg){return sg.type==='unknown';});});
+  return WSENT_POOL;
+}
+/** Слова для текста: разные переводы, из разных предложений; по возможности одной темы. */
+function wsentPick(n){
+  const pool=wsentPool();
+  const bycat={};pool.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
+  const rich=Object.keys(bycat).filter(function(c){return bycat[c].length>=n;});
+  const src=rich.length&&Math.random()<.6?bycat[rnd(rich)]:pool;
+  const out=[],seenT=new Set(),seenS=new Set();
+  shuffle(src).forEach(function(x){if(out.length<n&&!seenT.has(x.t)&&!seenS.has(x.ko)){out.push(x);seenT.add(x.t);seenS.add(x.ko);}});
+  return out;
+}
+/** Слова-ловушки: из того же пула, тех же тем и частей речи в первую очередь. */
+function wsentLures(picked,count,key){
+  const have=new Set(picked.map(function(x){return key(x);}));
+  const pool=wsentPool().filter(function(x){return !have.has(key(x));});
+  const near=pool.filter(function(x){return picked.some(function(p){return p.verb===x.verb&&p.cats.some(function(c){return x.cats.includes(c);});});});
+  const out=[];
+  shuffle(near).concat(shuffle(pool)).forEach(function(x){if(out.length<count&&!out.some(function(o){return key(o)===key(x);}))out.push(x);});
+  return out;
+}
+/** «Слово → перевод»: слово подсвечено в предложении, нужно поставить его перевод по смыслу. Перевод предложения скрыт: он выдал бы ответ. */
+function genWordStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const words=wsentPick(n);
+  const sents=words.map(function(x){
+    return {ko:x.ko,ru:x.ru,noTr:true,pieces:[x.ko.slice(0,x.at),{mark:x.ko.slice(x.at,x.at+x.len)},x.ko.slice(x.at+x.len),'  →  ',
+      {right:x.t,why:'«'+x.k+'» здесь значит «'+x.t+'». Предложение: '+x.ru}]};
+  });
+  const bank=words.map(function(x){return x.t;}).concat(wsentLures(words,hi>5?6:3,function(x){return x.t;}).map(function(x){return x.t;}));
+  return makeStory('word','Слово в предложении ('+plural(sents.length)+'): выбери перевод выделенного слова',sents,[...new Set(bank)],'🔤');
+}
+/** «Перевод → слово»: по-русски предложение целиком (иконка слева), по-корейски в нём пропущено существительное. */
+function genRevStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const nouns=wsentPool().filter(function(x){return !x.verb&&x.len===x.k.length;});
+  const bycat={};nouns.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
+  const rich=Object.keys(bycat).filter(function(c){return bycat[c].length>=n;});
+  const src=rich.length&&Math.random()<.6?bycat[rnd(rich)]:nouns;
+  const words=[],seen=new Set();
+  shuffle(src).forEach(function(x){if(words.length<n&&!seen.has(x.k)&&!seen.has(x.ko)){words.push(x);seen.add(x.k);seen.add(x.ko);}});
+  const sents=words.map(function(x){
+    return {ko:x.ko,ru:x.ru,pieces:[x.ko.slice(0,x.at),{right:x.k,why:'«'+x.t+'» по-корейски — '+x.k},x.ko.slice(x.at+x.len)]};
+  });
+  const lures=wsentLures(words,hi>5?6:3,function(x){return x.k;}).filter(function(x){return !x.verb;});
+  const bank=words.map(function(x){return x.k;}).concat(lures.map(function(x){return x.k;}));
+  return makeStory('rev','Перевод → слово ('+plural(sents.length)+'): поставь пропущенное слово',sents,[...new Set(bank)],'🔁');
 }
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
@@ -1015,14 +1078,18 @@ function drawStory(card,q){
   const box=el('div','story');
   q.sents.forEach(function(s,si){
     const row=el('div','story-row');
-    const tr=el('button','story-tr');tr.type='button';tr.innerHTML=iconImg('speech');
-    tr.setAttribute('aria-label','Перевод предложения');
-    tr.appendChild(el('span','story-tip',s.ru||''));
-    tr.addEventListener('click',function(){tr.classList.toggle('open');});
+    // у заданий, где перевод предложения выдаёт ответ («Слово → перевод»), вместо иконки пустое место: перевод виден в разборе после проверки
+    const tr=el('button','story-tr'+(s.noTr?' off':''));tr.type='button';tr.disabled=!!s.noTr;
+    if(!s.noTr){
+      tr.innerHTML=iconImg('speech');
+      tr.setAttribute('aria-label','Перевод предложения');
+      tr.appendChild(el('span','story-tip',s.ru||''));
+      tr.addEventListener('click',function(){tr.classList.toggle('open');});
+    }
     const p=el('div','story-s');
     if(s.cue)p.append(el('span','story-cue','('+s.cue+') '));
     s.parts.forEach(function(pt){
-      if(pt.gap===undefined)p.append(pt.t);
+      if(pt.gap===undefined){if(pt.mark)p.append(el('mark','story-mark',pt.t));else p.append(pt.t);}
       else{const g=el('button','gap');g.type='button';g.id='sg'+pt.gap;g.addEventListener('click',function(){tapGap(pt.gap);});p.append(g);}
     });
     const info=el('button','story-info','Разбор');info.type='button';info.id='si'+si;info.disabled=true;
