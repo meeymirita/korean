@@ -102,7 +102,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -271,6 +271,7 @@ function genBuild(){
 
 /* ---------- «Найди верное»: четыре предложения, верное одно ---------- */
 function genSpot(){
+  if(storyOn('spot'))return S.levels.spot==='long'?genSpotText(4,5):genSpotText(2,3);
   let key,ru,right,opts,note;
   if(Math.random()<.4){
     const i=pickW(D.QB.map((x,k)=>k),k=>'o:q'+k);const q=D.QB[i];
@@ -314,6 +315,7 @@ function genType(){
 
 /* ---------- «Найди ошибку»: нажми на слово, где ошибка ---------- */
 function genErr(){
+  if(storyOn('err'))return S.levels.err==='long'?genErrStory(5,10):genErrStory(3,5);
   let key,wrong,right,ru,note;
   if(Math.random()<.65){
     // варианты из двух слов («삼만 오천») не годятся: сломалась бы разбивка предложения на слова
@@ -344,7 +346,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -802,6 +804,95 @@ function genPoliteStory(lo,hi){
   });
   return makeStory('polite','Спасибо ('+plural(sents.length)+'): кому как сказать',sents,POLITE.map(function(x){return x[0];}),'🙏');
 }
+/* ---------- «Диалог», «Хангыль-блиц», «Найди верное», «Найди ошибку»: уровни ---------- */
+/** «Диалог»: вопросы по очереди, на каждый нужен свой ответ из банка (в банке лишние ответы на другие вопросы). */
+function genDlgStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const picked=shuffle(EXCHANGES.filter(function(e){return known(e[2]);})).slice(0,n);
+  const sents=picked.map(function(x){
+    return {ko:x[2],ru:x[3],tip:'Вопрос: '+x[1],pieces:[x[0]+'   →   ',{right:x[2],why:'На вопрос «'+x[0]+'» ('+x[1]+') отвечают так: '+x[2]+' ('+x[3]+')'}]};
+  });
+  const bank=picked.map(function(x){return x[2];});
+  shuffle(EXCHANGES.filter(function(e){return !bank.includes(e[2]);})).slice(0,hi>5?4:2).forEach(function(e){bank.push(e[2]);});
+  return makeStory('dlg','Диалог ('+plural(sents.length)+'): ответь на каждый вопрос',sents,[...new Set(bank)],'💬');
+}
+/** «Хангыль-блиц»: «Слова» — прочитать слово (выбрать, как оно звучит), «Строки» — прочитать три слова подряд. */
+let HAN_WORDS=null;
+function hanWords(){
+  if(HAN_WORDS)return HAN_WORDS;
+  HAN_WORDS=DICT.filter(function(d){return d.r&&/^[가-힣]+$/.test(d.k)&&d.k.length>=2&&d.k.length<=4&&/^[а-яё]+$/i.test(d.r);}).map(function(d){return {k:d.k,r:d.r,t:d.t};});
+  return HAN_WORDS;
+}
+function hanOptions(right,pool,len){
+  const dis=[];const used=new Set([right]);
+  shuffle(pool).forEach(function(x){if(dis.length<3&&!used.has(x)&&Math.abs(x.length-right.length)<=2){used.add(x);dis.push(x);}});
+  return shuffle([right,...dis]);
+}
+function genHanWord(){
+  const pool=hanWords();
+  const w=pickW(pool,x=>'hw:'+x.k);
+  const opts=hanOptions(w.r,pool.map(function(x){return x.r;})).map(function(t){return {text:t};});
+  return {type:'choice',mode:'han',key:'hw:'+w.k,label:'Прочитай слово: как оно звучит?',prompt:w.k,promptKo:true,
+    options:opts,correct:opts.findIndex(function(o){return o.text===w.r;}),right:w.r,explain:[w.k+' = '+w.r,w.t?'Значение: '+w.t:''],
+    hp:w.k,hr:w.r,icon:'ㅎ'};
+}
+function genHanLine(){
+  const pool=hanWords();
+  const picked=shuffle(pool).slice(0,3);
+  const right=picked.map(function(x){return x.r;}).join(' ');
+  const opts=new Set([right]);
+  let guard=0;
+  while(opts.size<4&&guard++<40){
+    const swap=Math.floor(Math.random()*3);
+    const alt=picked.map(function(x,i){if(i!==swap)return x.r;const o=rnd(pool.filter(function(y){return y.r!==x.r&&Math.abs(y.r.length-x.r.length)<=1;}));return o.r;}).join(' ');
+    opts.add(alt);
+  }
+  const line=picked.map(function(x){return x.k;}).join(' ');
+  const list=shuffle([...opts]).map(function(t){return {text:t};});
+  return {type:'choice',mode:'han',key:'hl:'+line,label:'Прочитай строку: как она звучит?',prompt:line,promptKo:true,
+    options:list,correct:list.findIndex(function(o){return o.text===right;}),right:right,explain:[line+' = '+right,picked.map(function(x){return x.k+' — '+x.t;}).join('; ')],
+    hp:line,hr:right,icon:'ㅎ'};
+}
+/** «Найди верное»: три текста из нескольких предложений, в двух по одной ошибке в частице, в одном всё верно. */
+function spotPool(){
+  if(POOLS.SPOT_POOL)return POOLS.SPOT_POOL;
+  POOLS.SPOT_POOL=D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};});
+  return POOLS.SPOT_POOL;
+}
+function genSpotText(lo,hi){
+  const k=lo+Math.floor(Math.random()*(hi-lo+1));
+  const base=shuffle(spotPool()).slice(0,k);
+  const good=base.map(function(x){return x.pre+x.right+x.post;});
+  const bad=shuffle(base.map(function(x,i){return i;})).slice(0,2);
+  const variants=[good];
+  const notes=[];
+  bad.forEach(function(i){
+    const x=base[i];const w=rnd(x.opts);
+    const t=good.slice();t[i]=x.pre+w+x.post;variants.push(t);
+    notes.push('В «'+t[i]+'» ошибка: нужно «'+x.right+'», а не «'+w+'». '+x.why);
+  });
+  const texts=variants.map(function(t){return t.join(' ');});
+  const list=shuffle(texts).map(function(t){return {text:t,ko:true};});
+  const right=good.join(' ');
+  return {type:'choice',mode:'spot',key:'sp:'+right.slice(0,60),label:'В каком тексте нет ошибок?',prompt:base.map(function(x){return x.ru;}).join(' '),promptKo:false,
+    options:list,correct:list.findIndex(function(o){return o.text===right;}),right:right,explain:notes,teach:good[0],trans:base[0].ru,hp:'Тексты без ошибок',hr:right,icon:'🔍'};
+}
+/** «Найди ошибку»: каждое предложение помечается «верно» или «ошибка»; в части предложений частица подменена. */
+function genErrStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const base=shuffle(spotPool()).slice(0,n);
+  const nBad=Math.max(1,Math.min(n-1,Math.round(n*(.4+Math.random()*.2))));
+  const badSet=new Set(shuffle(base.map(function(x,i){return i;})).slice(0,nBad));
+  const sents=base.map(function(x,i){
+    const right=x.pre+x.right+x.post;
+    if(badSet.has(i)){
+      const w=rnd(x.opts);const wrong=x.pre+w+x.post;
+      return {ko:right,ru:x.ru,pieces:[wrong+'   ',{right:'ошибка',why:'Здесь ошибка: «'+w+'» вместо «'+x.right+'». Правильно: '+right+'. '+x.why}]};
+    }
+    return {ko:right,ru:x.ru,pieces:[right+'   ',{right:'верно',why:'Предложение верное. '+x.why}]};
+  });
+  return makeStory('err','Найди ошибки ('+plural(sents.length)+'): отметь каждое предложение',sents,['верно','ошибка'],'🕵️');
+}
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
   if(Math.random()<.35){
@@ -857,6 +948,7 @@ function genOrd(){
 
 /* ---------- «Диалог»: выбери ответ на реплику ---------- */
 function genDlg(){
+  if(storyOn('dlg'))return S.levels.dlg==='long'?genDlgStory(5,10):genDlgStory(2,5);
   const i=pickW(EXCHANGES.map((x,k)=>k),k=>'d:'+k);
   const x=EXCHANGES[i];
   const dis=shuffle(EXCHANGES.filter(y=>y[4]!==x[4])).slice(0,2);
@@ -890,6 +982,7 @@ const HAN_C=[0,2,3,5,6,7,9,11,12,14,15,16,17,18],HAN_V=[0,2,4,6,8,12,13,17,18,20
 const HAN=[];
 HAN_C.forEach(c=>HAN_V.forEach(v=>{const cell=syllableRows[c].cells[v];HAN.push({ch:cell.char,rd:cell.reading,hint:cell.hint,c:c,v:v});}));
 function genHan(){
+  if(storyOn('han'))return S.levels.han==='long'?genHanLine():genHanWord();
   const h=pickW(HAN,x=>'h:'+x.ch);
   const near=shuffle(HAN.filter(x=>x.ch!==h.ch&&(x.c===h.c||x.v===h.v)));
   if(Math.random()<.5){
@@ -1284,9 +1377,10 @@ function checkBuild(){
   finish(ok,ans);
 }
 /** Чипы уровня над заданием: одно предложение (как раньше), текст из 2–5 или длинный из 5–10 (в блице и на выживании всегда простой). */
+const LEVEL_LABELS={han:[['simple','Слоги'],['story','Слова'],['long','Строки']],spot:[['simple','Простой'],['story','Текст 2–3'],['long','Длинный 4–5']]};
 function levelChips(mode){
   const lv=el('div','levels');
-  [['simple','Простой'],['story','Рассказ 2–5'],['long','Длинный 5–10']].forEach(function(x){
+  (LEVEL_LABELS[mode]||[['simple','Простой'],['story','Рассказ 2–5'],['long','Длинный 5–10']]).forEach(function(x){
     const b=el('button','chip'+(S.levels[mode]===x[0]?' on':''),x[1]);b.type='button';
     b.addEventListener('click',function(){S.levels[mode]=x[0];save();renderQuestion(genQuestion());});
     lv.appendChild(b);

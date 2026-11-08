@@ -282,3 +282,98 @@ describe('тексты: «Дни недели», «Числа», «Скольк�
     for (const r of rs.slice(0, -1)) expect(tip(r)).toMatch(/\d+ вон/)
   })
 })
+
+describe('уровни: «Диалог», «Найди ошибку», «Найди верное», «Хангыль-блиц»', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
+  const tiles = () => [...document.querySelectorAll<HTMLButtonElement>('#bank .tile')]
+  const tileText = (b: Element) => (b.textContent ?? '').replace(/^\d/, '').trim()
+  const rows = () => [...document.querySelectorAll('.story .story-row')]
+  const rowText = (r: Element) => [...r.querySelector('.story-s')!.childNodes].map(n => ((n as Element).classList?.contains('gap') ? '___' : n.textContent)).join('')
+  const open = (mode: string, level: string) => { start(mode); document.querySelector<HTMLButtonElement>('#helpOk')?.click(); chip(level).click() }
+
+  function playRight(mode: string, right: (r: Element) => string) {
+    const bank = tiles().map(tileText)
+    const gaps = [...document.querySelectorAll<HTMLButtonElement>('.story .gap')]
+    rows().forEach((r, i) => {
+      const want = right(r)
+      expect(bank, 'верный ответ «' + want + '» в банке; строка «' + rowText(r) + '»').toContain(want)
+      const ti = bank.indexOf(want)
+      tiles()[ti]!.click(); gaps[i]!.click(); tiles()[ti]!.click()
+    })
+    document.querySelector<HTMLButtonElement>('#schk')!.click()
+    expect(document.querySelector('#fb .fbh')!.textContent, mode).toContain('бонус +5')
+    expect(records.every(x => x.ok)).toBe(true)
+  }
+
+  for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+    it(`«dlg», «${level}»: на каждый вопрос в банке есть свой ответ; верные ответы дают бонус +5`, () => {
+      for (let round = 0; round < 3; round++) {
+        open('dlg', level)
+        expect(rows().length).toBeGreaterThanOrEqual(min)
+        expect(rows().length).toBeLessThanOrEqual(max)
+        playRight('dlg', r => EXCHANGES.find(e => rowText(r).startsWith(e[0]))![2])
+      }
+    })
+  }
+
+  for (const [level, min, max] of [['Рассказ', 3, 5], ['Длинный', 5, 10]] as const) {
+    it(`«err», «${level}»: ${min}–${max} предложений, есть и верные, и с ошибкой; отметки по данным дают бонус +5`, () => {
+      for (let round = 0; round < 3; round++) {
+        open('err', level)
+        expect(rows().length).toBeGreaterThanOrEqual(min)
+        expect(rows().length).toBeLessThanOrEqual(max)
+        expect([...document.querySelectorAll('#bank .tile')].map(tileText).sort()).toEqual(['верно', 'ошибка'])
+        let bad = 0
+        playRight('err', r => {
+          const text = rowText(r).replace('___', '').trim()
+          const verdict = GD.PB.some((p: string[]) => { const [pre, post] = p[0].split('___'); return text === pre + p[2] + (post ?? '') }) ? 'верно' : 'ошибка'
+          if (verdict === 'ошибка') bad++
+          return verdict
+        })
+        expect(bad, 'есть хотя бы одно предложение с ошибкой').toBeGreaterThan(0)
+        expect(bad, 'и хотя бы одно верное').toBeLessThan(rows().length)
+      }
+    })
+  }
+
+  it('«spot»: уровни «Текст 2–3» и «Длинный 4–5»: три текста, ровно один без ошибок', () => {
+    for (const [level, lo, hi] of [['Текст', 2, 3], ['Длинный', 4, 5]] as const) {
+      for (let round = 0; round < 4; round++) {
+        open('spot', level)
+        const opts = [...document.querySelectorAll('#opts .opt')].map(o => (o.textContent ?? '').trim())
+        expect(opts.length).toBe(3)
+        const bads = GD.PB.flatMap((p: string[]) => { const [pre, post] = p[0].split('___'); return p[3].filter((w: string) => w !== p[2]).map((w: string) => pre + w + (post ?? '')) })
+        const clean = opts.filter(o => !bads.some((b: string) => o.includes(b)))
+        expect(clean.length, 'один текст без ошибок среди ' + JSON.stringify(opts)).toBe(1)
+        const sentences = (clean[0]!.match(/[.?!]/g) ?? []).length
+        expect(sentences).toBeGreaterThanOrEqual(lo)
+        expect(sentences).toBeLessThanOrEqual(hi)
+        ;(document.querySelectorAll('#opts .opt')[0] as HTMLButtonElement).click()
+        expect(document.querySelectorAll('#opts .opt.ok').length).toBe(1)
+      }
+    }
+  })
+
+  it('«han»: «Слова» и «Строки»: верное чтение среди вариантов', () => {
+    for (const level of ['Слова', 'Строки']) {
+      for (let round = 0; round < 6; round++) {
+        open('han', level)
+        const prompt = (document.querySelector('#card .prompt, #card .q-prompt, #prompt')?.textContent ?? '').trim()
+        const opts = [...document.querySelectorAll('#opts .opt')].map(o => (o.textContent ?? '').replace(/^\d/, '').trim())
+        expect(opts.length).toBe(4)
+        expect(new Set(opts).size, 'варианты разные').toBe(4)
+        if (prompt) {
+          const reading = prompt.split(' ').map(w => DICT.find(d => d.k === w)?.r)
+          if (reading.every(Boolean)) expect(opts, 'чтение «' + prompt + '»').toContain(reading.join(' '))
+        }
+      }
+    }
+  })
+
+  it('уровни запоминаются по режимам, «Слоги» у хангыль-блица остаётся прежним заданием', () => {
+    start('han')
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+    expect(chip('Слоги').classList.contains('on')).toBe(true)
+    expect(document.querySelector('.story')).toBeNull()
+  })
+})
