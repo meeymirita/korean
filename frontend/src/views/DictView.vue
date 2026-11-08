@@ -2,7 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import DictShell from '@/components/dict/DictShell.vue'
-import { LEVELS, searchDict, type DictHit, type DictSearch } from '@/lib/dictApi'
+import DictCard from '@/components/dict/DictCard.vue'
+import DictWordList from '@/components/dict/DictWordList.vue'
+import { LEVELS, loadCards, searchDict, type DictHit, type DictSearch } from '@/lib/dictApi'
 import { useDictRecent, type DictRecent } from '@/composables/useDictRecent'
 import { useProgressStore } from '@/stores/progress'
 import { useNewWordsStore } from '@/stores/newWords'
@@ -20,6 +22,10 @@ const q = ref(str(route.query.q))
 const level = ref(str(route.query.level))
 const pos = ref(str(route.query.pos))
 const focused = ref(false)
+/** слово, выбранное в меню слева: его карточка показывается в центре */
+const pickedWord = ref(str(route.query.w))
+const picked = ref<DictHit[] | null>(null)
+const menuOpen = ref(false)
 const input = ref<HTMLInputElement | null>(null)
 
 const data = ref<DictSearch | null>(null)
@@ -28,7 +34,21 @@ const error = ref('')
 let timer: ReturnType<typeof setTimeout> | undefined
 let seq = 0
 
-const active = computed(() => focused.value || q.value.trim() !== '')
+/* ---------- SEO: страницы поиска с ?q=, ?w= и фильтрами не индексируем (у слов есть свои адреса), сама /dict индексируется ---------- */
+const hasParams = computed(() => Object.keys(route.query).length > 0)
+useSeoMeta({ robots: () => (hasParams.value ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1') })
+
+/** Популярные слова рисуются на сервере (ссылки в готовом HTML): так поисковик заходит в слова с главной страницы словаря. */
+const config = useRuntimeConfig()
+const { data: popular } = await useFetch<{ items: { id: string; word: string; ru: string }[] }>('/api/dict/list', {
+  baseURL: import.meta.server ? config.apiBase : undefined,
+  query: { order: 'pop', limit: 48 },
+  timeout: 8_000,
+  key: 'dict-popular',
+  default: () => ({ items: [] }),
+})
+
+const active = computed(() => focused.value || q.value.trim() !== '' || !!pickedWord.value)
 const hasQuery = computed(() => q.value.trim() !== '')
 
 function syncUrl() {
@@ -36,6 +56,7 @@ function syncUrl() {
   if (q.value.trim()) query.q = q.value.trim()
   if (level.value) query.level = level.value
   if (pos.value) query.pos = pos.value
+  if (pickedWord.value && !q.value.trim()) query.w = pickedWord.value
   void router.replace({ query })
 }
 
@@ -71,15 +92,41 @@ function schedule() {
   timer = setTimeout(() => { syncUrl(); void run() }, 260)
 }
 
-watch(q, schedule)
+watch(q, v => {
+  if (v.trim()) { pickedWord.value = ''; picked.value = null } // начал печатать: выбранная в меню карточка уходит
+  schedule()
+})
+
+/** Нажали слово в меню слева: карточка этого слова в центре, дальше с неё на страницу слова. */
+async function pickWord(word: string) {
+  menuOpen.value = false
+  clearTimeout(timer)
+  seq++
+  q.value = ''
+  level.value = ''
+  pos.value = ''
+  data.value = null
+  error.value = ''
+  loading.value = false
+  pickedWord.value = word
+  syncUrl()
+  try {
+    const cards = await loadCards(word)
+    if (pickedWord.value !== word) return
+    picked.value = cards
+    if (cards[0]) openWord(cards[0])
+  } catch (e) {
+    if (pickedWord.value === word) { picked.value = null; error.value = errText(e) }
+  }
+}
 function setLevel(l: string) { level.value = level.value === l ? '' : l; syncUrl(); void run() }
 function setPos(p: string) { pos.value = pos.value === p ? '' : p; syncUrl(); void run() }
 
 /** Клик по пустому месту (по бокам, где нет поиска, карточек, шапки и подписи): поиск закрывается, остаётся заставка. */
 function closeOnOutside(e: MouseEvent) {
-  if (!hasQuery.value) return
+  if (!hasQuery.value && !pickedWord.value) return
   const t = e.target as HTMLElement | null
-  if (!t || t.closest('.search, .res, .top, .src, .hero, .recent')) return
+  if (!t || t.closest('.search, .res, .top, .src, .hero, .recent, .picked, .menubtn, .dict-side')) return
   if (window.getSelection()?.toString()) return // человек выделял текст и отпустил кнопку снаружи
   remember()
   clearTimeout(timer)
@@ -89,6 +136,8 @@ function closeOnOutside(e: MouseEvent) {
   level.value = ''
   pos.value = ''
   data.value = null
+  pickedWord.value = ''
+  picked.value = null
   error.value = ''
   loading.value = false
   input.value?.blur()
@@ -98,15 +147,13 @@ function closeOnOutside(e: MouseEvent) {
 onMounted(() => {
   history.load()
   if (hasQuery.value) void run()
+  else if (pickedWord.value) void pickWord(pickedWord.value)
   document.addEventListener('click', closeOnOutside)
 })
 onBeforeUnmount(() => { remember(); clearTimeout(timer); clearTimeout(rememberTimer); seq++; if (import.meta.client) document.removeEventListener('click', closeOnOutside) })
 
 const posChips = computed(() => Object.entries(data.value?.facets.pos ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 8))
 const canMore = computed(() => !!data.value && data.value.hits.length < data.value.total && data.value.hits.length < 2000)
-/** Перевод: слова. Если у значения только описание без перевода, описание идёт в «Значение», а «Перевод» не показываем. */
-const ruList = (s: { ru: { t: string; d: string }[] }) => s.ru.map(r => r.t).filter(Boolean).join('; ')
-const defOf = (s: { ru: { t: string; d: string }[] }) => (ruList(s) ? s.ru[0]?.d ?? '' : s.ru.map(r => r.d).filter(Boolean).join(' '))
 
 /* ---------- «Недавно искал»: в этом браузере (у каждого посетителя своё), см. composables/useDictRecent.ts ---------- */
 const history = useDictRecent()
@@ -145,11 +192,14 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 </script>
 
 <template>
-  <DictShell>
+  <DictShell side :side-open="menuOpen" :lock="!hasQuery && !pickedWord">
+    <template #side>
+      <DictWordList :selected="pickedWord" @pick="pickWord" @close="menuOpen = false" />
+    </template>
     <div class="dict" :class="{ on: active }">
       <div class="hero">
-        <h1>Большой словарь</h1>
-        <p class="lead">Больше пятидесяти тысяч слов с русским переводом. Ищи по-корейски или по-русски, можно и в спряжённой форме: 먹었어요.</p>
+        <h1>Большой корейско-русский словарь</h1>
+        <p class="lead">Больше 50 тысяч корейских слов с переводом на русский: значения, примеры, словосочетания и формы. Ищи по-корейски, по-русски или по спряжённой форме: 먹었어요.</p>
       </div>
 
       <form class="search" :class="{ wide: active }" role="search" @submit.prevent="submit">
@@ -168,7 +218,22 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
         >
       </form>
 
-      <section v-if="!hasQuery && recent.length" class="recent" aria-label="Недавно искал">
+      <button type="button" class="menubtn" @click="menuOpen = true">Все слова</button>
+
+      <section v-if="pickedWord && !hasQuery" class="picked" aria-live="polite">
+        <p v-if="!picked && !error" class="count">Открываю…</p>
+        <p v-if="error && !picked" class="none">{{ error }}</p>
+        <DictCard v-for="e in picked ?? []" :key="e.id" :hit="e" :can-save="progress.unlocked" :saved="saved.has(e.id)" @open="openWord" @save="save" />
+      </section>
+
+      <section v-show="!active" class="popular" aria-label="Популярные слова">
+        <h2>Популярные слова</h2>
+        <div class="plist">
+          <RouterLink v-for="it in popular?.items ?? []" :key="it.id" :to="`/dict/${encodeURIComponent(it.word)}`" class="pw"><b lang="ko">{{ it.word }}</b><span>{{ it.ru.split(';')[0] }}</span></RouterLink>
+        </div>
+      </section>
+
+      <section v-if="!hasQuery && !pickedWord && recent.length" class="recent" aria-label="Недавно искал">
         <div class="rhead"><span>Недавно искал</span><button type="button" class="rclear" @click="clearRecent">очистить</button></div>
         <div class="rlist">
           <button v-for="r in recent" :key="r.q" type="button" class="rcard" @click="useRecent(r)">
@@ -191,35 +256,11 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
         <p v-else-if="!data && loading" class="count">Ищу…</p>
         <p v-else-if="data && !data.hits.length" class="none">Ничего не нашлось. Попробуй начало слова, другой перевод или сними фильтры.</p>
         <template v-else-if="data">
-          <p class="count">Найдено: {{ data.total >= 2000 ? 'больше 2000' : data.total }}<span v-if="loading"> · обновляю…</span></p>
+          <p class="count">Найдено: {{ data.total.toLocaleString('ru-RU') }}<span v-if="loading"> · обновляю…</span></p>
           <p v-if="data.via" class="via">
             Это спряжённая форма. Показываю начальную форму: <b lang="ko">{{ data.via.forms.join(', ') }}</b>
           </p>
-          <article v-for="e in data.hits" :key="e.id" class="card">
-            <RouterLink :to="`/dict/${encodeURIComponent(e.word)}`" class="cardlink" :aria-label="`Открыть слово ${e.word}`" @click="openWord(e)"></RouterLink>
-            <header class="ch">
-              <h3 lang="ko">{{ e.word }}</h3>
-              <span v-if="e.hom" class="hom">№{{ e.hom }}</span>
-              <span v-if="e.pron" class="pron">[{{ e.pron }}]</span>
-              <span class="chip">{{ e.pos }}</span>
-              <span class="chip lvl">{{ e.level === 'нет' ? 'без уровня' : e.level }}</span>
-            </header>
-            <div v-for="(s, i) in e.senses" :key="i" class="sense">
-              <p v-if="e.senses.length > 1 || e.moreSenses" class="sn"><span>{{ i + 1 }}</span>Значение {{ i + 1 }}</p>
-              <dl class="kv">
-                <template v-if="ruList(s)"><dt>Перевод</dt><dd class="ru">{{ ruList(s) }}</dd></template>
-                <template v-if="defOf(s)"><dt>Значение</dt><dd>{{ defOf(s) }}</dd></template>
-                <template v-if="s.ko"><dt>Определение</dt><dd lang="ko">{{ s.ko }}</dd></template>
-                <template v-if="s.sent[0]"><dt>Пример</dt><dd class="exv"><span lang="ko">{{ s.sent[0] }}</span></dd></template>
-              </dl>
-            </div>
-            <footer class="more">
-              <span v-if="e.moreSenses" class="lab">ещё значений: {{ e.moreSenses }}</span>
-              <template v-if="e.forms.length"><span class="lab">Формы</span><span v-for="f in e.forms.slice(0, 4)" :key="f" class="tag" lang="ko">{{ f }}</span></template>
-              <button v-if="progress.unlocked" type="button" class="savebtn" :disabled="saved.has(e.id)" @click.stop.prevent="save(e)">{{ saved.has(e.id) ? 'Записано' : 'Записать слово' }}</button>
-              <span class="open">Открыть слово →</span>
-            </footer>
-          </article>
+          <DictCard v-for="e in data.hits" :key="e.id" :hit="e" :can-save="progress.unlocked" :saved="saved.has(e.id)" @open="openWord" @save="save" />
           <button v-if="canMore" type="button" class="morebtn" :disabled="loading" @click="run(true)">Показать ещё</button>
         </template>
       </section>
@@ -228,7 +269,7 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 </template>
 
 <style scoped>
-.dict { display: flex; flex-direction: column; align-items: center; padding-top: 18vh; transition: padding-top .5s cubic-bezier(.2, .8, .2, 1); }
+.dict { display: flex; flex-direction: column; align-items: center; padding-top: clamp(20px, 5vh, 56px); transition: padding-top .5s cubic-bezier(.2, .8, .2, 1); }
 .dict.on { padding-top: 14px; }
 .hero { text-align: center; max-height: 200px; overflow: hidden; transition: max-height .45s ease, opacity .3s ease, margin .45s ease; margin-bottom: 22px; }
 .on .hero { max-height: 0; opacity: 0; margin-bottom: 0; }
@@ -241,6 +282,12 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--pink), var(--shadow); }
 .search input::placeholder { color: var(--muted); }
 
+.popular { width: 100%; max-width: 860px; margin-top: 26px; text-align: center; }
+.popular h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #3b3f7a; text-shadow: 0 1px 10px rgba(255, 255, 255, .9); }
+.plist { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; max-height: max(0px, calc(100dvh - 590px)); overflow: hidden; }
+.pw { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 13px; border: 1px solid rgba(255, 255, 255, .85); border-radius: 999px; background: rgba(255, 255, 255, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--ink); text-decoration: none; transition: transform .15s, background .15s; }
+.pw:hover { transform: translateY(-2px); background: rgba(255, 255, 255, .95); }
+.pw b { font-size: 16px; } .pw span { font-size: 12px; color: var(--muted); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent { width: 100%; max-width: 720px; margin-top: 16px; animation: rise .35s ease both; }
 .rhead { display: flex; align-items: center; justify-content: space-between; margin: 0 8px 8px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #3b3f7a; text-shadow: 0 1px 10px rgba(255, 255, 255, .9); }
 .rclear { border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: #3b3f7a; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; text-transform: none; letter-spacing: 0; }
@@ -261,35 +308,11 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 .count, .none { margin: 0 auto; width: fit-content; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .7); color: var(--muted); font-size: 14px; text-align: center; }
 .via { margin: 0; padding: 10px 16px; border-radius: 14px; background: #fff6d8; color: #5a4417; font-size: 14px; text-align: center; }
 
-.card { --a: #7a5ce0; --bg: #e8e0ff; --bg2: #f6f2ff; --t: #43308c; position: relative; padding: 24px 28px; border: 1px solid #fff; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; }
-.card:hover { transform: translateY(-2px); box-shadow: 0 22px 50px rgba(100, 87, 170, .18); }
-.cardlink { position: absolute; inset: 0; border-radius: 24px; z-index: 1; }
-.ch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 2px dotted var(--bg); }
-.ch h3 { margin: 0; font-size: 32px; font-weight: 700; }
-.hom, .pron { color: var(--muted); font-size: 14px; }
-.chip { padding: 3px 12px; border-radius: 999px; background: var(--bg); color: var(--a); font-size: 12px; font-weight: 700; white-space: nowrap; }
-.chip.lvl { background: transparent; border: 1px solid var(--bg); color: var(--t); }
-.sense + .sense { margin-top: 20px; padding-top: 20px; border-top: 1px dotted var(--bg); }
-.sn { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; font-weight: 700; color: var(--a); }
-.sn span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--bg); }
-.kv { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px 16px; }
-.kv dt { padding-top: 3px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.kv dd { margin: 0; color: #14173a; font-size: 15px; line-height: 1.55; }
-.kv dd.ru { font-size: 18px; font-weight: 700; color: var(--t); line-height: 1.4; }
-.exv { display: flex; flex-direction: column; gap: 4px; }
-.more { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; pointer-events: none; }
-.more > * { pointer-events: auto; }
-.lab { margin-left: 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.lab:first-child { margin-left: 0; }
-.tag { padding: 4px 12px; border-radius: 999px; background: var(--bg); color: var(--a); font-size: 14px; font-weight: 600; }
-.savebtn { margin-left: auto; padding: 5px 14px; border: 1px solid #cbbcff; border-radius: 999px; background: #fff; color: var(--t); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-.savebtn:disabled { opacity: .6; cursor: default; }
-.savebtn + .open { margin-left: 8px; }
-.open { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--a); pointer-events: none !important; }
-.savebtn ~ .open { margin-left: 8px; }
+.picked { width: 100%; max-width: 1040px; margin-top: 18px; display: flex; flex-direction: column; gap: 16px; animation: rise .35s ease both; }
+.menubtn { display: none; margin-top: 12px; padding: 9px 20px; border: 1px solid rgba(255, 255, 255, .85); border-radius: 999px; background: rgba(255, 255, 255, .78); color: #43308c; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+@media (max-width: 959px) { .menubtn { display: inline-block; } }
 .morebtn { align-self: center; padding: 11px 28px; border: 1px solid #cbbcff; border-radius: 999px; background: #fff; color: #43308c; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .morebtn:disabled { opacity: .6; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .dict, .hero, .res, .search { transition: none; animation: none; } }
-@media (max-width: 600px) { .kv { grid-template-columns: 1fr; gap: 2px; } .kv dd { margin-bottom: 8px; } .card { padding: 16px; } .ch h3 { font-size: 28px; } }
 </style>

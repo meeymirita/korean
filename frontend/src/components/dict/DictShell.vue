@@ -2,15 +2,26 @@
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
 import bg from '@/assets/dict/bg.webp'
+import bgSmall from '@/assets/dict/bg-sm.webp'
 import { DICT_SOURCE } from '@/data/korean/dictSource'
 import { useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
+/** side: слева закреплена панель (слот side), содержимое сдвигается; sideOpen: на телефоне панель открыта поверх */
+defineProps<{ side?: boolean; sideOpen?: boolean; lock?: boolean }>()
+// фон главный элемент страницы (LCP): грузим сразу, на телефоне облегчённый (900 px), на широком экране полный
+useHead({
+  link: [
+    { rel: 'preload', as: 'image', href: bgSmall, type: 'image/webp', media: '(max-width: 900px)', fetchpriority: 'high' },
+    { rel: 'preload', as: 'image', href: bg, type: 'image/webp', media: '(min-width: 901px)', fetchpriority: 'high' },
+  ],
+})
 </script>
 
 <template>
-  <div class="dict-root" :style="{ backgroundImage: `url(${bg})` }">
-  <div class="dict-scroll">
+  <div class="dict-root" :style="{ '--bg-sm': `url(${bgSmall})`, '--bg-lg': `url(${bg})` }">
+  <aside v-if="side" class="dict-side" :class="{ open: sideOpen }"><slot name="side" /></aside>
+  <div class="dict-scroll" :class="{ 'has-side': side, locked: lock }">
     <header class="top">
       <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span><span class="sub">большой словарь</span></RouterLink>
       <slot name="top" />
@@ -32,12 +43,21 @@ const progress = useProgressStore()
 </template>
 
 <style scoped>
-.dict-root { position: fixed; inset: 0; background: #d9cdf5 center / cover no-repeat; }
+.dict-root { position: fixed; inset: 0; background: #d9cdf5 var(--bg-lg) center / cover no-repeat; }
+@media (max-width: 900px) { .dict-root { background-image: var(--bg-sm); } }
 .dict-root::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(251, 248, 255, .35), rgba(251, 248, 255, .12) 40%, rgba(251, 248, 255, .3)); }
 .dict-scroll { --ink: #1e2350; --muted: #5f649f; --line: rgba(120, 110, 200, .2); --accent: #d64da9; --accent2: #6a5cd0; --soft: #f1ecff; --pink: #ffe3f3;
   --surface: rgba(255, 255, 255, .86); --shadow: 0 18px 45px rgba(70, 55, 140, .18);
-  position: absolute; inset: 0; z-index: 1; overflow-y: scroll; overflow-x: hidden; display: flex; flex-direction: column; padding: clamp(20px, 3vh, 36px) clamp(16px, 4vw, 64px) 18px;
+  position: absolute; inset: 0; z-index: 1; overflow-y: auto; scrollbar-gutter: stable; overflow-x: hidden; display: flex; flex-direction: column; padding: clamp(20px, 3vh, 36px) clamp(16px, 4vw, 64px) 18px;
   color: var(--ink); font-family: 'Inter', 'Archivo', 'Noto Sans KR', sans-serif; word-break: keep-all; }
+.dict-side { position: absolute; z-index: 3; left: 16px; top: 16px; bottom: 16px; width: 296px; }
+.dict-scroll.locked { overflow-y: hidden; }
+.dict-scroll.has-side { padding-left: calc(clamp(16px, 4vw, 64px) + 328px); }
+@media (max-width: 959px) {
+  .dict-side { display: none; inset: 0; width: auto; padding: 12px; background: rgba(251, 248, 255, .6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .dict-side.open { display: block; z-index: 5; }
+  .dict-scroll.has-side { padding-left: clamp(16px, 4vw, 64px); }
+}
 .dict-scroll > * { position: relative; width: 100%; max-width: 1040px; margin-left: auto; margin-right: auto; }
 .dict-scroll a { color: inherit; text-decoration: none; }
 .ko { font-family: 'Noto Sans KR', 'Archivo', sans-serif; }
