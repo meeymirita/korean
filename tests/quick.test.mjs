@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { close, load, stubLocalStorage } from './_load.mjs'
 
 stubLocalStorage()
-const { quickTasks, QUICK_SIZE } = await load('/src/data/korean/quick.ts')
+const { quickTasks, QUICK_SIZE, QUICK_SIZES } = await load('/src/data/korean/quick.ts')
 const { normalize } = await load('/src/stores/progress.ts')
 const { D } = await load('/src/data/korean/words.ts')
 after(close)
@@ -47,4 +47,16 @@ describe('режим «5 минут»', () => {
   test('есть задание на правило', () => {
     assert.ok(quickTasks(fresh(), QUICK_SIZE, now).some(x => x.kind === 'rule'))
   })
+})
+
+test('длина подхода: 5, 10 или 15 заданий, номера подряд, без повторов', () => {
+  assert.deepEqual([...QUICK_SIZES], [5, 10, 15])
+  for (const n of QUICK_SIZES) {
+    for (let i = 0; i < 10; i++) {
+      const t = quickTasks(fresh(), n, now)
+      assert.equal(t.length, n, 'заданий ' + n)
+      assert.deepEqual(t.map(x => x.id).sort((a, b) => a - b), [...Array(n).keys()])
+      assert.equal(new Set(t.map(x => x.kind + '|' + x.prompt)).size, n, 'без повторов')
+    }
+  }
 })

@@ -5,6 +5,8 @@ import { ruleTasks } from './rule-tasks'
 import { makeTask, randomTasks, shuffle, type Task } from './tasks'
 
 export const QUICK_SIZE = 10
+/** Доступная длина подхода: 5, 10 или 15 заданий. */
+export const QUICK_SIZES = [5, 10, 15] as const
 /** Сколько заданий отдать слабым словам, сколько правилу дня; остальное случайные. */
 const WEAK = 4
 const RULE = 2
