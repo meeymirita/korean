@@ -62,9 +62,9 @@ export class DictService implements OnApplicationBootstrap {
         if (!this.conn()) return
         await access(dictFile())
         if ((await this.status()).indexed) return
-        this.log.log('Индекса словаря нет, строю из ' + dictFile())
+        console.log('Словарь: индекса нет, строю из ' + dictFile()) // Nest Logger.log у нас выключен (main.ts: только error и warn), поэтому console
         const r = await this.reindex()
-        this.log.log(`Словарь проиндексирован: ${r.documents} слов`)
+        console.log(`Словарь проиндексирован: ${r.documents} слов`)
       } catch (e) {
         if ((e as NodeJS.ErrnoException)?.code !== 'ENOENT') this.log.warn('Не удалось проиндексировать словарь: ' + ((e as Error).message || e))
       }
