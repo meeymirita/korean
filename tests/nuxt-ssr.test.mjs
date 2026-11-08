@@ -60,6 +60,7 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
       assert.ok(html.includes(`content="${s.description.replace(/&/g, '&amp;')}"`), `description ${p}`)
       assert.ok(html.includes('name="yandex-verification" content="7e91f055e8c3fe9f"'), `проверка Яндекса ${p}`)
       assert.ok(html.includes('name="google-site-verification" content="gmPNUAXLfo28woGDW-c9NAMEAXEOm15RIeGPajRfETA"'), `проверка Google ${p}`)
+      assert.ok(html.includes('name="msvalidate.01" content="40B2022D5821E649AD18F1A4AA804AE7"'), `проверка Bing ${p}`)
       assert.match(html, /<html\s+lang="ru"/, `язык ${p}`)
       assert.ok(html.includes('application/ld+json'), `schema.org ${p}`)
       assert.equal((html.match(/<title>/g) ?? []).length, 1, `один title ${p}`)
