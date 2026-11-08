@@ -16,5 +16,9 @@ export const Owner = () => SetMetadata(OWNER, true)
 export const ALLOW_PENDING = 'allow_pending'
 export const AllowPending = () => SetMetadata(ALLOW_PENDING, true)
 
+/** Маршрут, который может прочитать токен входящих (INBOX_TOKEN): только чтение, на остальные маршруты он не действует. */
+export const INBOX_READ = 'inbox_read'
+export const InboxRead = () => SetMetadata(INBOX_READ, true)
+
 /** Кто делает запрос: параметр метода контроллера `@CurrentWho() who: Who`. */
 export const CurrentWho = createParamDecorator((_: unknown, ctx: ExecutionContext): Who => ctx.switchToHttp().getRequest().who)

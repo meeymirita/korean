@@ -37,6 +37,7 @@ services:
       MEILISEARCH_URL: http://meilisearch:7700
       MEILISEARCH_MASTER_KEY: ${MEILI_MASTER_KEY:?Set MEILI_MASTER_KEY in .env}
       PROGRESS_TOKEN: ${PROGRESS_TOKEN:?Set PROGRESS_TOKEN in .env}
+      INBOX_TOKEN: ${INBOX_TOKEN:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       CHAT_MODEL: ${CHAT_MODEL:-}
       CHAT_BASE: ${CHAT_BASE:-https://openrouter.ai/api/v1}

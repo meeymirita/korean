@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Unauthor
 import { Reflector } from '@nestjs/core'
 import { Events } from '../events/events.service.js'
 import { RateLimiter, clientIp } from '../security.js'
-import { ALLOW_PENDING, OWNER, PUBLIC } from './auth.js'
+import { ALLOW_PENDING, INBOX_READ, OWNER, PUBLIC } from './auth.js'
 import { AuthService } from './auth.service.js'
 import { TwoFaService } from './twofa.service.js'
 
@@ -22,6 +22,12 @@ export class AuthGuard implements CanActivate {
     if (this.reflector.getAllAndOverride<boolean>(PUBLIC, targets)) return true
 
     const req = ctx.switchToHttp().getRequest()
+    // токен входящих: только чтение помеченных @InboxRead маршрутов, всё остальное 403
+    if (this.auth.isInboxToken(req.headers.authorization)) {
+      if (req.method !== 'GET' || !this.reflector.getAllAndOverride<boolean>(INBOX_READ, targets)) throw new ForbiddenException({ error: 'forbidden' })
+      req.who = { role: 'owner' }
+      return true
+    }
     const who = await this.auth.whoIs(req.headers.authorization)
     const ip = clientIp(req)
     if (who === 'expired') throw new UnauthorizedException({ error: 'expired' })
