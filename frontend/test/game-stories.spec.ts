@@ -45,7 +45,7 @@ describe('тексты: «Слово → перевод» и «Перевод �
   /** Предложение строки без пропусков и стрелки: «저는 [학생]이에요.» */
   const flat = (r: Element, gap: string) => [...r.querySelector('.story-s')!.childNodes].map(n => ((n as Element).classList?.contains('gap') ? gap : n.textContent)).join('').replace('  →  ' + gap, '').replace(/\s+/g, ' ').trim()
 
-  for (const [mode, level, min, max] of [['word', 'Рассказ', 2, 5], ['word', 'Длинный', 5, 10], ['rev', 'Рассказ', 2, 5], ['rev', 'Длинный', 5, 10]] as const) {
+  for (const [mode, level, min, max] of [['word', 'Рассказ', 2, 4], ['word', 'Длинный', 5, 10], ['rev', 'Рассказ', 2, 4], ['rev', 'Длинный', 5, 10]] as const) {
     it(`«${mode}», «${level}»: ${min}–${max} предложений, верный ответ каждого пропуска есть в банке, в банке нет повторов`, () => {
       for (let round = 0; round < 4; round++) {
         start(mode)
@@ -147,7 +147,7 @@ describe('тексты: «Вопросы», «Частицы и счёт», «В
     return harmony ? (past ? '았어요' : '아요') : past ? '었어요' : '어요'
   }
 
-  for (const mode of ['qw', 'part', 'form']) for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+  for (const mode of ['qw', 'part', 'form']) for (const [level, min, max] of [['Рассказ', 2, 4], ['Длинный', 5, 10]] as const) {
     it(`«${mode}», «${level}»: ${min}–${max} предложений; если ставить верные плитки, все пропуски верны и бонус +5; без повторов в банке`, () => {
       for (let round = 0; round < 3; round++) {
         start(mode)
@@ -231,7 +231,7 @@ describe('тексты: «Дни недели», «Числа», «Скольк�
     return text.includes('___ ' + ITEM_COUNTER[item]) || text.match(/___ [가-힣]+ 있어요/) && !text.includes(' ' + NATF[k - 1] + ' ___') ? NATF[k - 1]! : ITEM_COUNTER[item]!
   }
 
-  for (const mode of ['days', 'num', 'price', 'count']) for (const [level, min, max] of [['Рассказ', 2, 6], ['Длинный', 5, 11]] as const) {
+  for (const mode of ['days', 'num', 'price', 'count']) for (const [level, min, max] of [['Рассказ', 2, 4], ['Длинный', 5, 11]] as const) {
     it(`«${mode}», «${level}»: ${min}–${max} строк; верные плитки дают все пропуски верными, бонус +5; без повторов в банке`, () => {
       for (let round = 0; round < 3; round++) {
         start(mode)
@@ -313,7 +313,7 @@ describe('уровни: «Диалог», «Найди ошибку», «Най�
     expect(records.every(x => x.ok)).toBe(true)
   }
 
-  for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+  for (const [level, min, max] of [['Рассказ', 2, 4], ['Длинный', 5, 10]] as const) {
     it(`«dlg», «${level}»: на каждый вопрос в банке есть свой ответ; верные ответы дают бонус +5`, () => {
       for (let round = 0; round < 3; round++) {
         open('dlg', level)
@@ -326,7 +326,7 @@ describe('уровни: «Диалог», «Найди ошибку», «Най�
     })
   }
 
-  for (const [level, min, max] of [['Рассказ', 3, 5], ['Длинный', 5, 10]] as const) {
+  for (const [level, min, max] of [['Рассказ', 3, 4], ['Длинный', 5, 10]] as const) {
     it(`«err», «${level}»: ${min}–${max} предложений, есть и верные, и с ошибкой; отметки по данным дают бонус +5`, () => {
       for (let round = 0; round < 3; round++) {
         open('err', level)
@@ -403,7 +403,7 @@ describe('«Напиши форму»: тексты с вводом с клав�
     return stem + (harmony ? (past ? '았어요' : '아요') : past ? '었어요' : '어요')
   }
 
-  for (const [level, min, max] of [['Рассказ', 3, 5], ['Длинный', 5, 8]] as const) {
+  for (const [level, min, max] of [['Рассказ', 3, 4], ['Длинный', 5, 8]] as const) {
     it(`«type», «${level}»: ${min}–${max} полей ввода, банка нет, верные формы дают бонус +5`, () => {
       for (let round = 0; round < 3; round++) {
         open(level)
@@ -454,7 +454,7 @@ describe('«Порядок слов»: рассказы из учебника', 
     expect(STORIES.filter(s => s.sents.length >= 5).length, 'для «Длинного» нужно несколько рассказов от 5 предложений').toBeGreaterThanOrEqual(3)
   })
 
-  for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+  for (const [level, min, max] of [['Рассказ', 2, 4], ['Длинный', 5, 10]] as const) {
     it(`«ord», «${level}»: ${min}–${max} предложений, они перемешаны, верные номера дают бонус +5`, () => {
       for (let round = 0; round < 8; round++) {
         open(level)
@@ -511,7 +511,7 @@ describe('«Тексты по правилу» (ptext)', () => {
     expect(JSON.parse(localStorage.getItem('hleb_game_v1')!).pfam).toBe('place')
   })
 
-  for (const [name, marks] of FAMS) for (const [level, min, max] of [['Простой', 1, 1], ['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+  for (const [name, marks] of FAMS) for (const [level, min, max] of [['Простой', 1, 1], ['Рассказ', 2, 4], ['Длинный', 5, 10]] as const) {
     it(`«${name}», «${level}»: ${min}–${max} предложений; нужные частицы всегда из набора правила, повторов предложений нет`, () => {
       for (let round = 0; round < 3; round++) {
         open(name, level)
@@ -582,7 +582,7 @@ describe('«Собери предложение»: рассказ из учеб�
     return { i, n, title: st.title }
   }
 
-  for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+  for (const [level, min, max] of [['Рассказ', 2, 4], ['Длинный', 5, 10]] as const) {
     it(`«build», «${level}»: предложения одного рассказа идут подряд по порядку (${min}–${max}), после последнего начинается новый рассказ`, () => {
       open(level)
       let first = solve()

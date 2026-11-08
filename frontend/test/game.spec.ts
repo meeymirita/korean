@@ -312,12 +312,12 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
   })
 
   for (const mode of MODES) {
-    it(`«${mode}», «Рассказ 2–5»: от 2 до 5 предложений, у каждого иконка перевода, проверка в конце`, () => {
+    it(`«${mode}», «Рассказ 2–4»: от 2 до 4 предложений, у каждого иконка перевода, проверка в конце`, () => {
       for (let round = 0; round < 6; round++) {
         open(mode, 'Рассказ')
         const n = sentences()
         expect(n).toBeGreaterThanOrEqual(2)
-        expect(n).toBeLessThanOrEqual(5)
+        expect(n).toBeLessThanOrEqual(4)
         const total = gapEls().length
         expect(total).toBeGreaterThanOrEqual(n)
         expect(tiles().length, 'в банке есть из чего выбирать').toBeGreaterThanOrEqual(2)

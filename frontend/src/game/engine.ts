@@ -64,19 +64,19 @@ const MODE_HELP={
   spot:['Перед тобой несколько корейских предложений, верное только одно. Выбери его по русскому переводу.','Пример: «Иду в школу» → 학교에 가요 (верно), 학교에서 가요 (неверно).'],
   type:['Напиши форму глагола или прилагательного с клавиатуры (настоящее или прошедшее время) и нажми «Проверить» (или Enter). Не знаешь — «Подсказка» открывает ответ по одной букве.','Пример: «Напиши форму: 마시다» → 마셔요.'],
   err:['В предложении одно слово стоит неверно: не та частица или не то вопросительное слово. Нажми на это слово (оно подписано кнопкой с цифрой). Сравнивай с русским переводом под предложением.','Пример: 저는 빵이 먹어요 — «Я ем хлеб». Ошибка в слове «빵이»: объект действия требует 을, правильно «저는 빵을 먹어요». Значит, нажимаешь на 2 빵이.'],
-  pair:['Из двух вариантов выбери верный: частицу, которая подходит к слову, или нужную форму. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 책 ___ → 을 (после согласной), а 커피 ___ → 를 (после гласной).'],
+  pair:['Из двух вариантов выбери верный: частицу, которая подходит к слову, или нужную форму. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 책 ___ → 을 (после согласной), а 커피 ___ → 를 (после гласной).'],
   ord:['Слово нужно поставить на своё место в предложении: выбери вариант, где порядок слов правильный. В корейском глагол стоит в конце.','Пример: «Я иду в школу» → 저는 학교에 가요, а не 가요 저는 학교에.'],
   dlg:['Прочитай реплику собеседника и выбери подходящий ответ.','Пример: «이름이 뭐예요?» → «저는 나나예요.»'],
   han:['Хангыль-блиц: собери слог из букв или выбери, как слог читается.','Пример: ㅂ + ㅏ → 바 [па/ба]; 가 читается «ка/га».'],
   days:['Дни недели, части дня и недели. Выбери перевод или корейское слово; иногда нужно сказать, какой день будет завтра или был вчера, или будни это или выходные.','Пример: 금요일 → «пятница»; сегодня 수요일, завтра → 목요일.'],
-  when:['Частица 에 («когда?») ставится к слову, которое отвечает на вопрос «когда»: дни недели, утро, вечер, выходные. Но 오늘, 내일, 지금, 언제 без 에. Выбери нужную частицу или «ничего не нужно». Плитка «—» значит: частица не нужна. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 금요일___ 친구를 만나요 → 에; 오늘___ 학교에 가요 → без частицы.'],
-  too:['Частица 도 значит «тоже». Она ставится вместо 은/는, 이/가, 을/를 (вместе с ними не бывает), а с 에 и 에서 даёт 에도 и 에서도. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 저는 학생이에요. 나나 씨도 학생이에요; 토요일에 만나요. 일요일에도 만나요.'],
+  when:['Частица 에 («когда?») ставится к слову, которое отвечает на вопрос «когда»: дни недели, утро, вечер, выходные. Но 오늘, 내일, 지금, 언제 без 에. Выбери нужную частицу или «ничего не нужно». Плитка «—» значит: частица не нужна. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 금요일___ 친구를 만나요 → 에; 오늘___ 학교에 가요 → без частицы.'],
+  too:['Частица 도 значит «тоже». Она ставится вместо 은/는, 이/가, 을/를 (вместе с ними не бывает), а с 에 и 에서 даёт 에도 и 에서도. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 저는 학생이에요. 나나 씨도 학생이에요; 토요일에 만나요. 일요일에도 만나요.'],
   num:['Числа бывают двух видов: корейские (하나, 둘, 셋…) для счёта вещей и китайские (일, 이, 삼…) для цен, дат, номеров. Выбери число или цифру.','Пример: 3 по-корейски (счёт) → 셋; 일곱 → 7; 100 → 백.'],
   price:['Цены читаются китайскими числами + 원: 천 (1000), 만 (10 000). Перед 만 цифру 일 не говорят. Выбери верное чтение цены или цену.','Пример: 3 500원 → 삼천오백 원; 10 000원 → 만 원.'],
   count:['Перед счётным словом (개, 병, 잔, 그릇) стоит корейское число в короткой форме: 한, 두, 세, 네. Выбери счётное слово или форму числа.','Пример: 물 한 병 주세요; 사과 세 개.'],
-  neg:['Скажи по-корейски «это …» или «это не …». Есть 받침 (согласная внизу) → 이에요 и 이 아니에요, нет 받침 → 예요 и 가 아니에요. Смотри и на смысл: «это» или «не это». Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «Это книга» → 책이에요; «Это не кофе» → 커피가 아니에요.'],
-  place:['Выбери частицу при месте. 에 — куда идёшь (가요) и где находишься (있어요). 에서 — где что-то делаешь (공부해요, 운동해요, 먹어요). Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 학교___ 가요 → 에; 도서관___ 공부해요 → 에서.'],
-  dem:['이 / 그 / 저 («этот / тот / вон тот»), 이것 / 그것 / 저것 («эта вещь…») и 여기 / 거기 / 저기 («здесь / там / вон там»). Первое рядом со мной, второе рядом с собеседником, третье далеко от обоих. Пометка в скобках у предложения показывает, где предмет. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «вон тот» → 저; «здесь» → 여기.'],
+  neg:['Скажи по-корейски «это …» или «это не …». Есть 받침 (согласная внизу) → 이에요 и 이 아니에요, нет 받침 → 예요 и 가 아니에요. Смотри и на смысл: «это» или «не это». Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «Это книга» → 책이에요; «Это не кофе» → 커피가 아니에요.'],
+  place:['Выбери частицу при месте. 에 — куда идёшь (가요) и где находишься (있어요). 에서 — где что-то делаешь (공부해요, 운동해요, 먹어요). Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 학교___ 가요 → 에; 도서관___ 공부해요 → 에서.'],
+  dem:['이 / 그 / 저 («этот / тот / вон тот»), 이것 / 그것 / 저것 («эта вещь…») и 여기 / 거기 / 저기 («здесь / там / вон там»). Первое рядом со мной, второе рядом с собеседником, третье далеко от обоих. Пометка в скобках у предложения показывает, где предмет. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «вон тот» → 저; «здесь» → 여기.'],
   ptext:['Выбери правило чипами под названием (은/는, 이/가, 을/를, 에 / 에서, 하고 / 와 / 과) и поставь нужную частицу в каждом предложении.','Пример: 학교___ 가요 → 에; 학교___ 공부해요 → 에서.'],
   polite:['«Спасибо» говорят по-разному: от друзей до начальника. Выбери форму для нужного собеседника или скажи, кому такая форма подходит.','Пример: другу → 고마워; начальнику → 감사합니다.']
 };
@@ -182,7 +182,7 @@ function naive(e,tense){
 
 /* ---------- генераторы вопросов ---------- */
 function genWord(){
-  if(storyOn('word'))return S.levels.word==='long'?genWordStory(5,10):genWordStory(2,5);
+  if(storyOn('word'))return S.levels.word==='long'?genWordStory(5,10):genWordStory(2,4);
   const pool=activePool();
   const w=pickW(pool,x=>'w:'+x.ko);
   const dis=distract(w,pool,3);
@@ -195,7 +195,7 @@ function genWord(){
     hp:w.ko,hr:w.ru,icon:'🔤'};
 }
 function genRev(){
-  if(storyOn('rev'))return S.levels.rev==='long'?genRevStory(5,10):genRevStory(2,5);
+  if(storyOn('rev'))return S.levels.rev==='long'?genRevStory(5,10):genRevStory(2,4);
   const pool=activePool();
   const w=pickW(pool,x=>'r:'+x.ko);
   const dis=distract(w,pool,3);
@@ -225,7 +225,7 @@ function genForm(){
     explain:[e.ko+' → '+right,e.note],hp:e.ko+' ('+(tense==='pres'?'наст.':'прош.')+')',hr:right,icon:'🔧'};
 }
 function genQw(){
-  if(storyOn('qw'))return S.levels.qw==='long'?genQwStory(5,10):genQwStory(2,5);
+  if(storyOn('qw'))return S.levels.qw==='long'?genQwStory(5,10):genQwStory(2,4);
   const i=pickW(D.QB.map((x,k)=>k),k=>'q:'+k);
   const q=D.QB[i];
   const dis=shuffle(D.QPOOL.filter(x=>x!==q[2])).slice(0,3);
@@ -236,7 +236,7 @@ function genQw(){
     hp:q[0].replace('___','…'),hr:q[2],icon:'❓'};
 }
 function genPart(){
-  if(storyOn('part'))return S.levels.part==='long'?genPartStory(5,10):genPartStory(2,5);
+  if(storyOn('part'))return S.levels.part==='long'?genPartStory(5,10):genPartStory(2,4);
   const i=pickW(D.PB.map((x,k)=>k),k=>'p:'+k);
   const p=D.PB[i];
   const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
@@ -290,7 +290,7 @@ function genBuildStory(lo,hi){
     ru:x.ru,tiles:tiles,accept:[right],right:right,note:'Предложение '+(b.i+1)+' рассказа «'+b.st.title+'»',explain:[right+'.',x.ru],hp:x.ru,hr:right,icon:'🏗️'};
 }
 function genBuild(){
-  if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,5);
+  if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,4);
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
   let level,seed,tm=mode;
   const missed=Object.keys(S.miss).filter(k=>/^b:/.test(k)&&k!==S.lastKey);
@@ -330,7 +330,7 @@ function ruAnswers(e){
   return [...out];
 }
 function genType(){
-  if(storyOn('type'))return S.levels.type==='long'?genTypeStory(5,8):genTypeStory(3,5);
+  if(storyOn('type'))return S.levels.type==='long'?genTypeStory(5,8):genTypeStory(3,4);
   const forms=formsPool();
   /* «Напиши правильную форму»: только формы; перевод слова вводят в тренажёре «Напиши перевод» (запасной вариант, если форм нет) */
   if(forms.length){
@@ -351,7 +351,7 @@ function genType(){
 
 /* ---------- «Найди ошибку»: нажми на слово, где ошибка ---------- */
 function genErr(){
-  if(storyOn('err'))return S.levels.err==='long'?genErrStory(5,10):genErrStory(3,5);
+  if(storyOn('err'))return S.levels.err==='long'?genErrStory(5,10):genErrStory(3,4);
   let key,wrong,right,ru,note;
   if(Math.random()<.65){
     // варианты из двух слов («삼만 오천») не годятся: сломалась бы разбивка предложения на слова
@@ -381,7 +381,7 @@ const hasFinal=ch=>jong(ch)>0;
 /** Уровень с текстом включён: режим открыт сам по себе (не «Микс»), не блиц и не выживание. */
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
-/** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
+/** Режимы с уровнями «Простой / Рассказ 2–4 / Длинный 5–10». */
 const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord','ptext','build'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
@@ -996,7 +996,7 @@ const inFam=(f,m)=>f.marks.includes(m.text)&&(f.g.includes(m.g)||(f.marks.includ
 function genPtext(){
   const f=PFAMS.find(function(x){return x.id===S.pfam;})||PFAMS[0];
   const lv=S.levels.ptext;
-  const n=lv==='long'?5+Math.floor(Math.random()*6):lv==='story'?2+Math.floor(Math.random()*4):1;
+  const n=lv==='long'?5+Math.floor(Math.random()*6):lv==='story'?2+Math.floor(Math.random()*3):1;
   const cands=ptextPool().map(function(x){return {x:x,gaps:x.marks.filter(function(m){return inFam(f,m);})};}).filter(function(c){return c.gaps.length;});
   // одинаковые по смыслу предложения («커피하고 우유가…» и «커피와 우유가…») в одном тексте не нужны
   const picked=[],seenRu=new Set();
@@ -1020,7 +1020,7 @@ function genPtext(){
   return makeStory('ptext','Правило «'+f.name+'» ('+plural(sents.length)+'): поставь частицы',sents,[...bank],'🧩');
 }
 function genPair(){
-  if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
+  if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,4);
   if(Math.random()<.35){
     const PP=D.PB.map((x,k)=>k).filter(k=>['에','에서','을','를','는','은'].includes(D.PB[k][2]));
     const i=pickW(PP,k=>'pr:p'+k);const p=D.PB[i];
@@ -1046,7 +1046,7 @@ function genPair(){
 
 /* ---------- «Порядок слов»: куда поставить слово ---------- */
 function genOrd(){
-  if(storyOn('ord'))return S.levels.ord==='long'?genOrdStory(5,10):genOrdStory(2,5);
+  if(storyOn('ord'))return S.levels.ord==='long'?genOrdStory(5,10):genOrdStory(2,4);
   for(let t=0;t<30;t++){
     const level=rnd([2,2,3]);
     const seed=1+Math.floor(Math.random()*2147483000);
@@ -1075,7 +1075,7 @@ function genOrd(){
 
 /* ---------- «Диалог»: выбери ответ на реплику ---------- */
 function genDlg(){
-  if(storyOn('dlg'))return S.levels.dlg==='long'?genDlgStory(5,10):genDlgStory(2,5);
+  if(storyOn('dlg'))return S.levels.dlg==='long'?genDlgStory(5,10):genDlgStory(2,4);
   const i=pickW(EXCHANGES.map((x,k)=>k),k=>'d:'+k);
   const x=EXCHANGES[i];
   // «лишние» ответы: другие теги и другие слова (у разных пар бывает одинаковый ответ «네. 있어요.»)
@@ -1133,7 +1133,7 @@ const DAYS=[['월요일','понедельник','ворёиль'],['화요일'
 const DAY_TIME=[['아침','утро','ачим'],['점심','день, обед','чомсим'],['저녁','вечер','чонёк'],['밤','ночь','пам']];
 const DAY_WEEK=[['지난주','прошлая неделя','чинанджу'],['이번 주','эта неделя','ибон чу'],['다음 주','следующая неделя','таым чу'],['주','неделя','чу']];
 function genDays(){
-  if(storyOn('days'))return S.levels.days==='long'?genDaysStory(5,10):genDaysStory(2,5);
+  if(storyOn('days'))return S.levels.days==='long'?genDaysStory(5,10):genDaysStory(2,4);
   const t=rnd(['ko2ru','ru2ko','ko2ru','ru2ko','near','kind']);
   if(t==='near'){
     const i=pickW(DAYS.map((x,k)=>k),k=>'dn:'+k);
@@ -1176,7 +1176,7 @@ const WHEN_ACT=[['친구를 만나요','встречаюсь с другом','�
 const NONE='ничего не нужно';
 const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function genWhen(){
-  if(storyOn('when'))return S.levels.when==='long'?genWhenStory(5,10):genWhenStory(2,5);
+  if(storyOn('when'))return S.levels.when==='long'?genWhenStory(5,10):genWhenStory(2,4);
   const act=rnd(WHEN_ACT);
   const r=Math.random();
   const q=r<.12,off=q||r<.3;
@@ -1211,7 +1211,7 @@ const TOO_AT=[
   ['저는 집에서 쉬어요. 공원',' 쉬어요.','Я отдыхаю дома. И в парке тоже.','에서도'],
 ];
 function genToo(){
-  if(storyOn('too'))return S.levels.too==='long'?genTooStory(5,10):genTooStory(2,5);
+  if(storyOn('too'))return S.levels.too==='long'?genTooStory(5,10):genTooStory(2,4);
   const at=Math.random()<.4;
   const pool=at?TOO_AT:TOO;
   const i=pickW(pool.map((x,k)=>k),k=>(at?'ta:':'to:')+k);
@@ -1231,7 +1231,7 @@ const NAT=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아�
 const SINO=['일','이','삼','사','오','육','칠','팔','구','십'];
 const SINO_BIG=[[100,'백'],[1000,'천'],[10000,'만']];
 function genNum(){
-  if(storyOn('num'))return S.levels.num==='long'?genNumStory(5,10):genNumStory(2,5);
+  if(storyOn('num'))return S.levels.num==='long'?genNumStory(5,10):genNumStory(2,4);
   const nat=Math.random()<.5;
   const list=nat?NAT.map((k,i)=>[i+1,k]):SINO.map((k,i)=>[i+1,k]).concat(SINO_BIG);
   const x=pickW(list,y=>'nu:'+(nat?'n':'s')+y[0]);
@@ -1255,7 +1255,7 @@ function sinoPart(x){let o='';const th=Math.floor(x/1000),h=Math.floor(x%1000/10
 function sinoNum(n){const man=Math.floor(n/10000),r=n%10000;return (man?(man>1?sinoPart(man):'')+'만':'')+sinoPart(r);}
 const fmtMoney=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')+'원';
 function genPrice(){
-  if(storyOn('price'))return S.levels.price==='long'?genPriceStory(5,10):genPriceStory(2,5);
+  if(storyOn('price'))return S.levels.price==='long'?genPriceStory(5,10):genPriceStory(1,3);
   const kind=rnd(['t','t','h','m','mix']);
   const n=kind==='t'?(1+Math.floor(Math.random()*9))*1000:kind==='h'?(1+Math.floor(Math.random()*9))*1000+500:kind==='m'?(1+Math.floor(Math.random()*9))*10000:(1+Math.floor(Math.random()*4))*10000+(1+Math.floor(Math.random()*9))*1000;
   const key='pr:'+n;
@@ -1276,7 +1276,7 @@ function genPrice(){
 const COUNTERS=['병','잔','개','그릇','명','마리','권','장'];
 function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k];return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
 function genCount(){
-  if(storyOn('count'))return S.levels.count==='long'?genCountStory(5,10):genCountStory(2,5);
+  if(storyOn('count'))return S.levels.count==='long'?genCountStory(5,10):genCountStory(2,4);
   const pool=countPool();
   const i=pickW(pool,k=>'cn:'+k);
   const p=D.PB[i];
@@ -1288,7 +1288,7 @@ function genCount(){
 /* ---------- по разделам грамматики: «Быть и отрицание», «Место и направление», «Указатели», «Вежливость» ---------- */
 /** «Это …» и «это не …»: 이에요/예요 и 이/가 아니에요 по 받침 */
 function genNeg(){
-  if(storyOn('neg'))return S.levels.neg==='long'?genNegStory(5,10):genNegStory(2,5);
+  if(storyOn('neg'))return S.levels.neg==='long'?genNegStory(5,10):genNegStory(2,4);
   const pool=D.S.filter(r=>/^[а-яё]+$/i.test(r[2]));
   const w=pickW(pool,r=>'ng:'+r[0]);
   const ko=w[0],hasB=jong(ko[ko.length-1])>0;
@@ -1306,7 +1306,7 @@ const PLACES=[['학교','в школу','в школе',['공부해요','зан�
   ['백화점','в универмаг','в универмаге',['쇼핑해요','хожу по магазинам']],['집','домой','дома',['쉬어요','отдыхаю']],['은행','в банк','в банке']];
 /** 에 (куда, где находишься) или 에서 (где действие) */
 function genPlace(){
-  if(storyOn('place'))return S.levels.place==='long'?genPlaceStory(5,10):genPlaceStory(2,5);
+  if(storyOn('place'))return S.levels.place==='long'?genPlaceStory(5,10):genPlaceStory(2,4);
   const p=pickW(PLACES,x=>'pl:'+x[0]);
   const acts=p.slice(3);
   const t=rnd(acts.length?['go','be','do','do']:['go','be']);
@@ -1326,7 +1326,7 @@ const DEM=[
 /** Примеры для «Этот, тот, вон тот»: по одному предложению на каждое слово (слова из словаря сайта). */
 const DEM_EX={'이':'이 사람은 친구예요.','그':'그 사람은 선생님이에요.','저':'저 사람은 학생이에요.','이것':'이것은 책이에요.','그것':'그것은 가방이에요.','저것':'저것은 나무예요.','여기':'여기는 학교예요.','거기':'거기는 공원이에요.','저기':'저기는 식당이에요.'};
 function genDem(){
-  if(storyOn('dem'))return S.levels.dem==='long'?genDemStory(5,10):genDemStory(2,5);
+  if(storyOn('dem'))return S.levels.dem==='long'?genDemStory(5,10):genDemStory(2,4);
   const fam=rnd(DEM);
   const w=pickW(fam,x=>'dm:'+x[0]);
   const toKo=Math.random()<.5;
@@ -1339,7 +1339,7 @@ const POLITE=[['고마워','друзьям (самое неформальное)
 /** Примеры для «Уровня вежливости»: по предложению на каждую форму «спасибо» (слова из словаря сайта). */
 const POLITE_EX={'고마워':'정말 고마워.','고마워요':'정말 고마워요.','감사해요':'정말 감사해요.','감사합니다':'선생님, 감사합니다.'};
 function genPolite(){
-  if(storyOn('polite'))return S.levels.polite==='long'?genPoliteStory(5,10):genPoliteStory(2,5);
+  if(storyOn('polite'))return S.levels.polite==='long'?genPoliteStory(5,10):genPoliteStory(2,4);
   const w=pickW(POLITE,x=>'po:'+x[0]);
   const toKo=Math.random()<.5;
   const set=shuffle(POLITE);
@@ -1347,7 +1347,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,5)):(Math.random()<.5?genForm():genPast())),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext};
+const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(Math.random()<.5?genForm():genPast())),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext};
 function genQuestion(){
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite']);
@@ -1506,11 +1506,11 @@ function checkBuild(){
   if(document.activeElement&&document.activeElement.tagName==='BUTTON')document.activeElement.blur();
   finish(ok,ans);
 }
-/** Чипы уровня над заданием: одно предложение (как раньше), текст из 2–5 или длинный из 5–10 (в блице и на выживании всегда простой). */
+/** Чипы уровня над заданием: одно предложение (как раньше), текст из 2–4 или длинный из 5–10 (в блице и на выживании всегда простой). */
 const LEVEL_LABELS={han:[['simple','Слоги'],['story','Слова'],['long','Строки']],spot:[['simple','Простой'],['story','Текст 2–3'],['long','Длинный 4–5']]};
 function levelChips(mode){
   const lv=el('div','levels');
-  (LEVEL_LABELS[mode]||[['simple','Простой'],['story','Рассказ 2–5'],['long','Длинный 5–10']]).forEach(function(x){
+  (LEVEL_LABELS[mode]||[['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10']]).forEach(function(x){
     const b=el('button','chip'+(S.levels[mode]===x[0]?' on':''),x[1]);b.type='button';
     b.addEventListener('click',function(){S.levels[mode]=x[0];save();renderQuestion(genQuestion());});
     lv.appendChild(b);
