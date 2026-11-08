@@ -109,6 +109,29 @@ export class DictService implements OnApplicationBootstrap {
     }
   }
 
+  private sitemapCache: { at: number; urls: { loc: string }[] } | null = null
+  private sitemapLoading: Promise<{ loc: string }[]> | null = null
+
+  /** Все слова словаря для карты сайта (sitemap.xml): адреса `/dict/<слово>`, по одному на слово (омонимы сливаются). Кэш на 6 часов. */
+  async sitemap(): Promise<{ loc: string }[]> {
+    const TTL = 6 * 60 * 60_000
+    if (this.sitemapCache && Date.now() - this.sitemapCache.at < TTL) return this.sitemapCache.urls
+    if (this.sitemapLoading) return this.sitemapLoading
+    this.sitemapLoading = (async () => {
+      const words = new Set<string>()
+      for (let offset = 0; ; offset += 1000) {
+        const page = await this.req<{ results?: { word: string }[]; total?: number }>(`/indexes/${INDEX}/documents?fields=word&limit=1000&offset=${offset}`, {}, [404], 20_000)
+        const rows = page?.results ?? []
+        for (const r of rows) if (r.word && !/[\s/?#%]/.test(r.word)) words.add(r.word)
+        if (rows.length < 1000) break
+      }
+      const urls = [...words].sort().map(w => ({ loc: `/dict/${encodeURIComponent(w)}` }))
+      if (urls.length) this.sitemapCache = { at: Date.now(), urls }
+      return urls
+    })().finally(() => { this.sitemapLoading = null })
+    return this.sitemapLoading
+  }
+
   async status() {
     if (!this.conn()) return { configured: false, indexed: false, documents: 0, indexing: this.indexing }
     const s = await this.req<{ numberOfDocuments?: number }>(`/indexes/${INDEX}/stats`, {}, [404])

@@ -21,6 +21,13 @@ export class DictController {
     return this.dict.word(word)
   }
 
+  /** Адреса всех слов для карты сайта (читает Nuxt при сборке sitemap.xml). Слова с пробелом (выражения) не включаются: у них неудобные адреса. */
+  @Public()
+  @Get('sitemap')
+  sitemap() {
+    return this.dict.sitemap()
+  }
+
   @Owner()
   @Get('status')
   status() {

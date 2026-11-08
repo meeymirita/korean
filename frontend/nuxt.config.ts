@@ -87,11 +87,23 @@ export default defineNuxtConfig({
   },
 
   robots: {
-    // как раньше в public/robots.txt: визитка и её картинка открыты, остальное API и закрытые страницы нет
-    groups: [{ userAgent: '*', allow: ['/', '/api/public/'], disallow: ['/api/', '/game', ...priv] }],
+    // Что видит поисковик (файл robots.txt собирает модуль @nuxtjs/robots при запросе, готового файла в репозитории нет):
+    //  открыто: главная, /about, /history, /me, большой словарь /dict и все слова /dict/<слово>, главная раздела /korean/home;
+    //  закрыто: API (кроме визитки), игры, загрузка картинок и весь остальной /korean/ (по токену; в приложении они всё равно не отрисуются без входа)
+    // Правило Allow длиннее Disallow, поэтому /korean/home открыт при закрытом /korean/. Строки Sitemap: добавляет модуль sitemap сам.
+    groups: [{
+      userAgent: '*',
+      allow: ['/', '/dict', '/about', '/history', '/me', '/korean/home', '/api/public/'],
+      disallow: ['/api/', '/game', '/upload', '/korean/', ...priv],
+    }],
   },
   sitemap: {
+    // постоянные страницы из seo.ts (без noindex) + слова большого словаря из API (/api/dict/sitemap, около 45 тысяч адресов)
     urls: pub,
+    sources: ['/api/dict/sitemap'],
+    // в одном файле карты не больше 50 тысяч адресов, а нам надёжнее кусками: sitemap.xml превращается в sitemap_index.xml со списком кусков
+    sitemaps: true,
+    defaultSitemapsChunkSize: 10000,
     // /korean и /korean/ref только перенаправляют на страницу раздела
     exclude: [...priv, '/korean', '/korean/ref'],
   },

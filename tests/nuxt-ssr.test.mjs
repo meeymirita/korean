@@ -67,15 +67,11 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
     }
   })
 
-  test('в HTML настоящее содержимое: словарь, грамматика, алфавит, примеры, справочники, «О платформе»', async () => {
-    const words = await page('/korean/words')
-    for (const d of [D[0], D[Math.floor(D.length / 2)], D.at(-1)]) assert.ok(words.includes(d.k), `слово ${d.k} в словаре`)
-    assert.ok(words.includes('чингу') && words.includes('друг'))
-    const grammar = await page('/korean/grammar')
-    assert.ok(grammar.includes('이에요') && grammar.includes('Урок 1'))
-    assert.ok((await page('/korean/ref/alphabet')).includes('ㄱ'))
-    for (const tab of ['cheat', 'talk', 'hangul', 'reading', 'numbers', 'sentences']) assert.ok((await page(`/korean/ref/${tab}`)).length > 20_000, `справочник ${tab} не пустой`)
+  test('в HTML настоящее содержимое: «О платформе» и большой словарь (слова, грамматика и справочник теперь по токену и на сервере не рисуются)', async () => {
     assert.ok((await page('/about')).includes('Личный кабинет'), 'слайды «О платформе»')
+    const dict = await page('/dict')
+    assert.ok(dict.includes('Большой словарь') && dict.includes('name="robots" content="index, follow'), '/dict открыт и индексируется')
+    for (const p of ['/korean/words', '/korean/grammar', '/korean/ref/cheat']) assert.ok((await page(p)).includes('<div id="__nuxt"></div>'), `${p} только оболочка приложения`)
   })
 
   test('главная рисуется на каждый запрос: фраза и слово дня меняются, а прошлая фраза помнится в cookie', async () => {
@@ -90,7 +86,7 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
 
 describe('Nuxt: закрытые страницы, ошибки, перенаправления', () => {
   test('закрытые токеном страницы не рисуются на сервере (только оболочка приложения) и закрыты от индексации', async () => {
-    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/forms', '/korean/garden', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/upload'])
+    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/forms', '/korean/garden', '/korean/grammar', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/ref/alphabet', '/korean/ref/cheat', '/korean/ref/hangul', '/korean/ref/numbers', '/korean/ref/reading', '/korean/ref/sentences', '/korean/ref/talk', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/korean/words', '/upload'])
     for (const p of privatePaths()) {
       const res = await get(p)
       assert.equal(res.status, 200, p)
@@ -131,14 +127,24 @@ describe('Nuxt: robots.txt, sitemap.xml, визитка', () => {
     for (const p of privatePaths()) assert.ok(robots.includes(`Disallow: ${p}`), `${p} не закрыт в robots.txt`)
     assert.ok(robots.includes('Disallow: /api/'))
     assert.ok(robots.includes('Allow: /api/public/'))
-    assert.ok(robots.includes(`Sitemap: ${SITE}/sitemap.xml`))
+    for (const rule of ['Allow: /dict', 'Allow: /korean/home', 'Disallow: /korean/', 'Disallow: /upload', 'Disallow: /game']) assert.ok(robots.includes(rule), `${rule} нет в robots.txt`)
+    assert.ok(robots.includes(`Sitemap: ${SITE}/sitemap_index.xml`))
   })
 
-  test('sitemap.xml: все открытые страницы, без закрытых, без перенаправлений и без повторов', async () => {
-    const locs = [...(await page('/sitemap.xml')).matchAll(/<loc>(.*?)<\/loc>/g)].map(m => m[1])
+  test('карта сайта: sitemap.xml ведёт на индекс, в кусках все открытые страницы, без закрытых и без повторов', async () => {
+    const old = await get('/sitemap.xml')
+    assert.ok([301, 302, 307, 308].includes(old.status), `sitemap.xml: ${old.status}`)
+    const index = await page('/sitemap_index.xml')
+    const parts = [...index.matchAll(/<loc>(.*?)<\/loc>/g)].map(m => new URL(m[1]).pathname)
+    assert.ok(parts.length >= 1, 'в индексе нет ни одного куска')
+    const locs = []
+    for (const part of parts) locs.push(...[...(await page(part)).matchAll(/<loc>(.*?)<\/loc>/g)].map(m => m[1]))
     assert.equal(new Set(locs).size, locs.length)
-    for (const p of indexablePaths()) assert.ok(locs.includes(p === '/' ? `${SITE}/` : `${SITE}${p}`), `${p} нет в sitemap.xml`)
-    assert.equal(locs.length, indexablePaths().length, `в карте лишнее: ${locs.join(' ')}`)
+    for (const p of indexablePaths()) assert.ok(locs.includes(p === '/' ? `${SITE}/` : `${SITE}${p}`), `${p} нет в карте сайта`)
+    for (const p of privatePaths()) assert.ok(!locs.includes(`${SITE}${p}`), `${p} закрыт, но есть в карте сайта`)
+    // кроме постоянных страниц в карте могут быть только слова большого словаря (их отдаёт API, в тесте индекса словаря нет)
+    const extra = locs.filter(l => !indexablePaths().some(p => l === (p === '/' ? `${SITE}/` : `${SITE}${p}`)))
+    assert.ok(extra.every(l => l.startsWith(`${SITE}/dict/`)), `в карте лишнее: ${extra.slice(0, 5).join(' ')}`)
   })
 
   test('визитка /me: закрытая не индексируется, открытая рисуется на сервере с данными из API', async () => {
