@@ -56,6 +56,9 @@ const inputEl = ref<HTMLInputElement | null>(null)
 const BEST_KEY = 'kb_best'
 
 const cur = computed(() => items.value[idx.value] ?? '')
+/** «Диктовка»: слово скрыто, видно только перевод; уже набранные буквы открываются. */
+const dictation = computed(() => level.value === 'dictation')
+const ruOfCur = computed(() => (dictation.value ? (customLabel(cur.value)?.ru ?? '') : ''))
 const keys = computed(() => keysOfText(cur.value))
 const next = computed(() => keys.value[pos.value])
 /** Сколько символов текущей строки уже набрано. */
@@ -203,9 +206,10 @@ const setLevel = (id: Tab) => {
         <div class="meter"><i :style="{ width: progress + '%' }" /></div>
         <div class="count">{{ Math.min(idx + 1, items.length) }} из {{ items.length }}</div>
         <div class="target" aria-live="polite">
-          <span v-for="(c, i) in chars" :key="i" class="ch" :class="{ done: i < doneChars, now: i === doneChars }">{{ c === ' ' ? '·' : c }}</span>
+          <span v-for="(c, i) in chars" :key="i" class="ch" :class="{ done: i < doneChars, now: i === doneChars }">{{ dictation && i >= doneChars ? '·' : c === ' ' ? '·' : c }}</span>
         </div>
-        <div class="need">Нажми: <b>{{ nextLabel }}</b><span v-if="needShift"> вместе с Shift</span></div>
+        <div v-if="dictation" class="need">Переведи на корейский: <b>{{ ruOfCur }}</b></div>
+        <div v-else class="need">Нажми: <b>{{ nextLabel }}</b><span v-if="needShift"> вместе с Shift</span></div>
       </template>
       <template v-else>
         <div class="res-title">Готово!</div>
@@ -214,18 +218,18 @@ const setLevel = (id: Tab) => {
         <div class="res-btns">
           <button type="button" class="chip on" @click.stop="start">Ещё раз</button>
           <button v-if="level === 'custom'" type="button" class="chip" @click.stop="((started = false), (result = null))">Изменить набор</button>
-          <button v-else-if="level !== 'sentences'" type="button" class="chip" @click.stop="setLevel(LEVEL_IDS[LEVEL_IDS.indexOf(level as KbLevel) + 1]!)">Следующий уровень</button>
+          <button v-else-if="level !== 'dictation'" type="button" class="chip" @click.stop="setLevel(LEVEL_IDS[LEVEL_IDS.indexOf(level as KbLevel) + 1]!)">Следующий уровень</button>
         </div>
       </template>
     </div>
 
     <div v-if="!isCustom || started" class="kb" aria-hidden="true">
       <div v-for="(row, r) in ROWS" :key="r" class="krow" :style="{ paddingLeft: r * 18 + 'px' }">
-        <div v-for="k in row" :key="k" class="key" :class="{ hit: !result && nextLetter === k, shift: !result && nextLetter === k && needShift }">
+        <div v-for="k in row" :key="k" class="key" :class="{ hit: !result && !dictation && nextLetter === k, shift: !result && !dictation && nextLetter === k && needShift }">
           <span>{{ KEY_LABELS[k]![0] }}</span><small v-if="KEY_LABELS[k]![1]">{{ KEY_LABELS[k]![1] }}</small>
         </div>
       </div>
-      <div class="krow"><div class="key space" :class="{ hit: !result && next?.key.code === 'Space' }">пробел</div></div>
+      <div class="krow"><div class="key space" :class="{ hit: !result && !dictation && next?.key.code === 'Space' }">пробел</div></div>
     </div>
     </div>
     </div>

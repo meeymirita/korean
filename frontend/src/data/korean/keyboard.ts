@@ -6,13 +6,14 @@ import { shuffle, short } from './tasks'
 import { TRANSLATIONS } from './translations'
 import { D, parseQuery, score, type Word } from './words'
 
-export type KbLevel = 'letters' | 'syllables' | 'words' | 'sentences'
+export type KbLevel = 'letters' | 'syllables' | 'words' | 'sentences' | 'dictation'
 
 export const KB_LEVELS: { id: KbLevel; label: string; hint: string; count: number }[] = [
   { id: 'letters', label: 'Буквы', hint: 'По одной букве', count: 14 },
   { id: 'syllables', label: 'Слоги', hint: 'Согласная + гласная (+ 받침)', count: 12 },
   { id: 'words', label: 'Слова', hint: 'Слова из словаря', count: 8 },
   { id: 'sentences', label: 'Предложения', hint: 'Примеры из словаря, со знаками', count: 4 },
+  { id: 'dictation', label: 'Диктовка', hint: 'Видишь перевод и печатаешь слово по-корейски: слово и подсветка клавиш скрыты', count: 6 },
 ]
 
 const CONSONANTS = 'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅎㅋㅌㅊㅍ'.split('')
@@ -44,6 +45,7 @@ export function kbItems(level: KbLevel): string[] {
       return [...out]
     }
     case 'words':
+    case 'dictation':
       return shuffle(WORDS).slice(0, n)
     default:
       return shuffle(SENTENCES).slice(0, n)

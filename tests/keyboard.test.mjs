@@ -59,6 +59,14 @@ describe('тренажёр печати: уровни', () => {
       for (const t of items) assert.ok(hk.isTypable(t), `${l.id}: ${t}`)
     }
   })
+  test('диктовка: у каждого слова есть перевод для показа, слова разные', () => {
+    assert.ok(kb.KB_LEVELS.some(l => l.id === 'dictation' && l.label === 'Диктовка'))
+    for (let i = 0; i < 20; i++) {
+      const items = kb.kbItems('dictation')
+      assert.equal(new Set(items).size, items.length, 'без повторов')
+      for (const t of items) assert.ok(kb.customLabel(t)?.ru, 'нет перевода у ' + t)
+    }
+  })
   test('слоги собираются правильно', () => {
     const syl = kb.kbItems('syllables')
     for (const s of syl) assert.match(s, /^[가-힣]$/)
