@@ -13,6 +13,8 @@ import { HOME_LINKS, HOME_MORE, useHome, useHomePicks } from '@/composables/useH
 import { withSeed } from '@/lib/seeded'
 
 const { progress, days, daysWord, hello, due, dueText } = useHome()
+/** Без входа в меню главной только «Большой словарь»; остальные ссылки (Словарь, Грамматика, Памятка, Чтение) видны вошедшим. */
+const homeLinks = computed(() => (progress.unlocked ? HOME_LINKS : HOME_LINKS.filter(l => l.to === '/dict')))
 const { seed, rule: HOME_RULE, phrase: HOME_PHRASE } = useHomePicks()
 const guide = ref(false)
 /** Окно с видео-обзором платформы: видео грузится, только когда окно открыто. */
@@ -85,7 +87,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
         <nav class="nav">
           <RouterLink to="/about">О платформе</RouterLink>
           <RouterLink to="/history" class="hide-sm">История изменений</RouterLink>
-          <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="hide-sm">{{ l.title }}</RouterLink>
+          <RouterLink v-for="l in homeLinks" :key="l.to" :to="l.to" class="hide-sm">{{ l.title }}</RouterLink>
           <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
         </nav>
       </header>
@@ -128,7 +130,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 
         <div class="more">
           <RouterLink to="/history" class="link show-sm">История изменений</RouterLink>
-          <RouterLink v-for="l in HOME_LINKS" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
+          <RouterLink v-for="l in homeLinks" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
           <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to" class="link">
             {{ m.title }}<span v-if="!progress.unlocked" class="lock"><Icon name="lock" /></span>
           </RouterLink>
