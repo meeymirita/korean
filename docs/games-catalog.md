@@ -1,6 +1,6 @@
 # Каталог игр и тренажёров
 
-Разработческая шпаргалка: что уже есть в играх и тренажёрах платформы, чтобы не пере-сканировать проект
+Разработческая шпаргалка (подробные описания тренажёров в [`docs/trainers/`](trainers/README.md)): что уже есть в играх и тренажёрах платформы, чтобы не пере-сканировать проект
 перед каждой новой идеей. **Обновляй этот файл, когда меняешь режим, добавляешь тренажёр или новую игру**
 (как и шторку «Что здесь есть», `src/data/guide.ts` — но та для пользователя, этот файл для разработки).
 
@@ -57,19 +57,19 @@
 
 ## Отдельные тренажёры (Vue-компоненты) — тоже на `/game/home?game=<id>`
 
-Не часть движка: свои компоненты, подключаются в `GameHomeView.vue` через `TOOLS` (список id — `TOOL_IDS`
-в `data/games.ts`).
+Не часть движка: свои компоненты, подключаются в `GameHomeView.vue` через `TOOLS` (список id — `TOOL_IDS` в `data/games.ts`).
+**Подробности по каждому (файлы, как собирается набор, что сохраняется, что идёт в прогресс) в `docs/trainers/`; здесь только указатель, чтобы не держать одно и то же в двух местах.**
 
-| id | Компонент | Что делает | Данные |
-|---|---|---|---|
-| match | `korean/TrainersView.vue` | «Найди пару» (`MatchGame.vue`) и «Напиши перевод» (`TypingQuiz.vue`), переключаются `?mode=match\|type` | `data/korean/trainer.ts` (`pool`, `pickRound`, 4 набора: глаголы / прилагательные / вопр. слова / вопр. предложения) |
-| quick | `korean/QuickView.vue` | «5 минут»: 10 заданий без выбора режима | `data/korean/quick.ts` — пул из `review.dueWords()` (слова на повторение) + `grammar.ts` + `rule-tasks.ts` |
-| particles | `korean/ParticlesView.vue` | Частицы и окончания, 9 правил, свой набор под каждое | `data/korean/particles.ts` (`particleSets`, `particleTasks`) |
-| pairs | `korean/PairsView.vue` | «Похожие, но разные»: слово среди похожих | `data/korean/pairs.ts` — `similarWords()` из `words.ts`, приоритет по `mistakes.ts` |
-| translate | `korean/TranslateView.vue` | «Переведи предложение», 3 направления | `data/korean/translate.ts` + переводы примеров `data/korean/translations.ts` |
-| rule | `korean/RuleView.vue` | «Потренировать правило»: 10 заданий из примеров выбранной карточки грамматики (`?game=rule&g=<id>`) | `data/korean/rule-tasks.ts` (`ruleSession`) |
-| syllables | `korean/SyllablesView.vue` | «Собери по слогам»: слово из слогов-плиток, своя DnD-разметка (`vuedraggable`) | `data/korean/syllables.ts`, приоритет по `mistakes.ts` (`mistakeWords`) |
-| keyboard | `korean/KeyboardView.vue` | «Печать на корейском»: 4 уровня (буквы, слоги, слова, предложения), подсветка клавиши на экранной клавиатуре, скорость и точность, рекорд уровня в `localStorage` (`kb_best`) | `lib/hangulKeys.ts` (раскладка 두벌식, разложение слога на клавиши, `matches`) + `data/korean/keyboard.ts` (уровни из словаря). Нажатия сверяются по `KeyboardEvent.code`, корейская раскладка в системе не нужна |
+| id | Компонент | Описание |
+|---|---|---|
+| match | `korean/TrainersView.vue` (+ `MatchGame.vue`, `TypingQuiz.vue`) | «Найди пару» и «Напиши перевод» (`?mode=match\|type`): [`match.md`](trainers/match.md), [`typing.md`](trainers/typing.md) |
+| quick | `korean/QuickView.vue` | «5 минут»: [`quick.md`](trainers/quick.md) |
+| particles | `korean/ParticlesView.vue` | «Частицы и окончания»: [`particles.md`](trainers/particles.md) |
+| pairs | `korean/PairsView.vue` | «Похожие, но разные»: [`pairs.md`](trainers/pairs.md) |
+| translate | `korean/TranslateView.vue` | «Переведи предложение»: [`translate.md`](trainers/translate.md) |
+| rule | `korean/RuleView.vue` | «Потренировать правило» (`&g=<id карточки>`): [`rule.md`](trainers/rule.md) |
+| syllables | `korean/SyllablesView.vue` | «Собери по слогам»: [`syllables.md`](trainers/syllables.md) |
+| keyboard | `korean/KeyboardView.vue` | «Печать на корейском»: [`keyboard.md`](trainers/keyboard.md) |
 
 **Общий UI для 15-вопросных серий** (particles / translate / quick / pairs — НЕ match, НЕ syllables, у них своя
 разметка): `components/korean/TaskSession.vue`. Новый режим вида «вопрос → несколько вариантов» — переиспользуй
@@ -79,7 +79,7 @@
 
 | Страница | Компонент | Что это |
 |---|---|---|
-| `/korean/mistakes` | `MistakesView.vue` (на `TaskSession`) | Тренировка по словам с частыми ошибками, `data/mistakes.ts` |
+| `/korean/mistakes` | `MistakesView.vue` (на `TaskSession`) | Тренировка по словам с частыми ошибками: [`mistakes.md`](trainers/mistakes.md) |
 | `/korean/forms` | `FormsView.vue` | Не игра — таблица спряжений с поиском, `data/korean/conjugation.ts` |
 | `/korean/review` | `ReviewView.vue` | Карточки слов на повторение, `data/review.ts` (`dueWords`) |
 | `/korean/today` | `TodayView.vue` | Набор дня: правило + 10 слов + 15 заданий; чек-лист — `data/checklist.ts` (ссылается на `ALL_GAMES` из `games.ts`) |
