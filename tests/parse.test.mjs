@@ -5,6 +5,7 @@ import { close, load, stubLocalStorage } from './_load.mjs'
 stubLocalStorage()
 const { analyze } = await load('/src/data/korean/parse.ts')
 const { D } = await load('/src/data/korean/words.ts')
+const tr = await load('/src/data/korean/translations.ts')
 after(close)
 
 /** [текст, тип] каждого куска разбора */
@@ -94,5 +95,22 @@ describe('analyze: примеры из словаря', () => {
   test('покрытие не падает ниже достигнутого (было 518 из 544)', () => {
     const full = sentences.filter(s => analyze(s).every(x => x.type !== 'unknown')).length
     assert.ok(full >= 515, `целиком разбирается ${full} из ${sentences.length}`)
+  })
+})
+
+describe('analyze: вежливое 요 и формы из примеров', () => {
+  test('«저도요»: слово, частица и вежливое окончание', () => {
+    assert.deepEqual(parts('저도요.'), [['저', 'word'], ['도', 'particle'], ['요', 'ending']])
+    assert.deepEqual(parts('저는요'), [['저', 'word'], ['는', 'particle'], ['요', 'ending']])
+  })
+
+  test('«요» не отрывается от обычных слов', () => {
+    assert.deepEqual(parts('가요'), [['가요', 'verb']])
+  })
+
+  test('в примерах сайта нет слов «нет в словаре»', () => {
+    const { TRANSLATIONS } = tr
+    const bad = Object.keys(TRANSLATIONS).filter(s => analyze(s).some(x => x.type === 'unknown'))
+    assert.deepEqual(bad, [])
   })
 })
