@@ -21,7 +21,7 @@ export const GAMES: GuideCard[] = [
   { icon: 'search', title: 'Найди верное', text: 'Четыре предложения на один перевод, верное только одно.', to: game('spot'), private: true },
   { icon: 'pencil', title: 'Напиши правильную форму', text: 'Форму глагола или прилагательного вводишь с клавиатуры. Есть подсказка по буквам.', to: game('type'), private: true },
   { icon: 'eraser', title: 'Найди ошибку', text: 'В предложении одна неверная частица или слово. Нажми на него.', to: game('err'), private: true },
-  { icon: 'hearts', title: 'Пара или нет', text: 'Две частицы на выбор: 은/는, 이/가, 을/를, 이에요/예요. Смотри на 받침.', to: game('pair'), private: true },
+  { icon: 'hearts', title: 'Пара или нет', text: 'Две частицы на выбор: 은/는, 이/가, 을/를, 이에요/예요. Смотри на 받침. Три уровня: одно слово, рассказ из 2–5 предложений и длинный из 5–10.', to: game('pair'), private: true },
   { icon: 'comet', title: 'Порядок слов', text: 'Названо слово. Выбери предложение, где оно стоит на своём месте.', to: game('ord'), private: true },
   { icon: 'chat', title: 'Диалог', text: 'Реплика собеседника, нужно выбрать подходящий ответ из трёх.', to: game('dlg'), private: true },
   { icon: 'han', title: 'Хангыль-блиц', text: 'Собери слог из букв или прочитай слог. Для самых первых уроков.', to: game('han'), private: true },

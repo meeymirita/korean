@@ -65,7 +65,6 @@
 .game .opt.bad{border-color:var(--bad);background:var(--bad-bg)}
 .game .opt:disabled{cursor:default}
 .game .feedback{margin-top:16px;border-radius:14px;padding:0 14px;max-height:0;overflow:hidden;transition:max-height .25s,padding .25s}
-.game .feedback.show{max-height:340px;padding:12px 14px}
 .game .feedback.ok{background:var(--ok-bg)}
 .game .feedback.bad{background:var(--bad-bg)}
 .game .fbh{font-weight: 500;font-size:15px}
@@ -158,9 +157,18 @@
 .game .opt{padding:14px 16px;min-height:clamp(62px,5vw,80px)}
 .game .slots{min-height:76px;padding:12px;gap:10px;margin:16px 0 14px}
 .game .tiles{gap:10px;margin-bottom:16px}
-.game .feedback.show{max-height:560px;padding:14px 16px}
+.game .feedback.show{max-height:none;overflow:visible;padding:14px 16px}
 .game details.set{padding:14px 20px}
 @media (max-width:860px){
   .game .game-app{grid-template-columns:1fr}
   .game .card{min-height:0}
 }
+/* «Рассказ» в «Паре или нет»: несколько предложений с пропусками, итог по предложениям */
+.game .story{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}
+.game .story-s{font-family:var(--ko);font-size:clamp(18px,3.4vw,24px);line-height:1.9;overflow-wrap:anywhere}
+.game .story .gap{margin:0 3px}
+.game .story .gap.wait{color:var(--muted);border-color:var(--line)}
+.game .bd-fold{margin:8px 0;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.55)}
+.game .bd-fold summary{cursor:pointer;font-family:var(--ko);font-size:18px}
+.game .bd-fold summary.ok{color:var(--ok)}
+.game .bd-fold summary.bad{color:var(--bad)}

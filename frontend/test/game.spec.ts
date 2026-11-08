@@ -15,6 +15,7 @@ const records: { word: string | null; ok: boolean; mode?: string }[] = []
 const grammarOpened: string[] = []
 
 function start(mode: string) {
+  dispose?.() // прежний экземпляр игры снимает свои обработчики клавиш
   records.length = 0
   grammarOpened.length = 0
   localStorage.clear()
@@ -273,5 +274,97 @@ describe('разбор после ответа', () => {
     ;(document.querySelector('#blitzBtn') as HTMLButtonElement | null)?.click()
     opts()[0]?.click()
     if (document.querySelector('#blitzBtn')) expect(document.querySelector('#fb .bd')).toBeNull()
+  })
+})
+
+describe('«Пара или нет»: уровни «Рассказ» и «Длинный»', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
+  const gaps = () => document.querySelectorAll('.story .gap').length
+  const sentences = () => document.querySelectorAll('.story .story-s').length
+
+  /** Проходит рассказ до конца, всегда выбирая первый вариант; возвращает число отвеченных пропусков. */
+  function playStory() {
+    let answered = 0
+    while (!document.querySelector('#fb')!.classList.contains('show')) {
+      const o = opts()
+      expect(o.length, 'у пропуска две частицы на выбор').toBe(2)
+      o[0]!.click()
+      answered++
+      expect(answered).toBeLessThan(60)
+    }
+    return answered
+  }
+
+  it('по умолчанию уровень «Простой»: одно предложение, как раньше', () => {
+    start('pair')
+    expect(chip('Простой').classList.contains('on')).toBe(true)
+    expect(document.querySelector('.story')).toBeNull()
+  })
+
+  it('«Рассказ 2–5»: от 2 до 5 предложений, у каждого пропуски, каждый ответ засчитывается', () => {
+    for (let round = 0; round < 8; round++) {
+      start('pair')
+      chip('Рассказ').click()
+      const n = sentences()
+      expect(n).toBeGreaterThanOrEqual(2)
+      expect(n).toBeLessThanOrEqual(5)
+      const total = gaps()
+      expect(total).toBeGreaterThanOrEqual(n)
+      expect(playStory()).toBe(total)
+      expect(records.length).toBe(total)
+      expect(records.every(r => r.mode === 'pair')).toBe(true)
+      const fb = document.querySelector('#fb')!
+      expect(fb.querySelector('.fbh')!.textContent).toContain('Рассказ пройден: верно')
+      expect(fb.querySelectorAll('.bd-fold').length).toBe(n)
+      expect(fb.querySelector('.bd-card')).not.toBeNull()
+      ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
+      expect(sentences()).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  it('«Длинный 5–10»: от 5 до 10 предложений', () => {
+    for (let round = 0; round < 6; round++) {
+      start('pair')
+      chip('Длинный').click()
+      const n = sentences()
+      expect(n).toBeGreaterThanOrEqual(5)
+      expect(n).toBeLessThanOrEqual(10)
+      expect(playStory()).toBe(gaps())
+    }
+  })
+
+  it('ответ ставит выбранную частицу на место пропуска и подсвечивает верно или неверно', () => {
+    start('pair')
+    chip('Рассказ').click()
+    const first = document.querySelector('.story .gap')!
+    expect(first.classList.contains('now')).toBe(true)
+    opts()[0]!.click()
+    expect(first.classList.contains('ok') || first.classList.contains('bad')).toBe(true)
+    expect(['은', '는', '이', '가', '을', '를', '에', '에서', '와', '과', '으로', '로']).toContain(first.textContent!.trim())
+  })
+
+  it('клавиши 1 и 2 выбирают частицу', () => {
+    start('pair')
+    chip('Рассказ').click()
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click() // при первом запуске окно «Как играть» открыто и клавиши не принимаются
+    const total = gaps()
+    for (let i = 0; i < total; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: i % 2 ? '2' : '1', bubbles: true }))
+    expect(document.querySelector('#fb')!.classList.contains('show')).toBe(true)
+    expect(records.length).toBe(total)
+  })
+
+  it('выбранный уровень запоминается, в остальных режимах рассказов нет', () => {
+    start('pair')
+    chip('Рассказ').click()
+    expect(JSON.parse(localStorage.getItem('hleb_game_v1')!).pairLevel).toBe('story')
+    dispose?.()
+    document.body.innerHTML = `<div id="root">${markup}</div>`
+    dispose = initGame({ record: () => ({}), importXp: () => {}, state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }), cats: () => null, mode: () => 'pair', saveCats: () => {}, grammar: () => {} })
+    expect(chip('Рассказ').classList.contains('on')).toBe(true)
+    for (let i = 0; i < 40; i++) {
+      dispose?.()
+      start('place')
+      expect(document.querySelector('.story'), 'рассказ только в «Паре или нет»').toBeNull()
+    }
   })
 })

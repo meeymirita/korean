@@ -59,7 +59,7 @@ export const GAME_GROUPS: GameGroup[] = [
     desc: '은/는, 이/가, 을/를 и другие: какая частица и в какой форме.',
     icon: 'macaron',
     games: [
-      { id: 'pair', name: 'Пара или нет', desc: 'Выбери верный вариант из двух', icon: 'hearts', to: '/game/home?game=pair' },
+      { id: 'pair', name: 'Пара или нет', desc: 'Выбери верный вариант из двух, а на сложном уровне целый рассказ', icon: 'hearts', to: '/game/home?game=pair' },
       { id: 'part', name: 'Частицы и счёт', desc: 'Вставь частицу или счётное слово', icon: 'macaron', to: '/game/home?game=part' },
       { id: 'particles', name: 'Частицы и окончания', desc: 'Девять правил со своими наборами', icon: 'wand', to: '/game/home?game=particles' },
       { id: 'err', name: 'Найди ошибку', desc: 'Найди неверное слово в предложении', icon: 'eraser', to: '/game/home?game=err' },

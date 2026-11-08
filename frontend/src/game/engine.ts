@@ -58,7 +58,7 @@ const MODE_HELP={
   spot:['Перед тобой несколько корейских предложений, верное только одно. Выбери его по русскому переводу.','Пример: «Иду в школу» → 학교에 가요 (верно), 학교에서 가요 (неверно).'],
   type:['Напиши форму глагола или прилагательного с клавиатуры (настоящее или прошедшее время) и нажми «Проверить» (или Enter). Не знаешь — «Подсказка» открывает ответ по одной букве.','Пример: «Напиши форму: 마시다» → 마셔요.'],
   err:['В предложении одно слово стоит неверно: не та частица или не то вопросительное слово. Нажми на это слово (оно подписано кнопкой с цифрой). Сравнивай с русским переводом под предложением.','Пример: 저는 빵이 먹어요 — «Я ем хлеб». Ошибка в слове «빵이»: объект действия требует 을, правильно «저는 빵을 먹어요». Значит, нажимаешь на 2 빵이.'],
-  pair:['Из двух вариантов выбери верный: частицу, которая подходит к слову, или нужную форму.','Пример: 책 ___ → 을 (после согласной), а 커피 ___ → 를 (после гласной).'],
+  pair:['Из двух вариантов выбери верный: частицу, которая подходит к слову, или нужную форму. Над заданием три уровня: «Простой» (одна пара), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений подряд, в каждом пропуски частиц, отвечаешь по очереди (клавиши 1 и 2).','Пример: 책 ___ → 을 (после согласной), а 커피 ___ → 를 (после гласной).'],
   ord:['Слово нужно поставить на своё место в предложении: выбери вариант, где порядок слов правильный. В корейском глагол стоит в конце.','Пример: «Я иду в школу» → 저는 학교에 가요, а не 가요 저는 학교에.'],
   dlg:['Прочитай реплику собеседника и выбери подходящий ответ.','Пример: «이름이 뭐예요?» → «저는 나나예요.»'],
   han:['Хангыль-блиц: собери слог из букв или выбери, как слог читается.','Пример: ㅂ + ㅏ → 바 [па/ба]; 가 читается «ка/га».'],
@@ -99,16 +99,16 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',pairLevel:'simple',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
   blitz:{on:false,left:60,ok:0,bad:0,iv:null}
 };
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,pairLevel:S.pairLevel,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
-  ['reading','tense','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  ['reading','tense','mode','seenHelp','modeHelp','level','pairLevel','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
   if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
 load();
 /* очки старой версии игры переходят в общий прогресс сайта */
@@ -120,6 +120,7 @@ const wantMode=hooks.mode&&hooks.mode();
 if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 if(![1,2,3,'any'].includes(S.level))S.level='any';
+if(!['simple','story','long'].includes(S.pairLevel))S.pairLevel='simple';
 
 /* ---------- выбор с весами (ошибки возвращаются чаще) ---------- */
 function pickW(arr,keyFn){
@@ -330,7 +331,52 @@ const PAIRS=[
   {a:'이에요',b:'예요',role:'«это…»',ex:n=>n+'___.',exRu:r=>'Это «'+r+'».'}
 ];
 const hasFinal=ch=>jong(ch)>0;
+/* ---------- «Рассказ» в «Паре или нет»: несколько предложений из наших данных, частицы выбираешь по очереди ---------- */
+/** У каждой частицы пара по 받침: 은/는, 이/가, 을/를, 와/과, 으로/로; у места 에/에서. */
+const TWIN={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'을','에':'에서','에서':'에','와':'과','과':'와','으로':'로','로':'으로'};
+let STORY_POOL=null;
+/** Все предложения с переводом, где есть частицы из пар и все слова известны разбору; считается один раз при первом рассказе. */
+function storyPool(){
+  if(STORY_POOL)return STORY_POOL;
+  const catOf={};DICT.forEach(d=>{if(d.s)catOf[d.s]=d.c;});
+  STORY_POOL=Object.keys(TRANSLATIONS).map(function(ko){
+    const segs=analyze(ko);
+    const gaps=[];let cur=0;
+    segs.forEach(function(sg){
+      const at=ko.indexOf(sg.text,cur);if(at<0)return;cur=at+sg.text.length;
+      if(sg.type==='particle'&&TWIN[sg.text])gaps.push({at:at,right:sg.text,why:sg.explain||sg.gloss});
+    });
+    return {ko:ko,ru:TRANSLATIONS[ko],gaps:gaps,cats:catOf[ko]||[],ok:!segs.some(function(sg){return sg.type==='unknown';})};
+  }).filter(function(x){return x.ok&&x.gaps.length;});
+  return STORY_POOL;
+}
+/** Рассказ из `n` предложений одной темы (если в теме хватает), в каждом до двух пропусков. */
+function genStory(lo,hi){
+  const pool=storyPool();
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const bycat={};pool.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
+  const rich=Object.keys(bycat).filter(function(c){return bycat[c].length>=n;});
+  const src=rich.length&&Math.random()<.75?bycat[rnd(rich)]:pool;
+  const picked=shuffle(src).slice(0,n);
+  const gaps=[];
+  const sents=picked.map(function(x){
+    const use=shuffle(x.gaps).slice(0,2).sort(function(a,b){return a.at-b.at;});
+    const parts=[];let pos=0;
+    use.forEach(function(g){
+      if(g.at>pos)parts.push({t:x.ko.slice(pos,g.at)});
+      parts.push({gap:gaps.length});
+      gaps.push({right:g.right,why:g.why,options:shuffle([g.right,TWIN[g.right]]),hp:x.ko.slice(0,g.at)+'…'+x.ko.slice(g.at+g.right.length),chosen:null,ok:null});
+      pos=g.at+g.right.length;
+    });
+    if(pos<x.ko.length)parts.push({t:x.ko.slice(pos)});
+    return {ko:x.ko,ru:x.ru,parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
+  });
+  const word=n+(n<=4?' предложения':' предложений');
+  return {type:'story',mode:'pair',key:'story:'+picked.map(function(x){return x.ko;}).join('|').slice(0,80),label:'Рассказ ('+word+'): выбери частицы по очереди',
+    sents:sents,gaps:gaps,cur:0,right:'',explain:[],hp:'Рассказ',hr:'',icon:'⚖️',level:2};
+}
 function genPair(){
+  if(S.mode==='pair'&&S.pairLevel!=='simple'&&!S.blitz.on&&!S.surv.on)return S.pairLevel==='long'?genStory(5,10):genStory(2,5);
   if(Math.random()<.35){
     const PP=D.PB.map((x,k)=>k).filter(k=>['에','에서','을','를','는','은'].includes(D.PB[k][2]));
     const i=pickW(PP,k=>'pr:p'+k);const p=D.PB[i];
@@ -655,7 +701,22 @@ function renderQuestion(q){
   clearTimeout(S.timer);
   const card=$('#card');card.innerHTML='';
   card.appendChild(labelWithHelp(q));
-  if(q.type==='choice'){
+  if(q.mode==='pair'&&S.mode==='pair')card.appendChild(pairLevels());
+  if(q.type==='story'){
+    const box=el('div','story');
+    q.sents.forEach(function(s){
+      const p=el('div','story-s');
+      s.parts.forEach(function(pt){
+        if(pt.gap===undefined)p.append(pt.t);
+        else{const g=el('span','gap');g.id='sg'+pt.gap;p.append(g);}
+      });
+      box.appendChild(p);
+    });
+    card.appendChild(box);
+    const note=el('div','ruline');note.id='snote';card.appendChild(note);
+    const opts=el('div','opts');opts.id='opts';card.appendChild(opts);
+    paintStory(q);
+  }else if(q.type==='choice'){
     if(q.sentence){
       const p=el('div','sentence');
       p.append(q.sentence.pre);
@@ -796,6 +857,49 @@ function checkBuild(){
   if(document.activeElement&&document.activeElement.tagName==='BUTTON')document.activeElement.blur();
   finish(ok,ans);
 }
+/** Чипы уровня у «Пары или нет»: одно предложение (как раньше), рассказ из 2–5 или длинный из 5–10 (в блице и на выживании всегда простой). */
+function pairLevels(){
+  const lv=el('div','levels');
+  [['simple','Простой'],['story','Рассказ 2–5'],['long','Длинный 5–10']].forEach(function(x){
+    const b=el('button','chip'+(S.pairLevel===x[0]?' on':''),x[1]);b.type='button';
+    b.addEventListener('click',function(){S.pairLevel=x[0];save();renderQuestion(genQuestion());});
+    lv.appendChild(b);
+  });
+  return lv;
+}
+/** Рассказ: подставленные ответы, пропуск под вопросом и варианты для него. */
+function paintStory(q){
+  q.gaps.forEach(function(g,i){
+    const e=$('#sg'+i);if(!e)return;
+    e.textContent=g.chosen!==null?g.chosen:(i===q.cur?' ___ ':' … ');
+    e.className='gap'+(g.chosen!==null?(g.ok?' ok':' bad'):(i===q.cur?' now':' wait'));
+  });
+  const opts=$('#opts');opts.innerHTML='';
+  const g=q.gaps[q.cur];if(!g)return;
+  g.options.forEach(function(t,i){
+    const b=el('button','opt');b.type='button';
+    b.appendChild(el('span','k',String(i+1)));
+    const tx=el('span','tx');tx.appendChild(el('span','t ko',t));
+    b.appendChild(tx);b.addEventListener('click',function(){answerStory(i);});opts.appendChild(b);
+  });
+  const done=q.gaps.filter(function(x){return x.chosen!==null;}).length;
+  const cnt=$('#snote');if(cnt&&!done)cnt.textContent='Пропуск 1 из '+q.gaps.length+': выбери частицу';
+}
+/** Ответ на один пропуск рассказа: считается как обычный ответ, после последнего показывается общий разбор. */
+function answerStory(i){
+  const q=S.cur;if(!q||q.type!=='story'||S.answered)return;
+  const g=q.gaps[q.cur];if(!g||i>=g.options.length)return;
+  g.chosen=g.options[i];g.ok=g.chosen===g.right;
+  finish(g.ok,g.chosen,{key:'',word:null,hp:g.hp,hr:g.right,icon:'⚖️',level:1},true);
+  const left=q.gaps.length-q.cur-1;
+  $('#snote').textContent=(g.ok?'Верно: ':'Не так, нужно ')+g.right+(g.why?' — '+g.why:'')+(left?' · осталось пропусков: '+left:'');
+  q.cur++;
+  if(q.cur>=q.gaps.length){
+    paintStory(q);
+    S.answered=true;
+    showFeedback(q,q.gaps.every(function(x){return x.ok;}));
+  }else paintStory(q);
+}
 function answerChoice(i){
   if(S.answered)return;const q=S.cur;
   const ok=i===q.correct;
@@ -810,13 +914,15 @@ function answerChoice(i){
 }
 
 /* ---------- ответ, статистика, история ---------- */
-function finish(ok,chosen){
-  S.answered=true;const q=S.cur;
+/** Засчитывает ответ. `qq` и `quiet` нужны рассказу: каждый пропуск считается ответом, а общий разбор показывается один раз в конце. */
+function finish(ok,chosen,qq,quiet){
+  const q=qq||S.cur;
+  if(!quiet)S.answered=true;
   const A=S.all,B=S.ses;
   const bm=A.byMode[S.mode]||(A.byMode[S.mode]={ok:0,bad:0,best:0});
   if(ok){B.ok++;A.ok++;B.streak++;if(B.streak>B.best)B.best=B.streak;if(B.streak>A.best)A.best=B.streak;
     bm.ok++;if(B.streak>bm.best)bm.best=B.streak;
-    const m=S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
+    const m=q.key&&S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
     const pr=hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr},xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
     if(pr.bloomed)msgs.push('🌸 Слово «'+q.word+'» расцвело в саду!');
@@ -829,13 +935,13 @@ function finish(ok,chosen){
     if(S.surv.on)S.surv.ok++;
   }else{B.bad++;A.bad++;B.streak=0;bm.bad++;
     hooks.record({word:q.word||null,ok:false,mode:S.mode,detail:{q:q.hp,a:q.hr,y:chosen}});
-    const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}
+    if(q.key){const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}}
   if(S.blitz.on){if(ok)S.blitz.ok++;else S.blitz.bad++;}
   if(S.surv.on&&!ok){S.surv.lives--;drawLives();if(S.surv.lives<=0)S.timer=setTimeout(endSurv,1300);}
   S.hist.unshift({ok:ok,icon:q.icon,p:q.hp,r:q.hr,you:ok?null:chosen});
   if(S.hist.length>150)S.hist.pop();
   save();updateStats();renderList();
-  showFeedback(q,ok);
+  if(!quiet)showFeedback(q,ok);
 }
 /* ---------- разбор после ответа ---------- */
 /** Строка только корейская (без русских слов), с хангылем и знаком в конце: это уже готовое предложение. */
@@ -878,13 +984,26 @@ function showFeedback(q,ok){
   const fb=$('#fb');fb.className='feedback show '+(ok?'ok':'bad');fb.innerHTML='';
   if(!motionCalm())gsap.from(fb,{opacity:0,y:12,duration:.32,ease:'power2.out',clearProps:'opacity,transform'});
   const streak=S.ses.streak;
-  fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
-  // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
-  const teach=S.blitz.on?'':teachOf(q);
-  const bd=teach?drawBreakdown(teach,transOf(q,teach)):null;
-  const shown=!!(bd&&bd.childNodes.length);
-  q.explain.forEach(t=>{if(t&&!(shown&&t.trim()===teach))fb.appendChild(el('div','fbt',t));});
-  if(shown)fb.appendChild(bd);
+  if(q.type==='story'){
+    // рассказ: итог по пропускам и разбор каждого предложения (с ошибками раскрыт сразу, остальные сворачиваются)
+    const right=q.gaps.filter(g=>g.ok).length;
+    fb.appendChild(el('div','fbh','Рассказ пройден: верно '+right+' из '+q.gaps.length+(ok?' 🔥':'')));
+    q.sents.forEach(function(s){
+      const bad=s.gapIdx.some(k=>!q.gaps[k].ok);
+      const d=document.createElement('details');d.className='bd-fold';d.open=bad;
+      d.appendChild(el('summary',bad?'bad':'ok',s.ko+(bad?'  · есть ошибки':'')));
+      d.appendChild(drawBreakdown(s.ko,s.ru));
+      fb.appendChild(d);
+    });
+  }else{
+    fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
+    // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
+    const teach=S.blitz.on?'':teachOf(q);
+    const bd=teach?drawBreakdown(teach,transOf(q,teach)):null;
+    const shown=!!(bd&&bd.childNodes.length);
+    q.explain.forEach(t=>{if(t&&!(shown&&t.trim()===teach))fb.appendChild(el('div','fbt',t));});
+    if(shown)fb.appendChild(bd);
+  }
   const x=el('div','fbx');const nb=el('button','primary','Дальше →');nb.type='button';nb.id='nextBtn';nb.addEventListener('click',next);
   x.appendChild(nb);fb.appendChild(x);
   nb.focus({preventScroll:true});
@@ -1086,6 +1205,7 @@ const onKeydown=e=>{
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const t=e.target;if(t&&(t.tagName==='SELECT'||t.tagName==='INPUT'))return;
   if(S.cur&&S.cur.type==='choice'&&!S.answered&&(e.key==='h'||e.key==='р')&&$('#hintBtn')){e.preventDefault();useHint();}
+  else if(S.cur&&S.cur.type==='story'&&!S.answered&&/^[1-9]$/.test(e.key)){e.preventDefault();answerStory(+e.key-1);}
   else if(S.cur&&S.cur.type==='choice'&&!S.answered&&/^[1-9]$/.test(e.key)){
     const i=+e.key-1;if(i<S.cur.options.length){e.preventDefault();answerChoice(i);}
   }else if(S.cur&&S.cur.type==='build'&&!S.answered){
