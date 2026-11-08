@@ -7,6 +7,7 @@ import { useProgressStore } from '@/stores/progress'
 
 export const HOME_LINKS = [
   { title: 'Словарь', to: '/korean/words' },
+  { title: 'Большой словарь', to: '/dict' },
   { title: 'Грамматика', to: '/korean/grammar' },
   { title: 'Памятка', to: '/korean/ref/cheat' },
   { title: 'Чтение', to: '/korean/ref/reading' },

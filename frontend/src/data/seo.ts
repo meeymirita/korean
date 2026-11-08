@@ -45,6 +45,10 @@ const PAGES: Record<string, Seo> = {
     title: `Корейский словарь с чтением и примерами · ${BRAND}`,
     description: 'Словарь корейского по темам: корейское слово, чтение русскими буквами, перевод и пример предложения с разбором по словам и частицам.',
   },
+  '/dict': {
+    title: `Большой корейско-русский словарь, поиск по слову · ${BRAND}`,
+    description: 'Поиск по всему словарю корейского: слово, перевод на русский, уровень, произношение и примеры. Данные 한국어기초사전 (Национальный институт корейского языка).',
+  },
   '/korean/grammar': {
     title: `Корейская грамматика по урокам в карточках · ${BRAND}`,
     description: 'Правила корейской грамматики для начинающих: частицы, вежливая форма, отрицание, места и направления. Формулы, таблицы и примеры в каждой карточке.',
@@ -96,7 +100,12 @@ const PAGES: Record<string, Seo> = {
 }
 
 /** SEO страницы по адресу; неизвестный адрес получает общие данные. */
-export const seoFor = (path: string): Seo => PAGES[path.replace(/\/+$/, '') || '/'] ?? NOT_FOUND
+export const seoFor = (path: string): Seo => {
+  const p = path.replace(/\/+$/, '') || '/'
+  // страницы слов большого словаря: пока на тестовых данных, в поиск не отдаём
+  if (p.startsWith('/dict/')) return { title: `Слово в большом словаре · ${BRAND}`, description: PAGES['/dict']!.description, noindex: true }
+  return PAGES[p] ?? NOT_FOUND
+}
 
 /** Публичные адреса для карты сайта (то, что не помечено noindex). */
 export const indexablePaths = () => Object.entries(PAGES).filter(([, s]) => !s.noindex).map(([p]) => p)

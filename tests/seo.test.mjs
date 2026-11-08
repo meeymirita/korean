@@ -30,8 +30,14 @@ describe('SEO', () => {
   test('у каждой страницы из seo.ts есть файл в src/pages', () => {
     for (const p of [...indexablePaths(), ...privatePaths()]) {
       const f = p === '/' ? 'index' : p.slice(1)
-      assert.ok(existsSync(new URL(`../frontend/src/pages/${f}.vue`, import.meta.url)), `нет src/pages/${f}.vue для ${p}`)
+      const at = x => existsSync(new URL(`../frontend/src/pages/${x}`, import.meta.url))
+      assert.ok(at(`${f}.vue`) || at(`${f}/index.vue`), `нет src/pages/${f}.vue для ${p}`)
     }
+  })
+
+  test('страницы слов большого словаря не индексируются, пока данные тестовые', () => {
+    assert.equal(seoFor('/dict/가다').noindex, true)
+    assert.equal(seoFor('/dict').noindex, undefined)
   })
 
   test('неизвестный адрес и адрес со слешем на конце получают нормальные данные', () => {

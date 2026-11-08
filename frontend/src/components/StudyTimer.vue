@@ -10,7 +10,7 @@ onMounted(() => timer.watchReminder())
 </script>
 
 <template>
-  <div v-if="timer.available && !['/', '/about', '/history'].includes(route.path)" class="stm">
+  <div v-if="timer.available && !(['/', '/about', '/history', '/dict'].includes(route.path) || route.path.startsWith('/dict/'))" class="stm">
     <Transition name="stm-pop">
       <div v-if="timer.reminder" class="stm-note" role="status">
         <span><Icon name="stopwatch" /> Не забывай нажимать таймер: время занятий запишется в кабинет.</span>
