@@ -163,12 +163,22 @@
   .game .game-app{grid-template-columns:1fr}
   .game .card{min-height:0}
 }
-/* «Рассказ» в «Паре или нет»: предложения с пропусками, справа у каждого кнопка «Разбор» (открывает окно) */
+/* Тексты (уровни «Рассказ» и «Длинный»): слева иконка перевода, посередине предложение с пропусками, справа «Разбор»; ниже банк плиток */
 .game .story{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}
 .game .story-row{display:flex;align-items:flex-start;gap:12px}
 .game .story-s{flex:1;min-width:0;font-family:var(--ko);font-size:clamp(18px,3.4vw,24px);line-height:1.9;overflow-wrap:anywhere}
-.game .story .gap{margin:0 3px}
-.game .story .gap.wait{color:var(--muted);border-color:var(--line)}
+.game .story .gap{min-width:2.2em;padding:0 6px;margin:0 3px;background:none;border:0;border-bottom:3px solid var(--line);font:inherit;color:var(--muted);cursor:pointer}
+.game .story .gap.filled{color:var(--ink);border-color:var(--accent)}
+.game .story .gap.now{border-color:var(--accent);background:var(--accent-soft)}
+.game .story .gap.ok{color:var(--ok);border-color:var(--ok)}
+.game .story .gap.bad{color:var(--bad);border-color:var(--bad)}
+.game .story .gap:disabled{cursor:default}
+.game .story-tr{position:relative;flex:none;margin-top:6px;width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:rgba(255,255,255,.7);cursor:help}
+.game .story-tr .gi-img{width:20px;height:20px}
+.game .story-tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;width:max-content;max-width:min(420px,70vw);padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);font:500 14px/1.4 inherit;text-align:left;box-shadow:0 10px 24px rgba(40,38,90,.2)}
+.game .story-tr:hover .story-tip,.game .story-tr:focus-visible .story-tip,.game .story-tr.open .story-tip{display:block}
+.game .bank{margin:10px 0}
+.game .tile.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent)}
 .game .story-info{flex:none;margin-top:8px;padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:rgba(255,255,255,.7);color:var(--accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
 .game .story-info:disabled{opacity:.4;cursor:default}
 .game .story-info:not(:disabled):hover{background:var(--accent);color:#fff;border-color:var(--accent)}
