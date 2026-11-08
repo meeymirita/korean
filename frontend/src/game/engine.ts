@@ -3,7 +3,10 @@
 import { D } from './words'
 import { iconImg, MODE_ICON } from './icons'
 import { makeBuild, parseBuildKey } from './build'
-import { analyze } from '@/data/korean/parse'
+import { analyze, SEG_LABEL } from '@/data/korean/parse'
+import { D as DICT } from '@/data/korean/words'
+import { TRANSLATIONS } from '@/data/korean/translations'
+import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
 import { syllableRows, syllableVowels } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
@@ -269,7 +272,7 @@ function genSpot(){
   }
   const options=opts.map(t=>({text:t,ko:true}));
   return {type:'choice',mode:'spot',key:key,label:'Какое предложение верное?',prompt:ru,promptKo:false,
-    options:options,correct:opts.indexOf(right),right:right,explain:[right,note],hp:ru,hr:right,icon:'🔍'};
+    options:options,correct:opts.indexOf(right),right:right,explain:[right,note],teach:right,trans:ru,hp:ru,hr:right,icon:'🔍'};
 }
 
 /* ---------- «Напиши»: ответ вводится с клавиатуры ---------- */
@@ -316,7 +319,7 @@ function genErr(){
   const idx=a.findIndex((t,k)=>t!==b[k]);
   const opts=a.map(t=>({text:t,ko:true}));
   return {type:'choice',mode:'err',key:key,label:'Найди слово с ошибкой: нажми на него',prompt:wrong,promptKo:true,sub:'Нужно сказать: '+ru,
-    options:opts,correct:idx,right:a[idx]+' → '+b[idx],explain:['Правильно: '+right,note],hp:wrong,hr:right,icon:'🕵️'};
+    options:opts,correct:idx,right:a[idx]+' → '+b[idx],explain:['Правильно: '+right,note],teach:right,trans:ru,hp:wrong,hr:right,icon:'🕵️'};
 }
 
 /* ---------- «Пара или нет»: две частицы на выбор ---------- */
@@ -387,7 +390,7 @@ function genDlg(){
   const texts=shuffle([x[2],...dis.map(y=>y[2])]);
   return {type:'choice',mode:'dlg',key:'d:'+i,label:'Выбери подходящий ответ',prompt:x[0],promptKo:true,sub:x[1],
     options:texts.map(t=>({text:t,ko:true})),correct:texts.indexOf(x[2]),right:x[2],
-    explain:[x[0]+' → '+x[2],x[3]],hp:x[0],hr:x[2],icon:'💬'};
+    explain:[x[0]+' → '+x[2],x[3]],teach:x[2],hp:x[0],hr:x[2],icon:'💬'};
 }
 
 /* ---------- «Прошедшее время»: вчера или сейчас ---------- */
@@ -406,7 +409,7 @@ function genPast(){
   const kind=e.cat==='a'?'прилагательное':'глагол';
   return {type:'choice',mode:'form',key:'ps:'+e.ko+':'+(past?'a':'p'),word:e.ko,label:'Выбери форму: '+tw[0]+' — '+(past?'прошедшее (-았어요/었어요)':'настоящее (-아요/어요)'),
     sentence:{pre:tw[0]+' ',post:''},ru:tw[1]+': '+e.ru+' ('+kind+' '+e.ko+')',options:opts,correct:opts.findIndex(o=>o.text===right),
-    right:right,explain:[tw[0]+' '+right,e.ko+' → '+right,e.note],hp:tw[0]+' '+e.ko,hr:right,icon:'⏳'};
+    right:right,explain:[tw[0]+' '+right,e.ko+' → '+right,e.note],teach:tw[0]+' '+right+'.',hp:tw[0]+' '+e.ko,hr:right,icon:'⏳'};
 }
 
 /* ---------- «Хангыль-блиц»: слог из букв и чтение слога ---------- */
@@ -565,10 +568,10 @@ function genPrice(){
   const how=fmtMoney(n)+' = '+parts.join(' + ');
   if(Math.random()<.5){
     return {type:'choice',mode:'price',key:key,word:null,label:'Прочитай цену по-корейски',prompt:fmtMoney(n),promptKo:false,options:set.map(v=>({text:readable(v),ko:true})),correct:set.indexOf(n),
-      right:readable(n),explain:[readable(n),how,'Перед 만 цифру 일 не говорят: 10 000 = 만, а не 일만.'],hp:fmtMoney(n),hr:readable(n),icon:'💴'};
+      right:readable(n),explain:[readable(n),how,'Перед 만 цифру 일 не говорят: 10 000 = 만, а не 일만.'],teach:readable(n)+'이에요.',trans:'Это стоит '+fmtMoney(n)+'.',hp:fmtMoney(n),hr:readable(n),icon:'💴'};
   }
   return {type:'choice',mode:'price',key:key,word:null,label:'Сколько это стоит?',prompt:readable(n),promptKo:true,options:set.map(v=>({text:fmtMoney(v)})),correct:set.indexOf(n),
-    right:fmtMoney(n),explain:[readable(n)+' = '+fmtMoney(n),how],hp:readable(n),hr:fmtMoney(n),icon:'💴'};
+    right:fmtMoney(n),explain:[readable(n)+' = '+fmtMoney(n),how],teach:readable(n)+'이에요.',trans:'Это стоит '+fmtMoney(n)+'.',hp:readable(n),hr:fmtMoney(n),icon:'💴'};
 }
 const COUNTERS=['병','잔','개','그릇','명','마리','권','장'];
 function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k];return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
@@ -617,23 +620,27 @@ const DEM=[
   [['이것','эта вещь (рядом со мной)'],['그것','та вещь (рядом с тобой)'],['저것','вон та вещь (далеко от обоих)']],
   [['여기','здесь (рядом со мной)'],['거기','там (рядом с тобой)'],['저기','вон там (далеко от обоих)']],
 ];
+/** Примеры для «Этот, тот, вон тот»: по одному предложению на каждое слово (слова из словаря сайта). */
+const DEM_EX={'이':'이 사람은 친구예요.','그':'그 사람은 선생님이에요.','저':'저 사람은 학생이에요.','이것':'이것은 책이에요.','그것':'그것은 가방이에요.','저것':'저것은 나무예요.','여기':'여기는 학교예요.','거기':'거기는 공원이에요.','저기':'저기는 식당이에요.'};
 function genDem(){
   const fam=rnd(DEM);
   const w=pickW(fam,x=>'dm:'+x[0]);
   const toKo=Math.random()<.5;
   const set=shuffle(fam);
   const note='1) близко ко мне, 2) близко к собеседнику, 3) далеко от обоих: '+fam.map(x=>x[0]).join(' / ');
-  if(toKo)return {type:'choice',mode:'dem',key:'dm:'+w[0]+':k',word:null,label:'Выбери слово',prompt:w[1],promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],hp:w[1],hr:w[0],icon:'👉'};
-  return {type:'choice',mode:'dem',key:'dm:'+w[0]+':r',word:null,label:'Что значит слово?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1]})),correct:set.indexOf(w),right:w[1],explain:[w[0]+' — '+w[1],note],hp:w[0],hr:w[1],icon:'👉'};
+  if(toKo)return {type:'choice',mode:'dem',key:'dm:'+w[0]+':k',word:null,label:'Выбери слово',prompt:w[1],promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:DEM_EX[w[0]],hp:w[1],hr:w[0],icon:'👉'};
+  return {type:'choice',mode:'dem',key:'dm:'+w[0]+':r',word:null,label:'Что значит слово?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1]})),correct:set.indexOf(w),right:w[1],explain:[w[0]+' — '+w[1],note],teach:DEM_EX[w[0]],hp:w[0],hr:w[1],icon:'👉'};
 }
 const POLITE=[['고마워','друзьям (самое неформальное)'],['고마워요','знакомым и близким старше тебя'],['감사해요','коллегам, товарищам'],['감사합니다','по работе, начальнику (формально)']];
+/** Примеры для «Уровня вежливости»: по предложению на каждую форму «спасибо» (слова из словаря сайта). */
+const POLITE_EX={'고마워':'정말 고마워.','고마워요':'정말 고마워요.','감사해요':'정말 감사해요.','감사합니다':'선생님, 감사합니다.'};
 function genPolite(){
   const w=pickW(POLITE,x=>'po:'+x[0]);
   const toKo=Math.random()<.5;
   const set=shuffle(POLITE);
   const note='От самого неформального к официальному: '+POLITE.map(x=>x[0]).join(' → ');
-  if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],hp:w[1],hr:w[0],icon:'🙇'};
-  return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],hp:w[0],hr:w[1],icon:'🙇'};
+  if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
+  return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
 const GEN={word:genWord,rev:genRev,form:()=>(Math.random()<.5?genForm():genPast()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite};
 function genQuestion(){
@@ -830,20 +837,54 @@ function finish(ok,chosen){
   save();updateStats();renderList();
   showFeedback(q,ok);
 }
+/* ---------- разбор после ответа ---------- */
+/** Строка только корейская (без русских слов), с хангылем и знаком в конце: это уже готовое предложение. */
+const PLAIN_SENTENCE=/^[^а-яёА-ЯЁ]*[가-힣][^а-яёА-ЯЁ]*[.?!]$/;
+/** Предложение для разбора: явное `teach` задания, иначе первая чисто корейская строка объяснения, иначе пример слова из словаря сайта. */
+function teachOf(q){
+  if(q.teach)return q.teach;
+  const line=(q.explain||[]).map(t=>(t||'').trim()).find(t=>t.length>=4&&PLAIN_SENTENCE.test(t));
+  if(line)return line;
+  const w=q.word&&DICT.find(d=>d.k===q.word);
+  return w&&w.s?w.s:'';
+}
+/** Перевод предложения: из словаря переводов, иначе `ru` задания (у заданий с `sentence` это перевод, у режима «формы» нет). */
+function transOf(q,s){
+  return TRANSLATIONS[s]||q.trans||(q.sentence&&q.mode!=='form'?q.ru:'')||'';
+}
+/** «Как собрано»: карточки слов, частиц и окончаний, объяснения и ссылки на правила, те же, что в разборе предложений словаря. */
+function drawBreakdown(sentence,trans){
+  const box=el('div','bd');
+  box.appendChild(el('div','bd-ko',sentence));
+  if(trans)box.appendChild(el('div','bd-tr','«'+trans+'»'));
+  box.appendChild(el('div','bd-title','Как собрано'));
+  const cards=el('div','bd-cards');
+  const segs=analyze(sentence);
+  if(segs.every(function(sg){return sg.type==='unknown';}))return document.createDocumentFragment();
+  segs.forEach(function(sg){
+    const c=el('div','bd-card '+sg.type);
+    c.appendChild(el('div','bd-kind',SEG_LABEL[sg.type]));
+    c.appendChild(el('div','bd-k',sg.text));
+    if(sg.reading)c.appendChild(el('div','bd-r',sg.reading));
+    c.appendChild(el('div','bd-g',sg.type==='unknown'?'?':sg.gloss));
+    if(sg.explain)c.appendChild(el('div','bd-ex',sg.explain));
+    if(sg.g&&hooks.grammar){const b=el('button','bd-rule','Правило →');b.type='button';b.addEventListener('click',()=>hooks.grammar(sg.g));c.appendChild(b);}
+    cards.appendChild(c);
+  });
+  box.appendChild(cards);
+  return box;
+}
 function showFeedback(q,ok){
   const fb=$('#fb');fb.className='feedback show '+(ok?'ok':'bad');fb.innerHTML='';
   if(!motionCalm())gsap.from(fb,{opacity:0,y:12,duration:.32,ease:'power2.out',clearProps:'opacity,transform'});
   const streak=S.ses.streak;
   fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
-  q.explain.forEach(t=>{if(t)fb.appendChild(el('div','fbt',t));});
-  if(q.type==='build'){
-    const box=el('div','mini');
-    analyze(q.right).forEach(function(sg){
-      const c=el('span','mc '+sg.type);c.appendChild(el('b','',sg.text));
-      c.appendChild(el('i','',sg.type==='unknown'?'?':sg.gloss.replace(/ \(.*$/,'')));box.appendChild(c);
-    });
-    fb.appendChild(box);
-  }
+  // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
+  const teach=S.blitz.on?'':teachOf(q);
+  const bd=teach?drawBreakdown(teach,transOf(q,teach)):null;
+  const shown=!!(bd&&bd.childNodes.length);
+  q.explain.forEach(t=>{if(t&&!(shown&&t.trim()===teach))fb.appendChild(el('div','fbt',t));});
+  if(shown)fb.appendChild(bd);
   const x=el('div','fbx');const nb=el('button','primary','Дальше →');nb.type='button';nb.id='nextBtn';nb.addEventListener('click',next);
   x.appendChild(nb);fb.appendChild(x);
   nb.focus({preventScroll:true});

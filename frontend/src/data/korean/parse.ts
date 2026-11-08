@@ -4,6 +4,16 @@ import { D } from './words'
 
 export type SegType = 'word' | 'verb' | 'particle' | 'ending' | 'num' | 'unknown'
 
+/** Подпись типа части разбора на карточке («слово», «частица»…). */
+export const SEG_LABEL: Record<SegType, string> = {
+  word: 'слово',
+  verb: 'глагол',
+  particle: 'частица',
+  ending: 'окончание',
+  num: 'число',
+  unknown: 'нет в словаре',
+}
+
 export interface Segment {
   text: string
   type: SegType

@@ -143,13 +143,6 @@
 .game .tile sup{position:absolute;top:2px;right:6px;font-size:10px;font-weight: 500;color:var(--muted);font-family:inherit}
 .game .slot.ok{border-color:var(--ok);background:var(--ok-bg)}
 .game .slot.bad{border-color:var(--bad);background:var(--bad-bg)}
-.game .mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.game .mini .mc{display:inline-flex;flex-direction:column;padding:5px 10px;border:1px solid var(--line);border-radius:10px;font-size:11px;line-height:1.25}
-.game .mini .mc b{font-family:var(--ko);font-size:14px}
-.game .mini .mc i{font-style:normal;color:var(--muted)}
-.game .mini .mc.particle{background:var(--accent-soft);border-color:var(--accent)}
-.game .mini .mc.ending{background:var(--ok-bg);border-color:var(--ok)}
-.game .mini .mc.unknown{border-style:dashed}
 
 .game .tile .tg,.game .slot .tg{display:none;margin-top:2px;font-family:'Manrope',sans-serif;font-size:11px;font-weight:500;color:var(--muted);line-height:1.25;max-width:170px}
 .game .tiles.gloss .tile .tg,.game .slots.gloss .slot .tg{display:block}

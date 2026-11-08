@@ -5,6 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
 import GameTools from '@/components/korean/GameTools.vue'
+import { useGrammarModal } from '@/composables/useGrammarModal'
 import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
 import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
@@ -34,6 +35,7 @@ import '@/game/redesign.css'
 import '@/game/shell.css'
 
 const progress = useProgressStore()
+const { open: openGrammar } = useGrammarModal()
 /** Класс на body: глобальная кнопка поиска встаёт в одну линию с кнопками шапки (см. стили ниже). */
 onMounted(() => document.body.classList.add('on-game-home'))
 onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
@@ -82,6 +84,7 @@ function startEngine() {
     cats: () => progress.data.settings.gameCats,
     mode: () => game.value,
     saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
+    grammar: (id: string) => openGrammar(id),
   })
 }
 function stopEngine() {

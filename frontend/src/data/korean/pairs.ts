@@ -14,10 +14,10 @@ export function pairTask(w: Word, id: number, reverse = Math.random() < 0.5): Ta
   if (wrong.length < 2) return null
   if (reverse) {
     const options = shuffle([short(w.t), ...wrong.map(x => short(x.t))])
-    return { id, kind: 'tr', title: TITLE, prompt: w.k, hint: w.r, options, answer: short(w.t), word: w.k }
+    return { id, kind: 'tr', title: TITLE, prompt: w.k, hint: w.r, options, answer: short(w.t), word: w.k, sentence: w.s }
   }
   const options = shuffle([w.k, ...wrong.map(x => x.k)])
-  return { id, kind: 'back', title: TITLE, prompt: short(w.t), options, answer: w.k, word: w.k }
+  return { id, kind: 'back', title: TITLE, prompt: short(w.t), options, answer: w.k, word: w.k, sentence: w.s }
 }
 
 /**

@@ -12,9 +12,11 @@ const NEW_MODES = ['days', 'when', 'too', 'num', 'price', 'count', 'neg', 'place
 
 let dispose: (() => void) | undefined
 const records: { word: string | null; ok: boolean; mode?: string }[] = []
+const grammarOpened: string[] = []
 
 function start(mode: string) {
   records.length = 0
+  grammarOpened.length = 0
   localStorage.clear()
   document.body.innerHTML = `<div id="root">${markup}</div>`
   dispose = initGame({
@@ -27,6 +29,7 @@ function start(mode: string) {
     cats: () => null,
     mode: () => mode,
     saveCats: () => {},
+    grammar: (id: string) => grammarOpened.push(id),
   })
 }
 afterEach(() => {
@@ -224,5 +227,51 @@ describe('игры по разделам грамматики', () => {
       }
     }
     expect(checked).toBeGreaterThan(5)
+  })
+})
+
+describe('разбор после ответа', () => {
+  /** Отвечает на n вопросов режима и считает, в скольких после ответа есть разбор «Как собрано». */
+  function coverage(mode: string, n = 30) {
+    start(mode)
+    let shown = 0
+    for (let i = 0; i < n; i++) {
+      const options = opts()
+      if (options.length) options[Math.floor(Math.random() * options.length)]!.click()
+      else {
+        const tinp = document.querySelector('#tinp')
+        if (tinp) [...document.querySelectorAll<HTMLButtonElement>('.acts button')].find(b => b.textContent?.includes('Не знаю'))!.click()
+        else {
+          document.querySelector<HTMLButtonElement>('#tiles .tile')?.click()
+          document.querySelector<HTMLButtonElement>('#chk')!.click()
+        }
+      }
+      if (document.querySelector('#fb .bd .bd-card')) shown++
+      ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
+    }
+    return shown / n
+  }
+  /** Режимы, где после ответа всегда есть предложение для разбора (у «хангыль-блица», «вежливости» и части «чисел» его нет). */
+  const WITH_BREAKDOWN = ['word', 'rev', 'neg', 'pair', 'part', 'err', 'place', 'form', 'type', 'qw', 'dem', 'build', 'spot', 'ord', 'dlg', 'count', 'days', 'when', 'too', 'price']
+  for (const mode of WITH_BREAKDOWN) {
+    it(`режим «${mode}»: после ответа показан разбор «Как собрано» с карточками`, () => {
+      expect(coverage(mode, 30), mode).toBeGreaterThanOrEqual(0.9)
+    })
+  }
+  it('в разборе у карточки частицы есть объяснение и ссылка на правило', () => {
+    start('place')
+    opts()[0]!.click()
+    const card = document.querySelector('#fb .bd-card.particle')!
+    expect(card.querySelector('.bd-ex')?.textContent?.length ?? 0).toBeGreaterThan(5)
+    const rule = card.querySelector<HTMLButtonElement>('.bd-rule')!
+    expect(rule).not.toBeNull()
+    rule.click()
+    expect(grammarOpened.length).toBe(1)
+  })
+  it('в блице разбор не показывается: на него нет времени', () => {
+    start('place')
+    ;(document.querySelector('#blitzBtn') as HTMLButtonElement | null)?.click()
+    opts()[0]?.click()
+    if (document.querySelector('#blitzBtn')) expect(document.querySelector('#fb .bd')).toBeNull()
   })
 })

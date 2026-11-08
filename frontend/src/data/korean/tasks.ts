@@ -70,15 +70,15 @@ function make(kind: Exclude<TaskKind, 'rule'>, d: Word, id: number, formPool?: F
   if (kind === 'tr') {
     const answer = short(d.t)
     const options = pick(SIMPLE.map(x => short(x.t)), answer)
-    return { id, kind, title: KINDS[kind], prompt: d.k, options, answer, word: d.k }
+    return { id, kind, title: KINDS[kind], prompt: d.k, options, answer, word: d.k, sentence: d.s }
   }
   if (kind === 'back') {
     const options = pick(SIMPLE.map(x => x.k), d.k)
-    return { id, kind, title: KINDS[kind], prompt: short(d.t), options, answer: d.k, word: d.k }
+    return { id, kind, title: KINDS[kind], prompt: short(d.t), options, answer: d.k, word: d.k, sentence: d.s }
   }
   if (kind === 'read') {
     const options = pick(SIMPLE.map(x => x.r), d.r)
-    return { id, kind, title: KINDS[kind], prompt: d.k, hint: short(d.t), options, answer: d.r, word: d.k }
+    return { id, kind, title: KINDS[kind], prompt: d.k, hint: short(d.t), options, answer: d.r, word: d.k, sentence: d.s }
   }
   if (kind === 'form') {
     const all = [...VERBS, ...ADJECTIVES]
@@ -105,7 +105,7 @@ function make(kind: Exclude<TaskKind, 'rule'>, d: Word, id: number, formPool?: F
   // blank: слово должно встречаться в примере ровно один раз и быть не короче двух слогов
   if (d.k.length < 2 || d.s.split(d.k).length !== 2) return null
   const options = pick(SIMPLE.filter(x => x.k.length >= 2).map(x => x.k), d.k)
-  return { id, kind, title: KINDS[kind], prompt: d.s.replace(d.k, '＿＿＿'), hint: short(d.t), options, answer: d.k, word: d.k }
+  return { id, kind, title: KINDS[kind], prompt: d.s.replace(d.k, '＿＿＿'), hint: short(d.t), options, answer: d.k, word: d.k, sentence: d.s }
 }
 
 /** Набор из n разных заданий на разные слова; типы чередуются. */
