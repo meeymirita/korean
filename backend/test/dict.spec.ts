@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildDocs, toDoc, type RawEntry } from '../src/dict/dict.data'
 import { dictionaryForms } from '../src/dict/dict.hangul'
-import { DictService } from '../src/dict/dict.service'
+import { DictService, isIndexFresh } from '../src/dict/dict.service'
 
 const entry = (over: Partial<RawEntry> = {}): RawEntry => ({
   word: '학생',
@@ -161,5 +161,19 @@ describe('большой словарь: поиск', () => {
     expect(bodies[0]!.filter).toBe('level = "начальный" AND pos = "глагол"')
     await new DictService().search('школа', { level: 'выдуманный' })
     expect(bodies.at(-1)!.filter).toBeUndefined()
+  })
+})
+
+describe('большой словарь: готов ли индекс', () => {
+  const file = { size: 100, mtimeMs: 5 }
+  it('готов только если пометка совпадает с файлом и числом документов', () => {
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10 }, file, 10)).toBe(true)
+  })
+  it('без пометки, с другим файлом или с недостроенным числом документов не готов (так сервер доделает индекс после обрыва)', () => {
+    expect(isIndexFresh(null, file, 10)).toBe(false)
+    expect(isIndexFresh({ size: 101, mtimeMs: 5, documents: 10 }, file, 10)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 6, documents: 10 }, file, 10)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10 }, file, 4)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 0 }, file, 0)).toBe(false)
   })
 })

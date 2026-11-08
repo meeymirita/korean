@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, OnApplicationBootstrap, ServiceUnavailableException } from '@nestjs/common'
-import { access, readFile } from 'node:fs/promises'
+import { access, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { buildDocs, type DictDoc, type RawEntry } from './dict.data.js'
 import { dictionaryForms, isPredicate } from './dict.hangul.js'
@@ -47,6 +47,12 @@ function slim(d: DictDoc): DictHit {
   }
 }
 
+/** Пометка «индекс собран целиком» рядом с файлом словаря: размер и время файла и число документов. Без неё недостроенный индекс (сервер перезапустили на середине) считался бы готовым. */
+export interface IndexMark { size: number; mtimeMs: number; documents: number }
+export const markFile = (file: string) => file + '.indexed'
+export const isIndexFresh = (mark: IndexMark | null, file: { size: number; mtimeMs: number }, documents: number) =>
+  !!mark && mark.size === file.size && mark.mtimeMs === file.mtimeMs && mark.documents === documents && documents > 0
+
 const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
 @Injectable()
@@ -61,8 +67,10 @@ export class DictService implements OnApplicationBootstrap {
       try {
         if (!this.conn()) return
         await access(dictFile())
-        if ((await this.status()).indexed) return
-        console.log('Словарь: индекса нет, строю из ' + dictFile()) // Nest Logger.log у нас выключен (main.ts: только error и warn), поэтому console
+        const [info, st] = await Promise.all([stat(dictFile()), this.status()])
+        const mark = await readFile(markFile(dictFile()), 'utf8').then(t => JSON.parse(t) as IndexMark).catch(() => null)
+        if (st.indexed && isIndexFresh(mark, info, st.documents)) return
+        console.log('Словарь: индекс не готов, строю заново из ' + dictFile()) // Nest Logger.log у нас выключен (main.ts: только error и warn), поэтому console
         const r = await this.reindex()
         console.log(`Словарь проиндексирован: ${r.documents} слов`)
       } catch (e) {
@@ -151,6 +159,7 @@ export class DictService implements OnApplicationBootstrap {
     if (!Array.isArray(parsed.entries)) throw new BadRequestException({ error: 'в файле нет списка entries' })
     const docs = buildDocs(parsed.entries)
     this.indexing = true
+    await unlink(markFile(file)).catch(() => undefined) // пока идёт сборка, индекс считается неготовым
     try {
       if (!(await this.req(`/indexes/${INDEX}`, {}, [404]))) {
         await this.wait(await this.req('/indexes', { method: 'POST', body: JSON.stringify({ uid: INDEX, primaryKey: 'id' }) }, [409]))
@@ -170,6 +179,8 @@ export class DictService implements OnApplicationBootstrap {
       for (let i = 0; i < docs.length; i += BATCH) {
         await this.wait(await this.req(`/indexes/${INDEX}/documents?primaryKey=id`, { method: 'POST', body: JSON.stringify(docs.slice(i, i + BATCH)) }, [], 120_000))
       }
+      const info = await stat(file)
+      await writeFile(markFile(file), JSON.stringify({ size: info.size, mtimeMs: info.mtimeMs, documents: docs.length } satisfies IndexMark)).catch(() => undefined)
       return { ok: true, documents: docs.length, entries: parsed.entries.length }
     } finally {
       this.indexing = false
