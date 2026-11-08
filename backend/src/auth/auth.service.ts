@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common'
 import { createHash, timingSafeEqual } from 'node:crypto'
-import { INBOX_TOKEN, TOKEN } from '../config.js'
+import { TOKEN } from '../config.js'
 import { Db } from '../db/db.service.js'
 import type { Who } from './auth.js'
 import { TwoFaService, ownerSessionHours } from './twofa.service.js'
 
 const sha = (text: string) => createHash('sha256').update(text).digest()
 const same = (a: Buffer, b: Buffer) => a.length === b.length && timingSafeEqual(a, b)
+
+/** Ключ в таблице `meta`: хэш и срок временного токена входящих. */
+export const INBOX_META = 'inbox_token'
 
 export const hashToken = (token: string) => sha(token).toString('hex')
 
@@ -22,10 +25,18 @@ export class AuthService {
     return given.length > 0 && given.length <= 200 && same(Buffer.from(given), Buffer.from(TOKEN))
   }
 
-  /** Токен входящих: совпадает ли с INBOX_TOKEN (пустой INBOX_TOKEN никогда не совпадает). */
-  isInboxToken(header?: string): boolean {
+  /** Временный токен входящих (создаётся кнопкой в шторке «Новые слова», живёт 10 минут, хранится хэшем в `meta`). */
+  async isInboxToken(header?: string): Promise<boolean> {
     const given = (header || '').replace(/^Bearer\s+/i, '')
-    return !!INBOX_TOKEN && given.length > 0 && given.length <= 200 && same(sha(given), sha(INBOX_TOKEN))
+    if (!given || given.length > 200) return false
+    const raw = await this.db.getMeta(INBOX_META)
+    if (!raw) return false
+    try {
+      const { h, exp } = JSON.parse(raw) as { h: string; exp: number }
+      return typeof exp === 'number' && exp > Date.now() && same(sha(given), Buffer.from(h, 'hex'))
+    } catch {
+      return false
+    }
   }
 
   /** По заголовку Authorization: Bearer … определяет, кто пришёл. 'expired' — гостевой токен просрочен, null — токен не подошёл. */

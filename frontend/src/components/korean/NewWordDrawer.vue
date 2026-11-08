@@ -16,6 +16,48 @@ const busy = ref(false)
 const formShown = ref(false)
 /** Блок «Записанные слова» свёрнут, пока не нажать на стрелку */
 const listOpen = ref(false)
+
+const tipOpen = ref(false)
+
+/** Временный токен для Claude: создаётся кнопкой, показывается один раз, живёт 10 минут */
+const tok = ref<{ token: string; expires: number } | null>(null)
+const left = ref(0)
+let tick: ReturnType<typeof setInterval> | undefined
+const mmss = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')}`
+function clearTok() {
+  clearInterval(tick)
+  tok.value = null
+}
+async function makeToken() {
+  try {
+    tok.value = await store.createToken()
+    left.value = tok.value.expires - Date.now()
+    clearInterval(tick)
+    tick = setInterval(() => {
+      left.value = (tok.value?.expires ?? 0) - Date.now()
+      if (left.value <= 0) clearTok()
+    }, 1000)
+  } catch (e) {
+    toast.error((e as Error).message)
+  }
+}
+async function copyToken() {
+  try {
+    await navigator.clipboard.writeText(tok.value?.token ?? '')
+    toast.ok('Токен скопирован')
+  } catch {
+    toast.error('Не удалось скопировать: выдели токен и скопируй вручную')
+  }
+}
+async function revoke() {
+  try {
+    await store.revokeToken()
+    clearTok()
+    toast.ok('Токен отозван')
+  } catch (e) {
+    toast.error((e as Error).message)
+  }
+}
 /** id слова, которое сейчас правится (null: новое) */
 const editId = ref<string | null>(null)
 const first = ref<HTMLInputElement>()
@@ -37,6 +79,7 @@ watch(
   ([open, edit]) => {
     if (!open) {
       listOpen.value = false
+      clearTok() // токен показывается только пока шторка открыта (сам он работает до конца срока)
       return hideForm()
     }
     if (edit) showForm(edit)
@@ -81,7 +124,10 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && props.open) formShown.value ? hideForm() : emit('close')
 }
 onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  clearInterval(tick)
+})
 </script>
 
 <template>
@@ -92,8 +138,23 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <header>
             <h2>Новые слова <small>{{ store.items.length }}</small></h2>
             <button v-if="!formShown" type="button" class="save add" @click="showForm()">+ Добавить</button>
+            <button type="button" class="ghost tokbtn" @click="makeToken">Создать токен</button>
+            <span class="tip">
+              <button type="button" class="q" aria-label="Что это за токен" @click="tipOpen = !tipOpen" @blur="tipOpen = false">?</button>
+              <span class="tipbox" :class="{ show: tipOpen }" role="tooltip">Токен для Claude: по нему он может только читать записанные слова, ничего не меняет. Действует 10 минут, потом перестаёт работать. Новый токен отменяет прежний.</span>
+            </span>
             <button type="button" class="x" aria-label="Закрыть" @click="emit('close')">✕</button>
           </header>
+
+          <div v-if="tok" class="tokbox">
+            <b>Токен для Claude <small>действует ещё {{ mmss(left) }}, только чтение слов</small></b>
+            <code>{{ tok.token }}</code>
+            <div class="btns">
+              <button type="button" class="save" @click="copyToken">Скопировать</button>
+              <button type="button" class="ghost" @click="revoke">Отозвать</button>
+            </div>
+            <p>Скинь его мне в чат: я прочитаю записанное. После показа он здесь больше не покажется; новый токен отменяет прежний.</p>
+          </div>
 
           <form v-if="formShown" class="form" @submit.prevent="save">
             <h3>{{ editId ? 'Изменить запись' : 'Новое слово' }}</h3>
@@ -176,6 +237,16 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .nwd .save:disabled { opacity: .6; cursor: default; }
 .nwd .ghost { padding: 13px 22px; border: 1px solid #fff; border-radius: 99px; background: rgba(255, 255, 255, .8); color: #6c70a8; font: inherit; font-weight: 600; cursor: pointer; }
 .nwd .ghost:hover { color: #d64da9; }
+.nwd .tip { position: relative; display: inline-flex; }
+.nwd .q { width: 28px; height: 28px; border: 1px solid #fff; border-radius: 50%; background: rgba(255, 255, 255, .8); color: #8f7cf0; font: inherit; font-size: 14px; font-weight: 700; cursor: help; transition: .2s; }
+.nwd .q:hover, .nwd .q:focus-visible { background: #fff; color: #d64da9; outline: none; }
+.nwd .tipbox { position: absolute; top: calc(100% + 8px); left: 50%; z-index: 2; width: 260px; padding: 10px 12px; border-radius: 14px; background: #fff; color: #20265c; font-size: 13px; font-weight: 500; line-height: 1.4; box-shadow: 0 10px 30px rgba(100, 87, 170, .25); opacity: 0; transform: translate(-50%, -4px); pointer-events: none; transition: opacity .2s, transform .2s; }
+.nwd .tip:hover .tipbox, .nwd .tipbox.show { opacity: 1; transform: translate(-50%, 0); }
+.nwd .tokbtn { padding: 8px 16px; font-size: 14px; }
+.nwd .tokbox { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 18px; background: rgba(255, 255, 255, .75); border: 1px dashed #d64da9; animation: nwd-in .25s ease; }
+.nwd .tokbox small { font-weight: 400; color: #6c70a8; margin-left: 6px; }
+.nwd .tokbox code { display: block; padding: 10px 12px; border-radius: 12px; background: #fff; font-size: 13px; word-break: break-all; user-select: all; }
+.nwd .tokbox p { margin: 0; font-size: 13px; color: #6c70a8; }
 .nwd .acc { border-radius: 18px; background: rgba(255, 255, 255, .6); border: 1px solid #fff; }
 .nwd .acc-head { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border: 0; background: none; color: #20265c; font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
 .nwd .acc-head small { margin-left: 6px; font-size: 14px; color: #8f7cf0; }

@@ -6,7 +6,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AppModule } from '../src/app.module'
 
 const OWNER = process.env.PROGRESS_TOKEN as string
-const INBOX = process.env.INBOX_TOKEN as string
 let app: INestApplication
 
 beforeAll(async () => {
@@ -99,28 +98,58 @@ describe('новые слова (вкладка «Записанные слов�
   })
 })
 
-describe('токен входящих (INBOX_TOKEN)', () => {
+describe('временный токен входящих (кнопка «Создать токен»)', () => {
   const owner = { Authorization: `Bearer ${OWNER}` }
-  const inbox = { Authorization: `Bearer ${INBOX}` }
+  const bearer = (t: string) => ({ Authorization: `Bearer ${t}` })
+  const create = async () => (await request(app.getHttpServer()).post('/api/new-words/token').set(owner).expect(200)).body as { token: string; expires: number }
 
-  it('читает список новых слов', async () => {
-    await request(app.getHttpServer()).get('/api/new-words').set(inbox).expect(200)
+  it('создаёт токен на 10 минут; без токена владельца создать нельзя', async () => {
+    await request(app.getHttpServer()).post('/api/new-words/token').expect(401)
+    const t = await create()
+    expect(t.token).toMatch(/^[a-f0-9]{48}$/)
+    expect(t.expires - Date.now()).toBeGreaterThan(9 * 60 * 1000)
+    expect(t.expires - Date.now()).toBeLessThanOrEqual(10 * 60 * 1000)
   })
 
-  it('ничего не пишет: POST, PUT и DELETE дают 403', async () => {
+  it('читает список новых слов', async () => {
+    const { token } = await create()
+    await request(app.getHttpServer()).get('/api/new-words').set(bearer(token)).expect(200)
+  })
+
+  it('ничего не пишет: POST, PUT, DELETE и создание токена дают 403', async () => {
     const http = app.getHttpServer()
-    await request(http).post('/api/new-words').set(inbox).send({ ko: 'a', ru: 'b' }).expect(403)
-    await request(http).put('/api/new-words/x').set(inbox).send({ ko: 'a', ru: 'b' }).expect(403)
-    await request(http).delete('/api/new-words/x').set(inbox).expect(403)
+    const { token } = await create()
+    await request(http).post('/api/new-words').set(bearer(token)).send({ ko: 'a', ru: 'b' }).expect(403)
+    await request(http).put('/api/new-words/x').set(bearer(token)).send({ ko: 'a', ru: 'b' }).expect(403)
+    await request(http).delete('/api/new-words/x').set(bearer(token)).expect(403)
+    await request(http).post('/api/new-words/token').set(bearer(token)).expect(403)
+    await request(http).delete('/api/new-words/token').set(bearer(token)).expect(403)
   })
 
   it('остальные маршруты закрыты: прогресс, заметки, магазин', async () => {
-    const http = app.getHttpServer()
-    for (const url of ['/api/progress', '/api/notes', '/api/shop']) await request(http).get(url).set(inbox).expect(403)
+    const { token } = await create()
+    for (const url of ['/api/progress', '/api/notes', '/api/shop']) await request(app.getHttpServer()).get(url).set(bearer(token)).expect(403)
   })
 
-  it('токен владельца по-прежнему работает, неверный токен 401', async () => {
-    await request(app.getHttpServer()).get('/api/new-words').set(owner).expect(200)
-    await request(app.getHttpServer()).get('/api/new-words').set('Authorization', 'Bearer jest-inbox-token-wrong').expect(401)
+  it('новый токен отменяет прежний, отзыв закрывает доступ, неверный токен 401', async () => {
+    const http = app.getHttpServer()
+    const first = await create()
+    const second = await create()
+    await request(http).get('/api/new-words').set(bearer(first.token)).expect(401)
+    await request(http).get('/api/new-words').set(bearer(second.token)).expect(200)
+    await request(http).delete('/api/new-words/token').set(owner).expect(200)
+    await request(http).get('/api/new-words').set(bearer(second.token)).expect(401)
+    await request(http).get('/api/new-words').set(bearer('wrong-token')).expect(401)
+    await request(http).get('/api/new-words').set(owner).expect(200) // токен владельца по-прежнему работает
+  })
+
+  it('просроченный токен не подходит', async () => {
+    const { token } = await create()
+    const { Db } = await import('../src/db/db.service')
+    const { INBOX_META } = await import('../src/auth/auth.service')
+    const db = app.get(Db)
+    const raw = JSON.parse((await db.getMeta(INBOX_META)) as string) as { h: string; exp: number }
+    await db.setMeta(INBOX_META, JSON.stringify({ ...raw, exp: Date.now() - 1000 }))
+    await request(app.getHttpServer()).get('/api/new-words').set(bearer(token)).expect(401)
   })
 })

@@ -30,8 +30,6 @@ loadEnv(path.join(ROOT, '.env'))
 export const PORT = Number(process.env.PORT || 3001)
 /** Токен владельца: полный доступ. Гостевые токены создаются из кабинета и лежат в базе (хэшами). */
 export const TOKEN = process.env.PROGRESS_TOKEN || ''
-/** Отдельный токен только для чтения входящих слов (GET /api/new-words, см. @InboxRead). Пусто = выключен. Для помощника-Claude: полного доступа не даёт. */
-export const INBOX_TOKEN = process.env.INBOX_TOKEN || ''
 /** Страница Swagger /api/docs (см. swagger.ts): только для локальной работы. */
 export const SWAGGER = process.env.SWAGGER === '1'
 export const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data')

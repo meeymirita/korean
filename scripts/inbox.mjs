@@ -1,14 +1,16 @@
-// Читает «Не добавленные» слова и заметки (GET /api/new-words) токеном входящих INBOX_TOKEN: только чтение, токен не печатается.
-// BASE=https://korean.meeymirita.ru node scripts/inbox.mjs   (токен из переменной INBOX_TOKEN или из backend/.env)
-import { readFileSync } from 'node:fs'
+// Читает «Записанные слова» и заметки (GET /api/new-words) временным токеном: владелец создаёт его кнопкой «Создать токен» в шторке «Новые слова» (10 минут, только чтение).
+// INBOX_TOKEN=<токен из шторки> BASE=https://korean.meeymirita.ru node scripts/inbox.mjs   (BASE по умолчанию локальный сервер)
 const BASE = (process.env.BASE || 'http://127.0.0.1:3001').replace(/\/$/, '')
-let token = process.env.INBOX_TOKEN || ''
+const token = process.env.INBOX_TOKEN || ''
 if (!token) {
-  try { token = readFileSync(new URL('../backend/.env', import.meta.url), 'utf8').match(/^INBOX_TOKEN=(.*)$/m)?.[1].trim() || '' } catch {}
+  console.error('Нет INBOX_TOKEN: создай токен кнопкой в шторке «Новые слова» и передай его переменной окружения')
+  process.exit(1)
 }
-if (!token) { console.error('Нет INBOX_TOKEN (переменная окружения или backend/.env)'); process.exit(1) }
 const res = await fetch(`${BASE}/api/new-words`, { headers: { Authorization: `Bearer ${token}` } })
-if (!res.ok) { console.error(`Ошибка ${res.status}`); process.exit(1) }
+if (!res.ok) {
+  console.error(res.status === 401 ? 'Токен не подошёл или его срок (10 минут) вышел: создай новый' : `Ошибка ${res.status}`)
+  process.exit(1)
+}
 const { words } = await res.json()
 console.log(`Записей: ${words.length}`)
 for (const w of words) {

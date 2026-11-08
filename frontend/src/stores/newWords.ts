@@ -53,5 +53,13 @@ export const useNewWordsStore = defineStore('newWords', () => {
     items.value = items.value.filter(i => i.id !== id)
   }
 
-  return { items, loaded, load, add, update, remove }
+  /** Временный токен (10 минут) только на чтение списка: владелец отдаёт его Claude. Показывается один раз. */
+  async function createToken() {
+    return (await call('/token', { method: 'POST' })) as { token: string; expires: number }
+  }
+  async function revokeToken() {
+    await call('/token', { method: 'DELETE' })
+  }
+
+  return { items, loaded, load, add, update, remove, createToken, revokeToken }
 })

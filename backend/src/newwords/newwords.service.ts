@@ -1,9 +1,12 @@
 /** Новые слова владельца, которые ещё не внесены в словарь (вкладка «Не добавленные»). */
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
+import { INBOX_META } from '../auth/auth.service.js'
 import { Db } from '../db/db.service.js'
 
 export const MAX_NEW_WORDS = 500
+/** Сколько живёт токен, который владелец создаёт кнопкой для Claude */
+export const INBOX_TOKEN_MS = 10 * 60 * 1000
 const LIMITS = { ko: 60, reading: 80, ru: 120, example: 200, note: 3000 } as const
 type Field = keyof typeof LIMITS
 
@@ -49,6 +52,19 @@ export class NewWordsService {
   async remove(id: string) {
     const r = await (await this.db.orm()).newWord.deleteMany({ where: { id } })
     if (!r.count) throw new NotFoundException({ error: 'not found' })
+    return { ok: true }
+  }
+
+  /** Создаёт временный токен только для чтения списка (его хэш и срок лежат в meta, прежний токен перестаёт работать). Сам токен показывается один раз. */
+  async createToken() {
+    const token = randomBytes(24).toString('hex')
+    const expires = Date.now() + INBOX_TOKEN_MS
+    await this.db.setMeta(INBOX_META, JSON.stringify({ h: createHash('sha256').update(token).digest('hex'), exp: expires }))
+    return { token, expires }
+  }
+
+  async revokeToken() {
+    await this.db.setMeta(INBOX_META, '')
     return { ok: true }
   }
 }

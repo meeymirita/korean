@@ -37,7 +37,7 @@
 его записи игнорируются, картинки, база и токены ему закрыты (403); просроченный гостевой токен даёт 401 `expired`. Полный список со схемами: Swagger.
 - `GET /api/progress`, `POST /api/ops` (пачка до 500 действий: `answer`, `profile`, `settings`, `time`, `round`, `mood`, `reset`, `import`; любое неверное отменяет пачку, 400;
   `reset`, `import` требуют `X-Confirm-Token`).
-- `/api/new-words` (GET, POST, PUT `:id`, DELETE `:id`; только владелец; `GET` читает ещё и токен `INBOX_TOKEN`: он закрыт на все остальные маршруты и методы, 403), `/api/notes`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
+- `/api/new-words` (GET, POST, PUT `:id`, DELETE `:id`; только владелец; `POST/DELETE /api/new-words/token` создают и отзывают временный токен на 10 минут, которым можно только `GET /api/new-words`, остальное 403), `/api/notes`, `/api/images` (JPEG, PNG, GIF, WebP до 50 МБ, всего до 1 ГБ, тип по содержимому, SVG нельзя; `kind`: `gallery`, `note`, `cover`), `/api/plans`, `/api/sets`, `/api/guests`.
 - `/api/session` (сеанс входа на `OWNER_SESSION_HOURS`), `/api/notify/*` (темы Telegram, `docs/telegram.md`), `/api/shop*`, `/api/chat`, `/api/digest`, `/api/reminder` (свои дни недели `days`), `/api/lesson` (напоминание о созвоне: день недели, время сообщения и время созвона), `/api/backup/*`, `/api/logs/app|caddy`, `/api/db/tables`, `/api/site-images*`, `/api/public/*`, `/api/2fa/*`.
 - `GET /api/report/clock?days=`, `GET /api/report/weeks`: ответы по часу дня и «эта неделя vs прошлая» (владелец, для «Прогресс и аналитика» в кабинете).
   `GET /api/report/answers` без `source` — ответы по всем разделам сразу (общий «Дневник ошибок»).
@@ -48,7 +48,7 @@
 - **Частота:** 600 запросов в минуту с адреса, загрузки картинок и создание гостей 40 в минуту. Адрес клиента берётся из `X-Forwarded-For` только от loopback (Caddy).
 - **Таймауты:** заголовки 15 с, запрос 30 с, загрузка картинки 180 с; JSON до 4 МБ. Картинки: ограничение разрешения (защита от «бомб»), квота 1 ГБ.
 - **Повторный токен** (`X-Confirm-Token`) для сброса, загрузки копии, создания гостя и очистки тем Telegram; неверный считается подбором.
-- `INBOX_TOKEN` (необязательный, `.env`): отдельный токен только для чтения `GET /api/new-words` (`@InboxRead` в `auth.ts`, проверка в `AuthGuard`); пустой = выключен. После правки `.env` на сервере: `docker compose up -d`.
+- Временный токен входящих: `POST /api/new-words/token` (только владелец) выдаёт 48 hex-знаков на 10 минут, в `meta` ключ `inbox_token` хранит `{h: sha256, exp}`; проверка в `AuthGuard` после обычных токенов (`AuthService.isInboxToken`), маршруты помечены `@InboxRead`, метод только GET. Новый токен отменяет прежний, `DELETE .../token` отзывает. Постоянного токена в `.env` нет.
 - Токен сравнивается без утечки по времени, гостевые токены хранятся хэшами (sha256).
 - Зависимости: `webpack` и `multer` закреплены в `overrides` у `backend/package.json`; менял зависимости, проверь `npx npm@10 ci --dry-run` (старый npm на хостинге иначе падает).
   Раз в месяц `npm audit` и `npm outdated`.

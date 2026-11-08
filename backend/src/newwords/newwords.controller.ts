@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common'
 import { InboxRead, Owner } from '../auth/auth.js'
 import { NewWordsService } from './newwords.service.js'
 
@@ -12,6 +12,18 @@ export class NewWordsController {
   @InboxRead()
   list() {
     return this.words.list()
+  }
+
+  /** Временный токен (10 минут) на чтение списка: владелец отдаёт его Claude. Создать и отозвать может только владелец. */
+  @Post('token')
+  @HttpCode(200)
+  createToken() {
+    return this.words.createToken()
+  }
+
+  @Delete('token')
+  revokeToken() {
+    return this.words.revokeToken()
   }
 
   @Post()

@@ -22,15 +22,15 @@ export class AuthGuard implements CanActivate {
     if (this.reflector.getAllAndOverride<boolean>(PUBLIC, targets)) return true
 
     const req = ctx.switchToHttp().getRequest()
-    // токен входящих: только чтение помеченных @InboxRead маршрутов, всё остальное 403
-    if (this.auth.isInboxToken(req.headers.authorization)) {
+    const who = await this.auth.whoIs(req.headers.authorization)
+    const ip = clientIp(req)
+    if (who === 'expired') throw new UnauthorizedException({ error: 'expired' })
+    if (!who && (await this.auth.isInboxToken(req.headers.authorization))) {
+      // временный токен входящих: только чтение помеченных @InboxRead маршрутов, всё остальное 403
       if (req.method !== 'GET' || !this.reflector.getAllAndOverride<boolean>(INBOX_READ, targets)) throw new ForbiddenException({ error: 'forbidden' })
       req.who = { role: 'owner' }
       return true
     }
-    const who = await this.auth.whoIs(req.headers.authorization)
-    const ip = clientIp(req)
-    if (who === 'expired') throw new UnauthorizedException({ error: 'expired' })
     if (!who) {
       if (req.headers.authorization) {
         // неверный токен: пишем в журнал и считаем попытку; после нескольких подряд адрес блокируется
