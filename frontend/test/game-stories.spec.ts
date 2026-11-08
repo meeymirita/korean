@@ -484,3 +484,71 @@ describe('«Порядок слов»: рассказы из учебника', 
     expect(document.querySelector('.story')).toBeNull()
   })
 })
+
+describe('«Тексты по правилу» (ptext)', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels:not(.fams) .chip')].find(b => b.textContent?.includes(text))!
+  const fam = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.fams .chip')].find(b => b.textContent?.includes(text))!
+  const tiles = () => [...document.querySelectorAll<HTMLButtonElement>('#bank .tile')]
+  const tileText = (b: Element) => (b.textContent ?? '').replace(/^\d/, '').trim()
+  const rows = () => [...document.querySelectorAll('.story .story-row')]
+  const open = (famName: string, level: string) => { start('ptext'); document.querySelector<HTMLButtonElement>('#helpOk')?.click(); fam(famName).click(); chip(level).click() }
+  const FAMS: [string, string[]][] = [['은 / 는', ['은', '는']], ['이 / 가', ['이', '가']], ['을 / 를', ['을', '를']], ['에 / 에서', ['에', '에서']], ['하고 / 와 / 과', ['하고', '와', '과']], ['Все вместе', ['은', '는', '이', '가', '을', '를', '에', '에서', '하고', '와', '과']]]
+  /** Всё, что разбор называет нужным ответом (после проверки): окна «Разбор» по каждому предложению. */
+  const needs = () => [...document.querySelectorAll<HTMLButtonElement>('.story-info')].flatMap(b => {
+    b.click()
+    const t = document.querySelector('.story-win')!.textContent ?? ''
+    document.querySelector<HTMLButtonElement>('.story-win-x')!.click()
+    return [...t.matchAll(/(?:нужно: |Верно: )([가-힣]+)/g)].map(m => m[1]!)
+  })
+
+  it('шесть чипов правил, у каждого свой набор плиток; по умолчанию «은 / 는»; выбор запоминается', () => {
+    start('ptext')
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+    expect(document.querySelectorAll('.fams .chip').length).toBe(6)
+    expect(fam('은 / 는').classList.contains('on')).toBe(true)
+    for (const [name, marks] of FAMS) expect((fam(name).click(), tiles().map(tileText).sort()), name).toEqual([...marks].sort())
+    fam('에 / 에서').click()
+    expect(JSON.parse(localStorage.getItem('hleb_game_v1')!).pfam).toBe('place')
+  })
+
+  for (const [name, marks] of FAMS) for (const [level, min, max] of [['Простой', 1, 1], ['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+    it(`«${name}», «${level}»: ${min}–${max} предложений; нужные частицы всегда из набора правила, повторов предложений нет`, () => {
+      for (let round = 0; round < 3; round++) {
+        open(name, level)
+        const n = rows().length
+        expect(n).toBeGreaterThanOrEqual(min)
+        expect(n).toBeLessThanOrEqual(max)
+        const texts = rows().map(r => r.querySelector('.story-s')!.textContent)
+        expect(new Set(texts).size, 'без повторов').toBe(n)
+        tiles()[0]!.click()
+        for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
+        document.querySelector<HTMLButtonElement>('#schk')!.click()
+        const right = needs()
+        expect(right.length).toBeGreaterThanOrEqual(n)
+        for (const w of right) expect(marks, 'нужное «' + w + '» входит в набор «' + name + '»').toContain(w)
+      }
+    })
+  }
+
+  it('«и»: если везде поставить 하고, все ответы верны (вместо 와 / 과 по 받침 принимается 하고), бонус +5', () => {
+    for (let round = 0; round < 4; round++) {
+      open('하고 / 와 / 과', 'Длинный')
+      const t = tiles().find(x => tileText(x) === '하고')!
+      t.click()
+      for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
+      document.querySelector<HTMLButtonElement>('#schk')!.click()
+      expect(records.every(r => r.ok), 'все ответы верны').toBe(true)
+      expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
+    }
+  })
+
+  it('открытие по ссылке: правило берётся из адреса (?fam=)', () => {
+    dispose?.()
+    records.length = 0
+    localStorage.clear()
+    document.body.innerHTML = `<div id="root">${markup}</div>`
+    dispose = initGame({ record: () => ({}), importXp: () => {}, state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }), cats: () => null, mode: () => 'ptext', fam: () => 'object', saveCats: () => {}, grammar: () => {} })
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+    expect(fam('을 / 를').classList.contains('on')).toBe(true)
+  })
+})

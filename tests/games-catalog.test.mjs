@@ -46,7 +46,7 @@ test('группы по темам: «Числа и деньги» и «Врем
 test('группы по разделам грамматики: каждая игра ровно в одной группе', () => {
   const byId = Object.fromEntries(GAME_GROUPS.map(g => [g.id, g.games.map(x => x.id)]))
   assert.deepEqual(byId.be, ['neg'])
-  assert.deepEqual(byId.particles, ['pair', 'part', 'particles', 'err'])
+  assert.deepEqual(byId.particles, ['pair', 'ptext', 'part', 'particles', 'err'])
   assert.deepEqual(byId.place, ['place'])
   assert.deepEqual(byId.verbs, ['form', 'type'])
   assert.deepEqual(byId.questions, ['qw', 'dem'])

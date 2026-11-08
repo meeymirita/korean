@@ -8,7 +8,8 @@ import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
-import { STORIES } from './stories'
+import { STORIES, RULE_SENTENCES } from './stories'
+import { PFAMS } from './families'
 import { syllableRows, syllableVowels } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
 import { gsap } from 'gsap'
@@ -48,7 +49,8 @@ const MODES=[
   {id:'han',icon:'ㅎ',name:'Хангыль-блиц'},
   {id:'days',icon:'📅',name:'Дни недели'},{id:'when',icon:'🕒',name:'Когда? (에)'},{id:'too',icon:'➕',name:'Тоже (도)'},
   {id:'num',icon:'🔢',name:'Числа'},{id:'price',icon:'💴',name:'Сколько стоит?'},{id:'count',icon:'🥤',name:'Счётные слова'},
-  {id:'neg',icon:'🙅',name:'Это или не это'},{id:'place',icon:'📍',name:'Куда, где'},{id:'dem',icon:'👉',name:'Этот, тот, вон тот'},{id:'polite',icon:'🙇',name:'Уровень вежливости'}
+  {id:'neg',icon:'🙅',name:'Это или не это'},{id:'place',icon:'📍',name:'Куда, где'},{id:'dem',icon:'👉',name:'Этот, тот, вон тот'},{id:'polite',icon:'🙇',name:'Уровень вежливости'},
+  {id:'ptext',icon:'🧩',name:'Тексты по правилу'}
 ];
 
 /* ---------- подсказки по режимам: кнопка «?» рядом с заданием раскрывает, что делать, и пример ---------- */
@@ -75,6 +77,7 @@ const MODE_HELP={
   neg:['Скажи по-корейски «это …» или «это не …». Есть 받침 (согласная внизу) → 이에요 и 이 아니에요, нет 받침 → 예요 и 가 아니에요. Смотри и на смысл: «это» или «не это». Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «Это книга» → 책이에요; «Это не кофе» → 커피가 아니에요.'],
   place:['Выбери частицу при месте. 에 — куда идёшь (가요) и где находишься (있어요). 에서 — где что-то делаешь (공부해요, 운동해요, 먹어요). Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 학교___ 가요 → 에; 도서관___ 공부해요 → 에서.'],
   dem:['이 / 그 / 저 («этот / тот / вон тот»), 이것 / 그것 / 저것 («эта вещь…») и 여기 / 거기 / 저기 («здесь / там / вон там»). Первое рядом со мной, второе рядом с собеседником, третье далеко от обоих. Пометка в скобках у предложения показывает, где предмет. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–5» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «вон тот» → 저; «здесь» → 여기.'],
+  ptext:['Выбери правило чипами под названием (은/는, 이/가, 을/를, 에 / 에서, 하고 / 와 / 과) и поставь нужную частицу в каждом предложении.','Пример: 학교___ 가요 → 에; 학교___ 공부해요 → 에서.'],
   polite:['«Спасибо» говорят по-разному: от друзей до начальника. Выбери форму для нужного собеседника или скажи, кому такая форма подходит.','Пример: другу → 고마워; начальнику → 감사합니다.']
 };
 function labelWithHelp(q){
@@ -104,18 +107,19 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story'},pfam:'topic',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
   blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null}
 };
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,blitzSecs:S.blitzSecs,survLives:S.survLives,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
   if(j.levels&&typeof j.levels==='object')Object.assign(S.levels,j.levels);
   else if(j.pairLevel)S.levels.pair=j.pairLevel;
   ['reading','tense','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  if(PFAMS.some(f=>f.id===j.pfam))S.pfam=j.pfam;
   if([30,60,120].includes(j.blitzSecs))S.blitzSecs=j.blitzSecs;
   if([0,3,5].includes(j.survLives))S.survLives=j.survLives;
   if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
@@ -128,6 +132,8 @@ if(sharedCats)Object.assign(S.cats,sharedCats);
 const wantMode=hooks.mode&&hooks.mode();
 if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
+const wantFam=hooks.fam&&hooks.fam();
+if(PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
 if(![1,2,3,'any'].includes(S.level))S.level='any';
 Object.keys(S.levels).forEach(k=>{if(!['simple','story','long'].includes(S.levels[k]))S.levels[k]='simple';});
 
@@ -351,7 +357,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord','ptext'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -929,6 +935,65 @@ function genOrdStory(lo,hi){
   q.bank=[...Array(n).keys()].map(function(i){return String(i+1);}); // номера идут по порядку, не вперемешку
   return q;
 }
+/* ---------- «Тексты по правилу»: частицы одного правила в предложениях и рассказах ---------- */
+/** Чипы правил над заданием: выбор запоминается, по нему собираются предложения. */
+function famChips(){
+  const lv=el('div','levels fams');
+  PFAMS.forEach(function(f){
+    const b=el('button','chip'+(S.pfam===f.id?' on':''),f.name);b.type='button';b.title=f.hint;
+    b.addEventListener('click',function(){S.pfam=f.id;save();renderQuestion(genQuestion());});
+    lv.appendChild(b);
+  });
+  return lv;
+}
+/** Все предложения с переводом, где известны все слова: из сайта, рассказов, диалогов и предложений учебника; для каждого место частиц (`at`, `text`, `g`). */
+function ptextPool(){
+  if(POOLS.PTEXT)return POOLS.PTEXT;
+  const all={};
+  Object.keys(TRANSLATIONS).forEach(function(ko){all[ko]=TRANSLATIONS[ko];});
+  STORIES.forEach(function(st){st.sents.forEach(function(x){all[x.ko]=x.ru;});});
+  EXCHANGES.forEach(function(e){all[e[0]]=e[1];all[e[2]]=e[3];});
+  RULE_SENTENCES.forEach(function(x){all[x.ko]=x.ru;});
+  POOLS.PTEXT=Object.keys(all).map(function(ko){
+    const segs=analyze(ko);
+    if(segs.some(function(sg){return sg.type==='unknown';}))return null;
+    const marks=[];let cur=0;
+    segs.forEach(function(sg){
+      const at=ko.indexOf(sg.text,cur);if(at<0)return;cur=at+sg.text.length;
+      if(sg.type==='particle')marks.push({at:at,text:sg.text,g:sg.g||'',why:sg.explain||sg.gloss||''});
+    });
+    return {ko:ko,ru:all[ko],marks:marks};
+  }).filter(Boolean);
+  return POOLS.PTEXT;
+}
+/** Частица входит в правило: по карточке (`g`) и тексту; у 와 / 과 разбор карточки не указывает, берём по тексту. */
+const inFam=(f,m)=>f.marks.includes(m.text)&&(f.g.includes(m.g)||(f.marks.includes('와')&&(m.text==='와'||m.text==='과')));
+function genPtext(){
+  const f=PFAMS.find(function(x){return x.id===S.pfam;})||PFAMS[0];
+  const lv=S.levels.ptext;
+  const n=lv==='long'?5+Math.floor(Math.random()*6):lv==='story'?2+Math.floor(Math.random()*4):1;
+  const cands=ptextPool().map(function(x){return {x:x,gaps:x.marks.filter(function(m){return inFam(f,m);})};}).filter(function(c){return c.gaps.length;});
+  // одинаковые по смыслу предложения («커피하고 우유가…» и «커피와 우유가…») в одном тексте не нужны
+  const picked=[],seenRu=new Set();
+  shuffle(cands).forEach(function(c){const key=c.x.ru.toLowerCase();if(picked.length<n&&!seenRu.has(key)){seenRu.add(key);picked.push(c);}});
+  const bank=new Set(f.marks);
+  const sents=picked.map(function(c){
+    const use=shuffle(c.gaps).slice(0,2).sort(function(a,b){return a.at-b.at;});
+    const pieces=[];let pos=0;
+    use.forEach(function(g){
+      const before=c.x.ko[g.at-1]||'';
+      let accept=null;
+      // «и»: к 하고 подходят 와 / 과 по 받침, и наоборот
+      if(g.text==='하고')accept=[hasFinal(before)?'과':'와'];
+      else if(g.text==='와'||g.text==='과')accept=['하고'];
+      pieces.push(c.x.ko.slice(pos,g.at));pieces.push({right:g.text,accept:accept,why:g.why});
+      pos=g.at+g.text.length;
+    });
+    pieces.push(c.x.ko.slice(pos));
+    return {ko:c.x.ko,ru:c.x.ru,pieces:pieces};
+  });
+  return makeStory('ptext','Правило «'+f.name+'» ('+plural(sents.length)+'): поставь частицы',sents,[...bank],'🧩');
+}
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
   if(Math.random()<.35){
@@ -988,8 +1053,10 @@ function genDlg(){
   if(storyOn('dlg'))return S.levels.dlg==='long'?genDlgStory(5,10):genDlgStory(2,5);
   const i=pickW(EXCHANGES.map((x,k)=>k),k=>'d:'+k);
   const x=EXCHANGES[i];
-  const dis=shuffle(EXCHANGES.filter(y=>y[4]!==x[4])).slice(0,2);
-  const texts=shuffle([x[2],...dis.map(y=>y[2])]);
+  // «лишние» ответы: другие теги и другие слова (у разных пар бывает одинаковый ответ «네. 있어요.»)
+  const lures=[];
+  shuffle(EXCHANGES.filter(y=>y[4]!==x[4]&&y[2]!==x[2])).forEach(y=>{if(lures.length<2&&!lures.includes(y[2]))lures.push(y[2]);});
+  const texts=shuffle([x[2],...lures]);
   return {type:'choice',mode:'dlg',key:'d:'+i,label:'Выбери подходящий ответ',prompt:x[0],promptKo:true,sub:x[1],
     options:texts.map(t=>({text:t,ko:true})),correct:texts.indexOf(x[2]),right:x[2],
     explain:[x[0]+' → '+x[2],x[3]],teach:x[2],hp:x[0],hr:x[2],icon:'💬'};
@@ -1255,7 +1322,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,5)):(Math.random()<.5?genForm():genPast())),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite};
+const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,5)):(Math.random()<.5?genForm():genPast())),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext};
 function genQuestion(){
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite']);
@@ -1270,6 +1337,7 @@ function renderQuestion(q){
   const card=$('#card');card.innerHTML='';
   card.appendChild(labelWithHelp(q));
   if(STORY_MODES.includes(q.mode)&&S.mode===q.mode)card.appendChild(levelChips(q.mode));
+  if(q.mode==='ptext'&&S.mode==='ptext')card.appendChild(famChips());
   if(q.type==='story'){
     drawStory(card,q);
   }else if(q.type==='choice'){

@@ -12,5 +12,5 @@ export const MODE_ICON: Record<string, string> = {
   mix: 'dice', word: 'speech', rev: 'card', form: 'pen', qw: 'cat-q', part: 'macaron', build: 'board', spot: 'telescope',
   type: 'pencil', err: 'eraser', pair: 'hearts', ord: 'comet', dlg: 'mail', han: 'han',
   days: 'sun', when: 'clock', too: 'hearts', num: 'dice', price: 'croissant', count: 'macaron',
-  neg: 'heart', place: 'home', dem: 'telescope', polite: 'star',
+  neg: 'heart', place: 'home', dem: 'telescope', polite: 'star', ptext: 'wand',
 }

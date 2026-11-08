@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { famOfCard } from '@/game/families'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import TaskSession from '@/components/korean/TaskSession.vue'
 import { usePersisted } from '@/composables/usePersisted'
@@ -27,6 +28,7 @@ const pick = (id: string) => {
     <TaskSession :tasks="tasks" source="trainer" mode="particles" again-label="Ещё набор" @again="again">
       <template #after>
         <RouterLink :to="{ path: '/korean/grammar', query: rule ? { g: rule } : {} }" class="qk-home">{{ rule ? 'Открыть правило' : 'Вся грамматика' }}</RouterLink>
+        <RouterLink :to="{ path: '/game/home', query: { game: 'ptext', ...(famOfCard(rule) ? { fam: famOfCard(rule) } : {}) } }" class="qk-home">Текст по правилу</RouterLink>
       </template>
     </TaskSession>
   </div>

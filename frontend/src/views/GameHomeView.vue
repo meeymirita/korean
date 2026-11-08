@@ -82,6 +82,7 @@ function startEngine() {
     state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: progress.goal }),
     cats: () => progress.data.settings.gameCats,
     mode: () => game.value,
+    fam: () => (typeof route.query.fam === 'string' ? route.query.fam : ''),
     saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
     grammar: (id: string) => openGrammar(id),
   })

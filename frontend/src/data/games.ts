@@ -60,6 +60,7 @@ export const GAME_GROUPS: GameGroup[] = [
     icon: 'macaron',
     games: [
       { id: 'pair', name: 'Пара или нет', desc: 'Выбери верный вариант из двух, а на сложном уровне целый рассказ', icon: 'hearts', to: '/game/home?game=pair' },
+      { id: 'ptext', name: 'Тексты по правилу', desc: 'Выбери правило (은/는, 이/가, 을/를, 에 / 에서, 하고 / 와 / 과) и расставь частицы в предложениях и рассказах из учебника', icon: 'wand', to: '/game/home?game=ptext' },
       { id: 'part', name: 'Частицы и счёт', desc: 'Вставь частицу или счётное слово', icon: 'macaron', to: '/game/home?game=part' },
       { id: 'particles', name: 'Частицы и окончания', desc: 'Девять правил со своими наборами', icon: 'wand', to: '/game/home?game=particles' },
       { id: 'err', name: 'Найди ошибку', desc: 'Найди неверное слово в предложении', icon: 'eraser', to: '/game/home?game=err' },
