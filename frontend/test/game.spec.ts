@@ -279,7 +279,7 @@ describe('разбор после ответа', () => {
 })
 
 describe('тексты: «Рассказ» и «Длинный» в «Паре или нет», «Куда, где» и «Тоже»', () => {
-  const MODES = ['pair', 'place', 'too']
+  const MODES = ['pair', 'place', 'too', 'neg', 'when', 'dem']
   const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
   const gapEls = () => [...document.querySelectorAll<HTMLButtonElement>('.story .gap')]
   const tiles = () => [...document.querySelectorAll<HTMLButtonElement>('#bank .tile')]
@@ -395,6 +395,27 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
     openWin()
     ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
     expect(document.querySelector('.story-win')).toBeNull()
+  })
+
+  it('«Этот, тот»: у каждого предложения пометка, где предмет; в банке указатели одного семейства', () => {
+    for (let round = 0; round < 6; round++) {
+      open('dem', 'Рассказ')
+      const cues = [...document.querySelectorAll('.story-cue')].map(c => (c.textContent ?? '').replace(/[()\s]+/g, ' ').trim())
+      expect(cues.length).toBe(sentences())
+      for (const c of cues) expect(['рядом со мной', 'рядом с тобой', 'далеко от обоих']).toContain(c)
+      const texts = tiles().map(tileText)
+      expect(texts.length % 3).toBe(0) // указатели идут тройками (этот, тот, вон тот)
+    }
+  })
+
+  it('«Когда? (에)»: в банке есть плитка «—» (частица не нужна), у 오늘, 내일, 지금 верный ответ «—»', () => {
+    let sawNone = false
+    for (let round = 0; round < 12 && !sawNone; round++) {
+      open('when', 'Длинный')
+      expect(tiles().map(tileText)).toContain('—')
+      sawNone = [...document.querySelectorAll('.story .story-s')].some(p => /^\s*(\(.*\))?\s*(오늘|내일|지금)/.test(p.textContent ?? ''))
+    }
+    expect(sawNone, 'в длинных текстах встречаются слова без 에').toBe(true)
   })
 
   it('иконка перевода слева: по нажатию (на телефоне) показывает или прячет перевод', () => {

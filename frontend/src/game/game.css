@@ -194,3 +194,4 @@ html[data-theme='dark'][data-palette='night'] .game .story-win-box{background:#2
 .game .story-win-gap b{font-family:var(--ko);font-size:17px}
 .game .story-win-gap.ok{background:var(--ok-bg);color:var(--ok)}
 .game .story-win-gap.bad{background:var(--bad-bg);color:var(--bad)}
+.game .story-cue{margin-right:4px;font-family:inherit;font-size:.7em;color:var(--muted)}
