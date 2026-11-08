@@ -552,3 +552,64 @@ describe('«Тексты по правилу» (ptext)', () => {
     expect(fam('을 / 를').classList.contains('on')).toBe(true)
   })
 })
+
+describe('«Собери предложение»: рассказ из учебника', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
+  const labelText = () => (document.querySelector('#card .label')?.textContent ?? '').trim()
+  const buildTiles = () => [...document.querySelectorAll<HTMLButtonElement>('#tiles .tile')]
+  /** Слово плитки «Собери предложение»: первый текст кнопки (дальше номер клавиши и перевод). */
+  const tileWord = (b: Element) => (b.firstChild?.textContent ?? '').trim()
+  const open = (level: string) => { start('build'); document.querySelector<HTMLButtonElement>('#helpOk')?.click(); chip(level).click() }
+
+  /** Собирает текущее предложение рассказа правильно (слова берёт из самого рассказа) и возвращает номер предложения и их число. */
+  function solve() {
+    const m = labelText().match(/Рассказ «([^»]+)»: предложение (\d+) из (\d+)/)
+    expect(m, 'подпись «Рассказ …: предложение N из M»: ' + labelText()).toBeTruthy()
+    const st = STORIES.find(x => x.title === m![1])!
+    const i = Number(m![2]) - 1, n = Number(m![3])
+    expect(st.sents.length).toBe(n)
+    const words = st.sents[i]!.ko.replace(/[.?!]$/, '').split(' ')
+    const used = new Set<string>()
+    for (const w of words) {
+      const b = buildTiles().find(t => !used.has(t.dataset.i!) && tileWord(t) === w)
+      expect(b, 'плитка «' + w + '» есть').toBeTruthy()
+      used.add(b!.dataset.i!)
+      b!.click()
+    }
+    document.querySelector<HTMLButtonElement>('#chk')!.click()
+    expect(document.querySelector('#fb .fbh')!.textContent, 'предложение собрано верно').toMatch(/Верно/)
+    expect(buildTiles().length, 'лишние плитки есть').toBeGreaterThan(words.length)
+    return { i, n, title: st.title }
+  }
+
+  for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+    it(`«build», «${level}»: предложения одного рассказа идут подряд по порядку (${min}–${max}), после последнего начинается новый рассказ`, () => {
+      open(level)
+      let first = solve()
+      expect(first.i).toBe(0)
+      expect(first.n).toBeGreaterThanOrEqual(min)
+      expect(first.n).toBeLessThanOrEqual(max)
+      for (let k = 1; k < first.n; k++) {
+        ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
+        const cur = solve()
+        expect(cur.title, 'тот же рассказ').toBe(first.title)
+        expect(cur.i, 'следующее по порядку').toBe(k)
+      }
+      ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
+      first = solve()
+      expect(first.i, 'новый рассказ с начала').toBe(0)
+      expect(records.every(r => r.ok)).toBe(true)
+    })
+  }
+
+  it('простой уровень остаётся прежним заданием, при смене уровня рассказ начинается заново', () => {
+    start('build')
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+    expect(chip('Простой').classList.contains('on')).toBe(true)
+    expect(labelText()).not.toMatch(/Рассказ «/)
+    chip('Рассказ').click()
+    expect(labelText()).toMatch(/предложение 1 из/)
+    chip('Длинный').click()
+    expect(labelText()).toMatch(/предложение 1 из/)
+  })
+})

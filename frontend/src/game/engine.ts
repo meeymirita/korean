@@ -107,7 +107,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story'},pfam:'topic',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple'},pfam:'topic',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -265,7 +265,32 @@ function tileGloss(tok){
   }).join(' + ');
   glossCache.set(tok,out);return out;
 }
+/** «Собери предложение: Рассказ»: предложения одного рассказа из учебника идут подряд, каждое собирается из слов-плиток (плюс одна-две лишние). Следующее предложение появляется после «Дальше». */
+function genBuildStory(lo,hi){
+  let b=S.bstory;
+  const lv=S.levels.build;
+  if(b&&b.lv===lv&&b.i+1<b.st.sents.length&&b.shown)b.i++;
+  else{
+    const fit=STORIES.filter(function(st){return st.sents.length>=lo&&st.sents.length<=hi;});
+    b=S.bstory={st:rnd(fit.length?fit:STORIES),i:0,lv:lv,shown:false};
+  }
+  b.shown=true;
+  const x=b.st.sents[b.i],n=b.st.sents.length;
+  const right=x.ko.replace(/[.?!]$/,'');
+  const words=right.split(' ');
+  // лишние плитки: слова других предложений рассказов, которых нет в этом
+  const spare=[];
+  shuffle(STORIES.flatMap(function(st){return st.sents.flatMap(function(y){return y.ko.replace(/[.,?!]/g,'').split(' ');});})).forEach(function(w){
+    if(spare.length<(words.length>=4?2:1)&&!words.includes(w)&&!spare.includes(w)&&!words.some(function(v){return v.replace(/[.,?!]/g,'')===w;}))spare.push(w);
+  });
+  const tiles=shuffle([...words,...spare]);
+  const before=b.i>0?b.st.sents.slice(0,b.i).map(function(y){return y.ko;}).join(' '):'';
+  return {type:'build',mode:'build',key:'bs:'+b.st.id+':'+b.i,level:2,
+    label:'Рассказ «'+b.st.title+'»: предложение '+(b.i+1)+' из '+n+(before?' (до этого: '+before+')':''),
+    ru:x.ru,tiles:tiles,accept:[right],right:right,note:'Предложение '+(b.i+1)+' рассказа «'+b.st.title+'»',explain:[right+'.',x.ru],hp:x.ru,hr:right,icon:'🏗️'};
+}
 function genBuild(){
+  if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,5);
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
   let level,seed,tm=mode;
   const missed=Object.keys(S.miss).filter(k=>/^b:/.test(k)&&k!==S.lastKey);
@@ -357,7 +382,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord','ptext'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord','ptext','build'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
