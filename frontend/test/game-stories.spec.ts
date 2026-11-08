@@ -5,6 +5,7 @@ import { iconImg } from '@/game/icons'
 import { D as DICT } from '@/data/korean/words'
 import { D as GD } from '@/game/words'
 import { EXCHANGES } from '@/game/dialogs'
+import { STORIES } from '@/game/stories'
 
 // Тексты «Рассказ» и «Длинный» в режимах, добавленных позже (отдельный файл: общий `game.spec.ts` уже занимает много памяти).
 const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
@@ -432,5 +433,54 @@ describe('«Напиши форму»: тексты с вводом с клав�
     document.querySelector<HTMLButtonElement>('#schk')!.click()
     expect(first.classList.contains('ok'), 'с пробелами всё равно верно').toBe(true)
     expect(inputs().slice(1).every(i => i.classList.contains('bad'))).toBe(true)
+  })
+})
+
+describe('«Порядок слов»: рассказы из учебника', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
+  const tiles = () => [...document.querySelectorAll<HTMLButtonElement>('#bank .tile')]
+  const tileText = (b: Element) => (b.textContent ?? '').replace(/^\d/, '').trim()
+  const rows = () => [...document.querySelectorAll('.story .story-row')]
+  const rowText = (r: Element) => [...r.querySelector('.story-s')!.childNodes].map(n => ((n as Element).classList?.contains('gap') ? '' : n.textContent)).join('').trim()
+  const open = (level: string) => { start('ord'); document.querySelector<HTMLButtonElement>('#helpOk')?.click(); chip(level).click() }
+
+  it('рассказы: у каждого предложения есть перевод, нет повторов, предложения идут в порядке учебника', () => {
+    expect(STORIES.length).toBeGreaterThanOrEqual(8)
+    for (const st of STORIES) {
+      expect(st.sents.length, st.id).toBeGreaterThanOrEqual(2)
+      expect(new Set(st.sents.map(s => s.ko)).size, st.id + ' без повторов').toBe(st.sents.length)
+      for (const s of st.sents) { expect(s.ko).toMatch(/[가-힣]/); expect(s.ru).toMatch(/[а-яё]/i) }
+    }
+    expect(STORIES.filter(s => s.sents.length >= 5).length, 'для «Длинного» нужно несколько рассказов от 5 предложений').toBeGreaterThanOrEqual(3)
+  })
+
+  for (const [level, min, max] of [['Рассказ', 2, 5], ['Длинный', 5, 10]] as const) {
+    it(`«ord», «${level}»: ${min}–${max} предложений, они перемешаны, верные номера дают бонус +5`, () => {
+      for (let round = 0; round < 8; round++) {
+        open(level)
+        const n = rows().length
+        expect(n).toBeGreaterThanOrEqual(min)
+        expect(n).toBeLessThanOrEqual(max)
+        expect(tiles().map(tileText)).toEqual([...Array(n).keys()].map(i => String(i + 1)))
+        // два рассказа могут делить предложение («이 방은 제 방이에요.»), поэтому ищем тот, где подходят все строки
+        const st = STORIES.find(x => x.sents.length === n && rows().every(r => x.sents.some(s => rowText(r).includes(s.ko))))!
+        expect(st, 'рассказ найден').toBeTruthy()
+        const order = rows().map(r => st.sents.findIndex(s => rowText(r).includes(s.ko)) + 1)
+        expect(order.every(k => k > 0), 'все предложения из одного рассказа').toBe(true)
+        expect(order.every((k, i) => k === i + 1), 'предложения перемешаны').toBe(false)
+        const gaps = [...document.querySelectorAll<HTMLButtonElement>('.story .gap')]
+        order.forEach((k, i) => { tiles()[k - 1]!.click(); gaps[i]!.click(); tiles()[k - 1]!.click() })
+        document.querySelector<HTMLButtonElement>('#schk')!.click()
+        expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
+        expect(records.every(x => x.ok)).toBe(true)
+      }
+    })
+  }
+
+  it('простой «Порядок слов» остаётся прежним заданием', () => {
+    start('ord')
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+    expect(chip('Простой').classList.contains('on')).toBe(true)
+    expect(document.querySelector('.story')).toBeNull()
   })
 })

@@ -8,6 +8,7 @@ import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
+import { STORIES } from './stories'
 import { syllableRows, syllableVowels } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
 import { gsap } from 'gsap'
@@ -103,7 +104,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -350,7 +351,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -912,6 +913,22 @@ function genTypeStory(lo,hi){
   });
   return makeStory('type','Впиши форму ('+plural(sents.length)+'): глагол в нужной форме',sents,[],'⌨️');
 }
+/** «Порядок слов»: предложения короткого рассказа из учебника перемешаны, у каждого нужно поставить его номер по порядку (подсказка: перевод в иконке и слова-связки вроде 그리고, 거기에서). */
+function genOrdStory(lo,hi){
+  const fit=STORIES.filter(function(st){return st.sents.length>=lo&&st.sents.length<=hi;});
+  const st=rnd(fit.length?fit:STORIES);
+  const n=st.sents.length;
+  let order=[...Array(n).keys()],guard=0;
+  do{order=shuffle(order);}while(order.every(function(v,i){return v===i;})&&guard++<30);
+  const sents=order.map(function(k){
+    const x=st.sents[k];
+    const why=k===0?'Рассказ начинается с этого предложения: оно вводит тему.':'Идёт '+(k+1)+'-м, после «'+st.sents[k-1].ko+'»: '+st.sents[k-1].ru;
+    return {ko:x.ko,ru:x.ru,pieces:[{right:String(k+1),why:why},'   '+x.ko]};
+  });
+  const q=makeStory('ord','Порядок («'+st.title+'», '+plural(n)+'): поставь номера по порядку',sents,[],'🔢');
+  q.bank=[...Array(n).keys()].map(function(i){return String(i+1);}); // номера идут по порядку, не вперемешку
+  return q;
+}
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
   if(Math.random()<.35){
@@ -939,6 +956,7 @@ function genPair(){
 
 /* ---------- «Порядок слов»: куда поставить слово ---------- */
 function genOrd(){
+  if(storyOn('ord'))return S.levels.ord==='long'?genOrdStory(5,10):genOrdStory(2,5);
   for(let t=0;t<30;t++){
     const level=rnd([2,2,3]);
     const seed=1+Math.floor(Math.random()*2147483000);
