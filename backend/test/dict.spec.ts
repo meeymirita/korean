@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildDocs, toDoc, type RawEntry } from '../src/dict/dict.data'
+import { buildDocs, rankOf, toDoc, type RawEntry } from '../src/dict/dict.data'
 import { dictionaryForms } from '../src/dict/dict.hangul'
-import { DictService, isIndexFresh } from '../src/dict/dict.service'
+import { DictService, INDEX_VERSION, isIndexFresh } from '../src/dict/dict.service'
 
 const entry = (over: Partial<RawEntry> = {}): RawEntry => ({
   word: '학생',
@@ -158,22 +158,96 @@ describe('большой словарь: поиск', () => {
       return new Response(JSON.stringify({ hits: [], estimatedTotalHits: 0 }), { status: 200 })
     }))
     await new DictService().search('школа', { level: 'начальный', pos: 'глагол' })
-    expect(bodies[0]!.filter).toBe('level = "начальный" AND pos = "глагол"')
+    const main = (list: Record<string, unknown>[]) => list.find(b => b.facets)!
+    expect(main(bodies).filter).toBe('level = "начальный" AND pos = "глагол"')
+    bodies.length = 0
     await new DictService().search('школа', { level: 'выдуманный' })
-    expect(bodies.at(-1)!.filter).toBeUndefined()
+    expect(main(bodies).filter).toBeUndefined()
   })
 })
 
 describe('большой словарь: готов ли индекс', () => {
   const file = { size: 100, mtimeMs: 5 }
   it('готов только если пометка совпадает с файлом и числом документов', () => {
-    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10 }, file, 10)).toBe(true)
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10, version: INDEX_VERSION }, file, 10)).toBe(true)
   })
   it('без пометки, с другим файлом или с недостроенным числом документов не готов (так сервер доделает индекс после обрыва)', () => {
     expect(isIndexFresh(null, file, 10)).toBe(false)
-    expect(isIndexFresh({ size: 101, mtimeMs: 5, documents: 10 }, file, 10)).toBe(false)
-    expect(isIndexFresh({ size: 100, mtimeMs: 6, documents: 10 }, file, 10)).toBe(false)
-    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10 }, file, 4)).toBe(false)
-    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 0 }, file, 0)).toBe(false)
+    expect(isIndexFresh({ size: 101, mtimeMs: 5, documents: 10, version: INDEX_VERSION }, file, 10)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10 }, file, 10)).toBe(false) // пометка от старой версии формата
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10, version: INDEX_VERSION - 1 }, file, 10)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 6, documents: 10, version: INDEX_VERSION }, file, 10)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 10, version: INDEX_VERSION }, file, 4)).toBe(false)
+    expect(isIndexFresh({ size: 100, mtimeMs: 5, documents: 0, version: INDEX_VERSION }, file, 0)).toBe(false)
+  })
+})
+
+describe('большой словарь: популярность и точные совпадения', () => {
+  it('частые слова получают больше очков: уровень, значения, примеры, короткое слово; окончания и выражения идут в конец', () => {
+    const common = toDoc(entry({ word: '학교', vocabulary_level: '초급' }), 0)!
+    const rare = toDoc(entry({ word: '농업기술센터', vocabulary_level: '없음' }), 1)!
+    const idiom = toDoc(entry({ word: '교편을 잡다', part_of_speech: '', vocabulary_level: '' }), 2)!
+    const ending = toDoc(entry({ word: '-ㅂ니다', part_of_speech: '어미', vocabulary_level: '없음' }), 3)!
+    expect(common.rank).toBeGreaterThan(rare.rank)
+    expect(rare.rank).toBeGreaterThan(idiom.rank)
+    expect(rare.rank).toBeGreaterThan(ending.rank)
+    expect(rankOf(common)).toBe(common.rank)
+  })
+
+  it('переводы раскладываются по одному (строчными) из двух первых значений: по ним слово ищется точно', () => {
+    const d = toDoc(entry({ senses: [
+      { definition: 'a', translations: [{ translation: 'Школа; учебное заведение', definition: '' }], examples: [] },
+      { definition: 'b', translations: [{ translation: 'направление', definition: '' }], examples: [] },
+      { definition: 'c', translations: [{ translation: 'третье значение', definition: '' }], examples: [] },
+    ] }), 0)!
+    expect(d.tr).toEqual(['школа', 'учебное заведение', 'направление'])
+  })
+
+  it('слово с точным переводом идёт выше остальных: запрос «школа» сначала берёт тех, у кого перевод ровно «школа»', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    const mk = (word: string) => ({ id: word, word, hom: 0, posKo: '명사', pos: 'существительное', level: 'начальный', levelRank: 3, pron: '', cat: '', ru: 'школа', def: '', forms: [], wordLen: 2, rank: 300, tr: ['школа'], senses: [{ ko: 'k', ru: [{ t: 'школа', d: '' }], sent: [], phr: [], dial: [] }] })
+    const filters: string[] = []
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (_u: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body))
+      filters.push(String(body.filter ?? ''))
+      const top = String(body.filter ?? '').includes('tr = ')
+      return new Response(JSON.stringify({ hits: top ? [mk('학교')] : [mk('농고'), mk('학교')], estimatedTotalHits: 2 }), { status: 200 })
+    }))
+    const r = await new DictService().search('Школа')
+    expect(r.hits.map(h => h.word)).toEqual(['학교', '농고'])
+    expect(filters.some(f => f.includes('tr = "школа"') && f.includes('word = "Школа"'))).toBe(true)
+  })
+
+  it('список слов: порядок по популярности или алфавиту, размер порции ограничен', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    const bodies: Record<string, unknown>[] = []
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (_u: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)))
+      return new Response(JSON.stringify({ hits: [{ id: 'a', word: '가게', hom: 0, pos: 'существительное', level: 'начальный', ru: 'магазин; лавка; ларёк' }], estimatedTotalHits: 53149 }), { status: 200 })
+    }))
+    const pop = await new DictService().list({ order: 'pop', limit: 500 })
+    expect(bodies[0]!.sort).toEqual(['rank:desc'])
+    expect(bodies[0]!.limit).toBe(100)
+    expect(pop.items[0]).toMatchObject({ word: '가게', ru: 'магазин; лавка' })
+    expect(pop.total).toBe(53149)
+    await new DictService().list({ order: 'abc', level: 'начальный' })
+    expect(bodies[1]!.sort).toEqual(['word:asc', 'hom:asc'])
+    expect(bodies[1]!.filter).toBe('level = "начальный"')
+  })
+})
+
+describe('большой словарь: папки меню', () => {
+  it('отдаёт число слов по уровням и частям речи и запоминает ответ', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    const fetch = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ hits: [], estimatedTotalHits: 53149, facetDistribution: { level: { начальный: 1940 }, pos: { глагол: 6540 } } }), { status: 200 }))
+    vi.stubGlobal('fetch', fetch)
+    const svc = new DictService()
+    const a = await svc.folders()
+    expect(a).toEqual({ total: 53149, level: { начальный: 1940 }, pos: { глагол: 6540 } })
+    await svc.folders()
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })

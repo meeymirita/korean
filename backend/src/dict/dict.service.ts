@@ -48,10 +48,12 @@ function slim(d: DictDoc): DictHit {
 }
 
 /** Пометка «индекс собран целиком» рядом с файлом словаря: размер и время файла и число документов. Без неё недостроенный индекс (сервер перезапустили на середине) считался бы готовым. */
-export interface IndexMark { size: number; mtimeMs: number; documents: number }
+/** Версия формата документов и настроек индекса: поменял поля или настройки в dict.data.ts / reindex, подними число, и при следующем старте индекс соберётся заново. */
+export const INDEX_VERSION = 2
+export interface IndexMark { size: number; mtimeMs: number; documents: number; version?: number }
 export const markFile = (file: string) => file + '.indexed'
 export const isIndexFresh = (mark: IndexMark | null, file: { size: number; mtimeMs: number }, documents: number) =>
-  !!mark && mark.size === file.size && mark.mtimeMs === file.mtimeMs && mark.documents === documents && documents > 0
+  !!mark && mark.version === INDEX_VERSION && mark.size === file.size && mark.mtimeMs === file.mtimeMs && mark.documents === documents && documents > 0
 
 const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
@@ -168,10 +170,10 @@ export class DictService implements OnApplicationBootstrap {
         method: 'PATCH',
         body: JSON.stringify({
           searchableAttributes: ['word', 'forms', 'ru', 'def'],
-          filterableAttributes: ['word', 'level', 'pos', 'posKo'],
-          sortableAttributes: ['levelRank', 'hom', 'wordLen'],
-          rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'levelRank:desc', 'wordLen:asc', 'hom:asc'],
-          pagination: { maxTotalHits: 2000 },
+          filterableAttributes: ['word', 'level', 'pos', 'posKo', 'tr', 'cat'],
+          sortableAttributes: ['levelRank', 'rank', 'hom', 'wordLen', 'word'],
+          rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'rank:desc', 'wordLen:asc', 'hom:asc'],
+          pagination: { maxTotalHits: 60000 },
           typoTolerance: { minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 } },
         }),
       }, [], 30_000))
@@ -180,7 +182,7 @@ export class DictService implements OnApplicationBootstrap {
         await this.wait(await this.req(`/indexes/${INDEX}/documents?primaryKey=id`, { method: 'POST', body: JSON.stringify(docs.slice(i, i + BATCH)) }, [], 120_000))
       }
       const info = await stat(file)
-      await writeFile(markFile(file), JSON.stringify({ size: info.size, mtimeMs: info.mtimeMs, documents: docs.length } satisfies IndexMark)).catch(() => undefined)
+      await writeFile(markFile(file), JSON.stringify({ size: info.size, mtimeMs: info.mtimeMs, documents: docs.length, version: INDEX_VERSION } satisfies IndexMark)).catch(() => undefined)
       return { ok: true, documents: docs.length, entries: parsed.entries.length }
     } finally {
       this.indexing = false
@@ -198,9 +200,10 @@ export class DictService implements OnApplicationBootstrap {
     if (opts.pos) filters.push(`pos = ${q1(opts.pos.slice(0, 40))}`)
     const filter = filters.join(' AND ') || undefined
     const body = { q: query, limit: LIMIT, offset, filter, facets: ['level', 'pos'], matchingStrategy: 'all' }
-    const [main, via] = await Promise.all([
+    const [main, via, top] = await Promise.all([
       this.req<MeiliSearch>(`/indexes/${INDEX}/search`, { method: 'POST', body: JSON.stringify(body) }, [404]),
       this.viaForms(query, filter),
+      offset === 0 ? this.topMatches(query, filter) : Promise.resolve([] as DictDoc[]),
     ])
     if (!main) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
     let hits = main.hits ?? []
@@ -210,6 +213,12 @@ export class DictService implements OnApplicationBootstrap {
       if (loose?.hits?.length) { Object.assign(main, loose); hits = loose.hits }
     }
     let total = Math.max(0, Number(main.estimatedTotalHits) || hits.length)
+    // слова, у которых запрос совпадает целиком с самим словом или с одним из переводов («школа» → 학교), идут первыми, самые употребимые выше
+    if (top.length) {
+      const ids = new Set(top.map(h => h.id))
+      hits = [...top, ...hits.filter(h => !ids.has(h.id))].slice(0, LIMIT)
+      total = Math.max(total, hits.length)
+    }
     let info: DictSearchResult['via']
     // слово и так есть в словаре в таком виде (비빔, 학생): догадки о спряжении не нужны
     const exact = hits.some(h => h.word === query)
@@ -220,6 +229,50 @@ export class DictService implements OnApplicationBootstrap {
       info = { typed: query, forms: [...new Set(via.map(h => h.word))] }
     }
     return { query, hits: hits.map(slim), total, limit: LIMIT, offset, ...(info ? { via: info } : {}), facets: { level: main.facetDistribution?.level ?? {}, pos: main.facetDistribution?.pos ?? {} } }
+  }
+
+  /** Слова, где запрос это ровно слово или ровно один из переводов, по убыванию «популярности». Не больше 8. */
+  private async topMatches(query: string, filter?: string): Promise<DictDoc[]> {
+    const lower = query.toLowerCase()
+    const match = `(word = ${q1(query)} OR tr = ${q1(lower)})`
+    const r = await this.req<{ hits?: DictDoc[] }>(`/indexes/${INDEX}/search`, {
+      method: 'POST',
+      body: JSON.stringify({ q: '', limit: 8, filter: [match, filter].filter(Boolean).join(' AND '), sort: ['rank:desc'] }),
+    }, [404])
+    return r?.hits ?? []
+  }
+
+  private foldersCache: { at: number; data: { total: number; level: Record<string, number>; pos: Record<string, number> } } | null = null
+
+  /** Папки меню «Все слова»: сколько слов в каждом уровне и в каждой части речи. Кэш на час (база не меняется). */
+  async folders() {
+    if (this.foldersCache && Date.now() - this.foldersCache.at < 3_600_000) return this.foldersCache.data
+    const r = await this.req<MeiliSearch & { facetDistribution?: { level?: Record<string, number>; pos?: Record<string, number> } }>(`/indexes/${INDEX}/search`, {
+      method: 'POST',
+      body: JSON.stringify({ q: '', limit: 0, facets: ['level', 'pos'] }),
+    }, [404])
+    if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
+    const data = { total: Number(r.estimatedTotalHits) || 0, level: r.facetDistribution?.level ?? {}, pos: r.facetDistribution?.pos ?? {} }
+    if (data.total > 0) this.foldersCache = { at: Date.now(), data }
+    return data
+  }
+
+  /** Список всех слов для меню слева: по «популярности» или по алфавиту, порциями. */
+  async list(opts: { order?: string; level?: string; pos?: string; offset?: number; limit?: number }) {
+    if (this.indexing) throw new ServiceUnavailableException({ error: 'словарь сейчас индексируется' })
+    const limit = Math.min(100, Math.max(1, Number.isSafeInteger(opts.limit) ? opts.limit! : 60))
+    const offset = Number.isSafeInteger(opts.offset) ? Math.min(59_900, Math.max(0, opts.offset!)) : 0
+    const filters: string[] = []
+    if (opts.level && LEVELS.includes(opts.level)) filters.push(`level = ${q1(opts.level)}`)
+    if (opts.pos) filters.push(`pos = ${q1(opts.pos.slice(0, 40))}`)
+    const sort = opts.order === 'abc' ? ['word:asc', 'hom:asc'] : ['rank:desc']
+    const r = await this.req<MeiliSearch>(`/indexes/${INDEX}/search`, {
+      method: 'POST',
+      body: JSON.stringify({ q: '', limit, offset, filter: filters.join(' AND ') || undefined, sort, attributesToRetrieve: ['id', 'word', 'hom', 'pos', 'level', 'ru'] }),
+    }, [404])
+    if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
+    const items = (r.hits ?? []).map(d => ({ id: d.id, word: d.word, hom: d.hom, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 2).join('; ') }))
+    return { items, total: Math.max(0, Number(r.estimatedTotalHits) || items.length), limit, offset }
   }
 
   /** Слово могли написать в спряжении: достаём словарные формы-кандидаты (только глаголы и прилагательные). */
@@ -253,6 +306,19 @@ export class DictService implements OnApplicationBootstrap {
       .filter(d => d.word.includes(w) && !seen.has(d.word) && (seen.add(d.word), true))
       .slice(0, 12)
       .map(d => ({ word: d.word, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 3).join('; ') }))
-    return { word: w, entries, related }
+    // слова из той же темы базы (поле «semantic_category», например «인간 > 신체 행위»): ссылки на странице слова и для поисковика, и для читателя
+    const cat = entries.find(e => e.cat)?.cat
+    const same = cat
+      ? await this.req<{ hits?: DictDoc[] }>(`/indexes/${INDEX}/search`, {
+        method: 'POST',
+        body: JSON.stringify({ q: '', limit: 40, filter: `cat = ${q1(cat)} AND word != ${q1(w)}`, sort: ['rank:desc'], attributesToRetrieve: ['id', 'word', 'pos', 'level', 'ru'] }),
+      }, [404])
+      : null
+    const seenSame = new Set<string>()
+    const similar = (same?.hits ?? [])
+      .filter(d => !seenSame.has(d.word) && (seenSame.add(d.word), true))
+      .slice(0, 12)
+      .map(d => ({ word: d.word, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 3).join('; ') }))
+    return { word: w, entries, related, similar, category: cat ?? '' }
   }
 }
