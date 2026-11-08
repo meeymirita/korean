@@ -102,7 +102,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -344,7 +344,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -674,6 +674,134 @@ function genFormStory(lo,hi){
   });
   return makeStory('form','Окончания ('+plural(picked.length)+'): добавь окончание к основе',sents,['아요','어요','았어요','었어요'],'🔧');
 }
+/* ---------- «Дни недели», «Числа», «Сколько стоит?», «Счётные слова», «Уровень вежливости»: тексты ---------- */
+const DAYS_ACC=['в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу','в воскресенье'];
+const DAY_ACTS=[['학교에 가요','иду в школу'],['공원에서 운동해요','занимаюсь спортом в парке'],['영화를 봐요','смотрю кино'],['친구를 만나요','встречаюсь с другом'],['집에서 쉬어요','отдыхаю дома'],['커피를 마셔요','пью кофе'],['빵을 먹어요','ем хлеб']];
+/** «Дни недели»: расписание недели (день → 에 + действие) и вопросы «а завтра какой день?». Подсказка у второго вида только в иконке, и в ней нет ответа. */
+function genDaysStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const acts=DAY_ACTS.filter(function(a){return known('월요일에 '+a[0]+'.');});
+  const sents=[],seen=new Set();
+  let guard=0;
+  while(sents.length<n&&guard++<80){
+    const i=Math.floor(Math.random()*7);
+    if(Math.random()<.5){
+      const d=DAYS[i],a=rnd(acts);
+      const ko=d[0]+'에 '+a[0]+'.';
+      if(seen.has(ko))continue;seen.add(ko);
+      sents.push({ko:ko,ru:cap1(DAYS_ACC[i])+' я '+a[1]+'.',pieces:[{right:d[0],why:'«'+d[1]+'» по-корейски — '+d[0]+'; «в такой-то день» = день + 에'},'에 '+a[0]+'.']});
+    }else{
+      const t=DAYS[i],nx=DAYS[(i+1)%7];
+      const ko='오늘은 '+t[0]+'이에요. 내일은 '+nx[0]+'이에요.';
+      if(seen.has(ko))continue;seen.add(ko);
+      sents.push({ko:ko,ru:'Сегодня '+t[1]+'. Завтра '+nx[1]+'.',tip:'Сегодня '+t[1]+'. Какой день завтра?',
+        pieces:['오늘은 '+t[0]+'이에요. 내일은 ',{right:nx[0],why:'Сегодня '+t[0]+', завтра следующий по кругу: '+nx[0]+' ('+nx[1]+')'},'이에요.']});
+    }
+  }
+  return makeStory('days','Дни недели ('+plural(sents.length)+'): поставь день',sents,DAYS.map(function(d){return d[0];}),'📅');
+}
+/** Предметы и их счётные слова (только слова, известные разбору). */
+const COUNT_ITEMS=[['사과','яблоко','개'],['물','вода','병'],['커피','кофе','잔'],['비빔밥','бибимбап','그릇'],['학생','ученик','명'],['고양이','кот','마리'],['책','книга','권'],['빵','хлеб','개'],['친구','друг','명'],['우유','молоко','병']];
+const NATF=['한','두','세','네','다섯','여섯','일곱','여덟','아홉','열'];
+const COUNTERS_ALL=['병','잔','개','그릇','명','마리','권','장'];
+const subjP=w=>w+(hasFinal(w[w.length-1])?'이':'가');
+function countItems(){
+  if(POOLS.COUNT_ITEMS)return POOLS.COUNT_ITEMS;
+  POOLS.COUNT_ITEMS=COUNT_ITEMS.filter(function(x){return known(subjP(x[0])+' 세 '+x[2]+' 있어요.');});
+  return POOLS.COUNT_ITEMS;
+}
+function countRow(x,n,gapKind){
+  const num=NATF[n-1];
+  const ko=subjP(x[0])+' '+num+' '+x[2]+' 있어요.';
+  const ru=cap1(x[1])+': '+n+'.';
+  const why='«'+x[0]+'» считают словом «'+x[2]+'»; '+n+' = '+NATF[n-1]+(n<=4?' (перед счётным слово короче: 하나 → 한, 둘 → 두, 셋 → 세, 넷 → 네)':'');
+  const pieces=gapKind==='num'?[subjP(x[0])+' ',{right:num,why:why},' '+x[2]+' 있어요.']:[subjP(x[0])+' '+num+' ',{right:x[2],why:why},' 있어요.'];
+  return {ko:ko,ru:ru,pieces:pieces};
+}
+function genCountStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const items=shuffle(countItems());
+  const sents=[],seen=new Set();
+  for(let i=0;sents.length<n&&i<items.length*3;i++){
+    const x=items[i%items.length],k=1+Math.floor(Math.random()*9);
+    const row=countRow(x,k,Math.random()<.5?'num':'cnt');
+    if(seen.has(row.ko))continue;seen.add(row.ko);sents.push(row);
+  }
+  const bank=new Set();
+  sents.forEach(function(r){r.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right);});});
+  shuffle(COUNTERS_ALL).slice(0,3).forEach(function(c){bank.add(c);});
+  shuffle(NATF).slice(0,3).forEach(function(c){bank.add(c);});
+  return makeStory('count','Счётные слова ('+plural(sents.length)+'): поставь число или счётное слово',sents,[...bank],'🥤');
+}
+/** «Числа»: корейские числа перед счётным словом (한, 두, 세…) и китайские числа для этажей (일 층, 이 층…). Какой ряд нужен, определяет слово после пропуска. */
+function genNumStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const items=shuffle(countItems());
+  const sents=[],seen=new Set();
+  for(let i=0;sents.length<n&&i<60;i++){
+    if(Math.random()<.65){
+      const x=items[i%items.length],k=1+Math.floor(Math.random()*9);
+      const row=countRow(x,k,'num');
+      if(seen.has(row.ko))continue;seen.add(row.ko);sents.push(row);
+    }else{
+      const k=1+Math.floor(Math.random()*9);
+      const ko=SINO[k-1]+' 층에 있어요.';
+      if(seen.has(ko))continue;seen.add(ko);
+      sents.push({ko:ko,ru:'Находится на '+k+'-м этаже.',pieces:[{right:SINO[k-1],why:'Этаж («층») считают китайскими числами: '+k+' = '+SINO[k-1]},' 층에 있어요.']});
+    }
+  }
+  const bank=new Set();
+  sents.forEach(function(r){r.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right);});});
+  shuffle(NATF.concat(SINO)).slice(0,hi>5?8:5).forEach(function(c){bank.add(c);});
+  return makeStory('num','Числа ('+plural(sents.length)+'): поставь число',sents,[...bank],'🔢');
+}
+/** «Сколько стоит?»: меню с ценами по-корейски и строка «всего»: нужно прочитать цену китайскими числами. Цифры стоят в иконке, итог надо сложить самому. */
+const PRICE_ITEMS=[['피자','пицца'],['햄버거','гамбургер'],['스파게티','спагетти'],['콜라','кола'],['커피','кофе'],['빵','хлеб'],['주스','сок']];
+const PRICES=[1500,2000,2500,3000,3500,4000,4500,5000,6000,7000,8000,9000,10000,12000,15000,18000,20000];
+const topicP=w=>w+(hasFinal(w[w.length-1])?'은':'는');
+function genPriceStory(lo,hi){
+  const n=Math.max(2,lo+Math.floor(Math.random()*(hi-lo+1)));
+  const items=shuffle(PRICE_ITEMS.filter(function(x){return known(topicP(x[0])+' 만오천 원이에요.');}));
+  const rows=Math.min(n,items.length);
+  const sents=[];let sum=0;
+  const spaced=v=>String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  for(let i=0;i<rows;i++){
+    const price=rnd(PRICES);sum+=price;
+    const r=sinoNum(price);
+    sents.push({ko:topicP(items[i][0])+' '+r+' 원이에요.',ru:cap1(items[i][1])+': '+spaced(price)+' вон.',tip:cap1(items[i][1])+': '+spaced(price)+' вон',
+      pieces:[topicP(items[i][0])+' ',{right:r,why:spaced(price)+' = '+r+(price>=10000?' (만 = 10 000, перед 만 цифру 일 не говорят)':'')},' 원이에요.']});
+  }
+  if(sum<100000){
+    const r=sinoNum(sum);
+    sents.push({ko:'모두 '+r+' 원이에요.',ru:'Всего: '+spaced(sum)+' вон.',tip:'Сколько всего? Сложи все цены выше',
+      pieces:['모두 ',{right:r,why:'Всего '+spaced(sum)+' = '+r},' 원이에요.']});
+  }
+  const bank=new Set();
+  sents.forEach(function(x){x.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right);});});
+  const base=sents.length?sum:5000;
+  [base+1000,base-1000,base*10,Math.floor(base/10)*1000||2000,base+500,base+10000].forEach(function(v){if(v>0&&v<100000&&bank.size<sents.length+(hi>5?5:3))bank.add(sinoNum(v));});
+  return makeStory('price','Цены ('+plural(sents.length)+'): прочитай цену',sents,[...bank],'💴');
+}
+/** «Уровень вежливости»: кому и как сказать «спасибо»; у каждой формы несколько адресатов. */
+const POLITE_TO={'고마워':['другу','младшему брату или сестре','однокласснику'],'고마워요':['знакомому старше тебя','старшему брату','соседке'],'감사해요':['коллеге','товарищу по работе','соседу по офису'],'감사합니다':['начальнику','учителю','незнакомому взрослому']};
+function genPoliteStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const order=shuffle(POLITE.map(function(x){return x[0];}));
+  const rows=[];
+  for(let i=0;rows.length<n&&i<40;i++){
+    const f=order[i%order.length];
+    const who=POLITE_TO[f][Math.floor(i/order.length)%POLITE_TO[f].length];
+    if(rows.some(function(r){return r.f===f&&r.who===who;}))continue;
+    rows.push({f:f,who:who});
+  }
+  const sents=rows.map(function(r){
+    const ex=POLITE_EX[r.f];const at=ex.indexOf(r.f);
+    const desc=POLITE.find(function(x){return x[0]===r.f;})[1];
+    return {ko:ex,ru:'Спасибо — '+r.who+'.',cue:'говоришь '+r.who,
+      pieces:[ex.slice(0,at),{right:r.f,why:r.f+' — '+desc+'. От неформального к официальному: '+POLITE.map(function(x){return x[0];}).join(' → ')},ex.slice(at+r.f.length)]};
+  });
+  return makeStory('polite','Спасибо ('+plural(sents.length)+'): кому как сказать',sents,POLITE.map(function(x){return x[0];}),'🙏');
+}
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
   if(Math.random()<.35){
@@ -783,6 +911,7 @@ const DAYS=[['월요일','понедельник','ворёиль'],['화요일'
 const DAY_TIME=[['아침','утро','ачим'],['점심','день, обед','чомсим'],['저녁','вечер','чонёк'],['밤','ночь','пам']];
 const DAY_WEEK=[['지난주','прошлая неделя','чинанджу'],['이번 주','эта неделя','ибон чу'],['다음 주','следующая неделя','таым чу'],['주','неделя','чу']];
 function genDays(){
+  if(storyOn('days'))return S.levels.days==='long'?genDaysStory(5,10):genDaysStory(2,5);
   const t=rnd(['ko2ru','ru2ko','ko2ru','ru2ko','near','kind']);
   if(t==='near'){
     const i=pickW(DAYS.map((x,k)=>k),k=>'dn:'+k);
@@ -880,6 +1009,7 @@ const NAT=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아�
 const SINO=['일','이','삼','사','오','육','칠','팔','구','십'];
 const SINO_BIG=[[100,'백'],[1000,'천'],[10000,'만']];
 function genNum(){
+  if(storyOn('num'))return S.levels.num==='long'?genNumStory(5,10):genNumStory(2,5);
   const nat=Math.random()<.5;
   const list=nat?NAT.map((k,i)=>[i+1,k]):SINO.map((k,i)=>[i+1,k]).concat(SINO_BIG);
   const x=pickW(list,y=>'nu:'+(nat?'n':'s')+y[0]);
@@ -903,6 +1033,7 @@ function sinoPart(x){let o='';const th=Math.floor(x/1000),h=Math.floor(x%1000/10
 function sinoNum(n){const man=Math.floor(n/10000),r=n%10000;return (man?(man>1?sinoPart(man):'')+'만':'')+sinoPart(r);}
 const fmtMoney=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')+'원';
 function genPrice(){
+  if(storyOn('price'))return S.levels.price==='long'?genPriceStory(5,10):genPriceStory(2,5);
   const kind=rnd(['t','t','h','m','mix']);
   const n=kind==='t'?(1+Math.floor(Math.random()*9))*1000:kind==='h'?(1+Math.floor(Math.random()*9))*1000+500:kind==='m'?(1+Math.floor(Math.random()*9))*10000:(1+Math.floor(Math.random()*4))*10000+(1+Math.floor(Math.random()*9))*1000;
   const key='pr:'+n;
@@ -923,6 +1054,7 @@ function genPrice(){
 const COUNTERS=['병','잔','개','그릇','명','마리','권','장'];
 function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k];return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
 function genCount(){
+  if(storyOn('count'))return S.levels.count==='long'?genCountStory(5,10):genCountStory(2,5);
   const pool=countPool();
   const i=pickW(pool,k=>'cn:'+k);
   const p=D.PB[i];
@@ -985,6 +1117,7 @@ const POLITE=[['고마워','друзьям (самое неформальное)
 /** Примеры для «Уровня вежливости»: по предложению на каждую форму «спасибо» (слова из словаря сайта). */
 const POLITE_EX={'고마워':'정말 고마워.','고마워요':'정말 고마워요.','감사해요':'정말 감사해요.','감사합니다':'선생님, 감사합니다.'};
 function genPolite(){
+  if(storyOn('polite'))return S.levels.polite==='long'?genPoliteStory(5,10):genPoliteStory(2,5);
   const w=pickW(POLITE,x=>'po:'+x[0]);
   const toKo=Math.random()<.5;
   const set=shuffle(POLITE);

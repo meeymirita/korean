@@ -182,3 +182,103 @@ describe('тексты: «Вопросы», «Частицы и счёт», «В
     expect(tiles().map(tileText).sort()).toEqual(['아요', '어요', '았어요', '었어요'].sort())
   })
 })
+
+describe('тексты: «Дни недели», «Числа», «Сколько стоит?», «Счётные слова», «Уровень вежливости»', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
+  const tiles = () => [...document.querySelectorAll<HTMLButtonElement>('#bank .tile')]
+  const tileText = (b: Element) => (b.textContent ?? '').replace(/^\d/, '').trim()
+  const rows = () => [...document.querySelectorAll('.story .story-row')]
+  const tip = (r: Element) => r.querySelector('.story-tip')?.textContent ?? ''
+  const DAYS = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+  const ACC = ['в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу', 'в воскресенье']
+  const RU_DAY = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
+  const NATF = ['한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열']
+  const SINO = ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십']
+  const ITEM_COUNTER: Record<string, string> = { 사과: '개', 물: '병', 커피: '잔', 비빔밥: '그릇', 학생: '명', 고양이: '마리', 책: '권', 빵: '개', 친구: '명', 우유: '병' }
+  const SD = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구']
+  const part = (x: number) => { let o = ''; const th = Math.floor(x / 1000), h = Math.floor(x % 1000 / 100), tn = Math.floor(x % 100 / 10), u = x % 10; if (th) o += (th > 1 ? SD[th] : '') + '천'; if (h) o += (h > 1 ? SD[h] : '') + '백'; if (tn) o += (tn > 1 ? SD[tn] : '') + '십'; if (u) o += SD[u]; return o }
+  const sino = (n: number) => { const man = Math.floor(n / 10000), r = n % 10000; return (man ? (man > 1 ? part(man) : '') + '만' : '') + part(r) }
+  const rowText = (r: Element) => [...r.querySelector('.story-s')!.childNodes].map(n => ((n as Element).classList?.contains('gap') ? '___' : (n as Element).classList?.contains('story-cue') ? '' : n.textContent)).join('')
+
+  /** Верный ответ каждой строки так, как его знает тест (из подсказки и самого предложения), независимо от движка. */
+  function expected(mode: string, r: Element, soFar: number[]): string {
+    const text = rowText(r), tp = tip(r)
+    if (mode === 'days') {
+      const m = tp.match(/^Сегодня ([а-яё]+)\. Какой день завтра/)
+      if (m) return DAYS[(RU_DAY.indexOf(m[1]!) + 1) % 7]!
+      const i = ACC.findIndex(a => tp.toLowerCase().startsWith(a))
+      return DAYS[i]!
+    }
+    if (mode === 'price') {
+      const m = tp.match(/: ([\d ]+) вон/)
+      if (m) { const v = Number(m[1]!.replace(/ /g, '')); soFar.push(v); return sino(v) }
+      return sino(soFar.reduce((a, b) => a + b, 0))
+    }
+    if (mode === 'polite') return ['고마워요', '고마워', '감사해요', '감사합니다'].find(f => text.includes(f + '.') && text.indexOf('___') === text.indexOf(f) || false) ?? ''
+    // count / num
+    const floor = tp.match(/на (\d)-м этаже/)
+    if (floor) return SINO[Number(floor[1]) - 1]!
+    const k = Number(tp.match(/: (\d)\./)![1])
+    const item = Object.keys(ITEM_COUNTER).find(w => text.startsWith(w))!
+    return text.includes('___ ' + ITEM_COUNTER[item]) || text.match(/___ [가-힣]+ 있어요/) && !text.includes(' ' + NATF[k - 1] + ' ___') ? NATF[k - 1]! : ITEM_COUNTER[item]!
+  }
+
+  for (const mode of ['days', 'num', 'price', 'count']) for (const [level, min, max] of [['Рассказ', 2, 6], ['Длинный', 5, 11]] as const) {
+    it(`«${mode}», «${level}»: ${min}–${max} строк; верные плитки дают все пропуски верными, бонус +5; без повторов в банке`, () => {
+      for (let round = 0; round < 3; round++) {
+        start(mode)
+        document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+        chip(level).click()
+        const n = rows().length
+        expect(n).toBeGreaterThanOrEqual(min)
+        expect(n).toBeLessThanOrEqual(max)
+        const bank = tiles().map(tileText)
+        expect(new Set(bank).size, 'без повторов в банке').toBe(bank.length)
+        const gaps = [...document.querySelectorAll<HTMLButtonElement>('.story .gap')]
+        const sum: number[] = []
+        rows().forEach((r, i) => {
+          const right = expected(mode, r, sum)
+          expect(bank, 'верный ответ «' + right + '» в банке; строка «' + rowText(r) + '», подсказка «' + tip(r) + '»').toContain(right)
+          const ti = bank.indexOf(right)
+          tiles()[ti]!.click()
+          gaps[i]!.click()
+          tiles()[ti]!.click()
+        })
+        document.querySelector<HTMLButtonElement>('#schk')!.click()
+        expect(document.querySelector('#fb .fbh')!.textContent, mode + ' ' + level).toContain('бонус +5')
+        expect(records.every(x => x.ok)).toBe(true)
+      }
+    })
+  }
+
+  for (const level of ['Рассказ', 'Длинный']) {
+    it(`«polite», «${level}»: в банке четыре формы «спасибо», у каждой строки пометка, кому говоришь`, () => {
+      start('polite')
+      document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+      chip(level).click()
+      expect(tiles().map(tileText).sort()).toEqual(['고마워', '고마워요', '감사해요', '감사합니다'].sort())
+      for (const r of rows()) expect(r.querySelector('.story-cue')?.textContent).toMatch(/говоришь/)
+      // каждый адресат закреплён за одной формой: ставим по пометке и получаем бонус
+      const FORM: Record<string, string> = { 'другу': '고마워', 'младшему брату или сестре': '고마워', 'однокласснику': '고마워', 'знакомому старше тебя': '고마워요', 'старшему брату': '고마워요', 'соседке': '고마워요', 'коллеге': '감사해요', 'товарищу по работе': '감사해요', 'соседу по офису': '감사해요', 'начальнику': '감사합니다', 'учителю': '감사합니다', 'незнакомому взрослому': '감사합니다' }
+      const gaps = [...document.querySelectorAll<HTMLButtonElement>('.story .gap')]
+      rows().forEach((r, i) => {
+        const who = (r.querySelector('.story-cue')!.textContent ?? '').replace(/^\(говоришь /, '').replace(/\) ?$/, '').trim()
+        const right = FORM[who]!
+        expect(right, 'адресат «' + who + '» известен').toBeTruthy()
+        const ti = tiles().map(tileText).indexOf(right)
+        tiles()[ti]!.click(); gaps[i]!.click(); tiles()[ti]!.click()
+      })
+      document.querySelector<HTMLButtonElement>('#schk')!.click()
+      expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
+    })
+  }
+
+  it('«Сколько стоит?»: последняя строка «всего» — сумма цен выше; цифры лежат в иконке', () => {
+    start('price')
+    document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+    chip('Рассказ').click()
+    const rs = rows()
+    expect(tip(rs[rs.length - 1]!)).toMatch(/Сложи все цены/)
+    for (const r of rs.slice(0, -1)) expect(tip(r)).toMatch(/\d+ вон/)
+  })
+})
