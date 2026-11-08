@@ -198,4 +198,9 @@ html[data-theme='dark'][data-palette='night'] .game .story-win-box{background:#2
 .game .story-mark{padding:0 6px;border-radius:8px;background:#ffe3f3;color:#a02f78;font:inherit;font-weight:700}
 html[data-theme='dark'] .game .story-mark{background:rgba(255,128,200,.22);color:#ffc7e8}
 .game .story-ans{color:var(--muted);font-size:.8em}
+.game .gap-in{font:inherit;font-family:var(--ko);text-align:center;padding:2px 8px;border:2px dashed var(--line);border-radius:12px;background:rgba(255,255,255,.85);color:inherit;min-width:5em}
+.game .gap-in:focus{outline:none;border-color:#b79cff}
+.game .gap-in.ok{border-style:solid;border-color:#46c28c;background:#e6f8ef}
+.game .gap-in.bad{border-style:solid;border-color:#ee7a8f;background:#fdebef}
+html[data-theme='dark'] .game .gap-in{background:rgba(30,32,64,.85)}
 .game .story-cue{margin-right:4px;font-family:inherit;font-size:.7em;color:var(--muted)}

@@ -102,7 +102,7 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
@@ -295,6 +295,7 @@ function ruAnswers(e){
   return [...out];
 }
 function genType(){
+  if(storyOn('type'))return S.levels.type==='long'?genTypeStory(5,8):genTypeStory(3,5);
   const forms=formsPool();
   /* «Напиши правильную форму»: только формы; перевод слова вводят в тренажёре «Напиши перевод» (запасной вариант, если форм нет) */
   if(forms.length){
@@ -346,7 +347,7 @@ const hasFinal=ch=>jong(ch)>0;
 const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–5 / Длинный 5–10». */
-const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err'];
+const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type'];
 const plural=n=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
@@ -363,13 +364,13 @@ function makeStory(mode,label,sents,bank,icon){
       else{
         const k=gaps.length;
         const hp=sn.pieces.map(function(x){return typeof x==='string'?x:x.mark!==undefined?x.mark:x.ans!==undefined?x.ans:(x===pc?'…':x.right);}).join('');
-        parts.push({gap:k});gaps.push({right:pc.right,accept:pc.accept||null,why:pc.why||'',hp:hp,picked:null,ok:null});
+        parts.push({gap:k});gaps.push({right:pc.right,accept:pc.accept||null,why:pc.why||'',hp:hp,picked:null,ok:null,input:!!pc.input});
       }
     });
     return {ko:sn.ko,ru:sn.ru,tip:sn.tip||'',noTr:!!sn.noTr,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
   });
   return {type:'story',mode:mode,key:'story:'+mode+':'+sents.map(function(x){return x.ko;}).join('|').slice(0,80),label:label,
-    sents:out,gaps:gaps,bank:shuffle(bank),active:null,sel:null,checked:false,bonus:0,right:'',explain:[],hp:'Рассказ',hr:'',icon:icon||'⚖️',level:2};
+    sents:out,gaps:gaps,input:gaps.some(function(g){return g.input;}),bank:shuffle(bank),active:null,sel:null,checked:false,bonus:0,right:'',explain:[],hp:'Рассказ',hr:'',icon:icon||'⚖️',level:2};
 }
 /** «Пара или нет». У каждой частицы пара по 받침: 은/는, 이/가, 을/를, 와/과, 으로/로; у места 에/에서. */
 const TWIN={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'을','에':'에서','에서':'에','와':'과','과':'와','으로':'로','로':'으로'};
@@ -893,6 +894,17 @@ function genErrStory(lo,hi){
   });
   return makeStory('err','Найди ошибки ('+plural(sents.length)+'): отметь каждое предложение',sents,['верно','ошибка'],'🕵️');
 }
+/** «Напиши форму»: в предложении вместо глагола или прилагательного пропуск, форму надо вписать с клавиатуры; в подсказке словарная форма. */
+function genTypeStory(lo,hi){
+  const n=lo+Math.floor(Math.random()*(hi-lo+1));
+  const picked=shuffle(formPool()).slice(0,n);
+  const sents=picked.map(function(x){
+    const form=x.stem+x.e;const from=x.at-x.stem.length;
+    const why=x.stem+'다 → '+form+'. У основы последний гласный '+(x.harmony?'ㅏ или ㅗ':'не ㅏ и не ㅗ')+' → '+(x.harmony?(x.past?'았어요':'아요'):(x.past?'었어요':'어요'));
+    return {ko:x.ko,ru:x.ru,cue:x.stem+'다'+(x.past?', в прошлом':''),pieces:[x.ko.slice(0,from),{right:form,why:why,input:true},x.ko.slice(x.at+x.e.length)]};
+  });
+  return makeStory('type','Впиши форму ('+plural(sents.length)+'): глагол в нужной форме',sents,[],'⌨️');
+}
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,5);
   if(Math.random()<.35){
@@ -1404,6 +1416,14 @@ function drawStory(card,q){
     if(s.cue)p.append(el('span','story-cue','('+s.cue+') '));
     s.parts.forEach(function(pt){
       if(pt.gap===undefined){if(pt.mark)p.append(el('mark','story-mark',pt.t));else if(pt.ans)p.append(el('span','story-ans',pt.t));else p.append(pt.t);}
+      else if(q.gaps[pt.gap].input){
+        // ответ вводится с клавиатуры (корейская раскладка), пробелы не считаются
+        const inp=el('input','gap-in');inp.type='text';inp.id='sg'+pt.gap;inp.lang='ko';inp.autocomplete='off';inp.spellcheck=false;
+        inp.size=Math.max(4,q.gaps[pt.gap].right.length+2);inp.setAttribute('aria-label','Впиши форму');
+        inp.addEventListener('input',function(){q.gaps[pt.gap].picked=inp.value.replace(/\s+/g,'')||null;paintStory(q);});
+        inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();checkStory(q);}});
+        p.append(inp);
+      }
       else{const g=el('button','gap');g.type='button';g.id='sg'+pt.gap;g.addEventListener('click',function(){tapGap(pt.gap);});p.append(g);}
     });
     const info=el('button','story-info','Разбор');info.type='button';info.id='si'+si;info.disabled=true;
@@ -1412,6 +1432,7 @@ function drawStory(card,q){
     row.append(tr,p,info);box.appendChild(row);
   });
   card.appendChild(box);
+  if(!q.input){
   const bank=el('div','tiles bank');bank.id='bank';
   q.bank.forEach(function(t,i){
     const b=el('button','tile');b.type='button';b.id='bt'+i;
@@ -1420,6 +1441,7 @@ function drawStory(card,q){
     b.addEventListener('click',function(){tapTile(i);});bank.appendChild(b);
   });
   card.appendChild(bank);
+  }
   const note=el('div','ruline');note.id='snote';card.appendChild(note);
   const acts=el('div','acts');
   const chk=el('button','primary','Проверить');chk.type='button';chk.id='schk';chk.addEventListener('click',function(){checkStory(q);});
@@ -1430,6 +1452,7 @@ function drawStory(card,q){
 function paintStory(q){
   q.gaps.forEach(function(g,i){
     const e=$('#sg'+i);if(!e)return;
+    if(g.input){e.className='gap-in'+(q.checked?(g.ok?' ok':' bad'):(g.picked!==null?' filled':''));e.disabled=q.checked;return;}
     e.textContent=g.picked!==null?g.picked:'___';
     e.className='gap'+(q.checked?(g.ok?' ok':' bad'):(g.picked!==null?' filled':' empty')+(i===q.active?' now':''));
     e.disabled=q.checked;
@@ -1442,7 +1465,8 @@ function paintStory(q){
   const chk=$('#schk');if(chk)chk.disabled=q.checked||filled<q.gaps.length;
   const clr=$('#sclr');if(clr)clr.disabled=q.checked||!filled;
   const note=$('#snote');
-  if(note)note.textContent=q.checked?'':q.sel!==null?('Выбрано «'+q.bank[q.sel]+'»: нажми на пропуск'):('Заполнено '+filled+' из '+q.gaps.length+(filled?'. Нажми на заполненный пропуск, чтобы убрать ответ.':'. Нажми плитку, потом пропуск.'));
+  if(note&&q.input)note.textContent=q.checked?'':'Впиши форму в каждое поле: заполнено '+filled+' из '+q.gaps.length+'. Enter проверяет.';
+  else if(note)note.textContent=q.checked?'':q.sel!==null?('Выбрано «'+q.bank[q.sel]+'»: нажми на пропуск'):('Заполнено '+filled+' из '+q.gaps.length+(filled?'. Нажми на заполненный пропуск, чтобы убрать ответ.':'. Нажми плитку, потом пропуск.'));
   paintStoryInfo(q);
 }
 /** Кнопка «Разбор» у предложения оживает после проверки и красится по результату. */
@@ -1480,7 +1504,7 @@ function keyStory(q,e){
 }
 function clearStory(q){
   if(q.checked)return;
-  q.gaps.forEach(function(g){g.picked=null;});q.sel=null;q.active=null;paintStory(q);
+  q.gaps.forEach(function(g,k){g.picked=null;if(g.input){const e=$('#sg'+k);if(e)e.value='';}});q.sel=null;q.active=null;paintStory(q);
 }
 /** Проверка в конце: каждый пропуск считается ответом; за итог бонус к опыту (все верно +5, от 80% +3, от 60% +1) добавляется к первому верному. */
 function checkStory(q){

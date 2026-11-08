@@ -377,3 +377,51 @@ describe('уровни: «Диалог», «Найди ошибку», «Най�
     expect(document.querySelector('.story')).toBeNull()
   })
 })
+
+describe('«Напиши форму»: тексты с вводом с клавиатуры', () => {
+  const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
+  const inputs = () => [...document.querySelectorAll<HTMLInputElement>('.story input.gap-in')]
+  const type = (i: HTMLInputElement, v: string) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })) }
+  const jungOf = (ch: string) => Math.floor(((ch.charCodeAt(0) - 0xac00) % 588) / 28)
+  const open = (level: string) => { start('type'); document.querySelector<HTMLButtonElement>('#helpOk')?.click(); chip(level).click() }
+  /** Верная форма: основа из подсказки «먹다» + окончание по гласному (и по пометке «в прошлом»). */
+  const right = (inp: HTMLInputElement) => {
+    const cue = inp.closest('.story-row')!.querySelector('.story-cue')!.textContent!
+    const stem = cue.replace(/^\(/, '').split(/[,)]/)[0]!.slice(0, -1)
+    const harmony = [0, 8].includes(jungOf(stem[stem.length - 1]!))
+    const past = /в прошлом/.test(cue)
+    return stem + (harmony ? (past ? '았어요' : '아요') : past ? '었어요' : '어요')
+  }
+
+  for (const [level, min, max] of [['Рассказ', 3, 5], ['Длинный', 5, 8]] as const) {
+    it(`«type», «${level}»: ${min}–${max} полей ввода, банка нет, верные формы дают бонус +5`, () => {
+      for (let round = 0; round < 3; round++) {
+        open(level)
+        expect(inputs().length).toBeGreaterThanOrEqual(min)
+        expect(inputs().length).toBeLessThanOrEqual(max)
+        expect(document.querySelector('#bank'), 'банка плиток нет').toBeNull()
+        const chk = document.querySelector<HTMLButtonElement>('#schk')!
+        expect(chk.disabled, 'пока поля пусты, проверять нечего').toBe(true)
+        for (const i of inputs()) type(i, right(i))
+        expect(chk.disabled).toBe(false)
+        chk.click()
+        expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
+        expect(records.every(x => x.ok)).toBe(true)
+        expect(inputs().every(i => i.classList.contains('ok'))).toBe(true)
+      }
+    })
+  }
+
+  it('неверная форма красится как ошибка, Очистить пустит поля, пробелы не мешают', () => {
+    open('Рассказ')
+    for (const i of inputs()) type(i, 'ㅁ')
+    document.querySelector<HTMLButtonElement>('#sclr')!.click()
+    expect(inputs().every(i => i.value === '')).toBe(true)
+    const first = inputs()[0]!
+    type(first, right(first).split('').join(' '))
+    for (const i of inputs().slice(1)) type(i, 'ㅁ')
+    document.querySelector<HTMLButtonElement>('#schk')!.click()
+    expect(first.classList.contains('ok'), 'с пробелами всё равно верно').toBe(true)
+    expect(inputs().slice(1).every(i => i.classList.contains('bad'))).toBe(true)
+  })
+})
