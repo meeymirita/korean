@@ -102,7 +102,7 @@ const S={
   mode:'mix',level:'any',pairLevel:'simple',gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,ok:0},lastOver:'blitz',
-  seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,
+  seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
   blitz:{on:false,left:60,ok:0,bad:0,iv:null}
 };
 function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,pairLevel:S.pairLevel,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
@@ -697,6 +697,7 @@ function genQuestion(){
 
 /* ---------- отрисовка ---------- */
 function renderQuestion(q){
+  closeStoryWin();
   S.cur=q;S.answered=false;S.lastKey=q.key;
   clearTimeout(S.timer);
   const card=$('#card');card.innerHTML='';
@@ -704,13 +705,18 @@ function renderQuestion(q){
   if(q.mode==='pair'&&S.mode==='pair')card.appendChild(pairLevels());
   if(q.type==='story'){
     const box=el('div','story');
-    q.sents.forEach(function(s){
+    q.sents.forEach(function(s,si){
+      const row=el('div','story-row');
       const p=el('div','story-s');
       s.parts.forEach(function(pt){
         if(pt.gap===undefined)p.append(pt.t);
         else{const g=el('span','gap');g.id='sg'+pt.gap;p.append(g);}
       });
-      box.appendChild(p);
+      // справа от предложения кнопка: после ответа на все его пропуски открывает окно с разбором
+      const info=el('button','story-info','Разбор');info.type='button';info.id='si'+si;info.disabled=true;
+      info.title='Разбор предложения: что верно, почему и как оно собрано';
+      info.addEventListener('click',function(){openStoryWin(q,si);});
+      row.append(p,info);box.appendChild(row);
     });
     card.appendChild(box);
     const note=el('div','ruline');note.id='snote';card.appendChild(note);
@@ -883,7 +889,42 @@ function paintStory(q){
     b.appendChild(tx);b.addEventListener('click',function(){answerStory(i);});opts.appendChild(b);
   });
   const done=q.gaps.filter(function(x){return x.chosen!==null;}).length;
-  const cnt=$('#snote');if(cnt&&!done)cnt.textContent='Пропуск 1 из '+q.gaps.length+': выбери частицу';
+  const cnt=$('#snote');if(cnt)cnt.textContent='Пропуск '+Math.min(done+1,q.gaps.length)+' из '+q.gaps.length+': выбери частицу';
+}
+/** У предложения все пропуски отвечены: кнопка «Разбор» оживает и красится по результату. */
+function paintStoryInfo(q){
+  q.sents.forEach(function(s,si){
+    const b=$('#si'+si);if(!b)return;
+    const done=s.gapIdx.every(function(k){return q.gaps[k].chosen!==null;});
+    const bad=s.gapIdx.some(function(k){return q.gaps[k].ok===false;});
+    b.disabled=!done;b.className='story-info'+(done?(bad?' bad':' ok'):'');
+  });
+}
+/** Окно с разбором одного предложения рассказа: что выбрано и что верно, почему, и «Как собрано». Лежит внутри игры (стили `.study`), под окном правила. */
+function closeStoryWin(){if(S.win){S.win.remove();S.win=null;}}
+function openStoryWin(q,si){
+  closeStoryWin();
+  const s=q.sents[si];
+  const back=el('div','story-win');
+  const box=el('div','story-win-box');
+  const head=el('div','story-win-head');
+  const x=el('button','story-win-x','✕');x.type='button';x.setAttribute('aria-label','Закрыть');x.addEventListener('click',closeStoryWin);
+  head.append(el('b','','Разбор предложения'),x);
+  box.appendChild(head);
+  s.gapIdx.forEach(function(k){
+    const g=q.gaps[k];
+    const line=el('div','story-win-gap '+(g.ok?'ok':'bad'));
+    line.appendChild(el('b','',(g.ok?'Верно: ':'Не так. Ты выбрал(а) '+g.chosen+', нужно: ')+g.right));
+    if(g.why)line.appendChild(el('span','',g.why));
+    box.appendChild(line);
+  });
+  box.appendChild(drawBreakdown(s.ko,s.ru));
+  back.appendChild(box);
+  back.addEventListener('click',function(e){if(e.target===back)closeStoryWin();});
+  const root=$('#card').closest('.game')||document.body;
+  root.appendChild(back);
+  S.win=back;
+  x.focus({preventScroll:true});
 }
 /** Ответ на один пропуск рассказа: считается как обычный ответ, после последнего показывается общий разбор. */
 function answerStory(i){
@@ -891,14 +932,13 @@ function answerStory(i){
   const g=q.gaps[q.cur];if(!g||i>=g.options.length)return;
   g.chosen=g.options[i];g.ok=g.chosen===g.right;
   finish(g.ok,g.chosen,{key:'',word:null,hp:g.hp,hr:g.right,icon:'⚖️',level:1},true);
-  const left=q.gaps.length-q.cur-1;
-  $('#snote').textContent=(g.ok?'Верно: ':'Не так, нужно ')+g.right+(g.why?' — '+g.why:'')+(left?' · осталось пропусков: '+left:'');
   q.cur++;
+  paintStory(q);
+  paintStoryInfo(q);
   if(q.cur>=q.gaps.length){
-    paintStory(q);
     S.answered=true;
     showFeedback(q,q.gaps.every(function(x){return x.ok;}));
-  }else paintStory(q);
+  }
 }
 function answerChoice(i){
   if(S.answered)return;const q=S.cur;
@@ -985,16 +1025,10 @@ function showFeedback(q,ok){
   if(!motionCalm())gsap.from(fb,{opacity:0,y:12,duration:.32,ease:'power2.out',clearProps:'opacity,transform'});
   const streak=S.ses.streak;
   if(q.type==='story'){
-    // рассказ: итог по пропускам и разбор каждого предложения (с ошибками раскрыт сразу, остальные сворачиваются)
+    // рассказ: только итог; разбор каждого предложения открывается кнопкой «Разбор» справа от него
     const right=q.gaps.filter(g=>g.ok).length;
     fb.appendChild(el('div','fbh','Рассказ пройден: верно '+right+' из '+q.gaps.length+(ok?' 🔥':'')));
-    q.sents.forEach(function(s){
-      const bad=s.gapIdx.some(k=>!q.gaps[k].ok);
-      const d=document.createElement('details');d.className='bd-fold';d.open=bad;
-      d.appendChild(el('summary',bad?'bad':'ok',s.ko+(bad?'  · есть ошибки':'')));
-      d.appendChild(drawBreakdown(s.ko,s.ru));
-      fb.appendChild(d);
-    });
+    fb.appendChild(el('div','fbt','Нажми «Разбор» справа от предложения, чтобы увидеть, что верно и как оно собрано.'));
   }else{
     fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
     // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
@@ -1200,6 +1234,7 @@ $('#help').addEventListener('click',e=>{if(e.target.id==='help')closeHelp();});
 
 /* ---------- клавиши ---------- */
 const onKeydown=e=>{
+  if(S.win){if(e.key==='Escape')closeStoryWin();return;}
   if($('#help').classList.contains('on')){if(e.key==='Escape')closeHelp();return;}
   if($('#over').classList.contains('on'))return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
@@ -1224,6 +1259,7 @@ renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();
 return ()=>{
   document.removeEventListener('keydown',onKeydown);
+  closeStoryWin();
   clearInterval(S.blitz.iv);
   clearTimeout(S.timer);
   clearTimeout(toast.t);

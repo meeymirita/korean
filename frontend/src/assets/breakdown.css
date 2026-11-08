@@ -4,7 +4,7 @@
 .study .bd-title { margin-top: 16px; font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
 .study .bd-cards { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .study .bd-card { display: flex; flex-direction: column; gap: 2px; min-width: 104px; max-width: 220px; padding: 10px 14px;
-  background: var(--bg); border: 1px solid var(--line-soft); border-radius: 12px; }
+  background: linear-gradient(var(--bd-tint), var(--bd-tint)), var(--bd-base); border: 1px solid var(--bd-line); border-radius: 12px; }
 .study .bd-kind { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .study .bd-k { font-family: var(--ko); font-size: 22px; font-weight: 700; line-height: 1.15; }
 .study .bd-r { font-size: 12px; color: var(--muted); }
@@ -13,12 +13,19 @@
 .study .bd-rule { align-self: flex-start; margin-top: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--gold);
   background: transparent; border: 1px solid var(--gold); border-radius: 99px; }
 .study .bd-rule:hover { background: var(--gold); color: #fff; }
-.study .bd-card.particle { background: var(--gold-soft); border-color: var(--gold); }
-.study .bd-card.particle .bd-kind { color: var(--gold); }
-.study .bd-card.ending { background: var(--ok-bg); border-color: var(--ok); }
-.study .bd-card.ending .bd-kind { color: var(--ok); }
-.study .bd-card.verb { border-color: #6a5a8a; }
-.study .bd-card.verb .bd-kind { color: #6a5a8a; }
+/* Цвета карточек: слово (сиреневый), частица (розовый), окончание (зелёный), глагол (синий). Плотные: слой цвета поверх белого или тёмного, поэтому не смешиваются с зелёным и красным фоном блока ответа в играх. */
+.study { --bd-base: #fff; }
+html[data-theme='dark'] .study { --bd-base: #25274e; }
+html[data-theme='dark'][data-palette='night'] .study { --bd-base: #2c232a; }
+.study .bd-card { --bd-tint: rgba(143, 124, 240, .16); --bd-line: rgba(143, 124, 240, .5); --bd-ink: var(--ink); }
+.study .bd-card.particle { --bd-tint: rgba(232, 107, 192, .2); --bd-line: #e86bc0; --bd-ink: #d64da9; }
+.study .bd-card.ending { --bd-tint: rgba(58, 168, 108, .2); --bd-line: #3aa86c; --bd-ink: #2f7a52; }
+.study .bd-card.verb { --bd-tint: rgba(95, 127, 224, .2); --bd-line: #5f7fe0; --bd-ink: #4a64c8; }
+html[data-theme='dark'] .study .bd-card.particle { --bd-ink: #f08bd0; }
+html[data-theme='dark'] .study .bd-card.ending { --bd-ink: #6fcf97; }
+html[data-theme='dark'] .study .bd-card.verb { --bd-ink: #8fa8ff; }
+.study .bd-card.particle .bd-k, .study .bd-card.ending .bd-k, .study .bd-card.verb .bd-k,
+.study .bd-card.particle .bd-kind, .study .bd-card.ending .bd-kind, .study .bd-card.verb .bd-kind { color: var(--bd-ink); }
 .study .bd-card.unknown { border-style: dashed; opacity: .75; }
 .study .bd-note { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
 

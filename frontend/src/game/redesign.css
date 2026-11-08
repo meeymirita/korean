@@ -71,10 +71,6 @@
 .game .gx-body .chip.on { color: #fff; background: linear-gradient(90deg, #7d6bf0, #9a86f5); }
 .gx-center { min-width: 0; grid-column: 1; }
 .game .card { background: var(--panel); border: 1px solid #fff; border-radius: 28px; box-shadow: var(--shadow); overflow: visible; }
-.gx-cat-card { position: absolute; bottom: calc(76% - 12px); right: 34px; width: clamp(110px, 8.5vw, 140px); z-index: 2;
-  /* ОБРЕЗКА КОТИКА: поменяй четыре числа inset(сверху справа снизу слева), они считаются от краёв картинки.
-     inset(0 0 0 0) = ничего не режется; inset(0 10% 0 0) = убрать 10% справа; inset(0 0 15% 0) = убрать 15% снизу. */
-  clip-path: inset(0 11% 12% 0); }
 .gx-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px !important; }
 .game .gx-actions .ghost, .game .gx-actions .helpbtn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; font-weight: 500; color: var(--ink);
   background: var(--glass); border: 1px solid #fff; border-radius: 16px; box-shadow: 0 8px 22px rgba(100, 87, 170, .14); }

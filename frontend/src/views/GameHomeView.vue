@@ -24,7 +24,6 @@ import RuleView from '@/views/korean/RuleView.vue'
 import { ICON } from '@/game/icons'
 import { useProgressStore } from '@/stores/progress'
 import { themeDark, toggleTheme } from '@/lib/theme'
-import catSleep from '@/assets/game/cat-sleep.webp'
 import catWow from '@/assets/game/cat-wow.webp'
 import yunaSit from '@/assets/game/yuna-sit.webp'
 import bg from '@/assets/game/bg.webp'
@@ -42,7 +41,7 @@ onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
 const bgStyle = { '--gx-bg': `url(${bg})` }
 /** «← К списку игр», название и кнопки страницы вынесены в общую строку `.gh-back` (у тренажёров и игр движка одна и та же). */
 const markup = markupRaw
-  .replace('CAT_SLEEP', catSleep).replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
+  .replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
 const route = useRoute()
