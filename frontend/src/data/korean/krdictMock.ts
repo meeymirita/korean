@@ -3,6 +3,8 @@ export interface DictSense {
   definition: string
   ru: { translation: string; definition: string }[]
   example?: string
+  /** перевод примера на русский */
+  exampleRu?: string
 }
 
 export interface DictEntry {
@@ -78,17 +80,17 @@ export const DICT_MOCK: DictEntry[] = [
     related: [{ ko: '오다', ru: 'приходить' }, { ko: '떠나다', ru: 'уезжать, отправляться' }],
     notes: ['Один из самых базовых и часто используемых глаголов.', 'Может означать как физическое движение (идти, ехать, лететь), так и уход, отправление куда-либо.'],
     senses: [
-    { definition: '한 곳에서 다른 곳으로 장소를 이동하다.', ru: [{ translation: 'ходить; уходить; идти', definition: 'Передвигаться с одного места на другое.' }], example: '나는 친구에게 갈 때마다 책을 빌려 왔다.' },
-    { definition: '배, 비행기, 자동차 등이 일정한 곳을 다니다.', ru: [{ translation: 'плыть; летать; ехать', definition: 'О транспорте.' }], example: '서울에 바로 가는 버스가 있습니까?' },
+    { definition: '한 곳에서 다른 곳으로 장소를 이동하다.', ru: [{ translation: 'ходить; уходить; идти', definition: 'Передвигаться с одного места на другое.' }], example: '나는 친구에게 갈 때마다 책을 빌려 왔다.', exampleRu: 'Я каждый раз брал книгу, когда ходил к другу.' },
+    { definition: '배, 비행기, 자동차 등이 일정한 곳을 다니다.', ru: [{ translation: 'плыть; летать; ехать', definition: 'О транспорте.' }], example: '서울에 바로 가는 버스가 있습니까?', exampleRu: 'Есть ли автобус, который едет прямо в Сеул?' },
   ] },
   { id: '13', word: '가게', homonym: 0, pos: 'существительное', level: 'начальный', pron: '가ː게', senses: [
-    { definition: '물건을 파는 작은 규모의 집.', ru: [{ translation: 'магазин; лавка; ларёк', definition: 'Небольшое помещение, где продают товары.' }], example: '가게에서 우유를 샀다.' },
+    { definition: '물건을 파는 작은 규모의 집.', ru: [{ translation: 'магазин; лавка; ларёк', definition: 'Небольшое помещение, где продают товары.' }], example: '가게에서 우유를 샀다.', exampleRu: 'Я купил молоко в магазине.' },
   ] },
   { id: '14', word: '비', homonym: 1, pos: 'существительное', level: 'начальный', pron: '비', senses: [
-    { definition: '구름에서 물방울로 떨어지는 것.', ru: [{ translation: 'дождь', definition: 'Капли воды, падающие из облаков.' }], example: '비가 와서 우산을 썼다.' },
+    { definition: '구름에서 물방울로 떨어지는 것.', ru: [{ translation: 'дождь', definition: 'Капли воды, падающие из облаков.' }], example: '비가 와서 우산을 썼다.', exampleRu: 'Пошёл дождь, и я раскрыл зонт.' },
   ] },
   { id: '15', word: '비빔밥', homonym: 0, pos: 'существительное', level: 'начальный', pron: '비빔빱', senses: [
-    { definition: '밥에 여러 가지 나물과 고기를 넣고 비벼 먹는 음식.', ru: [{ translation: 'пибимпап', definition: 'Рис с овощами и мясом, который перемешивают перед едой.' }], example: '점심에 비빔밥을 먹었다.' },
+    { definition: '밥에 여러 가지 나물과 고기를 넣고 비벼 먹는 음식.', ru: [{ translation: 'пибимпап', definition: 'Рис с овощами и мясом, который перемешивают перед едой.' }], example: '점심에 비빔밥을 먹었다.', exampleRu: 'На обед я ел пибимпап.' },
   ] },
 ]
 

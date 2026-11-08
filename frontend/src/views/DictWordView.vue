@@ -59,7 +59,7 @@ const search = () => void router.push({ path: '/dict', query: q.value.trim() ? {
             <div>
               <p class="ru">{{ s.ru.map(r => r.translation).join(' · ') }}</p>
               <p class="def" lang="ko">{{ s.definition }}</p>
-              <p v-if="s.example" class="ex" lang="ko">{{ s.example }}</p>
+              <p v-if="s.example" class="ex"><span lang="ko">{{ s.example }}</span><small v-if="s.exampleRu">{{ s.exampleRu }}</small></p>
             </div>
           </div>
         </article>
@@ -110,6 +110,7 @@ const search = () => void router.push({ path: '/dict', query: q.value.trim() ? {
 .num { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--pink); color: var(--accent); font-weight: 700; }
 .ru { font-size: 19px; font-weight: 700; }
 .def { margin-top: 3px; font-size: 14px; color: var(--muted); }
+.ex small { display: block; margin-top: 2px; font-size: 13px; color: var(--muted); }
 .ex { margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: var(--pink); font-size: 16px; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 12px; }
 .tabs button { padding: 10px 20px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; transition: background .2s, color .2s; }
