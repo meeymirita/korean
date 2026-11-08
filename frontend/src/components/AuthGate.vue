@@ -85,14 +85,14 @@ async function submit() {
         </form>
         <p v-if="codeError" class="gate-err">{{ codeError }}</p>
         <p class="gate-help"><a v-if="left <= 0" href="#" @click.prevent="sendCode">Отправить код ещё раз</a><span v-else class="gate-wait">Отправить ещё раз через {{ left }} с</span> · <a href="#" @click.prevent="progress.disconnect()">Другой токен</a></p>
-        <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
+        <RouterLink to="/" class="gate-back">← На главную</RouterLink>
       </template>
       <template v-else>
       <div class="gate-ico"><Icon name="lock" /></div>
       <h2>Этот раздел открывается по токену</h2>
       <p>
-        Справочники открыты всем: слова, грамматика, шпаргалка, разговорник, хангыль, алфавит, правила чтения, примеры и числа.
-        Задания, тренажёры, игра, повторение и личный кабинет работают после входа по токену.
+        Большой словарь, «О платформе» и история изменений открыты всем. Всё остальное (слова, грамматика, справочник, задания,
+        тренажёры, игра, повторение и личный кабинет) работает после входа по токену.
       </p>
       <form class="gate-form" @submit.prevent="submit">
         <input v-model="token" type="password" placeholder="токен" autocomplete="current-password" aria-label="Токен" />
@@ -103,7 +103,7 @@ async function submit() {
         По вопросам доступа пишите в Telegram:
         <a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a>
       </p>
-      <RouterLink to="/korean/words" class="gate-back">← К справочникам</RouterLink>
+      <RouterLink to="/" class="gate-back">← На главную</RouterLink>
       </template>
     </div>
   </div>

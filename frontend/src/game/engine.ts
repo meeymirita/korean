@@ -103,17 +103,19 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 const LS='hleb_game_v1';
 const S={
   mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple'},gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
-  ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}},miss:{},hints:3,
-  surv:{on:false,lives:3,ok:0},lastOver:'blitz',
+  ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
+  surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
-  blitz:{on:false,left:60,ok:0,bad:0,iv:null}
+  blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null}
 };
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,blitzSecs:S.blitzSecs,survLives:S.survLives,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
   if(j.levels&&typeof j.levels==='object')Object.assign(S.levels,j.levels);
   else if(j.pairLevel)S.levels.pair=j.pairLevel;
   ['reading','tense','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  if([30,60,120].includes(j.blitzSecs))S.blitzSecs=j.blitzSecs;
+  if([0,3,5].includes(j.survLives))S.survLives=j.survLives;
   if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
 load();
 /* очки старой версии игры переходят в общий прогресс сайта */
@@ -1585,7 +1587,7 @@ function finish(ok,chosen,qq,quiet){
     hooks.record({word:q.word||null,ok:false,mode:S.mode,detail:{q:q.hp,a:q.hr,y:chosen}});
     if(q.key){const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}}
   if(S.blitz.on){if(ok)S.blitz.ok++;else S.blitz.bad++;}
-  if(S.surv.on&&!ok){S.surv.lives--;drawLives();if(S.surv.lives<=0)S.timer=setTimeout(endSurv,1300);}
+  if(S.surv.on&&!ok&&S.surv.max!==0){S.surv.lives--;drawLives();if(S.surv.lives<=0)S.timer=setTimeout(endSurv,1300);}
   S.hist.unshift({ok:ok,icon:q.icon,p:q.hp,r:q.hr,you:ok?null:chosen});
   if(S.hist.length>150)S.hist.pop();
   save();updateStats();renderList();
@@ -1669,7 +1671,7 @@ function updateStats(){
   $('#nLoaf').textContent=Math.floor(A.ok/10);
   $('#loafTxt').textContent=(A.ok%10)+' / 10';
   $('#loafBar').style.width=((A.ok%10)*10)+'%';
-  $('#allTime').textContent='За всё время: '+A.ok+' верно, '+A.bad+' неверно'+(A.bestBlitz?' · лучший блиц: '+A.bestBlitz:'')+(A.bestSurv?' · выживание: '+A.bestSurv:'');
+  $('#allTime').textContent='За всё время: '+A.ok+' верно, '+A.bad+' неверно'+(bestBlitz()?' · лучший блиц ('+S.blitzSecs+' с): '+bestBlitz():'')+(bestSurv()?' · выживание ('+survName()+'): '+bestSurv():'');
   const P=hooks.state();
   $('#lvlN').textContent=P.level;$('#lvlName').textContent=P.title;
   $('#xpTxt').textContent=P.max?'максимум':P.into+' / '+P.span;$('#xpBar').style.width=P.pct+'%';
@@ -1747,11 +1749,14 @@ function drawCats(){
   });
 }
 function syncToggles(){
-  $('#cbRead').checked=S.reading;$('#tense').value=S.tense;
+  $('#cbRead').checked=S.reading;$('#tense').value=S.tense;$('#blitzSecs').value=String(S.blitzSecs);$('#survLives').value=String(S.survLives);
+  if(!S.blitz.on)$('#blitzBtn').innerHTML=blitzLabel();
   $('#lbRead').classList.toggle('on',S.reading);
 }
 $('#cbRead').addEventListener('change',e=>{S.reading=e.target.checked;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);});
 $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
+$('#blitzSecs').addEventListener('change',e=>{if(S.blitz.on){syncToggles();return;}S.blitzSecs=+e.target.value;save();syncToggles();updateStats();});
+$('#survLives').addEventListener('change',e=>{if(S.surv.on){syncToggles();return;}S.survLives=+e.target.value;save();syncToggles();updateStats();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
 $('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
 $('#tabWords').addEventListener('click',()=>{S.tab='words';renderList();$('#wq').focus({preventScroll:true});});
@@ -1760,19 +1765,25 @@ $('#wq').addEventListener('input',renderList);
 $('#resetBtn').addEventListener('click',async()=>{
   const yes=await askConfirm({title:'Сбросить статистику игры?',text:'Сбросится только прогресс этой игры: счёт, рекорды, испечённые хлебушки, слабые слова и история ответов. Уровень, цель дня, слова и остальной прогресс сайта останутся как есть.',ok:'Сбросить статистику игры',danger:true});
   if(!yes)return;
-  S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,xp:0,byMode:{}};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
+  S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
   save();updateStats();renderList();next();
 });
 
 /* ---------- блиц ---------- */
+/** Рекорды по вариантам: у блица на 60 секунд и выживания на 3 жизни прежние поля `bestBlitz` и `bestSurv`, у остальных вариантов свои ячейки. */
+const bestBlitz=()=>S.blitzSecs===60?S.all.bestBlitz:((S.all.bestBlitzBy||{})[S.blitzSecs]||0);
+const bestSurv=()=>S.survLives===3?S.all.bestSurv:((S.all.bestSurvBy||{})[S.survLives]||0);
+const survName=()=>S.survLives===0?'без ограничения':S.survLives+' жизни';
+const blitzLabel=()=>iconImg('rocket')+' Блиц '+S.blitzSecs+' секунд';
 function startBlitz(){
   if(S.surv.on){toast('Сначала закончи выживание');return;}
   clearInterval(S.blitz.iv);
-  S.blitz={on:true,left:60,ok:0,bad:0,iv:null};
+  const secs=S.blitzSecs;
+  S.blitz={on:true,left:secs,total:secs,ok:0,bad:0,iv:null};
   $('#timer').classList.add('on');$('#timerBar').style.width='100%';
   $('#blitzBtn').innerHTML='<span class="gi">⏹</span> Остановить блиц';
   S.blitz.iv=setInterval(()=>{
-    S.blitz.left--;$('#timerBar').style.width=Math.max(0,S.blitz.left/60*100)+'%';
+    S.blitz.left--;$('#timerBar').style.width=Math.max(0,S.blitz.left/S.blitz.total*100)+'%';
     if(S.blitz.left<=0)endBlitz();
   },1000);
   next();
@@ -1780,13 +1791,16 @@ function startBlitz(){
 function endBlitz(){
   clearInterval(S.blitz.iv);clearTimeout(S.timer);
   const b=S.blitz;b.on=false;
-  $('#timer').classList.remove('on');$('#blitzBtn').innerHTML=iconImg('rocket')+' Блиц 60 секунд';
+  $('#timer').classList.remove('on');$('#blitzBtn').innerHTML=blitzLabel();
   const tot=b.ok+b.bad;
   let rec='';
-  if(b.ok>S.all.bestBlitz){S.all.bestBlitz=b.ok;rec=' Новый рекорд!';save();updateStats();}
+  if(b.ok>bestBlitz()){
+    if(S.blitzSecs===60)S.all.bestBlitz=b.ok;else(S.all.bestBlitzBy||(S.all.bestBlitzBy={}))[S.blitzSecs]=b.ok;
+    rec=' Новый рекорд!';save();updateStats();
+  }
   S.lastOver='blitz';$('#overT').textContent='Время вышло!';
   $('#overBig').textContent=b.ok;
-  $('#overTxt').textContent='верных ответов за минуту. Неверных: '+b.bad+(tot?', точность '+Math.round(b.ok/tot*100)+'%':'')+'.'+rec;
+  $('#overTxt').textContent='верных ответов за '+b.total+' секунд. Неверных: '+b.bad+(tot?', точность '+Math.round(b.ok/tot*100)+'%':'')+'.'+rec;
   $('#over').classList.add('on');$('#overAgain').focus();
   if(S.cur)S.answered=true;
 }
@@ -1797,11 +1811,12 @@ function drawLives(){
   const box=$('#lives');
   if(!S.surv.on){box.className='lives';box.textContent='';return;}
   box.className='lives on';
-  box.textContent='❤️'.repeat(Math.max(0,S.surv.lives))+'🖤'.repeat(3-Math.max(0,S.surv.lives))+'  ·  верно: '+S.surv.ok;
+  if(S.surv.max===0){box.textContent='♾️  ·  верно: '+S.surv.ok+' (остановить можно кнопкой ниже)';return;}
+  box.textContent='❤️'.repeat(Math.max(0,S.surv.lives))+'🖤'.repeat(S.surv.max-Math.max(0,S.surv.lives))+'  ·  верно: '+S.surv.ok;
 }
 function startSurv(){
   if(S.blitz.on){toast('Сначала закончи блиц');return;}
-  S.surv={on:true,lives:3,ok:0};
+  S.surv={on:true,lives:S.survLives||Infinity,max:S.survLives,ok:0};
   $('#survBtn').innerHTML='<span class="gi">⏹</span> Остановить выживание';drawLives();next();
 }
 function endSurv(){
@@ -1809,10 +1824,13 @@ function endSurv(){
   const sv=S.surv;sv.on=false;
   $('#survBtn').innerHTML=iconImg('heart')+' На выживание';drawLives();
   let rec='';
-  if(sv.ok>S.all.bestSurv){S.all.bestSurv=sv.ok;rec=' Новый рекорд!';save();updateStats();}
-  S.lastOver='surv';$('#overT').textContent='Жизни закончились';
+  if(sv.ok>bestSurv()){
+    if(S.survLives===3)S.all.bestSurv=sv.ok;else(S.all.bestSurvBy||(S.all.bestSurvBy={}))[S.survLives]=sv.ok;
+    rec=' Новый рекорд!';save();updateStats();
+  }
+  S.lastOver='surv';$('#overT').textContent=sv.max===0?'Выживание остановлено':'Жизни закончились';
   $('#overBig').textContent=sv.ok;
-  $('#overTxt').textContent='верных ответов до третьей ошибки.'+rec;
+  $('#overTxt').textContent=sv.max===0?'верных ответов за заход.'+rec:'верных ответов до '+(sv.max===3?'третьей':'пятой')+' ошибки.'+rec;
   $('#over').classList.add('on');$('#overAgain').focus();
   if(S.cur)S.answered=true;
 }
