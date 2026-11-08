@@ -1,4 +1,5 @@
-import { ADJECTIVES, QSENT, QWORDS, VERBS, type TWord } from './forms'
+import { ADJECTIVES, QSENT, QWORDS, VERBS, mk, type TWord } from './forms'
+import { TRANSLATIONS } from './translations'
 import { shuffle, short } from './tasks'
 import { D } from './words'
 
@@ -17,6 +18,13 @@ export const SETS: TSet[] = [
   { id: 'qsent', title: 'Вопросительные предложения' },
 ]
 
+/** Наборы только для «Найди пару»: предложение с переводом и слово с примером (в «Напиши перевод» их нет: целое предложение так не проверить). */
+export const PAIR_SETS: TSet[] = [
+  { id: 'sent', title: 'Предложение ↔ перевод' },
+  { id: 'example', title: 'Слово ↔ пример' },
+]
+export const isPairSet = (cat: string) => PAIR_SETS.some(s => s.id === cat)
+
 export const DIR_LABEL: Record<Direction, string> = {
   'ko-ru': 'корейский → русский',
   'ru-ko': 'русский → корейский',
@@ -28,7 +36,12 @@ export const DIR_LABEL: Record<Direction, string> = {
 export const dirsFor = (cat: string): Direction[] =>
   cat === 'qsent' ? ['fill'] : cat === 'verbs' || cat === 'adjectives' ? ['ko-ru', 'ru-ko', 'form', 'past'] : ['ko-ru', 'ru-ko']
 
-const SET_WORDS: Record<string, TWord[]> = { verbs: VERBS, adjectives: ADJECTIVES, qwords: QWORDS, qsent: QSENT }
+const SENT_WORDS: TWord[] = Object.entries(TRANSLATIONS)
+  .filter(([ko, ru]) => ko.length <= 40 && ru.length <= 70)
+  .map(([ko, ru], i) => mk(14000 + i, ko, '', ru, { label: ru }))
+/** Слово слева, предложение с ним справа (у каждого слова словаря есть пример). */
+const EXAMPLE_WORDS: TWord[] = D.filter(d => d.s && d.s.length <= 40 && !/[()]/.test(d.k)).map((d, i) => mk(15000 + i, d.k, d.r, d.s, { label: d.s }))
+const SET_WORDS: Record<string, TWord[]> = { verbs: VERBS, adjectives: ADJECTIVES, qwords: QWORDS, qsent: QSENT, sent: SENT_WORDS, example: EXAMPLE_WORDS }
 
 /** Слова для тренажёров: без скобок и очень длинных переводов. */
 export const pool = (cat: string): TWord[] =>

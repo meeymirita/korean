@@ -8,7 +8,7 @@ import MatchGame from '@/components/korean/MatchGame.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import TypingQuiz from '@/components/korean/TypingQuiz.vue'
 import { CATN } from '@/data/korean/words'
-import { DIR_LABEL, type Direction, SETS, dirsFor, pickRound, pool, shown } from '@/data/korean/trainer'
+import { DIR_LABEL, type Direction, PAIR_SETS, SETS, dirsFor, isPairSet, pickRound, pool, shown } from '@/data/korean/trainer'
 
 type Mode = 'match' | 'type'
 
@@ -18,12 +18,14 @@ const cat = usePersisted('tr_cat', '', v => typeof v === 'string')
 const size = usePersisted('tr_size', 8, v => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 20)
 const dir = usePersisted<Direction>('tr_dir', 'ko-ru', v => typeof v === 'string')
 const showReading = usePersisted('tr_reading', true, v => typeof v === 'boolean')
+// предложения и примеры бывают только в «Найди пару»
+if (mode.value === 'type' && isPairSet(cat.value)) cat.value = ''
 
 const available = computed(() => pool(cat.value))
 /** Различных слов в теме (переводы не повторяются, как и в раунде). */
 const poolSize = computed(() => pickRound(available.value, 1000).length)
 /** В теме мало слов: недостающие добираются из всего словаря (там, где задания только «слово ↔ перевод»); у предложений и форм глаголов этого нет. */
-const canFill = computed(() => !['qsent', 'verbs', 'adjectives'].includes(cat.value))
+const canFill = computed(() => !['qsent', 'verbs', 'adjectives', 'sent', 'example'].includes(cat.value))
 const roundSize = computed(() => (canFill.value ? size.value : Math.max(1, Math.min(size.value, poolSize.value))))
 /** Раунд: слова темы, а если их меньше нужного, добавка из остального словаря (без повторов перевода). */
 function makeRound() {
@@ -52,7 +54,11 @@ const setCat = (c: string) => {
 }
 const setMode = (m: Mode) => (mode.value = m)
 // новый раунд при любой смене режима, в том числе кнопкой «Назад»
-watch(mode, () => start())
+watch(mode, m => {
+  // предложения и примеры бывают только в «Найди пару»
+  if (m === 'type' && isPairSet(cat.value)) cat.value = ''
+  start()
+})
 </script>
 
 <template>
@@ -76,6 +82,11 @@ watch(mode, () => start())
     <div class="chips">
       <span class="tr-group">Грамматика</span>
       <button v-for="s in SETS" :key="s.id" class="chip" :class="{ on: cat === s.id }" @click="setCat(s.id)">{{ s.title }}</button>
+    </div>
+
+    <div v-if="mode === 'match'" class="chips">
+      <span class="tr-group">Предложения</span>
+      <button v-for="s in PAIR_SETS" :key="s.id" class="chip" :class="{ on: cat === s.id }" @click="setCat(s.id)">{{ s.title }}</button>
     </div>
 
     <div class="tr-set">
