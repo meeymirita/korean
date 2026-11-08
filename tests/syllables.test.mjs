@@ -45,8 +45,8 @@ describe('собери слово по слогам', () => {
 })
 
 describe('собери по слогам: уровни', () => {
-  test('четыре уровня: любой и по длине слова', () => {
-    assert.deepEqual(SYLLABLE_LEVELS.map(l => l.id), ['any', 'easy', 'medium', 'hard'])
+  test('пять уровней: любой, по длине слова и «Фраза»', () => {
+    assert.deepEqual(SYLLABLE_LEVELS.map(l => l.id), ['any', 'easy', 'medium', 'hard', 'phrase'])
   })
   test('простой, средний и сложный дают слова из 2, 3 и 4 слогов, серия полная', () => {
     for (const [level, len] of [['easy', 2], ['medium', 3], ['hard', 4]]) {
@@ -61,5 +61,32 @@ describe('собери по слогам: уровни', () => {
     const weak = SYLLABLE_WORDS.filter(w => w.k.length === 3).slice(0, 3).map(w => w.k)
     const t = syllableTasks(10, weak, 'medium')
     assert.deepEqual(new Set(t.slice(0, 3).map(x => x.word.k)), new Set(weak))
+  })
+})
+
+describe('уровень «Фраза»', () => {
+  test('есть чип «Фраза», фраз достаточно, у каждой два слова и 4–6 слогов', async () => {
+    const { PHRASES } = await load('/src/data/korean/syllables.ts')
+    assert.ok(SYLLABLE_LEVELS.some(l => l.id === 'phrase' && l.label === 'Фраза'))
+    assert.ok(PHRASES.length >= 10, 'фраз: ' + PHRASES.length)
+    for (const p of PHRASES) {
+      assert.match(p.display, /^[가-힣]+ [가-힣]+$/)
+      assert.equal(p.k, p.display.replace(' ', ''))
+      assert.ok(p.k.length >= 4 && p.k.length <= 6)
+      assert.ok(p.n >= 16000, 'не пересекается с номерами слов словаря')
+    }
+  })
+
+  test('серия на уровне «Фраза»: слоги и лишние плитки как у слов, ответ показывается с пробелом, проверка по слогам', () => {
+    const tasks = syllableTasks(10, [], 'phrase')
+    assert.ok(tasks.length >= 5)
+    assert.equal(new Set(tasks.map(t => t.word.k)).size, tasks.length, 'без повторов')
+    for (const t of tasks) {
+      assert.deepEqual(t.answer, [...t.word.k])
+      assert.ok(t.display && t.display.includes(' '))
+      assert.ok(isCorrect(t, t.answer))
+      assert.ok(!isCorrect(t, [...t.answer].reverse()) || t.answer.join('') === [...t.answer].reverse().join(''))
+      assert.ok(t.tiles.length > t.answer.length)
+    }
   })
 })

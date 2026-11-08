@@ -20,6 +20,8 @@ const progress = useProgressStore()
 const weak = () => mistakeWords(progress.data, 30).map(m => m.word.k)
 /** Уровень по длине слова; помнится после обновления страницы. */
 const level = usePersisted<SyllableLevel>('syl_level', 'any', v => SYLLABLE_LEVELS.some(l => l.id === v))
+/** Чтение под переводом можно выключить: тогда слово собирается без подсказки. */
+const reading = usePersisted('syl_reading', true, v => typeof v === 'boolean')
 const tasks = ref<SyllableTask[]>(syllableTasks(ROUND, weak(), level.value))
 const idx = ref(0)
 /** плитки в слотах по порядку: их можно тянуть в слоты, менять местами и убирать нажатием (в самом наборе плитка затемняется, пока выбрана) */
@@ -64,7 +66,8 @@ watch(picked, p => {
   result.value = ok ? 'ok' : 'bad'
   if (ok) right.value++
   else missed.value.push(task)
-  progress.record({ word: task.word.k, ok, source: 'trainer', mode: 'syllables' })
+  // у фраз нет слова в словаре (номер от 16000): в общий прогресс слов они не идут
+  if (task.word.n < 16000) progress.record({ word: task.word.k, ok, source: 'trainer', mode: 'syllables' })
   ;(ok ? pop : shake)(slotsBox.value)
 })
 
@@ -106,13 +109,14 @@ watch(finished, v => {
     <div class="chips">
       <button v-for="l in SYLLABLE_LEVELS" :key="l.id" type="button" class="chip" :class="{ on: level === l.id }" :title="l.hint" @click="setLevel(l.id)">{{ l.label }}</button>
     </div>
+    <div class="chips"><label class="chk"><input v-model="reading" type="checkbox" /> показывать чтение</label></div>
     <div class="rs">
       <template v-if="!finished && current">
         <div class="rs-bar"><span>{{ idx + 1 }} из {{ tasks.length }}</span><span>верно: {{ right }}</span></div>
         <div class="qk-prog"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
         <div class="rs-sub">Собери слово по слогам</div>
         <div class="rs-q ru">{{ current.prompt }}</div>
-        <div class="rs-sub">чтение: {{ current.word.r }}</div>
+        <div v-if="reading && current.word.r" class="rs-sub">чтение: {{ current.word.r }}</div>
 
         <div ref="slotsBox" class="sy-slotwrap">
           <div class="sy-bg" aria-hidden="true"><span v-for="n in current.answer.length" :key="n" class="sy-slot empty"></span></div>
@@ -156,13 +160,13 @@ watch(finished, v => {
             </template>
           </Draggable>
         </div>
-        <div v-if="result === 'bad'" class="xb" role="note">Верно: <b class="ko">{{ current.word.k }}</b> ({{ current.word.r }})</div>
+        <div v-if="result === 'bad'" class="xb" role="note">Верно: <b class="ko">{{ current.display ?? current.word.k }}</b><template v-if="current.word.r"> ({{ current.word.r }})</template></div>
         <button v-if="result" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>
       </template>
       <div v-else class="rs-end">
         <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
         <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Вот что не получилось:</template></p>
-        <ul v-if="missed.length" class="qk-miss"><li v-for="t in missed" :key="t.word.n"><span class="ko">{{ t.word.k }}</span> ({{ t.word.r }}) — {{ t.prompt }}</li></ul>
+        <ul v-if="missed.length" class="qk-miss"><li v-for="t in missed" :key="t.word.n"><span class="ko">{{ t.display ?? t.word.k }}</span><template v-if="t.word.r"> ({{ t.word.r }})</template> — {{ t.prompt }}</li></ul>
         <div class="pg-btns"><button class="rs-start" @click="again">Ещё раз</button></div>
       </div>
     </div>
