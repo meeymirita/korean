@@ -86,6 +86,7 @@ function labelWithHelp(q){
     const first=!S.modeHelp[q.mode];if(first){S.modeHelp[q.mode]=1;save();}
     const box=el('div','mhelp');box.hidden=!first;if(first){b.classList.add('on');b.setAttribute('aria-expanded','true');}
     box.appendChild(el('div','',h[0]));box.appendChild(el('div','mex',h[1]));
+    if(q.type==='story')box.appendChild(el('div','mex',q.input?'В тексте: впиши форму в каждое поле, Enter проверяет. Значок слева показывает перевод, после проверки «Разбор» объяснит каждое предложение.':'В тексте: нажми плитку, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ). Значок слева показывает перевод, «Проверить» в конце, после проверки «Разбор» объяснит каждое предложение.'));
     b.addEventListener('click',()=>{box.hidden=!box.hidden;b.setAttribute('aria-expanded',String(!box.hidden));b.classList.toggle('on',!box.hidden);});
     wrap.appendChild(b);wrap.appendChild(box);
   }

@@ -104,3 +104,12 @@ describe('выживание: 3, 5 жизней и без ограничения
     expect($('#overT').textContent).toBe('Выживание остановлено')
   })
 })
+
+describe('подсказка «?» в текстах', () => {
+  it('у текста в подсказке есть строка про плитки и проверку в конце, у ввода про Enter', () => {
+    start('place', { levels: { place: 'story' } })
+    expect($('#card .mhelp').textContent).toMatch(/нажми плитку, потом пропуск/)
+    start('type', { levels: { type: 'story' } })
+    expect($('#card .mhelp').textContent).toMatch(/впиши форму в каждое поле/)
+  })
+})

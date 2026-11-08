@@ -11,7 +11,7 @@
 
 ## Встроенная игра «Хлебушек» — `/game/home?game=<id>`
 
-Один движок на все 24 режима (14 общих и 10 по темам грамматики): `src/game/engine.ts` (`initGame()`, без типов — `@ts-nocheck`, чистый DOM
+Один движок на все 24 режима (в 25 из них, а также в блице и на выживании, у части есть уровни-тексты «Рассказ» и «Длинный», см. `docs/trainers/bread-game.md`) (14 общих и 10 по темам грамматики): `src/game/engine.ts` (`initGame()`, без типов — `@ts-nocheck`, чистый DOM
 без Vue), разметка `src/game/markup.html`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
 и переключение режимов — `GameHomeView.vue`. Слова движка свои (`src/game/words.ts`), это не тот же массив,
 что общий словарь `data/korean/words.ts`.
@@ -44,8 +44,8 @@
 | polite | Уровень вежливости | «Спасибо» от 고마워 до 감사합니다 | `genPolite` |
 
 Оверлеи поверх любого режима (не отдельные `id`, переключаются кнопками в `GameHomeView.vue`):
-- **Блиц 60 секунд** — `S.blitz` в `engine.ts`, рекорд `S.all.bestBlitz`
-- **На выживание** (3 жизни) — `S.surv`, рекорд `S.all.bestSurv`
+- **Блиц 30 / 60 / 120 секунд** — `S.blitz` в `engine.ts`, длина в «Настройках» (`S.blitzSecs`), рекорд `S.all.bestBlitz` (для 60 с) и `bestBlitzBy`
+- **На выживание** (3 / 5 жизней или без ограничения, `S.survLives`) — `S.surv`, рекорд `S.all.bestSurv` (для 3 жизней) и `bestSurvBy`
 
 Общие на всю игру рекорды: `S.all{ok,bad,best,bestBlitz,bestSurv,xp}` и `S.ses{ok,bad,streak,best}` в `engine.ts`.
 Рекорды по каждому режиму — `S.all.byMode[id]{ok,bad,best}`, обновляются в `finish()`, показываются вкладкой
