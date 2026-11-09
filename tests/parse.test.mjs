@@ -114,3 +114,30 @@ describe('analyze: вежливое 요 и формы из примеров', ()
     assert.deepEqual(bad, [])
   })
 })
+
+describe('analyze: 만 и -(으)ㄹ 거예요 (карточки man и future_my)', () => {
+  test('만 после слова и после 에 / 에서, с карточкой man', () => {
+    for (const s of ['저는 이 가수만 좋아해요.', '교실에 선생님만 있어요.', '일요일에만 청소해요.', '집에서만 커피를 마셔요.']) {
+      const segs = analyze(s)
+      assert.ok(!segs.some(x => x.type === 'unknown'), s)
+      assert.ok(segs.some(x => x.text === '만' && x.type === 'particle' && x.g === 'man'), s)
+    }
+    // 에 / 에서 стоит до 만
+    assert.deepEqual(parts('집에서만 마셔요').slice(0, 3), [['집', 'word'], ['에서', 'particle'], ['만', 'particle']])
+  })
+
+  test('форма перед 거예요: ㄹ после гласной, 을 после 받침, основа на ㄹ, глаголы на 하다', () => {
+    for (const [s, form] of [['바다에 갈 거예요.', '갈'], ['사진을 찍을 거예요.', '찍을'], ['서울에서 살 거예요.', '살'], ['김치찌개를 만들 거예요.', '만들'], ['토요일에 운동할 거예요.', '운동할'], ['내일 친구를 만날 거예요.', '만날']]) {
+      const segs = analyze(s)
+      assert.ok(!segs.some(x => x.type === 'unknown'), s)
+      const v = segs.find(x => x.text === form)
+      assert.equal(v?.type, 'verb', `${s}: ${form}`)
+      assert.equal(v?.g, 'future_my')
+      assert.ok(segs.some(x => x.text === '거예요' && x.type === 'ending' && x.g === 'future_my'), s)
+    }
+  })
+
+  test('обычные слова на ㄹ не принимаются за форму будущего', () => {
+    assert.deepEqual(parts('물'), [['물', 'word']])
+  })
+})

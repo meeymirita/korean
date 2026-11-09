@@ -43,7 +43,7 @@ interface Entry {
   k: string
   r: string
   gloss: string
-  type: 'word' | 'verb'
+  type: 'word' | 'verb' | 'ending'
   explain?: string
   g?: string
 }
@@ -134,6 +134,8 @@ const FORMS: [string, string, string][] = [
 const FUNC_MAP = new Map<string, Entry>([
   ...FUNC.map(([k, r, gloss]) => [k, { k, r, gloss, type: 'word' } as Entry] as const),
   ...FORMS.map(([k, r, gloss]) => [k, { k, r, gloss, type: 'verb' } as Entry] as const),
+  // «-(으)ㄹ 거예요»: само 거예요 одно и то же, а перед ним форма основы с ㄹ / 을 (см. futureBase)
+  ['거예요', { k: '거예요', r: 'коеё', gloss: 'будущее время, планы («буду…»)', type: 'ending', explain: 'Основа глагола + ㄹ / 을 + 거예요: так говорят о планах и будущем; пишется 거예요, читается [꺼예요]', g: 'future_my' } as Entry] as const,
 ])
 
 interface Particle {
@@ -174,6 +176,7 @@ const PARTICLES: Particle[] = [
   P('를', 'рыль', 'частица объекта («что» делают)', 'eul', ['을', '를']),
   P('에', 'э', 'где находится или куда идут', 'iss'),
   P('도', 'то', 'тоже, и'),
+  P('만', 'ман', 'только (выделяет одно и исключает остальное)', 'man'),
   P('의', 'ы', 'принадлежность («чей»)'),
   P('로', 'ро', 'чем, на чём, в какую сторону', 'ro', ['으로', '로']),
   P('와', 'ва', 'и, вместе с', undefined, ['과', '와']),
@@ -238,6 +241,26 @@ const fitsRest = (b: string, token: string) => {
   return !rest || PARTICLES.some(p => p.form === rest)
 }
 
+/** Глаголы, у которых бывает форма «основа + ㄹ / 을» перед 거예요: глаголы из тренажёров и на -하다 (прилагательные не берём). */
+const VERB_BASES = new Set<string>(
+  [...VERBS.map(e => e.k), ...D.filter(w => w.k.endsWith('하다')).map(w => clean(w.k))].filter(k => !ADJECTIVES.some(a => a.k === k)),
+)
+
+/**
+ * Слово «갈», «먹을», «할», «살»: форма перед 거예요. Возвращает глагол в словарной форме или null.
+ * 을 после основы с 받침 (먹 + 을), ㄹ под последней гласной (가 + ㄹ = 갈), основа на ㄹ остаётся (살, 만들).
+ */
+function futureBase(tok: string): string | null {
+  if (!tok) return null
+  const head = tok.slice(0, -1)
+  if (tok.endsWith('을') && VERB_BASES.has(head + '다')) return head + '다'
+  const c = tok.charCodeAt(tok.length - 1) - 0xac00
+  if (c < 0 || c > 11171 || c % 28 !== 8) return null
+  const open = head + String.fromCharCode(0xac00 + c - 8) + '다'
+  if (VERB_BASES.has(open)) return open
+  return VERB_BASES.has(tok + '다') ? tok + '다' : null
+}
+
 /** Разбор одного слова (без пробелов). Возвращает null, если не получилось. */
 function analyzeToken(tok: string, depth = 0): Segment[] | null {
   // «뭐예요», «어디예요»: связку показываем отдельно, даже если фраза есть в словаре целиком
@@ -253,6 +276,13 @@ function analyzeToken(tok: string, depth = 0): Segment[] | null {
   if (direct) return [entrySeg(tok, direct)]
   if (depth > 2) return null
   if (SINO.test(tok)) return [{ text: tok, type: 'num', gloss: 'число (китайское)' }]
+
+  // «갈 거예요», «먹을 거예요»: основа + ㄹ / 을 (перед 거예요)
+  const fb = futureBase(tok)
+  if (fb) {
+    const base = LEX.get(fb)?.gloss ?? fb
+    return [{ text: tok, type: 'verb', gloss: `${base} (форма перед 거예요, от ${fb})`, explain: `${fb.slice(0, -1)} + ${tok.endsWith('을') ? '을' : 'ㄹ'} → ${tok}: основа с ㄹ / 을 перед 거예요`, g: 'future_my' }]
+  }
 
   // «공부해요», «협력해요»: существительное + 하다 в настоящем времени
   if (tok.endsWith('해요') && tok.length > 2) {
