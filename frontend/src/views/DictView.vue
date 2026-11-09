@@ -192,7 +192,7 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 </script>
 
 <template>
-  <DictShell side :side-open="menuOpen" :lock="!hasQuery && !pickedWord">
+  <DictShell side :side-open="menuOpen">
     <template #side>
       <DictWordList :selected="pickedWord" @pick="pickWord" @close="menuOpen = false" />
     </template>
@@ -291,9 +291,9 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
 .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--pink), var(--shadow); }
 .search input::placeholder { color: var(--muted); }
 
-.popular { width: 100%; max-width: 860px; margin-top: 26px; text-align: center; }
+.popular { width: 100%; max-width: 860px; margin-top: 22px; text-align: center; }
 .popular h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #3b3f7a; text-shadow: 0 1px 10px rgba(255, 255, 255, .9); }
-.plist { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; max-height: max(0px, calc(100dvh - 590px)); overflow: hidden; }
+.plist { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; padding: 6px 4px 8px; }
 .pw { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 13px; border: 1px solid rgba(255, 255, 255, .85); border-radius: 999px; background: rgba(255, 255, 255, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--ink); text-decoration: none; transition: transform .15s, background .15s; }
 .sets { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 14px; font-size: 13px; color: #3b3f7a; text-shadow: 0 1px 10px rgba(255, 255, 255, .9); }
 .sets a { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
