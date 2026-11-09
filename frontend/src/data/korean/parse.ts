@@ -256,6 +256,8 @@ const VERB_BASES = new Set<string>(
 function futureBase(tok: string): string | null {
   if (!tok) return null
   const head = tok.slice(0, -1)
+  // существительное + 하다: «성공할», «운동할» (существительное есть в словаре)
+  if (tok.length > 1 && tok.endsWith('할') && LEX.has(head)) return head + '하다'
   if (tok.endsWith('을') && VERB_BASES.has(head + '다')) return head + '다'
   const c = tok.charCodeAt(tok.length - 1) - 0xac00
   if (c < 0 || c > 11171 || c % 28 !== 8) return null
