@@ -14,7 +14,7 @@ import { titleOfVideo } from '@/data/korean/videoTitles'
 import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { photoOf } from '@/data/korean/grammarPhotos'
 
-const { current, close, prev, next } = useGrammarModal()
+const { current, mine, close, prev, next } = useGrammarModal()
 const router = useRouter()
 /** «Потренировать это правило»: серия заданий из примеров карточки; игры открыты тем, кто вошёл (владелец и гости). */
 const canTrain = computed(() => progress.unlocked && !!current.value && trainableRule(current.value))
@@ -43,6 +43,7 @@ const isOk = computed(() => current.value?.st === 'ok' && !unmarked.value)
 /** Видео урока; если файла на сервере нет (или локально), показываем заглушку. */
 const broken = ref('')
 const video = computed(() => {
+  if (mine.value) return undefined
   const v = current.value?.video ?? videoOf(current.value?.l)
   return v && v !== broken.value ? v : undefined
 })
@@ -148,7 +149,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
         <div class="gsplit" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину. Двойной щелчок возвращает как было" @pointerdown="splitDown" @pointermove="splitMove" @pointerup="splitUp" @pointercancel="splitUp" @dblclick="splitReset"><i></i></div>
         <aside class="gv">
           <video v-if="video" :key="video" class="gvp" :src="video" controls preload="metadata" @error="broken = video!"></video>
-          <button v-else-if="photo && !current.l" type="button" class="gph" title="Открыть фото на весь экран" @click="viewer = photo!"><img :src="photo" :alt="`Фото Юны: ${current.ru}`" draggable="false" /></button>
+          <button v-else-if="photo && (!current.l || mine)" type="button" class="gph" title="Открыть фото на весь экран" @click="viewer = photo!"><img :src="photo" :alt="`Фото Юны: ${current.ru}`" draggable="false" /></button>
           <div v-else-if="broken" class="gvp stub">
             <span class="play" aria-hidden="true">▶</span>
             <b>{{ current.l ? `Видео · ${current.l}` : 'Видео' }}</b>
@@ -156,7 +157,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           </div>
           <p v-if="video && titleOfVideo(video)" class="vt">{{ titleOfVideo(video) }}</p>
           <p v-if="video" class="src">Видео в формате AV1: в Яндекс Браузере, Chrome и Firefox играет, в Safari и на части iPad может не открываться.</p>
-          <p v-if="current.l" class="src">Автор видеоурока: <a :href="CHANNEL" target="_blank" rel="noopener">Учитель Ян · 양쌤의 한국어 교실</a></p>
+          <p v-if="current.l && !mine" class="src">Автор видеоурока: <a :href="CHANNEL" target="_blank" rel="noopener">Учитель Ян · 양쌤의 한국어 교실</a></p>
         </aside>
       </div>
     </div>

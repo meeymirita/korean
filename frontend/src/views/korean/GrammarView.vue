@@ -35,7 +35,9 @@ const SEC_ICON: Record<string, string> = {
 const part = usePersisted<0 | 1 | 2>('grammar_tab', 0, v => v === 0 || v === 1 || v === 2)
 /** Открытая вкладка: без токена «Мои карточки» недоступны, показываем часть 1 */
 const cur = computed<0 | 1 | 2>(() => (part.value === 0 && !progress.unlocked ? 1 : part.value))
-const partCount = (n: number) => G.filter(g => tabOf(g) === n).length
+/** Пройденные карточки части 1 показываются и во «Мои карточки» (там без видео, только фото) */
+const inTab = (g: (typeof G)[number], n: number) => tabOf(g) === n || (n === 0 && tabOf(g) === 1 && g.st === 'ok')
+const partCount = (n: number) => G.filter(g => inTab(g, n)).length
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
 const list = computed(() => {
@@ -47,7 +49,7 @@ const list = computed(() => {
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
 })
 /** Карточки выбранной вкладки. В разметку попадают все вкладки (скрытые через v-show): поисковики видят все карточки, а не одну вкладку. */
-const shown = computed(() => list.value.filter(g => tabOf(g) === cur.value))
+const shown = computed(() => list.value.filter(g => inTab(g, cur.value)))
 const { open } = useGrammarModal()
 const route = useRoute()
 /** /korean/grammar?g=ayo сразу открывает карточку */
@@ -56,7 +58,7 @@ onMounted(() => {
   const card = G.find(x => x.id === g)
   if (card && (progress.unlocked || tabOf(card) !== 0)) {
     part.value = tabOf(card)
-    open(g)
+    open(g, false)
   }
 })
 </script>
@@ -84,7 +86,7 @@ onMounted(() => {
       <label class="gdone"><input v-model="onlyDone" type="checkbox" /> показывать только пройденное</label>
     </div>
     <p v-if="cur === 0" class="gcourse">
-      Здесь правила, которые разбирали с Лерой по учебнику 서울대 한국어+, и свои карточки. Номера урока у них нет: видео к ним не привязано, а темы могут повторяться с видеоуроками.
+      Здесь правила, которые разбирали с Лерой по учебнику 서울대 한국어+, и свои карточки. Сюда же попадают пройденные карточки видеокурса (часть 1): здесь у них только фото, без видео; само видео осталось в «Части 1».
     </p>
     <div class="gparts" role="tablist">
       <button v-for="p in parts" :key="p.id" role="tab" :aria-selected="cur === p.id" class="gpart" :class="{ on: cur === p.id }" @click="part = p.id">
@@ -93,7 +95,7 @@ onMounted(() => {
     </div>
     <p v-if="!shown.length" class="gempty">Ничего не найдено.</p>
     <div class="gg">
-      <button v-for="g in list" v-show="tabOf(g) === cur" :key="g.id" class="gc" @click="open(g.id)">
+      <button v-for="g in list" v-show="inTab(g, cur)" :key="g.id" class="gc" @click="open(g.id, cur === 0)">
         <h3 v-html="F(g.ko)"></h3>
         <div class="rn">{{ g.ru }}</div>
         <div class="d">{{ g.d }}</div>
