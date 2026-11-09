@@ -139,6 +139,13 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
 
       <p class="lead" lang="ru">{{ lead }}</p>
 
+      <nav v-if="data?.navigation" class="word-nav" aria-label="Алфавитная навигация">
+        <RouterLink v-if="data.navigation.previous" :to="`/dict/${encodeURIComponent(data.navigation.previous)}`" rel="prev">← Предыдущее · <span lang="ko">{{ data.navigation.previous }}</span></RouterLink>
+        <span v-else class="disabled">← Начало списка</span>
+        <RouterLink v-if="data.navigation.next" :to="`/dict/${encodeURIComponent(data.navigation.next)}`" rel="next"><span lang="ko">{{ data.navigation.next }}</span> · Следующее →</RouterLink>
+        <span v-else class="disabled">Конец списка →</span>
+      </nav>
+
       <section class="meanings">
         <h2>Значения слова</h2>
         <article v-for="e in entries" :key="e.id" class="entry">
@@ -250,6 +257,9 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
 .cat2 { font-weight: 500; color: var(--muted); font-size: 12px; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
 .lead { width: fit-content; max-width: 100%; margin: 12px 0 0; padding: 8px 16px; border-radius: 16px; background: rgba(255, 255, 255, .72); color: #3b3f7a; font-size: 14px; line-height: 1.5; }
+.word-nav { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.word-nav a, .word-nav .disabled { padding: 9px 15px; border-radius: 999px; background: rgba(255, 255, 255, .75); color: #43308c; font-size: 13px; font-weight: 600; }
+.word-nav .disabled { color: var(--muted); }
 .pairs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pairs li { display: flex; align-items: center; gap: 14px; }
 .w { flex: none; padding: 6px 16px; border-radius: 999px; background: var(--pink); color: var(--accent); font-weight: 700; font-size: 16px; }

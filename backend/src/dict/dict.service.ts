@@ -63,6 +63,12 @@ export const shortRu = (ru: string, max = 2) => {
   return (short.length ? short : all).slice(0, max).join('; ')
 }
 
+/** Соседние разные слова в уже отсортированном алфавитном списке. */
+export const sitemapNeighbors = (words: string[], word: string) => {
+  const index = words.indexOf(word)
+  return { previous: index > 0 ? words[index - 1]! : null, next: index >= 0 && index < words.length - 1 ? words[index + 1]! : null }
+}
+
 const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
 @Injectable()
@@ -388,6 +394,10 @@ export class DictService implements OnApplicationBootstrap {
       .filter(d => !seenSame.has(d.word) && (seenSame.add(d.word), true))
       .slice(0, 12)
       .map(d => ({ word: d.word, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 3).join('; ') }))
-    return { word: w, entries, related, similar, category: cat ?? '' }
+    const wordList = (await this.sitemap())
+      .map(({ loc }) => loc)
+      .filter(loc => loc.startsWith('/dict/') && loc !== '/dict/podborki' && !loc.startsWith('/dict/podborki/'))
+      .map(loc => loc.slice('/dict/'.length))
+    return { word: w, entries, related, similar, category: cat ?? '', navigation: sitemapNeighbors(wordList, w) }
   }
 }

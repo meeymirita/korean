@@ -3,7 +3,7 @@ import { applyVocab, buildDocs, rankOf, toDoc, type RawEntry } from '../src/dict
 import { COLLECTIONS } from '../src/dict/dict.collections'
 import { VOCAB } from '../src/dict/dict.vocab'
 import { dictionaryForms } from '../src/dict/dict.hangul'
-import { DictService, INDEX_VERSION, isIndexFresh } from '../src/dict/dict.service'
+import { DictService, INDEX_VERSION, isIndexFresh, sitemapNeighbors } from '../src/dict/dict.service'
 
 const entry = (over: Partial<RawEntry> = {}): RawEntry => ({
   word: '학생',
@@ -47,6 +47,16 @@ describe('большой словарь: документы для индекс�
     const d = toDoc(entry({ part_of_speech: '', vocabulary_level: '' }), 0)!
     expect(d.pos).toBe('выражение')
     expect(d.level).toBe('нет')
+  })
+})
+
+describe('большой словарь: алфавитные соседи', () => {
+  it('возвращает предыдущее и следующее слово, а на границах — null', () => {
+    const words = ['가다', '나다', '다다']
+    expect(sitemapNeighbors(words, '나다')).toEqual({ previous: '가다', next: '다다' })
+    expect(sitemapNeighbors(words, '가다')).toEqual({ previous: null, next: '나다' })
+    expect(sitemapNeighbors(words, '다다')).toEqual({ previous: '나다', next: null })
+    expect(sitemapNeighbors(words, '없다')).toEqual({ previous: null, next: null })
   })
 })
 

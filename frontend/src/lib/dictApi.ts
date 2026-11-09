@@ -32,7 +32,7 @@ export interface DictSearch {
 export interface DictFullSense extends DictHitSense { phr: string[]; dial: string[] }
 export interface DictEntry extends Omit<DictHit, 'senses' | 'moreSenses'> { def: string; senses: DictFullSense[] }
 export interface DictRelated { word: string; pos: string; level: string; ru: string }
-export interface DictWord { word: string; entries: DictEntry[]; related: DictRelated[]; similar?: DictRelated[]; category?: string }
+export interface DictWord { word: string; entries: DictEntry[]; related: DictRelated[]; similar?: DictRelated[]; category?: string; navigation?: { previous: string | null; next: string | null } }
 
 export const LEVELS = ['начальный', 'средний', 'высокий', 'нет'] as const
 
