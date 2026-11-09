@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from '../config.js'
 import { Db } from '../db/db.service.js'
+import { NotifyService } from '../notify/notify.service.js'
 import { OpsService } from './ops.service.js'
 
 const PROMETHEUS = (process.env.PROMETHEUS_URL || 'http://prometheus:9090').replace(/\/$/, '')
@@ -16,11 +17,50 @@ export const hide = (text: string) => text.replace(SECRET, '$1***').replace(/[0-
 
 /** Отчёт о состоянии для владельца: одним markdown-файлом, который можно переслать (например, Claude) и по нему понять, что и где не работало. */
 @Injectable()
-export class OpsReportService {
+export class OpsReportService implements OnModuleInit, OnModuleDestroy {
+  private timer?: NodeJS.Timeout
+
   constructor(
     private readonly db: Db,
     private readonly ops: OpsService,
+    private readonly notify: NotifyService,
   ) {}
+
+  /** Раз в минуту проверяем, не пора ли слать недельный отчёт в «Тревоги». */
+  onModuleInit() {
+    if (process.env.REPORT_WEEKLY === '0') return
+    this.timer = setInterval(() => void this.weekly().catch(e => console.error('недельный отчёт:', (e as Error).message)), Number(process.env.REPORT_WATCH_MS) || 60_000)
+    this.timer.unref()
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.timer)
+  }
+
+  /**
+   * Раз в неделю (по умолчанию в понедельник в 21:00 по времени сервера; REPORT_WEEKDAY 0–6, REPORT_TIME ЧЧ:ММ) шлёт файл отчёта в тему «Тревоги».
+   * Метка дня в meta `report:weekly` ставится до отправки: второй раз за день не пошлём, даже если Telegram не принял (ошибка в журнале).
+   */
+  async weekly(now = new Date()): Promise<'off' | 'early' | 'already' | 'sent' | 'failed'> {
+    const weekday = process.env.REPORT_WEEKDAY === undefined || process.env.REPORT_WEEKDAY === '' ? 1 : Number(process.env.REPORT_WEEKDAY)
+    const time = /^\d{1,2}:\d{2}$/.test(process.env.REPORT_TIME ?? '') ? process.env.REPORT_TIME!.padStart(5, '0') : '21:00'
+    if (now.getDay() !== weekday) return 'off'
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    if (hhmm < time) return 'early'
+    const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    if ((await this.db.getMeta('report:weekly')) === day) return 'already'
+    await this.db.setMeta('report:weekly', day)
+    try {
+      const text = await this.build(false)
+      const stamp = `${day}-${hhmm.replace(':', '-')}`
+      await this.notify.sendFileToTopic('alert', `otchet-${stamp}.md`, text, `Недельный отчёт о состоянии 우리말 (${day}). Можно переслать Claude целиком.`)
+      return 'sent'
+    } catch (e) {
+      // метку не снимаем: иначе сборка отчёта шла бы каждую минуту до конца дня; ошибка видна в журнале, файл можно взять кнопкой «Отчёт для разбора»
+      console.error('недельный отчёт не отправился:', (e as Error).message)
+      return 'failed'
+    }
+  }
 
   private async query(expr: string): Promise<number | null> {
     try {

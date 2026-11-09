@@ -300,4 +300,18 @@ describe('уведомления: Telegram с запасом на почту', (
       })
     })
   })
+
+  it('файл уходит в тему «Тревоги» документом; без темы — понятная ошибка', async () => {
+    const file = path.join(mkdtempSync(path.join(tmpdir(), 'tg-')), 'tg.jsonl')
+    vi.stubEnv('TELEGRAM_DUMP_FILE', file)
+    vi.stubEnv('TELEGRAM_GROUP_ID', '-100123')
+    vi.stubEnv('TELEGRAM_TOPIC_ALERT', '17')
+    const n = new NotifyService(mail() as never)
+    await n.sendFileToTopic('alert', 'otchet.md', '# Отчёт', 'Подпись')
+    const line = JSON.parse(readFileSync(file, 'utf8').trim())
+    expect(line.method).toBe('sendDocument')
+    expect(line.form).toMatchObject({ chat_id: '-100123', message_thread_id: '17', caption: 'Подпись', document: { file: 'otchet.md' } })
+    vi.stubEnv('TELEGRAM_TOPIC_ALERT', '')
+    await expect(n.sendFileToTopic('alert', 'o.md', 'x', 'y')).rejects.toThrow(/не настроена/)
+  })
 })

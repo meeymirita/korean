@@ -130,6 +130,20 @@ export class NotifyService {
     return typeof r === 'object' && r ? r.message_id : undefined
   }
 
+  /** Файл (текст) в тему группы: например, недельный отчёт в «Тревоги». Номер запоминается, тему можно очистить кнопкой. Ошибка, если тема не настроена. */
+  async sendFileToTopic(topic: TgTopic, filename: string, content: string, caption: string) {
+    const to = this.route({ topic } as Mail)
+    if (!to?.message_thread_id) throw new Error(`тема «${TG_TOPIC_NAMES[topic]}» не настроена: нужны TELEGRAM_GROUP_ID и TELEGRAM_TOPIC_${topic.toUpperCase()} в .env`)
+    const f = new FormData()
+    f.set('chat_id', String(to.chat_id))
+    f.set('message_thread_id', String(to.message_thread_id))
+    f.set('caption', caption.slice(0, 1000))
+    f.set('document', new Blob([content], { type: 'text/markdown;charset=utf-8' }), filename)
+    const r = await this.tgRaw('sendDocument', f)
+    const id = typeof r === 'object' && r ? r.message_id : undefined
+    if (id) await this.remember(topic, [id])
+  }
+
   /** Темы группы и настроены ли они (для вкладки «Telegram» в кабинете). */
   topics() {
     const env = process.env

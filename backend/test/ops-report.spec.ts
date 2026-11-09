@@ -18,7 +18,7 @@ describe('отчёт для разбора неполадок', () => {
     }
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { result: [{ value: [0, '42'] }] } }))))
     const db = { orm: async () => ({ event: { findMany: async () => [{ t: BigInt(1793900000000), type: 'bad_token', info: '1.2.3.4' }] } }) }
-    const text = await new OpsReportService(db as never, ops as never).build(true)
+    const text = await new OpsReportService(db as never, ops as never, {} as never).build(true)
     expect(text).toContain('# Отчёт о состоянии')
     expect(text).toContain('**Проблемные службы:** redis')
     expect(text).toContain('Процессор занят: 42%')
