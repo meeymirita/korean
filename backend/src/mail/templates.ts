@@ -116,7 +116,7 @@ export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10
 }
 
 export interface BackupMailOptions {
-  kind: 'archive' | 'big' | 'test' | 'nightly-fail' | 'stale' | 'disk-fail'
+  kind: 'archive' | 'big' | 'test' | 'nightly-fail' | 'stale' | 'disk-fail' | 'disk-ok' | 'nightly-ok'
   /** пояснение для тревожных писем (что сказал скрипт) или число часов без свежей копии */
   detail?: string
   /** имя файла-вложения (для archive) */
@@ -143,13 +143,15 @@ export function backupMail(o: BackupMailOptions): Mail {
   const listCmd = 'tar -tzf korean.tar.gz | head'
   const unpackCmd = 'mkdir korean-restore && tar -xzf korean.tar.gz -C korean-restore'
 
-  const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки', 'nightly-fail': 'Ночная копия не удалась', 'disk-fail': 'Копия не легла на Яндекс.Диск', stale: 'Ночная копия давно не делалась' }
+  const titles = { archive: part ? `Копия платформы, часть ${part.i} из ${part.n}` : 'Резервная копия платформы', big: 'Архив слишком большой для почты', test: 'Проверка отправки', 'nightly-fail': 'Ночная копия не удалась', 'disk-fail': 'Копия не легла на Яндекс.Диск', stale: 'Ночная копия давно не делалась', 'disk-ok': 'Копия лежит на Яндекс.Диске', 'nightly-ok': 'Ночная копия сделана' }
   const leads = {
     archive: `Во вложении полный архив: база, картинки, файлы календаря и настройки${o.mb ? ` (${o.mb} МБ)` : ''}. Он зашифрован вашим паролем, поэтому открыть его без пароля нельзя.`,
     big: `Полный архив${o.mb ? ` (${o.mb} МБ)` : ''} не помещается в письма и остался на сервере в папке backend/data/export. Скачайте его оттуда вручную.`,
     test: 'Это проверочное письмо из «Настроек». Если оно пришло, почта для резервных копий настроена верно.',
     'nightly-fail': `Скрипт scripts/backup.sh завершился с ошибкой${o.detail ? `: ${o.detail}` : ''}. Последняя хорошая копия осталась на месте, но новой нет.`,
     'disk-fail': `Архив собран, но не загрузился на Диск${o.detail ? `: ${o.detail}` : ''}. Проверьте YADISK_TOKEN в .env и свободное место на Диске. Архив лежит на сервере в backend/data/export.`,
+    'disk-ok': `Архив собран и загружен на Диск${o.mb ? ` (${o.mb} МБ)` : ''}${o.name ? `: ${o.name}` : ''}. Он зашифрован вашим паролем.`,
+    'nightly-ok': `Скрипт scripts/backup.sh отработал: база и файлы сохранены${o.detail ? `. ${o.detail}` : ''}.`,
     stale: `Свежей ночной копии нет ${o.detail ?? 'больше суток'}: скрипт не запускался или завис. Проверьте таймер на сервере.`,
   }
   const alert = o.kind === 'nightly-fail' || o.kind === 'stale' || o.kind === 'disk-fail'
@@ -216,7 +218,7 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
     note: notice,
     foot: 'Служебное сообщение платформы 우리말. Подробности: docs/backup.md.',
   })
-  return { tg, topic, subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
+  return { tg, topic, subject: `우리말: ${o.kind === 'nightly-fail' ? 'ночная копия не удалась' : o.kind === 'disk-fail' ? 'копия не легла на Диск' : o.kind === 'stale' ? 'ночная копия давно не делалась' : o.kind === 'test' ? 'проверка отправки' : o.kind === 'disk-ok' ? 'копия на Диске' : o.kind === 'nightly-ok' ? 'ночная копия сделана' : o.kind === 'big' ? 'архив слишком большой для почты' : `резервная копия${part ? ` (часть ${part.i} из ${part.n})` : ''}`}`, text, html }
 }
 
 export interface ReminderMailOptions {

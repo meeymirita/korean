@@ -122,18 +122,22 @@ describe('сервер: тревога о ночной копии', () => {
     assert.equal((await readFile(path.join(dir, 'm.jsonl'), 'utf8')).trim().split('\n').length, 1)
   })
 
-  test('копии нет больше 36 часов: письмо; свежая копия и отсутствие скрипта молчат', async () => {
+  test('копии нет больше 36 часов: письмо; свежая копия: одно сообщение «сделана»; без скрипта тишина', async () => {
     const old = await mkdtemp(path.join(tmpdir(), 'bk-stale-'))
     await writeFile(path.join(old, 'backup-status.json'), JSON.stringify({ ok: true, time: Date.now() - 40 * 3600_000 }))
     await start({ dir: old, env: { BACKUP_WATCH_MS: '100', MAIL_DUMP_FILE: path.join(old, 'm.jsonl'), BACKUP_MAIL_TO: 'me@example.org' } })
     assert.match((await mails(path.join(old, 'm.jsonl'), 1))[0].subject, /давно не делалась/)
 
-    for (const status of [{ ok: true, time: Date.now() }, null]) {
-      const dir = await mkdtemp(path.join(tmpdir(), 'bk-quiet-'))
-      if (status) await writeFile(path.join(dir, 'backup-status.json'), JSON.stringify(status))
-      await start({ dir, env: { BACKUP_WATCH_MS: '100', MAIL_DUMP_FILE: path.join(dir, 'm.jsonl'), BACKUP_MAIL_TO: 'me@example.org' } })
-      assert.equal((await mails(path.join(dir, 'm.jsonl'), 1, 8)).length, 0)
-    }
+    const fresh = await mkdtemp(path.join(tmpdir(), 'bk-fresh-'))
+    await writeFile(path.join(fresh, 'backup-status.json'), JSON.stringify({ ok: true, time: Date.now() }))
+    await start({ dir: fresh, env: { BACKUP_WATCH_MS: '100', MAIL_DUMP_FILE: path.join(fresh, 'm.jsonl'), BACKUP_MAIL_TO: 'me@example.org' } })
+    const sent = await mails(path.join(fresh, 'm.jsonl'), 1, 8)
+    assert.match(sent[0].subject, /ночная копия сделана/)
+    assert.equal(sent.length, 1, 'на одну копию одно сообщение, не каждый час')
+
+    const dir = await mkdtemp(path.join(tmpdir(), 'bk-quiet-'))
+    await start({ dir, env: { BACKUP_WATCH_MS: '100', MAIL_DUMP_FILE: path.join(dir, 'm.jsonl'), BACKUP_MAIL_TO: 'me@example.org' } })
+    assert.equal((await mails(path.join(dir, 'm.jsonl'), 1, 8)).length, 0)
   })
 })
 

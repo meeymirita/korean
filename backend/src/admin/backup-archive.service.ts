@@ -131,7 +131,10 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     const time = Number(s.time) || 0
     const failed = s.ok === false
     const stale = !failed && now - time > STALE_MS
-    if (!failed && !stale) return 'ok'
+    if (!failed && !stale) {
+      await this.tellNightlyOk(time)
+      return 'ok'
+    }
     if (!this.notify.ready(await this.mailTo())) return 'quiet'
     const key = failed ? `fail-${time}` : `stale-${new Date(now).toISOString().slice(0, 10)}`
     let seen = ''
@@ -154,6 +157,23 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     } catch (e) {
       console.error('письмо о ночной копии не отправилось:', (e as Error).message)
       return 'quiet'
+    }
+  }
+
+  /** Ночная копия прошла: одно сообщение на каждую новую копию (метка времени в backup-alert.json). */
+  private async tellNightlyOk(time: number) {
+    if (!time || !this.notify.ready(await this.mailTo())) return
+    const key = `ok-${time}`
+    try {
+      if ((JSON.parse(readFileSync(ALERT, 'utf8')) as { key?: string }).key === key) return
+    } catch {
+      /* метки ещё нет */
+    }
+    try {
+      await this.notify.send(backupMail({ kind: 'nightly-ok', when: new Date(time) }), await this.mailTo())
+      writeFileSync(ALERT, JSON.stringify({ key, time: Date.now() }))
+    } catch (e) {
+      console.error('сообщение о ночной копии не отправилось:', (e as Error).message)
     }
   }
 
@@ -203,6 +223,16 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       /* статус — удобство, не критично */
     }
     this.job = { running: false, step: -1, percent: r.ok ? 100 : 0, started: 0 }
+    // успех на Диск тоже сообщаем (сбои шлются отдельно); не вышло — ошибка только в журнале
+    if (r.ok && r.disk === 'ok') void this.tellDone(r)
+  }
+
+  private async tellDone(r: ArchiveResult) {
+    try {
+      await this.notify.send(backupMail({ kind: 'disk-ok', name: r.name, mb: (r.sizeKb / 1024).toFixed(1) }), await this.mailTo())
+    } catch (e) {
+      console.error('сообщение о копии на Диске не отправилось:', (e as Error).message)
+    }
   }
 
   private set(step: number, percent: number) {
