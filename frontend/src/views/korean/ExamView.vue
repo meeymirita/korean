@@ -45,7 +45,9 @@ const partNo = computed(() => Math.min(Math.max(Number(route.query.part) || 1, 1
 const row = computed(() => exams.results[EXAM_ID])
 const state = computed(() => examState(row.value, now.value))
 const STATE_LABEL = { new: 'ещё не сдавал', failed: 'не сдано', passed: 'сдано', due: 'пора подтвердить' } as const
-const waitMs = computed(() => (row.value && now.value < row.value.retryAt ? row.value.retryAt - now.value : 0))
+/** Только при локальном запуске (`nuxt dev`): ожидание пересдачи не мешает, а в любую часть можно зайти кнопкой. На сайте этого нет. */
+const dev = import.meta.dev
+const waitMs = computed(() => (!dev && row.value && now.value < row.value.retryAt ? row.value.retryAt - now.value : 0))
 const waitText = computed(() => {
   const m = Math.ceil(waitMs.value / 60_000)
   return m >= 60 ? `Через ${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}` : `Через ${m} мин`
@@ -244,6 +246,9 @@ const summaryText = (a: ExamAttempt) =>
         <p class="ex-sub">Следующая: часть {{ nextPart }} ({{ partPoints(draft.parts[nextPart - 1] ?? []) }} пунктов). Нужно будет набрать {{ examNeed(total) }} из {{ total }}.<template v-if="draft.partial"> Ответы в части {{ draft.partial.part }} уже частично сохранены.</template></p>
       </section>
 
+      <div v-if="dev && draft" class="ex-btns">
+        <button v-for="p in draft.parts.length" :key="p" class="rs-start ex-btn soft" type="button" @click="void router.push({ query: { part: String(p) } })">Часть {{ p }}{{ draft.results[p - 1] ? ' ✓' : '' }} (локально)</button>
+      </div>
       <div class="ex-btns">
         <button v-if="draft" class="rs-start ex-btn" :disabled="busy" @click="continueExam">Продолжить с части {{ nextPart }}</button>
         <button class="rs-start ex-btn" :class="{ soft: !!draft }" :disabled="busy || waitMs > 0 || !ready" @click="startNew">
