@@ -113,7 +113,7 @@ describe('итоговая оценка: данные экзамена', () => {
       n++
       if (SWAP[x.answer] && ['topic', 'subject'].includes(x.rule)) { if (x.accept) assert.deepEqual(x.accept, [SWAP[x.answer]]); else assert.equal(x.answer, '는') }
       else if (x.rule === 'and') { const all = [x.answer, ...x.accept]; assert.equal(all.length, 2); assert.ok(all.includes('하고') || x.answer === '하고'); assert.ok(all.every(a => ['과', '와', '하고'].includes(a))) }
-      else if (x.answer === '뭐') assert.deepEqual(x.accept, ['무엇'])
+      else if (x.answer === '뭐') assert.ok(x.accept === undefined || x.accept[0] === '무엇')
       else assert.equal(x.accept, undefined)
     }
     assert.ok(n >= 40)
@@ -179,6 +179,14 @@ describe('итоговая оценка: проверка нейросетями
     assert.deepEqual(altOrders('제 책이 아니에요'), [])
     assert.ok(!altOrders('저는 시장에서만 과일을 사요').includes('시장에서만 과일을 저는 사요 x'))
     assert.equal(altOrders('저는 시장에서만 과일을 사요').length, 5)
+  })
+
+  test('무엇 не принимается перед 예요: 뭐예요, но не 무엇예요', () => {
+    for (let i = 0; i < 10; i++) {
+      for (const part of examParts()) for (const b of part) if (b.kind === 'gaps') for (const s of b.sentences) s.pieces.forEach((p, k) => {
+        if (typeof p !== 'string' && p.answer === '뭐' && String(s.pieces[k + 1]).startsWith('예요')) assert.equal(p.accept, undefined, s.ko)
+      })
+    }
   })
 
   test('저는 / 나는 не принимают 가, 와 / 과 выбирается по 받침', () => {

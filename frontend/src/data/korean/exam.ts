@@ -319,7 +319,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
       used.add(c.ko)
       ruUsed.add(c.ru.toLowerCase())
       const m = shuffle(c.marks.filter(x => x.rule === rule))[0]!
-      sentences.push({ ru: c.ru, ko: c.ko, pieces: [c.ko.slice(0, m.at), { answer: m.text, accept: m.text === '뭐' ? ['무엇'] : undefined, rule }, c.ko.slice(m.at + m.text.length)] })
+      sentences.push({ ru: c.ru, ko: c.ko, pieces: [c.ko.slice(0, m.at), { answer: m.text, accept: m.text === '뭐' && !c.ko.slice(m.at + m.text.length).startsWith('예요') ? ['무엇'] : undefined, rule }, c.ko.slice(m.at + m.text.length)] })
       count[rule]!++
     }
     return { kind: 'gaps', id, title, note, typed: false, bank: shuffle(bank), sentences }
