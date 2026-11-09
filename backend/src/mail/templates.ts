@@ -391,3 +391,12 @@ export function sampleMail(topic: TgTopic): Mail {
       return backupMail({ kind: 'disk-fail', detail: 'пример: на Диске закончилось место' })
   }
 }
+
+/** Напоминание об экзамене по правилам: что пора сдать или подтвердить (тема «Напоминания»). */
+export function examMail(titles: string[], site?: string): Mail {
+  const link = `${(site || 'https://korean.meeymirita.ru').replace(/\/$/, '')}/korean/exam`
+  const lead = titles.length === 1 ? `Пора пройти итоговую проверку: ${titles[0]}.` : `Пора пройти итоговую проверку по правилам: ${titles.join(', ')}.`
+  const text = `${lead}\n\nОткрыть: ${link}`
+  const tg = tgCard({ topic: 'remind', title: 'Итоговая оценка', lead, foot: 'Проверка без подсказок, нужно набрать 85%. Пересдача через сутки.', button: { text: 'Пройти', url: link } })
+  return { subject: '우리말: пора пройти итоговую проверку', text, html: esc(text), tg, topic: 'remind' }
+}
