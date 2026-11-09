@@ -14,8 +14,8 @@ export const MIN_RULE = 0.7
 export const OWN_RULE = 0.8
 export const RECHECK_DAYS = 30
 export const EXAM_PARTS = 4
-/** Сколько пунктов примерно в полном экзамене (для подписей до начала): 4 части по ~52. */
-export const EXAM_POINTS_APPROX = 208
+/** Сколько пунктов примерно в полном экзамене (для подписей до начала): 4 части по ~60. */
+export const EXAM_POINTS_APPROX = 240
 /** Сколько верных нужно из n пунктов экзамена. */
 export const examNeed = (n: number) => Math.ceil(n * EXAM_PASS)
 /** id результата итогового экзамена на сервере. */
@@ -36,6 +36,10 @@ export const WORD_RULES: { id: string; label: string }[] = [
   { id: 'have', label: '있다 / 없다' },
   { id: 'pos', label: '앞 / 뒤 / 옆 / 위 / 아래' },
 ]
+/** Указатели, вопросительные и счётные слова: плитки в отдельных блоках (у каждого свой набор плиток). */
+export const DEM_RULE = { id: 'dem', label: '이 / 그 / 저 (указатели)' }
+export const QW_RULE = { id: 'qw', label: 'Вопросительные слова' }
+export const CNT_RULE = { id: 'cnt', label: 'Счётные слова' }
 export const FORM_RULES: { id: string; label: string }[] = [
   { id: 'ayo', label: 'Настоящее время (-아요/어요)' },
   { id: 'past', label: 'Прошедшее время (-았어요/었어요)' },
@@ -43,7 +47,7 @@ export const FORM_RULES: { id: string; label: string }[] = [
   { id: 'an', label: 'Отрицание «안»' },
 ]
 /** Название правила для таблицы результатов. */
-export const ruleLabel = (id: string) => PFAMS.find(f => f.id === id)?.name ?? [...WORD_RULES, ...FORM_RULES].find(r => r.id === id)?.label ?? id
+export const ruleLabel = (id: string) => PFAMS.find(f => f.id === id)?.name ?? [...WORD_RULES, ...FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE].find(r => r.id === id)?.label ?? id
 
 /** Частица в разборе принадлежит правилу: по карточке (`g`) и тексту; у 와 / 과 разбор карточки не указывает (как в `inFam` игры). */
 const inRule = (f: RuleFamily, m: PtextMark) => f.marks.includes(m.text) && (f.g.includes(m.g) || (f.id === 'and' && (m.text === '와' || m.text === '과')))
@@ -116,15 +120,25 @@ export const examPassed = (right: number, total: number, rules: RuleScores) =>
 const cut = (ko: string, m: PtextMark, to: string) => ko.slice(0, m.at) + to + ko.slice(m.at + m.text.length)
 const bare = (ko: string) => ko.replace(/[.,?!]/g, '')
 
-/** Плитки блока «Подставь слово»: связка, отрицание, наличие и слова положения. */
+/** Плитки блоков со словами: связка, отрицание, наличие и положение; указатели; вопросительные слова; счётные слова. */
 const WORD_BANK = ['이에요', '예요', '이 아니에요', '가 아니에요', '있어요', '없어요', '앞', '뒤', '옆', '위', '아래']
+const DEM_BANK = ['이', '그', '저', '이것', '그것', '저것', '여기', '거기', '저기']
+const QW_BANK = ['누구', '뭐', '어디', '언제', '얼마', '몇', '무슨', '어느']
+const CNT_BANK = ['개', '명', '마리', '권', '장', '병', '잔', '그릇']
 type WMark = { at: number; text: string; rule: string }
-/** Слова-пропуски предложения для правил без частиц: ищем по тексту (связка в конце, «이 / 가 아니에요», 있어요 / 없어요, слова положения перед 에). */
-function wordMarks(ko: string): WMark[] {
+/** Указатель подходит для пропуска, только если перевод его однозначно выдаёт: «этот / здесь» → 이 / 여기, «вон тот / вон там» → 저, «тот / там» → 그 / 거기. */
+const demOk = (w: string, ru: string) =>
+  /^이/.test(w) || w === '여기' ? /[Ээ]т(от|а|о|у|и)|Здесь|здесь|Это/.test(ru) : /^저/.test(w) ? /вон/i.test(ru) : /^(그|거기)/.test(w) ? /(Тот|тот|Та |та |Там|там)/.test(ru) && !/вон/i.test(ru) : false
+/** Слова-пропуски предложения для правил без частиц: ищем по тексту (связка в конце, «이 / 가 아니에요», 있어요 / 없어요, слова положения перед 에, указатели, вопросительные и счётные слова). */
+function wordMarks(ko: string, ru: string): WMark[] {
   const out: WMark[] = []
-  const add = (re: RegExp, rule: string) => {
-    for (const m of ko.matchAll(re)) out.push({ at: m.index!, text: m[0], rule })
+  const add = (re: RegExp, rule: string, ok: (w: string) => boolean = () => true) => {
+    for (const m of ko.matchAll(re)) if (ok(m[0])) out.push({ at: m.index!, text: m[0], rule })
   }
+  add(/(?<=^|\s)(이것|그것|저것|여기|거기|저기)(?=[은는이가을를도에]|\s|[.?!,]|$)/g, 'dem', w => demOk(w, ru))
+  add(/(?<=^|\s)(이|그|저)(?= [가-힣])/g, 'dem', w => demOk(w, ru))
+  add(/(?<=^|\s)(누구|뭐|어디|언제|얼마|몇|무슨|어느)(?=[가-힣]|\s|[.?!,]|$)/g, 'qw')
+  add(/(?<=(?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|몇|스무) )(개|명|마리|권|장|병|잔|그릇)/g, 'cnt')
   add(/(?<!거)(이에요|예요)(?=[.?!]|$)/g, 'iyo')
   add(/(이|가) 아니에요/g, 'anie')
   add(/(있어요|없어요)(?=[.?!]|$)/g, 'have')
@@ -164,9 +178,9 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
   const pool = shuffle(cands)
   const used = new Set<string>()
   const ruUsed = new Set<string>()
-  const count: Record<string, number> = Object.fromEntries([...ruleIds, ...WORD_RULES.map(r => r.id), ...FORM_RULES.map(r => r.id)].map(id => [id, 0]))
+  const count: Record<string, number> = Object.fromEntries([...ruleIds, ...WORD_RULES.map(r => r.id), ...FORM_RULES.map(r => r.id), DEM_RULE.id, QW_RULE.id, CNT_RULE.id].map(id => [id, 0]))
   /** Предложения для блока «Подставь слово» (связка, отрицание, наличие, положение). */
-  const wpool = shuffle(ptextPool().map(x => ({ ko: x.ko, ru: x.ru, marks: wordMarks(x.ko) })).filter(c => c.marks.length))
+  const wpool = shuffle(ptextPool().map(x => ({ ko: x.ko, ru: x.ru, marks: wordMarks(x.ko, x.ru) })).filter(c => c.marks.length))
   const verbs = shuffle(CONJUGATIONS.filter(c => c.kind === 'verb'))
   const usedVerbs = new Set<string>()
 
@@ -215,10 +229,9 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
     return { kind: 'gaps', id, title, note, typed, bank: typed ? [] : shuffle(BANK), sentences }
   }
 
-  /** Блок «Подставь слово»: плитки, в пропуске слово правила без частиц (одно правило на предложение). */
-  const wordBlock = (n: number, points: number): ExamBlock => {
+  /** Блок с плитками для правил без частиц (одно правило на предложение): `ids` правила, `bank` плитки, перевод предложения подсказывает слово. */
+  const tileBlock = (id: string, title: string, note: string, ids: string[], bank: string[], points: number): ExamBlock => {
     const sentences: ExamSentence[] = []
-    const ids = WORD_RULES.map(r => r.id)
     for (let left = points; left > 0; left--) {
       const rule = nextRule(ids)
       const c = wpool.find(x => !used.has(x.ko) && !ruUsed.has(x.ru.toLowerCase()) && x.marks.some(m => m.rule === rule))
@@ -226,11 +239,13 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
       used.add(c.ko)
       ruUsed.add(c.ru.toLowerCase())
       const m = shuffle(c.marks.filter(x => x.rule === rule))[0]!
-      sentences.push({ ru: c.ru, ko: c.ko, pieces: [c.ko.slice(0, m.at), { answer: m.text, rule }, c.ko.slice(m.at + m.text.length)] })
+      sentences.push({ ru: c.ru, ko: c.ko, pieces: [c.ko.slice(0, m.at), { answer: m.text, accept: m.text === '뭐' ? ['무엇'] : undefined, rule }, c.ko.slice(m.at + m.text.length)] })
       count[rule]!++
     }
-    return { kind: 'gaps', id: `words${n}`, title: 'Подставь слово', note: 'Нажми на пропуск и на плитку: связка, отрицание, «есть / нет» или слово положения. Перевод предложения подскажет, какое слово нужно.', typed: false, bank: shuffle(WORD_BANK), sentences }
+    return { kind: 'gaps', id, title, note, typed: false, bank: shuffle(bank), sentences }
   }
+  const wordBlock = (n: number, points: number) =>
+    tileBlock(`words${n}`, 'Подставь слово', 'Нажми на пропуск и на плитку: связка, отрицание, «есть / нет» или слово положения. Перевод предложения подскажет, какое слово нужно.', WORD_RULES.map(r => r.id), WORD_BANK, points)
   /** Блок «Впиши форму глагола»: настоящее, прошедшее, будущее, отрицание; глагол в экзамене не повторяется. */
   const formsBlock = (n: number, points: number): ExamBlock => {
     const items: { k: string; ru: string; task: string; answer: string; rule: string }[] = []
@@ -249,7 +264,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
 
   const part = (n: number): ExamBlock[] => {
     const blocks: ExamBlock[] = []
-    blocks.push(gapBlock(`tiles${n}`, 'Поставь частицы', 'Нажми на пропуск и на плитку (или сразу на плитку: она встанет в первый свободный пропуск). Чужие плитки лишние.', false, 10))
+    blocks.push(gapBlock(`tiles${n}`, 'Поставь частицы', 'Нажми на пропуск и на плитку (или сразу на плитку: она встанет в первый свободный пропуск). Чужие плитки лишние.', false, 8))
     blocks.push(gapBlock(`typed${n}`, 'Впиши частицы', 'Здесь плиток нет: впиши каждую частицу с клавиатуры.', true, 6))
     // перевод: 6 предложений
     const mi: { ko: string; ru: string; rule: string }[] = []
@@ -293,7 +308,10 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
       count[rule]!++
     }
     blocks.push({ kind: 'errors', id: `errors${n}`, title: 'Найди ошибки', note: 'Про каждое предложение скажи: оно верное или в нём ошибка в частице.', items: shuffle(ei) })
-    blocks.push(wordBlock(n, 10), formsBlock(n, 10))
+    blocks.push(wordBlock(n, 8), formsBlock(n, 10))
+    blocks.push(tileBlock(`dem${n}`, 'Подставь указатель', 'Этот, тот, вон тот; здесь, там, вон там. Перевод подскажет, какой нужен.', [DEM_RULE.id], DEM_BANK, 4))
+    blocks.push(tileBlock(`qw${n}`, 'Подставь вопросительное слово', 'Кто, что, где, когда, сколько: по переводу выбери нужное слово.', [QW_RULE.id], QW_BANK, 4))
+    blocks.push(tileBlock(`cnt${n}`, 'Подставь счётное слово', 'Штуки, люди, бутылки, чашки: по переводу выбери счётное слово.', [CNT_RULE.id], CNT_BANK, 4))
     return shuffle(blocks)
   }
   return Array.from({ length: parts }, (_, i) => part(i + 1))

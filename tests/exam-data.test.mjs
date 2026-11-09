@@ -3,7 +3,7 @@ import { after, describe, test } from 'node:test'
 import { close, load } from './_load.mjs'
 
 const { ptextPool } = await load('/src/game/ptext-pool.ts')
-const { examParts, examRules, WORD_RULES, FORM_RULES, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
+const { examParts, examRules, WORD_RULES, FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
 
 after(close)
 
@@ -18,20 +18,21 @@ describe('итоговая оценка: данные экзамена', () => {
     assert.deepEqual(examRules().map(r => r.id).sort(), ['and', 'object', 'only', 'place', 'subject', 'topic'])
   })
 
-  test('четыре части по семь блоков, 190–230 пунктов, каждое из 14 правил получает достаточно пунктов (проверено дважды)', () => {
+  test('четыре части по десять блоков, 220–260 пунктов, каждое из 17 правил получает достаточно пунктов (проверено дважды)', () => {
     for (let i = 0; i < 2; i++) {
       const parts = examParts()
       assert.equal(parts.length, EXAM_PARTS)
       for (const p of parts) {
-        assert.deepEqual(p.map(b => b.kind).sort(), ['errors', 'forms', 'gaps', 'gaps', 'gaps', 'match', 'order'])
-        assert.ok(partPoints(p) >= 46 && partPoints(p) <= 56, `пунктов в части: ${partPoints(p)}`)
+        assert.deepEqual(p.map(b => b.kind).sort(), ['errors', 'forms', 'gaps', 'gaps', 'gaps', 'gaps', 'gaps', 'gaps', 'match', 'order'])
+        assert.ok(partPoints(p) >= 54 && partPoints(p) <= 66, `пунктов в части: ${partPoints(p)}`)
       }
       const total = examTotal(parts)
-      assert.ok(total >= 190 && total <= 230, `пунктов всего: ${total}`)
+      assert.ok(total >= 220 && total <= 260, `пунктов всего: ${total}`)
       const by = pointsByRule(parts)
       for (const r of examRules()) assert.ok((by[r.id] ?? 0) >= 14, `правило ${r.id}: ${by[r.id]} пунктов`)
       for (const r of [...WORD_RULES, ...FORM_RULES]) assert.ok((by[r.id] ?? 0) >= 8, `правило ${r.id}: ${by[r.id]} пунктов`)
-      assert.equal(Object.keys(by).length, 14)
+      for (const r of [DEM_RULE, QW_RULE, CNT_RULE]) assert.ok((by[r.id] ?? 0) >= 10, `правило ${r.id}: ${by[r.id]} пунктов`)
+      assert.equal(Object.keys(by).length, 17)
     }
   })
 
@@ -101,8 +102,9 @@ describe('итоговая оценка: данные экзамена', () => {
     for (const p of examParts()) for (const b of p) if (b.kind === 'gaps') for (const s of b.sentences) for (const x of s.pieces) {
       if (typeof x === 'string') continue
       n++
-      if (SWAP[x.answer]) assert.deepEqual(x.accept, [SWAP[x.answer]])
+      if (SWAP[x.answer] && ['topic', 'subject'].includes(x.rule)) assert.deepEqual(x.accept, [SWAP[x.answer]])
       else if (x.rule === 'and') assert.deepEqual([x.answer, ...x.accept].sort(), ['과', '와', '하고'])
+      else if (x.answer === '뭐') assert.deepEqual(x.accept, ['무엇'])
       else assert.equal(x.accept, undefined)
     }
     assert.ok(n >= 40)
