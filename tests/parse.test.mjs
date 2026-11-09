@@ -141,3 +141,18 @@ describe('analyze: 만 и -(으)ㄹ 거예요 (карточки man и future_my
     assert.deepEqual(parts('물'), [['물', 'word']])
   })
 })
+
+describe('analyze: прошедшее от связки (past_i)', () => {
+  test('이었어요 после 받침, 였어요 без 받침, карточка past_i, форма — окончание', () => {
+    for (const [s, form, head] of [['어제는 일요일이었어요.', '이었어요', '일요일'], ['그 사람은 제 친구였어요.', '였어요', '친구'], ['동생은 대학생이었어요.', '이었어요', '대학생']]) {
+      const segs = analyze(s)
+      assert.ok(!segs.some(x => x.type === 'unknown'), s)
+      assert.ok(segs.some(x => x.text === head && x.type === 'word'), s)
+      assert.ok(segs.some(x => x.text === form && x.type === 'ending' && x.g === 'past_i'), s)
+    }
+    // 받침 не совпадает: 일요일였어요 — неверная форма не разбирается как связка
+    assert.ok(!analyze('일요일였어요').some(x => x.g === 'past_i'))
+    assert.equal(analyze('저는 학생이 아니었어요.').some(x => x.type === 'unknown'), false)
+  })
+})
+
