@@ -61,8 +61,19 @@ const inRule = (f: RuleFamily, m: PtextMark) => f.marks.includes(m.text) && (f.g
  * с той же 받침 (는 ↔ 가, 은 ↔ 이); у 하고 / 와 / 과 принимаются все три.
  */
 const SWAP: Record<string, string> = { 은: '이', 는: '가', 이: '은', 가: '는' }
-const ACCEPT = (m: { text: string; rule: string }): string[] | undefined =>
-  m.rule === 'and' ? ['하고', '와', '과'].filter(x => x !== m.text) : SWAP[m.text] ? [SWAP[m.text]!] : undefined
+const hasBatchim = (w: string) => {
+  const c = w.charCodeAt(w.length - 1) - 0xac00
+  return c >= 0 && c <= 11171 && c % 28 !== 0
+}
+/** `before`: предложение до пропуска. 저는 / 나는 / 너는 с 가 не меняются (это 제가, 내가, 네가: другое слово), 와 / 과 выбирается по 받침. */
+const ACCEPT = (m: { text: string; rule: string }, before: string): string[] | undefined => {
+  if (m.rule === 'and') {
+    const noun = before.trim()
+    return ['하고', hasBatchim(noun) ? '과' : '와'].filter(x => x !== m.text)
+  }
+  if (m.text === '는' && /(^|\s)(저|나|너)$/.test(before)) return undefined
+  return SWAP[m.text] ? [SWAP[m.text]!] : undefined
+}
 
 /** Часть предложения: просто текст или пропуск с верным ответом и правилом. */
 export type ExamPiece = string | { answer: string; accept?: string[]; rule: string }
@@ -74,7 +85,7 @@ export type ExamBlock =
   /** К каждому корейскому предложению выбрать его перевод из списка. */
   | { kind: 'match'; id: string; title: string; note: string; items: { ko: string; ru: string; rule: string }[]; choices: string[] }
   /** Собрать предложение из слов в правильном порядке. */
-  | { kind: 'order'; id: string; title: string; note: string; items: { ru: string; ko: string; words: string[]; rule: string }[] }
+  | { kind: 'order'; id: string; title: string; note: string; items: { ru: string; ko: string; words: string[]; alts?: string[]; rule: string }[] }
   /** Про каждое предложение сказать, верное оно или с ошибкой. */
   | { kind: 'errors'; id: string; title: string; note: string; items: { ko: string; ru: string; bad: boolean; rule: string }[] }
   /** Вписать форму глагола, которую просит задание (настоящее, прошедшее, будущее, отрицание). */
@@ -123,6 +134,34 @@ export const examPassed = (right: number, total: number, rules: RuleScores) =>
 
 const cut = (ko: string, m: PtextMark, to: string) => ko.slice(0, m.at) + to + ko.slice(m.at + m.text.length)
 const bare = (ko: string) => ko.replace(/[.,?!]/g, '')
+
+/**
+ * Другие верные порядки слов: в корейском группы с частицей (и слова времени) меняются местами, сказуемое (со словами перед ним) остаётся в конце.
+ * Слово без частицы держится за следующим («제 책이», «두 명 있어요»). Не больше четырёх групп.
+ */
+const PARTICLE_END = /(은|는|이|가|을|를|에|에서|도|만|와|과|하고|에게|한테|까지|부터)$/
+const TIME_WORDS = new Set(['오늘', '내일', '어제', '지금', '매일', '아침', '저녁', '주말', '그리고'])
+export function altOrders(ko: string): string[] {
+  const words = ko.split(/\s+/)
+  const groups: string[][] = []
+  let cur: string[] = []
+  words.slice(0, -1).forEach(w => {
+    cur.push(w)
+    if (TIME_WORDS.has(w) || (w.length > 1 && PARTICLE_END.test(w))) {
+      groups.push(cur)
+      cur = []
+    }
+  })
+  const tail = [...cur, words[words.length - 1]!]
+  if (groups.length < 2 || groups.length > 4) return []
+  const out: string[] = []
+  const walk = (left: string[][], acc: string[][]) => {
+    if (!left.length) return void out.push([...acc.flat(), ...tail].join(' '))
+    left.forEach((g, i) => walk([...left.slice(0, i), ...left.slice(i + 1)], [...acc, g]))
+  }
+  walk(groups, [])
+  return out.filter(x => x !== ko)
+}
 
 /** Плитки блоков со словами: связка, отрицание, наличие и положение; указатели; вопросительные слова; счётные слова. */
 const WORD_BANK = ['이에요', '예요', '이 아니에요', '가 아니에요', '있어요', '없어요', '앞', '뒤', '옆', '위', '아래', '주세요']
@@ -239,7 +278,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
     ruUsed.add(c.ru.toLowerCase())
     return c
   }
-  const piece = (m: RMark): ExamPiece => ({ answer: m.text, accept: ACCEPT(m), rule: m.rule })
+  const piece = (m: RMark, before: string): ExamPiece => ({ answer: m.text, accept: ACCEPT(m, before), rule: m.rule })
 
   /** Текст из предложений, пока не наберётся `points` пропусков (в предложении до двух пропусков). */
   const gapBlock = (id: string, title: string, note: string, typed: boolean, points: number): ExamBlock => {
@@ -259,7 +298,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
       const pieces: ExamPiece[] = []
       let pos = 0
       for (const m of use) {
-        pieces.push(c.ko.slice(pos, m.at), piece(m))
+        pieces.push(c.ko.slice(pos, m.at), piece(m, c.ko.slice(0, m.at)))
         pos = m.at + m.text.length
         count[m.rule]!++
         left--
@@ -361,7 +400,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
     }
     blocks.push({ kind: 'match', id: `match${n}`, title: 'Переведи', note: 'Выбери для каждого предложения его перевод. Каждый перевод подходит только одному.', items: mi, choices: shuffle(mi.map(x => x.ru)) })
     // порядок слов: 4 предложения из 3–6 слов
-    const oi: { ru: string; ko: string; words: string[]; rule: string }[] = []
+    const oi: { ru: string; ko: string; words: string[]; alts?: string[]; rule: string }[] = []
     for (let i = 0; i < 4; i++) {
       const rule = nextRule(ruleIds)
       const c = pick(rule, x => {
@@ -369,7 +408,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
         return w >= 3 && w <= 6
       })
       if (!c) break
-      oi.push({ ru: c.ru, ko: bare(c.ko), words: shuffle(bare(c.ko).split(/\s+/)), rule })
+      oi.push({ ru: c.ru, ko: bare(c.ko), words: shuffle(bare(c.ko).split(/\s+/)), alts: altOrders(bare(c.ko)), rule })
       count[rule]!++
     }
     blocks.push({ kind: 'order', id: `order${n}`, title: 'Расставь слова по порядку', note: 'Нажимай на слова, чтобы собрать предложение; нажми на собранное слово, чтобы убрать его.', items: oi })

@@ -93,7 +93,7 @@ function check() {
     } else if (b.kind === 'match') {
       b.items.forEach((it, i) => add(it.rule, pick[`${bi}:${i}`] === it.ru, it.ko, pick[`${bi}:${i}`] ?? '', it.ru))
     } else if (b.kind === 'order') {
-      b.items.forEach((it, i) => add(it.rule, builtText(bi, i, it.words) === it.ko, it.ru, builtText(bi, i, it.words), it.ko))
+      b.items.forEach((it, i) => add(it.rule, [it.ko, ...(it.alts ?? [])].includes(builtText(bi, i, it.words)), it.ru, builtText(bi, i, it.words), it.ko))
     } else {
       b.items.forEach((it, i) => add(it.rule, verdict[`${bi}:${i}`] === it.bad, it.ko, verdict[`${bi}:${i}`] ? 'Ошибка' : 'Верно', it.bad ? 'Ошибка' : 'Верно'))
     }

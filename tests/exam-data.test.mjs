@@ -3,7 +3,7 @@ import { after, describe, test } from 'node:test'
 import { close, load } from './_load.mjs'
 
 const { ptextPool } = await load('/src/game/ptext-pool.ts')
-const { examParts, examRules, WORD_RULES, FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, NUM_RULE, PHR_RULE, sinoNumber, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
+const { altOrders, examParts, examRules, WORD_RULES, FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, NUM_RULE, PHR_RULE, sinoNumber, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
 
 after(close)
 
@@ -111,8 +111,8 @@ describe('итоговая оценка: данные экзамена', () => {
     for (const p of examParts()) for (const b of p) if (b.kind === 'gaps') for (const s of b.sentences) for (const x of s.pieces) {
       if (typeof x === 'string') continue
       n++
-      if (SWAP[x.answer] && ['topic', 'subject'].includes(x.rule)) assert.deepEqual(x.accept, [SWAP[x.answer]])
-      else if (x.rule === 'and') assert.deepEqual([x.answer, ...x.accept].sort(), ['과', '와', '하고'])
+      if (SWAP[x.answer] && ['topic', 'subject'].includes(x.rule)) { if (x.accept) assert.deepEqual(x.accept, [SWAP[x.answer]]); else assert.equal(x.answer, '는') }
+      else if (x.rule === 'and') { const all = [x.answer, ...x.accept]; assert.equal(all.length, 2); assert.ok(all.includes('하고') || x.answer === '하고'); assert.ok(all.every(a => ['과', '와', '하고'].includes(a))) }
       else if (x.answer === '뭐') assert.deepEqual(x.accept, ['무엇'])
       else assert.equal(x.accept, undefined)
     }
@@ -168,5 +168,34 @@ describe('итоговая оценка: данные экзамена', () => {
     assert.equal(examState({ passed: false, dueAt: null }, now), 'failed')
     assert.equal(examState({ passed: true, dueAt: now + day }, now), 'passed')
     assert.equal(examState({ passed: true, dueAt: now - 1 }, now), 'due')
+  })
+})
+
+describe('итоговая оценка: проверка нейросетями', () => {
+  test('другие порядки слов: группы с частицей и слова времени меняются, сказуемое остаётся', () => {
+    const a = altOrders('내일 친구만 올 거예요')
+    assert.ok(a.includes('친구만 내일 올 거예요'))
+    assert.ok(a.every(x => x.endsWith('올 거예요')))
+    assert.deepEqual(altOrders('제 책이 아니에요'), [])
+    assert.ok(!altOrders('저는 시장에서만 과일을 사요').includes('시장에서만 과일을 저는 사요 x'))
+    assert.equal(altOrders('저는 시장에서만 과일을 사요').length, 5)
+  })
+
+  test('저는 / 나는 не принимают 가, 와 / 과 выбирается по 받침', () => {
+    for (let i = 0; i < 10; i++) {
+      for (const part of examParts()) for (const b of part) if (b.kind === 'gaps') for (const s of b.sentences) {
+        let before = ''
+        for (const p of s.pieces) {
+          if (typeof p === 'string') { before += p; continue }
+          if (p.answer === '는' && /(^|\s)(저|나|너)$/.test(before)) assert.equal(p.accept, undefined, s.ko)
+          if (p.rule === 'and') {
+            const c = before.trim().charCodeAt(before.trim().length - 1) - 0xac00
+            const want = c % 28 ? '과' : '와'
+            assert.ok(![p.answer, ...p.accept].includes(want === '과' ? '와' : '과') || p.answer === (want === '과' ? '와' : '과'), s.ko)
+          }
+          before += p.answer
+        }
+      }
+    }
   })
 })
