@@ -10,6 +10,7 @@ import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
 import { STORIES, RULE_SENTENCES } from './stories'
 import { PFAMS } from './families'
+import { ptextPool } from './ptext-pool'
 import { syllableRows, syllableVowels } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
 import { gsap } from 'gsap'
@@ -973,25 +974,6 @@ function famChips(){
   return lv;
 }
 /** Все предложения с переводом, где известны все слова: из сайта, рассказов, диалогов и предложений учебника; для каждого место частиц (`at`, `text`, `g`). */
-function ptextPool(){
-  if(POOLS.PTEXT)return POOLS.PTEXT;
-  const all={};
-  Object.keys(TRANSLATIONS).forEach(function(ko){all[ko]=TRANSLATIONS[ko];});
-  STORIES.forEach(function(st){st.sents.forEach(function(x){all[x.ko]=x.ru;});});
-  EXCHANGES.forEach(function(e){all[e[0]]=e[1];all[e[2]]=e[3];});
-  RULE_SENTENCES.forEach(function(x){all[x.ko]=x.ru;});
-  POOLS.PTEXT=Object.keys(all).map(function(ko){
-    const segs=analyze(ko);
-    if(segs.some(function(sg){return sg.type==='unknown';}))return null;
-    const marks=[];let cur=0;
-    segs.forEach(function(sg){
-      const at=ko.indexOf(sg.text,cur);if(at<0)return;cur=at+sg.text.length;
-      if(sg.type==='particle')marks.push({at:at,text:sg.text,g:sg.g||'',why:sg.explain||sg.gloss||''});
-    });
-    return {ko:ko,ru:all[ko],marks:marks};
-  }).filter(Boolean);
-  return POOLS.PTEXT;
-}
 /** Частица входит в правило: по карточке (`g`) и тексту; у 와 / 과 разбор карточки не указывает, берём по тексту. */
 const inFam=(f,m)=>f.marks.includes(m.text)&&(f.g.includes(m.g)||(f.marks.includes('와')&&(m.text==='와'||m.text==='과')));
 function genPtext(){

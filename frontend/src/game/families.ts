@@ -16,11 +16,12 @@ const BASE: RuleFamily[] = [
   { id: 'object', name: '을 / 를', hint: 'частица объекта: 을 после 받침, 를 без него', marks: ['을', '를'], g: ['eul'] },
   { id: 'place', name: '에 / 에서', hint: '에: куда, где находишься, когда; 에서: где происходит действие', marks: ['에', '에서'], g: ['iss', 'gada', 'eseo', 'when_e'] },
   { id: 'and', name: '하고 / 와 / 과', hint: '«и», «с»: 하고 в любом случае, 와 без 받침, 과 с 받침', marks: ['하고', '와', '과'], g: ['hago'] },
+  { id: 'only', name: '만', hint: '«только»: 만 стоит после слова, а после 에 / 에서 стоит 만 (집에서만); 받침 на неё не влияет', marks: ['만'], g: ['man'] },
 ]
 
 export const PFAMS: RuleFamily[] = [
   ...BASE,
-  { id: 'all', name: 'Все вместе', hint: 'все пять правил вперемешку', marks: [...new Set(BASE.flatMap(f => f.marks))], g: BASE.flatMap(f => f.g) },
+  { id: 'all', name: 'Все вместе', hint: 'все шесть правил вперемешку', marks: [...new Set(BASE.flatMap(f => f.marks))], g: BASE.flatMap(f => f.g) },
 ]
 
 /** Семья по id карточки грамматики (для кнопки «Текст по правилу» в окне карточки), у других карточек нет. */
