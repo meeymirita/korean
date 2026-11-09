@@ -28,6 +28,9 @@ const idx = ref(0)
 const picked = ref<string | null>(null)
 const missed = ref<Task[]>([])
 const right = ref(0)
+const scheduledRetries = new Set<number>()
+const completedTasks = new Set<number>()
+const rewardedWords = new Set<string>()
 /** Отметка «как прошло»: одна на серию, после неё кнопки заменяются подтверждением. */
 const moodSet = ref<Mood | null>(null)
 function setMood(m: Mood) {
@@ -191,7 +194,7 @@ onMounted(() => {
 let roundId = Math.random().toString(36).slice(2, 12)
 watch(finished, v => {
   if (!v) return
-  progress.roundDone(roundId, list.value.length, right.value)
+  progress.roundDone(roundId, props.tasks.length, right.value)
   void nextTick(() => {
     const r = document.querySelector('.rs-end')?.getBoundingClientRect()
     if (r && right.value >= props.tasks.length / 2) burst(r.left + r.width / 2, r.top + 40)
@@ -208,6 +211,9 @@ watch(
     picked.value = null
     missed.value = []
     right.value = 0
+    scheduledRetries.clear()
+    completedTasks.clear()
+    rewardedWords.clear()
     moodSet.value = null
     times.value = []
     shownAt.value = Date.now()
@@ -233,9 +239,23 @@ function commit(option: string) {
   picked.value = option
   times.value.push(Math.min((Date.now() - shownAt.value) / 1000, PACE_CAP))
   const ok = option === t.answer
-  if (ok) right.value++
-  else missed.value.push(t)
-  progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
+  if (ok) {
+    if (!completedTasks.has(t.id)) right.value++
+    completedTasks.add(t.id)
+    missed.value = missed.value.filter(task => task.id !== t.id)
+  } else {
+    if (!missed.value.some(task => task.id === t.id)) missed.value.push(t)
+    if (!scheduledRetries.has(t.id)) {
+      scheduledRetries.add(t.id)
+      const delay = 3 + Math.floor(Math.random() * 2)
+      list.value.splice(Math.min(list.value.length, idx.value + 1 + delay), 0, t)
+    }
+  }
+  const rewardKey = t.word ?? `task:${t.id}`
+  if (!ok || !rewardedWords.has(rewardKey)) {
+    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
+    if (ok) rewardedWords.add(rewardKey)
+  }
   ;(ok ? pop : shake)(zone.value)
 }
 function next() {
@@ -278,11 +298,11 @@ onBeforeUnmount(() => {
   <div class="rs">
     <template v-if="!finished && current">
       <div class="rs-bar">
-        <span>{{ idx + 1 }} из {{ tasks.length }}</span>
+        <span>{{ idx + 1 }} из {{ list.length }}</span>
         <span class="rs-clock" aria-label="Время на задание"><Icon name="stopwatch" /> {{ clock(elapsed) }}</span>
         <span>верно: {{ right }}</span>
       </div>
-      <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="tasks.length"><i :style="{ width: (idx / tasks.length) * 100 + '%' }"></i></div>
+      <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="list.length"><i :style="{ width: (idx / list.length) * 100 + '%' }"></i></div>
       <div v-if="owner && progress.data.combo >= 2" class="rs-combo">
         Серия {{ progress.data.combo }}<template v-if="nextCombo(progress.data.combo)">: ещё {{ nextCombo(progress.data.combo)!.left }} до +{{ nextCombo(progress.data.combo)!.coins }} монеток</template>
       </div>
@@ -329,7 +349,7 @@ onBeforeUnmount(() => {
         <p class="rs-sub">Как устроено верное предложение:</p>
         <SentenceBreakdown :sentence="current.sentence" />
       </div>
-      <button v-if="picked !== null && pending === null" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>
+      <button v-if="picked !== null && pending === null" class="rs-next" @click="next">{{ idx + 1 < list.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">
       <Cat :name="right === tasks.length ? 'cheer' : right * 2 >= tasks.length ? 'happy' : 'sad'" />
