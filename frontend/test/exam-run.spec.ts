@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { nextTick } from 'vue'
 import ExamRun from '@/components/korean/ExamRun.vue'
-import { blockRules, examParts, partPoints, type ExamBlock, type PointResult } from '@/data/korean/exam'
+import { blockRules, examParts, partPoints, type ExamBlock, type PartAnswers, type PointResult } from '@/data/korean/exam'
 
 /** Проходит часть экзамена: верно (из данных блоков) или специально неверно. */
 async function fillPart(wrapper: Awaited<ReturnType<typeof mountSuspended>>, blocks: ExamBlock[], correct: boolean) {
@@ -98,5 +98,32 @@ describe('ExamRun: часть итогового экзамена', () => {
     expect(wrong.length).toBeGreaterThan(points.length * 0.8)
     for (const p of wrong) expect(p.m && p.m.q && p.m.a && p.m.b).toBeTruthy()
     wrapper.unmount()
+  })
+
+  it('«Сохранить и выйти»: ответы отдаются без оценки, и при возврате восстанавливаются', async () => {
+    const blocks = examParts()[2]!
+    let paused: PartAnswers | null = null
+    let saved = false
+    const w1 = await mountSuspended(ExamRun, { props: { blocks, part: 2, parts: 3, onPause: (a: PartAnswers) => (paused = a), onSaved: () => (saved = true) } })
+    await nextTick()
+    // отвечаем только на несколько пунктов: блок с ошибками, первое предложение
+    const errBlock = blocks.findIndex(b => b.kind === 'errors')
+    const sec = [...w1.element.querySelectorAll<HTMLElement>('.er-block')][errBlock]!
+    sec.querySelectorAll<HTMLElement>('li')[0]!.querySelectorAll<HTMLButtonElement>('.er-yn .er-tile')[1]!.click()
+    await nextTick()
+    const pauseBtn = w1.element.querySelector<HTMLButtonElement>('.ex-pause')!
+    expect(pauseBtn.disabled).toBe(false) // без обязательного ответа на все пункты
+    pauseBtn.click()
+    await nextTick()
+    expect(saved).toBe(false)
+    expect(paused).not.toBeNull()
+    expect(paused!.verdict[`${errBlock}:0`]).toBe(true)
+    w1.unmount()
+    const w2 = await mountSuspended(ExamRun, { props: { blocks, part: 2, parts: 3, initial: paused! } })
+    await nextTick()
+    const sec2 = [...w2.element.querySelectorAll<HTMLElement>('.er-block')][errBlock]!
+    expect(sec2.querySelectorAll<HTMLElement>('li')[0]!.querySelectorAll('.er-yn .er-tile')[1]!.classList.contains('on')).toBe(true)
+    expect(w2.element.textContent).toContain('Осталось ответить')
+    w2.unmount()
   })
 })

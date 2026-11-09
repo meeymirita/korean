@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { blockPoints, partPoints, type ExamBlock, type ExamPiece, type PointResult } from '@/data/korean/exam'
+import { blockPoints, partPoints, type ExamBlock, type ExamPiece, type PartAnswers, type PointResult } from '@/data/korean/exam'
 
 /**
  * Одна часть итогового экзамена: крупные блоки на одной странице (текст с пропусками плитками, текст с вводом, перевод, порядок слов, поиск ошибок).
  * Ничего не проверяется и не показывается по ходу: кнопка внизу считает результат по каждому пункту (с правилом и разбором ошибки)
  * и отдаёт событием saved(points); результаты и разбор показывает страница экзамена после последней части.
  */
-const props = defineProps<{ blocks: ExamBlock[]; part: number; parts: number }>()
-const emit = defineEmits<{ saved: [points: PointResult[]] }>()
+const props = defineProps<{ blocks: ExamBlock[]; part: number; parts: number; /** ответы, сохранённые кнопкой «Сохранить и выйти» */ initial?: PartAnswers }>()
+const emit = defineEmits<{ saved: [points: PointResult[]]; pause: [answers: PartAnswers] }>()
 
 const total = computed(() => partPoints(props.blocks))
 const checked = ref(false)
@@ -20,6 +20,17 @@ const pick = reactive<Record<string, string>>({})
 const built = reactive<Record<string, number[]>>({})
 const verdict = reactive<Record<string, boolean>>({})
 const active = ref('')
+if (props.initial) {
+  Object.assign(gap, props.initial.gap)
+  Object.assign(pick, props.initial.pick)
+  Object.assign(built, props.initial.built)
+  Object.assign(verdict, props.initial.verdict)
+}
+/** «Сохранить и выйти»: текущие ответы отдаём наружу, оценки нет. */
+function pause() {
+  if (checked.value) return
+  emit('pause', JSON.parse(JSON.stringify({ gap, pick, built, verdict })) as PartAnswers)
+}
 // у списков перевода сразу выбрана подсказка «Выбери перевод…» (иначе поле выглядит пустым)
 props.blocks.forEach((b, bi) => {
   if (b.kind === 'match') b.items.forEach((_, i) => (pick[`${bi}:${i}`] = ''))
@@ -100,7 +111,7 @@ const answered = computed(() => {
 
 <template>
   <div class="er">
-    <p class="er-top">Часть <b>{{ part }}</b> из {{ parts }}: <b>{{ total }}</b> пунктов. Результаты и разбор будут после последней части. Отвечено: {{ answered }} из {{ total }}.</p>
+    <p class="er-top">Часть <b>{{ part }}</b> из {{ parts }}: <b>{{ total }}</b> пунктов. Результаты и разбор будут после последней части.</p>
 
     <section v-for="(b, bi) in blocks" :key="b.id" class="er-block">
       <h2>{{ bi + 1 }}. {{ b.title }} <small>{{ blockPoints(b) }} п.</small></h2>
@@ -169,7 +180,8 @@ const answered = computed(() => {
 
     <div class="er-foot">
       <button class="rs-start" type="button" :disabled="answered < total || checked" @click="check">{{ part < parts ? 'Сохранить часть' : 'Закончить экзамен' }}</button>
-      <small v-if="answered < total">Ответь на все пункты: осталось {{ total - answered }}.</small>
+      <button class="ex-pause" type="button" :disabled="checked" @click="pause">Сохранить и выйти</button>
+      <small v-if="answered < total">Осталось ответить: {{ total - answered }} из {{ total }}.</small>
       <small v-else-if="part < parts">Ответы сохранятся, потом можно остановиться и вернуться к части {{ part + 1 }}.</small>
     </div>
   </div>
@@ -219,4 +231,6 @@ const answered = computed(() => {
 .er-foot .rs-start { box-sizing: border-box; height: 48px; margin: 0; padding: 0 28px; }
 .er-foot small { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.3; }
 .er-foot .pg-v { margin: 0; }
+.ex-pause { height: 48px; padding: 0 22px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.ex-pause:disabled { opacity: .5; cursor: default; }
 </style>

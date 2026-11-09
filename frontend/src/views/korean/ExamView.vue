@@ -7,7 +7,7 @@ import { askConfirm } from '@/composables/useConfirm'
 import {
   EXAM_ID, EXAM_PARTS, EXAM_PASS, MIN_RULE, OWN_RULE, RECHECK_DAYS,
   examParts, examPassed, examNeed, examState, examTotal, partPoints, ruleLabel, summarize,
-  type ExamAttempt, type ExamDraft, type ExamMistake, type ExamResultRow, type PointResult, type RuleScores,
+  type ExamAttempt, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
 } from '@/data/korean/exam'
 import { useExamStore } from '@/stores/exam'
 import { useToastStore } from '@/stores/toast'
@@ -94,6 +94,19 @@ async function loadLog() {
 }
 watch(view, v => v === 'log' && void loadLog())
 
+/** «Сохранить и выйти»: ответы неоконченной части сохраняются в черновик без оценки. */
+async function pause(answers: PartAnswers) {
+  const d = draft.value
+  if (!d) return
+  d.partial = { part: partNo.value, answers }
+  busy.value = true
+  const err = await exams.saveDraft(d)
+  busy.value = false
+  if (err) return void toast.error(`Не сохранилось: ${err}`)
+  toast.ok('Ответы сохранены, можно продолжить позже')
+  home()
+}
+
 /** Часть сохранена: результат уходит в черновик; после последней части считаем итог и отправляем его. */
 async function saved(points: PointResult[]) {
   const d = draft.value
@@ -101,6 +114,7 @@ async function saved(points: PointResult[]) {
   const results = d.results.slice()
   results[partNo.value - 1] = points
   d.results = results
+  delete d.partial
   busy.value = true
   const err = await exams.saveDraft(d)
   if (err) {
@@ -146,7 +160,7 @@ const summaryText = (a: ExamAttempt) =>
     <template v-if="view === 'run' && ready">
       <template v-if="draft && blocks.length">
         <p class="intro">Итоговая оценка, часть {{ partNo }} из {{ EXAM_PARTS }}. Без подсказок и предметов Юны.</p>
-        <ExamRun :key="'p' + partNo + ':' + draft.startedAt" :blocks="blocks" :part="partNo" :parts="draft.parts.length" @saved="saved" />
+        <ExamRun :key="'p' + partNo + ':' + draft.startedAt" :blocks="blocks" :part="partNo" :parts="draft.parts.length" :initial="draft.partial?.part === partNo ? draft.partial.answers : undefined" @saved="saved" @pause="pause" />
         <p class="ex-exit"><button class="ex-link" type="button" :disabled="busy" @click="home">Выйти из экзамена (ответы этой части не сохранятся)</button></p>
       </template>
       <p v-else class="empty">Черновика экзамена нет. <button class="ex-link" type="button" @click="home">Назад</button></p>
@@ -227,7 +241,7 @@ const summaryText = (a: ExamAttempt) =>
       <!-- черновик -->
       <section v-if="draft" class="ex-card">
         <h2>Экзамен начат: сохранено частей {{ savedParts }} из {{ draft.parts.length }}</h2>
-        <p class="ex-sub">Следующая: часть {{ nextPart }} ({{ partPoints(draft.parts[nextPart - 1] ?? []) }} пунктов). Нужно будет набрать {{ examNeed(total) }} из {{ total }}.</p>
+        <p class="ex-sub">Следующая: часть {{ nextPart }} ({{ partPoints(draft.parts[nextPart - 1] ?? []) }} пунктов). Нужно будет набрать {{ examNeed(total) }} из {{ total }}.<template v-if="draft.partial"> Ответы в части {{ draft.partial.part }} уже частично сохранены.</template></p>
       </section>
 
       <div class="ex-btns">

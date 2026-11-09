@@ -65,8 +65,10 @@ export const examTotal = (parts: ExamBlock[][]) => parts.reduce((n, p) => n + pa
 export interface ExamMistake { b: string; q: string; y: string; a: string }
 /** Результат одного пункта: правило и верно ли; ошибка с разбором, если неверно. */
 export interface PointResult { rule: string; ok: boolean; m?: ExamMistake }
-/** Черновик экзамена на сервере: задания всех частей и результаты сохранённых (null, пока часть не пройдена). */
-export interface ExamDraft { v: 1; startedAt: number; parts: ExamBlock[][]; results: (PointResult[] | null)[] }
+/** Ответы в части, которая ещё не закончена: по ключам `блок:предложение:часть` (пропуски) и `блок:номер` (остальное). */
+export interface PartAnswers { gap: Record<string, string>; pick: Record<string, string>; built: Record<string, number[]>; verdict: Record<string, boolean> }
+/** Черновик экзамена на сервере: задания всех частей, результаты сохранённых (null, пока часть не пройдена) и неоконченная часть («Сохранить и выйти»). */
+export interface ExamDraft { v: 1; startedAt: number; parts: ExamBlock[][]; results: (PointResult[] | null)[]; partial?: { part: number; answers: PartAnswers } }
 export type RuleScores = Record<string, { ok: number; total: number }>
 
 /** Свёртка результатов всех частей: верных, всего, по правилам и список ошибок. */
