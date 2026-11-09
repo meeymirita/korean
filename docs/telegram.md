@@ -83,6 +83,8 @@ rm /tmp/u.json
 |---|---|
 | отправка, маршрут по темам, очистка, редактор General | `backend/src/notify/notify.service.ts`, `notify.controller.ts` |
 | шаблоны, оформление, анимированные эмодзи, `sampleMail` | `backend/src/mail/templates.ts` |
+| недельный отчёт файлом в «Тревоги» | `backend/src/admin/ops-report.service.ts` (`weekly`), `sendFileToTopic` в `notify.service.ts`, тесты `backend/test/weekly-report.spec.ts` |
+| недельная сводка заходов на словарь (понедельник 21:10, текст в «Тревоги») | `backend/src/dict/dict-visits-weekly.service.ts` |
 | вкладка | `frontend/src/components/cabinet/TelegramTab.vue`, `TelegramGuide.vue`, стили в `assets/cabinet.css` |
 | баннеры | `frontend/public/tg/` |
 | тесты | `backend/test/notify.service.spec.ts` |
