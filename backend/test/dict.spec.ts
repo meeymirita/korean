@@ -60,6 +60,30 @@ describe('большой словарь: алфавитные соседи', () 
   })
 })
 
+describe('большой словарь: алфавитный указатель', () => {
+  it('строит ссылки на начальные буквы и слоги и отдаёт слова порциями', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    const words = ['가다', '가게', '나다']
+    const docs = words.map((word, i) => ({ id: `id${i}`, word, hom: 1, pos: 'глагол', level: 'начальный', ru: `перевод ${i}` }))
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url.includes('/documents?')) return new Response(JSON.stringify({ results: words.map(word => ({ word })) }), { status: 200 })
+      const body = JSON.parse(String(init?.body)) as { filter: string }
+      const selected = words.filter(word => body.filter.includes(`"${word}"`))
+      return new Response(JSON.stringify({ hits: docs.filter(doc => selected.includes(doc.word)) }), { status: 200 })
+    }))
+    const svc = new DictService()
+    const map = await svc.sitemap()
+    expect(map.map(x => x.loc)).toContain('/dict/a')
+    expect(map.map(x => x.loc)).toContain('/dict/a/ㄱ')
+    expect(map.map(x => x.loc)).toContain('/dict/a/가')
+    const index = await svc.alphabetIndex()
+    expect(index.letters.find(x => x.value === 'ㄱ')).toMatchObject({ count: 2, syllables: [{ value: '가', count: 2 }] })
+    const page = await svc.alphabet('ㄱ', 0, 1)
+    expect(page).toMatchObject({ initial: 'ㄱ', total: 2, items: [{ word: '가게', ru: 'перевод 1' }] })
+  })
+})
+
 describe('большой словарь: словарная форма по спрягаемой', () => {
   const has = (typed: string, dict: string) => expect(dictionaryForms(typed)).toContain(dict)
   it('находит начальную форму частых спряжений', () => {

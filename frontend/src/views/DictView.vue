@@ -239,6 +239,7 @@ async function save(h: { id: string; word: string; pron: string; ru: string }) {
         <RouterLink to="/dict/podborki/glagoly">Глаголы</RouterLink>
         <RouterLink to="/dict/podborki/eda">Еда</RouterLink>
         <RouterLink to="/dict/podborki">Все подборки</RouterLink>
+        <RouterLink to="/dict/a">По алфавиту</RouterLink>
       </nav>
 
       <section v-if="!hasQuery && !pickedWord && recent.length" class="recent" aria-label="Недавно искал">

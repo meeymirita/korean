@@ -11,6 +11,8 @@ const LIMIT = 20
 const MAX_QUERY = 120
 const TASK_WAIT_MS = 5 * 60_000
 const LEVELS = ['начальный', 'средний', 'высокий', 'нет']
+const CHOSEONG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+const ALPHABET_PAGE_SIZE = 100
 
 export interface DictHit extends Omit<DictDoc, 'senses' | 'def' | 'ru'> {
   ru: string
@@ -68,6 +70,19 @@ export const sitemapNeighbors = (words: string[], word: string) => {
   const index = words.indexOf(word)
   return { previous: index > 0 ? words[index - 1]! : null, next: index >= 0 && index < words.length - 1 ? words[index + 1]! : null }
 }
+
+const initialOf = (word: string) => {
+  const code = word.codePointAt(0) ?? 0
+  return code >= 0xac00 && code <= 0xd7a3 ? CHOSEONG[Math.floor((code - 0xac00) / 588)] : undefined
+}
+const syllableOf = (word: string) => {
+  const first = [...word][0] ?? ''
+  return first && initialOf(first) ? first : undefined
+}
+const namesFromSitemap = (urls: { loc: string }[]) => urls
+  .map(({ loc }) => loc)
+  .filter(loc => loc.startsWith('/dict/') && loc !== '/dict/podborki' && !loc.startsWith('/dict/podborki/') && !loc.startsWith('/dict/a/'))
+  .map(loc => loc.slice('/dict/'.length))
 
 const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
@@ -150,11 +165,25 @@ export class DictService implements OnApplicationBootstrap {
         for (const r of rows) if (r.word && !/[\s/?#%]/.test(r.word)) words.add(r.word)
         if (rows.length < 1000) break
       }
+      const letterCounts = new Map<string, number>()
+      const syllableCounts = new Map<string, number>()
+      for (const word of words) {
+        const letter = initialOf(word)
+        const syllable = syllableOf(word)
+        if (letter) letterCounts.set(letter, (letterCounts.get(letter) ?? 0) + 1)
+        if (syllable) syllableCounts.set(syllable, (syllableCounts.get(syllable) ?? 0) + 1)
+      }
       const urls = [
         { loc: '/dict/podborki' },
         ...COLLECTIONS.map(c => ({ loc: `/dict/podborki/${c.slug}` })),
+        { loc: '/dict/a' },
+        ...CHOSEONG.filter(letter => letterCounts.has(letter)).map(letter => ({ loc: `/dict/a/${letter}` })),
+        ...[...syllableCounts.keys()].sort().map(syllable => ({ loc: `/dict/a/${syllable}` })),
         ...[...words].sort().map(w => ({ loc: `/dict/${w}` })),
       ]
+      for (const [initial, count] of [...letterCounts, ...syllableCounts]) {
+        for (let page = 2; page <= Math.ceil(count / ALPHABET_PAGE_SIZE); page++) urls.push({ loc: `/dict/a/${initial}/${page}` })
+      }
       if (urls.length && !this.indexing) this.sitemapCache = { at: Date.now(), urls }
       return urls
     })().finally(() => { this.sitemapLoading = null })
@@ -394,10 +423,38 @@ export class DictService implements OnApplicationBootstrap {
       .filter(d => !seenSame.has(d.word) && (seenSame.add(d.word), true))
       .slice(0, 12)
       .map(d => ({ word: d.word, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 3).join('; ') }))
-    const wordList = (await this.sitemap())
-      .map(({ loc }) => loc)
-      .filter(loc => loc.startsWith('/dict/') && loc !== '/dict/podborki' && !loc.startsWith('/dict/podborki/'))
-      .map(loc => loc.slice('/dict/'.length))
+    const wordList = namesFromSitemap(await this.sitemap())
     return { word: w, entries, related, similar, category: cat ?? '', navigation: sitemapNeighbors(wordList, w) }
+  }
+
+  /** Счётчики для общедоступного алфавитного указателя. */
+  async alphabetIndex() {
+    const words = namesFromSitemap(await this.sitemap())
+    const counts = new Map<string, number>()
+    for (const word of words) {
+      const syllable = syllableOf(word)
+      const letter = initialOf(word)
+      if (syllable) counts.set(syllable, (counts.get(syllable) ?? 0) + 1)
+      if (letter) counts.set(letter, (counts.get(letter) ?? 0) + 1)
+    }
+    return { letters: CHOSEONG.filter(letter => counts.has(letter)).map(letter => ({ value: letter, count: counts.get(letter)!, syllables: [...counts].filter(([value]) => !!initialOf(value) && initialOf(value) === letter).map(([value, count]) => ({ value, count })) })) }
+  }
+
+  /** Слова, начинающиеся с выбранной буквы хангыля или конкретного слога, порциями по 100. */
+  async alphabet(initial: string, offset = 0, limit = ALPHABET_PAGE_SIZE) {
+    this.notWhileIndexing()
+    const key = initial.trim()
+    if (!CHOSEONG.includes(key) && !(key.length === 1 && initialOf(key))) throw new NotFoundException({ error: 'нет такого алфавитного раздела' })
+    const words = namesFromSitemap(await this.sitemap())
+    const filtered = words.filter(word => CHOSEONG.includes(key) ? initialOf(word) === key : syllableOf(word) === key)
+    const selected = filtered.slice(offset, offset + limit)
+    if (!selected.length) return { initial: key, items: [], total: filtered.length, offset, limit }
+    const query = await this.req<{ hits?: Pick<DictDoc, 'id' | 'word' | 'hom' | 'pos' | 'level' | 'ru'>[] }>(`/indexes/${INDEX}/search`, {
+      method: 'POST',
+      body: JSON.stringify({ q: '', limit: 1000, filter: `word IN [${selected.map(q1).join(', ')}]`, sort: ['word:asc', 'hom:asc'], attributesToRetrieve: ['id', 'word', 'hom', 'pos', 'level', 'ru'] }),
+    }, [404])
+    const byWord = new Map<string, Pick<DictDoc, 'id' | 'word' | 'hom' | 'pos' | 'level' | 'ru'>>()
+    for (const hit of query?.hits ?? []) if (!byWord.has(hit.word)) byWord.set(hit.word, { ...hit, ru: shortRu(hit.ru, 3) })
+    return { initial: key, items: selected.flatMap(word => byWord.has(word) ? [byWord.get(word)!] : []), total: filtered.length, offset, limit }
   }
 }

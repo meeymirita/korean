@@ -49,6 +49,23 @@ export class DictController {
     return this.dict.collection(slug)
   }
 
+  /** Счётчики открытого алфавитного указателя. */
+  @Public()
+  @Header('Cache-Control', 'public, max-age=3600')
+  @Get('alphabet-index')
+  alphabetIndex() {
+    return this.dict.alphabetIndex()
+  }
+
+  /** Слова с выбранной начальной согласной или слогом. */
+  @Public()
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+  @Get('alphabet/:initial')
+  alphabet(@Param('initial') initial: string, @Query('offset') offset = '0') {
+    if (!/^\d{1,5}$/.test(offset)) throw new BadRequestException({ error: 'неверное смещение' })
+    return this.dict.alphabet(initial, Number(offset))
+  }
+
   /** Открытая страница слова: все омонимы и слова, где оно встречается. */
   @Public()
   @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
