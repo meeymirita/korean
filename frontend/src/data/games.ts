@@ -64,6 +64,7 @@ export const GAME_GROUPS: GameGroup[] = [
       { id: 'part', name: 'Частицы и счёт', desc: 'Вставь частицу или счётное слово', icon: 'macaron', to: '/game/home?game=part' },
       { id: 'particles', name: 'Частицы и окончания', desc: 'Девять правил со своими наборами', icon: 'wand', to: '/game/home?game=particles' },
       { id: 'err', name: 'Найди ошибку', desc: 'Найди неверное слово в предложении', icon: 'eraser', to: '/game/home?game=err' },
+      { id: 'only', name: 'Только (만)', desc: '«Только» или «тоже»: 만 и 도, а ещё 에만, 에서만', icon: 'sparkle', to: '/game/home?game=only' },
     ],
   },
   {
@@ -135,6 +136,7 @@ export const GAME_GROUPS: GameGroup[] = [
       { id: 'days', name: 'Дни недели', desc: 'Понедельник, будни, выходные, эта неделя', icon: 'sun', to: '/game/home?game=days' },
       { id: 'when', name: 'Когда? (에)', desc: 'Нужна ли частица «когда»: в пятницу, но сегодня', icon: 'clock', to: '/game/home?game=when' },
       { id: 'too', name: 'Тоже (도)', desc: 'Вставь «тоже»: 도, 에도, 에서도', icon: 'hearts', to: '/game/home?game=too' },
+      { id: 'fut', name: 'Планы (-(으)ㄹ 거예요)', desc: 'Буду делать: 갈, 먹을, 살 거예요; сейчас или потом', icon: 'rocket', to: '/game/home?game=fut' },
     ],
   },
 ]

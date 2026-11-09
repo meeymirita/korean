@@ -52,7 +52,8 @@ const MODES=[
   {id:'days',icon:'📅',name:'Дни недели'},{id:'when',icon:'🕒',name:'Когда? (에)'},{id:'too',icon:'➕',name:'Тоже (도)'},
   {id:'num',icon:'🔢',name:'Числа'},{id:'price',icon:'💴',name:'Сколько стоит?'},{id:'count',icon:'🥤',name:'Счётные слова'},
   {id:'neg',icon:'🙅',name:'Это или не это'},{id:'place',icon:'📍',name:'Куда, где'},{id:'dem',icon:'👉',name:'Этот, тот, вон тот'},{id:'polite',icon:'🙇',name:'Уровень вежливости'},
-  {id:'ptext',icon:'🧩',name:'Тексты по правилу'}
+  {id:'ptext',icon:'🧩',name:'Тексты по правилу'},
+  {id:'fut',icon:'🔮',name:'Планы (-(으)ㄹ 거예요)'},{id:'only',icon:'☝️',name:'Только (만)'}
 ];
 
 /* ---------- подсказки по режимам: кнопка «?» рядом с заданием раскрывает, что делать, и пример ---------- */
@@ -76,6 +77,8 @@ const MODE_HELP={
   num:['Числа бывают двух видов: корейские (하나, 둘, 셋…) для счёта вещей и китайские (일, 이, 삼…) для цен, дат, номеров. Выбери число или цифру.','Пример: 3 по-корейски (счёт) → 셋; 일곱 → 7; 100 → 백.'],
   price:['Цены читаются китайскими числами + 원: 천 (1000), 만 (10 000). Перед 만 цифру 일 не говорят. Выбери верное чтение цены или цену.','Пример: 3 500원 → 삼천오백 원; 10 000원 → 만 원.'],
   count:['Перед счётным словом (개, 병, 잔, 그릇) стоит корейское число в короткой форме: 한, 두, 세, 네. Выбери счётное слово или форму числа.','Пример: 물 한 병 주세요; 사과 세 개.'],
+  fut:['Так говорят о планах: «буду делать». Только глаголы: основа + ㄹ (нет 받침: 가 → 갈) или 을 (есть 받침: 먹 → 먹을), у глаголов на ㄹ ничего не добавляем (살 → 살 거예요); сам 거예요 не меняется. Иногда нужно выбрать между «сейчас» (지금, настоящее) и «потом» (내일, 주말에: будущее).','Пример: 내일 친구를 ___ → 만날 거예요; 지금 책을 읽어요, а 내일 책을 읽을 거예요.'],
+  only:['Частица 만 значит «только»: она выделяет одно и стоит вместо 은/는, 이/가, 을/를, а с 에 и 에서 после них (학교에만, 집에서만). 도 значит «тоже». Выбери по смыслу и по порядку частиц.','Пример: 친구만 와요 — «приходит только друг»; 학교에만 가요 — «хожу только в школу»; 친구도 와요 — «друг тоже приходит».'],
   neg:['Скажи по-корейски «это …» или «это не …». Есть 받침 (согласная внизу) → 이에요 и 이 아니에요, нет 받침 → 예요 и 가 아니에요. Смотри и на смысл: «это» или «не это». Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «Это книга» → 책이에요; «Это не кофе» → 커피가 아니에요.'],
   place:['Выбери частицу при месте. 에 — куда идёшь (가요) и где находишься (있어요). 에서 — где что-то делаешь (공부해요, 운동해요, 먹어요). Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: 학교___ 가요 → 에; 도서관___ 공부해요 → 에서.'],
   dem:['이 / 그 / 저 («этот / тот / вон тот»), 이것 / 그것 / 저것 («эта вещь…») и 여기 / 거기 / 저기 («здесь / там / вон там»). Первое рядом со мной, второе рядом с собеседником, третье далеко от обоих. Пометка в скобках у предложения показывает, где предмет. Над заданием три уровня: «Простой» (одно предложение), «Рассказ 2–4» и «Длинный 5–10»: несколько предложений с пропусками. Нажми плитку внизу, потом пропуск (нажми на заполненный пропуск, чтобы убрать ответ), в конце «Проверить». Иконка слева от предложения показывает перевод, «Разбор» справа открывается после проверки.','Пример: «вон тот» → 저; «здесь» → 여기.'],
@@ -1227,6 +1230,104 @@ function genToo(){
     explain:[x[0]+right+x[1],at?'С 에 и 에서 частица 도 добавляется: 에도, 에서도.':'도 заменяет 은/는, 이/가, 을/를: вместе с ними её не ставят.'],hp:x[0]+' ___'+x[1],hr:right,icon:'➕'};
 }
 
+/* «Планы»: -(으)ㄹ 거예요. Часть 1: форма будущего в предложении, часть 2: «сейчас или потом» (지금 и 내일) */
+/** [начало, конец, глагол, перевод, настоящее, прошедшее] */
+const FUT_S=[
+  ['내일 친구를 ','.','만나다','Завтра встречусь с другом.','만나요','만났어요'],
+  ['저녁에 한국어 책을 ','.','읽다','Вечером буду читать книгу по-корейски.','읽어요','읽었어요'],
+  ['토요일에 ','.','운동하다','В субботу буду заниматься спортом.','운동해요','운동했어요'],
+  ['집에서 ','.','쉬다','Буду отдыхать дома.','쉬어요','쉬었어요'],
+  ['바다에 ','.','가다','Поеду на море.','가요','갔어요'],
+  ['사진을 ','.','찍다','Буду фотографировать.','찍어요','찍었어요'],
+  ['서울에서 ','.','살다','Буду жить в Сеуле.','살아요','살았어요'],
+  ['주말에 밥을 ','.','만들다','На выходных приготовлю еду.','만들어요','만들었어요'],
+  ['오늘 저녁에 고기를 안 ','.','먹다','Сегодня вечером не буду есть мясо.','먹어요','먹었어요'],
+  ['혼자 영화를 ','.','보다','Буду смотреть фильм одна/один.','봐요','봤어요'],
+];
+/** [объект или место, глагол, настоящее, «сейчас» по-русски, «потом» по-русски, прошедшее] */
+const FUT_NOW=[
+  ['한국어를','공부하다','공부해요','учу корейский','буду учить корейский','공부했어요'],
+  ['커피를','마시다','마셔요','пью кофе','буду пить кофе','마셨어요'],
+  ['책을','읽다','읽어요','читаю книгу','буду читать книгу','읽었어요'],
+  ['친구를','만나다','만나요','встречаюсь с другом','встречусь с другом','만났어요'],
+  ['집에서','쉬다','쉬어요','отдыхаю дома','буду отдыхать дома','쉬었어요'],
+  ['밥을','먹다','먹어요','ем','буду есть','먹었어요'],
+  ['사진을','찍다','찍어요','фотографирую','буду фотографировать','찍었어요'],
+];
+const FUT_LATER=[['내일','завтра'],['주말에','на выходных'],['토요일에','в субботу']];
+function futWrongMark(ko){
+  const stem=ko.slice(0,-1),j=jong(stem[stem.length-1]);
+  return j===0||j===8?stem+'을 거예요':stem+'ㄹ 거예요';
+}
+function genFut(){
+  const later=Math.random()<.4;
+  if(!later){
+    const i=pickW(FUT_S.map((x,k)=>k),k=>'ft:'+k);
+    const x=FUT_S[i];
+    const right=futureForm(x[2]);
+    const set=[right,futWrongMark(x[2]),x[4],x[5]].filter((v,k,a)=>a.indexOf(v)===k);
+    const opts=shuffle(set).map(t=>({text:t,ko:true}));
+    const stem=x[2].slice(0,-1),j=jong(stem[stem.length-1]);
+    return {type:'choice',mode:'fut',key:'ft:'+i,word:null,label:'Поставь глагол в форму будущего: -(으)ㄹ 거예요',sentence:{pre:x[0],post:x[1]},ru:x[3],
+      options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+      explain:[x[0]+right+x[1],(j===8?'Основа на ㄹ: ничего не добавляем':j===0?'받침 нет: ㄹ под последней гласной':'받침 есть: 을')+'; сам 거예요 не меняется.'],hp:x[0]+'___'+x[1],hr:right,icon:'🔮'};
+  }
+  const i=pickW(FUT_NOW.map((x,k)=>k),k=>'fn:'+k);
+  const x=FUT_NOW[i];
+  const now=Math.random()<.5;
+  const lt=rnd(FUT_LATER);
+  const pre=(now?'지금':lt[0])+' '+x[0]+' ';
+  const fut=futureForm(x[1]);
+  const right=now?x[2]:fut;
+  const set=[right,now?fut:x[2],futWrongMark(x[1]),x[5]];
+  const opts=shuffle(set.filter((v,k,a)=>a.indexOf(v)===k)).map(t=>({text:t,ko:true}));
+  const ru=(now?'Сейчас ':cap1(lt[1])+' ')+(now?x[3]:x[4])+'.';
+  return {type:'choice',mode:'fut',key:'fn:'+i+':'+(now?'n':'l'),word:null,label:'Сейчас или потом? Выбери форму',sentence:{pre:pre,post:'.'},ru:ru,
+    options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+    explain:[pre+right+'.',now?'지금 — это сейчас: обычное настоящее время.':'План на потом: -(으)ㄹ 거예요 («буду…»).'],hp:pre+'___.',hr:right,icon:'🔮'};
+}
+
+/* «Только (만)»: 만 или 도 по смыслу, место 만 рядом с 에 / 에서 */
+/** [начало, конец, перевод, правильный ответ (만), частица без «только»] */
+const ONLY_P=[
+  ['교실에 선생님',' 있어요.','В классе только учитель.','만','이'],
+  ['저는 김치',' 먹어요.','Я ем только кимчи.','만','를'],
+  ['친구',' 와요.','Приходит только друг.','만','가'],
+  ['하이 씨',' 회사원이에요.','Только Хай сотрудник компании.','만','는'],
+  ['우리 반에서 저',' 영국 사람이에요.','В нашей группе только я англичанин.','만','는'],
+  ['저는 이 가수',' 좋아해요.','Мне нравится только этот певец.','만','를'],
+];
+/** [слово, конец, перевод, верное сочетание, неверные] */
+const ONLY_AT=[
+  ['학교',' 가요.','Хожу только в школу.','에만',['만에','는만','를만']],
+  ['집',' 커피를 마셔요.','Пью кофе только дома.','에서만',['만에서','에만','는만']],
+  ['일요일',' 청소해요.','Убираюсь только по воскресеньям.','에만',['만에','에서만','는만']],
+  ['평일',' 학교에 가요.','В школу хожу только в будни.','에만',['만에','에서만','는만']],
+  ['돌하르방은 제주도',' 있어요.','Статуи дольхарбан есть только на острове Чеджу.','에만',['만에','에서만','는만']],
+  ['저는 책',' 읽어요.','Я читаю только книги.','만',['을만','를만','은만']],
+];
+const ONLY_PAIR={'이':'가','가':'이','은':'는','는':'은','을':'를','를':'을'};
+function genOnly(){
+  const at=Math.random()<.4;
+  if(at){
+    const i=pickW(ONLY_AT.map((x,k)=>k),k=>'oa:'+k);
+    const x=ONLY_AT[i];
+    const set=shuffle([x[3]].concat(x[4])).map(t=>({text:t,ko:true}));
+    return {type:'choice',mode:'only',key:'oa:'+i,word:null,label:'Поставь «только» на своё место',sentence:{pre:x[0],post:x[1]},ru:x[2],
+      options:set,correct:set.findIndex(o=>o.text===x[3]),right:x[3],
+      explain:[x[0]+x[3]+x[1],x[3]==='만'?'Вместо 을/를 ставим просто 만: «책만».':'Сначала 에 / 에서, потом 만: «'+x[3]+'». 만 не ставится перед 에 и не рядом с 은/는, 이/가, 을/를.'],hp:x[0]+'___'+x[1],hr:x[3],icon:'☝️'};
+  }
+  const too=Math.random()<.4;
+  const x=too?TOO[pickW(TOO.map((y,k)=>k),k=>'ot:'+k)]:ONLY_P[pickW(ONLY_P.map((y,k)=>k),k=>'op:'+k)];
+  const base=x[3]==='만'||x[3]==='도'?x[4]:x[3];
+  const right=too?'도':'만';
+  const set=[right,too?'만':'도',base,ONLY_PAIR[base]];
+  const opts=shuffle(set).map(t=>({text:t,ko:true}));
+  return {type:'choice',mode:'only',key:(too?'ot:':'op:')+x[0]+x[1],word:null,label:'Вставь частицу по смыслу: «только» или «тоже»',sentence:{pre:x[0],post:x[1]},ru:x[2],
+    options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+    explain:[x[0]+right+x[1],too?'도 добавляет: «тоже». Вместо 은/는, 이/가, 을/를.':'만 выделяет одно: «только». Вместо 은/는, 이/가, 을/를; 받침 на неё не влияет.'],hp:x[0]+' ___'+x[1],hr:right,icon:'☝️'};
+}
+
 /* ---------- «Числа и деньги»: числа, цены, счётные слова ---------- */
 const NAT=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const SINO=['일','이','삼','사','오','육','칠','팔','구','십'];
@@ -1348,10 +1449,10 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext};
+const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,fut:genFut,only:genOnly};
 function genQuestion(){
   let m=S.mode;
-  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite']);
+  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);
   return GEN[m]();
 }
 
@@ -1730,9 +1831,22 @@ function teachOf(q){
 function transOf(q,s){
   return TRANSLATIONS[s]||q.trans||(q.sentence&&q.mode!=='form'?q.ru:'')||'';
 }
+/** Карточка разбора относится к слову задания: само слово или его основа с окончанием (타다 → 타요). */
+function isWordSeg(sg,word){
+  if(sg.type==='particle'||sg.type==='unknown')return false;
+  const stem=word.endsWith('다')?word.slice(0,-1):word;
+  return sg.text===word||(stem.length>0&&sg.text.startsWith(stem));
+}
+/** Предложение для разбора взято не из задания, а как пример слова q.word из словаря (тогда его надо подписать). */
+function isWordExample(q,teach){
+  if(!q.word||q.teach)return false;
+  const w=DICT.find(d=>d.k===q.word);
+  return !!(w&&w.s&&w.s===teach);
+}
 /** «Как собрано»: карточки слов, частиц и окончаний, объяснения и ссылки на правила, те же, что в разборе предложений словаря. */
-function drawBreakdown(sentence,trans){
+function drawBreakdown(sentence,trans,exampleOf){
   const box=el('div','bd');
+  if(exampleOf)box.appendChild(el('div','bd-cap','Пример со словом «'+exampleOf+'»: оно выделено в разборе'));
   box.appendChild(el('div','bd-ko',sentence));
   if(trans)box.appendChild(el('div','bd-tr','«'+trans+'»'));
   box.appendChild(el('div','bd-title','Как собрано'));
@@ -1740,7 +1854,7 @@ function drawBreakdown(sentence,trans){
   const segs=analyze(sentence);
   if(segs.every(function(sg){return sg.type==='unknown';}))return document.createDocumentFragment();
   segs.forEach(function(sg){
-    const c=el('div','bd-card '+sg.type);
+    const c=el('div','bd-card '+sg.type+(exampleOf&&isWordSeg(sg,exampleOf)?' bd-hit':''));
     c.appendChild(el('div','bd-kind',SEG_LABEL[sg.type]));
     c.appendChild(el('div','bd-k',sg.text));
     if(sg.reading)c.appendChild(el('div','bd-r',sg.reading));
@@ -1765,7 +1879,7 @@ function showFeedback(q,ok){
     fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
     // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
     const teach=S.blitz.on?'':teachOf(q);
-    const bd=teach?drawBreakdown(teach,transOf(q,teach)):null;
+    const bd=teach?drawBreakdown(teach,transOf(q,teach),isWordExample(q,teach)?q.word:''):null;
     const shown=!!(bd&&bd.childNodes.length);
     q.explain.forEach(t=>{if(t&&!(shown&&t.trim()===teach))fb.appendChild(el('div','fbt',t));});
     if(shown)fb.appendChild(bd);

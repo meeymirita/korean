@@ -4,7 +4,7 @@ import MarkStar from '@/components/korean/MarkStar.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { trainableRule } from '@/data/korean/rule-tasks'
-import { famOfCard } from '@/game/families'
+import { famOfCard, gameOfCard } from '@/game/families'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { F, blk } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
@@ -20,6 +20,14 @@ const router = useRouter()
 const canTrain = computed(() => progress.unlocked && !!current.value && trainableRule(current.value))
 /** «Текст по правилу»: есть у карточек про частицы 은/는, 이/가, 을/를, 에, 에서, 하고. */
 const textFam = computed(() => (progress.unlocked && current.value ? famOfCard(current.value.id) : undefined))
+/** «Игра по правилу»: свой режим игры у карточки (-(으)ㄹ 거예요, 만). */
+const ruleGame = computed(() => (progress.unlocked && current.value ? gameOfCard(current.value.id) : undefined))
+function playGame() {
+  const game = ruleGame.value
+  if (!game) return
+  close()
+  void router.push({ path: '/game/home', query: { game } })
+}
 function trainText() {
   const fam = textFam.value
   if (!fam) return
@@ -128,6 +136,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
               {{ isOk ? 'пройдено' : 'ещё рано' }}
             </span>
             <button v-if="canTrain" type="button" class="pass train" title="Игра из примеров этой карточки" @click="train">Потренировать это правило</button>
+            <button v-if="ruleGame" type="button" class="pass train" title="Режим игры именно про это правило" @click="playGame">Игра по правилу</button>
             <button v-if="textFam" type="button" class="pass train" title="Предложения и рассказы с этой частицей: поставь её в пропуски" @click="trainText">Текст по правилу</button>
             <button v-if="photo" type="button" class="pass ph" title="Показать фото Юны к этому правилу" @click="viewer = photo!">Фото</button>
             <button v-if="owner && current.st === 'ok'" type="button" class="pass" :class="{ on: unmarked }" :aria-pressed="unmarked" :title="unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»: карточка не пройдена'" @click="progress.toggleMark('u', current.id)">

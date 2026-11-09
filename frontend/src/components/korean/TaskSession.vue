@@ -344,8 +344,8 @@ onBeforeUnmount(() => {
             </span>
           </li>
         </ul>
-        <p class="rs-sub">Как устроено верное предложение:</p>
-        <SentenceBreakdown :sentence="current.sentence" />
+        <p v-if="current.pairOf || current.prompt.includes('＿')" class="rs-sub">Как устроено верное предложение:</p>
+        <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" />
       </div>
       <button v-if="picked !== null && pending === null" class="rs-next" @click="next">{{ idx + 1 < list.length ? 'Дальше →' : 'Итог' }}</button>
     </template>

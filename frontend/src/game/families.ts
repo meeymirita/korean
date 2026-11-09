@@ -27,3 +27,6 @@ export const PFAMS: RuleFamily[] = [
 
 /** Семья по id карточки грамматики (для кнопки «Текст по правилу» в окне карточки), у других карточек нет. */
 export const famOfCard = (cardId: string): string | undefined => BASE.find(f => f.g.includes(cardId))?.id
+
+/** Игра движка, которая тренирует именно это правило (кнопка «Игра по правилу» в окне карточки). */
+export const gameOfCard = (cardId: string): string | undefined => ({ future_my: 'fut', man: 'only' } as Record<string, string>)[cardId]
