@@ -30,7 +30,6 @@ const missed = ref<Task[]>([])
 const right = ref(0)
 const scheduledRetries = new Set<number>()
 const completedTasks = new Set<number>()
-const rewardedWords = new Set<string>()
 /** Отметка «как прошло»: одна на серию, после неё кнопки заменяются подтверждением. */
 const moodSet = ref<Mood | null>(null)
 function setMood(m: Mood) {
@@ -213,7 +212,6 @@ watch(
     right.value = 0
     scheduledRetries.clear()
     completedTasks.clear()
-    rewardedWords.clear()
     moodSet.value = null
     times.value = []
     shownAt.value = Date.now()
@@ -239,8 +237,9 @@ function commit(option: string) {
   picked.value = option
   times.value.push(Math.min((Date.now() - shownAt.value) / 1000, PACE_CAP))
   const ok = option === t.answer
+  const already = ok && completedTasks.has(t.id)
   if (ok) {
-    if (!completedTasks.has(t.id)) right.value++
+    if (!already) right.value++
     completedTasks.add(t.id)
     missed.value = missed.value.filter(task => task.id !== t.id)
   } else {
@@ -251,10 +250,9 @@ function commit(option: string) {
       list.value.splice(Math.min(list.value.length, idx.value + 1 + delay), 0, t)
     }
   }
-  const rewardKey = t.word ?? `task:${t.id}`
-  if (!ok || !rewardedWords.has(rewardKey)) {
+  // повтор после ошибки засчитывается (ошибка −1, верно +1); второй верный ответ на то же задание не начисляется
+  if (!already) {
     progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, ...(t.gram ? { g: t.gram } : {}) } })
-    if (ok) rewardedWords.add(rewardKey)
   }
   ;(ok ? pop : shake)(zone.value)
 }

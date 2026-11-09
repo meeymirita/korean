@@ -111,9 +111,9 @@ const S={
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
-  blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null},retryQueue:[],retryKeys:new Set(),rewardedWords:new Set()
+  blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null},retryQueue:[],retryKeys:new Set()
 };
-S.retryQueue=[];S.retryKeys=new Set();S.rewardedWords=new Set();
+S.retryQueue=[];S.retryKeys=new Set();
 function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
@@ -1691,9 +1691,7 @@ function finish(ok,chosen,qq,quiet){
     bm.ok++;if(B.streak>bm.best)bm.best=B.streak;
     const m=q.key&&S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
-    const rewardKey=q.word||q.key;
-    const pr=rewardKey&&S.rewardedWords.has(rewardKey)?{}:hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr,...(q.mode?{g:q.mode}:{})},xp:q.xp!==undefined?q.xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
-    if(rewardKey)S.rewardedWords.add(rewardKey);
+    const pr=hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr,...(q.mode?{g:q.mode}:{})},xp:q.xp!==undefined?q.xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
     if(pr.bloomed)msgs.push('🌸 Слово «'+q.word+'» расцвело в саду!');
     if(pr.levelUp)msgs.push('⭐ Новый уровень '+pr.level+': '+pr.title+'!');
     if(pr.goalReached)msgs.push('🎯 Цель дня выполнена!');
@@ -1785,7 +1783,7 @@ function next(){
   if(S.blitz.on&&S.blitz.left<=0)return;
   if(S.surv.on&&S.surv.lives<=0){endSurv();return;}
   const due=S.retryQueue.findIndex(x=>x.left<=0);
-  if(due>=0)renderQuestion(S.retryQueue.splice(due,1)[0].q);
+  if(due>=0){const rq=S.retryQueue.splice(due,1)[0].q;S.retryKeys.delete(rq.word||rq.key);renderQuestion(rq);}
   else{S.retryQueue.forEach(x=>x.left--);renderQuestion(genQuestion());}
 }
 

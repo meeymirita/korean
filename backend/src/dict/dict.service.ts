@@ -423,8 +423,9 @@ export class DictService implements OnApplicationBootstrap {
       .filter(d => !seenSame.has(d.word) && (seenSame.add(d.word), true))
       .slice(0, 12)
       .map(d => ({ word: d.word, pos: d.pos, level: d.level, ru: d.ru.split('; ').slice(0, 3).join('; ') }))
-    const wordList = namesFromSitemap(await this.sitemap())
-    return { word: w, entries, related, similar, category: cat ?? '', navigation: sitemapNeighbors(wordList, w) }
+    // соседи по алфавиту не обязательны: если карта слов не собралась, страница слова всё равно открывается
+    const navigation = await this.sitemap().then(urls => sitemapNeighbors(namesFromSitemap(urls), w)).catch(() => undefined)
+    return { word: w, entries, related, similar, category: cat ?? '', navigation }
   }
 
   /** Счётчики для общедоступного алфавитного указателя. */
