@@ -330,4 +330,14 @@ describe('большой словарь: частотный список и по
     await expect(svc.collection('top-100')).rejects.toMatchObject({ status: 503 })
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  it('карта сайта отдаёт исходные слова без двойного URL-кодирования', async () => {
+    process.env.MEILISEARCH_URL = 'http://meili:7700'
+    process.env.MEILISEARCH_MASTER_KEY = 'k'
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ results: [{ word: '학생' }, { word: '가다' }] }), { status: 200 })))
+    const urls = await new DictService().sitemap()
+    expect(urls).toContainEqual({ loc: '/dict/학생' })
+    expect(urls).toContainEqual({ loc: '/dict/가다' })
+    expect(urls.some(({ loc }) => /%25/i.test(loc))).toBe(false)
+  })
 })
