@@ -11,6 +11,7 @@ import { EXCHANGES } from './dialogs'
 import { STORIES, RULE_SENTENCES } from './stories'
 import { PFAMS } from './families'
 import { ptextPool } from './ptext-pool'
+import { futureForm } from '@/data/korean/conjugation'
 import { syllableRows, syllableVowels } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
 import { gsap } from 'gsap'
@@ -58,7 +59,7 @@ const MODES=[
 const MODE_HELP={
   word:['Видишь корейское слово — выбери его перевод на русский.','Пример: 마시다 → «пить».'],
   rev:['Видишь русское слово — выбери его по-корейски.','Пример: «пить» → 마시다.'],
-  form:['Выбери верную форму глагола или прилагательного: настоящее или прошедшее время, вежливый стиль. Иногда форма стоит в предложении со словом «вчера» или «сейчас»: смотри на него.','Пример: 마시다 → настоящее 마셔요, прошедшее 마셨어요; «вчера» → 먹다 → 먹었어요.'],
+  form:['Выбери верную форму глагола или прилагательного: настоящее или прошедшее время, вежливый стиль; у глаголов иногда будущее (-(으)ㄹ 거예요). Иногда форма стоит в предложении со словом «вчера» или «сейчас»: смотри на него.','Пример: 마시다 → настоящее 마셔요, прошедшее 마셨어요, будущее 마실 거예요; «вчера» → 먹다 → 먹었어요.'],
   qw:['В предложении пропущено вопросительное слово: 어디 (где), 누구 (кто), 뭐 (что), 얼마 (сколько стоит), 몇 (сколько штук). Выбери подходящее по смыслу, ориентируйся на русский перевод.','Пример: 카페가 ___예요? «Где кафе?» → 어디.'],
   part:['Вставь пропущенную частицу (에, 에서, 을/를, 은/는…) или счётное слово. Смотри на русский перевод и на последнюю букву слова перед пропуском.','Пример: 저는 학교 ___ 가요. «Иду в школу» → 에.'],
   build:['Собери предложение из плиток: нажимай слова по порядку (или клавишами 1–9). Среди плиток есть лишние: с неверной частицей, временем или местом. Enter — проверить, Backspace — убрать последнее слово.','Пример: «Иду в парк» → 공원에 가요.'],
@@ -108,19 +109,19 @@ const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S={
-  mode:'mix',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple'},pfam:'topic',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',fut:'on',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple'},pfam:'topic',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
   blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null},retryQueue:[],retryKeys:new Set()
 };
 S.retryQueue=[];S.retryKeys=new Set();
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,fut:S.fut,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
   if(j.levels&&typeof j.levels==='object')Object.assign(S.levels,j.levels);
   else if(j.pairLevel)S.levels.pair=j.pairLevel;
-  ['reading','tense','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  ['reading','tense','fut','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
   if(PFAMS.some(f=>f.id===j.pfam))S.pfam=j.pfam;
   if([30,60,120].includes(j.blitzSecs))S.blitzSecs=j.blitzSecs;
   if([0,3,5].includes(j.survLives))S.survLives=j.survLives;
@@ -225,6 +226,23 @@ function genForm(){
   return {type:'choice',mode:'form',key:'f:'+e.ko,word:e.ko,label:'Поставь в форму: '+tn,prompt:e.ko,promptKo:true,
     reading:e.rd,sub:e.ru,options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
     explain:[e.ko+' → '+right,e.note],hp:e.ko+' ('+(tense==='pres'?'наст.':'прош.')+')',hr:right,icon:'🔧'};
+}
+/** «Выбери форму»: будущее время (-(으)ㄹ 거예요) у глагола. Ловушки: ㄹ / 을 не по 받침, настоящее и прошедшее вместо будущего. */
+function genFuture(){
+  const pool=W.v.filter(function(x){return !!futureForm(x.ko);});
+  const e=pickW(pool,function(x){return 'fu:'+x.ko;});
+  const right=futureForm(e.ko);
+  const stem=e.ko.slice(0,-1),last=stem[stem.length-1];
+  const j=jong(last);
+  const wrongMark=j===0||j===8?stem+'을 거예요':stem+'ㄹ 거예요';
+  const set=[right,e.pres,e.past,wrongMark].filter(function(v,i,a){return a.indexOf(v)===i;});
+  let guard=0;
+  while(set.length<4&&guard++<80){const x=rnd(W.v);const f=futureForm(x.ko);if(f&&x.ko!==e.ko&&!set.includes(f))set.push(f);}
+  const opts=shuffle(set).map(function(t){return {text:t,ko:true};});
+  const rule=j===8?'основа на ㄹ: ничего не добавляем':j===0?'받침 нет: ㄹ под последней гласной':'받침 есть: 을';
+  return {type:'choice',mode:'form',key:'fu:'+e.ko,word:e.ko,label:'Поставь в форму будущего: -(으)ㄹ 거예요 («буду…»)',prompt:e.ko,promptKo:true,
+    reading:e.rd,sub:e.ru,options:opts,correct:opts.findIndex(function(o){return o.text===right;}),right:right,
+    explain:[e.ko+' → '+right,rule+'; сам 거예요 не меняется'],hp:e.ko+' (буд.)',hr:right,icon:'🔮'};
 }
 function genQw(){
   if(storyOn('qw'))return S.levels.qw==='long'?genQwStory(5,10):genQwStory(2,4);
@@ -1330,7 +1348,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(Math.random()<.5?genForm():genPast())),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext};
+const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext};
 function genQuestion(){
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite']);
@@ -1855,12 +1873,13 @@ function drawCats(){
   });
 }
 function syncToggles(){
-  $('#cbRead').checked=S.reading;$('#tense').value=S.tense;$('#blitzSecs').value=String(S.blitzSecs);$('#survLives').value=String(S.survLives);
+  $('#cbRead').checked=S.reading;$('#tense').value=S.tense;$('#fut').value=S.fut;$('#blitzSecs').value=String(S.blitzSecs);$('#survLives').value=String(S.survLives);
   if(!S.blitz.on)$('#blitzBtn').innerHTML=blitzLabel();
   $('#lbRead').classList.toggle('on',S.reading);
 }
 $('#cbRead').addEventListener('change',e=>{S.reading=e.target.checked;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);});
 $('#tense').addEventListener('change',e=>{S.tense=e.target.value;save();});
+$('#fut').addEventListener('change',e=>{S.fut=e.target.value;save();});
 $('#blitzSecs').addEventListener('change',e=>{if(S.blitz.on){syncToggles();return;}S.blitzSecs=+e.target.value;save();syncToggles();updateStats();});
 $('#survLives').addEventListener('change',e=>{if(S.surv.on){syncToggles();return;}S.survLives=+e.target.value;save();syncToggles();updateStats();});
 $('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});

@@ -449,10 +449,10 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .sy-back:disabled { opacity: .35; cursor: default; }
 
 /* «слово в разных формах» */
-.study .fm-tb .row { grid-template-columns: 1.3fr 1.4fr 1fr 1fr 1.2fr; align-items: center; }
+.study .fm-tb .row { grid-template-columns: 1.3fr 1.3fr 1fr 1fr 1.2fr 1.1fr; align-items: center; }
 .study .fm-rd { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
 .study .fm-link { padding: 0; font: inherit; color: var(--gold); text-decoration: underline; background: none; border: 0; cursor: pointer; }
-@media (max-width: 760px) { .study .fm-tb { overflow-x: auto; } .study .fm-tb .row { width: max(100%, 640px); } }
+@media (max-width: 760px) { .study .fm-tb { overflow-x: auto; } .study .fm-tb .row { width: max(100%, 760px); } }
 
 /* напоминание заниматься */
 .study .rm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 10px 0; }
