@@ -3,7 +3,7 @@ import { after, describe, test } from 'node:test'
 import { close, load } from './_load.mjs'
 
 const { ptextPool } = await load('/src/game/ptext-pool.ts')
-const { examParts, examRules, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
+const { examParts, examRules, WORD_RULES, FORM_RULES, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
 
 after(close)
 
@@ -18,21 +18,20 @@ describe('итоговая оценка: данные экзамена', () => {
     assert.deepEqual(examRules().map(r => r.id).sort(), ['and', 'object', 'only', 'place', 'subject', 'topic'])
   })
 
-  test('три части по пять блоков, 100–130 пунктов, каждое правило получает достаточно пунктов (проверено дважды)', () => {
+  test('четыре части по семь блоков, 190–230 пунктов, каждое из 14 правил получает достаточно пунктов (проверено дважды)', () => {
     for (let i = 0; i < 2; i++) {
       const parts = examParts()
       assert.equal(parts.length, EXAM_PARTS)
       for (const p of parts) {
-        assert.deepEqual(p.map(b => b.kind).sort(), ['errors', 'gaps', 'gaps', 'match', 'order'])
-        assert.ok(partPoints(p) >= 34 && partPoints(p) <= 42, `пунктов в части: ${partPoints(p)}`)
+        assert.deepEqual(p.map(b => b.kind).sort(), ['errors', 'forms', 'gaps', 'gaps', 'gaps', 'match', 'order'])
+        assert.ok(partPoints(p) >= 46 && partPoints(p) <= 56, `пунктов в части: ${partPoints(p)}`)
       }
       const total = examTotal(parts)
-      assert.ok(total >= 100 && total <= 130, `пунктов всего: ${total}`)
+      assert.ok(total >= 190 && total <= 230, `пунктов всего: ${total}`)
       const by = pointsByRule(parts)
-      for (const r of examRules()) assert.ok((by[r.id] ?? 0) >= 12, `правило ${r.id}: ${by[r.id]} пунктов`)
-      // поровну: самое частое правило не больше чем в 2 раза чаще самого редкого
-      const counts = Object.values(by)
-      assert.ok(Math.max(...counts) <= Math.min(...counts) * 2, `неравномерно: ${JSON.stringify(by)}`)
+      for (const r of examRules()) assert.ok((by[r.id] ?? 0) >= 14, `правило ${r.id}: ${by[r.id]} пунктов`)
+      for (const r of [...WORD_RULES, ...FORM_RULES]) assert.ok((by[r.id] ?? 0) >= 8, `правило ${r.id}: ${by[r.id]} пунктов`)
+      assert.equal(Object.keys(by).length, 14)
     }
   })
 
@@ -40,6 +39,7 @@ describe('итоговая оценка: данные экзамена', () => {
     const parts = examParts()
     const pool = new Map(ptextPool().map(x => [x.ko.replace(/[.,?!]/g, ''), x]))
     const seen = new Set()
+    const verbs = new Set()
     for (const p of parts) {
       for (const b of p) {
         if (b.kind === 'gaps') {
@@ -62,11 +62,35 @@ describe('итоговая оценка: данные экзамена', () => {
             assert.ok(pool.has(it.ko), `предложения нет в пуле: ${it.ko}`)
             assert.ok(!seen.has(it.ko + '.') || true)
           }
+        } else if (b.kind === 'forms') {
+          for (const it of b.items) {
+            assert.ok(it.answer && it.task && it.rule)
+            assert.ok(!verbs.has(it.k), `глагол повторяется: ${it.k}`)
+            verbs.add(it.k)
+            if (it.rule === 'future_my') assert.ok(/ 거예요$/.test(it.answer))
+            if (it.rule === 'an') assert.ok(/안 /.test(it.answer))
+          }
         } else {
           assert.equal(b.items.filter(x => x.bad).length, b.items.filter(x => !x.bad).length)
           for (const it of b.items.filter(x => x.bad)) assert.ok([...it.ko].some(ch => TWIN[ch]), 'ошибка на двойнике частицы')
         }
         assert.equal(blockPoints(b), blockRules(b).length)
+      }
+    }
+  })
+
+  test('в блоке «Подставь слово» связка не берётся из 거예요 (будущее) и пропуск совпадает с правилом', () => {
+    for (let i = 0; i < 3; i++) for (const p of examParts()) for (const b of p) if (b.kind === 'gaps' && b.id.startsWith('words')) {
+      assert.equal(b.bank.length, 11)
+      for (const s of b.sentences) {
+        const gaps = s.pieces.filter(x => typeof x !== 'string')
+        assert.equal(gaps.length, 1)
+        const [g] = gaps
+        assert.ok(['iyo', 'anie', 'have', 'pos'].includes(g.rule))
+        if (g.rule === 'iyo') assert.ok(['이에요', '예요'].includes(g.answer) && !s.pieces[0].endsWith('거'), s.ko)
+        if (g.rule === 'anie') assert.ok(['이 아니에요', '가 아니에요'].includes(g.answer))
+        if (g.rule === 'have') assert.ok(['있어요', '없어요'].includes(g.answer))
+        if (g.rule === 'pos') assert.ok(['앞', '뒤', '옆', '위', '아래'].includes(g.answer))
       }
     }
   })

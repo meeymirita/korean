@@ -25,6 +25,12 @@ async function fillPart(wrapper: Awaited<ReturnType<typeof mountSuspended>>, blo
           await nextTick()
         }
       }
+    } else if (b.kind === 'forms') {
+      const inputs = [...sec.querySelectorAll<HTMLInputElement>('.er-form')]
+      for (const [i, input] of inputs.entries()) {
+        input.value = correct ? b.items[i]!.answer.replace(/ /g, '  ') : '＠'
+        input.dispatchEvent(new Event('input'))
+      }
     } else if (b.kind === 'match') {
       const sels = [...sec.querySelectorAll<HTMLSelectElement>('select')]
       for (const [i, s] of sels.entries()) {

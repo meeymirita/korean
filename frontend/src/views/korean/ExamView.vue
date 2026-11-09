@@ -5,7 +5,7 @@ import ExamRun from '@/components/korean/ExamRun.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
 import {
-  EXAM_ID, EXAM_PARTS, EXAM_PASS, MIN_RULE, OWN_RULE, RECHECK_DAYS,
+  EXAM_ID, EXAM_PARTS, EXAM_PASS, EXAM_POINTS_APPROX, MIN_RULE, OWN_RULE, RECHECK_DAYS,
   examParts, examPassed, examNeed, examState, examTotal, partPoints, ruleLabel, summarize,
   type ExamAttempt, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
 } from '@/data/korean/exam'
@@ -199,7 +199,7 @@ const summaryText = (a: ExamAttempt) =>
     <!-- ГЛАВНАЯ СТРАНИЦА ЭКЗАМЕНА -->
     <template v-else>
       <p class="intro">
-        Один большой экзамен по всему пройденному: {{ EXAM_PARTS }} части, около {{ draft ? total : 114 }} пунктов (текст с пропусками плитками, ввод частиц, перевод, порядок слов, поиск ошибок).
+        Один большой экзамен по всему пройденному: {{ EXAM_PARTS }} части, около {{ draft ? total : EXAM_POINTS_APPROX }} пунктов (текст с пропусками плитками, ввод частиц, перевод, порядок слов, поиск ошибок, связка и отрицание, «есть / нет» и слова положения, формы глаголов).
         Без подсказок. После каждой части можно остановиться: ответы сохраняются. Сдан, если верных не меньше {{ Math.round(EXAM_PASS * 100) }}% и по каждому правилу не меньше {{ Math.round(MIN_RULE * 100) }}%.
         Не сдал: пересдача через сутки. Сдал: через {{ RECHECK_DAYS }} дней придёт напоминание подтвердить.
       </p>

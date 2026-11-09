@@ -37,6 +37,8 @@ props.blocks.forEach((b, bi) => {
 })
 
 const isGap = (p: ExamPiece): p is { answer: string; accept?: string[]; rule: string } => typeof p !== 'string'
+/** Сравнение вписанных форм: пробелы не важны (안 가요 = 안가요). */
+const sq = (s: string) => norm(s).replace(/\s+/g, '')
 const gapKeys = (bi: number) => {
   const b = props.blocks[bi]!
   if (b.kind !== 'gaps') return []
@@ -86,6 +88,8 @@ function check() {
           add(p.rule, gapOk(p, key), s.pieces.map((x, j) => (isGap(x) ? (j === pi ? '＿＿' : x.answer) : x)).join(''), gap[key] ?? '', p.answer)
         }),
       )
+    } else if (b.kind === 'forms') {
+      b.items.forEach((it, i) => add(it.rule, sq(gap[`${bi}:${i}`] ?? '') === sq(it.answer), `${it.k} (${it.task})`, gap[`${bi}:${i}`] ?? '', it.answer))
     } else if (b.kind === 'match') {
       b.items.forEach((it, i) => add(it.rule, pick[`${bi}:${i}`] === it.ru, it.ko, pick[`${bi}:${i}`] ?? '', it.ru))
     } else if (b.kind === 'order') {
@@ -101,6 +105,7 @@ const answered = computed(() => {
   let n = 0
   props.blocks.forEach((b, bi) => {
     if (b.kind === 'gaps') n += gapKeys(bi).filter(k => norm(gap[k] ?? '')).length
+    else if (b.kind === 'forms') n += b.items.filter((_, i) => norm(gap[`${bi}:${i}`] ?? '')).length
     else if (b.kind === 'match') n += b.items.filter((_, i) => pick[`${bi}:${i}`]).length
     else if (b.kind === 'order') n += b.items.filter((it, i) => (built[`${bi}:${i}`] ?? []).length === it.words.length).length
     else n += b.items.filter((_, i) => verdict[`${bi}:${i}`] !== undefined).length
@@ -133,6 +138,16 @@ const answered = computed(() => {
               </template>
             </div>
             <div class="er-ru">{{ s.ru }}</div>
+          </li>
+        </ol>
+      </template>
+
+      <template v-else-if="b.kind === 'forms'">
+        <ol class="er-sents">
+          <li v-for="(it, i) in b.items" :key="i">
+            <div class="er-ko ko">{{ it.k }}</div>
+            <div class="er-ru">{{ it.ru }} · {{ it.task }}</div>
+            <input v-model="gap[`${bi}:${i}`]" class="er-form ko" :disabled="checked" lang="ko" autocomplete="off" spellcheck="false" placeholder="Впиши форму" :aria-label="`${it.k}: ${it.task}`" />
           </li>
         </ol>
       </template>
@@ -210,6 +225,8 @@ const answered = computed(() => {
 .er-gap.ok { border: 2px solid #3aa660; background: #dff6e6; }
 .er-gap.bad { border: 2px solid #d64d6a; background: #ffe1e6; }
 .er-right { margin-left: 6px; color: #a1233c; font-size: 14px; font-weight: 600; }
+.er-form { box-sizing: border-box; display: block; width: 100%; max-width: 360px; height: var(--h); margin-top: 8px; padding: 0 14px; border: 2px dashed var(--line); border-radius: 12px; background: transparent; color: inherit; font: inherit; font-size: 20px; }
+.er-form:focus-visible { outline: none; border-color: var(--pink, #d64da9); }
 .er-sel { box-sizing: border-box; display: block; width: 100%; height: var(--h); margin-top: 8px; padding: 0 44px 0 14px; border: 1px solid var(--line); border-radius: 12px; color: inherit; font: inherit; font-size: 15px; text-overflow: ellipsis;
   appearance: none; -webkit-appearance: none; background-color: var(--surface);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1.5l6 6 6-6' fill='none' stroke='%238a84b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
