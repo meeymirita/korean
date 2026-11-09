@@ -3,7 +3,7 @@ import { after, describe, test } from 'node:test'
 import { close, load } from './_load.mjs'
 
 const { ptextPool } = await load('/src/game/ptext-pool.ts')
-const { examParts, examRules, WORD_RULES, FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
+const { examParts, examRules, WORD_RULES, FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, NUM_RULE, PHR_RULE, sinoNumber, examTotal, examNeed, examPassed, examState, summarize, blockRules, blockPoints, partPoints, TWIN, EXAM_PARTS } = await load('/src/data/korean/exam.ts')
 
 after(close)
 
@@ -14,25 +14,26 @@ const pointsByRule = parts => {
 }
 
 describe('итоговая оценка: данные экзамена', () => {
-  test('правила экзамена: все шесть семей частиц с пройденными карточками', () => {
-    assert.deepEqual(examRules().map(r => r.id).sort(), ['and', 'object', 'only', 'place', 'subject', 'topic'])
+  test('правила экзамена: все семь семей частиц с пройденными карточками', () => {
+    assert.deepEqual(examRules().map(r => r.id).sort(), ['and', 'object', 'only', 'place', 'subject', 'too', 'topic'])
   })
 
-  test('четыре части по десять блоков, 220–260 пунктов, каждое из 17 правил получает достаточно пунктов (проверено дважды)', () => {
+  test('четыре части по двенадцать блоков, 240–290 пунктов, каждое из 21 правила получает достаточно пунктов (проверено дважды)', () => {
     for (let i = 0; i < 2; i++) {
       const parts = examParts()
       assert.equal(parts.length, EXAM_PARTS)
       for (const p of parts) {
-        assert.deepEqual(p.map(b => b.kind).sort(), ['errors', 'forms', 'gaps', 'gaps', 'gaps', 'gaps', 'gaps', 'gaps', 'match', 'order'])
-        assert.ok(partPoints(p) >= 54 && partPoints(p) <= 66, `пунктов в части: ${partPoints(p)}`)
+        assert.deepEqual(p.map(b => b.kind).sort(), ['errors', 'forms', 'forms', 'gaps', 'gaps', 'gaps', 'gaps', 'gaps', 'gaps', 'match', 'match', 'order'])
+        assert.ok(partPoints(p) >= 58 && partPoints(p) <= 74, `пунктов в части: ${partPoints(p)}`)
       }
       const total = examTotal(parts)
-      assert.ok(total >= 220 && total <= 260, `пунктов всего: ${total}`)
+      assert.ok(total >= 240 && total <= 290, `пунктов всего: ${total}`)
       const by = pointsByRule(parts)
-      for (const r of examRules()) assert.ok((by[r.id] ?? 0) >= 14, `правило ${r.id}: ${by[r.id]} пунктов`)
-      for (const r of [...WORD_RULES, ...FORM_RULES]) assert.ok((by[r.id] ?? 0) >= 8, `правило ${r.id}: ${by[r.id]} пунктов`)
+      for (const r of examRules()) assert.ok((by[r.id] ?? 0) >= 12, `правило ${r.id}: ${by[r.id]} пунктов`)
+      for (const r of [...WORD_RULES, ...FORM_RULES]) assert.ok((by[r.id] ?? 0) >= 6, `правило ${r.id}: ${by[r.id]} пунктов`)
       for (const r of [DEM_RULE, QW_RULE, CNT_RULE]) assert.ok((by[r.id] ?? 0) >= 10, `правило ${r.id}: ${by[r.id]} пунктов`)
-      assert.equal(Object.keys(by).length, 17)
+      assert.ok((by[NUM_RULE.id] ?? 0) >= 20 && (by[PHR_RULE.id] ?? 0) >= 10, JSON.stringify(by))
+      assert.equal(Object.keys(by).length, 21)
     }
   })
 
@@ -56,7 +57,12 @@ describe('итоговая оценка: данные экзамена', () => {
           if (!b.typed) assert.ok(b.bank.length > new Set(b.sentences.flatMap(s => s.pieces.filter(x => typeof x !== 'string').map(x => x.answer))).size, 'есть лишние плитки')
         } else if (b.kind === 'match') {
           assert.deepEqual([...b.choices].sort(), b.items.map(x => x.ru).sort())
-          for (const it of b.items) { assert.ok(it.rule); assert.ok(!seen.has(it.ko)); seen.add(it.ko) }
+          for (const it of b.items) {
+            assert.ok(it.rule)
+            if (b.id.startsWith('phrases')) continue // фраз всего 11, на 4 части они могут повторяться между частями
+            assert.ok(!seen.has(it.ko))
+            seen.add(it.ko)
+          }
         } else if (b.kind === 'order') {
           for (const it of b.items) {
             assert.deepEqual([...it.words].sort(), it.ko.split(/\s+/).sort())
@@ -66,8 +72,10 @@ describe('итоговая оценка: данные экзамена', () => {
         } else if (b.kind === 'forms') {
           for (const it of b.items) {
             assert.ok(it.answer && it.task && it.rule)
-            assert.ok(!verbs.has(it.k), `глагол повторяется: ${it.k}`)
-            verbs.add(it.k)
+            if (it.rule !== 'num') {
+              assert.ok(!verbs.has(it.k), `глагол повторяется: ${it.k}`)
+              verbs.add(it.k)
+            }
             if (it.rule === 'future_my') assert.ok(/ 거예요$/.test(it.answer))
             if (it.rule === 'an') assert.ok(/안 /.test(it.answer))
           }
@@ -82,16 +90,17 @@ describe('итоговая оценка: данные экзамена', () => {
 
   test('в блоке «Подставь слово» связка не берётся из 거예요 (будущее) и пропуск совпадает с правилом', () => {
     for (let i = 0; i < 3; i++) for (const p of examParts()) for (const b of p) if (b.kind === 'gaps' && b.id.startsWith('words')) {
-      assert.equal(b.bank.length, 11)
+      assert.equal(b.bank.length, 12)
       for (const s of b.sentences) {
         const gaps = s.pieces.filter(x => typeof x !== 'string')
         assert.equal(gaps.length, 1)
         const [g] = gaps
-        assert.ok(['iyo', 'anie', 'have', 'pos'].includes(g.rule))
+        assert.ok(['iyo', 'anie', 'have', 'pos', 'juse'].includes(g.rule))
         if (g.rule === 'iyo') assert.ok(['이에요', '예요'].includes(g.answer) && !s.pieces[0].endsWith('거'), s.ko)
         if (g.rule === 'anie') assert.ok(['이 아니에요', '가 아니에요'].includes(g.answer))
         if (g.rule === 'have') assert.ok(['있어요', '없어요'].includes(g.answer))
         if (g.rule === 'pos') assert.ok(['앞', '뒤', '옆', '위', '아래'].includes(g.answer))
+        if (g.rule === 'juse') assert.equal(g.answer, '주세요')
       }
     }
   })
@@ -123,6 +132,33 @@ describe('итоговая оценка: данные экзамена', () => {
     assert.equal(examPassed(17, 20, { a: { ok: 6, total: 10 }, b: { ok: 11, total: 10 } }), false) // правило ниже 70%
     assert.equal(examPassed(16, 20, s.rules), false) // 80% всего
     assert.equal(examNeed(114), 97)
+  })
+
+  test('числа вводом: китайские числа словами, даты (6 и 10 месяцы особые), цены, корейское число для счёта', () => {
+    const cases = { 1: '일', 10: '십', 11: '십일', 30: '삼십', 45: '사십오', 100: '백', 800: '팔백', 1000: '천', 1200: '천이백', 1500: '천오백', 3000: '삼천', 4500: '사천오백', 10000: '만', 12000: '만이천', 15000: '만오천', 25000: '이만오천', 50000: '오만' }
+    for (const [n, w] of Object.entries(cases)) assert.equal(sinoNumber(Number(n)), w, n)
+    for (let i = 0; i < 4; i++) for (const p of examParts()) for (const b of p) if (b.id.startsWith('numbers')) {
+      assert.equal(b.kind, 'forms')
+      assert.equal(b.items.length, 6)
+      for (const it of b.items) {
+        assert.equal(it.rule, 'num')
+        if (it.task.startsWith('месяц')) assert.match(it.answer, /^(일|이|삼|사|오|유|칠|팔|구|시|십일|십이)월 .+일$/)
+        else if (it.task.startsWith('сумма')) assert.match(it.answer, / 원$/)
+        else assert.match(it.answer, /^(한|두|세|네|다섯|여섯|일곱|여덟|아홉|열) (개|명|마리|권|장|병|잔|그릇)$/)
+      }
+    }
+  })
+
+  test('разговорные формулы: три фразы в части, у каждой своя ситуация, ответы однозначны', () => {
+    const parts = examParts()
+    for (const p of parts) {
+      const b = p.find(x => x.id.startsWith('phrases'))
+      assert.equal(b.kind, 'match')
+      assert.equal(b.items.length, 3)
+      assert.equal(new Set(b.items.map(x => x.ko)).size, 3)
+      assert.deepEqual([...b.choices].sort(), b.items.map(x => x.ru).sort())
+      assert.ok(b.items.every(x => x.rule === 'phr'))
+    }
   })
 
   test('состояние в списке', () => {

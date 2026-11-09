@@ -492,7 +492,7 @@ describe('«Тексты по правилу» (ptext)', () => {
   const tileText = (b: Element) => (b.textContent ?? '').replace(/^\d/, '').trim()
   const rows = () => [...document.querySelectorAll('.story .story-row')]
   const open = (famName: string, level: string) => { start('ptext'); document.querySelector<HTMLButtonElement>('#helpOk')?.click(); fam(famName).click(); chip(level).click() }
-  const FAMS: [string, string[]][] = [['은 / 는', ['은', '는']], ['이 / 가', ['이', '가']], ['을 / 를', ['을', '를']], ['에 / 에서', ['에', '에서']], ['하고 / 와 / 과', ['하고', '와', '과']], ['만', ['만']], ['Все вместе', ['은', '는', '이', '가', '을', '를', '에', '에서', '하고', '와', '과', '만']]]
+  const FAMS: [string, string[]][] = [['은 / 는', ['은', '는']], ['이 / 가', ['이', '가']], ['을 / 를', ['을', '를']], ['에 / 에서', ['에', '에서']], ['하고 / 와 / 과', ['하고', '와', '과']], ['도', ['도']], ['만', ['만']], ['Все вместе', ['은', '는', '이', '가', '을', '를', '에', '에서', '하고', '와', '과', '도', '만']]]
   /** Всё, что разбор называет нужным ответом (после проверки): окна «Разбор» по каждому предложению. */
   const needs = () => [...document.querySelectorAll<HTMLButtonElement>('.story-info')].flatMap(b => {
     b.click()
@@ -501,10 +501,10 @@ describe('«Тексты по правилу» (ptext)', () => {
     return [...t.matchAll(/(?:нужно: |Верно: )([가-힣]+)/g)].map(m => m[1]!)
   })
 
-  it('семь чипов правил, у каждого свой набор плиток; по умолчанию «은 / 는»; выбор запоминается', () => {
+  it('восемь чипов правил, у каждого свой набор плиток; по умолчанию «은 / 는»; выбор запоминается', () => {
     start('ptext')
     document.querySelector<HTMLButtonElement>('#helpOk')?.click()
-    expect(document.querySelectorAll('.fams .chip').length).toBe(7)
+    expect(document.querySelectorAll('.fams .chip').length).toBe(8)
     expect(fam('은 / 는').classList.contains('on')).toBe(true)
     for (const [name, marks] of FAMS) expect((fam(name).click(), tiles().map(tileText).sort()), name).toEqual([...marks].sort())
     fam('에 / 에서').click()

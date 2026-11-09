@@ -14,8 +14,8 @@ export const MIN_RULE = 0.7
 export const OWN_RULE = 0.8
 export const RECHECK_DAYS = 30
 export const EXAM_PARTS = 4
-/** Сколько пунктов примерно в полном экзамене (для подписей до начала): 4 части по ~60. */
-export const EXAM_POINTS_APPROX = 240
+/** Сколько пунктов примерно в полном экзамене (для подписей до начала): 4 части по ~65. */
+export const EXAM_POINTS_APPROX = 260
 /** Сколько верных нужно из n пунктов экзамена. */
 export const examNeed = (n: number) => Math.ceil(n * EXAM_PASS)
 /** id результата итогового экзамена на сервере. */
@@ -35,11 +35,15 @@ export const WORD_RULES: { id: string; label: string }[] = [
   { id: 'anie', label: '이 / 가 아니에요' },
   { id: 'have', label: '있다 / 없다' },
   { id: 'pos', label: '앞 / 뒤 / 옆 / 위 / 아래' },
+  { id: 'juse', label: '주세요 («дайте, пожалуйста»)' },
 ]
 /** Указатели, вопросительные и счётные слова: плитки в отдельных блоках (у каждого свой набор плиток). */
 export const DEM_RULE = { id: 'dem', label: '이 / 그 / 저 (указатели)' }
 export const QW_RULE = { id: 'qw', label: 'Вопросительные слова' }
 export const CNT_RULE = { id: 'cnt', label: 'Счётные слова' }
+/** Числа, даты и цены вводом; разговорные формулы (ситуация → фраза). */
+export const NUM_RULE = { id: 'num', label: 'Числа, даты и цены' }
+export const PHR_RULE = { id: 'phr', label: 'Разговорные формулы' }
 export const FORM_RULES: { id: string; label: string }[] = [
   { id: 'ayo', label: 'Настоящее время (-아요/어요)' },
   { id: 'past', label: 'Прошедшее время (-았어요/었어요)' },
@@ -47,7 +51,7 @@ export const FORM_RULES: { id: string; label: string }[] = [
   { id: 'an', label: 'Отрицание «안»' },
 ]
 /** Название правила для таблицы результатов. */
-export const ruleLabel = (id: string) => PFAMS.find(f => f.id === id)?.name ?? [...WORD_RULES, ...FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE].find(r => r.id === id)?.label ?? id
+export const ruleLabel = (id: string) => PFAMS.find(f => f.id === id)?.name ?? [...WORD_RULES, ...FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, NUM_RULE, PHR_RULE].find(r => r.id === id)?.label ?? id
 
 /** Частица в разборе принадлежит правилу: по карточке (`g`) и тексту; у 와 / 과 разбор карточки не указывает (как в `inFam` игры). */
 const inRule = (f: RuleFamily, m: PtextMark) => f.marks.includes(m.text) && (f.g.includes(m.g) || (f.id === 'and' && (m.text === '와' || m.text === '과')))
@@ -121,7 +125,7 @@ const cut = (ko: string, m: PtextMark, to: string) => ko.slice(0, m.at) + to + k
 const bare = (ko: string) => ko.replace(/[.,?!]/g, '')
 
 /** Плитки блоков со словами: связка, отрицание, наличие и положение; указатели; вопросительные слова; счётные слова. */
-const WORD_BANK = ['이에요', '예요', '이 아니에요', '가 아니에요', '있어요', '없어요', '앞', '뒤', '옆', '위', '아래']
+const WORD_BANK = ['이에요', '예요', '이 아니에요', '가 아니에요', '있어요', '없어요', '앞', '뒤', '옆', '위', '아래', '주세요']
 const DEM_BANK = ['이', '그', '저', '이것', '그것', '저것', '여기', '거기', '저기']
 const QW_BANK = ['누구', '뭐', '어디', '언제', '얼마', '몇', '무슨', '어느']
 const CNT_BANK = ['개', '명', '마리', '권', '장', '병', '잔', '그릇']
@@ -143,6 +147,7 @@ function wordMarks(ko: string, ru: string): WMark[] {
   add(/(이|가) 아니에요/g, 'anie')
   add(/(있어요|없어요)(?=[.?!]|$)/g, 'have')
   add(/(?<=^|\s)(앞|뒤|옆|위|아래)(?=에|\s|[.?!,]|$)/g, 'pos')
+  add(/(주세요)(?=[.?!]|$)/g, 'juse')
   return out
 }
 const FORM_TASK: Record<string, string> = {
@@ -151,6 +156,42 @@ const FORM_TASK: Record<string, string> = {
   future_my: 'будущее время (-(으)ㄹ 거예요)',
   an: 'отрицание с «안» (настоящее время)',
 }
+
+/** Китайское число словами: 3000 → 삼천, 12000 → 만 이천 (перед 십 / 백 / 천 / 만 единица «일» не говорится). */
+export function sinoNumber(n: number): string {
+  const D = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구']
+  if (n === 0) return '영'
+  const small = (x: number) => {
+    let out = ''
+    for (const [unit, name] of [[1000, '천'], [100, '백'], [10, '십']] as const) {
+      const d = Math.floor(x / unit)
+      x %= unit
+      if (d) out += (d === 1 ? '' : D[d]!) + name
+    }
+    return out + D[x]!
+  }
+  const man = Math.floor(n / 10000)
+  return (man ? (man === 1 ? '' : small(man)) + '만' : '') + small(n % 10000)
+}
+const MONTHS = ['일월', '이월', '삼월', '사월', '오월', '유월', '칠월', '팔월', '구월', '시월', '십일월', '십이월']
+const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+const NATIVE = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열']
+const COUNTERS: [string, string][] = [['개', 'штуки'], ['명', 'человек'], ['마리', 'животных'], ['권', 'книг'], ['장', 'листов, билетов'], ['병', 'бутылки'], ['잔', 'чашки, стаканы'], ['그릇', 'порции в миске']]
+const PRICES = [500, 800, 1200, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 7000, 8000, 10000, 12000, 15000, 20000, 25000, 30000, 50000]
+/** Разговорные формулы платформы: фраза и ситуация, в которой её говорят. */
+const PHRASES: [string, string][] = [
+  ['안녕하세요?', 'Приветствие: «Здравствуйте»'],
+  ['만나서 반가워요.', 'При знакомстве: «Приятно познакомиться»'],
+  ['안녕히 가세요.', 'Говорит тот, кто остаётся, тому, кто уходит'],
+  ['안녕히 계세요.', 'Говорит тот, кто уходит, тому, кто остаётся'],
+  ['주세요.', 'Просьба в магазине или кафе: «Дайте, пожалуйста»'],
+  ['고마워요.', '«Спасибо» знакомым, вежливо'],
+  ['감사합니다.', '«Спасибо» официально, на работе'],
+  ['고마워.', '«Спасибо» близким друзьям'],
+  ['맞아요.', '«Верно, правильно»'],
+  ['틀려요.', '«Неверно, неправильно»'],
+  ['내일 봐.', '«До завтра» близким друзьям'],
+]
 
 type RMark = PtextMark & { rule: string }
 type Cand = { ko: string; ru: string; marks: RMark[] }
@@ -178,7 +219,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
   const pool = shuffle(cands)
   const used = new Set<string>()
   const ruUsed = new Set<string>()
-  const count: Record<string, number> = Object.fromEntries([...ruleIds, ...WORD_RULES.map(r => r.id), ...FORM_RULES.map(r => r.id), DEM_RULE.id, QW_RULE.id, CNT_RULE.id].map(id => [id, 0]))
+  const count: Record<string, number> = Object.fromEntries([...ruleIds, ...WORD_RULES.map(r => r.id), ...FORM_RULES.map(r => r.id), DEM_RULE.id, QW_RULE.id, CNT_RULE.id, NUM_RULE.id, PHR_RULE.id].map(id => [id, 0]))
   /** Предложения для блока «Подставь слово» (связка, отрицание, наличие, положение). */
   const wpool = shuffle(ptextPool().map(x => ({ ko: x.ko, ru: x.ru, marks: wordMarks(x.ko, x.ru) })).filter(c => c.marks.length))
   const verbs = shuffle(CONJUGATIONS.filter(c => c.kind === 'verb'))
@@ -262,13 +303,56 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
     return { kind: 'forms', id: `forms${n}`, title: 'Впиши форму глагола', note: 'Впиши форму, которую просит задание (вежливый стиль). Пробелы не важны.', items }
   }
 
+  /** Числа вводом: дата (месяц и число, у 6 и 10 особые названия), цена в вонах, число для счёта + счётное слово. Пробелы не важны. */
+  const usedNum = new Set<string>()
+  const numbersBlock = (n: number, points: number): ExamBlock => {
+    const items: { k: string; ru: string; task: string; answer: string; rule: string }[] = []
+    for (let i = 0; i < points; i++) {
+      for (let tries = 0; tries < 30; tries++) {
+        const kind = (i + tries) % 3
+        let it: { k: string; ru: string; task: string; answer: string }
+        if (kind === 0) {
+          const m = Math.floor(Math.random() * 12)
+          const d = 1 + Math.floor(Math.random() * 28)
+          it = { k: `${d} ${MONTHS_RU[m]}`, ru: 'дата', task: 'месяц и число по-корейски (китайские числа, например 삼월 오일)', answer: `${MONTHS[m]} ${sinoNumber(d)}일` }
+        } else if (kind === 1) {
+          const price = PRICES[Math.floor(Math.random() * PRICES.length)]!
+          it = { k: `${String(price).replace(/\B(?=(\d{3})+$)/g, ' ')} вон`, ru: 'цена', task: 'сумма по-корейски (китайские числа) со словом 원', answer: `${sinoNumber(price)} 원` }
+        } else {
+          const num = 1 + Math.floor(Math.random() * 10)
+          const [counter, label] = COUNTERS[Math.floor(Math.random() * COUNTERS.length)]!
+          it = { k: `${num} + ${counter}`, ru: `${num} ${label}`, task: 'корейское число для счёта и счётное слово (например 두 잔)', answer: `${NATIVE[num]} ${counter}` }
+        }
+        if (usedNum.has(it.k)) continue
+        usedNum.add(it.k)
+        items.push({ ...it, rule: NUM_RULE.id })
+        count[NUM_RULE.id]!++
+        break
+      }
+    }
+    return { kind: 'forms', id: `numbers${n}`, title: 'Впиши по-корейски: дата, цена, счёт', note: 'Впиши по-корейски, как просит задание. Пробелы не важны (삼월 오일 и 삼 월 오 일 одно и то же).', items }
+  }
+  /** Разговорные формулы: к каждой фразе выбрать ситуацию. Фразы не повторяются, пока не кончится список (в части их 3, всего 11). */
+  const phrasePool: [string, string][] = shuffle(PHRASES)
+  const phrasesBlock = (n: number, points: number): ExamBlock => {
+    const items: { ko: string; ru: string; rule: string }[] = []
+    while (items.length < points) {
+      if (!phrasePool.length) phrasePool.push(...shuffle(PHRASES).filter(p => !items.some(x => x.ko === p[0])))
+      const [ko, ru] = phrasePool.pop()!
+      if (items.some(x => x.ko === ko)) continue
+      items.push({ ko, ru, rule: PHR_RULE.id })
+      count[PHR_RULE.id]!++
+    }
+    return { kind: 'match', id: `phrases${n}`, title: 'Разговорные формулы', note: 'К каждой фразе выбери ситуацию, в которой её говорят.', items, choices: shuffle(items.map(x => x.ru)) }
+  }
+
   const part = (n: number): ExamBlock[] => {
     const blocks: ExamBlock[] = []
     blocks.push(gapBlock(`tiles${n}`, 'Поставь частицы', 'Нажми на пропуск и на плитку (или сразу на плитку: она встанет в первый свободный пропуск). Чужие плитки лишние.', false, 8))
-    blocks.push(gapBlock(`typed${n}`, 'Впиши частицы', 'Здесь плиток нет: впиши каждую частицу с клавиатуры.', true, 6))
-    // перевод: 6 предложений
+    blocks.push(gapBlock(`typed${n}`, 'Впиши частицы', 'Здесь плиток нет: впиши каждую частицу с клавиатуры.', true, 4))
+    // перевод: 4 предложения
     const mi: { ko: string; ru: string; rule: string }[] = []
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       const rule = nextRule(ruleIds)
       const c = pick(rule)
       if (!c) break
@@ -308,7 +392,7 @@ export function examParts(parts = EXAM_PARTS): ExamBlock[][] {
       count[rule]!++
     }
     blocks.push({ kind: 'errors', id: `errors${n}`, title: 'Найди ошибки', note: 'Про каждое предложение скажи: оно верное или в нём ошибка в частице.', items: shuffle(ei) })
-    blocks.push(wordBlock(n, 8), formsBlock(n, 10))
+    blocks.push(wordBlock(n, 10), formsBlock(n, 8), numbersBlock(n, 6), phrasesBlock(n, 3))
     blocks.push(tileBlock(`dem${n}`, 'Подставь указатель', 'Этот, тот, вон тот; здесь, там, вон там. Перевод подскажет, какой нужен.', [DEM_RULE.id], DEM_BANK, 4))
     blocks.push(tileBlock(`qw${n}`, 'Подставь вопросительное слово', 'Кто, что, где, когда, сколько: по переводу выбери нужное слово.', [QW_RULE.id], QW_BANK, 4))
     blocks.push(tileBlock(`cnt${n}`, 'Подставь счётное слово', 'Штуки, люди, бутылки, чашки: по переводу выбери счётное слово.', [CNT_RULE.id], CNT_BANK, 4))
