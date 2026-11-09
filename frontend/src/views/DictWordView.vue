@@ -71,7 +71,7 @@ const setTab = (id: string) => void router.replace({ query: id === TABS.value[0]
 /** Клик по пустому месту (по бокам, где нет блоков слова, шапки и подписи) закрывает слово: возвращает к поиску. */
 function closeOnOutside(e: MouseEvent) {
   const t = e.target as HTMLElement | null
-  if (!t || t.closest('.top, .crumbs, .head, .meanings, .tabs, .panel, .none, .src')) return
+  if (!t || t.closest('.top, .crumbs, .head, .word-nav, .meanings, .tabs, .panel, .none, .src, a, button, input')) return
   if (window.getSelection()?.toString()) return
   void router.push('/dict')
 }
