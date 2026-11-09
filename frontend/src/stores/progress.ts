@@ -23,6 +23,8 @@ export interface AnswerDetail {
   q?: string
   a?: string
   y?: string
+  /** Rule card ID or normalized grammar mode used by the weak-rules overview. */
+  g?: string
 }
 export interface LogEntry {
   t: number
@@ -118,6 +120,7 @@ function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
   if (!d) return undefined
   const out: AnswerDetail = {}
   for (const k of ['q', 'a', 'y'] as const) if (typeof d[k] === 'string' && d[k]) out[k] = d[k]!.slice(0, 300)
+  if (typeof d.g === 'string' && d.g) out.g = d.g.slice(0, 80)
   return Object.keys(out).length ? out : undefined
 }
 /** Очков у слова, с которых оно считается выученным: верный ответ +1, ошибка −1 (не ниже 0). */

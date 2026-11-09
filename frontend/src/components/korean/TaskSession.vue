@@ -253,7 +253,7 @@ function commit(option: string) {
   }
   const rewardKey = t.word ?? `task:${t.id}`
   if (!ok || !rewardedWords.has(rewardKey)) {
-    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
+    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, ...(t.gram ? { g: t.gram } : {}) } })
     if (ok) rewardedWords.add(rewardKey)
   }
   ;(ok ? pop : shake)(zone.value)

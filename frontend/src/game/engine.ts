@@ -1692,7 +1692,7 @@ function finish(ok,chosen,qq,quiet){
     const m=q.key&&S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs=[];
     const rewardKey=q.word||q.key;
-    const pr=rewardKey&&S.rewardedWords.has(rewardKey)?{}:hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr},xp:q.xp!==undefined?q.xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
+    const pr=rewardKey&&S.rewardedWords.has(rewardKey)?{}:hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr,...(q.mode?{g:q.mode}:{})},xp:q.xp!==undefined?q.xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
     if(rewardKey)S.rewardedWords.add(rewardKey);
     if(pr.bloomed)msgs.push('🌸 Слово «'+q.word+'» расцвело в саду!');
     if(pr.levelUp)msgs.push('⭐ Новый уровень '+pr.level+': '+pr.title+'!');
@@ -1703,7 +1703,7 @@ function finish(ok,chosen,qq,quiet){
     if(msgs.length)toast(msgs[0]);
     if(S.surv.on)S.surv.ok++;
   }else{B.bad++;A.bad++;B.streak=0;bm.bad++;
-    hooks.record({word:q.word||null,ok:false,mode:S.mode,detail:{q:q.hp,a:q.hr,y:chosen}});
+    hooks.record({word:q.word||null,ok:false,mode:S.mode,detail:{q:q.hp,a:q.hr,y:chosen,...(q.mode?{g:q.mode}:{})}});
     if(q.key){const m=S.miss[q.key]||{n:0,l:''};m.n=Math.min(5,m.n+1);m.l=q.hp+' — '+q.hr;S.miss[q.key]=m;}
     const retryKey=q.word||q.key;
     if(retryKey&&!q.retry&& !S.retryKeys.has(retryKey)){

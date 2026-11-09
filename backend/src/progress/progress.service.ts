@@ -303,6 +303,7 @@ export class ProgressService {
     const o = v as Record<string, unknown>
     const out: Record<string, string> = {}
     for (const k of ['q', 'a', 'y']) if (o[k] != null) out[k] = str(o[k], 300)
+    if (o.g != null) out.g = str(o.g, 80)
     return Object.keys(out).length ? JSON.stringify(out) : ''
   }
 

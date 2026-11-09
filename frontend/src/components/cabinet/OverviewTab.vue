@@ -7,7 +7,7 @@ import LineChart from '@/components/charts/LineChart.vue'
 import HeatMap from '@/components/cabinet/HeatMap.vue'
 import { moodSummary, MOODS } from '@/data/mood'
 import { personalRecords } from '@/data/records'
-import { answersByDay } from '@/data/charts'
+import { answersByDay, weakRules } from '@/data/charts'
 import { ACHIEVEMENTS } from '@/data/achievements'
 import { achievedAt, markAchieved } from '@/lib/achievedDates'
 import { useShareCard } from '@/composables/useShareCard'
@@ -37,6 +37,8 @@ const answerSeries = computed(() => [
   { name: 'Всего ответов', values: ans.value.map(a => a.all), color: '#1f93cf' },
   { name: 'Верных', values: ans.value.map(a => a.ok), color: '#7a63e8' },
 ])
+const weakRuleRows = computed(() => weakRules(progress.data.log, 30))
+const ruleLink = (family?: string) => ({ path: '/game/home', query: { game: 'ptext', ...(family ? { fam: family } : {}) } })
 const goal = computed(() => progress.goal)
 const mood = computed(() => moodSummary(progress.data.moods))
 const moodColor = (s: number | null) => (s === null ? '' : s < 1.67 ? 'm1' : s < 2.34 ? 'm2' : 'm3')
@@ -179,6 +181,17 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       <LineChart class="pg-days-ch" title="Ответы за 30 дней" :labels="ans.map(a => a.label)" :series="answerSeries" unit="отв." />
     </div>
 
+    <template v-if="weakRuleRows.length">
+      <h2 class="today-h">Слабые правила <small>точность за 30 дней</small></h2>
+      <div class="pg-weak-rules">
+        <div v-for="rule in weakRuleRows" :key="rule.id" class="pg-weak-rule">
+          <div class="pg-weak-rule-head"><span>{{ rule.label }}</span><b>{{ rule.accuracy }}%</b></div>
+          <div class="pg-weak-rule-track" role="img" :aria-label="`${rule.label}: верно ${rule.accuracy}% из ${rule.ok + rule.bad} ответов`"><i :style="{ width: `${rule.accuracy}%` }"></i></div>
+          <div class="pg-weak-rule-foot"><small>{{ rule.ok }} верно · {{ rule.bad }} ошибок</small><RouterLink :to="ruleLink(rule.family)">Тексты по правилу →</RouterLink></div>
+        </div>
+      </div>
+    </template>
+
     <h2 class="today-h">Слова по темам</h2>
     <div class="pg-cats">
       <div v-for="c in byCategory" :key="c.id" class="pg-cat">
@@ -231,4 +244,12 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
 <style>
 .study .pg-lvl-btn { margin-top: 8px; padding: 2px 12px; border: 1px solid rgba(214, 77, 169, .3); border-radius: 999px; background: rgba(214, 77, 169, .06); font-size: 12px; font-weight: 400; color: var(--pink, #d64da9); }
 .study .pg-lvl-btn:hover { background: rgba(214, 77, 169, .14); border-color: rgba(214, 77, 169, .55); }
+.pg-weak-rules { display: grid; gap: 12px; max-width: 740px; }
+.pg-weak-rule { padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.pg-weak-rule-head, .pg-weak-rule-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pg-weak-rule-head b { color: var(--pink, #d64da9); font-size: 17px; }
+.pg-weak-rule-track { height: 7px; margin: 8px 0; overflow: hidden; border-radius: 8px; background: var(--line); }
+.pg-weak-rule-track i { display: block; height: 100%; border-radius: inherit; background: var(--pink, #d64da9); }
+.pg-weak-rule-foot small { color: var(--muted); }
+.pg-weak-rule-foot a { color: var(--link, #1f82ae); font-size: 13px; }
 </style>
