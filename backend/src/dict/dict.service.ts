@@ -147,7 +147,7 @@ export class DictService implements OnApplicationBootstrap {
       const urls = [
         { loc: '/dict/podborki' },
         ...COLLECTIONS.map(c => ({ loc: `/dict/podborki/${c.slug}` })),
-        ...[...words].sort().map(w => ({ loc: `/dict/${encodeURIComponent(w)}` })),
+        ...[...words].sort().map(w => ({ loc: `/dict/${w}` })),
       ]
       if (urls.length && !this.indexing) this.sitemapCache = { at: Date.now(), urls }
       return urls
