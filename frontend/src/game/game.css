@@ -204,3 +204,9 @@ html[data-theme='dark'] .game .story-mark{background:rgba(255,128,200,.22);color
 .game .gap-in.bad{border-style:solid;border-color:#ee7a8f;background:#fdebef}
 html[data-theme='dark'] .game .gap-in{background:rgba(30,32,64,.85)}
 .game .story-cue{margin-right:4px;font-family:inherit;font-size:.7em;color:var(--muted)}
+/* Результат на зелёном и красном фоне: текст темнее, чтобы читался (заголовок, подписи, перевод, «Как собрано») */
+.game .feedback.ok .fbh{color:color-mix(in srgb,var(--ok) 55%,var(--ink))}
+.game .feedback.bad .fbh{color:color-mix(in srgb,var(--bad) 60%,var(--ink))}
+.game .feedback .fbt,.game .feedback .bd-ko{color:var(--ink)}
+.game .feedback .bd-tr{color:color-mix(in srgb,var(--ink) 80%,transparent)}
+.game .feedback .bd-title{color:color-mix(in srgb,var(--ink) 75%,transparent);font-weight:700}
