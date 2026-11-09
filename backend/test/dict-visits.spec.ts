@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { dayOf, sourceOf, visitOf, whoIs } from '../src/dict/dict.visits'
 import { DictVisits } from '../src/dict/dict.visits.service'
+import { DictVisitsWeekly, formatDictVisitsWeekly } from '../src/dict/dict-visits-weekly.service'
 
 describe('учёт заходов на словарь: разбор адреса и посетителя', () => {
   it('узнаёт страницы словаря и подборок, остальное не считает', () => {
@@ -69,5 +70,39 @@ describe('учёт заходов на словарь: запись', () => {
     for (let i = 0; i < 650; i++) await v.record({ path: '/dict', ua: 'Chrome' }, now)
     expect(rows).toHaveLength(600)
     expect(await v.record({ path: '/dict', ua: 'Chrome' }, now + 61_000)).toBe(true)
+  })
+})
+
+describe('недельная сводка посещений словаря', () => {
+  const summary = {
+    days: 7, since: '2026-11-03', human: 4, bots: 7, anyHuman: true, lastHuman: 123,
+    byDay: [], byBot: [{ who: 'google', n: 7 }], byKind: [{ kind: 'word', who: 'человек', n: 8 }],
+    sources: [{ src: 'google.com', n: 3 }], top: [{ kind: 'word', ref: '학교', n: 4 }],
+  } as Awaited<ReturnType<DictVisits['summary']>>
+
+  it('формирует короткие агрегаты без времён и адресов посетителей', () => {
+    const text = formatDictVisitsWeekly(summary, new Date(2026, 10, 9, 21, 10))
+    expect(text).toContain('люди 4, роботы 7')
+    expect(text).toContain('слова «학교» (4)')
+    expect(text).toContain('google.com (3)')
+    expect(text).not.toContain('123')
+    expect(text).not.toMatch(/\b(?:\d{1,3}\.){3}\d{1,3}\b|@[\w.-]+/)
+  })
+
+  it('отправляет отчёт раз в неделю и не дублирует его в этот день', async () => {
+    let marker: string | null = null
+    const db = { getMeta: vi.fn(async () => marker), setMeta: vi.fn(async (_key: string, value: string) => { marker = value }) }
+    const visits = { summary: vi.fn(async () => summary) }
+    const notify = { sendToTopic: vi.fn(async () => undefined) }
+    const weekly = new DictVisitsWeekly(db as never, visits as never, notify as never)
+    const now = new Date(2026, 10, 9, 21, 10)
+    expect(await weekly.weekly(new Date(2026, 10, 9, 21, 9))).toBe('early')
+    expect(await weekly.weekly(now)).toBe('sent')
+    expect(marker).toBe('2026-11-09')
+    expect(visits.summary).toHaveBeenCalledWith(7, now.getTime())
+    expect(notify.sendToTopic).toHaveBeenCalledOnce()
+    expect(notify.sendToTopic.mock.calls[0]?.[0]).toBe('alert')
+    expect(await weekly.weekly(now)).toBe('already')
+    expect(notify.sendToTopic).toHaveBeenCalledOnce()
   })
 })
