@@ -58,7 +58,14 @@ const video = computed(() => {
 })
 
 /** Фото Юны к карточке: метка «Фото» открывает его на весь экран; у своей карточки (не урок) оно ещё стоит справа вместо видео. */
-const photo = computed(() => (current.value ? photoOf(current.value) : undefined))
+/** Картинка не загрузилась (файл на Диске заменили, а ссылка в памяти сервера и браузера ещё старая): один раз просим свежую ссылку. */
+const photoFresh = ref<Record<string, number>>({})
+const photoBase = computed(() => (current.value ? photoOf(current.value) : undefined))
+const photo = computed(() => (photoBase.value && photoFresh.value[photoBase.value] ? `${photoBase.value}?fresh=${photoFresh.value[photoBase.value]}` : photoBase.value))
+function photoFailed() {
+  const p = photoBase.value
+  if (p && !photoFresh.value[p]) photoFresh.value = { ...photoFresh.value, [p]: Date.now() }
+}
 const viewer = ref<string | null>(null)
 
 /** Метки цвета ({o|…}) и теги — в простой текст для карточки. */
@@ -159,7 +166,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
         <div class="gsplit" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину. Двойной щелчок возвращает как было" @pointerdown="splitDown" @pointermove="splitMove" @pointerup="splitUp" @pointercancel="splitUp" @dblclick="splitReset"><i></i></div>
         <aside class="gv">
           <video v-if="video" :key="video" class="gvp" :src="video" controls preload="metadata" @error="broken = video!"></video>
-          <button v-else-if="photo && (!current.l || mine)" type="button" class="gph" title="Открыть фото на весь экран" @click="viewer = photo!"><img :src="photo" :alt="`Фото Юны: ${current.ru}`" draggable="false" /></button>
+          <button v-else-if="photo && (!current.l || mine)" type="button" class="gph" title="Открыть фото на весь экран" @click="viewer = photo!"><img :src="photo" :alt="`Фото Юны: ${current.ru}`" draggable="false" @error="photoFailed" /></button>
           <div v-else-if="broken" class="gvp stub">
             <span class="play" aria-hidden="true">▶</span>
             <b>{{ current.l ? `Видео · ${current.l}` : 'Видео' }}</b>

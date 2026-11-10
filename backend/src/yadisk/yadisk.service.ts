@@ -117,9 +117,11 @@ export class YaDiskService {
   private links = new Map<string, { href: string; until: number }>()
 
   /** Ссылка на скачивание с памятью на 20 минут (сама живёт около 30): для видео и картинок, которые отдаём перенаправлением. */
-  async cachedLink(remote: string): Promise<string> {
+  async cachedLink(remote: string, fresh = false): Promise<string> {
     const hit = this.links.get(remote)
-    if (hit && hit.until > Date.now()) return hit.href
+    // fresh: файл на Диске заменили, старая ссылка умерла; новую берём не чаще раза в 30 секунд на файл
+    const young = !!hit && hit.until - 20 * 60_000 > Date.now() - 30_000
+    if (hit && hit.until > Date.now() && (!fresh || young)) return hit.href
     const href = await this.link(remote)
     this.links.set(remote, { href, until: Date.now() + 20 * 60_000 })
     return href

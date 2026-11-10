@@ -55,7 +55,8 @@ handle_path /video/* {
 
 **Картинки грамматики.** `frontend/src/data/korean/grammarPhotos.ts` держит список имён `KEYS` и строит адрес `/api/pic/grammar/<имя>.webp` (`backend/src/pic/pic.controller.ts`, тот же приём: 302 на Диск, папка `korean_grammar`). В репозитории картинок больше нет.
 Заменить картинку: положить на Диск в `korean_grammar` файл с тем же именем (`own-<id>.webp`, `lesson-N.webp`, ширина около 1200, формат webp); сменится через 10–20 минут, деплой не нужен.
-Новая картинка к новой карточке: файл в `korean_grammar` и имя в `KEYS`, потом пуш. PNG в webp: `cwebp -q 82 файл.png -o own-<id>.webp` (так сделаны `own-past_my`, `own-future_my`, `own-man` и замены 2026-11-10). У карточки «들» картинки нет: файл `own-deul.png` оказался инфографикой «도». Картинку «하고» заменили так: PNG → webp через `sharp` (`resize width 1280`, `quality 82`) → в `korean_grammar/own-hago.webp`.
+Новая картинка к новой карточке: файл в `korean_grammar` и имя в `KEYS`, потом пуш. PNG в webp: `cwebp -q 82 файл.png -o own-<id>.webp` (так сделаны `own-past_my`, `own-future_my`, `own-man` и замены 2026-11-10). Имён в `KEYS` 26; урочная карточка может брать картинку своей (`TWIN` в `grammarPhotos.ts`: `past` → `own-past_my`). Без картинок: `own-counters`, `own-pyeong`, `own-assim`, `own-rieul`.
+**Картинка не показывается после замены файла:** сервер помнит ссылку Диска 20 минут, браузер перенаправление 10 минут, а ссылка на заменённый файл уже мертва. Окно грамматики при ошибке загрузки один раз просит `?fresh=<время>`: сервер берёт новую ссылку (не чаще раза в 30 секунд на файл) и отвечает `no-store`. В CSP сайта для `img-src` и `media-src` разрешены `*.yandex.ru` и `*.yandex.net`, иначе включённая CSP заблокирует картинки и видео. Картинку «하고» заменили так: PNG → webp через `sharp` (`resize width 1280`, `quality 82`) → в `korean_grammar/own-hago.webp`.
 
 **Уведомления в Telegram:** см. `docs/telegram.md`.
 
