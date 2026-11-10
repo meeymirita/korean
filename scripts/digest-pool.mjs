@@ -1,3 +1,4 @@
+// @ts-check
 // Слова и предложения для письма-подборки (кабинет → Настройки → «Подборка на повторение»).
 // Пишет backend/src/digest/pool.ts. Запуск: node scripts/digest-pool.mjs (после изменения словаря или переводов).
 // Тест tests/digest-pool.test.mjs следит, что файл не отстал от данных сайта.
@@ -9,13 +10,19 @@ export const OUT = fileURLToPath(new URL('../backend/src/digest/pool.ts', import
 /** Будущее время и обещания ещё не проходили: такие предложения в письмо не берём. */
 export const FUTURE = /거예요|거에요|겠|게요|ㄹ까요|을까요/
 
+/** @typedef {{ n: number; k: string; r: string; t: string; s: string }} RawWord слово словаря сайта (dictionary.ts) */
+
 /** Текст файла pool.ts по текущим данным сайта. */
 export async function build() {
+  /** @type {{ RAW: RawWord[] }} */
   const { RAW } = await load('/src/data/korean/dictionary.ts')
+  /** @type {{ TRANSLATIONS: Record<string, string> }} */
   const { TRANSLATIONS } = await load('/src/data/korean/translations.ts')
+  /** @type {{ short: (t: string) => string }} */
   const { short } = await load('/src/data/korean/tasks.ts')
   const words = RAW.map(r => [r.k, short(r.t)])
   const seen = new Set()
+  /** @type {[string, string][]} */
   const sentences = []
   for (const r of RAW) {
     const ru = TRANSLATIONS[r.s]
@@ -23,6 +30,7 @@ export async function build() {
     seen.add(r.s)
     sentences.push([r.s, ru])
   }
+  /** @param {unknown[]} a */
   const rows = a => a.map(x => '  ' + JSON.stringify(x)).join(',\n')
   return `// Файл создаёт scripts/digest-pool.mjs из данных сайта, руками не править.
 /** Слова словаря: [по-корейски, перевод]. */

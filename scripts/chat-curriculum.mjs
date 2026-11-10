@@ -1,3 +1,4 @@
+// @ts-check
 // Что помощник-чат знает о программе владельца: пройденные темы грамматики и слова словаря.
 // Пишет backend/src/chat/curriculum.ts. Запуск: node scripts/chat-curriculum.mjs (после изменения словаря или грамматики).
 // Тест tests/chat-prompt.test.mjs следит, что файл не отстал от данных сайта.
@@ -7,9 +8,13 @@ import { close, load } from '../tests/_load.mjs'
 
 export const OUT = fileURLToPath(new URL('../backend/src/chat/curriculum.ts', import.meta.url))
 
+/** @typedef {{ n: number; k: string; r: string; t: string; s: string }} RawWord слово словаря сайта (dictionary.ts) */
+
 /** Текст файла curriculum.ts по текущим данным сайта. */
 export async function build() {
+  /** @type {{ G: { ko: string; ru: string; st: string }[] }} */
   const { G } = await load('/src/data/korean/grammar.ts')
+  /** @type {{ RAW: RawWord[] }} */
   const { RAW } = await load('/src/data/korean/dictionary.ts')
   const grammar = G.filter(g => g.st === 'ok').map(g => `- ${g.ko} — ${g.ru}`)
   const words = [...new Set(RAW.map(r => r.k))]
