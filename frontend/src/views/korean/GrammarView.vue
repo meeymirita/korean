@@ -36,7 +36,9 @@ const part = usePersisted<0 | 1 | 2>('grammar_tab', 0, v => v === 0 || v === 1 |
 /** Открытая вкладка: без токена «Мои карточки» недоступны, показываем часть 1 */
 const cur = computed<0 | 1 | 2>(() => (part.value === 0 && !progress.unlocked ? 1 : part.value))
 /** Пройденные карточки части 1 показываются и во «Мои карточки» (там без видео, только фото) */
-const inTab = (g: (typeof G)[number], n: number) => tabOf(g) === n || (n === 0 && tabOf(g) === 1 && g.st === 'ok')
+/** Урочные карточки, у которых есть своя карточка владельца на ту же тему: во «Мои карточки» они не дублируются (past и past_i → past_my: их содержание собрано в ней, решение владельца 2026-11-10) */
+const OWN_TWIN = new Set(['past', 'past_i'])
+const inTab = (g: (typeof G)[number], n: number) => tabOf(g) === n || (n === 0 && tabOf(g) === 1 && g.st === 'ok' && !OWN_TWIN.has(g.id))
 const partCount = (n: number) => G.filter(g => inTab(g, n)).length
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
@@ -101,9 +103,10 @@ onMounted(() => {
         <div class="d">{{ g.d }}</div>
         <div class="ft">
           <span class="pill">{{ g.s }}</span>
-          <span v-if="g.l" class="pill l">{{ g.l }}</span>
+          <!-- во «Мои карточки» подпись урока не пишется: вкладка владельца не про видеокурс -->
+          <span v-if="g.l && cur !== 0" class="pill l">{{ g.l }}</span>
           <span class="pill" :class="isOk(g) ? 's' : 'n'">{{ isOk(g) ? 'пройдено' : 'ещё рано' }}</span>
-          <span v-if="passed(g.id)" class="pill s">✓ {{ g.l || 'отмечено' }}</span>
+          <span v-if="passed(g.id)" class="pill s">✓ {{ (cur !== 0 && g.l) || 'отмечено' }}</span>
           <span v-if="photoOf(g)" class="pill ph" role="button" tabindex="0" title="Показать фото Юны к этому правилу" @click.stop="photo = photoOf(g)!" @keydown.enter.stop.prevent="photo = photoOf(g)!">Фото</span>
         </div>
       </button>
