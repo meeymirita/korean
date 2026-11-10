@@ -1,5 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Header, HttpCode, Param, Post, Query } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Header, HttpCode, NotFoundException, Param, Post, Query, Req } from '@nestjs/common'
+import type { Request } from 'express'
 import { Owner, Public } from '../auth/auth.js'
+import { isInternal } from '../security.js'
 import { DictService } from './dict.service.js'
 import { DictVisits } from './dict.visits.service.js'
 
@@ -82,11 +84,15 @@ export class DictController {
     return this.dict.sitemap()
   }
 
-  /** Учёт захода на страницу словаря или подборки (зовёт серверная часть сайта и браузер при переходе внутри словаря). Всегда отвечает 204: ошибки учёта не должны ломать страницу. */
+  /**
+   * Учёт захода на страницу словаря или подборки. Зовёт только серверная часть сайта (nitro/utils/dictVisit.ts) из внутренней сети:
+   * снаружи адрес отвечает 404, браузер сообщает о переходах сайту (`POST /dict-visit`), а не сюда. Ошибки учёта не ломают страницу: ответ 204.
+   */
   @Public()
   @HttpCode(204)
   @Post('visit')
-  async visit(@Body() body: { path?: unknown; ua?: unknown; ref?: unknown }) {
+  async visit(@Req() req: Request, @Body() body: { path?: unknown; ua?: unknown; ref?: unknown }) {
+    if (!isInternal(req)) throw new NotFoundException()
     await this.visits.record(body ?? {}).catch(() => false)
   }
 

@@ -39,6 +39,23 @@ interface Bad {
 /** IP клиента: за Caddy (loopback) берётся из X-Forwarded-For, напрямую — адрес соединения. Задано через `trust proxy` в main.ts. */
 export const clientIp = (req: Request) => req.ip || req.socket.remoteAddress || 'unknown'
 
+/** Частный или локальный адрес: сама машина, сеть Docker, домашняя сеть. */
+export const isPrivateAddress = (address: string) => {
+  const a = address.replace(/^::ffff:/, '').toLowerCase()
+  if (a === '::1' || a.startsWith('fe80:') || /^f[cd][0-9a-f]{2}:/.test(a)) return true
+  const m = /^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/.exec(a)
+  if (!m) return false
+  const [x, y] = [Number(m[1]), Number(m[2])]
+  return x === 127 || x === 10 || (x === 172 && y >= 16 && y <= 31) || (x === 192 && y === 168) || (x === 169 && y === 254)
+}
+
+/**
+ * Запрос пришёл изнутри (серверная часть сайта, Prometheus), а не от посетителя: соединение с частного адреса и без заголовков прокси.
+ * Всё, что приходит снаружи, идёт через Caddy, а он всегда дописывает X-Forwarded-For; посетитель убрать его не может.
+ */
+export const isInternal = (req: Request) =>
+  !req.headers['x-forwarded-for'] && !req.headers['forwarded'] && !req.headers['x-real-ip'] && isPrivateAddress(req.socket?.remoteAddress || '')
+
 @Injectable()
 export class RateLimiter {
   private readonly all = new Map<string, Bucket>()
