@@ -18,13 +18,13 @@
     "node": "^22.18.0 || >=24.12.0"
   },
   "dependencies": {
-    "@nestjs/common": "^12.3.2",
-    "@nestjs/core": "^12.3.2",
-    "@nestjs/platform-express": "^12.3.2",
-    "@nestjs/swagger": "^12.0.5",
+    "@nestjs/common": "^12.4.0",
+    "@nestjs/core": "^12.4.0",
+    "@nestjs/platform-express": "^12.4.0",
+    "@nestjs/swagger": "^12.1.1",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
-    "bullmq": "^6.7.0",
+    "bullmq": "^6.7.2",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.3.1",
     "pg": "^8.16.3",
@@ -34,18 +34,18 @@
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@nestjs/cli": "^12.0.11",
-    "@nestjs/testing": "^12.3.2",
-    "@swc/core": "^1.16.21",
+    "@nestjs/cli": "^12.0.12",
+    "@nestjs/testing": "^12.4.0",
+    "@swc/core": "^1.16.22",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
     "@types/node": "^24.19.2",
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
-    "supertest": "^7.3.1",
+    "supertest": "^7.3.2",
     "typescript": "~5.9",
     "unplugin-swc": "^2.0.0",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "overrides": {
     "multer": "^2.5.0",
