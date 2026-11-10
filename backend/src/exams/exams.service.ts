@@ -3,6 +3,7 @@ import { BadRequestException, HttpException, Injectable, OnModuleDestroy, OnModu
 import { Db } from '../db/db.service.js'
 import { examMail } from '../mail/templates.js'
 import { NotifyService } from '../notify/notify.service.js'
+import { logError } from '../log.js'
 
 const KEY = 'exams'
 const NOTIFIED = 'exams:notified'
@@ -76,7 +77,7 @@ export class ExamsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     if (process.env.NODE_ENV === 'test') return
-    this.timer = setInterval(() => void this.remind().catch(e => console.error('напоминание об экзамене:', (e as Error).message)), 10 * 60_000)
+    this.timer = setInterval(() => void this.remind().catch(e => logError('напоминание об экзамене:', (e as Error).message)), 10 * 60_000)
     this.timer.unref()
   }
 
@@ -185,7 +186,7 @@ export class ExamsService implements OnModuleInit, OnModuleDestroy {
       await this.notify.send(examMail(list.map(x => x.title), process.env.SITE_URL))
       return 'sent'
     } catch (e) {
-      console.error('напоминание об экзамене не отправилось:', (e as Error).message)
+      logError('напоминание об экзамене не отправилось:', (e as Error).message)
       return 'failed'
     }
   }

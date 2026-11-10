@@ -12,6 +12,7 @@ import { digestMail } from '../mail/templates.js'
 import { dayOf } from '../reminders/reminder.service.js'
 import { DIGEST_SENTENCES, DIGEST_WORDS } from './pool.js'
 import { BackgroundJobs } from '../jobs/background-jobs.service.js'
+import { logError } from '../log.js'
 
 export interface DigestSettings {
   enabled: boolean
@@ -132,7 +133,7 @@ export class DigestService implements OnModuleInit {
       await this.deliver(s)
       return 'sent'
     } catch (e) {
-      console.error('письмо-подборка не отправилось:', (e as Error).message)
+      logError('письмо-подборка не отправилось:', (e as Error).message)
       await this.save({ ...s, lastSent: '' })
       return 'failed'
     }

@@ -1,3 +1,4 @@
+import { logError } from '../log.js'
 import { BadRequestException, Injectable, Logger, NotFoundException, OnApplicationBootstrap, ServiceUnavailableException } from '@nestjs/common'
 import { access, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -231,7 +232,7 @@ export class DictService implements OnApplicationBootstrap {
         await this.wait(await this.req(`/indexes/${INDEX}/documents?primaryKey=id`, { method: 'POST', body: JSON.stringify(docs.slice(i, i + BATCH)) }, [], 120_000))
       }
       const info = await stat(file)
-      await writeFile(markFile(file), JSON.stringify({ size: info.size, mtimeMs: info.mtimeMs, documents: docs.length, version: INDEX_VERSION } satisfies IndexMark)).catch(() => undefined)
+      await writeFile(markFile(file), JSON.stringify({ size: info.size, mtimeMs: info.mtimeMs, documents: docs.length, version: INDEX_VERSION } satisfies IndexMark)).catch(e => logError('Словарь: метка готового индекса не записалась (при следующем запуске индекс соберётся заново):', (e as Error).message))
       return { ok: true, documents: docs.length, entries: parsed.entries.length }
     } finally {
       this.indexing = false

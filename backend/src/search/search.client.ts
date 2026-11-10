@@ -1,6 +1,7 @@
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common'
 import type { StaticSearchDocument, SearchCategory, SearchResponse, SearchServiceStatus, MeiliTask, PrivateSearchCategory, PrivateSearchResponse, PrivateSearchHit } from './search.types.js'
 import type { Db } from '../db/db.service.js'
+import { logWarn } from '../log.js'
 
 const INDEX = 'study-materials'
 const PRIVATE_INDEX = 'owner-materials'
@@ -167,7 +168,7 @@ export class SearchClient {
       await this.reindexPrivate()
     } catch (error) {
       this.privateIndexDirty = true
-      console.warn('Не удалось обновить личный поисковый индекс:', (error as Error).message)
+      logWarn('Не удалось обновить личный поисковый индекс:', (error as Error).message)
       throw new ServiceUnavailableException({ error: 'личный поисковый индекс не обновлён' })
     }
   }

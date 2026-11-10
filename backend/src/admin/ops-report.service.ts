@@ -5,6 +5,7 @@ import { DATA_DIR } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { OpsService } from './ops.service.js'
+import { logError } from '../log.js'
 
 const PROMETHEUS = (process.env.PROMETHEUS_URL || 'http://prometheus:9090').replace(/\/$/, '')
 /** Настоящие ошибки и предупреждения: уровень в журнале (ERROR, WARN, level=error) или явные слова; обычные строки INFO и «0 failed tasks» не считаются. */
@@ -29,7 +30,7 @@ export class OpsReportService implements OnModuleInit, OnModuleDestroy {
   /** Раз в минуту проверяем, не пора ли слать недельный отчёт в «Тревоги». */
   onModuleInit() {
     if (process.env.REPORT_WEEKLY === '0') return
-    this.timer = setInterval(() => void this.weekly().catch(e => console.error('недельный отчёт:', (e as Error).message)), Number(process.env.REPORT_WATCH_MS) || 60_000)
+    this.timer = setInterval(() => void this.weekly().catch(e => logError('недельный отчёт:', (e as Error).message)), Number(process.env.REPORT_WATCH_MS) || 60_000)
     this.timer.unref()
   }
 
@@ -57,7 +58,7 @@ export class OpsReportService implements OnModuleInit, OnModuleDestroy {
       return 'sent'
     } catch (e) {
       // метку не снимаем: иначе сборка отчёта шла бы каждую минуту до конца дня; ошибка видна в журнале, файл можно взять кнопкой «Отчёт для разбора»
-      console.error('недельный отчёт не отправился:', (e as Error).message)
+      logError('недельный отчёт не отправился:', (e as Error).message)
       return 'failed'
     }
   }

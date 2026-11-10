@@ -9,6 +9,7 @@ import { Db } from '../db/db.service.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { reminderMail } from '../mail/templates.js'
 import { BackgroundJobs } from '../jobs/background-jobs.service.js'
+import { logError } from '../log.js'
 
 export interface ReminderSettings {
   enabled: boolean
@@ -130,7 +131,7 @@ export class ReminderService implements OnModuleInit {
       await this.deliver(day)
       return 'sent'
     } catch (e) {
-      console.error('письмо-напоминание не отправилось:', (e as Error).message)
+      logError('письмо-напоминание не отправилось:', (e as Error).message)
       await this.save({ ...s, lastSent: '' })
       return 'failed'
     }

@@ -10,6 +10,7 @@ import { Db } from '../db/db.service.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { lessonMail } from '../mail/templates.js'
 import { dayOf } from '../reminders/reminder.service.js'
+import { logError } from '../log.js'
 
 export interface LessonSettings {
   enabled: boolean
@@ -119,7 +120,7 @@ export class LessonService implements OnModuleInit, OnModuleDestroy {
       await this.deliver()
       return 'sent'
     } catch (e) {
-      console.error('письмо-напоминание о созвоне не отправилось:', (e as Error).message)
+      logError('письмо-напоминание о созвоне не отправилось:', (e as Error).message)
       await this.save({ ...s, lastSent: '' })
       return 'failed'
     }

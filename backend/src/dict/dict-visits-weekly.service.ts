@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Db } from '../db/db.service.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { DictVisits } from './dict.visits.service.js'
+import { logError } from '../log.js'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const dayOf = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -32,7 +33,7 @@ export class DictVisitsWeekly implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     if (process.env.NODE_ENV === 'test') return
-    this.timer = setInterval(() => void this.weekly().catch(e => console.error('недельная сводка словаря:', (e as Error).message)), 60_000)
+    this.timer = setInterval(() => void this.weekly().catch(e => logError('недельная сводка словаря:', (e as Error).message)), 60_000)
     this.timer.unref()
   }
 
@@ -51,7 +52,7 @@ export class DictVisitsWeekly implements OnModuleInit, OnModuleDestroy {
       await this.notify.sendToTopic('alert', formatDictVisitsWeekly(summary, now))
       return 'sent'
     } catch (e) {
-      console.error('недельная сводка словаря не отправилась:', (e as Error).message)
+      logError('недельная сводка словаря не отправилась:', (e as Error).message)
       return 'failed'
     }
   }

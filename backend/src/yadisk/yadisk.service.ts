@@ -10,6 +10,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import path from 'node:path'
 import { DATA_DIR } from '../config.js'
+import { logError } from '../log.js'
 
 const API = 'https://cloud-api.yandex.net/v1/disk'
 
@@ -210,12 +211,12 @@ export class YaDiskService {
   /** Копирует файл в папку «Картинки» на Диске в фоне; ошибка только в лог (локальный файл остаётся главным). */
   mirror(file: string) {
     if (!this.configured()) return
-    void this.upload(`${DISK_DIRS.media}/${path.basename(file)}`, file).catch(e => console.error('Диск: не загрузился', path.basename(file), (e as Error).message))
+    void this.upload(`${DISK_DIRS.media}/${path.basename(file)}`, file).catch(e => logError('Диск: не загрузился', path.basename(file), (e as Error).message))
   }
 
   unmirror(file: string) {
     if (!this.configured()) return
-    void this.remove(`${DISK_DIRS.media}/${path.basename(file)}`).catch(() => undefined)
+    void this.remove(`${DISK_DIRS.media}/${path.basename(file)}`).catch(e => logError('Диск: не удалился', path.basename(file), (e as Error).message))
   }
 
   /** Локального файла нет (диск сервера пересоздан): берёт его с Диска. Возвращает, получилось ли. */
@@ -247,7 +248,7 @@ export class YaDiskService {
           sent++
         } catch (err) {
           failed++
-          console.error('Диск: не загрузился', e.name, (err as Error).message)
+          logError('Диск: не загрузился', e.name, (err as Error).message)
         }
       }
     }

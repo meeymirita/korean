@@ -10,9 +10,10 @@ import { Db } from '../db/db.service.js'
 import { appendFileSync } from 'node:fs'
 import { MailService } from '../mail/mail.service.js'
 import { tgButtonFor, TG_HEART, TG_TOPICS, TG_TOPIC_ABOUT, TG_TOPIC_NAMES, sampleMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
+import { logError } from '../log.js'
 
 /** Версия баннеров в адресе: Telegram запоминает картинку по адресу, поэтому при замене файлов в frontend/public/tg число надо увеличить. */
-const BANNER_VERSION = '2'
+const BANNER_VERSION = '3'
 
 /** Без анимированных эмодзи: тег tg-emoji заменяется обычным символом внутри него, иконки кнопок убираются. */
 const stripCustom = (v: unknown): unknown =>
@@ -66,7 +67,7 @@ export class NotifyService {
         return
       } catch (e) {
         tgError = e as Error
-        console.error('Telegram не отправил:', tgError.message)
+        logError('Telegram не отправил:', tgError.message)
       }
     }
     if (this.mail.configured() && this.validMail(mailTo)) {
@@ -191,7 +192,7 @@ export class NotifyService {
           keep(await this.tgCall('sendPhoto', { ...target, photo: banner }))
         } catch (e) {
           // баннера ещё нет или Telegram его не скачал: шлём обычное сообщение
-          console.error('Telegram: баннер не ушёл, шлю текстом:', (e as Error).message)
+          logError('Telegram: баннер не ушёл, шлю текстом:', (e as Error).message)
         }
       }
       keep(await this.tgCall('sendMessage', { ...target, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...markup }))
@@ -208,7 +209,7 @@ export class NotifyService {
       const list = JSON.parse((await this.db.getMeta(key)) ?? '[]') as number[]
       await this.db.setMeta(key, JSON.stringify([...list, ...ids].slice(-500)))
     } catch (e) {
-      console.error('Telegram: не запомнил номера сообщений:', (e as Error).message)
+      logError('Telegram: не запомнил номера сообщений:', (e as Error).message)
     }
   }
 
@@ -388,7 +389,7 @@ export class NotifyService {
       } catch (e) {
         if (o.file || st.fileId) throw e
         // баннера по умолчанию ещё нет на сайте (до выкладки): отправляем одним текстом
-        console.error('Telegram: баннер по умолчанию не ушёл, шлю текстом:', (e as Error).message)
+        logError('Telegram: баннер по умолчанию не ушёл, шлю текстом:', (e as Error).message)
         r = await this.tgRaw('sendMessage', { chat_id: chat, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, reply_markup })
         next = { ...st, kind: 'text' }
       }
@@ -405,7 +406,7 @@ export class NotifyService {
         await this.tgCall('pinChatMessage', { chat_id: chat, message_id: id, disable_notification: true })
         pinned = true
       } catch (e) {
-        console.error('Telegram: не закрепил сообщение (нужно право «Закрепление сообщений»):', (e as Error).message)
+        logError('Telegram: не закрепил сообщение (нужно право «Закрепление сообщений»):', (e as Error).message)
       }
     }
     await this.guideSave({ ...next, text })

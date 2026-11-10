@@ -15,6 +15,7 @@ import { MailService } from '../mail/mail.service.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { BACKUP_FOLDER_RE, DISK_DIRS, YaDiskService, backupFolder } from '../yadisk/yadisk.service.js'
 import { backupMail } from '../mail/templates.js'
+import { logError } from '../log.js'
 
 /** Конфиги сервера, которые кладём в архив (что не прочиталось, пропускается). */
 const CONFIG_FILES = [
@@ -103,13 +104,13 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     this.timer = setInterval(() => void this.watch(), Number(process.env.BACKUP_WATCH_MS) || 3600_000)
     this.timer.unref()
     // через минуту после старта: докладываем на Диск картинки и файлы, которых там нет (после загрузки пачкой или сбоя связи)
-    if (this.disk.configured()) setTimeout(() => void this.disk.syncMedia().catch(e => console.error('Диск: синхронизация картинок', (e as Error).message)), Number(process.env.YADISK_SYNC_DELAY_MS) || 60_000).unref()
+    if (this.disk.configured()) setTimeout(() => void this.disk.syncMedia().catch(e => logError('Диск: синхронизация картинок', (e as Error).message)), Number(process.env.YADISK_SYNC_DELAY_MS) || 60_000).unref()
   }
 
   private async watch() {
     const last = this.last()
     if (process.env.BACKUP_AUTO !== '0' && !(await this.problems()).length && new Date().getHours() >= 4 && Date.now() - (last?.time ?? 0) > everyMs() - SLACK) void this.start()
-    if (this.disk.configured()) void this.disk.syncMedia().catch(() => undefined)
+    if (this.disk.configured()) void this.disk.syncMedia().catch(e => logError('Диск: синхронизация картинок', (e as Error).message))
     await this.watchNightly()
   }
 
@@ -155,7 +156,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       writeFileSync(ALERT, JSON.stringify({ key, time: now }))
       return 'sent'
     } catch (e) {
-      console.error('письмо о ночной копии не отправилось:', (e as Error).message)
+      logError('письмо о ночной копии не отправилось:', (e as Error).message)
       return 'quiet'
     }
   }
@@ -173,7 +174,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       await this.notify.send(backupMail({ kind: 'nightly-ok', when: new Date(time) }), await this.mailTo())
       writeFileSync(ALERT, JSON.stringify({ key, time: Date.now() }))
     } catch (e) {
-      console.error('сообщение о ночной копии не отправилось:', (e as Error).message)
+      logError('сообщение о ночной копии не отправилось:', (e as Error).message)
     }
   }
 
@@ -231,7 +232,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.notify.send(backupMail({ kind: 'disk-ok', name: r.name, mb: (r.sizeKb / 1024).toFixed(1) }), await this.mailTo())
     } catch (e) {
-      console.error('сообщение о копии на Диске не отправилось:', (e as Error).message)
+      logError('сообщение о копии на Диске не отправилось:', (e as Error).message)
     }
   }
 
@@ -435,7 +436,7 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
       return { mail: 'ok' as const, message: '' }
     } catch (e) {
       const message = 'Почта: ' + (e as Error).message.slice(0, 120)
-      console.error('проверка отправки копий:', message)
+      logError('проверка отправки копий:', message)
       return { mail: 'fail' as const, message }
     }
   }

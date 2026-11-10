@@ -6,6 +6,7 @@ import path from 'node:path'
 import { BACKUPS, KEEP_BACKUPS } from '../config.js'
 import { postgresDumpConfig } from './postgres-dump.js'
 import { BackgroundJobs } from '../jobs/background-jobs.service.js'
+import { logError } from '../log.js'
 
 @Injectable()
 export class BackupService implements OnModuleInit {
@@ -31,7 +32,7 @@ export class BackupService implements OnModuleInit {
       const files = readdirSync(BACKUPS).filter(f => f.startsWith('app-')).sort()
       for (const old of files.slice(0, Math.max(0, files.length - KEEP_BACKUPS))) unlinkSync(path.join(BACKUPS, old))
     } catch (e) {
-      console.error('копия базы не создалась:', (e as Error).message) // копия — страховка, на работу сервера не влияет
+      logError('копия базы не создалась:', (e as Error).message) // копия — страховка, на работу сервера не влияет
       throw e // BullMQ повторит попытку с backoff и запишет исчерпанные попытки в failed jobs.
     }
   }

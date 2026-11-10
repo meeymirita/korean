@@ -10,6 +10,7 @@ import { Events } from '../events/events.service.js'
 import { MailService } from '../mail/mail.service.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { codeMail } from '../mail/templates.js'
+import { logError } from '../log.js'
 
 const SESSION_DAYS = 30
 /** OWNER_SESSION_HOURS=4: вход по токену живёт 4 часа, потом токен нужно вводить заново (0 или пусто: сеанс только после кода, 30 дней). */
@@ -104,7 +105,7 @@ export class TwoFaService {
       const mail = codeMail(code, kind, CODE_TTL / 60_000)
       await this.notify.send(mail, email === TG ? undefined : email)
     } catch (e) {
-      console.error(`Письмо с кодом не отправилось (${kind}): ${(e as Error).message}`) // видно во вкладке «Журналы»: чаще всего неверный пароль приложения или не включён SMTP
+      logError(`Письмо с кодом не отправилось (${kind}): ${(e as Error).message}`) // видно во вкладке «Журналы»: чаще всего неверный пароль приложения или не включён SMTP
       await this.events.log('2fa_mail_failed', kind)
       throw new ServiceUnavailableException({ error: 'mail failed' })
     }
