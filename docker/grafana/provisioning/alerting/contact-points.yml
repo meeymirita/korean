@@ -1,0 +1,25 @@
+# Куда Grafana шлёт тревоги: тема «Тревоги» в группе Telegram (те же TELEGRAM_* из .env, что у сервера).
+# Grafana пишет в Telegram сама, мимо сервера сайта: иначе о его падении некому было бы сообщить.
+# Значения __TELEGRAM_...__ подставляет docker/grafana/start.sh при запуске контейнера. Через $ПЕРЕМЕННУЮ нельзя:
+# Grafana превращает подставленный номер чата в число и не стартует («cannot unmarshal number into … chatid of type string»).
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: telegram-alerts
+    receivers:
+      - uid: telegram-alerts
+        type: telegram
+        disableResolveMessage: false
+        settings:
+          bottoken: "__TELEGRAM_TOKEN__"
+          chatid: "__TELEGRAM_CHAT__"
+          message_thread_id: "__TELEGRAM_TOPIC__"
+          parse_mode: HTML
+          disable_web_page_preview: true
+          message: |
+            {{ if eq .Status "firing" }}🔴 <b>우리말: тревога</b>{{ else }}🟢 <b>우리말: снова в порядке</b>{{ end }}
+            {{ range .Alerts }}
+            <b>{{ .Labels.alertname }}</b>
+            {{ .Annotations.summary }}
+            {{ end }}

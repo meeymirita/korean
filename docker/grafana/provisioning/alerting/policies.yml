@@ -1,0 +1,10 @@
+# Все тревоги идут в одну тему Telegram; о той же беде напоминаем не чаще раза в 12 часов.
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: telegram-alerts
+    group_by: [alertname]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 12h

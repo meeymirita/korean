@@ -164,6 +164,8 @@ services:
   grafana:
     image: ${GRAFANA_IMAGE}
     restart: unless-stopped
+    # start.sh вписывает данные Telegram в адрес тревог и запускает обычный /run.sh
+    entrypoint: ["/bin/sh", "/opt/korean/start.sh"]
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
@@ -171,10 +173,15 @@ services:
       GF_SERVER_ROOT_URL: ${GRAFANA_URL:-http://localhost:3002}
       # при входе сразу открывается панель нагрузки, а не пустая стартовая страница Grafana
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/operations.json
+      # тревоги (docker/grafana/provisioning/alerting) идут в тему «Тревоги» той же группы Telegram, что и сообщения сервера
+      ALERT_TELEGRAM_TOKEN: ${TELEGRAM_BOT_TOKEN:-not-set}
+      ALERT_TELEGRAM_CHAT: ${TELEGRAM_GROUP_ID:-${TELEGRAM_CHAT_ID:-0}}
+      ALERT_TELEGRAM_TOPIC: ${TELEGRAM_TOPIC_ALERT:-}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./docker/grafana/start.sh:/opt/korean/start.sh:ro
     expose: ["3000"]
     ports:
       - "127.0.0.1:${GRAFANA_PORT}:3000"

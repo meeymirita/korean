@@ -9,12 +9,15 @@ type Aggregate = { count: number; sum: number; buckets: number[] }
 export class MetricsService {
   private readonly requests = new Map<string, number>()
   private readonly durations = new Map<string, Aggregate>()
+  /** Сколько раз запросили слово, которого нет в большом словаре: рост значит битые адреса (тревога в Grafana). */
+  private dictNotFound = 0
 
   middleware = (req: Request, res: Response, next: NextFunction) => {
     const started = process.hrtime.bigint()
     res.once('finish', () => {
       const method = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(req.method) ? req.method : 'OTHER'
       const status = String(res.statusCode)
+      if (res.statusCode === 404 && req.method === 'GET' && (req.originalUrl || '').startsWith('/api/dict/word/')) this.dictNotFound++
       const key = `${method}\u0000${status}`
       this.requests.set(key, (this.requests.get(key) || 0) + 1)
       const elapsed = Number(process.hrtime.bigint() - started) / 1e9
@@ -45,6 +48,7 @@ export class MetricsService {
       lines.push(`http_request_duration_seconds_sum{${labels}} ${aggregate.sum}`)
       lines.push(`http_request_duration_seconds_count{${labels}} ${aggregate.count}`)
     }
+    lines.push('# HELP dict_word_not_found_total Запросы слов, которых нет в большом словаре.', '# TYPE dict_word_not_found_total counter', `dict_word_not_found_total ${this.dictNotFound}`)
     return `${lines.join('\n')}\n`
   }
 }

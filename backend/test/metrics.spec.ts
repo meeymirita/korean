@@ -16,5 +16,22 @@ describe('метрики HTTP-запросов', () => {
     expect(result).toContain('http_request_duration_seconds_count{method="GET",status="503"} 1')
     expect(result).not.toContain('/api/notes')
     expect(result).not.toContain('secret')
+    expect(result).toContain('dict_word_not_found_total 0')
+  })
+
+  it('считает ненайденные слова словаря одним числом, без самого слова', () => {
+    const metrics = new MetricsService()
+    const hit = (url: string, statusCode: number) => {
+      const response = new EventEmitter() as EventEmitter & { statusCode: number; once: EventEmitter['once'] }
+      response.statusCode = statusCode
+      metrics.middleware({ method: 'GET', originalUrl: url, headers: {} } as never, response as never, () => undefined)
+      response.emit('finish')
+    }
+    hit('/api/dict/word/%EC%97%86%EB%8A%94', 404)
+    hit('/api/dict/word/%ED%95%99%EA%B5%90', 200)
+    hit('/api/notes/1', 404)
+    const result = metrics.render()
+    expect(result).toContain('dict_word_not_found_total 1')
+    expect(result).not.toContain('%EC%97%86')
   })
 })
