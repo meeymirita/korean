@@ -16,6 +16,8 @@
 #   HEALTH_URL          проверка API (по умолчанию: http://127.0.0.1:3001/api/health)
 #   SITE_HEALTH_URL     проверка сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
 #   HEALTH_TRIES        сколько секунд ждать ответа (по умолчанию 60: после миграций backend стартует не сразу)
+#   SMOKE_URLS          страницы для проверки после запуска, через пробел, вид «адрес|что должно быть в ответе»
+#                       (по умолчанию главная, словарь, одно слово и карта сайта на 127.0.0.1:3000; пустая строка выключает проверку)
 #   GIT_PULL=0          не делать git pull (код уже на месте)
 #   NOTIFY_TELEGRAM_TOKEN и NOTIFY_TELEGRAM_CHAT — отправить результат в Telegram (по желанию; задать в /etc/korean-deploy.env)
 set -uo pipefail
@@ -30,6 +32,9 @@ BACKUP_CMD=${BACKUP_CMD:-bash scripts/backup-docker.sh}
 HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:3001/api/health}
 SITE_HEALTH_URL=${SITE_HEALTH_URL:-http://127.0.0.1:3000/robots.txt}
 HEALTH_TRIES=${HEALTH_TRIES:-60}
+SMOKE_BASE=${SMOKE_BASE:-http://127.0.0.1:3000}
+# главная, большой словарь, страница слова «학교» и карта сайта: то, что видят посетители и поисковики
+SMOKE_URLS=${SMOKE_URLS-"$SMOKE_BASE/|우리말 $SMOKE_BASE/dict|<title $SMOKE_BASE/dict/%ED%95%99%EA%B5%90|학교 $SMOKE_BASE/sitemap_index.xml|<sitemap"}
 
 FORCE=0
 RESTART=1
@@ -61,6 +66,14 @@ wait_for() { # url [шаблон ответа]
   return 1
 }
 healthy() { wait_for "$HEALTH_URL" '"ok":true' && wait_for "$SITE_HEALTH_URL"; }
+# дымовая проверка страниц: печатает первый адрес, который не ответил как надо
+smoke() {
+  local item
+  for item in $SMOKE_URLS; do
+    if ! wait_for "${item%%|*}" "${item#*|}"; then echo "${item%%|*}"; return 1; fi
+  done
+  return 0
+}
 
 # рабочая папка должна быть чистой: иначе обновление и откат могут затереть чьи-то правки
 if [ -n "$(git status --porcelain)" ]; then
@@ -115,7 +128,11 @@ if [ "$RESTART" = 1 ]; then
     rollback
     fail "сайт не ответил после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри: docker compose logs --tail 50 frontend"
   fi
+  if ! BROKEN=$(smoke); then
+    rollback
+    fail "страница $BROKEN не открылась после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри: docker compose logs --tail 50 frontend backend"
+  fi
 fi
 
-say "Готово: $(git rev-parse --short HEAD) ($BRANCH). Сайт и сервер отвечают."
+say "Готово: $(git rev-parse --short HEAD) ($BRANCH). Сайт, сервер и проверочные страницы отвечают."
 notify "우리말: обновлено до $(git rev-parse --short HEAD), сайт и сервер отвечают"

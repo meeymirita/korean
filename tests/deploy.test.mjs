@@ -36,6 +36,7 @@ async function deploy(args = [], env = {}) {
         HEALTH_URL: `http://127.0.0.1:${port}/health`,
         SITE_HEALTH_URL: `http://127.0.0.1:${port}/health`,
         HEALTH_TRIES: '2',
+        SMOKE_URLS: `http://127.0.0.1:${port}/|ok http://127.0.0.1:${port}/dict|true`,
         BACKUP_CMD: `${tmp}/call.sh backup`,
         BUILD_CMD: `${tmp}/call.sh build`,
         UP_CMD: `${tmp}/up.sh`,
@@ -103,7 +104,7 @@ describe('скрипт обновления на сервере (scripts/deploy.
     const r = await deploy()
     assert.equal(r.code, 0, r.out)
     assert.deepEqual(calls(), ['backup', 'build', 'up'])
-    assert.match(r.out, /Сайт и сервер отвечают/)
+    assert.match(r.out, /Сайт, сервер и проверочные страницы отвечают/)
   })
 
   test('--no-backup пропускает копию, --no-restart только собирает', async () => {
@@ -140,6 +141,23 @@ describe('скрипт обновления на сервере (scripts/deploy.
     resetCalls()
     const ok = await deploy()
     assert.equal(ok.code, 0, ok.out)
+  })
+
+  test('сервер жив, но страница сайта не открылась: откат с названием страницы', async () => {
+    const before = await sh(srv, 'git rev-parse HEAD')
+    await release({ 'src/a.txt': 'страница сломана' })
+    resetCalls()
+    const broken = `http://127.0.0.1:${port}/dict/слово`
+    const r = await deploy([], { SMOKE_URLS: `http://127.0.0.1:${port}/|ok ${broken}|этого-нет-в-ответе` })
+    assert.notEqual(r.code, 0, 'должна быть ошибка')
+    assert.match(r.out, /ОТКАТ/)
+    assert.ok(r.out.includes(`страница ${broken} не открылась`), r.out)
+    assert.equal(await sh(srv, 'git rev-parse HEAD'), before, 'код вернулся на прошлую версию')
+    // пустой список выключает проверку страниц
+    resetCalls()
+    const ok = await deploy([], { SMOKE_URLS: '' })
+    assert.equal(ok.code, 0, ok.out)
+    assert.deepEqual(calls(), ['backup', 'build', 'up'])
   })
 
   test('сборка не удалась: откат, ошибка', async () => {
