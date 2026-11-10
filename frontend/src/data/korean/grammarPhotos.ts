@@ -7,7 +7,7 @@
 const KEYS = new Set([
   'lesson-1', 'lesson-2', 'lesson-3', 'lesson-4', 'lesson-5', 'lesson-6', 'lesson-7', 'lesson-8', 'lesson-9', 'lesson-10',
   'own-adj', 'own-deul', 'own-hago', 'own-here', 'own-ijeo', 'own-juse', 'own-mor', 'own-nuga', 'own-pos', 'own-thanks', 'own-too_do', 'own-when_e', 'own-yeon',
-  'own-past_my', 'own-future_my', 'own-man',
+  'own-past_my', 'own-future_my', 'own-man', 'own-counters', 'own-assim', 'own-rieul',
 ])
 
 const TWIN: Record<string, string> = { past: 'own-past_my' }
