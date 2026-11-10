@@ -111,6 +111,8 @@ const shareWord = (d: Word) =>
         <template v-if="!progress.unlocked"> · </template>
         <button v-if="progress.unlocked" type="button" class="nw-add" @click="openForm()">+ Добавить слово</button>
         <a class="words-json" href="/words.json" target="_blank" rel="noopener" title="Весь словарь одним файлом, только чтение">словарь в JSON ↗</a>
+        <a class="words-json" href="/api/public/grammar" target="_blank" rel="noopener" title="Пройденная грамматика одним файлом, только чтение">грамматика в JSON ↗</a>
+        <a class="words-json" href="/api/public/sentences" target="_blank" rel="noopener" title="Все предложения с переводами одним файлом, только чтение">предложения в JSON ↗</a>
       </template>
     </SectionHead>
     <div class="searchbar">
@@ -185,7 +187,9 @@ const shareWord = (d: Word) =>
 </template>
 
 <style>
-.study .page-head .sub .words-json { display: inline-block; margin-left: 8px; padding: 4px 14px; border-radius: 99px; background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9 !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: filter .2s; }
+/* кнопка и три ссылки в одну строку с ровными отступами, на узком экране переносятся */
+.study .words-page .page-head .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.study .page-head .sub .words-json { display: inline-block; padding: 4px 14px; border-radius: 99px; background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9 !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: filter .2s; }
 .study .page-head .sub .nw-add { padding: 4px 14px; opacity: 1; font-size: 14px; color: #fff !important; border: 0; border-radius: 99px; background: linear-gradient(100deg, #e86bc0, #d64da9); color: #fff !important; font: inherit; font-weight: 700; cursor: pointer; transition: filter .2s; }
 .study .page-head .sub .nw-add:hover { filter: brightness(1.06); }
 .study .page-head .sub .words-json:hover { filter: brightness(.97); }
