@@ -27,9 +27,11 @@ const POOLS={};
 export function initGame(hooks) {
 'use strict';
 /* ---------- данные ---------- */
+/** Подпись задания, в которой само задание (вопрос или длинная инструкция), пишется крупно: «Сегодня 월요일. Какой день был вчера?» */
+const isTask=t=>/\?$/.test(t||'')||(t||'').length>34;
 function labelWithHelp(q){
   const wrap=el('div','labelrow');
-  const lb=el('div','label',q.label);wrap.appendChild(lb);
+  const lb=el('div','label'+(isTask(q.label)?' task':''),q.label);wrap.appendChild(lb);
   const h=MODE_HELP[q.mode];
   if(h){
     const b=el('button','qhelp','?');b.type='button';b.title='Что делать в этом задании';b.setAttribute('aria-label','Что делать в этом задании');b.setAttribute('aria-expanded','false');
@@ -1404,9 +1406,10 @@ function renderQuestion(q){
   S.cur=q;S.answered=false;S.lastKey=q.key;
   clearTimeout(S.timer);
   const card=$('#card');card.innerHTML='';
-  card.appendChild(labelWithHelp(q));
+  // первая строка это уровни игры (и чипы правила), под ними задание: так видно, что делать
   if(STORY_MODES.includes(q.mode)&&S.mode===q.mode)card.appendChild(levelChips(q.mode));
   if(q.mode==='ptext'&&S.mode==='ptext')card.appendChild(famChips());
+  card.appendChild(labelWithHelp(q));
   if(q.type==='story'){
     drawStory(card,q);
   }else if(q.type==='choice'){
@@ -1556,7 +1559,7 @@ function levelChips(mode){
   const lv=el('div','levels');
   (LEVEL_LABELS[mode]||[['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10']]).forEach(function(x){
     const b=el('button','chip'+(S.levels[mode]===x[0]?' on':''),x[1]);b.type='button';
-    b.addEventListener('click',function(){S.levels[mode]=x[0];save();renderQuestion(genQuestion());});
+    b.addEventListener('click',function(){S.levels[mode]=x[0];S.retryQueue=[];S.retryKeys=new Set();save();renderQuestion(genQuestion());});
     lv.appendChild(b);
   });
   return lv;
@@ -1572,7 +1575,8 @@ function drawStory(card,q){
       tr.innerHTML=iconImg('speech');
       tr.setAttribute('aria-label','Перевод предложения');
       tr.appendChild(el('span','story-tip',s.tip||s.ru||''));
-      tr.addEventListener('click',function(){tr.classList.toggle('open');});
+      tr.setAttribute('aria-expanded','false');
+      tr.addEventListener('click',function(){const on=!tr.classList.contains('open');closeTips();tr.classList.toggle('open',on);tr.setAttribute('aria-expanded',String(on));});
     }
     const p=el('div','story-s');
     if(s.cue)p.append(el('span','story-cue','('+s.cue+') '));
@@ -1608,15 +1612,20 @@ function drawStory(card,q){
   const acts=el('div','acts');
   const chk=el('button','primary','Проверить');chk.type='button';chk.id='schk';chk.addEventListener('click',function(){checkStory(q);});
   const clr=el('button','ghost','Очистить');clr.type='button';clr.id='sclr';clr.addEventListener('click',function(){clearStory(q);});
-  acts.append(chk,clr);card.appendChild(acts);
+  const all=el('button','ghost story-all','Разбор всего');all.type='button';all.id='sall';all.disabled=true;
+  all.title='Разбор всех предложений сразу (после проверки)';all.addEventListener('click',function(){openStoryWin(q,-1);});
+  acts.append(chk,clr,all);card.appendChild(acts);
   paintStory(q);
 }
+/** Прячет открытые переводы предложений (нажатие на другой значок, мимо или Esc). */
+function closeTips(){document.querySelectorAll('.story-tr.open').forEach(function(t){t.classList.remove('open');t.setAttribute('aria-expanded','false');});}
 function paintStory(q){
   q.gaps.forEach(function(g,i){
     const e=$('#sg'+i);if(!e)return;
-    if(g.input){e.className='gap-in'+(q.checked?(g.ok?' ok':' bad'):(g.picked!==null?' filled':''));e.disabled=q.checked;return;}
+    const need=q.need&&g.picked===null?' need':'';
+    if(g.input){e.className='gap-in'+(q.checked?(g.ok?' ok':' bad'):(g.picked!==null?' filled':need));e.disabled=q.checked;return;}
     e.textContent=g.picked!==null?g.picked:'___';
-    e.className='gap'+(q.checked?(g.ok?' ok':' bad'):(g.picked!==null?' filled':' empty')+(i===q.active?' now':''));
+    e.className='gap'+(q.checked?(g.ok?' ok':' bad'):(g.picked!==null?' filled':' empty'+need)+(i===q.active?' now':''));
     e.disabled=q.checked;
   });
   q.bank.forEach(function(t,i){
@@ -1624,9 +1633,13 @@ function paintStory(q){
     b.classList.toggle('sel',q.sel===i);b.disabled=q.checked;
   });
   const filled=q.gaps.filter(function(g){return g.picked!==null;}).length;
-  const chk=$('#schk');if(chk)chk.disabled=q.checked||filled<q.gaps.length;
+  if(filled===q.gaps.length)q.need=false;
+  const chk=$('#schk');if(chk)chk.disabled=q.checked;
+  const all=$('#sall');if(all)all.disabled=!q.checked;
   const clr=$('#sclr');if(clr)clr.disabled=q.checked||!filled;
   const note=$('#snote');
+  if(note)note.classList.toggle('need',!!q.need);
+  if(note&&q.need&&!q.checked){note.textContent='Заполни все пропуски: осталось '+(q.gaps.length-filled)+' (обведены рамкой).';paintStoryInfo(q);return;}
   if(note&&q.input)note.textContent=q.checked?'':'Впиши форму в каждое поле: заполнено '+filled+' из '+q.gaps.length+'. Enter проверяет.';
   else if(note)note.textContent=q.checked?'':q.sel!==null?('Выбрано «'+q.bank[q.sel]+'»: нажми на пропуск'):('Заполнено '+filled+' из '+q.gaps.length+(filled?'. Нажми на заполненный пропуск, чтобы убрать ответ.':'. Нажми плитку, потом пропуск.'));
   paintStoryInfo(q);
@@ -1647,7 +1660,7 @@ function tapTile(i){
 function tapGap(k){
   const q=S.cur;if(!q||q.type!=='story'||q.checked)return;
   const g=q.gaps[k];
-  if(q.sel!==null)g.picked=q.bank[q.sel];
+  if(q.sel!==null){g.picked=q.bank[q.sel];q.sel=null;}
   else if(g.picked!==null)g.picked=null;
   q.active=k;
   paintStory(q);
@@ -1666,12 +1679,14 @@ function keyStory(q,e){
 }
 function clearStory(q){
   if(q.checked)return;
-  q.gaps.forEach(function(g,k){g.picked=null;if(g.input){const e=$('#sg'+k);if(e)e.value='';}});q.sel=null;q.active=null;paintStory(q);
+  q.gaps.forEach(function(g,k){g.picked=null;if(g.input){const e=$('#sg'+k);if(e)e.value='';}});q.sel=null;q.active=null;q.need=false;paintStory(q);
 }
 /** Проверка в конце: каждый пропуск считается ответом; за итог бонус к опыту (все верно +5, от 80% +3, от 60% +1) добавляется к первому верному. */
 function checkStory(q){
-  if(q.checked||q.gaps.some(function(g){return g.picked===null;}))return;
-  q.checked=true;q.sel=null;q.active=null;
+  if(q.checked)return;
+  // не всё заполнено: проверки нет, пустые пропуски обводятся рамкой, под текстом надпись
+  if(q.gaps.some(function(g){return g.picked===null;})){q.need=true;paintStory(q);const e=document.querySelector('.story .need');if(e&&e.focus)e.focus({preventScroll:true});return;}
+  q.checked=true;q.need=false;q.sel=null;q.active=null;
   q.gaps.forEach(function(g){g.ok=g.picked===g.right||!!(g.accept&&g.accept.includes(g.picked));});
   const right=q.gaps.filter(function(g){return g.ok;}).length,ratio=right/q.gaps.length;
   q.bonus=ratio===1?5:ratio>=.8?3:ratio>=.6?1:0;
@@ -1688,21 +1703,25 @@ function checkStory(q){
 function closeStoryWin(){if(S.win){S.win.remove();S.win=null;}}
 function openStoryWin(q,si){
   closeStoryWin();
-  const s=q.sents[si];
+  // si = -1: разбор всех предложений подряд (кнопка «Разбор всего»)
+  const list=si<0?q.sents:[q.sents[si]];
   const back=el('div','story-win');
   const box=el('div','story-win-box');
   const head=el('div','story-win-head');
   const x=el('button','story-win-x','✕');x.type='button';x.setAttribute('aria-label','Закрыть');x.addEventListener('click',closeStoryWin);
-  head.append(el('b','','Разбор предложения'),x);
+  head.append(el('b','',si<0?'Разбор всех предложений':'Разбор предложения'),x);
   box.appendChild(head);
-  s.gapIdx.forEach(function(k){
-    const g=q.gaps[k];
-    const line=el('div','story-win-gap '+(g.ok?'ok':'bad'));
-    line.appendChild(el('b','',g.ok?('Верно: '+g.picked+(g.picked!==g.right?' (можно и '+g.right+')':'')):('Не так. Ты поставил(а) '+g.picked+', нужно: '+g.right)));
-    if(g.why)line.appendChild(el('span','',g.why));
-    box.appendChild(line);
+  list.forEach(function(s,n){
+    if(si<0)box.appendChild(el('div','story-win-n','Предложение '+(n+1)+' из '+list.length));
+    s.gapIdx.forEach(function(k){
+      const g=q.gaps[k];
+      const line=el('div','story-win-gap '+(g.ok?'ok':'bad'));
+      line.appendChild(el('b','',g.ok?('Верно: '+g.picked+(g.picked!==g.right?' (можно и '+g.right+')':'')):('Не так. Ты поставил(а) '+g.picked+', нужно: '+g.right)));
+      if(g.why)line.appendChild(el('span','',g.why));
+      box.appendChild(line);
+    });
+    box.appendChild(drawBreakdown(s.ko,s.ru));
   });
-  box.appendChild(drawBreakdown(s.ko,s.ru));
   back.appendChild(box);
   back.addEventListener('click',function(e){if(e.target===back)closeStoryWin();});
   const root=$('#card').closest('.game')||document.body;
@@ -1788,10 +1807,16 @@ function isWordExample(q,teach){
 /** «Как собрано»: карточки слов, частиц и окончаний, объяснения и ссылки на правила, те же, что в разборе предложений словаря. */
 function drawBreakdown(sentence,trans,exampleOf){
   const box=el('div','bd');
-  if(exampleOf)box.appendChild(el('div','bd-cap','Пример со словом «'+exampleOf+'»: оно выделено в разборе'));
-  box.appendChild(el('div','bd-ko',sentence));
-  if(trans)box.appendChild(el('div','bd-tr','«'+trans+'»'));
-  box.appendChild(el('div','bd-title','Как собрано'));
+  if(exampleOf){
+    // предложение взято как пример слова: оно уже стоит в карточках ниже, поэтому отдельно не печатается
+    const t=el('div','bd-title bd-title-ex','Как собрано / пример предложения');
+    if(trans)t.appendChild(el('span','bd-title-tr','«'+trans+'»'));
+    box.appendChild(t);
+  }else{
+    box.appendChild(el('div','bd-ko',sentence));
+    if(trans)box.appendChild(el('div','bd-tr','«'+trans+'»'));
+    box.appendChild(el('div','bd-title','Как собрано'));
+  }
   const cards=el('div','bd-cards');
   const segs=analyze(sentence);
   if(segs.every(function(sg){return sg.type==='unknown';}))return document.createDocumentFragment();
@@ -1816,7 +1841,7 @@ function showFeedback(q,ok){
     // рассказ: только итог; разбор каждого предложения открывается кнопкой «Разбор» справа от него
     const right=q.gaps.filter(g=>g.ok).length;
     fb.appendChild(el('div','fbh','Рассказ пройден: верно '+right+' из '+q.gaps.length+(q.bonus?' · бонус +'+q.bonus+' к опыту':'')+(ok?' 🔥':'')));
-    fb.appendChild(el('div','fbt','Нажми «Разбор» справа от предложения, чтобы увидеть, что верно и как оно собрано.'));
+    fb.appendChild(el('div','fbt','Нажми «Разбор» справа от предложения, чтобы увидеть, что верно и как оно собрано, или «Разбор всего» под текстом.'));
   }else{
     fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
     // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
@@ -1838,7 +1863,8 @@ function next(){
   clearTimeout(S.timer);
   if(S.blitz.on&&S.blitz.left<=0)return;
   if(S.surv.on&&S.surv.lives<=0){endSurv();return;}
-  const due=S.retryQueue.findIndex(x=>x.left<=0);
+  // на уровнях «Рассказ» и «Длинный» повтор простого вопроса не вставляется: уровень остаётся выбранным
+  const due=storyOn(S.mode)?-1:S.retryQueue.findIndex(x=>x.left<=0);
   if(due>=0){const rq=S.retryQueue.splice(due,1)[0].q;S.retryKeys.delete(rq.word||rq.key);renderQuestion(rq);}
   else{S.retryQueue.forEach(x=>x.left--);renderQuestion(genQuestion());}
 }
@@ -2057,6 +2083,7 @@ $('#help').addEventListener('click',e=>{if(e.target.id==='help')closeHelp();});
 /* ---------- клавиши ---------- */
 const onKeydown=e=>{
   if(S.win){if(e.key==='Escape')closeStoryWin();return;}
+  if(e.key==='Escape')closeTips();
   if($('#help').classList.contains('on')){if(e.key==='Escape')closeHelp();return;}
   if($('#over').classList.contains('on'))return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
@@ -2074,6 +2101,8 @@ const onKeydown=e=>{
   }else if(S.answered&&e.key==='Enter'&&!(t&&t.tagName==='BUTTON')){e.preventDefault();next();}
 };
 document.addEventListener('keydown',onKeydown);
+const onDocClick=e=>{if(!(e.target&&e.target.closest&&e.target.closest('.story-tr')))closeTips();};
+document.addEventListener('click',onDocClick);
 
 /* ---------- старт ---------- */
 drawCats();syncToggles();updateStats();renderList();drawLives();
@@ -2081,6 +2110,7 @@ renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();
 return ()=>{
   document.removeEventListener('keydown',onKeydown);
+  document.removeEventListener('click',onDocClick);
   closeStoryWin();
   clearInterval(S.blitz.iv);
   clearTimeout(S.timer);

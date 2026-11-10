@@ -84,8 +84,7 @@ describe('тексты: «Слово → перевод» и «Перевод �
       expect(r.querySelector('.story-tip'), 'перевода в разметке нет').toBeNull()
       expect(r.querySelector('mark.story-mark'), 'слово подсвечено').not.toBeNull()
     }
-    tiles()[0]!.click()
-    for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
+    for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) { tiles()[0]!.click(); g.click() }
     document.querySelector<HTMLButtonElement>('#schk')!.click()
     document.querySelector<HTMLButtonElement>('.story-info')!.click()
     expect(document.querySelector('.story-win')?.textContent, 'в окне разбора виден перевод предложения').toMatch(/[а-яё]{3}/i)
@@ -105,8 +104,7 @@ describe('тексты: «Слово → перевод» и «Перевод �
       document.querySelector<HTMLButtonElement>('#helpOk')?.click()
       chip(level).click()
       const total = document.querySelectorAll('.story .gap').length
-      tiles()[0]!.click()
-      for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
+      for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) { tiles()[0]!.click(); g.click() }
       document.querySelector<HTMLButtonElement>('#schk')!.click()
       expect(records.length, mode + ' ' + level).toBe(total)
       ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
@@ -166,7 +164,6 @@ describe('тексты: «Вопросы», «Частицы и счёт», «В
           const ti = bank.indexOf(right)
           tiles()[ti]!.click()
           gaps[i]!.click()
-          tiles()[ti]!.click()
         })
         document.querySelector<HTMLButtonElement>('#schk')!.click()
         expect(document.querySelector('#fb .fbh')!.textContent, mode + ' ' + level).toContain('бонус +5')
@@ -250,7 +247,6 @@ describe('тексты: «Дни недели», «Числа», «Скольк�
           const ti = bank.indexOf(right)
           tiles()[ti]!.click()
           gaps[i]!.click()
-          tiles()[ti]!.click()
         })
         document.querySelector<HTMLButtonElement>('#schk')!.click()
         expect(document.querySelector('#fb .fbh')!.textContent, mode + ' ' + level).toContain('бонус +5')
@@ -274,7 +270,7 @@ describe('тексты: «Дни недели», «Числа», «Скольк�
         const right = FORM[who]!
         expect(right, 'адресат «' + who + '» известен').toBeTruthy()
         const ti = tiles().map(tileText).indexOf(right)
-        tiles()[ti]!.click(); gaps[i]!.click(); tiles()[ti]!.click()
+        tiles()[ti]!.click(); gaps[i]!.click()
       })
       document.querySelector<HTMLButtonElement>('#schk')!.click()
       expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
@@ -306,7 +302,7 @@ describe('уровни: «Диалог», «Найди ошибку», «Най�
       const want = right(r)
       expect(bank, 'верный ответ «' + want + '» в банке; строка «' + rowText(r) + '»').toContain(want)
       const ti = bank.indexOf(want)
-      tiles()[ti]!.click(); gaps[i]!.click(); tiles()[ti]!.click()
+      tiles()[ti]!.click(); gaps[i]!.click()
     })
     document.querySelector<HTMLButtonElement>('#schk')!.click()
     expect(document.querySelector('#fb .fbh')!.textContent, mode).toContain('бонус +5')
@@ -411,9 +407,12 @@ describe('«Напиши форму»: тексты с вводом с клав�
         expect(inputs().length).toBeLessThanOrEqual(max)
         expect(document.querySelector('#bank'), 'банка плиток нет').toBeNull()
         const chk = document.querySelector<HTMLButtonElement>('#schk')!
-        expect(chk.disabled, 'пока поля пусты, проверять нечего').toBe(true)
+        chk.click()
+        expect(inputs().every(i => i.classList.contains('need')), 'пустые поля обведены, проверки нет').toBe(true)
+        expect(document.querySelector('#snote')!.textContent).toContain('Заполни все пропуски')
+        expect(records.length).toBe(0)
         for (const i of inputs()) type(i, right(i))
-        expect(chk.disabled).toBe(false)
+        expect(inputs().some(i => i.classList.contains('need'))).toBe(false)
         chk.click()
         expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
         expect(records.every(x => x.ok)).toBe(true)
@@ -469,7 +468,7 @@ describe('«Порядок слов»: рассказы из учебника', 
         expect(order.every(k => k > 0), 'все предложения из одного рассказа').toBe(true)
         expect(order.every((k, i) => k === i + 1), 'предложения перемешаны').toBe(false)
         const gaps = [...document.querySelectorAll<HTMLButtonElement>('.story .gap')]
-        order.forEach((k, i) => { tiles()[k - 1]!.click(); gaps[i]!.click(); tiles()[k - 1]!.click() })
+        order.forEach((k, i) => { tiles()[k - 1]!.click(); gaps[i]!.click() })
         document.querySelector<HTMLButtonElement>('#schk')!.click()
         expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
         expect(records.every(x => x.ok)).toBe(true)
@@ -520,8 +519,7 @@ describe('«Тексты по правилу» (ptext)', () => {
         expect(n).toBeLessThanOrEqual(max)
         const texts = rows().map(r => r.querySelector('.story-s')!.textContent)
         expect(new Set(texts).size, 'без повторов').toBe(n)
-        tiles()[0]!.click()
-        for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
+        for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) { tiles()[0]!.click(); g.click() }
         document.querySelector<HTMLButtonElement>('#schk')!.click()
         const right = needs()
         expect(right.length).toBeGreaterThanOrEqual(n)
@@ -534,8 +532,7 @@ describe('«Тексты по правилу» (ptext)', () => {
     for (let round = 0; round < 4; round++) {
       open('하고 / 와 / 과', 'Длинный')
       const t = tiles().find(x => tileText(x) === '하고')!
-      t.click()
-      for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) g.click()
+      for (const g of document.querySelectorAll<HTMLButtonElement>('.story .gap')) { t.click(); g.click() }
       document.querySelector<HTMLButtonElement>('#schk')!.click()
       expect(records.every(r => r.ok), 'все ответы верны').toBe(true)
       expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')

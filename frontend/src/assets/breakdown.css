@@ -38,3 +38,7 @@ html[data-theme='dark'] .study .bd-card.verb { --bd-ink: #8fa8ff; }
 /* Подпись «Пример со словом …» и подсветка слова задания в разборе */
 .study .bd-cap { margin-bottom: 6px; font-size: 12.5px; color: var(--muted); }
 .study .bd-card.bd-hit { box-shadow: 0 0 0 2px var(--gold); }
+
+/* пример слова в игре: одна строка «Как собрано / пример предложения» и перевод, без повтора предложения */
+.study .bd-title-ex { margin-top: 0; }
+.study .bd-title-tr { margin-left: 10px; font-family: inherit; font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--muted); }

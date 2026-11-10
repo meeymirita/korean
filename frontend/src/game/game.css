@@ -178,10 +178,11 @@
 .game .story .gap.ok{color:var(--ok);border-color:var(--ok)}
 .game .story .gap.bad{color:var(--bad);border-color:var(--bad)}
 .game .story .gap:disabled{cursor:default}
-.game .story-tr{position:relative;flex:none;margin-top:6px;width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:rgba(255,255,255,.7);cursor:help}
+.game .story-tr{position:relative;flex:none;margin-top:6px;width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:rgba(255,255,255,.7);cursor:pointer}
 .game .story-tr .gi-img{width:20px;height:20px}
 .game .story-tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;width:max-content;max-width:min(420px,70vw);padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);font:500 14px/1.4 inherit;text-align:left;box-shadow:0 10px 24px rgba(40,38,90,.2)}
-.game .story-tr:hover .story-tip,.game .story-tr:focus-visible .story-tip,.game .story-tr.open .story-tip{display:block}
+.game .story-tr.open .story-tip{display:block}
+.game .story-tr.open{border-color:var(--accent);background:var(--accent-soft)}
 .game .bank{margin:10px 0}
 .game .tile.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent)}
 .game .story-info{flex:none;margin-top:8px;padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:rgba(255,255,255,.7);color:var(--accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
@@ -215,3 +216,12 @@ html[data-theme='dark'] .game .gap-in{background:rgba(30,32,64,.85)}
 .game .feedback .fbt,.game .feedback .bd-ko{color:var(--ink)}
 .game .feedback .bd-tr{color:color-mix(in srgb,var(--ink) 80%,transparent)}
 .game .feedback .bd-title{color:color-mix(in srgb,var(--ink) 75%,transparent);font-weight:700}
+
+/* правки режимов 2026-11-10: заметное задание, пустые пропуски после «Проверить», «Разбор всего» справа */
+.game .label.task{font-size:17px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);line-height:1.4}
+.game .story .gap.need{border-bottom-color:var(--bad);outline:2px solid var(--bad);outline-offset:2px;border-radius:8px;background:var(--bad-bg)}
+.game .gap-in.need{border-style:solid;border-color:var(--bad);background:var(--bad-bg)}
+.game #snote.need{color:var(--bad);font-weight:600}
+.game .acts .story-all{margin-left:auto}
+.game .story-win-n{margin:16px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.game .story-win-n:first-of-type{margin-top:0}

@@ -14,8 +14,7 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
 
   /** Нажал плитку, нажал каждый пропуск: все пропуски заполнены одной плиткой. */
   function fillAll(tileIdx = 0) {
-    tiles()[tileIdx]!.click()
-    for (const g of gapEls()) g.click()
+    for (const g of gapEls()) { tiles()[tileIdx]!.click(); g.click() } // плитка после вставки снимается сама
   }
   function playStory(tileIdx = 0) {
     fillAll(tileIdx)
@@ -47,7 +46,7 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
         expect(tiles().length, 'в банке есть из чего выбирать').toBeGreaterThanOrEqual(2)
         for (const tip of document.querySelectorAll('.story-tr .story-tip')) expect((tip.textContent ?? '').length, 'перевод есть у каждого предложения').toBeGreaterThan(3)
         expect(document.querySelectorAll('.story-tr').length).toBe(n)
-        expect(checkBtn().disabled, 'пока пропуски пусты, проверять нечего').toBe(true)
+        expect(checkBtn().disabled, '«Проверить» доступна всегда: пустые пропуски она обводит').toBe(false)
         expect(document.querySelector('#fb')!.classList.contains('show')).toBe(false)
         playStory(round % tiles().length)
         expect(records.length, 'каждый пропуск засчитан отдельным ответом').toBe(total)
@@ -78,14 +77,20 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
     t0!.click()
     gapEls()[0]!.click()
     expect(gapEls()[0]!.textContent).toBe(tileText(t0!))
-    t0!.click() // снять выбор плитки
+    expect(t0!.classList.contains('sel'), 'после вставки плитка больше не выбрана').toBe(false)
     gapEls()[0]!.click() // нажатие без выбранной плитки убирает ответ
     expect(gapEls()[0]!.textContent).toBe('___')
     t1!.click()
     gapEls()[0]!.click()
     expect(gapEls()[0]!.textContent).toBe(tileText(t1!))
-    expect(checkBtn().disabled).toBe(true)
+    if (gapEls().length > 1) {
+      checkBtn().click() // заполнено не всё: проверки нет, пустые пропуски обведены
+      expect(document.querySelector('#fb')!.classList.contains('show')).toBe(false)
+      expect(gapEls().slice(1).every(g => g.classList.contains('need'))).toBe(true)
+      expect(document.querySelector('#snote')!.textContent).toContain('Заполни все пропуски')
+    }
     document.querySelector<HTMLButtonElement>('#sclr')!.click()
+    expect(document.querySelector('.story .need')).toBeNull()
     expect(gapEls().every(g => g.textContent === '___')).toBe(true)
   })
 
@@ -150,6 +155,20 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
     expect(tr.classList.contains('open')).toBe(true)
     tr.click()
     expect(tr.classList.contains('open')).toBe(false)
+    tr.click()
+    document.body.click() // нажатие мимо тоже прячет перевод
+    expect(tr.classList.contains('open')).toBe(false)
+  })
+
+  it('«Разбор всего»: до проверки неактивна, после открывает разбор всех предложений', () => {
+    open('place', 'Рассказ')
+    const all = () => document.querySelector<HTMLButtonElement>('#sall')!
+    expect(all().disabled).toBe(true)
+    playStory()
+    expect(all().disabled).toBe(false)
+    all().click()
+    expect(document.querySelectorAll('.story-win .story-win-n').length).toBe(sentences())
+    expect(document.querySelectorAll('.story-win .bd').length).toBe(sentences())
   })
 
   it('клавиши: цифра ставит плитку в первый пустой пропуск, Backspace убирает, Enter проверяет', () => {
@@ -178,7 +197,6 @@ describe('тексты: «Рассказ» и «Длинный» в «Паре �
     sentenceTexts.forEach((txt, i) => {
       tiles()[bankIdx(right(txt))]!.click()
       gapEls()[i]!.click()
-      tiles()[bankIdx(right(txt))]!.click() // снять выбор, чтобы следующий клик был «плитка, пропуск»
     })
     checkBtn().click()
     expect(document.querySelector('#fb .fbh')!.textContent).toContain('бонус +5')
