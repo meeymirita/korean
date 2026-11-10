@@ -54,18 +54,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     </div>
     <div class="rv-stage">
       <div class="rv-deck">
-        <div class="fc" @click="open = !open">
-          <div class="rv-top" @click.stop>
-            <span class="rv-count">{{ pos + 1 }} / {{ deck.length }}</span>
-            <button type="button" class="rv-icon" title="Перемешать колоду" aria-label="Перемешать колоду" @click="shuffle">⇄</button>
+        <!-- переворот: карточка стоит на месте и вращается вокруг вертикальной оси; ключ по слову, чтобы новая карточка появлялась лицом без вращения (иначе на миг виден ответ) -->
+        <div class="rv-persp">
+          <div :key="word.k + ':' + pos" class="rv-flip" :class="{ flipped: open }" role="button" tabindex="0" :aria-pressed="open" aria-label="Перевернуть карточку" @click="open = !open" @keydown.enter.stop.prevent="open = !open">
+            <div class="fc rv-face rv-front" :aria-hidden="open">
+              <div class="big">{{ word.k }}</div>
+              <div class="hint">нажми, чтобы перевернуть</div>
+            </div>
+            <div class="fc rv-face rv-back" :aria-hidden="!open">
+              <div class="big">{{ word.k }}</div>
+              <div class="ans">
+                {{ word.r }}<b>{{ word.t }}</b><small>{{ word.s }}</small>
+              </div>
+            </div>
           </div>
-          <div class="big">{{ word.k }}</div>
-          <div v-if="!open" class="hint">нажми, чтобы открыть</div>
-          <div v-else class="ans">
-            {{ word.r }}<b>{{ word.t }}</b><small>{{ word.s }}</small>
-          </div>
-          <div class="rv-bottom"><MarkStar kind="w" :id="word.k" /></div>
         </div>
+        <div class="rv-top">
+          <span class="rv-count">{{ pos + 1 }} / {{ deck.length }}</span>
+          <button type="button" class="rv-icon" title="Перемешать колоду" aria-label="Перемешать колоду" @click="shuffle">⇄</button>
+        </div>
+        <div class="rv-bottom"><MarkStar kind="w" :id="word.k" /></div>
       </div>
       <img class="rv-yuna" :src="yunaImg" alt="" aria-hidden="true" draggable="false" />
     </div>
@@ -83,12 +91,21 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .review-page .rv-deck::before { transform: translate(12px, 12px); }
 .review-page .rv-deck::after { transform: translate(24px, 24px); opacity: .6; }
 .review-page .rv-deck .fc { margin-top: 0; position: relative; }
-.review-page .rv-top { position: absolute; top: 18px; right: 20px; display: flex; align-items: center; gap: 8px; cursor: default; }
+/* 3D-переворот: перспектива на родителе, вращается .rv-flip, обе стороны лежат в одной ячейке сетки (высота по большей, карточка не прыгает).
+   Тень остаётся у сторон (box-shadow): filter на вращаемом элементе сплющил бы 3D. */
+.review-page .rv-persp { perspective: 1100px; }
+.review-page .rv-flip { display: grid; transform-style: preserve-3d; transition: transform 850ms cubic-bezier(.2, .75, .25, 1); cursor: pointer; border-radius: 22px; }
+.review-page .rv-flip.flipped { transform: rotateY(180deg); }
+.review-page .rv-flip:focus-visible { outline: 2px solid var(--accent, #8a6cf0); outline-offset: 4px; }
+.review-page .rv-face { grid-area: 1 / 1; min-width: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.review-page .rv-back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) { .review-page .rv-flip { transition: none; } }
+.review-page .rv-top { position: absolute; z-index: 3; top: 18px; right: 20px; display: flex; align-items: center; gap: 8px; cursor: default; }
 .review-page .rv-count { padding: 6px 14px; font-size: 13px; font-weight: 700; color: var(--muted); background: rgba(150, 130, 230, .14); border-radius: 999px; }
 .review-page .rv-icon { width: 34px; height: 34px; display: grid; place-items: center; font-size: 16px; color: var(--muted);
   background: rgba(150, 130, 230, .14); border: 0; border-radius: 50%; cursor: pointer; }
 .review-page .rv-icon:hover { background: rgba(150, 130, 230, .28); }
-.review-page .rv-bottom { position: absolute; right: 20px; bottom: 18px; }
+.review-page .rv-bottom { position: absolute; z-index: 3; right: 20px; bottom: 18px; }
 .review-page .rv-bottom .mark-star { width: 40px; height: 40px; font-size: 18px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, .6); }
 .review-page .rv-yuna { --w: 100%; --x: 0px; --y: 0px; width: var(--w); max-width: 600px; justify-self: end; align-self: end; height: auto;
   transform: translate(var(--x), var(--y)); pointer-events: none; user-select: none; }

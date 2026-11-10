@@ -12,7 +12,7 @@ export const motionCalm = calm
 
 /** Карточки и ряды, которые выезжают, когда доходят до экрана. */
 export const REVEAL = [
-  '.gc', '.gh-card', '.shx-card', '.tw-card', '.nt-card', '.im-card', '.cl-card', '.pc-card', '.bd-card', '.shp-item', '.pg-card', '.ov-card',
+  '.gc', '.gh-card', '.shx-card', '.tw-flip', '.nt-card', '.im-card', '.cl-card', '.pc-card', '.bd-card', '.shp-item', '.pg-card', '.ov-card',
   '.wk-stat', '.pg-recc', '.td-set', '.rs-item', '.sb', '.gh-block', '.word', '.task', '.md-b',
 ].join(',')
 

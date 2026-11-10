@@ -278,7 +278,16 @@
 .study .tw { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
 .study .tw-card { display: flex; flex-direction: column; gap: 4px; min-height: 130px; padding: 16px 18px; text-align: left;
   background: var(--surface); border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s, transform .2s; }
-.study .tw-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.study .tw-card:hover { border-color: var(--gold); }
+/* «Слова дня»: 3D-переворот на месте. Кнопка держит перспективу, вращается .tw-in, стороны лежат в одной ячейке сетки (высота по большей). */
+.study .tw-flip { display: block; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; perspective: 1100px; border-radius: 16px; }
+.study .tw-in { display: grid; height: 100%; transform-style: preserve-3d; transition: transform 850ms cubic-bezier(.2, .75, .25, 1); }
+.study .tw-flip.open .tw-in { transform: rotateY(180deg); }
+.study .tw-flip .tw-card { grid-area: 1 / 1; min-width: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.study .tw-flip .tw-back { transform: rotateY(180deg); }
+.study .tw-flip:hover .tw-card { border-color: var(--gold); }
+.study .tw-flip:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .study .tw-in { transition: none; } }
 .study .tw-card .k { font-family: var(--ko); font-size: 28px; font-weight: 700; line-height: 1.15; }
 .study .tw-card .rd { font-size: 13px; color: var(--muted); }
 .study .tw-card .tr { margin-top: 6px; font-weight: 600; }

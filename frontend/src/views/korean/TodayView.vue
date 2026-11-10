@@ -346,12 +346,21 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
       </h2>
       <template v-if="!wordsHidden">
       <div class="tw">
-        <button v-for="w in words" :key="w.n" class="tw-card" :class="{ open: revealed[w.n] }" @click="toggle(w.n)">
-          <span class="k">{{ w.k }}</span>
-          <span class="rd">{{ w.r }}</span>
-          <span v-if="revealed[w.n]" class="tr">{{ w.t }}</span>
-          <span v-if="revealed[w.n]" class="se">{{ w.s }}</span>
-          <span v-else class="hint">?</span>
+        <!-- карточка переворачивается на месте: спереди слово и «?», сзади перевод и пример -->
+        <button v-for="w in words" :key="w.n" type="button" class="tw-flip" :class="{ open: revealed[w.n] }" :aria-pressed="!!revealed[w.n]" @click="toggle(w.n)">
+          <span class="tw-in">
+            <span class="tw-card tw-front" :aria-hidden="!!revealed[w.n]">
+              <span class="k">{{ w.k }}</span>
+              <span class="rd">{{ w.r }}</span>
+              <span class="hint">?</span>
+            </span>
+            <span class="tw-card tw-back" :aria-hidden="!revealed[w.n]">
+              <span class="k">{{ w.k }}</span>
+              <span class="rd">{{ w.r }}</span>
+              <span class="tr">{{ w.t }}</span>
+              <span class="se">{{ w.s }}</span>
+            </span>
+          </span>
         </button>
       </div>
       <div class="fcb">
