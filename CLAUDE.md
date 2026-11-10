@@ -132,6 +132,7 @@
 - CI на GitHub (типы, сборка, тесты, `npm audit`, Node 22 как в образах Docker) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
 - Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`; около 915 тестов: 632 в `tests/`, 180 во `frontend/test`, 102 в `backend/test`). Отдельно `npm run test:nest`, `npm run test:nuxt`.
   **Игровые тесты `frontend/test` разнесены по файлам** (`game.spec.ts`, `game-stories.spec.ts`, `game-variants.spec.ts`): один большой файл упирается в память Node (процесс падает с `SIGABRT`). Новые игровые тесты клади в отдельный файл.
+- Линтер: `npm run lint` (`oxlint` с типами, настройки `.oxlintrc.json`; ловит забытый `await` и неиспользуемое, идёт в CI). После `npm install` в корне, если тесты не находят `pinia` или `vue`: `node scripts/link-test-deps.mjs`.
 - Типы и сборка: `npm run type-check`, `npm run build`. Тест TS-модулей без браузера: `tests/_load.mjs` (`load('/src/...')`).
 - Визуально: headless Chromium из кэша Playwright (`~/Library/Caches/ms-playwright/chromium_headless_shell-*/…/chrome-headless-shell`), `--screenshot` или `--remote-debugging-port`.
 - Демо-сервер: `DATA_DIR=<tmp> PORT=3002 PROGRESS_TOKEN=… node backend/dist/main.js`, сайт `API_PORT=3002 npx --prefix frontend nuxt dev --port 5198`,

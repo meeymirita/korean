@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vue", "promise"],
+  "categories": { "correctness": "error" },
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-misused-spread": "off",
+    "typescript/restrict-template-expressions": "off",
+    "typescript/require-array-sort-compare": "off",
+    "typescript/no-redundant-type-constituents": "off",
+    "typescript/no-base-to-string": "off",
+    "typescript/no-meaningless-void-operator": "off",
+    "unicorn/prefer-string-starts-ends-with": "off",
+    "unicorn/no-thenable": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "promise/valid-params": "off",
+    "no-unused-expressions": "off",
+    "no-control-regex": "off"
+  },
+  "overrides": [
+    {
+      "files": ["tests/**", "backend/test/**", "frontend/test/**"],
+      "rules": { "typescript/no-floating-promises": "off", "typescript/unbound-method": "off" }
+    }
+  ],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/.nuxt/**", "**/.output/**", "backend/src/generated/**", "материалы/**", "plan-and-fixes/**"]
+}

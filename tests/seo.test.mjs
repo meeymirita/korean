@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { close, load } from './_load.mjs'
 
-const { SITE, seoFor, indexablePaths, privatePaths } = await load('/src/data/seo.ts')
+const { seoFor, indexablePaths, privatePaths } = await load('/src/data/seo.ts')
 after(close)
 
 const file = p => readFileSync(new URL(`../frontend/${p}`, import.meta.url), 'utf8')

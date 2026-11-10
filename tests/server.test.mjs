@@ -1,7 +1,6 @@
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readdir } from 'node:fs/promises'
-import path from 'node:path'
 import { OWNER, cleanup, start } from './_server.mjs'
 import { withDb } from './_db.mjs'
 

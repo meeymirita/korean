@@ -10,6 +10,7 @@
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
     "type-check": "npm --prefix frontend run type-check",
+    "lint": "oxlint --type-aware backend/src backend/test frontend/src frontend/test frontend/nuxt.config.ts scripts tests",
     "server": "npm --prefix backend start",
     "server:build": "npm --prefix backend run build",
     "server:dev": "npm --prefix backend run dev",
@@ -19,6 +20,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.13.4",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2006",
     "typescript": "~6.0.0",
     "vite": "^8.2.2"
   },

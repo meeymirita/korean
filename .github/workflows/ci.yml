@@ -104,6 +104,9 @@ jobs:
           echo "Meilisearch не ответил вовремя" >&2
           exit 1
 
+      - name: Линтер (ошибки в коде и забытый await)
+        run: npm run lint
+
       - name: Типы сайта
         run: npm --prefix frontend run type-check
 

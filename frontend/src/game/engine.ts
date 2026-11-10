@@ -8,11 +8,11 @@ import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
-import { STORIES, RULE_SENTENCES } from './stories'
+import { STORIES } from './stories'
 import { PFAMS } from './families'
 import { ptextPool } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
-import { syllableRows, syllableVowels } from '@/data/alphabet'
+import { syllableRows } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
 import { gsap } from 'gsap'
 import { burst, cascade, pop } from '@/lib/fx'
@@ -119,7 +119,7 @@ const S={
   blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null},retryQueue:[],retryKeys:new Set()
 };
 S.retryQueue=[];S.retryKeys=new Set();
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,fut:S.fut,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,fut:S.fut,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch{}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
   if(j.levels&&typeof j.levels==='object')Object.assign(S.levels,j.levels);
@@ -128,7 +128,7 @@ function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)r
   if(PFAMS.some(f=>f.id===j.pfam))S.pfam=j.pfam;
   if([30,60,120].includes(j.blitzSecs))S.blitzSecs=j.blitzSecs;
   if([0,3,5].includes(j.survLives))S.survLives=j.survLives;
-  if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch(e){}}
+  if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch{}}
 load();
 /* очки старой версии игры переходят в общий прогресс сайта */
 if(S.all.xp>0){hooks.importXp(S.all.xp);S.all.xp=0;save();}
@@ -886,7 +886,7 @@ function hanWords(){
   HAN_WORDS=DICT.filter(function(d){return d.r&&/^[가-힣]+$/.test(d.k)&&d.k.length>=2&&d.k.length<=4&&/^[а-яё]+$/i.test(d.r);}).map(function(d){return {k:d.k,r:d.r,t:d.t};});
   return HAN_WORDS;
 }
-function hanOptions(right,pool,len){
+function hanOptions(right,pool,_len){
   const dis=[];const used=new Set([right]);
   shuffle(pool).forEach(function(x){if(dis.length<3&&!used.has(x)&&Math.abs(x.length-right.length)<=2){used.add(x);dis.push(x);}});
   return shuffle([right,...dis]);

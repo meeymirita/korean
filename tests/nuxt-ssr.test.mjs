@@ -10,7 +10,6 @@ import { OWNER, cleanup, start } from './_server.mjs'
 
 const root = fileURLToPath(new URL('../frontend/', import.meta.url))
 const { SITE, seoFor, indexablePaths, privatePaths } = await load('/src/data/seo.ts')
-const { D } = await load('/src/data/korean/words.ts')
 after(close)
 after(cleanup)
 

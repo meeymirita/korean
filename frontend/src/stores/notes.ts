@@ -184,7 +184,7 @@ export const useNotesStore = defineStore('notes', () => {
       if (applying || !synced()) return
       status.value = 'saving'
       clearTimeout(timer)
-      timer = setTimeout(push, PUSH_DELAY)
+      timer = setTimeout(() => void push(), PUSH_DELAY)
     },
     // sync: колбэк срабатывает сразу, пока флаг applying ещё поднят, и загруженное с сервера не уходит обратно
     { deep: true, flush: 'sync' },

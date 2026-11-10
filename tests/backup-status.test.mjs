@@ -23,7 +23,7 @@ describe('сервер: статус резервной копии', () => {
     await writeFile(path.join(dir, 'backup-status.json'), JSON.stringify({ ok: true, time: 1793351000000, dir: '/секретный/путь', sizeKb: 2048, offsite: true, message: 'копия готова' }))
     const s = await start({ dir })
     const r = await (await s.call('GET', '/api/backup/status', OWNER)).json()
-    const { archive, ...script } = r
+    const { archive: _archive, ...script } = r
     assert.deepEqual(script, { configured: true, ok: true, time: 1793351000000, sizeKb: 2048, offsite: true, message: 'копия готова' })
     assert.ok(!JSON.stringify(r).includes('секретный'), 'путь на сервере наружу не отдаётся')
   })

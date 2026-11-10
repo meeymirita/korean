@@ -8,7 +8,6 @@ const { TRANSLATIONS } = await load('/src/data/korean/translations.ts')
 after(close)
 
 const ruOf = new Map(Object.entries(TRANSLATIONS))
-const koOf = new Map(Object.entries(TRANSLATIONS).map(([k, r]) => [r, k]))
 
 describe('перевод предложений', () => {
   test('направления: три', () => assert.deepEqual(TRANSLATE_DIRS.map(d => d.id), ['ko-ru', 'ru-ko', 'mix']))
