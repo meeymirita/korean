@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 import { trainableRule } from '@/data/korean/rule-tasks'
 import { famOfCard, gameOfCard } from '@/game/families'
 import { useGrammarModal } from '@/composables/useGrammarModal'
+import { firstBlock } from '@/data/korean/grammar'
 import { F, blk } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
 import { useProgressStore } from '@/stores/progress'
@@ -65,8 +66,8 @@ const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^
 function shareRule() {
   const g = current.value
   if (!g) return
-  const formula = g.b.find(b => b[0] === 'formula')?.[1] as string | undefined
-  const ex = g.b.find(b => b[0] === 'ex')?.[1] as [string, string][] | undefined
+  const formula = firstBlock(g.b, 'formula')
+  const ex = firstBlock(g.b, 'ex')
   const lines = [formula ? plain(formula) : '', ...(ex ?? []).slice(0, 2).map(([k, r]) => `${plain(k)}  ${r}`)].filter(Boolean)
   void share({ kicker: g.l ? `правило · ${g.l}` : 'правило', title: plain(g.ko), sub: plain(g.ru), lines, icon: 'grammar' }, `правило-${g.id}`)
 }

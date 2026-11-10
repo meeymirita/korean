@@ -1,4 +1,4 @@
-import { D as GAME } from '@/game/words'
+import { D as GAME, type GameVerb } from '@/game/words'
 import type { Word } from './words'
 
 /** Слово для тренажёра; доп. поля нужны глаголам, прилагательным и вопросам. */
@@ -29,12 +29,12 @@ export const mk = (n: number, k: string, r: string, t: string, extra: Partial<TW
 })
 
 /** [слово, чтение, перевод, настоящее, прошедшее, пояснение] → слово тренажёра. */
-const forms = (rows: any[][], base: number) =>
-  rows.map((e, i) => mk(base + i, e[0], e[1], e[2], { form: e[3], past: e[4], s: e[5] ?? '' }))
+const forms = (rows: GameVerb[], base: number) =>
+  rows.map((e, i) => mk(base + i, e[0], e[1], e[2], { form: e[3], past: e[4], s: e[5] }))
 
-export const VERBS = forms(GAME.V!, 10000)
-export const ADJECTIVES = forms(GAME.A!, 11000)
-export const QWORDS = GAME.Q!.map((e, i) => mk(12000 + i, e[0], e[1], e[2], { label: e[2] }))
-export const QSENT = GAME.QB!.map((e, i) =>
+export const VERBS = forms(GAME.V, 10000)
+export const ADJECTIVES = forms(GAME.A, 11000)
+export const QWORDS = GAME.Q.map((e, i) => mk(12000 + i, e[0], e[1], e[2], { label: e[2] }))
+export const QSENT = GAME.QB.map((e, i) =>
   mk(13000 + i, e[0].replace('___', e[2]), '', e[1], { blank: e[0], ans: e[2], label: e[1] }),
 )

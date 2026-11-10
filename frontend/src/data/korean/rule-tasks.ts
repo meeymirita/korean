@@ -7,7 +7,7 @@ const plain = (s: string) => s.replace(MARK, '$1')
 
 type Pair = [string, string]
 const examplesOf = (g: Gram): Pair[] =>
-  g.b.filter(b => b[0] === 'ex').flatMap(b => b[1] as Pair[])
+  g.b.flatMap(b => (b[0] === 'ex' ? b[1] : []))
 
 /** Все части, которые правило меняет в примерах (выделены {o|…}, {b|…}, {k|…}). */
 const partsOf = (pairs: Pair[]) => pairs.flatMap(([ko]) => [...ko.matchAll(MARK)].map(m => m[1]!))

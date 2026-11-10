@@ -1,4 +1,16 @@
-export type Block = [string, ...any[]]
+/** Пара «корейский пример, перевод». */
+export type ExPair = [string, string]
+/** Блок с одним текстом: абзац, заголовок, правило, формула, предупреждение, совет, «верно», произношение. */
+export type TextBlock = ['p' | 'h' | 'rule' | 'formula' | 'warn' | 'tip' | 'ok' | 'pron', string]
+/** Блок карточки: текст, список примеров или таблица (заголовки и строки). Рисует `blk()` в render.ts. */
+export type Block = TextBlock | ['ex', ExPair[]] | ['tbl', string[], string[][]]
+
+/** Первый блок нужного вида: `firstBlock(g.b, 'ex')` даёт список примеров, `firstBlock(g.b, 'formula')` текст формулы. */
+export function firstBlock(b: Block[], kind: 'ex'): ExPair[] | undefined
+export function firstBlock(b: Block[], kind: TextBlock[0]): string | undefined
+export function firstBlock(b: Block[], kind: Block[0]) {
+  return b.find(x => x[0] === kind)?.[1]
+}
 
 export interface Gram {
   id: string

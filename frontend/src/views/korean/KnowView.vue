@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
-import { G, type Gram } from '@/data/korean/grammar'
+import { firstBlock, G, type Gram } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { useProgressStore } from '@/stores/progress'
 
@@ -15,8 +15,8 @@ const ordered = computed(() => [...known.value].sort((a, b) => num(a) - num(b)))
 
 /** Короткая выжимка карточки: формула и первый пример. */
 function digest(g: Gram) {
-  const formula = g.b.find(b => b[0] === 'formula')?.[1] as string | undefined
-  const ex = (g.b.find(b => b[0] === 'ex')?.[1] as string[][] | undefined)?.[0]
+  const formula = firstBlock(g.b, 'formula')
+  const ex = firstBlock(g.b, 'ex')?.[0]
   return { formula, ko: ex?.[0], ru: ex?.[1] }
 }
 </script>

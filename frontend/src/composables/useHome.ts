@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { G, type Gram } from '@/data/korean/grammar'
+import { firstBlock, G, type Gram } from '@/data/korean/grammar'
 import { PHRASE_COOKIE, pickOther, pickPhrase } from '@/data/phrases'
 import { withSeed } from '@/lib/seeded'
 import { dueWords } from '@/data/review'
@@ -25,7 +25,7 @@ const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^
 
 /** Правило для блока на главной из карточки грамматики: название, подпись и до трёх целых примеров. */
 export function ruleOf(card: Gram) {
-  const ex = (card.b.find(b => b[0] === 'ex')?.[1] ?? []) as [string, string][]
+  const ex = firstBlock(card.b, 'ex') ?? []
   // примеры набираются, пока строка не станет длиннее 52 символов (но хотя бы один)
   const examples = ex
     .filter(([ko]) => !ko.includes('…') && !ko.includes(' — ')) // обрывки вроде «형은 …» и диалоги не показываем
