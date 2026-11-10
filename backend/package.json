@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Сервер сайта «Хлебушек»: NestJS + Prisma + PostgreSQL",
+  "description": "Сервер платформы 우리말: NestJS + Prisma + PostgreSQL",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",

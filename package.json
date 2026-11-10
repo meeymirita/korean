@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Хлебушек: тесты всего проекта (frontend/ — Nuxt-сайт, backend/ — NestJS-сервер, см. CLAUDE.md)",
+  "description": "우리말: тесты всего проекта (frontend/ — Nuxt-сайт, backend/ — NestJS-сервер, см. CLAUDE.md)",
   "scripts": {
     "postinstall": "node scripts/link-test-deps.mjs",
     "dev": "npm --prefix frontend run dev",
