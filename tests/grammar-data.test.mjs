@@ -58,9 +58,9 @@ describe('данные грамматики', () => {
 
 describe('подсказки режимов игры', () => {
   test('у каждого режима игры (кроме «Микс») есть подсказка «?» с описанием и примером', () => {
-    const src = readFileSync('frontend/src/game/engine.ts', 'utf8')
-    const modes = [...src.slice(src.indexOf('const MODES=['), src.indexOf('];', src.indexOf('const MODES=['))).matchAll(/\{id:'(\w+)'/g)].map(m => m[1]).filter(m => m !== 'mix')
-    const helpBlock = src.slice(src.indexOf('const MODE_HELP={'), src.indexOf('};', src.indexOf('const MODE_HELP={')))
+    const src = readFileSync('frontend/src/game/modes.ts', 'utf8')
+    const modes = [...src.slice(src.indexOf('export const MODES: Mode[]=['), src.indexOf('];', src.indexOf('export const MODES: Mode[]=['))).matchAll(/\{id:'(\w+)'/g)].map(m => m[1]).filter(m => m !== 'mix')
+    const helpBlock = src.slice(src.indexOf('export const MODE_HELP: Record<string, ModeHelp>={'), src.indexOf('};', src.indexOf('export const MODE_HELP: Record<string, ModeHelp>={')))
     assert.ok(modes.length >= 13)
     for (const m of modes) {
       const re = new RegExp(`\\b${m}:\\['[^']+','Пример: `)
