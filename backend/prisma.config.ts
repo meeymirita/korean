@@ -1,4 +1,4 @@
-import 'dotenv/config'
+// DATABASE_URL берётся из окружения; локально его подставляет `node --env-file-if-exists=.env` в скриптах db:* (backend/package.json)
 import { defineConfig } from 'prisma/config'
 
 export default defineConfig({

@@ -130,3 +130,7 @@ swagger.korean.meeymirita.ru {
 ```
 Хэш тот же, что в блоках Prometheus и поиска (строка после `korean ` в `/etc/caddy/Caddyfile`). Без `SWAGGER=1` страницы нет, ссылка отдаст 404.
 PostgreSQL и Redis наружу не открываем никогда: их смотрят через SSH-туннель.
+
+**Память и версии образов (2026-11-10).** У `meilisearch`, `prometheus` и `grafana` стоит потолок памяти (`mem_limit`: 1 ГБ, 512 МБ, 512 МБ; меняется в `.env`: `MEILI_MEM_LIMIT`, `PROMETHEUS_MEM_LIMIT`, `GRAFANA_MEM_LIMIT`). В `.env.example` образы закреплены до младшей версии: `postgres:17.11-alpine`, `redis:7.4.12-alpine`, `getmeili/meilisearch:v1.12.8`, `caddy:2.11.9-alpine`. Боевой сервер берёт версии из своего `.env`: чтобы закрепить их там, владелец правит `.env` и делает `docker compose up -d`.
+
+**Prisma без `dotenv` (2026-11-10).** `backend/prisma.config.ts` читает `DATABASE_URL` из окружения. В контейнере его даёт Compose, в CI переменная задана, локально скрипты `db:generate`, `db:migrate`, `db:dev` запускают Prisma через `node --env-file-if-exists=.env` (файл `backend/.env`, если он есть).
