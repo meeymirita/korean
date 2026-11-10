@@ -27,7 +27,7 @@
    Картинки/…                       копия живой папки «Картинки» (копируется прямо на Диске, без загрузки)
 Картинки/                      живая плоская папка: все картинки и файлы календаря, картинки сайта, обложка визитки (имена уникальны)
 korean_video/                  44 видеоурока: lesson-01.mp4 … lesson-30.mp4, lesson-16-1/2, part2-01 … part2-13 (залиты владельцем руками)
-korean_grammar/                23 картинки карточек грамматики: lesson-1…10.webp и own-<id>.webp
+korean_grammar/                25 картинок карточек грамматики: lesson-1…10.webp и own-<id>.webp
 проверка связи.txt             создаётся кнопкой «Проверить отправку»
 ```
 Запасная копия `korean_grammar` лежит у владельца на компьютере (`~/Desktop/korean_grammar`), видео в `~/Movies/Korean-videos/`.
@@ -55,7 +55,7 @@ handle_path /video/* {
 
 **Картинки грамматики.** `frontend/src/data/korean/grammarPhotos.ts` держит список имён `KEYS` и строит адрес `/api/pic/grammar/<имя>.webp` (`backend/src/pic/pic.controller.ts`, тот же приём: 302 на Диск, папка `korean_grammar`). В репозитории картинок больше нет.
 Заменить картинку: положить на Диск в `korean_grammar` файл с тем же именем (`own-<id>.webp`, `lesson-N.webp`, ширина около 1200, формат webp); сменится через 10–20 минут, деплой не нужен.
-Новая картинка к новой карточке: файл в `korean_grammar` и имя в `KEYS`, потом пуш. Картинку «하고» заменили так: PNG → webp через `sharp` (`resize width 1280`, `quality 82`) → в `korean_grammar/own-hago.webp`.
+Новая картинка к новой карточке: файл в `korean_grammar` и имя в `KEYS`, потом пуш. PNG в webp: `cwebp -q 82 файл.png -o own-<id>.webp` (так сделаны `own-past_my`, `own-future_my`, `own-man` и замены 2026-11-10). У карточки «들» картинки нет: файл `own-deul.png` оказался инфографикой «도». Картинку «하고» заменили так: PNG → webp через `sharp` (`resize width 1280`, `quality 82`) → в `korean_grammar/own-hago.webp`.
 
 **Уведомления в Telegram:** см. `docs/telegram.md`.
 
