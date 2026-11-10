@@ -187,6 +187,7 @@ const summaryText = (a: ExamAttempt) =>
         <p v-if="!a.mistakes.length" class="ex-none">Ошибок в этой попытке не сохранилось (или их не было).</p>
         <section v-for="[title, list] in byBlock(a.mistakes)" :key="title" class="ex-bl">
           <h3>{{ title }} <small>{{ list.length }}</small></h3>
+          <p v-if="/порядк/i.test(title)" class="ex-note">Засчитывается порядок слов из предложения на сайте. В корейском возможен и другой порядок: это не правило, а проверка одного варианта.</p>
           <ul>
             <li v-for="(m, k) in list" :key="k">
               <div class="ko ex-q">{{ m.q }}</div>
@@ -219,6 +220,7 @@ const summaryText = (a: ExamAttempt) =>
         <p v-if="!finished.attempt.passed" class="ex-hint">Слабые правила можно потренировать: «Потренировать правило» на странице грамматики и «Тексты по правилу» в играх. Пересдача через сутки.</p>
         <section v-for="[title, list] in byBlock(finished.attempt.mistakes)" :key="title" class="ex-bl">
           <h3>{{ title }} <small>{{ list.length }}</small></h3>
+          <p v-if="/порядк/i.test(title)" class="ex-note">Засчитывается порядок слов из предложения на сайте. В корейском возможен и другой порядок: это не правило, а проверка одного варианта.</p>
           <ul>
             <li v-for="(m, k) in list" :key="k">
               <div class="ko ex-q">{{ m.q }}</div>
@@ -293,6 +295,7 @@ const summaryText = (a: ExamAttempt) =>
 .ex-bl h3 small { color: var(--muted); font-weight: 500; }
 .ex-bl ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px 32px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 900px) { .ex-bl ul { grid-template-columns: 1fr; } }
+.ex-note { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
 .ex-bl li { padding: 10px 14px; border-radius: 14px; background: rgba(120, 99, 255, .06); }
 .ex-q { font-size: 18px; margin-bottom: 4px; }
 .ex-ans { display: grid; gap: 2px; font-size: 14px; }
