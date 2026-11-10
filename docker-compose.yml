@@ -145,6 +145,7 @@ services:
   prometheus:
     image: ${PROMETHEUS_IMAGE}
     restart: unless-stopped
+    mem_limit: ${PROMETHEUS_MEM_LIMIT:-512m}
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -164,6 +165,7 @@ services:
   grafana:
     image: ${GRAFANA_IMAGE}
     restart: unless-stopped
+    mem_limit: ${GRAFANA_MEM_LIMIT:-512m}
     # start.sh вписывает данные Telegram в адрес тревог и запускает обычный /run.sh
     entrypoint: ["/bin/sh", "/opt/korean/start.sh"]
     environment:
@@ -288,6 +290,8 @@ services:
   meilisearch:
     image: ${MEILISEARCH_IMAGE}
     restart: unless-stopped
+    # потолок памяти: поиск не должен забрать память у сайта и базы (значение меняется в .env)
+    mem_limit: ${MEILI_MEM_LIMIT:-1g}
     environment:
       MEILI_ENV: ${MEILI_ENV}
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
