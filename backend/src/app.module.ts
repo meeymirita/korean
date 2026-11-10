@@ -4,6 +4,7 @@ import { AdminModule } from './admin/admin.module.js'
 import { AuthModule } from './auth/auth.module.js'
 import { ChatModule } from './chat/chat.module.js'
 import { DbModule } from './db/db.module.js'
+import { CspReportController } from './csp-report.controller.js'
 import { ErrorFilter } from './error.filter.js'
 import { EventsModule } from './events/events.module.js'
 import { GuestsModule } from './guests/guests.module.js'
@@ -33,7 +34,7 @@ import { YaDiskModule } from './yadisk/yadisk.module.js'
 
 @Module({
   imports: [PicModule, VideoModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, AdminModule, SearchModule, DictModule],
-  controllers: [HealthController, MetricsController],
+  controllers: [HealthController, MetricsController, CspReportController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })
 export class AppModule {}

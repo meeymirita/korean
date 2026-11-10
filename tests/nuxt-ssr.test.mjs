@@ -120,6 +120,33 @@ describe('Nuxt: закрытые страницы, ошибки, перенап�
     assert.ok(h.get('referrer-policy'))
     assert.ok(h.get('permissions-policy')?.includes('camera=()'))
   })
+
+  test('CSP в режиме отчёта: разрешены свои файлы и встроенные скрипты страницы по хэшу', async () => {
+    const { createHash } = await import('node:crypto')
+    for (const p of ['/', '/korean/words', '/dict', '/korean/home']) {
+      const res = await get(p)
+      const csp = res.headers.get('content-security-policy-report-only')
+      assert.ok(csp, `нет заголовка CSP у ${p}`)
+      assert.equal(res.headers.get('content-security-policy'), null, 'CSP пока только отчёт')
+      for (const part of ["default-src 'self'", "object-src 'none'", "frame-ancestors 'none'", 'report-uri /api/csp-report']) assert.ok(csp.includes(part), `${p}: ${part}`)
+      const script = csp.split('; ').find(x => x.startsWith('script-src'))
+      assert.ok(!script.includes('unsafe-inline') && !script.includes('unsafe-eval'), script)
+      const html = await res.text()
+      let inline = 0
+      for (const m of html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/gi)) {
+        if (/type=["']?application\/(ld\+)?json/i.test(m[1]) || !m[2]) continue
+        inline++
+        assert.ok(script.includes(`'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`), `${p}: встроенный скрипт без хэша: ${m[2].slice(0, 60)}`)
+      }
+      assert.ok(inline >= 1, `${p}: встроенных скриптов не нашлось, проверка пустая`)
+      assert.ok(!/ on(click|load|error)=/i.test(html.replace(/<script[\s\S]*?<\/script>/gi, '')), `${p}: встроенные обработчики событий`)
+    }
+  })
+
+  test('переход внутри словаря браузер сообщает сайту: POST /dict-visit отвечает 204', async () => {
+    const r = await fetch(base + '/dict-visit', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: '/dict/podborki' }) })
+    assert.equal(r.status, 204)
+  })
 })
 
 describe('Nuxt: robots.txt, sitemap.xml, визитка', () => {

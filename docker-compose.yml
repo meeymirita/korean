@@ -98,6 +98,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    environment:
+      # 1: Content-Security-Policy блокирует нарушения; пусто: только отчёт в журнал событий (frontend/src/nitro/plugins/csp.ts)
+      CSP_ENFORCE: ${CSP_ENFORCE:-}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     networks: [app]
