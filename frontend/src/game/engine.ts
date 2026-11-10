@@ -2034,6 +2034,21 @@ function closeHelp(){
   if(!S.seenHelp){S.seenHelp=true;save();}
   if(helpFrom&&helpFrom.focus)helpFrom.focus();
 }
+/** Список игр в окне «Как играть» собирается из MODES и MODE_HELP: новая игра попадает в справку сама и текст не устаревает. */
+function drawHelpModes(){
+  const ul=$('#helpModes');if(!ul)return;ul.textContent='';
+  MODES.forEach(m=>{
+    const h=MODE_HELP[m.id];
+    const li=el('li');
+    const mk=el('span','hm-ico');mk.innerHTML=iconImg(MODE_ICON[m.id]);li.appendChild(mk);
+    li.appendChild(el('b','',m.name));
+    // общий абзац про уровни стоит в справке один раз, из подсказки режима он убирается
+    li.appendChild(document.createTextNode(': '+(h?h[0].split(' Над заданием три уровня')[0]:'вопросы из разных игр вперемешку.')));
+    if(h)li.appendChild(el('div','hm-ex',h[1]));
+    ul.appendChild(li);
+  });
+}
+drawHelpModes();
 $('#helpBtn').addEventListener('click',openHelp);
 $('#helpX').addEventListener('click',closeHelp);
 $('#helpOk').addEventListener('click',closeHelp);

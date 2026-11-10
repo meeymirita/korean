@@ -109,6 +109,11 @@
 .game .help ul{padding-left:20px;margin:4px 0}
 .game .help kbd{font:500 13px var(--ko);background:var(--accent-soft);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
 .game .help .ex{font-family:var(--ko);font-weight: 500}
+.game .help #helpModes{list-style:none;padding-left:0}
+.game .help #helpModes li{margin:8px 0;padding-left:26px}
+.game .help .hm-ico{display:inline-block;width:20px;margin:0 6px 0 -26px;vertical-align:-3px}
+.game .help .hm-ico .gi-img{width:18px;height:18px}
+.game .help .hm-ex{color:var(--muted);font-size:13px}
 .game .help .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .game .helpbtn{border:1.5px solid var(--accent);color:var(--accent);background:transparent;border-radius:12px;padding:10px 16px;font-weight: 500}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
