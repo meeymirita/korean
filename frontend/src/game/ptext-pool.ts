@@ -1,5 +1,5 @@
 import { analyze } from '@/data/korean/parse'
-import { TRANSLATIONS } from '@/data/korean/translations'
+import { STUDY_TRANSLATIONS } from '@/data/korean/study'
 import { EXCHANGES } from './dialogs'
 import { LONG_SENTENCES, longText } from './long-sentences'
 import { RULE_SENTENCES, STORIES } from './stories'
@@ -16,7 +16,7 @@ let cache: PtextSentence[] | null = null
  */
 export function ptextPool(): PtextSentence[] {
   if (cache) return cache
-  const all: Record<string, string> = { ...TRANSLATIONS }
+  const all: Record<string, string> = { ...STUDY_TRANSLATIONS }
   for (const st of STORIES) for (const x of st.sents) all[x.ko] = x.ru
   for (const e of EXCHANGES) {
     all[e[0]] = e[1]

@@ -1,4 +1,4 @@
-import { TRANSLATIONS } from './translations'
+import { STUDY_TRANSLATIONS } from './study'
 import { shuffle, type Task } from './tasks'
 import { STORIES } from '@/game/stories'
 
@@ -26,7 +26,7 @@ const inLevel = (ko: string, level: TranslateLevel) => {
   return n >= l.min && n <= l.max
 }
 
-const PAIRS = Object.entries(TRANSLATIONS).filter(([ko, ru]) => ko && ru)
+const PAIRS = Object.entries(STUDY_TRANSLATIONS).filter(([ko, ru]) => ko && ru)
 
 /** Неверные варианты: предложения похожей длины (чтобы ответ не угадывался по размеру), без повторов и без самого ответа. */
 function distractors(idx: number, side: 0 | 1, count = 3): string[] {

@@ -7,6 +7,7 @@ import { makeBuild, parseBuildKey } from './build'
 import { analyze, SEG_LABEL } from '@/data/korean/parse'
 import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
+import { STUDY, STUDY_TRANSLATIONS } from '@/data/korean/study'
 import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
 import { STORIES } from './stories'
@@ -276,7 +277,8 @@ function genBuildLong(){
 function genBuild(){
   if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,4);
   // «Мастер» только в самом режиме и в «Миксе»: в блице и на выживании длинное предложение не успеть собрать
-  if(S.level===4&&!S.blitz.on&&!S.surv.on)return genBuildLong();
+  // «Любой» в самом режиме даёт «Мастера» примерно в каждом пятом задании
+  if(!S.blitz.on&&!S.surv.on&&(S.level===4||(S.level==='any'&&S.mode==='build'&&Math.random()<.2)))return genBuildLong();
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
   let level,seed,tm=mode;
   const missed=Object.keys(S.miss).filter(k=>/^b:/.test(k)&&k!==S.lastKey);
@@ -400,7 +402,7 @@ const TWIN={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'�
 function storyPool(){
   if(POOLS.STORY_POOL)return POOLS.STORY_POOL;
   const catOf={};DICT.forEach(d=>{if(d.s)catOf[d.s]=d.c;});
-  POOLS.STORY_POOL=Object.keys(TRANSLATIONS).map(function(ko){
+  POOLS.STORY_POOL=Object.keys(STUDY_TRANSLATIONS).map(function(ko){
     const segs=analyze(ko);
     const gaps=[];let cur=0;
     segs.forEach(function(sg){
@@ -564,7 +566,7 @@ const firstRu=t=>String(t||'').split(/[;,(]/)[0].trim();
 /** Слова сайта с примером и переводом: где слово стоит в предложении (`at`, `len`: само слово или основа глагола) и все слова предложения известны разбору. */
 function wsentPool(){
   if(POOLS.WSENT_POOL)return POOLS.WSENT_POOL;
-  POOLS.WSENT_POOL=DICT.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
+  POOLS.WSENT_POOL=STUDY.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
     let at=d.s.indexOf(d.k),len=d.k.length;
     if(at<0&&/다$/.test(d.k)&&d.k.length>2){at=d.s.indexOf(d.k.slice(0,-1));len=d.k.length-1;}
     return {k:d.k,ko:d.s,ru:TRANSLATIONS[d.s],t:firstRu(d.t),at:at,len:len,cats:d.c||[],verb:/다$/.test(d.k)};
@@ -667,7 +669,7 @@ function formPool(){
   DICT.forEach(function(d){if(/다$/.test(d.k)&&!/하다$/.test(d.k))stems.add(d.k.slice(0,-1));});
   [...D.V,...D.A].forEach(function(r){if(/다$/.test(r[0])&&!/하다$/.test(r[0]))stems.add(r[0].slice(0,-1));});
   const out=[];
-  Object.keys(TRANSLATIONS).forEach(function(ko){
+  Object.keys(STUDY_TRANSLATIONS).forEach(function(ko){
     const words=ko.replace(/[.?!,]/g,'').split(' ');
     words.forEach(function(w){
       for(const e of ['았어요','었어요','아요','어요']){
@@ -846,7 +848,7 @@ function genDlgStory(lo,hi){
 let HAN_WORDS=null;
 function hanWords(){
   if(HAN_WORDS)return HAN_WORDS;
-  HAN_WORDS=DICT.filter(function(d){return d.r&&/^[가-힣]+$/.test(d.k)&&d.k.length>=2&&d.k.length<=4&&/^[а-яё]+$/i.test(d.r);}).map(function(d){return {k:d.k,r:d.r,t:d.t};});
+  HAN_WORDS=STUDY.filter(function(d){return d.r&&/^[가-힣]+$/.test(d.k)&&d.k.length>=2&&d.k.length<=4&&/^[а-яё]+$/i.test(d.r);}).map(function(d){return {k:d.k,r:d.r,t:d.t};});
   return HAN_WORDS;
 }
 function hanOptions(right,pool,_len){

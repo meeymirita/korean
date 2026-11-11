@@ -12,6 +12,7 @@ import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
 import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
+import { EXTRA } from '@/data/korean/study'
 import NewWordDrawer from '@/components/korean/NewWordDrawer.vue'
 import { useNewWordsStore, type NewWord } from '@/stores/newWords'
 import yunaBook from '@/assets/home/yuna-book.webp'
@@ -157,7 +158,7 @@ const shareWord = (d: Word) =>
           <span class="n"><MarkStar kind="w" :id="d.k" />{{ d.n }}</span>
           <span class="k" v-html="h(d.k)"></span>
           <span class="rd" v-html="h(d.r)"></span>
-          <span class="tr" v-html="h(d.t)"></span>
+          <span class="tr"><span v-html="h(d.t)"></span><small v-if="EXTRA.has(d.k)" class="w-extra" title="Слово выше начального уровня: в игры, «Сегодня» и экзамен пока не попадает">дополнительно</small></span>
           <span class="se">
             <button class="se-btn" :class="{ open: openN === d.n }" title="Разобрать предложение" @click="toggle(d.n)" v-html="h(d.s)"></button>
           </span>
@@ -187,6 +188,8 @@ const shareWord = (d: Word) =>
 </template>
 
 <style>
+/* пометка «дополнительно» у слов выше начального уровня (data/korean/study.ts) */
+.study .row .tr .w-extra { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 99px; background: rgba(150, 130, 230, .14); color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; vertical-align: middle; }
 /* кнопка и три ссылки в одну строку с ровными отступами, на узком экране переносятся */
 .study .words-page .page-head .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .study .page-head .sub .words-json { display: inline-block; padding: 4px 14px; border-radius: 99px; background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9 !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: filter .2s; }

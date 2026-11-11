@@ -1,6 +1,6 @@
 import { shuffle, short } from './tasks'
-import { TRANSLATIONS } from './translations'
-import { D, type Word } from './words'
+import { STUDY, STUDY_TRANSLATIONS } from './study'
+import { type Word } from './words'
 
 export interface SyllableTask {
   word: Word
@@ -15,7 +15,7 @@ export interface SyllableTask {
 }
 
 /** Подходят слова из 2–4 слогов хангылем, без пробелов и знаков. */
-export const SYLLABLE_WORDS = D.filter(d => /^[가-힣]{2,4}$/.test(d.k))
+export const SYLLABLE_WORDS = STUDY.filter(d => /^[가-힣]{2,4}$/.test(d.k))
 
 /** Уровни по длине слова: 2 слога (308 слов), 3 слога (108), 4 слога (40); «любой» это все вместе. */
 export type SyllableLevel = 'any' | 'easy' | 'medium' | 'hard' | 'phrase'
@@ -27,7 +27,7 @@ export const SYLLABLE_LEVELS: { id: SyllableLevel; label: string; hint: string; 
   { id: 'phrase', label: 'Фраза', hint: 'Короткая фраза из двух слов (4–6 слогов)' },
 ]
 /** Фразы: предложения из переводов, где ровно два слова хангылем, всего 4–6 слогов («학교에 가요» → 학교에가요); номер от 16000, чтобы не путать со словами словаря. */
-export const PHRASES: (Word & { display: string })[] = Object.entries(TRANSLATIONS)
+export const PHRASES: (Word & { display: string })[] = Object.entries(STUDY_TRANSLATIONS)
   .map(([ko, ru]) => ({ ko: ko.replace(/[.?!]$/, ''), ru }))
   .filter(x => /^[가-힣]+ [가-힣]+$/.test(x.ko) && x.ko.replace(' ', '').length >= 4 && x.ko.replace(' ', '').length <= 6)
   .map((x, i) => ({ n: 16000 + i, k: x.ko.replace(' ', ''), r: '', t: x.ru, s: '', ft: '', fr: '', fs: '', c: [], display: x.ko }))

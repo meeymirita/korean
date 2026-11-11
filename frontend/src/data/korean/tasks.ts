@@ -1,5 +1,6 @@
 import { ADJECTIVES, VERBS } from './forms'
-import { D, type Word } from './words'
+import { STUDY } from './study'
+import { type Word } from './words'
 
 export type TaskKind = 'tr' | 'back' | 'read' | 'blank' | 'form' | 'rule'
 
@@ -32,7 +33,7 @@ export const shuffle = <T>(a: T[]) => {
 }
 
 /** Для заданий берём простые слова: одно корейское слово без скобок и пометок. */
-const SIMPLE = D.filter(d => /^[가-힣]+$/.test(d.k) && d.t.length <= 40)
+const SIMPLE = STUDY.filter(d => /^[가-힣]+$/.test(d.k) && d.t.length <= 40)
 
 /** Короткий перевод для кнопок: без «→ форма» и без скобок. */
 export const short = (t: string) => t.split(/ →| \(/)[0]!.trim()

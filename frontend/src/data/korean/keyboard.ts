@@ -3,6 +3,7 @@ import type { ProgressData } from '@/stores/progress'
 import { mistakeWords } from '../mistakes'
 import { dueWords } from '../review'
 import { shuffle, short } from './tasks'
+import { STUDY } from './study'
 import { TRANSLATIONS } from './translations'
 import { D, parseQuery, score, type Word } from './words'
 
@@ -30,8 +31,8 @@ const syl = (i: string, m: string, f: string) => String.fromCharCode(0xac00 + (I
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)]!
 
 /** Только слова и предложения, которые можно набрать этими клавишами. */
-const WORDS = [...new Set(D.map(w => w.k))].filter(k => /^[가-힣]{1,4}$/.test(k) && isTypable(k))
-const SENTENCES = [...new Set(D.map(w => w.s))].filter(s => s.length >= 6 && s.length <= 26 && isTypable(s))
+const WORDS = [...new Set(STUDY.map(w => w.k))].filter(k => /^[가-힣]{1,4}$/.test(k) && isTypable(k))
+const SENTENCES = [...new Set(STUDY.map(w => w.s))].filter(s => s.length >= 6 && s.length <= 26 && isTypable(s))
 
 /** Задания уровня: список строк, которые нужно набрать. */
 export function kbItems(level: KbLevel): string[] {
@@ -92,7 +93,7 @@ const itemOf = (w: Word, kind: CustomKind): CustomItem => {
 export function customWords(source: CustomSource, p: ProgressData, now = Date.now()): Word[] {
   if (source === 'mistakes') return mistakeWords(p).map(m => m.word)
   if (source === 'due') return dueWords(p, now).map(d => d.word)
-  return D
+  return STUDY
 }
 
 /** Что можно предложить на выбор: только то, что набирается этими клавишами; без повторов. */

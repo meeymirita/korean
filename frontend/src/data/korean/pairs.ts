@@ -1,7 +1,8 @@
 import { mistakeWords } from '../mistakes'
 import type { ProgressData } from '@/stores/progress'
 import { shuffle, short, type Task } from './tasks'
-import { D, similarWords, type Word } from './words'
+import { STUDY } from './study'
+import { similarWords, type Word } from './words'
 
 const TITLE = 'Не перепутай'
 
@@ -26,7 +27,7 @@ export function pairTask(w: Word, id: number, reverse = Math.random() < 0.5): Ta
  */
 export function pairTasks(p: ProgressData, n = 10): Task[] {
   const weak = mistakeWords(p, 30).map(m => m.word)
-  const rest = shuffle(D.filter(d => !weak.includes(d)))
+  const rest = shuffle(STUDY.filter(d => !weak.includes(d)))
   const out: Task[] = []
   for (const w of [...shuffle(weak), ...rest]) {
     if (out.length >= n) break

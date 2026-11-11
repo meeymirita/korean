@@ -1,7 +1,6 @@
 import { ADJECTIVES, QSENT, QWORDS, VERBS, mk, type TWord } from './forms'
-import { TRANSLATIONS } from './translations'
+import { STUDY, STUDY_TRANSLATIONS } from './study'
 import { shuffle, short } from './tasks'
-import { D } from './words'
 
 export type { TWord }
 export type Direction = 'ko-ru' | 'ru-ko' | 'form' | 'past' | 'fill'
@@ -36,17 +35,17 @@ export const DIR_LABEL: Record<Direction, string> = {
 export const dirsFor = (cat: string): Direction[] =>
   cat === 'qsent' ? ['fill'] : cat === 'verbs' || cat === 'adjectives' ? ['ko-ru', 'ru-ko', 'form', 'past'] : ['ko-ru', 'ru-ko']
 
-const SENT_WORDS: TWord[] = Object.entries(TRANSLATIONS)
+const SENT_WORDS: TWord[] = Object.entries(STUDY_TRANSLATIONS)
   .filter(([ko, ru]) => ko.length <= 40 && ru.length <= 70)
   .map(([ko, ru], i) => mk(14000 + i, ko, '', ru, { label: ru }))
 /** Слово слева, предложение с ним справа (у каждого слова словаря есть пример). */
-const EXAMPLE_WORDS: TWord[] = D.filter(d => d.s && d.s.length <= 40 && !/[()]/.test(d.k)).map((d, i) => mk(15000 + i, d.k, d.r, d.s, { label: d.s }))
+const EXAMPLE_WORDS: TWord[] = STUDY.filter(d => d.s && d.s.length <= 40 && !/[()]/.test(d.k)).map((d, i) => mk(15000 + i, d.k, d.r, d.s, { label: d.s }))
 const SET_WORDS: Record<string, TWord[]> = { verbs: VERBS, adjectives: ADJECTIVES, qwords: QWORDS, qsent: QSENT, sent: SENT_WORDS, example: EXAMPLE_WORDS }
 
 /** Слова для тренажёров: без скобок и очень длинных переводов. */
 export const pool = (cat: string): TWord[] =>
   SET_WORDS[cat] ??
-  D.filter(d => (!cat || d.c.includes(cat)) && !/[()]/.test(d.k) && d.k.length <= 12 && d.t.length <= 60)
+  STUDY.filter(d => (!cat || d.c.includes(cat)) && !/[()]/.test(d.k) && d.k.length <= 12 && d.t.length <= 60)
 
 /** Перевод для показа справа и в вопросах. */
 export const shown = (w: TWord) => w.label ?? short(w.t)
