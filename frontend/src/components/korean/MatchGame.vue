@@ -247,7 +247,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
           data-side="l"
           :data-id="w.n"
           :class="{
-            over: over === 'l' + w.n,
+            'mg-aim': over === 'l' + w.n,
             sel: selL === w.n,
             ok: matched.has(w.n),
             bad: wrong?.l === w.n,
@@ -269,7 +269,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
           data-side="r"
           :data-id="w.n"
           :class="{
-            over: over === 'r' + w.n,
+            'mg-aim': over === 'r' + w.n,
             sel: selR === w.n,
             ok: matched.has(w.n),
             bad: wrong?.r === w.n,
@@ -321,7 +321,8 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-card.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); opacity: .55; cursor: default; }
 .study .mg-card.bad { background: var(--bad-bg); border-color: var(--bad); }
 /* карточка, к которой подвели линию: только цвет и обводка, без увеличения (от scale список «прыгал» при переходе с карточки на карточку) */
-.study .mg-card.over { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-soft); }
+/* класс именно mg-aim, а не over: на странице игр у `.game .over` (окно конца игры движка) стоит display: none, и карточка под линией исчезала, а колонка съезжала */
+.study .mg-card.mg-aim { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-soft); }
 /* тянем слово к переводу: всё движение по карточке наше (touch-action: none). С pan-y браузер на iPad забирал жест пера при малейшем сдвиге вверх или вниз:
    страница дёргалась, линия обрывалась (pointercancel). Прокручивать страницу можно по просвету между колонками и по полям. */
 .study .mg-card:not(:disabled) { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
