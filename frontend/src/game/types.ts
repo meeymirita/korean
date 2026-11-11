@@ -1,9 +1,12 @@
 // Типы движка игры «Хлебушек» (`engine.ts`): вопрос, состояние, хуки страницы. Вынесены сюда, чтобы движок проверял компилятор.
 import type { Story } from './stories'
 
+/** Что вернул общий прогресс после ответа (для плашек «новый уровень», «цель дня», «слово расцвело»). */
+export interface RecordResult { bloomed?: boolean; levelUp?: boolean; level?: number; title?: string; goalReached?: boolean }
+
 /** Что страница игры передаёт движку: общий прогресс сайта и настройки. */
 export interface GameHooks {
-  record: (o: { word: string | null; ok: boolean; xp?: number; mode?: string; detail?: { q?: string; a?: string; y?: string; g?: string } }) => unknown
+  record: (o: { word: string | null; ok: boolean; xp?: number; mode?: string; detail?: { q?: string; a?: string; y?: string; g?: string } }) => RecordResult
   importXp: (n: number) => void
   state: () => { level: number; title: string; max: boolean; into: number; span: number; pct: number; todayOk: number; goal: number }
   /** Группы слов, выбранные в кабинете. */
