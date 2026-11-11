@@ -54,10 +54,34 @@ const over = ref<string | null>(null)
 let start = { x: 0, y: 0 }
 let suppressClick = false
 
-function cardAt(x: number, y: number) {
-  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('.mg-card')
-  if (!el || !board.value?.contains(el)) return null
-  return { side: el.dataset.side as 'l' | 'r', id: Number(el.dataset.id) }
+/** Запас вокруг карточки, в котором линия всё ещё считается доведённой: пером и пальцем трудно попасть точно, а между карточками есть щели. */
+const REACH_X = 28
+const REACH_Y = 6
+/**
+ * Карточка противоположной колонки, до которой дотянули линию: ближайшая по высоте из тех, в чей прямоугольник (с запасом) попала точка.
+ * Считается по размерам карточек, а не по элементу под курсором: так отпускание в щели между карточками или у самого края тоже соединяет пару.
+ */
+function cardAt(x: number, y: number, from: 'l' | 'r') {
+  const side = from === 'l' ? 'r' : 'l'
+  let best: { side: 'l' | 'r'; id: number } | null = null
+  let bestDist = Infinity
+  for (const [key, el] of cards) {
+    if (!key.startsWith(side)) continue
+    const id = Number(key.slice(1))
+    if (matched.value.has(id)) continue
+    const r = el.getBoundingClientRect()
+    if (x < r.left - REACH_X || x > r.right + REACH_X || y < r.top - REACH_Y || y > r.bottom + REACH_Y) continue
+    const dist = Math.abs(y - (r.top + r.height / 2))
+    if (dist < bestDist) {
+      best = { side, id }
+      bestDist = dist
+    }
+  }
+  return best
+}
+/** Пока ведём линию, страница не должна прокручиваться: иначе браузер на планшете забирает жест и обрывает линию (в дополнение к touch-action у карточек). */
+const blockScroll = (e: TouchEvent) => {
+  if (drag.value && e.cancelable) e.preventDefault()
 }
 function down(e: PointerEvent, side: 'l' | 'r', id: number) {
   if (e.button !== 0 || matched.value.has(id) || wrong.value) return
@@ -65,7 +89,8 @@ function down(e: PointerEvent, side: 'l' | 'r', id: number) {
   drag.value = { side, id, x: e.clientX, y: e.clientY, moved: false }
   window.addEventListener('pointermove', move)
   window.addEventListener('pointerup', up)
-  window.addEventListener('pointercancel', stopDrag)
+  window.addEventListener('pointercancel', cancel)
+  window.addEventListener('touchmove', blockScroll, { passive: false })
 }
 function move(e: PointerEvent) {
   const d = drag.value
@@ -74,29 +99,34 @@ function move(e: PointerEvent) {
   d.y = e.clientY
   if (!d.moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) d.moved = true
   if (!d.moved) return
-  const t = cardAt(e.clientX, e.clientY)
-  over.value = t && t.side !== d.side && !matched.value.has(t.id) ? t.side + t.id : null
+  const t = cardAt(e.clientX, e.clientY, d.side)
+  over.value = t ? t.side + t.id : null
 }
 function stopDrag() {
   drag.value = null
   over.value = null
   window.removeEventListener('pointermove', move)
   window.removeEventListener('pointerup', up)
-  window.removeEventListener('pointercancel', stopDrag)
+  window.removeEventListener('pointercancel', cancel)
+  window.removeEventListener('touchmove', blockScroll)
 }
-function up(e: PointerEvent) {
+/** Линию довели до точки (x, y): если там карточка другой колонки, пара проверяется. */
+function finishAt(x: number, y: number) {
   const d = drag.value
   stopDrag()
   if (!d?.moved) return
   // после перетаскивания браузер ещё пришлёт click: его не считаем
   suppressClick = true
   setTimeout(() => (suppressClick = false), 0)
-  const t = cardAt(e.clientX, e.clientY)
-  if (!t || t.side === d.side || matched.value.has(t.id) || wrong.value) return
+  const t = cardAt(x, y, d.side)
+  if (!t || wrong.value) return
   selL.value = selR.value = null
   pick(d.side, d.id)
   pick(t.side, t.id)
 }
+const up = (e: PointerEvent) => finishAt(e.clientX, e.clientY)
+/** Браузер прервал жест (на планшете так бывает и без нашей вины): считаем линию доведённой до последней точки, а не теряем её. */
+const cancel = () => finishAt(drag.value?.x ?? -1, drag.value?.y ?? -1)
 const onClick = (side: 'l' | 'r', id: number) => !suppressClick && pick(side, id)
 onBeforeUnmount(stopDrag)
 
@@ -290,7 +320,8 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-card.sel { border-color: var(--gold); background: var(--gold-soft); transform: scale(1.02); }
 .study .mg-card.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); opacity: .55; cursor: default; }
 .study .mg-card.bad { background: var(--bad-bg); border-color: var(--bad); }
-.study .mg-card.over { border-color: var(--gold); background: var(--gold-soft); transform: scale(1.03); }
+/* карточка, к которой подвели линию: только цвет и обводка, без увеличения (от scale список «прыгал» при переходе с карточки на карточку) */
+.study .mg-card.over { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-soft); }
 /* тянем слово к переводу: всё движение по карточке наше (touch-action: none). С pan-y браузер на iPad забирал жест пера при малейшем сдвиге вверх или вниз:
    страница дёргалась, линия обрывалась (pointercancel). Прокручивать страницу можно по просвету между колонками и по полям. */
 .study .mg-card:not(:disabled) { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
