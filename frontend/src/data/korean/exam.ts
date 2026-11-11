@@ -53,6 +53,21 @@ export const FORM_RULES: { id: string; label: string }[] = [
 /** Название правила для таблицы результатов. */
 export const ruleLabel = (id: string) => PFAMS.find(f => f.id === id)?.name ?? [...WORD_RULES, ...FORM_RULES, DEM_RULE, QW_RULE, CNT_RULE, NUM_RULE, PHR_RULE].find(r => r.id === id)?.label ?? id
 
+/** Карточка грамматики для правила экзамена, если у правила другое имя; у чисел и разговорных формул карточки нет. */
+const RULE_CARD: Record<string, string> = { have: 'iss', past: 'past_my', dem: 'ijeo', qw: 'nuga', cnt: 'counters' }
+/** Карточка грамматики, которая тренирует правило экзамена (для серии «Слабые места»). */
+export const cardOfRule = (id: string): string | undefined =>
+  PFAMS.find(f => f.id === id && f.id !== 'all')?.g[0] ?? RULE_CARD[id] ?? (G.some(g => g.id === id) ? id : undefined)
+/** Карточки правил, по которым на экзамене верных меньше `MIN_RULE`, от худшего; без повторов. */
+export function examWeakCards(rules: RuleScores | undefined): string[] {
+  const weak = Object.entries(rules ?? {})
+    .filter(([, v]) => v.total > 0 && v.ok / v.total < MIN_RULE)
+    .sort((a, b) => a[1].ok / a[1].total - b[1].ok / b[1].total)
+    .map(([id]) => cardOfRule(id))
+    .filter((id): id is string => !!id)
+  return [...new Set(weak)]
+}
+
 /** Частица в разборе принадлежит правилу: по карточке (`g`) и тексту; у 와 / 과 разбор карточки не указывает (как в `inFam` игры). */
 const inRule = (f: RuleFamily, m: PtextMark) => f.marks.includes(m.text) && (f.g.includes(m.g) || (f.id === 'and' && (m.text === '와' || m.text === '과')))
 

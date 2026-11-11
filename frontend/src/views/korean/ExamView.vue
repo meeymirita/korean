@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ExamRun from '@/components/korean/ExamRun.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
 import {
   EXAM_ID, EXAM_PARTS, EXAM_PASS, EXAM_POINTS_APPROX, MIN_RULE, OWN_RULE, RECHECK_DAYS,
-  examParts, examPassed, examNeed, examState, examTotal, partPoints, ruleLabel, summarize,
+  examParts, examPassed, examNeed, examState, examTotal, examWeakCards, partPoints, ruleLabel, summarize,
   type ExamAttempt, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
 } from '@/data/korean/exam'
 import { useExamStore } from '@/stores/exam'
@@ -240,6 +240,7 @@ const summaryText = (a: ExamAttempt) =>
             <i :style="{ width: pct(r) + '%' }"></i>
           </div>
         </div>
+        <p v-if="examWeakCards(row.rules).length" class="ex-sub"><RouterLink :to="{ path: '/game/home', query: { game: 'rule', weak: '1' } }">Потренировать слабые места →</RouterLink></p>
       </section>
 
       <!-- черновик -->
