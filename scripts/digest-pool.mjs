@@ -7,8 +7,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { close, load } from '../tests/_load.mjs'
 
 export const OUT = fileURLToPath(new URL('../backend/src/digest/pool.ts', import.meta.url))
-/** Будущее время и обещания ещё не проходили: такие предложения в письмо не берём. */
-export const FUTURE = /거예요|거에요|겠|게요|ㄹ까요|을까요/
+/** Ещё не пройденные формы будущего и обещаний: такие предложения в письмо не берём. «-(으)ㄹ 거예요» пройдено (2026-11-09) и берётся. */
+export const FUTURE = /거에요|겠|게요|ㄹ까요|을까요/
 
 /** @typedef {{ n: number; k: string; r: string; t: string; s: string }} RawWord слово словаря сайта (dictionary.ts) */
 
@@ -38,7 +38,7 @@ export const DIGEST_WORDS: [string, string][] = [
 ${rows(words)},
 ]
 
-/** Предложения из примеров словаря без будущего времени: [по-корейски, перевод]. */
+/** Предложения из примеров словаря без непройденных форм будущего: [по-корейски, перевод]. */
 export const DIGEST_SENTENCES: [string, string][] = [
 ${rows(sentences)},
 ]
