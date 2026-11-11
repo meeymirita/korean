@@ -8,7 +8,8 @@ import { MOODS, type Mood } from '@/data/mood'
 import { nextCombo } from '@/data/coins'
 import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
-import { burst, cascade, drop, follow, pop, shake, springBack } from '@/lib/fx'
+import { dragDrop } from '@/lib/dragdrop'
+import { burst, cascade, pop, shake } from '@/lib/fx'
 import { itemIcon, itemName } from '@/data/shop'
 import { useProgressStore } from '@/stores/progress'
 import { useShopStore } from '@/stores/shop'
@@ -113,79 +114,30 @@ function keepWrong() {
   commit(bad)
 }
 
-/* ---------- перетаскивание варианта на вопрос, анимации ---------- */
+/* ---------- перетаскивание варианта на вопрос (общий помощник lib/dragdrop.ts), анимации ---------- */
 const zone = ref<HTMLElement>()
 const optsBox = ref<HTMLElement>()
-const over = ref(false)
-let dragEl: HTMLElement | null = null
-let dragOpt = ''
-let dragFrom = { x: 0, y: 0 }
-let moved = false
-let suppressClick = false
-
-const hitZone = (x: number, y: number) => {
-  const r = zone.value?.getBoundingClientRect()
-  return !!r && x >= r.left - 12 && x <= r.right + 12 && y >= r.top - 12 && y <= r.bottom + 12
+let dragOff = () => {}
+/** Варианты перерисовываются с каждым заданием и после «50/50»: перетаскивание подключается заново. */
+function wireDrag() {
+  dragOff()
+  dragOff = dragDrop({
+    tiles: optsBox.value?.querySelectorAll('.rs-opt') ?? [],
+    targets: () => (picked.value === null && zone.value ? [zone.value] : []),
+    overClass: 'over',
+    onDrop: tile => {
+      if (picked.value === null && tile.dataset.opt !== undefined) answer(tile.dataset.opt)
+    },
+  })
 }
-function optDown(e: PointerEvent, o: string) {
-  if (e.button !== 0 || picked.value !== null) return
-  dragEl = e.currentTarget as HTMLElement
-  dragOpt = o
-  dragFrom = { x: e.clientX, y: e.clientY }
-  moved = false
-  window.addEventListener('pointermove', optMove)
-  window.addEventListener('pointerup', optUp)
-  window.addEventListener('pointercancel', optCancel)
-}
-function optMove(e: PointerEvent) {
-  if (!dragEl) return
-  const dx = e.clientX - dragFrom.x
-  const dy = e.clientY - dragFrom.y
-  if (!moved && Math.hypot(dx, dy) > 8) {
-    moved = true
-    dragEl.classList.add('dragging')
-  }
-  if (!moved) return
-  follow(dragEl, dx, dy)
-  over.value = hitZone(e.clientX, e.clientY)
-}
-function endDrag() {
-  window.removeEventListener('pointermove', optMove)
-  window.removeEventListener('pointerup', optUp)
-  window.removeEventListener('pointercancel', optCancel)
-  over.value = false
-}
-function optCancel() {
-  const el = dragEl
-  endDrag()
-  dragEl = null
-  if (el && moved) {
-    el.classList.remove('dragging')
-    springBack(el)
-  }
-}
-function optUp(e: PointerEvent) {
-  const el = dragEl
-  const o = dragOpt
-  const wasMoved = moved
-  const hit = hitZone(e.clientX, e.clientY)
-  endDrag()
-  dragEl = null
-  if (!el || !wasMoved) return
-  // после перетаскивания браузер ещё пришлёт click: его не считаем
-  suppressClick = true
-  setTimeout(() => (suppressClick = false), 0)
-  el.classList.remove('dragging')
-  if (hit && picked.value === null) {
-    drop(el)
-    answer(o)
-  } else springBack(el)
-}
-const onPick = (o: string) => !suppressClick && answer(o)
 function enter() {
-  void nextTick(() => cascade(optsBox.value?.querySelectorAll('.rs-opt') ?? []))
+  void nextTick(() => {
+    cascade(optsBox.value?.querySelectorAll('.rs-opt') ?? [])
+    wireDrag()
+  })
 }
 watch([idx, () => props.tasks], enter)
+watch(visible, () => void nextTick(wireDrag))
 onMounted(() => {
   enter()
   if (owner.value) void shop.load()
@@ -286,7 +238,7 @@ onMounted(() => {
   }, 1000)
 })
 onBeforeUnmount(() => {
-  endDrag()
+  dragOff()
   document.removeEventListener('keydown', onKey)
   clearInterval(tick)
 })
@@ -305,7 +257,7 @@ onBeforeUnmount(() => {
         Серия {{ progress.data.combo }}<template v-if="nextCombo(progress.data.combo)">: ещё {{ nextCombo(progress.data.combo)!.left }} до +{{ nextCombo(progress.data.combo)!.coins }} монеток</template>
       </div>
       <div class="rs-sub">{{ current.title }}</div>
-      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back', over }" title="Перетащи сюда вариант ответа"><template v-if="blank"><template v-if="picked !== null && pending === null">{{ blank[0] }}<b class="rs-fill">{{ current.answer }}</b>{{ blank[1] }}</template><template v-else>{{ current.prompt }}</template></template><template v-else>{{ current.prompt }}</template></div>
+      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back' }" title="Перетащи сюда вариант ответа"><template v-if="blank"><template v-if="picked !== null && pending === null">{{ blank[0] }}<b class="rs-fill">{{ current.answer }}</b>{{ blank[1] }}</template><template v-else>{{ current.prompt }}</template></template><template v-else>{{ current.prompt }}</template></div>
       <div v-if="current.hint" class="rs-sub">{{ current.hint }}</div>
       <div v-if="btns.length && picked === null" class="rs-items" aria-label="Предметы Юны">
         <button v-for="b in btns" :key="b.id" type="button" class="rs-item" :disabled="!canUse(b.id)" :title="itemName(b.id)" @click="useItem(b.id)">
@@ -319,9 +271,9 @@ onBeforeUnmount(() => {
           :key="o"
           class="rs-opt"
           :class="{ ok: picked !== null && o === current.answer, bad: picked === o && o !== current.answer }"
+          :data-opt="o"
           :disabled="picked !== null"
-          @pointerdown="optDown($event, o)"
-          @click="onPick(o)"
+          @click="answer(o)"
         >
           <kbd>{{ i + 1 }}</kbd> {{ o }}
         </button>

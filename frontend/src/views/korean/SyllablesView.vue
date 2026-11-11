@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import Draggable from 'vuedraggable'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { mistakeWords } from '@/data/mistakes'
 import { usePersisted } from '@/composables/usePersisted'
 import { isCorrect, SYLLABLE_LEVELS, syllableTasks, type SyllableLevel, type SyllableTask } from '@/data/korean/syllables'
+import { dragDrop } from '@/lib/dragdrop'
 import { burst, cascade, pop, shake } from '@/lib/fx'
 import { useProgressStore } from '@/stores/progress'
 
@@ -37,7 +37,6 @@ const finished = computed(() => idx.value >= tasks.value.length)
 const pool = computed<Tile[]>(() => (current.value ? current.value.tiles.map((s, i) => ({ i, s })) : []))
 const pickedIdx = computed(() => picked.value.map(t => t.i))
 const letters = computed(() => picked.value.map(t => t.s))
-const cloneTile = (t: Tile): Tile => ({ ...t })
 
 function tap(t: Tile) {
   const task = current.value
@@ -50,6 +49,39 @@ const removeAt = (n: number) => {
 const back = () => {
   if (!result.value) picked.value = picked.value.slice(0, -1)
 }
+
+/**
+ * Плитку отпустили над слотами в точке `x`: она встаёт перед слотом, левее середины которого её отпустили.
+ * Так же двигается плитка, которая уже стоит в слоте (сначала вынимается, потом встаёт на новое место).
+ */
+function place(i: number, x: number) {
+  const task = current.value
+  const tile = pool.value.find(t => t.i === i)
+  if (!task || !tile || result.value) return
+  const rest = picked.value.filter(t => t.i !== i)
+  if (rest.length >= task.answer.length) return
+  const slots = [...(slotsBox.value?.querySelectorAll<HTMLElement>('.sy-slot.filled') ?? [])].filter(e => Number(e.dataset.i) !== i)
+  let pos = slots.findIndex(e => {
+    const r = e.getBoundingClientRect()
+    return x < r.left + r.width / 2
+  })
+  if (pos < 0) pos = rest.length
+  picked.value = [...rest.slice(0, pos), tile, ...rest.slice(pos)]
+}
+/** Перетаскивание (общий помощник `lib/dragdrop.ts`): плитки набора и плитки в слотах тянутся в слоты. Набор перерисовывается, поэтому подключается заново. */
+let dragOff = () => {}
+function wireDrag() {
+  dragOff()
+  dragOff = () => {}
+  const box = slotsBox.value
+  if (!box || !poolBox.value || result.value) return
+  dragOff = dragDrop({
+    tiles: [...poolBox.value.querySelectorAll('.sy-tile:not(.picked)'), ...box.querySelectorAll('.sy-slot.filled')],
+    targets: () => (result.value ? [] : [box]),
+    onDrop: (tile, _target, x) => place(Number(tile.dataset.i), x),
+  })
+}
+onBeforeUnmount(() => dragOff())
 
 /** Слоты заполнены (нажатием или перетаскиванием): проверяем ответ. */
 watch(picked, p => {
@@ -70,6 +102,7 @@ watch(picked, p => {
   if (task.word.n < 16000) progress.record({ word: task.word.k, ok, source: 'trainer', mode: 'syllables' })
   ;(ok ? pop : shake)(slotsBox.value)
 })
+watch([picked, result, current], () => void nextTick(wireDrag), { flush: 'post' })
 
 function enter() {
   void nextTick(() => cascade(poolBox.value?.querySelectorAll('.sy-tile') ?? []))
@@ -120,45 +153,13 @@ watch(finished, v => {
 
         <div ref="slotsBox" class="sy-slotwrap">
           <div class="sy-bg" aria-hidden="true"><span v-for="n in current.answer.length" :key="n" class="sy-slot empty"></span></div>
-          <Draggable
-            v-model="picked"
-            item-key="i"
-            class="sy-slots"
-            :class="result"
-            :group="{ name: 'sy', pull: false, put: true }"
-            :disabled="!!result"
-            :animation="180"
-            :empty-insert-threshold="60"
-            ghost-class="sy-ghost"
-            draggable=".sy-slot"
-            aria-live="polite"
-          >
-            <template #item="{ element, index }">
-              <span class="sy-slot ko filled" :title="result ? '' : 'Нажми, чтобы убрать'" @click="removeAt(index)">{{ element.s }}</span>
-            </template>
-          </Draggable>
+          <div class="sy-slots" :class="result" aria-live="polite">
+            <button v-for="(t, index) in picked" :key="idx + ':' + t.i" type="button" class="sy-slot ko filled" :data-i="t.i" :title="result ? '' : 'Нажми, чтобы убрать'" @click="removeAt(index)">{{ t.s }}</button>
+          </div>
         </div>
-        <div ref="poolBox">
-          <Draggable
-            :model-value="pool"
-            item-key="i"
-            class="sy-tiles"
-            :group="{ name: 'sy', pull: 'clone', put: false }"
-            :sort="false"
-            :clone="cloneTile"
-            :disabled="!!result"
-            :animation="150"
-            filter=".picked"
-            draggable=".sy-tile"
-            chosen-class="sy-chosen"
-          >
-            <template #item="{ element }">
-              <button type="button" class="sy-tile ko" :class="{ picked: pickedIdx.includes(element.i) }" :aria-disabled="pickedIdx.includes(element.i) || !!result" @click="tap(element)">{{ element.s }}</button>
-            </template>
-            <template #footer>
-              <button class="sy-back" :disabled="!picked.length || !!result" title="Убрать последний слог" aria-label="Убрать последний слог" @click="back">⌫</button>
-            </template>
-          </Draggable>
+        <div ref="poolBox" class="sy-tiles">
+          <button v-for="t in pool" :key="idx + ':' + t.i" type="button" class="sy-tile ko" :data-i="t.i" :class="{ picked: pickedIdx.includes(t.i) }" :aria-disabled="pickedIdx.includes(t.i) || !!result" @click="tap(t)">{{ t.s }}</button>
+          <button class="sy-back" :disabled="!picked.length || !!result" title="Убрать последний слог" aria-label="Убрать последний слог" @click="back">⌫</button>
         </div>
         <div v-if="result === 'bad'" class="xb" role="note">Верно: <b class="ko">{{ current.display ?? current.word.k }}</b><template v-if="current.word.r"> ({{ current.word.r }})</template></div>
         <button v-if="result" class="rs-next" @click="next">{{ idx + 1 < tasks.length ? 'Дальше →' : 'Итог' }}</button>

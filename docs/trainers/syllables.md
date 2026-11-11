@@ -5,7 +5,7 @@
 **Где открыть.** `/game/home?game=syllables`. Только по токену.
 
 **Файлы.**
-- `views/korean/SyllablesView.vue`: **свой экран, не `TaskSession`**; плитки и слоты на `vuedraggable` (перетаскивание или нажатие), анимации из `lib/fx`.
+- `views/korean/SyllablesView.vue`: **свой экран, не `TaskSession`**; плитки и слоты обычной разметкой, перетаскивание через общий помощник `lib/dragdrop.ts` (с 2026-11-11, `vuedraggable` удалён): плитку набора можно перетащить в слоты, плитку в слоте на другое место (`place(i, x)`: встаёт перед слотом, левее середины которого её отпустили); набор перерисовывается, поэтому перетаскивание подключается заново (`wireDrag` в `watch`); нажатия работают как раньше; анимации из `lib/fx`. Тест нажатий: `frontend/test/syllables-view.spec.ts`. На iPad с пером не проверено.
 - `data/korean/syllables.ts`: `syllableTasks(n, weak, level)`, `syllableTask(word)`, `isCorrect`, `SYLLABLE_WORDS`, `SYLLABLE_LEVELS`.
 - Использует: `data/mistakes.ts` (`mistakeWords`: слабые слова идут первыми), `words.ts` (`D`), `tasks.ts` (`shuffle`, `short`).
 
