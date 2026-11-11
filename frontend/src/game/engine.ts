@@ -1,9 +1,10 @@
 // @ts-nocheck
 // Логика игры «Хлебушек», перенесена из Hlebushek_Game.html. Работает с разметкой GameView.vue.
 import { D } from './words'
-import { ALLW, CATS, FORMS, MODE_HELP, MODES, W } from './modes'
+import { ALLW, CATS, FORMS, MODE_HELP, MODES, W, type Entry } from './modes'
+import type { BuildQ, ChoiceQ, GameHooks, GameState, Option, Piece, Question, SentIn, StoryGap, StoryPart, StoryQ, StorySent } from './types'
 import { iconImg, MODE_ICON } from './icons'
-import { makeBuild, parseBuildKey } from './build'
+import { makeBuild, parseBuildKey, type Level, type TenseMode } from './build'
 import { analyze, SEG_LABEL } from '@/data/korean/parse'
 import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
@@ -23,16 +24,18 @@ import { burst, cascade, pop } from '@/lib/fx'
 import { motionCalm } from '@/lib/motion'
 
 /** Тяжёлые наборы предложений для текстов считаются один раз на страницу (данные не меняются), а не при каждом запуске игры. */
-const POOLS={};
+const POOLS: Record<string, unknown>={};
+/** Пул считается один раз на страницу: при первом обращении, дальше берётся готовый. Вид записей задаёт функция, которая его собирает. */
+function memo<T>(key: string,make: ()=>T): T{if(!(key in POOLS))POOLS[key]=make();return POOLS[key] as T;}
 
 /** Запускает игру на уже отрисованной разметке; возвращает функцию очистки. */
 /** hooks: общий прогресс сайта (record, importXp, state) — передаёт GameView. */
-export function initGame(hooks) {
+export function initGame(hooks: GameHooks) {
 'use strict';
 /* ---------- данные ---------- */
 /** Подпись задания, в которой само задание (вопрос или длинная инструкция), пишется крупно: «Сегодня 월요일. Какой день был вчера?» */
-const isTask=t=>/\?$/.test(t||'')||(t||'').length>34;
-function labelWithHelp(q){
+const isTask=(t?: string)=>/\?$/.test(t||'')||(t||'').length>34;
+function labelWithHelp(q: Question){
   const wrap=el('div','labelrow');
   const lb=el('div','label'+(isTask(q.label)?' task':''),q.label);wrap.appendChild(lb);
   const h=MODE_HELP[q.mode];
@@ -50,20 +53,21 @@ function labelWithHelp(q){
 }
 
 /* ---------- утилиты ---------- */
-const $=(s,r)=>(r||document).querySelector(s);
-const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;};
-const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-const rnd=a=>a[Math.floor(Math.random()*a.length)];
-const head=x=>String(x.ru).split(/[ ,(]/)[0].toLowerCase();
+/** Элемент по селектору. Разметка игры постоянная, поэтому тип элемента задаёт вызывающий (по умолчанию обычный HTMLElement). */
+const $=<T extends HTMLElement=HTMLElement>(s: string,r?: ParentNode)=>(r||document).querySelector(s) as T;
+const el=<K extends keyof HTMLElementTagNameMap>(t: K,c?: string,x?: string|number|null)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=String(x);return e;};
+const shuffle=<T,>(src: readonly T[]): T[]=>{const a=src.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j]!,a[i]!];}return a;};
+const rnd=<T,>(a: readonly T[]): T=>a[Math.floor(Math.random()*a.length)]!;
+const head=(x: Entry)=>String(x.ru).split(/[ ,(]/)[0]!.toLowerCase();
 
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
-const S={
+const S: GameState={
   mode:'mix',fut:'on',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple'},pfam:'topic',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
-  seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:null,win:null,
-  blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:null},retryQueue:[],retryKeys:new Set()
+  seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:undefined,win:null,
+  blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:undefined},retryQueue:[],retryKeys:new Set()
 };
 S.retryQueue=[];S.retryKeys=new Set();
 function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,fut:S.fut,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch{}}
@@ -71,7 +75,7 @@ function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)r
   if(j.cats)Object.assign(S.cats,j.cats);
   if(j.levels&&typeof j.levels==='object')Object.assign(S.levels,j.levels);
   else if(j.pairLevel)S.levels.pair=j.pairLevel;
-  ['reading','tense','fut','mode','seenHelp','modeHelp','level','gloss'].forEach(k=>{if(j[k]!==undefined)S[k]=j[k];});
+  (['reading','tense','fut','mode','seenHelp','modeHelp','level','gloss'] as const).forEach(k=>{if(j[k]!==undefined)(S as unknown as Record<string, unknown>)[k]=j[k];});
   if(PFAMS.some(f=>f.id===j.pfam))S.pfam=j.pfam;
   if([30,60,120].includes(j.blitzSecs))S.blitzSecs=j.blitzSecs;
   if([0,3,5].includes(j.survLives))S.survLives=j.survLives;
@@ -86,25 +90,25 @@ const wantMode=hooks.mode&&hooks.mode();
 if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 const wantFam=hooks.fam&&hooks.fam();
-if(PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
+if(wantFam&&PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
 if(![1,2,3,4,'any'].includes(S.level))S.level='any';
-Object.keys(S.levels).forEach(k=>{if(!['simple','story','long'].includes(S.levels[k]))S.levels[k]='simple';});
+Object.keys(S.levels).forEach(k=>{if(!['simple','story','long'].includes(S.levels[k]!))S.levels[k]='simple';});
 
 /* ---------- выбор с весами (ошибки возвращаются чаще) ---------- */
-function pickW(arr,keyFn){
+function pickW<T>(arr: T[],keyFn: (x: T)=>string): T{
   let pool=arr;
   if(arr.length>1) pool=arr.filter(x=>keyFn(x)!==S.lastKey);
   const w=pool.map(x=>{const m=S.miss[keyFn(x)];return 1+3*(m?m.n:0);});
   let r=Math.random()*w.reduce((a,b)=>a+b,0);
-  for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0)return pool[i];}
-  return pool[pool.length-1];
+  for(let i=0;i<pool.length;i++){r-=w[i]!;if(r<=0)return pool[i]!;}
+  return pool[pool.length-1]!;
 }
 function activePool(){
   const p=CATS.filter(c=>S.cats[c.id]).flatMap(c=>W[c.id]);
   return p.length>=4?p:ALLW;
 }
-function distract(correct,pool,n){
-  const bad=[];const used=new Set([head(correct)]);
+function distract(correct: Entry,pool: Entry[],n: number){
+  const bad: Entry[]=[];const used=new Set([head(correct)]);
   const same=shuffle(pool.filter(x=>x.cat===correct.cat));
   const other=shuffle(pool);
   for(const x of same.concat(other,shuffle(ALLW))){
@@ -116,15 +120,15 @@ function distract(correct,pool,n){
   return bad;
 }
 function formsPool(){
-  const p=[];if(S.cats.v)p.push(...W.v);if(S.cats.a)p.push(...W.a);
+  const p: Entry[]=[];if(S.cats.v)p.push(...W.v);if(S.cats.a)p.push(...W.a);
   return p.length?p:FORMS;
 }
 
 /* ---------- хангыль: неверные «наивные» формы ---------- */
-const jung=ch=>{const c=ch.charCodeAt(0)-0xAC00;return c<0||c>11171?-1:Math.floor((c%588)/28);};
-const jong=ch=>{const c=ch.charCodeAt(0)-0xAC00;return c<0||c>11171?-1:c%28;};
-function naive(e,tense){
-  const stem=e.ko.slice(0,-1),last=stem[stem.length-1];
+const jung=(ch: string)=>{const c=ch.charCodeAt(0)-0xAC00;return c<0||c>11171?-1:Math.floor((c%588)/28);};
+const jong=(ch: string)=>{const c=ch.charCodeAt(0)-0xAC00;return c<0||c>11171?-1:c%28;};
+function naive(e: Entry,tense: string){
+  const stem=e.ko.slice(0,-1),last=stem[stem.length-1]!;
   const correct=tense==='pres'?e.pres:e.past;
   const eo=tense==='pres'?'어요':'었어요',a=tense==='pres'?'아요':'았어요';
   let c=stem+eo;
@@ -182,7 +186,7 @@ function genFuture(){
   const pool=W.v.filter(function(x){return !!futureForm(x.ko);});
   const e=pickW(pool,function(x){return 'fu:'+x.ko;});
   const right=futureForm(e.ko);
-  const stem=e.ko.slice(0,-1),last=stem[stem.length-1];
+  const stem=e.ko.slice(0,-1),last=stem[stem.length-1]!;
   const j=jong(last);
   const wrongMark=j===0||j===8?stem+'을 거예요':stem+'ㄹ 거예요';
   const set=[right,e.pres,e.past,wrongMark].filter(function(v,i,a){return a.indexOf(v)===i;});
@@ -197,7 +201,7 @@ function genFuture(){
 function genQw(){
   if(storyOn('qw'))return S.levels.qw==='long'?genQwStory(5,10):genQwStory(2,4);
   const i=pickW(D.QB.map((x,k)=>k),k=>'q:'+k);
-  const q=D.QB[i];
+  const q=D.QB[i]!;
   const dis=shuffle(D.QPOOL.filter(x=>x!==q[2])).slice(0,3);
   const opts=shuffle([q[2],...dis]).map(t=>({text:t,ko:true}));
   const parts=q[0].split('___');
@@ -208,24 +212,24 @@ function genQw(){
 function genPart(){
   if(storyOn('part'))return S.levels.part==='long'?genPartStory(5,10):genPartStory(2,4);
   const i=pickW(D.PB.map((x,k)=>k),k=>'p:'+k);
-  const p=D.PB[i];
+  const p=D.PB[i]!;
   const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
   const parts=p[0].split('___');
   return {type:'choice',mode:'part',key:'p:'+i,label:'Вставь частицу или слово',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
     options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],
     hp:p[0].replace('___','…'),hr:p[2],icon:'🧩'};
 }
-const LEVEL_NAME={1:'простой',2:'средний',3:'сложный',4:'мастер'};
+const LEVEL_NAME: Record<number, string>={1:'простой',2:'средний',3:'сложный',4:'мастер'};
 /* перевод плитки: «дедушка + 는 — тема» */
-const PART_ROLE={'은':'тема','는':'тема','이':'подлежащее','가':'подлежащее','을':'объект','를':'объект','에':'куда / где','에서':'где (действие)',
+const PART_ROLE: Record<string, string>={'은':'тема','는':'тема','이':'подлежащее','가':'подлежащее','을':'объект','를':'объект','에':'куда / где','에서':'где (действие)',
   '하고':'и / с','이에요':'быть','예요':'быть','도':'тоже','의':'чей','로':'чем / куда','으로':'чем / куда','와':'и / с','과':'и / с',
   '에게':'кому','한테':'кому','께':'кому','들':'мн. число','부터':'с','까지':'до'};
-const TOKEN_OVERRIDE={'안':'не (отрицание)','제':'мой','내':'мой'};
-const glossCache=new Map();
-function tileGloss(tok){
-  if(glossCache.has(tok))return glossCache.get(tok);
-  let out;
-  if(TOKEN_OVERRIDE[tok])out=TOKEN_OVERRIDE[tok];
+const TOKEN_OVERRIDE: Record<string, string>={'안':'не (отрицание)','제':'мой','내':'мой'};
+const glossCache=new Map<string, string>();
+function tileGloss(tok: string): string{
+  if(glossCache.has(tok))return glossCache.get(tok)!;
+  let out: string;
+  if(TOKEN_OVERRIDE[tok])out=TOKEN_OVERRIDE[tok]!;
   else out=analyze(tok).map(function(sg){
     if(sg.type==='unknown')return '?';
     if(sg.type==='particle'||sg.type==='ending')return sg.text+' — '+(PART_ROLE[sg.text]||'частица');
@@ -236,20 +240,20 @@ function tileGloss(tok){
   glossCache.set(tok,out);return out;
 }
 /** «Собери предложение: Рассказ»: предложения одного рассказа из учебника идут подряд, каждое собирается из слов-плиток (плюс одна-две лишние). Следующее предложение появляется после «Дальше». */
-function genBuildStory(lo,hi){
+function genBuildStory(lo: number,hi: number){
   let b=S.bstory;
-  const lv=S.levels.build;
+  const lv=S.levels.build!;
   if(b&&b.lv===lv&&b.i+1<b.st.sents.length&&b.shown)b.i++;
   else{
     const fit=STORIES.filter(function(st){return st.sents.length>=lo&&st.sents.length<=hi;});
     b=S.bstory={st:rnd(fit.length?fit:STORIES),i:0,lv:lv,shown:false};
   }
   b.shown=true;
-  const x=b.st.sents[b.i],n=b.st.sents.length;
+  const x=b.st.sents[b.i]!,n=b.st.sents.length;
   const right=x.ko.replace(/[.?!]$/,'');
   const words=right.split(' ');
   // лишние плитки: слова других предложений рассказов, которых нет в этом
-  const spare=[];
+  const spare: string[]=[];
   shuffle(STORIES.flatMap(function(st){return st.sents.flatMap(function(y){return y.ko.replace(/[.,?!]/g,'').split(' ');});})).forEach(function(w){
     if(spare.length<(words.length>=4?2:1)&&!words.includes(w)&&!spare.includes(w)&&!words.some(function(v){return v.replace(/[.,?!]/g,'')===w;}))spare.push(w);
   });
@@ -262,18 +266,18 @@ function genBuildStory(lo,hi){
 /** «Собери предложение: Мастер»: длинное предложение из двух частей (`long-sentences.ts`). Группы внутри части можно ставить в любом порядке, сказуемое последнее (`checkLong`); лишние плитки с неверной частицей. */
 function genBuildLong(){
   const all=LONG_SENTENCES.map(function(x,i){return i;});
-  const fit=all.filter(function(i){const t=LONG_SENTENCES[i].t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');});
+  const fit=all.filter(function(i){const t=LONG_SENTENCES[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');});
   const pool=fit.length?fit:all;
   const rest=pool.filter(function(i){return 'bl:'+i!==S.lastKey;});
-  const i=rnd(rest.length?rest:pool),x=LONG_SENTENCES[i];
+  const i=rnd(rest.length?rest:pool),x=LONG_SENTENCES[i]!;
   const words=longWords(x),right=words.join(' '),text=longText(x);
-  const spare=[];
+  const spare: string[]=[];
   shuffle(words.slice()).forEach(function(w){
     const t=longTrap(w);
     if(t&&spare.length<2&&!words.includes(t)&&!spare.includes(t))spare.push(t);
   });
   return {type:'build',mode:'build',key:'bl:'+i,level:4,label:'Собери предложение · '+LEVEL_NAME[4],ru:x.ru,tiles:shuffle([...words,...spare]),
-    accept:[right],check:function(w){return checkLong(x,w);},right:right,note:x.note,explain:[text,x.note],teach:text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
+    accept:[right],check:function(w: string[]){return checkLong(x,w);},right:right,note:x.note,explain:[text,x.note],teach:text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
 }
 function genBuild(){
   if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,4);
@@ -281,15 +285,15 @@ function genBuild(){
   // «Любой» в самом режиме даёт «Мастера» примерно в каждом пятом задании
   if(!S.blitz.on&&!S.surv.on&&(S.level===4||(S.level==='any'&&S.mode==='build'&&Math.random()<.2)))return genBuildLong();
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
-  let level,seed,tm=mode;
+  let level: Level|undefined,seed: number|undefined,tm: TenseMode=mode;
   const missed=Object.keys(S.miss).filter(k=>/^b:/.test(k)&&k!==S.lastKey);
   if(missed.length&&Math.random()<.3){
     const p=parseBuildKey(rnd(missed));
     if(p){level=p.level;tm=p.mode;seed=p.seed;}
   }
-  if(!seed){level=S.level==='any'?rnd([1,2,2,3]):S.level===4?3:S.level;seed=1+Math.floor(Math.random()*2147483000);}
-  const b=makeBuild(level,tm,seed);
-  return {type:'build',mode:'build',key:b.key,level:level,label:'Собери предложение · '+LEVEL_NAME[level],ru:b.ru,tiles:b.tiles,
+  if(!seed){level=(S.level==='any'?rnd([1,2,2,3]):S.level===4?3:S.level) as Level;seed=1+Math.floor(Math.random()*2147483000);}
+  const b=makeBuild(level!,tm,seed!);
+  return {type:'build',mode:'build',key:b.key,level:level,label:'Собери предложение · '+LEVEL_NAME[level!],ru:b.ru,tiles:b.tiles,
     accept:b.accept,right:b.right,note:b.note,explain:[b.right+'.',b.note],hp:b.ru,hr:b.right,icon:'🏗️'};
 }
 
@@ -298,11 +302,11 @@ function genSpot(){
   if(storyOn('spot'))return S.levels.spot==='long'?genSpotText(4,5):genSpotText(2,3);
   let key,ru,right,opts,note;
   if(Math.random()<.4){
-    const i=pickW(D.QB.map((x,k)=>k),k=>'o:q'+k);const q=D.QB[i];
+    const i=pickW(D.QB.map((x,k)=>k),k=>'o:q'+k);const q=D.QB[i]!;
     const words=shuffle([q[2],...shuffle(D.QPOOL.filter(x=>x!==q[2])).slice(0,3)]);
     opts=words.map(w=>q[0].replace('___',w));right=q[0].replace('___',q[2]);ru=q[1];key='o:q'+i;note=q[1];
   }else{
-    const i=pickW(D.PB.map((x,k)=>k),k=>'o:p'+k);const p=D.PB[i];
+    const i=pickW(D.PB.map((x,k)=>k),k=>'o:p'+k);const p=D.PB[i]!;
     opts=shuffle(p[3]).map(t=>p[0].replace('___',t));right=p[0].replace('___',p[2]);ru=p[1];key='o:p'+i;note=p[4];
   }
   const options=opts.map(t=>({text:t,ko:true}));
@@ -311,9 +315,9 @@ function genSpot(){
 }
 
 /* ---------- «Напиши»: ответ вводится с клавиатуры ---------- */
-function normRu(s){return String(s).toLowerCase().replace(/ё/g,'е').replace(/\([^)]*\)/g,' ').replace(/[^a-zа-я0-9가-힣 ]/g,' ').replace(/\s+/g,' ').trim();}
-function ruAnswers(e){
-  const out=new Set();
+function normRu(s: unknown){return String(s).toLowerCase().replace(/ё/g,'е').replace(/\([^)]*\)/g,' ').replace(/[^a-zа-я0-9가-힣 ]/g,' ').replace(/\s+/g,' ').trim();}
+function ruAnswers(e: Entry){
+  const out=new Set<string>();
   e.ru.split(/[,;/]/).forEach(p=>{const n=normRu(p);if(n)out.add(n);});
   (e.ru.match(/\(([^)]*)\)/g)||[]).forEach(m=>{const n=normRu(m.slice(1,-1));if(n&&n.split(' ').length<=2)out.add(n);});
   return [...out];
@@ -344,11 +348,11 @@ function genErr(){
   let key,wrong,right,ru,note;
   if(Math.random()<.65){
     // варианты из двух слов («삼만 오천») не годятся: сломалась бы разбивка предложения на слова
-    const i=pickW(D.PB.map((x,k)=>k).filter(k=>!/\s/.test(D.PB[k][2])),k=>'e:p'+k);const p=D.PB[i];
+    const i=pickW(D.PB.map((x,k)=>k).filter(k=>!/\s/.test(D.PB[k]![2])),k=>'e:p'+k);const p=D.PB[i]!;
     const bad=rnd(p[3].filter(t=>t!==p[2]&&!/\s/.test(t)));
     wrong=p[0].replace('___',bad);right=p[0].replace('___',p[2]);ru=p[1];note=p[4];key='e:p'+i;
   }else{
-    const i=pickW(D.QB.map((x,k)=>k),k=>'e:q'+k);const q=D.QB[i];
+    const i=pickW(D.QB.map((x,k)=>k),k=>'e:q'+k);const q=D.QB[i]!;
     const bad=rnd(D.QPOOL.filter(x=>x!==q[2]));
     wrong=q[0].replace('___',bad);right=q[0].replace('___',q[2]);ru=q[1];note='Нужно по смыслу: '+q[2];key='e:q'+i;
   }
@@ -360,27 +364,27 @@ function genErr(){
 }
 
 /* ---------- «Пара или нет»: две частицы на выбор ---------- */
-const PAIRS=[
+const PAIRS: {a: string;b: string;role: string;ex: (n: string)=>string;exRu: (r: string)=>string}[]=[
   {a:'은',b:'는',role:'тема',ex:n=>n+'___ 뭐예요?',exRu:r=>'А что такое «'+r+'»?'},
   {a:'이',b:'가',role:'подлежащее',ex:n=>n+'___ 있어요.',exRu:r=>'Есть: '+r+'.'},
   {a:'을',b:'를',role:'объект действия',ex:n=>n+'___',exRu:r=>'«'+r+'» как объект (что?)'},
   {a:'이에요',b:'예요',role:'«это…»',ex:n=>n+'___.',exRu:r=>'Это «'+r+'».'}
 ];
-const hasFinal=ch=>jong(ch)>0;
+const hasFinal=(ch: string)=>jong(ch)>0;
 /** Уровень с текстом включён: режим открыт сам по себе (не «Микс»), не блиц и не выживание. */
-const storyOn=m=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
+const storyOn=(m: string)=>S.mode===m&&S.levels[m]!=='simple'&&!S.blitz.on&&!S.surv.on;
 /* ---------- Тексты: несколько предложений с пропусками; плитки из банка переносятся нажатием, проверка в конце ---------- */
 /** Режимы с уровнями «Простой / Рассказ 2–4 / Длинный 5–10». */
 const STORY_MODES=['pair','place','too','neg','when','dem','word','rev','qw','part','form','days','num','price','count','polite','dlg','han','spot','err','type','ord','ptext','build'];
-const plural=n=>n+(n<=4?' предложения':' предложений');
+const plural=(n: number)=>n+(n<=4?' предложения':' предложений');
 /**
  * Вопрос-текст из предложений. `sents`: [{ko, ru, pieces:[строка | {right, accept?, why}]}], `bank`: плитки (одну можно ставить много раз).
  * У пропуска `picked` (что поставили) и `ok` (после проверки).
  */
-function makeStory(mode,label,sents,bank,icon){
-  const gaps=[];
+function makeStory(mode: string,label: string,sents: SentIn[],bank: string[],icon?: string): StoryQ{
+  const gaps: StoryGap[]=[];
   const out=sents.map(function(sn){
-    const parts=[];
+    const parts: StoryPart[]=[];
     sn.pieces.forEach(function(pc){
       if(typeof pc==='string'){if(pc)parts.push({t:pc});}
       else if(pc.mark!==undefined)parts.push({t:pc.mark,mark:true});
@@ -388,46 +392,47 @@ function makeStory(mode,label,sents,bank,icon){
       else{
         const k=gaps.length;
         const hp=sn.pieces.map(function(x){return typeof x==='string'?x:x.mark!==undefined?x.mark:x.ans!==undefined?x.ans:(x===pc?'…':x.right);}).join('');
-        parts.push({gap:k});gaps.push({right:pc.right,accept:pc.accept||null,why:pc.why||'',hp:hp,picked:null,ok:null,input:!!pc.input});
+        parts.push({gap:k});gaps.push({right:pc.right!,accept:pc.accept||null,why:pc.why||'',hp:hp,picked:null,ok:null,input:!!pc.input});
       }
     });
-    return {ko:sn.ko,ru:sn.ru,tip:sn.tip||'',noTr:!!sn.noTr,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap;})};
+    return {ko:sn.ko,ru:sn.ru,tip:sn.tip||'',noTr:!!sn.noTr,cue:sn.cue||'',parts:parts,gapIdx:parts.filter(function(p){return p.gap!==undefined;}).map(function(p){return p.gap!;})};
   });
   return {type:'story',mode:mode,key:'story:'+mode+':'+sents.map(function(x){return x.ko;}).join('|').slice(0,80),label:label,
     sents:out,gaps:gaps,input:gaps.some(function(g){return g.input;}),bank:shuffle(bank),active:null,sel:null,checked:false,bonus:0,right:'',explain:[],hp:'Рассказ',hr:'',icon:icon||'⚖️',level:2};
 }
 /** «Пара или нет». У каждой частицы пара по 받침: 은/는, 이/가, 을/를, 와/과, 으로/로; у места 에/에서. */
-const TWIN={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'을','에':'에서','에서':'에','와':'과','과':'와','으로':'로','로':'으로'};
+const TWIN: Record<string, string>={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'을','에':'에서','에서':'에','와':'과','과':'와','으로':'로','로':'으로'};
 
+interface PoolSent { ko: string; ru: string; gaps: { at: number; right: string; why: string }[]; cats: string[]; ok: boolean }
 /** Все предложения с переводом, где есть частицы из пар и все слова известны разбору; считается один раз при первом тексте. */
-function storyPool(){
-  if(POOLS.STORY_POOL)return POOLS.STORY_POOL;
-  const catOf={};DICT.forEach(d=>{if(d.s)catOf[d.s]=d.c;});
-  POOLS.STORY_POOL=Object.keys(STUDY_TRANSLATIONS).map(function(ko){
+function storyPool(): PoolSent[]{
+  return memo('STORY_POOL',function(){
+  const catOf: Record<string, string[]>={};DICT.forEach(d=>{if(d.s)catOf[d.s]=d.c;});
+  return Object.keys(STUDY_TRANSLATIONS).map(function(ko){
     const segs=analyze(ko);
-    const gaps=[];let cur=0;
+    const gaps: PoolSent['gaps']=[];let cur=0;
     segs.forEach(function(sg){
       const at=ko.indexOf(sg.text,cur);if(at<0)return;cur=at+sg.text.length;
       if(sg.type==='particle'&&TWIN[sg.text])gaps.push({at:at,right:sg.text,why:sg.explain||sg.gloss});
     });
-    return {ko:ko,ru:TRANSLATIONS[ko],gaps:gaps,cats:catOf[ko]||[],ok:!segs.some(function(sg){return sg.type==='unknown';})};
+    return {ko:ko,ru:TRANSLATIONS[ko]!,gaps:gaps,cats:catOf[ko]||[],ok:!segs.some(function(sg){return sg.type==='unknown';})};
   }).filter(function(x){return x.ok&&x.gaps.length;});
-  return POOLS.STORY_POOL;
+  });
 }
 /** Текст из `n` предложений одной темы (если в теме хватает), в каждом до двух пропусков; плитки: частицы и их пары. */
-function genStory(lo,hi){
+function genStory(lo: number,hi: number){
   const pool=storyPool();
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
-  const bycat={};pool.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
-  const rich=Object.keys(bycat).filter(function(c){return bycat[c].length>=n;});
-  const src=rich.length&&Math.random()<.75?bycat[rnd(rich)]:pool;
-  const bank=new Set();
+  const bycat: Record<string, PoolSent[]>={};pool.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
+  const rich=Object.keys(bycat).filter(function(c){return bycat[c]!.length>=n;});
+  const src=rich.length&&Math.random()<.75?bycat[rnd(rich)]!:pool;
+  const bank=new Set<string>();
   const sents=shuffle(src).slice(0,n).map(function(x){
     const use=shuffle(x.gaps).slice(0,2).sort(function(a,b){return a.at-b.at;});
-    const pieces=[];let pos=0;
+    const pieces: Piece[]=[];let pos=0;
     use.forEach(function(g){
       pieces.push(x.ko.slice(pos,g.at));pieces.push({right:g.right,why:g.why});
-      bank.add(g.right);bank.add(TWIN[g.right]);pos=g.at+g.right.length;
+      bank.add(g.right);bank.add(TWIN[g.right]!);pos=g.at+g.right.length;
     });
     pieces.push(x.ko.slice(pos));
     return {ko:x.ko,ru:x.ru,pieces:pieces};
@@ -435,57 +440,59 @@ function genStory(lo,hi){
   return makeStory('pair','Рассказ ('+plural(n)+'): поставь частицы',sents,[...bank]);
 }
 /** «Куда, где»: день человека: в каждом предложении место и действие, нужно 에 (куда, где находишься) или 에서 (где действие). */
-function genPlaceStory(lo,hi){
+/** Место: слово, «куда», «где» и действия в нём (корейский, перевод). */
+type Place=[string,string,string,...[string,string][]];
+function genPlaceStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
-  const combos=[];
+  const combos: {p: Place;t: string;a?: [string,string]}[]=[];
   PLACES.forEach(function(p){
     combos.push({p:p,t:'go'},{p:p,t:'be'});
-    p.slice(3).forEach(function(a){combos.push({p:p,t:'do',a:a});});
+    (p.slice(3) as [string,string][]).forEach(function(a){combos.push({p:p,t:'do',a:a});});
   });
-  const picked=[];let last=null;
+  const picked: typeof combos=[];let last: Place|null=null;
   const order=shuffle(combos);
   while(picked.length<n){
     let i=order.findIndex(function(c){return (!last||c.p!==last)&&!picked.includes(c)&&(picked.length>=PLACES.length||!picked.some(function(x){return x.p===c.p;}));});
     if(i<0)i=order.findIndex(function(c){return !picked.includes(c);});
     if(i<0)break;
-    picked.push(order[i]);last=order[i].p;
+    picked.push(order[i]!);last=order[i]!.p;
   }
   const sents=picked.map(function(c){
-    const p=c.p;let post,ru,right,why;
+    const p=c.p;let post: string,ru: string,right: string,why: string;
     if(c.t==='go'){post=' 가요.';ru='Я иду '+p[1]+'.';right='에';why='Куда идёшь (가요) → 에';}
     else if(c.t==='be'){post=' 있어요.';ru='Я '+p[2]+'.';right='에';why='Где находишься (있어요) → 에';}
-    else{post=' '+c.a[0]+'.';ru=cap1(p[2])+' '+c.a[1]+'.';right='에서';why='Где что-то делаешь ('+c.a[0]+') → 에서';}
+    else{const a=c.a!;post=' '+a[0]+'.';ru=cap1(p[2])+' '+a[1]+'.';right='에서';why='Где что-то делаешь ('+a[0]+') → 에서';}
     return {ko:'저는 '+p[0]+right+post,ru:ru,pieces:['저는 '+p[0],{right:right,why:why},post]};
   });
   return makeStory('place','День ('+plural(picked.length)+'): 에 или 에서',sents,['에','에서','를','는'],'📍');
 }
 /** «Тоже»: новое действие → частица темы (은/는, можно и 이/가), то же действие у другого человека → 도. */
-const TOO_SUBJ=[['엄마','мама'],['아빠','папа'],['친구','друг'],['선생님','учитель'],['학생','ученик'],['형','старший брат']];
-const TOO_PRED=[['학교에 가요','идёт в школу'],['공원에 가요','идёт в парк'],['빵을 먹어요','ест хлеб'],['커피를 마셔요','пьёт кофе'],['한국어를 공부해요','учит корейский'],['집에 있어요','дома']];
+const TOO_SUBJ: [string,string][]=[['엄마','мама'],['아빠','папа'],['친구','друг'],['선생님','учитель'],['학생','ученик'],['형','старший брат']];
+const TOO_PRED: [string,string][]=[['학교에 가요','идёт в школу'],['공원에 가요','идёт в парк'],['빵을 먹어요','ест хлеб'],['커피를 마셔요','пьёт кофе'],['한국어를 공부해요','учит корейский'],['집에 있어요','дома']];
 
 /** Слова шаблона, которых нет в разборе, отбрасываются (чтобы в карточках не было «?»). */
 function tooPool(){
-  if(POOLS.TOO_POOL)return POOLS.TOO_POOL;
-  const known=t=>!analyze(t).some(function(sg){return sg.type==='unknown';});
-  POOLS.TOO_POOL={subj:TOO_SUBJ.filter(function(x){return known(x[0]+'는 집에 있어요.');}),pred:TOO_PRED.filter(function(x){return known('엄마는 '+x[0]+'.');})};
-  return POOLS.TOO_POOL;
+  return memo('TOO_POOL',function(){
+  const known=(t: string)=>!analyze(t).some(function(sg){return sg.type==='unknown';});
+  return {subj:TOO_SUBJ.filter(function(x){return known(x[0]+'는 집에 있어요.');}),pred:TOO_PRED.filter(function(x){return known('엄마는 '+x[0]+'.');})};
+  });
 }
-function genTooStory(lo,hi){
+function genTooStory(lo: number,hi: number){
   const pool=tooPool();
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   let order=shuffle(pool.subj),oi=0;
-  const take=function(){if(oi>=order.length){order=shuffle(pool.subj);oi=0;}return order[oi++];};
-  const sents=[];let prev=null,reps=0;
+  const take=function(){if(oi>=order.length){order=shuffle(pool.subj);oi=0;}return order[oi++]!;};
+  const sents: SentIn[]=[];let prev: {s: [string,string];p: [string,string]}|null=null,reps=0;
   for(let i=0;i<n;i++){
-    let sj=take();if(prev&&sj[0]===prev.s[0])sj=take();
+    let sj=take();if(prev&&sj[0]===(prev as {s: [string,string]}).s[0])sj=take();
     const repeat=!!prev&&(i===n-1&&!reps?true:Math.random()<.55);
-    if(repeat){
+    if(repeat&&prev){const pv: {s: [string,string];p: [string,string]}=prev;
       reps++;
-      sents.push({ko:sj[0]+'도 '+prev.p[0]+'.',ru:cap1(sj[1])+' тоже '+prev.p[1]+'.',
-        pieces:[sj[0],{right:'도',why:'То же действие, что в предыдущем предложении, но делает другой человек → 도 («тоже») вместо 은/는, 이/가'},' '+prev.p[0]+'.']});
+      sents.push({ko:sj[0]+'도 '+pv.p[0]+'.',ru:cap1(sj[1])+' тоже '+pv.p[1]+'.',
+        pieces:[sj[0],{right:'도',why:'То же действие, что в предыдущем предложении, но делает другой человек → 도 («тоже») вместо 은/는, 이/가'},' '+pv.p[0]+'.']});
     }else{
-      const p=rnd(pool.pred.filter(function(x){return !prev||x!==prev.p;}));
-      const fin=hasFinal(sj[0][sj[0].length-1]);
+      const pv=prev as {p: [string,string]}|null;const p=rnd(pool.pred.filter(function(x){return !pv||x!==pv.p;}));
+      const fin=hasFinal(sj[0][sj[0].length-1]!);
       const right=fin?'은':'는',alt=fin?'이':'가';
       sents.push({ko:sj[0]+right+' '+p[0]+'.',ru:cap1(sj[1])+' '+p[1]+'.',
         pieces:[sj[0],{right:right,accept:[alt],why:'Новое действие → частица темы '+right+' (у слова «'+sj[0]+'» '+(fin?'есть':'нет')+' 받침). Можно и '+alt+'.'},' '+p[0]+'.']});
@@ -498,14 +505,14 @@ function genTooStory(lo,hi){
 /** «Это или не это»: знакомство с вещами: 이에요 / 예요 / 이 아니에요 / 가 아니에요 по 받침. */
 
 function negPool(){
-  if(POOLS.NEG_POOL)return POOLS.NEG_POOL;
-  POOLS.NEG_POOL=D.S.filter(function(r){return /^[а-яё]+$/i.test(r[2])&&!analyze(r[0]+'이에요.').some(function(sg){return sg.type==='unknown';});});
-  return POOLS.NEG_POOL;
+  return memo('NEG_POOL',function(){
+  return D.S.filter(function(r){return /^[а-яё]+$/i.test(r[2])&&!analyze(r[0]+'이에요.').some(function(sg){return sg.type==='unknown';});});
+  });
 }
-function genNegStory(lo,hi){
+function genNegStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const sents=shuffle(negPool()).slice(0,n).map(function(w){
-    const ko=w[0],fin=jong(ko[ko.length-1])>0,neg=Math.random()<.5;
+    const ko=w[0],fin=jong(ko[ko.length-1]!)>0,neg=Math.random()<.5;
     const right=neg?(fin?'이 아니에요':'가 아니에요'):(fin?'이에요':'예요');
     return {ko:ko+right+'.',ru:(neg?'Это не ':'Это ')+w[2]+'.',pieces:[ko,{right:right,why:'У слова «'+ko+'» '+(fin?'есть':'нет')+' 받침 → '+right},'.']};
   });
@@ -513,13 +520,13 @@ function genNegStory(lo,hi){
 }
 /** «Когда? (에)»: распорядок: у дней и времени суток нужна 에, у 오늘, 내일, 지금 частица не нужна (плитка «—»). */
 const NOPART='—';
-function genWhenStory(lo,hi){
+function genWhenStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const acts=shuffle(WHEN_ACT),ons=shuffle(WHEN_ON),offs=shuffle(WHEN_OFF);
-  const sents=[];
+  const sents: SentIn[]=[];
   for(let i=0;i<n;i++){
     const off=Math.random()<.3;
-    const time=off?offs[i%offs.length]:ons[i%ons.length],act=acts[i%acts.length];
+    const time=(off?offs[i%offs.length]:ons[i%ons.length])!,act=acts[i%acts.length]!;
     const right=off?NOPART:'에';
     sents.push({ko:time[0]+(off?'':'에')+' '+act[0]+'.',ru:cap1(time[1])+' '+act[1]+'.',
       pieces:[time[0],{right:right,why:off?'С 오늘, 내일, 지금 частицу 에 не ставят: «—».':'Слово отвечает на вопрос «когда» → к нему добавляется 에.'},' '+act[0]+'.']});
@@ -527,30 +534,32 @@ function genWhenStory(lo,hi){
   return makeStory('when','Когда? ('+plural(n)+'): 에 или «—»',sents,['에','에서','는',NOPART],'🕒');
 }
 /** «Этот, тот, вон тот»: сцена: у каждого предложения пометка, где предмет (рядом со мной, с тобой, далеко от обоих); в пропуск нужный указатель. */
+type Dist='near'|'mid'|'far';
+type Gender='f'|'m'|'n';
 const DEM_CUE={near:'рядом со мной',mid:'рядом с тобой',far:'далеко от обоих'};
 const DEM_WHY={near:'близко ко мне',mid:'близко к собеседнику',far:'далеко от обоих'};
 const DEM_DET={near:'이',mid:'그',far:'저'},DEM_THING={near:'이것',mid:'그것',far:'저것'},DEM_PLACE={near:'여기',mid:'거기',far:'저기'};
 const DEM_RU_DET={near:{f:'Эта',m:'Этот',n:'Это'},mid:{f:'Та',m:'Тот',n:'То'},far:{f:'Вон та',m:'Вон тот',n:'Вон то'}};
 const DEM_RU_THING={near:'Это',mid:'То',far:'Вон то'},DEM_RU_PLACE={near:'Здесь',mid:'Там',far:'Вон там'};
-const DEM_NOUN=[['책','книга','f'],['가방','сумка','f'],['나무','дерево','n'],['집','дом','m'],['꽃','цветок','m'],['산','гора','f'],['문','дверь','f']];
-const DEM_PRED=[['커요',{f:'большая',m:'большой',n:'большое'}],['작아요',{f:'маленькая',m:'маленький',n:'маленькое'}],['예뻐요',{f:'красивая',m:'красивый',n:'красивое'}],['비싸요',{f:'дорогая',m:'дорогой',n:'дорогое'}]];
-const DEM_PLACES=[['학교','школа'],['공원','парк'],['식당','столовая'],['카페','кафе'],['시장','рынок'],['은행','банк'],['도서관','библиотека']];
-function genDemStory(lo,hi){
+const DEM_NOUN: [string,string,Gender][]=[['책','книга','f'],['가방','сумка','f'],['나무','дерево','n'],['집','дом','m'],['꽃','цветок','m'],['산','гора','f'],['문','дверь','f']];
+const DEM_PRED: [string,Record<Gender,string>][]=[['커요',{f:'большая',m:'большой',n:'большое'}],['작아요',{f:'маленькая',m:'маленький',n:'маленькое'}],['예뻐요',{f:'красивая',m:'красивый',n:'красивое'}],['비싸요',{f:'дорогая',m:'дорогой',n:'дорогое'}]];
+const DEM_PLACES: [string,string][]=[['학교','школа'],['공원','парк'],['식당','столовая'],['카페','кафе'],['시장','рынок'],['은행','банк'],['도서관','библиотека']];
+function genDemStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
-  const sents=[],seen=new Set(),bank=new Set();
+  const sents: SentIn[]=[],seen=new Set<string>(),bank=new Set<string>();
   for(let t=0;sents.length<n&&t<200;t++){
-    const dist=rnd(['near','mid','far']),fam=rnd(['det','thing','place']);
-    let right,post,ru;
+    const dist: Dist=rnd(['near','mid','far'] as const),fam=rnd(['det','thing','place']);
+    let right: string,post: string,ru: string;
     if(fam==='det'){
-      const nn=rnd(DEM_NOUN),pr=rnd(DEM_PRED),fin=jong(nn[0][nn[0].length-1])>0;
+      const nn=rnd(DEM_NOUN),pr=rnd(DEM_PRED),fin=jong(nn[0][nn[0].length-1]!)>0;
       right=DEM_DET[dist];post=' '+nn[0]+(fin?'은':'는')+' '+pr[0]+'.';ru=DEM_RU_DET[dist][nn[2]]+' '+nn[1]+' '+pr[1][nn[2]]+'.';
       [DEM_DET.near,DEM_DET.mid,DEM_DET.far].forEach(function(w){bank.add(w);});
     }else if(fam==='thing'){
-      const nn=rnd(DEM_NOUN),fin=jong(nn[0][nn[0].length-1])>0;
+      const nn=rnd(DEM_NOUN),fin=jong(nn[0][nn[0].length-1]!)>0;
       right=DEM_THING[dist];post='은 '+nn[0]+(fin?'이에요':'예요')+'.';ru=DEM_RU_THING[dist]+' — '+nn[1]+'.';
       [DEM_THING.near,DEM_THING.mid,DEM_THING.far].forEach(function(w){bank.add(w);});
     }else{
-      const pl=rnd(DEM_PLACES),fin=jong(pl[0][pl[0].length-1])>0;
+      const pl=rnd(DEM_PLACES),fin=jong(pl[0][pl[0].length-1]!)>0;
       right=DEM_PLACE[dist];post='는 '+pl[0]+(fin?'이에요':'예요')+'.';ru=DEM_RU_PLACE[dist]+' — '+pl[1]+'.';
       [DEM_PLACE.near,DEM_PLACE.mid,DEM_PLACE.far].forEach(function(w){bank.add(w);});
     }
@@ -562,39 +571,40 @@ function genDemStory(lo,hi){
 }
 /* ---------- «Слово → перевод» и «Перевод → слово»: слова в предложениях ---------- */
 /** Первый перевод слова: «пить; выпивать» → «пить». */
-const firstRu=t=>String(t||'').split(/[;,(]/)[0].trim();
+const firstRu=(t: string)=>String(t||'').split(/[;,(]/)[0]!.trim();
 
 /** Слова сайта с примером и переводом: где слово стоит в предложении (`at`, `len`: само слово или основа глагола) и все слова предложения известны разбору. */
 function wsentPool(){
-  if(POOLS.WSENT_POOL)return POOLS.WSENT_POOL;
-  POOLS.WSENT_POOL=STUDY.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
+  return memo('WSENT_POOL',function(){
+  return STUDY.filter(function(d){return d.s&&TRANSLATIONS[d.s]&&d.t;}).map(function(d){
     let at=d.s.indexOf(d.k),len=d.k.length;
     if(at<0&&/다$/.test(d.k)&&d.k.length>2){at=d.s.indexOf(d.k.slice(0,-1));len=d.k.length-1;}
-    return {k:d.k,ko:d.s,ru:TRANSLATIONS[d.s],t:firstRu(d.t),at:at,len:len,cats:d.c||[],verb:/다$/.test(d.k)};
+    return {k:d.k,ko:d.s,ru:TRANSLATIONS[d.s]!,t:firstRu(d.t),at:at,len:len,cats:d.c||[],verb:/다$/.test(d.k)};
   }).filter(function(x){return x.at>=0&&x.t&&x.t.length<=24&&!analyze(x.ko).some(function(sg){return sg.type==='unknown';});});
-  return POOLS.WSENT_POOL;
+  });
 }
 /** Слова для текста: разные переводы, из разных предложений; по возможности одной темы. */
-function wsentPick(n){
+type WSent=ReturnType<typeof wsentPool>[number];
+function wsentPick(n: number){
   const pool=wsentPool();
-  const bycat={};pool.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
-  const rich=Object.keys(bycat).filter(function(c){return bycat[c].length>=n;});
-  const src=rich.length&&Math.random()<.6?bycat[rnd(rich)]:pool;
-  const out=[],seenT=new Set(),seenS=new Set();
+  const bycat: Record<string, WSent[]>={};pool.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
+  const rich=Object.keys(bycat).filter(function(c){return bycat[c]!.length>=n;});
+  const src=rich.length&&Math.random()<.6?bycat[rnd(rich)]!:pool;
+  const out: WSent[]=[],seenT=new Set<string>(),seenS=new Set<string>();
   shuffle(src).forEach(function(x){if(out.length<n&&!seenT.has(x.t)&&!seenS.has(x.ko)){out.push(x);seenT.add(x.t);seenS.add(x.ko);}});
   return out;
 }
 /** Слова-ловушки: из того же пула, тех же тем и частей речи в первую очередь. */
-function wsentLures(picked,count,key){
+function wsentLures(picked: WSent[],count: number,key: (x: WSent)=>string){
   const have=new Set(picked.map(function(x){return key(x);}));
   const pool=wsentPool().filter(function(x){return !have.has(key(x));});
   const near=pool.filter(function(x){return picked.some(function(p){return p.verb===x.verb&&p.cats.some(function(c){return x.cats.includes(c);});});});
-  const out=[];
+  const out: WSent[]=[];
   shuffle(near).concat(shuffle(pool)).forEach(function(x){if(out.length<count&&!out.some(function(o){return key(o)===key(x);}))out.push(x);});
   return out;
 }
 /** «Слово → перевод»: слово подсвечено в предложении, нужно поставить его перевод по смыслу. Перевод предложения скрыт: он выдал бы ответ. */
-function genWordStory(lo,hi){
+function genWordStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const words=wsentPick(n);
   const sents=words.map(function(x){
@@ -605,13 +615,13 @@ function genWordStory(lo,hi){
   return makeStory('word','Слово в предложении ('+plural(sents.length)+'): выбери перевод выделенного слова',sents,[...new Set(bank)],'🔤');
 }
 /** «Перевод → слово»: по-русски предложение целиком (иконка слева), по-корейски в нём пропущено существительное. */
-function genRevStory(lo,hi){
+function genRevStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const nouns=wsentPool().filter(function(x){return !x.verb&&x.len===x.k.length;});
-  const bycat={};nouns.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
-  const rich=Object.keys(bycat).filter(function(c){return bycat[c].length>=n;});
-  const src=rich.length&&Math.random()<.6?bycat[rnd(rich)]:nouns;
-  const words=[],seen=new Set();
+  const bycat: Record<string, WSent[]>={};nouns.forEach(function(x){x.cats.forEach(function(c){(bycat[c]||(bycat[c]=[])).push(x);});});
+  const rich=Object.keys(bycat).filter(function(c){return bycat[c]!.length>=n;});
+  const src=rich.length&&Math.random()<.6?bycat[rnd(rich)]!:nouns;
+  const words: WSent[]=[],seen=new Set<string>();
   shuffle(src).forEach(function(x){if(words.length<n&&!seen.has(x.k)&&!seen.has(x.ko)){words.push(x);seen.add(x.k);seen.add(x.ko);}});
   const sents=words.map(function(x){
     return {ko:x.ko,ru:x.ru,pieces:[x.ko.slice(0,x.at),{right:x.k,why:'«'+x.t+'» по-корейски — '+x.k},x.ko.slice(x.at+x.len)]};
@@ -621,22 +631,22 @@ function genRevStory(lo,hi){
   return makeStory('rev','Перевод → слово ('+plural(sents.length)+'): поставь пропущенное слово',sents,[...new Set(bank)],'🔁');
 }
 /* ---------- «Вопросы», «Частицы и счёт», «Выбери форму»: тексты ---------- */
-const known=ko=>!analyze(ko).some(function(sg){return sg.type==='unknown';});
+const known=(ko: string)=>!analyze(ko).some(function(sg){return sg.type==='unknown';});
 /** «Вопросы»: пары «вопрос — ответ» из диалогов; в вопросе пропущено вопросительное слово, подсказка только в переводе ответа (иконка слева). */
 const QW_WORDS=['어디','누구','뭐','얼마','몇','어느','무슨'];
 
 function qwPool(){
-  if(POOLS.QW_POOL)return POOLS.QW_POOL;
-  POOLS.QW_POOL=EXCHANGES.map(function(e){
+  return memo('QW_POOL',function(){
+  return EXCHANGES.map(function(e){
     const hit=QW_WORDS.filter(function(w){return e[0].split(/[ ?]/).some(function(t){return t===w||t.startsWith(w+'에')||t.startsWith(w+'예')||t.startsWith(w+'이')||t.startsWith(w+'의');});});
     if(hit.length!==1)return null;
-    const at=e[0].indexOf(hit[0]);
+    const w=hit[0]!;const at=e[0].indexOf(w);
     if(at<0)return null;
-    return {q:e[0],qru:e[1],a:e[2],aru:e[3],w:hit[0],at:at};
-  }).filter(function(x){return x&&known(x.q);});
-  return POOLS.QW_POOL;
+    return {q:e[0],qru:e[1],a:e[2],aru:e[3],w:w,at:at};
+  }).filter(function(x): x is NonNullable<typeof x>{return !!x&&known(x.q);});
+  });
 }
-function genQwStory(lo,hi){
+function genQwStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const picked=shuffle(qwPool()).slice(0,n);
   const sents=picked.map(function(x){
@@ -650,11 +660,11 @@ function genQwStory(lo,hi){
 /** «Частицы и счёт»: предложения из банка частиц и счётных слов, в пропуске нужное слово; в банке всё, что встречалось как вариант. */
 
 function partPool(){
-  if(POOLS.PART_POOL)return POOLS.PART_POOL;
-  POOLS.PART_POOL=D.PB.map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);});
-  return POOLS.PART_POOL;
+  return memo('PART_POOL',function(){
+  return D.PB.map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);});
+  });
 }
-function genPartStory(lo,hi){
+function genPartStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const picked=shuffle(partPool()).slice(0,n);
   const sents=picked.map(function(x){return {ko:x.ko,ru:x.ru,pieces:[x.pre,{right:x.right,why:x.why},x.post]};});
@@ -665,32 +675,32 @@ function genPartStory(lo,hi){
 /** «Выбери форму»: в предложении глагол или прилагательное без окончания (основа), в пропуск нужно поставить окончание: 아요 / 어요 / 았어요 / 었어요. Только слова, где основа и окончание просто склеиваются (без слияния). */
 
 function formPool(){
-  if(POOLS.FORM_POOL)return POOLS.FORM_POOL;
-  const stems=new Set();
+  return memo('FORM_POOL',function(){
+  const stems=new Set<string>();
   DICT.forEach(function(d){if(/다$/.test(d.k)&&!/하다$/.test(d.k))stems.add(d.k.slice(0,-1));});
   [...D.V,...D.A].forEach(function(r){if(/다$/.test(r[0])&&!/하다$/.test(r[0]))stems.add(r[0].slice(0,-1));});
-  const out=[];
+  const out: {ko: string;ru: string;stem: string;e: string;at: number;past: boolean;harmony: boolean}[]=[];
   Object.keys(STUDY_TRANSLATIONS).forEach(function(ko){
     const words=ko.replace(/[.?!,]/g,'').split(' ');
     words.forEach(function(w){
       for(const e of ['았어요','었어요','아요','어요']){
         if(!w.endsWith(e))continue;
         const stem=w.slice(0,-e.length);
-        if(stem&&stems.has(stem)&&jong(stem[stem.length-1])>0){
+        if(stem&&stems.has(stem)&&jong(stem[stem.length-1]!)>0){
           const at=ko.indexOf(w);
-          const a=jung(stem[stem.length-1]);const harmony=a===0||a===8;// ㅏ, ㅗ
+          const a=jung(stem[stem.length-1]!);const harmony=a===0||a===8;// ㅏ, ㅗ
           const past=e[0]==='았'||e[0]==='었';
-          if((e==='아요'||e==='았어요')===harmony&&known(ko))out.push({ko:ko,ru:TRANSLATIONS[ko],stem:stem,e:e,at:at+stem.length,past:past,harmony:harmony});
+          if((e==='아요'||e==='았어요')===harmony&&known(ko))out.push({ko:ko,ru:TRANSLATIONS[ko]!,stem:stem,e:e,at:at+stem.length,past:past,harmony:harmony});
         }
         break;
       }
     });
   });
-  const seen=new Set();
-  POOLS.FORM_POOL=out.filter(function(x){const k=x.stem;if(seen.has(k))return false;seen.add(k);return true;});
-  return POOLS.FORM_POOL;
+  const seen=new Set<string>();
+  return out.filter(function(x){const k=x.stem;if(seen.has(k))return false;seen.add(k);return true;});
+  });
 }
-function genFormStory(lo,hi){
+function genFormStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const pool=formPool();
   const picked=shuffle(pool).slice(0,n);
@@ -728,14 +738,14 @@ function genDaysStory(lo,hi){
   return makeStory('days','Дни недели ('+plural(sents.length)+'): поставь день',sents,DAYS.map(function(d){return d[0];}),'📅');
 }
 /** Предметы и их счётные слова (только слова, известные разбору). */
-const COUNT_ITEMS=[['사과','яблоко','개'],['물','вода','병'],['커피','кофе','잔'],['비빔밥','бибимбап','그릇'],['학생','ученик','명'],['고양이','кот','마리'],['책','книга','권'],['빵','хлеб','개'],['친구','друг','명'],['우유','молоко','병']];
+const COUNT_ITEMS: [string,string,string][]=[['사과','яблоко','개'],['물','вода','병'],['커피','кофе','잔'],['비빔밥','бибимбап','그릇'],['학생','ученик','명'],['고양이','кот','마리'],['책','книга','권'],['빵','хлеб','개'],['친구','друг','명'],['우유','молоко','병']];
 const NATF=['한','두','세','네','다섯','여섯','일곱','여덟','아홉','열'];
 const COUNTERS_ALL=['병','잔','개','그릇','명','마리','권','장'];
-const subjP=w=>w+(hasFinal(w[w.length-1])?'이':'가');
+const subjP=(w: string)=>w+(hasFinal(w[w.length-1]!)?'이':'가');
 function countItems(){
-  if(POOLS.COUNT_ITEMS)return POOLS.COUNT_ITEMS;
-  POOLS.COUNT_ITEMS=COUNT_ITEMS.filter(function(x){return known(subjP(x[0])+' 세 '+x[2]+' 있어요.');});
-  return POOLS.COUNT_ITEMS;
+  return memo('COUNT_ITEMS',function(){
+  return COUNT_ITEMS.filter(function(x){return known(subjP(x[0])+' 세 '+x[2]+' 있어요.');});
+  });
 }
 function countRow(x,n,gapKind){
   const num=NATF[n-1];
@@ -884,9 +894,9 @@ function genHanLine(){
 }
 /** «Найди верное»: три текста из нескольких предложений, в двух по одной ошибке в частице, в одном всё верно. */
 function spotPool(){
-  if(POOLS.SPOT_POOL)return POOLS.SPOT_POOL;
-  POOLS.SPOT_POOL=D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};});
-  return POOLS.SPOT_POOL;
+  return memo('SPOT_POOL',function(){
+  return D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};});
+  });
 }
 function genSpotText(lo,hi){
   const k=lo+Math.floor(Math.random()*(hi-lo+1));
@@ -993,7 +1003,7 @@ function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,4);
   if(Math.random()<.35){
     const PP=D.PB.map((x,k)=>k).filter(k=>['에','에서','을','를','는','은'].includes(D.PB[k][2]));
-    const i=pickW(PP,k=>'pr:p'+k);const p=D.PB[i];
+    const i=pickW(PP,k=>'pr:p'+k);const p=D.PB[i]!;
     const twin={'에':'에서','에서':'에','을':'를','를':'을','는':'은','은':'는'}[p[2]];
     const opts=shuffle([p[2],twin]).map(t=>({text:t,ko:true}));
     const parts=p[0].split('___');
@@ -1136,15 +1146,15 @@ function genDays(){
 }
 
 /* «Когда?»: к слову времени ставится 에, но не к 오늘, 내일, 지금, 언제 */
-const WHEN_ON=[['월요일','в понедельник'],['화요일','во вторник'],['수요일','в среду'],['목요일','в четверг'],['금요일','в пятницу'],['토요일','в субботу'],['일요일','в воскресенье'],
+const WHEN_ON: [string,string][]=[['월요일','в понедельник'],['화요일','во вторник'],['수요일','в среду'],['목요일','в четверг'],['금요일','в пятницу'],['토요일','в субботу'],['일요일','в воскресенье'],
   ['아침','утром'],['저녁','вечером'],['밤','ночью'],['점심','днём'],['주말','на выходных'],['평일','в будни'],['이번 주','на этой неделе'],['다음 주','на следующей неделе']];
-const WHEN_OFF=[['오늘','сегодня'],['내일','завтра'],['지금','сейчас']];
-const WHEN_ACT=[['친구를 만나요','встречаюсь с другом','Когда ты встречаешься с другом?'],['운동해요','занимаюсь спортом','Когда ты занимаешься спортом?'],
+const WHEN_OFF: [string,string][]=[['오늘','сегодня'],['내일','завтра'],['지금','сейчас']];
+const WHEN_ACT: [string,string,string][]=[['친구를 만나요','встречаюсь с другом','Когда ты встречаешься с другом?'],['운동해요','занимаюсь спортом','Когда ты занимаешься спортом?'],
   ['한국어를 공부해요','занимаюсь корейским','Когда ты занимаешься корейским?'],['도서관에 가요','иду в библиотеку','Когда ты идёшь в библиотеку?'],
   ['영화를 봐요','смотрю фильм','Когда ты смотришь фильм?'],['쇼핑해요','хожу по магазинам','Когда ты ходишь по магазинам?'],
   ['요리를 배워요','учусь готовить','Когда ты учишься готовить?'],['집에 있어요','я дома','Когда ты дома?']];
 const NONE='ничего не нужно';
-const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const cap1=(s: string)=>s.charAt(0).toUpperCase()+s.slice(1);
 function genWhen(){
   if(storyOn('when'))return S.levels.when==='long'?genWhenStory(5,10):genWhenStory(2,4);
   const act=rnd(WHEN_ACT);
@@ -1347,7 +1357,7 @@ function genCount(){
   if(storyOn('count'))return S.levels.count==='long'?genCountStory(5,10):genCountStory(2,4);
   const pool=countPool();
   const i=pickW(pool,k=>'cn:'+k);
-  const p=D.PB[i];
+  const p=D.PB[i]!;
   const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
   const parts=p[0].split('___');
   return {type:'choice',mode:'count',key:'cn:'+i,label:'Вставь счётное слово или число',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
@@ -1369,7 +1379,7 @@ function genNeg(){
     options:set.map(t=>({text:t,ko:true})),correct:set.indexOf(right),right:right,
     explain:[right+' — '+(neg?'Это не ':'Это ')+w[2],hasB?'У слова «'+ko+'» есть 받침 → '+(neg?'이 아니에요':'이에요'):'У слова «'+ko+'» нет 받침 → '+(neg?'가 아니에요':'예요')],hp:(neg?'не ':'')+w[2],hr:right,icon:'🙅'};
 }
-const PLACES=[['학교','в школу','в школе',['공부해요','занимаюсь']],['도서관','в библиотеку','в библиотеке',['공부해요','занимаюсь'],['책을 읽어요','читаю книгу']],['공원','в парк','в парке',['운동해요','занимаюсь спортом']],
+const PLACES: Place[]=[['학교','в школу','в школе',['공부해요','занимаюсь']],['도서관','в библиотеку','в библиотеке',['공부해요','занимаюсь'],['책을 읽어요','читаю книгу']],['공원','в парк','в парке',['운동해요','занимаюсь спортом']],
   ['카페','в кафе','в кафе',['커피를 마셔요','пью кофе']],['시장','на рынок','на рынке',['빵을 사요','покупаю хлеб']],['식당','в столовую','в столовой',['밥을 먹어요','ем']],
   ['백화점','в универмаг','в универмаге',['쇼핑해요','хожу по магазинам']],['집','домой','дома',['쉬어요','отдыхаю']],['은행','в банк','в банке']];
 /** 에 (куда, где находишься) или 에서 (где действие) */
