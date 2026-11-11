@@ -18,7 +18,7 @@ export interface GameHooks {
 }
 
 /** Вариант ответа в задании с выбором. */
-export interface Option { text: string; ko?: boolean; sub?: string }
+export interface Option { text: string; ko?: boolean; sub?: string; /** короткое значение варианта, когда в тексте есть ещё подпись */ k?: string }
 
 /** Кусок предложения в тексте: обычный текст, выделенное слово, готовый ответ или пропуск (номер в `gaps`). */
 export interface StoryPart { t?: string; mark?: boolean; ans?: boolean; gap?: number }
@@ -46,7 +46,7 @@ export interface Question {
   right: string
   explain: (string | undefined)[]
   /** слово словаря, к которому относится вопрос (для прогресса слов) */
-  word?: string
+  word?: string | null
   prompt?: string
   promptKo?: boolean
   reading?: string

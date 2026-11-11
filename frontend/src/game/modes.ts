@@ -6,6 +6,8 @@ import { D, type GameVerb, type GameWord } from './words'
 export type CatId = 'v' | 'a' | 'q' | 'p' | 'd' | 'n' | 'l' | 's' | 'w'
 /** Слово в игре: глаголы и прилагательные (v, a) несут ещё формы настоящего и прошедшего и пояснение. */
 export interface Entry { ko: string; rd: string; ru: string; cat: CatId; pres?: string; past?: string; note?: string }
+/** Глагол или прилагательное: формы и пояснение есть всегда. */
+export interface FormEntry extends Entry { pres: string; past: string; note: string }
 export interface Mode { id: string; icon: string; name: string }
 /** Подсказка режима: что делать и пример («Пример: …»). */
 export type ModeHelp = [what: string, example: string]
@@ -17,17 +19,19 @@ export const CATS: { id: CatId; name: string }[]=[
   {id:'w',name:'Время и дни'}
 ];
 
-const verb = (cat: 'v' | 'a') => (r: GameVerb): Entry => ({ ko: r[0], rd: r[1], ru: r[2], pres: r[3], past: r[4], note: r[5], cat })
+const verb = (cat: 'v' | 'a') => (r: GameVerb): FormEntry => ({ ko: r[0], rd: r[1], ru: r[2], pres: r[3], past: r[4], note: r[5], cat })
 const word = (cat: CatId) => (r: GameWord): Entry => ({ ko: r[0], rd: r[1], ru: r[2], cat })
 /** Слова игры по категориям. */
+export const VERBS: FormEntry[] = D.V.map(verb('v'))
+export const ADJS: FormEntry[] = D.A.map(verb('a'))
 export const W: Record<CatId, Entry[]> = {
-  v: D.V.map(verb('v')), a: D.A.map(verb('a')),
+  v: VERBS, a: ADJS,
   q: D.Q.map(word('q')), p: D.P.map(word('p')), d: D.D.map(word('d')), n: D.N.map(word('n')),
   l: D.L.map(word('l')), s: D.S.map(word('s')), w: D.W.map(word('w')),
 }
 export const ALLW: Entry[] = Object.values(W).flat()
 /** Всё, у чего есть формы: глаголы и прилагательные. */
-export const FORMS: Entry[] = W.v.concat(W.a)
+export const FORMS: FormEntry[] = VERBS.concat(ADJS)
 
 export const MODES: Mode[]=[
   {id:'mix',icon:'🎲',name:'Микс'},{id:'word',icon:'🔤',name:'Слово → перевод'},

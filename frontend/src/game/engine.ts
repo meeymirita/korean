@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Логика игры «Хлебушек», перенесена из Hlebushek_Game.html. Работает с разметкой GameView.vue.
 import { D } from './words'
-import { ALLW, CATS, FORMS, MODE_HELP, MODES, W, type Entry } from './modes'
+import { ADJS, ALLW, CATS, FORMS, MODE_HELP, MODES, VERBS, W, type Entry, type FormEntry } from './modes'
 import type { BuildQ, ChoiceQ, GameHooks, GameState, Option, Piece, Question, SentIn, StoryGap, StoryPart, StoryQ, StorySent } from './types'
 import { iconImg, MODE_ICON } from './icons'
 import { makeBuild, parseBuildKey, type Level, type TenseMode } from './build'
@@ -10,12 +10,12 @@ import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { STUDY, STUDY_TRANSLATIONS } from '@/data/korean/study'
 import '@/assets/breakdown.css'
-import { EXCHANGES } from './dialogs'
+import { EXCHANGES, type Exchange } from './dialogs'
 import { STORIES } from './stories'
 import { LONG_SENTENCES, checkLong, longText, longTrap, longWords } from './long-sentences'
 import { dragDrop } from '@/lib/dragdrop'
-import { PFAMS } from './families'
-import { ptextPool } from './ptext-pool'
+import { PFAMS, type RuleFamily } from './families'
+import { ptextPool, type PtextMark } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
 import { syllableRows } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
@@ -120,14 +120,14 @@ function distract(correct: Entry,pool: Entry[],n: number){
   return bad;
 }
 function formsPool(){
-  const p: Entry[]=[];if(S.cats.v)p.push(...W.v);if(S.cats.a)p.push(...W.a);
+  const p: FormEntry[]=[];if(S.cats.v)p.push(...VERBS);if(S.cats.a)p.push(...ADJS);
   return p.length?p:FORMS;
 }
 
 /* ---------- хангыль: неверные «наивные» формы ---------- */
 const jung=(ch: string)=>{const c=ch.charCodeAt(0)-0xAC00;return c<0||c>11171?-1:Math.floor((c%588)/28);};
 const jong=(ch: string)=>{const c=ch.charCodeAt(0)-0xAC00;return c<0||c>11171?-1:c%28;};
-function naive(e: Entry,tense: string){
+function naive(e: FormEntry,tense: string){
   const stem=e.ko.slice(0,-1),last=stem[stem.length-1]!;
   const correct=tense==='pres'?e.pres:e.past;
   const eo=tense==='pres'?'어요':'었어요',a=tense==='pres'?'아요':'았어요';
@@ -183,7 +183,7 @@ function genForm(){
 }
 /** «Выбери форму»: будущее время (-(으)ㄹ 거예요) у глагола. Ловушки: ㄹ / 을 не по 받침, настоящее и прошедшее вместо будущего. */
 function genFuture(){
-  const pool=W.v.filter(function(x){return !!futureForm(x.ko);});
+  const pool=VERBS.filter(function(x){return !!futureForm(x.ko);});
   const e=pickW(pool,function(x){return 'fu:'+x.ko;});
   const right=futureForm(e.ko);
   const stem=e.ko.slice(0,-1),last=stem[stem.length-1]!;
@@ -191,7 +191,7 @@ function genFuture(){
   const wrongMark=j===0||j===8?stem+'을 거예요':stem+'ㄹ 거예요';
   const set=[right,e.pres,e.past,wrongMark].filter(function(v,i,a){return a.indexOf(v)===i;});
   let guard=0;
-  while(set.length<4&&guard++<80){const x=rnd(W.v);const f=futureForm(x.ko);if(f&&x.ko!==e.ko&&!set.includes(f))set.push(f);}
+  while(set.length<4&&guard++<80){const x=rnd(VERBS);const f=futureForm(x.ko);if(f&&x.ko!==e.ko&&!set.includes(f))set.push(f);}
   const opts=shuffle(set).map(function(t){return {text:t,ko:true};});
   const rule=j===8?'основа на ㄹ: ничего не добавляем':j===0?'받침 нет: ㄹ под последней гласной':'받침 есть: 을';
   return {type:'choice',mode:'form',key:'fu:'+e.ko,word:e.ko,label:'Поставь в форму будущего: -(으)ㄹ 거예요 («буду…»)',prompt:e.ko,promptKo:true,
@@ -205,7 +205,7 @@ function genQw(){
   const dis=shuffle(D.QPOOL.filter(x=>x!==q[2])).slice(0,3);
   const opts=shuffle([q[2],...dis]).map(t=>({text:t,ko:true}));
   const parts=q[0].split('___');
-  return {type:'choice',mode:'qw',key:'q:'+i,label:'Вставь вопросительное слово',sentence:{pre:parts[0],post:parts[1]},ru:q[1],
+  return {type:'choice',mode:'qw',key:'q:'+i,label:'Вставь вопросительное слово',sentence:{pre:parts[0]!,post:parts[1]!},ru:q[1],
     options:opts,correct:opts.findIndex(o=>o.text===q[2]),right:q[2],explain:[q[0].replace('___',q[2]),q[1]],
     hp:q[0].replace('___','…'),hr:q[2],icon:'❓'};
 }
@@ -215,7 +215,7 @@ function genPart(){
   const p=D.PB[i]!;
   const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
   const parts=p[0].split('___');
-  return {type:'choice',mode:'part',key:'p:'+i,label:'Вставь частицу или слово',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
+  return {type:'choice',mode:'part',key:'p:'+i,label:'Вставь частицу или слово',sentence:{pre:parts[0]!,post:parts[1]!},ru:p[1],
     options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],
     hp:p[0].replace('___','…'),hr:p[2],icon:'🧩'};
 }
@@ -661,7 +661,7 @@ function genQwStory(lo: number,hi: number){
 
 function partPool(){
   return memo('PART_POOL',function(){
-  return D.PB.map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);});
+  return D.PB.map(function(p){return {pre:p[0].split('___')[0]!,post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);});
   });
 }
 function genPartStory(lo: number,hi: number){
@@ -713,22 +713,22 @@ function genFormStory(lo: number,hi: number){
 }
 /* ---------- «Дни недели», «Числа», «Сколько стоит?», «Счётные слова», «Уровень вежливости»: тексты ---------- */
 const DAYS_ACC=['в понедельник','во вторник','в среду','в четверг','в пятницу','в субботу','в воскресенье'];
-const DAY_ACTS=[['학교에 가요','иду в школу'],['공원에서 운동해요','занимаюсь спортом в парке'],['영화를 봐요','смотрю кино'],['친구를 만나요','встречаюсь с другом'],['집에서 쉬어요','отдыхаю дома'],['커피를 마셔요','пью кофе'],['빵을 먹어요','ем хлеб']];
+const DAY_ACTS: [string,string][]=[['학교에 가요','иду в школу'],['공원에서 운동해요','занимаюсь спортом в парке'],['영화를 봐요','смотрю кино'],['친구를 만나요','встречаюсь с другом'],['집에서 쉬어요','отдыхаю дома'],['커피를 마셔요','пью кофе'],['빵을 먹어요','ем хлеб']];
 /** «Дни недели»: расписание недели (день → 에 + действие) и вопросы «а завтра какой день?». Подсказка у второго вида только в иконке, и в ней нет ответа. */
-function genDaysStory(lo,hi){
+function genDaysStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const acts=DAY_ACTS.filter(function(a){return known('월요일에 '+a[0]+'.');});
-  const sents=[],seen=new Set();
+  const sents: SentIn[]=[],seen=new Set<string>();
   let guard=0;
   while(sents.length<n&&guard++<80){
     const i=Math.floor(Math.random()*7);
     if(Math.random()<.5){
-      const d=DAYS[i],a=rnd(acts);
+      const d=DAYS[i]!,a=rnd(acts);
       const ko=d[0]+'에 '+a[0]+'.';
       if(seen.has(ko))continue;seen.add(ko);
-      sents.push({ko:ko,ru:cap1(DAYS_ACC[i])+' я '+a[1]+'.',pieces:[{right:d[0],why:'«'+d[1]+'» по-корейски — '+d[0]+'; «в такой-то день» = день + 에'},'에 '+a[0]+'.']});
+      sents.push({ko:ko,ru:cap1(DAYS_ACC[i]!)+' я '+a[1]+'.',pieces:[{right:d[0],why:'«'+d[1]+'» по-корейски — '+d[0]+'; «в такой-то день» = день + 에'},'에 '+a[0]+'.']});
     }else{
-      const t=DAYS[i],nx=DAYS[(i+1)%7];
+      const t=DAYS[i]!,nx=DAYS[(i+1)%7]!;
       const ko='오늘은 '+t[0]+'이에요. 내일은 '+nx[0]+'이에요.';
       if(seen.has(ko))continue;seen.add(ko);
       sents.push({ko:ko,ru:'Сегодня '+t[1]+'. Завтра '+nx[1]+'.',tip:'Сегодня '+t[1]+'. Какой день завтра?',
@@ -747,95 +747,95 @@ function countItems(){
   return COUNT_ITEMS.filter(function(x){return known(subjP(x[0])+' 세 '+x[2]+' 있어요.');});
   });
 }
-function countRow(x,n,gapKind){
-  const num=NATF[n-1];
+function countRow(x: [string,string,string],n: number,gapKind: string): SentIn{
+  const num=NATF[n-1]!;
   const ko=subjP(x[0])+' '+num+' '+x[2]+' 있어요.';
   const ru=cap1(x[1])+': '+n+'.';
   const why='«'+x[0]+'» считают словом «'+x[2]+'»; '+n+' = '+NATF[n-1]+(n<=4?' (перед счётным слово короче: 하나 → 한, 둘 → 두, 셋 → 세, 넷 → 네)':'');
-  const pieces=gapKind==='num'?[subjP(x[0])+' ',{right:num,why:why},' '+x[2]+' 있어요.']:[subjP(x[0])+' '+num+' ',{right:x[2],why:why},' 있어요.'];
+  const pieces: Piece[]=gapKind==='num'?[subjP(x[0])+' ',{right:num,why:why},' '+x[2]+' 있어요.']:[subjP(x[0])+' '+num+' ',{right:x[2],why:why},' 있어요.'];
   return {ko:ko,ru:ru,pieces:pieces};
 }
-function genCountStory(lo,hi){
+function genCountStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const items=shuffle(countItems());
-  const sents=[],seen=new Set();
+  const sents: SentIn[]=[],seen=new Set<string>();
   for(let i=0;sents.length<n&&i<items.length*3;i++){
-    const x=items[i%items.length],k=1+Math.floor(Math.random()*9);
+    const x=items[i%items.length]!,k=1+Math.floor(Math.random()*9);
     const row=countRow(x,k,Math.random()<.5?'num':'cnt');
     if(seen.has(row.ko))continue;seen.add(row.ko);sents.push(row);
   }
-  const bank=new Set();
-  sents.forEach(function(r){r.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right);});});
+  const bank=new Set<string>();
+  sents.forEach(function(r){r.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right!);});});
   shuffle(COUNTERS_ALL).slice(0,3).forEach(function(c){bank.add(c);});
   shuffle(NATF).slice(0,3).forEach(function(c){bank.add(c);});
   return makeStory('count','Счётные слова ('+plural(sents.length)+'): поставь число или счётное слово',sents,[...bank],'🥤');
 }
 /** «Числа»: корейские числа перед счётным словом (한, 두, 세…) и китайские числа для этажей (일 층, 이 층…). Какой ряд нужен, определяет слово после пропуска. */
-function genNumStory(lo,hi){
+function genNumStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const items=shuffle(countItems());
-  const sents=[],seen=new Set();
+  const sents: SentIn[]=[],seen=new Set<string>();
   for(let i=0;sents.length<n&&i<60;i++){
     if(Math.random()<.65){
-      const x=items[i%items.length],k=1+Math.floor(Math.random()*9);
+      const x=items[i%items.length]!,k=1+Math.floor(Math.random()*9);
       const row=countRow(x,k,'num');
       if(seen.has(row.ko))continue;seen.add(row.ko);sents.push(row);
     }else{
       const k=1+Math.floor(Math.random()*9);
       const ko=SINO[k-1]+' 층에 있어요.';
       if(seen.has(ko))continue;seen.add(ko);
-      sents.push({ko:ko,ru:'Находится на '+k+'-м этаже.',pieces:[{right:SINO[k-1],why:'Этаж («층») считают китайскими числами: '+k+' = '+SINO[k-1]},' 층에 있어요.']});
+      sents.push({ko:ko,ru:'Находится на '+k+'-м этаже.',pieces:[{right:SINO[k-1]!,why:'Этаж («층») считают китайскими числами: '+k+' = '+SINO[k-1]},' 층에 있어요.']});
     }
   }
-  const bank=new Set();
-  sents.forEach(function(r){r.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right);});});
+  const bank=new Set<string>();
+  sents.forEach(function(r){r.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right!);});});
   shuffle(NATF.concat(SINO)).slice(0,hi>5?8:5).forEach(function(c){bank.add(c);});
   return makeStory('num','Числа ('+plural(sents.length)+'): поставь число',sents,[...bank],'🔢');
 }
 /** «Сколько стоит?»: меню с ценами по-корейски и строка «всего»: нужно прочитать цену китайскими числами. Цифры стоят в иконке, итог надо сложить самому. */
-const PRICE_ITEMS=[['피자','пицца'],['햄버거','гамбургер'],['스파게티','спагетти'],['콜라','кола'],['커피','кофе'],['빵','хлеб'],['주스','сок']];
+const PRICE_ITEMS: [string,string][]=[['피자','пицца'],['햄버거','гамбургер'],['스파게티','спагетти'],['콜라','кола'],['커피','кофе'],['빵','хлеб'],['주스','сок']];
 const PRICES=[1500,2000,2500,3000,3500,4000,4500,5000,6000,7000,8000,9000,10000,12000,15000,18000,20000];
 /** Цены из меню учебника (снимки 076, 080, 081): пицца 15 000, гамбургер 8 000, спагетти 12 000, кола 2 000; у остальных позиций цена случайная. */
-const PRICE_BOOK={'피자':15000,'햄버거':8000,'스파게티':12000,'콜라':2000};
-const topicP=w=>w+(hasFinal(w[w.length-1])?'은':'는');
-function genPriceStory(lo,hi){
+const PRICE_BOOK: Record<string, number>={'피자':15000,'햄버거':8000,'스파게티':12000,'콜라':2000};
+const topicP=(w: string)=>w+(hasFinal(w[w.length-1]!)?'은':'는');
+function genPriceStory(lo: number,hi: number){
   const n=Math.max(2,lo+Math.floor(Math.random()*(hi-lo+1)));
   const items=shuffle(PRICE_ITEMS.filter(function(x){return known(topicP(x[0])+' 만오천 원이에요.');}));
   const rows=Math.min(n,items.length);
-  const sents=[];let sum=0;
-  const spaced=v=>String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  const sents: SentIn[]=[];let sum=0;
+  const spaced=(v: number)=>String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
   for(let i=0;i<rows;i++){
-    const price=PRICE_BOOK[items[i][0]]||rnd(PRICES);sum+=price;
+    const item=items[i]!;const price=PRICE_BOOK[item[0]]||rnd(PRICES);sum+=price;
     const r=sinoNum(price);
-    sents.push({ko:topicP(items[i][0])+' '+r+' 원이에요.',ru:cap1(items[i][1])+': '+spaced(price)+' вон.',tip:cap1(items[i][1])+': '+spaced(price)+' вон',
-      pieces:[topicP(items[i][0])+' ',{right:r,why:spaced(price)+' = '+r+(price>=10000?' (만 = 10 000, перед 만 цифру 일 не говорят)':'')},' 원이에요.']});
+    sents.push({ko:topicP(item[0])+' '+r+' 원이에요.',ru:cap1(item[1])+': '+spaced(price)+' вон.',tip:cap1(item[1])+': '+spaced(price)+' вон',
+      pieces:[topicP(item[0])+' ',{right:r,why:spaced(price)+' = '+r+(price>=10000?' (만 = 10 000, перед 만 цифру 일 не говорят)':'')},' 원이에요.']});
   }
   if(sum<100000){
     const r=sinoNum(sum);
     sents.push({ko:'모두 '+r+' 원이에요.',ru:'Всего: '+spaced(sum)+' вон.',tip:'Сколько всего? Сложи все цены выше',
       pieces:['모두 ',{right:r,why:'Всего '+spaced(sum)+' = '+r},' 원이에요.']});
   }
-  const bank=new Set();
-  sents.forEach(function(x){x.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right);});});
+  const bank=new Set<string>();
+  sents.forEach(function(x){x.pieces.forEach(function(p){if(typeof p!=='string')bank.add(p.right!);});});
   const base=sents.length?sum:5000;
   [base+1000,base-1000,base*10,Math.floor(base/10)*1000||2000,base+500,base+10000].forEach(function(v){if(v>0&&v<100000&&bank.size<sents.length+(hi>5?5:3))bank.add(sinoNum(v));});
   return makeStory('price','Цены ('+plural(sents.length)+'): прочитай цену',sents,[...bank],'💴');
 }
 /** «Уровень вежливости»: кому и как сказать «спасибо»; у каждой формы несколько адресатов. */
-const POLITE_TO={'고마워':['другу','младшему брату или сестре','однокласснику'],'고마워요':['знакомому старше тебя','старшему брату','соседке'],'감사해요':['коллеге','товарищу по работе','соседу по офису'],'감사합니다':['начальнику','учителю','незнакомому взрослому']};
-function genPoliteStory(lo,hi){
+const POLITE_TO: Record<string, string[]>={'고마워':['другу','младшему брату или сестре','однокласснику'],'고마워요':['знакомому старше тебя','старшему брату','соседке'],'감사해요':['коллеге','товарищу по работе','соседу по офису'],'감사합니다':['начальнику','учителю','незнакомому взрослому']};
+function genPoliteStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const order=shuffle(POLITE.map(function(x){return x[0];}));
-  const rows=[];
+  const rows: {f: string;who: string}[]=[];
   for(let i=0;rows.length<n&&i<40;i++){
-    const f=order[i%order.length];
-    const who=POLITE_TO[f][Math.floor(i/order.length)%POLITE_TO[f].length];
+    const f=order[i%order.length]!;
+    const to=POLITE_TO[f]!;const who=to[Math.floor(i/order.length)%to.length]!;
     if(rows.some(function(r){return r.f===f&&r.who===who;}))continue;
     rows.push({f:f,who:who});
   }
   const sents=rows.map(function(r){
-    const ex=POLITE_EX[r.f];const at=ex.indexOf(r.f);
-    const desc=POLITE.find(function(x){return x[0]===r.f;})[1];
+    const ex=POLITE_EX[r.f]!;const at=ex.indexOf(r.f);
+    const desc=POLITE.find(function(x){return x[0]===r.f;})![1];
     return {ko:ex,ru:'Спасибо — '+r.who+'.',cue:'говоришь '+r.who,
       pieces:[ex.slice(0,at),{right:r.f,why:r.f+' — '+desc+'. От неформального к официальному: '+POLITE.map(function(x){return x[0];}).join(' → ')},ex.slice(at+r.f.length)]};
   });
@@ -843,10 +843,10 @@ function genPoliteStory(lo,hi){
 }
 /* ---------- «Диалог», «Хангыль-блиц», «Найди верное», «Найди ошибку»: уровни ---------- */
 /** «Диалог»: вопросы по очереди, на каждый нужен свой ответ из банка (в банке лишние ответы на другие вопросы). */
-function genDlgStory(lo,hi){
+function genDlgStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   // у строк разные теги: ответы одного тега подходят друг к другу, и тогда «неверный» ответ был бы обидным
-  const picked=[],tags=new Set();
+  const picked: Exchange[]=[],tags=new Set<string>();
   shuffle(EXCHANGES.filter(function(e){return known(e[2]);})).forEach(function(e){if(picked.length<n&&!tags.has(e[4])){picked.push(e);tags.add(e[4]);}});
   const sents=picked.map(function(x){
     return {ko:x[2],ru:x[3],tip:'Вопрос: '+x[1],pieces:[x[0]+'   →   ',{right:x[2],why:'На вопрос «'+x[0]+'» ('+x[1]+') отвечают так: '+x[2]+' ('+x[3]+')'}]};
@@ -856,14 +856,14 @@ function genDlgStory(lo,hi){
   return makeStory('dlg','Диалог ('+plural(sents.length)+'): ответь на каждый вопрос',sents,[...new Set(bank)],'💬');
 }
 /** «Хангыль-блиц»: «Слова» — прочитать слово (выбрать, как оно звучит), «Строки» — прочитать три слова подряд. */
-let HAN_WORDS=null;
+let HAN_WORDS: {k: string;r: string;t: string}[]|null=null;
 function hanWords(){
   if(HAN_WORDS)return HAN_WORDS;
   HAN_WORDS=STUDY.filter(function(d){return d.r&&/^[가-힣]+$/.test(d.k)&&d.k.length>=2&&d.k.length<=4&&/^[а-яё]+$/i.test(d.r);}).map(function(d){return {k:d.k,r:d.r,t:d.t};});
   return HAN_WORDS;
 }
-function hanOptions(right,pool,_len){
-  const dis=[];const used=new Set([right]);
+function hanOptions(right: string,pool: string[]){
+  const dis: string[]=[];const used=new Set([right]);
   shuffle(pool).forEach(function(x){if(dis.length<3&&!used.has(x)&&Math.abs(x.length-right.length)<=2){used.add(x);dis.push(x);}});
   return shuffle([right,...dis]);
 }
@@ -895,18 +895,18 @@ function genHanLine(){
 /** «Найди верное»: три текста из нескольких предложений, в двух по одной ошибке в частице, в одном всё верно. */
 function spotPool(){
   return memo('SPOT_POOL',function(){
-  return D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0],post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};});
+  return D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0]!,post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};});
   });
 }
-function genSpotText(lo,hi){
+function genSpotText(lo: number,hi: number){
   const k=lo+Math.floor(Math.random()*(hi-lo+1));
   const base=shuffle(spotPool()).slice(0,k);
   const good=base.map(function(x){return x.pre+x.right+x.post;});
   const bad=shuffle(base.map(function(x,i){return i;})).slice(0,2);
   const variants=[good];
-  const notes=[];
+  const notes: string[]=[];
   bad.forEach(function(i){
-    const x=base[i];const w=rnd(x.opts);
+    const x=base[i]!;const w=rnd(x.opts);
     const t=good.slice();t[i]=x.pre+w+x.post;variants.push(t);
     notes.push('В «'+t[i]+'» ошибка: нужно «'+x.right+'», а не «'+w+'». '+x.why);
   });
@@ -914,10 +914,10 @@ function genSpotText(lo,hi){
   const list=shuffle(texts).map(function(t){return {text:t,ko:true};});
   const right=good.join(' ');
   return {type:'choice',mode:'spot',key:'sp:'+right.slice(0,60),label:'В каком тексте нет ошибок?',prompt:base.map(function(x){return x.ru;}).join(' '),promptKo:false,
-    options:list,correct:list.findIndex(function(o){return o.text===right;}),right:right,explain:notes,teach:good[0],trans:base[0].ru,hp:'Тексты без ошибок',hr:right,icon:'🔍'};
+    options:list,correct:list.findIndex(function(o){return o.text===right;}),right:right,explain:notes,teach:good[0],trans:base[0]!.ru,hp:'Тексты без ошибок',hr:right,icon:'🔍'};
 }
 /** «Найди ошибку»: каждое предложение помечается «верно» или «ошибка»; в части предложений частица подменена. */
-function genErrStory(lo,hi){
+function genErrStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const base=shuffle(spotPool()).slice(0,n);
   const nBad=Math.max(1,Math.min(n-1,Math.round(n*(.4+Math.random()*.2))));
@@ -933,7 +933,7 @@ function genErrStory(lo,hi){
   return makeStory('err','Найди ошибки ('+plural(sents.length)+'): отметь каждое предложение',sents,['верно','ошибка'],'🕵️');
 }
 /** «Напиши форму»: в предложении вместо глагола или прилагательного пропуск, форму надо вписать с клавиатуры; в подсказке словарная форма. */
-function genTypeStory(lo,hi){
+function genTypeStory(lo: number,hi: number){
   const n=lo+Math.floor(Math.random()*(hi-lo+1));
   const picked=shuffle(formPool()).slice(0,n);
   const sents=picked.map(function(x){
@@ -944,15 +944,15 @@ function genTypeStory(lo,hi){
   return makeStory('type','Впиши форму ('+plural(sents.length)+'): глагол в нужной форме',sents,[],'⌨️');
 }
 /** «Порядок слов»: предложения короткого рассказа из учебника перемешаны, у каждого нужно поставить его номер по порядку (подсказка: перевод в иконке и слова-связки вроде 그리고, 거기에서). */
-function genOrdStory(lo,hi){
+function genOrdStory(lo: number,hi: number){
   const fit=STORIES.filter(function(st){return st.sents.length>=lo&&st.sents.length<=hi;});
   const st=rnd(fit.length?fit:STORIES);
   const n=st.sents.length;
   let order=[...Array(n).keys()],guard=0;
   do{order=shuffle(order);}while(order.every(function(v,i){return v===i;})&&guard++<30);
   const sents=order.map(function(k){
-    const x=st.sents[k];
-    const why=k===0?'Рассказ начинается с этого предложения: оно вводит тему.':'Идёт '+(k+1)+'-м, после «'+st.sents[k-1].ko+'»: '+st.sents[k-1].ru;
+    const x=st.sents[k]!;
+    const why=k===0?'Рассказ начинается с этого предложения: оно вводит тему.':'Идёт '+(k+1)+'-м, после «'+st.sents[k-1]!.ko+'»: '+st.sents[k-1]!.ru;
     return {ko:x.ko,ru:x.ru,pieces:[{right:String(k+1),why:why},'   '+x.ko]};
   });
   const q=makeStory('ord','Порядок («'+st.title+'», '+plural(n)+'): поставь номера по порядку',sents,[],'🔢');
@@ -972,22 +972,22 @@ function famChips(){
 }
 /** Все предложения с переводом, где известны все слова: из сайта, рассказов, диалогов и предложений учебника; для каждого место частиц (`at`, `text`, `g`). */
 /** Частица входит в правило: по карточке (`g`) и тексту; у 와 / 과 разбор карточки не указывает, берём по тексту. */
-const inFam=(f,m)=>f.marks.includes(m.text)&&(f.g.includes(m.g)||(f.marks.includes('와')&&(m.text==='와'||m.text==='과')));
+const inFam=(f: RuleFamily,m: PtextMark)=>f.marks.includes(m.text)&&(f.g.includes(m.g)||(f.marks.includes('와')&&(m.text==='와'||m.text==='과')));
 function genPtext(){
-  const f=PFAMS.find(function(x){return x.id===S.pfam;})||PFAMS[0];
+  const f=PFAMS.find(function(x){return x.id===S.pfam;})||PFAMS[0]!;
   const lv=S.levels.ptext;
   const n=lv==='long'?5+Math.floor(Math.random()*6):lv==='story'?2+Math.floor(Math.random()*3):1;
   const cands=ptextPool().map(function(x){return {x:x,gaps:x.marks.filter(function(m){return inFam(f,m);})};}).filter(function(c){return c.gaps.length;});
   // одинаковые по смыслу предложения («커피하고 우유가…» и «커피와 우유가…») в одном тексте не нужны
-  const picked=[],seenRu=new Set();
+  const picked: typeof cands=[],seenRu=new Set<string>();
   shuffle(cands).forEach(function(c){const key=c.x.ru.toLowerCase();if(picked.length<n&&!seenRu.has(key)){seenRu.add(key);picked.push(c);}});
   const bank=new Set(f.marks);
   const sents=picked.map(function(c){
     const use=shuffle(c.gaps).slice(0,2).sort(function(a,b){return a.at-b.at;});
-    const pieces=[];let pos=0;
+    const pieces: Piece[]=[];let pos=0;
     use.forEach(function(g){
       const before=c.x.ko[g.at-1]||'';
-      let accept=null;
+      let accept: string[]|undefined;
       // «и»: к 하고 подходят 와 / 과 по 받침, и наоборот
       if(g.text==='하고')accept=[hasFinal(before)?'과':'와'];
       else if(g.text==='와'||g.text==='과')accept=['하고'];
@@ -1002,25 +1002,25 @@ function genPtext(){
 function genPair(){
   if(storyOn('pair'))return S.levels.pair==='long'?genStory(5,10):genStory(2,4);
   if(Math.random()<.35){
-    const PP=D.PB.map((x,k)=>k).filter(k=>['에','에서','을','를','는','은'].includes(D.PB[k][2]));
+    const PP=D.PB.map((x,k)=>k).filter(k=>['에','에서','을','를','는','은'].includes(D.PB[k]![2]));
     const i=pickW(PP,k=>'pr:p'+k);const p=D.PB[i]!;
-    const twin={'에':'에서','에서':'에','을':'를','를':'을','는':'은','은':'는'}[p[2]];
+    const twin=({'에':'에서','에서':'에','을':'를','를':'을','는':'은','은':'는'} as Record<string, string>)[p[2]]!;
     const opts=shuffle([p[2],twin]).map(t=>({text:t,ko:true}));
     const parts=p[0].split('___');
-    return {type:'choice',mode:'pair',key:'pr:p'+i,label:'Какая частица? Выбери одну из двух',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
+    return {type:'choice',mode:'pair',key:'pr:p'+i,label:'Какая частица? Выбери одну из двух',sentence:{pre:parts[0]!,post:parts[1]!},ru:p[1],
       options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],
       hp:p[0].replace('___','…'),hr:p[2],icon:'⚖️'};
   }
   const nouns=W.s.filter(e=>/^[가-힣]+$/.test(e.ko));
   const e=pickW(nouns,x=>'pr:'+x.ko);
   const pr=rnd(PAIRS);
-  const fin=hasFinal(e.ko[e.ko.length-1]);
+  const fin=hasFinal(e.ko[e.ko.length-1]!);
   const right=fin?pr.a:pr.b;
   const opts=shuffle([pr.a,pr.b]).map(t=>({text:t,ko:true}));
   const parts=pr.ex(e.ko).split('___');
   const why=fin?'есть 받침 (согласная внизу) → '+pr.a:'нет 받침 (слог кончается на гласную) → '+pr.b;
   return {type:'choice',mode:'pair',key:'pr:'+e.ko+':'+pr.a,word:e.ko,label:'Выбери форму: '+pr.a+' или '+pr.b+' ('+pr.role+')',
-    sentence:{pre:parts[0],post:parts[1]},ru:pr.exRu(e.ru),options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
+    sentence:{pre:parts[0]!,post:parts[1]!},ru:pr.exRu(e.ru),options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
     explain:[pr.ex(e.ko).replace('___',right),e.ko+': '+why],hp:pr.ex(e.ko).replace('___','…'),hr:right,icon:'⚖️'};
 }
 
@@ -1028,15 +1028,15 @@ function genPair(){
 function genOrd(){
   if(storyOn('ord'))return S.levels.ord==='long'?genOrdStory(5,10):genOrdStory(2,4);
   for(let t=0;t<30;t++){
-    const level=rnd([2,2,3]);
+    const level: Level=rnd([2,2,3] as const);
     const seed=1+Math.floor(Math.random()*2147483000);
-    const tm=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
+    const tm: TenseMode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
     const b=makeBuild(level,tm,seed);
     const toks=b.right.split(' ');
     if(toks.length<3)continue;
     const k=Math.floor(Math.random()*toks.length);
-    const word=toks[k],rest=toks.filter((x,i)=>i!==k);
-    const seen=new Set(),good=[],bad=[];
+    const word=toks[k]!,rest=toks.filter((x,i)=>i!==k);
+    const seen=new Set<string>(),good: string[]=[],bad: string[]=[];
     for(let p=0;p<=rest.length;p++){
       const arr=rest.slice();arr.splice(p,0,word);
       const sent=arr.join(' ');
@@ -1044,7 +1044,7 @@ function genOrd(){
       (b.accept.includes(sent)?good:bad).push(sent);
     }
     if(bad.length<2)continue;
-    const right=good.includes(b.right)?b.right:good[0];
+    const right=good.includes(b.right)?b.right:good[0]!;
     const texts=shuffle([right,...shuffle(bad).slice(0,3)]);
     return {type:'choice',mode:'ord',key:'od:'+b.key+'|'+k,label:'Куда поставить слово «'+word+'»? Выбери верный порядок',
       prompt:b.ru,promptKo:false,options:texts.map(x=>({text:x,ko:true})),correct:texts.indexOf(right),right:right,
@@ -1057,9 +1057,9 @@ function genOrd(){
 function genDlg(){
   if(storyOn('dlg'))return S.levels.dlg==='long'?genDlgStory(5,10):genDlgStory(2,4);
   const i=pickW(EXCHANGES.map((x,k)=>k),k=>'d:'+k);
-  const x=EXCHANGES[i];
+  const x=EXCHANGES[i]!;
   // «лишние» ответы: другие теги и другие слова (у разных пар бывает одинаковый ответ «네. 있어요.»)
-  const lures=[];
+  const lures: string[]=[];
   shuffle(EXCHANGES.filter(y=>y[4]!==x[4]&&y[2]!==x[2])).forEach(y=>{if(lures.length<2&&!lures.includes(y[2]))lures.push(y[2]);});
   const texts=shuffle([x[2],...lures]);
   return {type:'choice',mode:'dlg',key:'d:'+i,label:'Выбери подходящий ответ',prompt:x[0],promptKo:true,sub:x[1],
@@ -1088,8 +1088,8 @@ function genPast(){
 
 /* ---------- «Хангыль-блиц»: слог из букв и чтение слога ---------- */
 const HAN_C=[0,2,3,5,6,7,9,11,12,14,15,16,17,18],HAN_V=[0,2,4,6,8,12,13,17,18,20];
-const HAN=[];
-HAN_C.forEach(c=>HAN_V.forEach(v=>{const cell=syllableRows[c].cells[v];HAN.push({ch:cell.char,rd:cell.reading,hint:cell.hint,c:c,v:v});}));
+const HAN: {ch: string;rd: string;hint: string;c: number;v: number}[]=[];
+HAN_C.forEach(c=>HAN_V.forEach(v=>{const cell=syllableRows[c]!.cells[v]!;HAN.push({ch:cell.char,rd:cell.reading,hint:cell.hint||'',c:c,v:v});}));
 function genHan(){
   if(storyOn('han'))return S.levels.han==='long'?genHanLine():genHanWord();
   const h=pickW(HAN,x=>'h:'+x.ch);
@@ -1101,7 +1101,7 @@ function genHan(){
       options:opts,correct:opts.findIndex(o=>o.text===h.ch),right:h.ch,explain:[h.hint+' = '+h.ch+' ('+h.rd+')'],
       hp:h.hint,hr:h.ch,icon:'ㅎ'};
   }
-  const dis=[];const used=new Set([h.rd]);
+  const dis: typeof HAN=[];const used=new Set([h.rd]);
   for(const x of near.concat(shuffle(HAN))){if(dis.length>=3)break;if(used.has(x.rd))continue;used.add(x.rd);dis.push(x);}
   const opts=shuffle([h,...dis]).map(x=>({text:x.rd}));
   return {type:'choice',mode:'han',key:'h:'+h.ch,label:'Как читается слог?',prompt:h.ch,promptKo:true,
@@ -1109,20 +1109,20 @@ function genHan(){
     (h.v===4||h.v===8)?'ㅓ — среднее «о» (머, 서), ㅗ — глубокое «о» (고, 보)':''],hp:h.ch,hr:h.rd,icon:'ㅎ'};
 }
 /* ---------- «Время и дни»: дни недели, частицы 에 («когда») и 도 («тоже») ---------- */
-const DAYS=[['월요일','понедельник','ворёиль'],['화요일','вторник','хваёиль'],['수요일','среда','суёиль'],['목요일','четверг','мокёиль'],['금요일','пятница','кымнёиль'],['토요일','суббота','тхоёиль'],['일요일','воскресенье','ильёиль']];
-const DAY_TIME=[['아침','утро','ачим'],['점심','день, обед','чомсим'],['저녁','вечер','чонёк'],['밤','ночь','пам']];
-const DAY_WEEK=[['지난주','прошлая неделя','чинанджу'],['이번 주','эта неделя','ибон чу'],['다음 주','следующая неделя','таым чу'],['주','неделя','чу']];
+const DAYS: [string,string,string][]=[['월요일','понедельник','ворёиль'],['화요일','вторник','хваёиль'],['수요일','среда','суёиль'],['목요일','четверг','мокёиль'],['금요일','пятница','кымнёиль'],['토요일','суббота','тхоёиль'],['일요일','воскресенье','ильёиль']];
+const DAY_TIME: [string,string,string][]=[['아침','утро','ачим'],['점심','день, обед','чомсим'],['저녁','вечер','чонёк'],['밤','ночь','пам']];
+const DAY_WEEK: [string,string,string][]=[['지난주','прошлая неделя','чинанджу'],['이번 주','эта неделя','ибон чу'],['다음 주','следующая неделя','таым чу'],['주','неделя','чу']];
 function genDays(){
   if(storyOn('days'))return S.levels.days==='long'?genDaysStory(5,10):genDaysStory(2,4);
   const t=rnd(['ko2ru','ru2ko','ko2ru','ru2ko','near','kind']);
   if(t==='near'){
     const i=pickW(DAYS.map((x,k)=>k),k=>'dn:'+k);
-    const back=Math.random()<.5,r=DAYS[(i+(back?6:1))%7];
+    const back=Math.random()<.5,r=DAYS[(i+(back?6:1))%7]!;
     const set=shuffle(DAYS.filter(x=>x!==r)).slice(0,3).concat([r]);
     const opts=shuffle(set).map(x=>({text:x[0],ko:true}));
-    return {type:'choice',mode:'days',key:'dn:'+i+':'+(back?'b':'f'),word:r[0],label:'Сегодня «'+DAYS[i][0]+'» ('+DAYS[i][1]+'). Какой день '+(back?'был вчера?':'будет завтра?'),
+    return {type:'choice',mode:'days',key:'dn:'+i+':'+(back?'b':'f'),word:r[0],label:'Сегодня «'+DAYS[i]![0]+'» ('+DAYS[i]![1]+'). Какой день '+(back?'был вчера?':'будет завтра?'),
       prompt:(back?'어제':'내일')+' = ?',promptKo:true,options:opts,correct:opts.findIndex(o=>o.text===r[0]),right:r[0],
-      explain:[DAYS[i][0]+' → '+(back?'вчера ':'завтра ')+r[0]+' ('+r[1]+')','Неделя идёт по кругу: 월 화 수 목 금 토 일'],hp:DAYS[i][0]+' → '+(back?'вчера':'завтра'),hr:r[0],icon:'📅'};
+      explain:[DAYS[i]![0]+' → '+(back?'вчера ':'завтра ')+r[0]+' ('+r[1]+')','Неделя идёт по кругу: 월 화 수 목 금 토 일'],hp:DAYS[i]![0]+' → '+(back?'вчера':'завтра'),hr:r[0],icon:'📅'};
   }
   if(t==='kind'){
     const d=pickW(DAYS,x=>'dk:'+x[0]);const wk=d[0]==='토요일'||d[0]==='일요일';
@@ -1160,7 +1160,7 @@ function genWhen(){
   const act=rnd(WHEN_ACT);
   const r=Math.random();
   const q=r<.12,off=q||r<.3;
-  const time=q?['언제','когда']:off?rnd(WHEN_OFF):rnd(WHEN_ON);
+  const time: [string,string]=q?['언제','когда']:off?rnd(WHEN_OFF):rnd(WHEN_ON);
   const post=' '+act[0]+(q?'?':'.');
   const ru=q?act[2]:cap1(time[1])+' '+act[1]+'.';
   const opts=shuffle(['에','에서','는',NONE]).map(t=>({text:t,ko:t!==NONE}));
@@ -1173,7 +1173,7 @@ function genWhen(){
 
 /* «Тоже»: 도 вместо 은/는, 이/가, 을/를; с 에 и 에서 получается 에도, 에서도 */
 /** [начало, конец, перевод, какая частица стояла бы без «тоже»] */
-const TOO=[
+const TOO: [string,string,string,string][]=[
   ['민우 씨는 한국 사람이에요. 유진 씨',' 한국 사람이에요.','Мину из Кореи. Ючжин тоже из Кореи.','는'],
   ['저는 학교에 가요. 제 친구',' 학교에 가요.','Я иду в школу. Мой друг тоже идёт в школу.','가'],
   ['나나 씨는 비빔밥을 먹어요. 김치',' 먹어요.','Нана ест бибимбап. Кимчи тоже ест.','를'],
@@ -1184,7 +1184,7 @@ const TOO=[
   ['하이 씨는 파티에 가요. 나나 씨',' 파티에 가요.','Хай идёт на вечеринку. Нана тоже идёт.','는'],
 ];
 /** [начало, конец, перевод, правильная форма: 에도 или 에서도] */
-const TOO_AT=[
+const TOO_AT: [string,string,string,string][]=[
   ['저는 토요일에 친구를 만나요. 일요일',' 친구를 만나요.','В субботу я встречаюсь с другом. И в воскресенье тоже.','에도'],
   ['저는 도서관에 가요. 학교',' 가요.','Я иду в библиотеку. И в школу тоже.','에도'],
   ['저는 도서관에서 공부해요. 카페',' 공부해요.','Я занимаюсь в библиотеке. И в кафе тоже.','에서도'],
@@ -1195,9 +1195,9 @@ function genToo(){
   const at=Math.random()<.4;
   const pool=at?TOO_AT:TOO;
   const i=pickW(pool.map((x,k)=>k),k=>(at?'ta:':'to:')+k);
-  const x=pool[i];
+  const x=pool[i]!;
   const right=at?x[3]:'도';
-  let set;
+  let set: string[];
   if(at)set=x[3]==='에도'?['에도','도','에','에서도']:['에서도','도','에서','에도'];
   else{const other=rnd(['이','가','은','는','을','를'].filter(t=>t!==x[3]));set=['도',x[3],x[3]+'도',other];}
   const opts=shuffle(set).map(t=>({text:t,ko:true}));
@@ -1208,7 +1208,7 @@ function genToo(){
 
 /* «Планы»: -(으)ㄹ 거예요. Часть 1: форма будущего в предложении, часть 2: «сейчас или потом» (지금 и 내일) */
 /** [начало, конец, глагол, перевод, настоящее, прошедшее] */
-const FUT_S=[
+const FUT_S: [string,string,string,string,string,string][]=[
   ['내일 친구를 ','.','만나다','Завтра встречусь с другом.','만나요','만났어요'],
   ['저녁에 한국어 책을 ','.','읽다','Вечером буду читать книгу по-корейски.','읽어요','읽었어요'],
   ['토요일에 ','.','운동하다','В субботу буду заниматься спортом.','운동해요','운동했어요'],
@@ -1221,7 +1221,7 @@ const FUT_S=[
   ['혼자 영화를 ','.','보다','Буду смотреть фильм одна/один.','봐요','봤어요'],
 ];
 /** [объект или место, глагол, настоящее, «сейчас» по-русски, «потом» по-русски, прошедшее] */
-const FUT_NOW=[
+const FUT_NOW: [string,string,string,string,string,string][]=[
   ['한국어를','공부하다','공부해요','учу корейский','буду учить корейский','공부했어요'],
   ['커피를','마시다','마셔요','пью кофе','буду пить кофе','마셨어요'],
   ['책을','읽다','읽어요','читаю книгу','буду читать книгу','읽었어요'],
@@ -1230,30 +1230,30 @@ const FUT_NOW=[
   ['밥을','먹다','먹어요','ем','буду есть','먹었어요'],
   ['사진을','찍다','찍어요','фотографирую','буду фотографировать','찍었어요'],
 ];
-const FUT_LATER=[['내일','завтра'],['주말에','на выходных'],['토요일에','в субботу']];
-function futWrongMark(ko){
-  const stem=ko.slice(0,-1),j=jong(stem[stem.length-1]);
+const FUT_LATER: [string,string][]=[['내일','завтра'],['주말에','на выходных'],['토요일에','в субботу']];
+function futWrongMark(ko: string){
+  const stem=ko.slice(0,-1),j=jong(stem[stem.length-1]!);
   return j===0||j===8?stem+'을 거예요':stem+'ㄹ 거예요';
 }
 function genFut(){
   const later=Math.random()<.4;
   if(!later){
     const i=pickW(FUT_S.map((x,k)=>k),k=>'ft:'+k);
-    const x=FUT_S[i];
-    const right=futureForm(x[2]);
+    const x=FUT_S[i]!;
+    const right=futureForm(x[2])!;
     const set=[right,futWrongMark(x[2]),x[4],x[5]].filter((v,k,a)=>a.indexOf(v)===k);
     const opts=shuffle(set).map(t=>({text:t,ko:true}));
-    const stem=x[2].slice(0,-1),j=jong(stem[stem.length-1]);
+    const stem=x[2].slice(0,-1),j=jong(stem[stem.length-1]!);
     return {type:'choice',mode:'fut',key:'ft:'+i,word:null,label:'Поставь глагол в форму будущего: -(으)ㄹ 거예요',sentence:{pre:x[0],post:x[1]},ru:x[3],
       options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
       explain:[x[0]+right+x[1],(j===8?'Основа на ㄹ: ничего не добавляем':j===0?'받침 нет: ㄹ под последней гласной':'받침 есть: 을')+'; сам 거예요 не меняется.'],hp:x[0]+'___'+x[1],hr:right,icon:'🔮'};
   }
   const i=pickW(FUT_NOW.map((x,k)=>k),k=>'fn:'+k);
-  const x=FUT_NOW[i];
+  const x=FUT_NOW[i]!;
   const now=Math.random()<.5;
   const lt=rnd(FUT_LATER);
   const pre=(now?'지금':lt[0])+' '+x[0]+' ';
-  const fut=futureForm(x[1]);
+  const fut=futureForm(x[1])!;
   const right=now?x[2]:fut;
   const set=[right,now?fut:x[2],futWrongMark(x[1]),x[5]];
   const opts=shuffle(set.filter((v,k,a)=>a.indexOf(v)===k)).map(t=>({text:t,ko:true}));
@@ -1265,7 +1265,7 @@ function genFut(){
 
 /* «Только (만)»: 만 или 도 по смыслу, место 만 рядом с 에 / 에서 */
 /** [начало, конец, перевод, правильный ответ (만), частица без «только»] */
-const ONLY_P=[
+const ONLY_P: [string,string,string,string,string][]=[
   ['교실에 선생님',' 있어요.','В классе только учитель.','만','이'],
   ['저는 김치',' 먹어요.','Я ем только кимчи.','만','를'],
   ['친구',' 와요.','Приходит только друг.','만','가'],
@@ -1274,7 +1274,7 @@ const ONLY_P=[
   ['저는 이 가수',' 좋아해요.','Мне нравится только этот певец.','만','를'],
 ];
 /** [слово, конец, перевод, верное сочетание, неверные] */
-const ONLY_AT=[
+const ONLY_AT: [string,string,string,string,string[]][]=[
   ['학교',' 가요.','Хожу только в школу.','에만',['만에','는만','를만']],
   ['집',' 커피를 마셔요.','Пью кофе только дома.','에서만',['만에서','에만','는만']],
   ['일요일',' 청소해요.','Убираюсь только по воскресеньям.','에만',['만에','에서만','는만']],
@@ -1282,22 +1282,22 @@ const ONLY_AT=[
   ['돌하르방은 제주도',' 있어요.','Статуи дольхарбан есть только на острове Чеджу.','에만',['만에','에서만','는만']],
   ['저는 책',' 읽어요.','Я читаю только книги.','만',['을만','를만','은만']],
 ];
-const ONLY_PAIR={'이':'가','가':'이','은':'는','는':'은','을':'를','를':'을'};
+const ONLY_PAIR: Record<string, string>={'이':'가','가':'이','은':'는','는':'은','을':'를','를':'을'};
 function genOnly(){
   const at=Math.random()<.4;
   if(at){
     const i=pickW(ONLY_AT.map((x,k)=>k),k=>'oa:'+k);
-    const x=ONLY_AT[i];
+    const x=ONLY_AT[i]!;
     const set=shuffle([x[3]].concat(x[4])).map(t=>({text:t,ko:true}));
     return {type:'choice',mode:'only',key:'oa:'+i,word:null,label:'Поставь «только» на своё место',sentence:{pre:x[0],post:x[1]},ru:x[2],
       options:set,correct:set.findIndex(o=>o.text===x[3]),right:x[3],
       explain:[x[0]+x[3]+x[1],x[3]==='만'?'Вместо 을/를 ставим просто 만: «책만».':'Сначала 에 / 에서, потом 만: «'+x[3]+'». 만 не ставится перед 에 и не рядом с 은/는, 이/가, 을/를.'],hp:x[0]+'___'+x[1],hr:x[3],icon:'☝️'};
   }
   const too=Math.random()<.4;
-  const x=too?TOO[pickW(TOO.map((y,k)=>k),k=>'ot:'+k)]:ONLY_P[pickW(ONLY_P.map((y,k)=>k),k=>'op:'+k)];
+  const x=(too?TOO[pickW(TOO.map((y,k)=>k),k=>'ot:'+k)]:ONLY_P[pickW(ONLY_P.map((y,k)=>k),k=>'op:'+k)])! as [string,string,string,string,string];
   const base=x[3]==='만'||x[3]==='도'?x[4]:x[3];
   const right=too?'도':'만';
-  const set=[right,too?'만':'도',base,ONLY_PAIR[base]];
+  const set=[right,too?'만':'도',base,ONLY_PAIR[base]!];
   const opts=shuffle(set).map(t=>({text:t,ko:true}));
   return {type:'choice',mode:'only',key:(too?'ot:':'op:')+x[0]+x[1],word:null,label:'Вставь частицу по смыслу: «только» или «тоже»',sentence:{pre:x[0],post:x[1]},ru:x[2],
     options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
@@ -1307,16 +1307,17 @@ function genOnly(){
 /* ---------- «Числа и деньги»: числа, цены, счётные слова ---------- */
 const NAT=['하나','둘','셋','넷','다섯','여섯','일곱','여덟','아홉','열'];
 const SINO=['일','이','삼','사','오','육','칠','팔','구','십'];
-const SINO_BIG=[[100,'백'],[1000,'천'],[10000,'만']];
+const SINO_BIG: [number,string][]=[[100,'백'],[1000,'천'],[10000,'만']];
 function genNum(){
   if(storyOn('num'))return S.levels.num==='long'?genNumStory(5,10):genNumStory(2,4);
   const nat=Math.random()<.5;
-  const list=nat?NAT.map((k,i)=>[i+1,k]):SINO.map((k,i)=>[i+1,k]).concat(SINO_BIG);
+  const pair=(k: string,i: number): [number,string]=>[i+1,k];
+  const list=nat?NAT.map(pair):SINO.map(pair).concat(SINO_BIG);
   const x=pickW(list,y=>'nu:'+(nat?'n':'s')+y[0]);
   const toKo=Math.random()<.5;
   const others=shuffle(list.filter(y=>y!==x)).slice(0,3);
   const sys=nat?'Корейские числа (하나, 둘, 셋…)':'Китайские числа (일, 이, 삼…)';
-  const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  const fmt=(n: number)=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
   const note=nat?'Корейские числа считают вещи, людей, животных; после 열 (10) — 열하나, 열둘…':'Китайские числа нужны для цен, дат, номеров и минут.';
   const set=shuffle([x,...others]);
   if(toKo){
@@ -1327,22 +1328,22 @@ function genNum(){
     options:set.map(y=>({text:fmt(y[0])})),correct:set.indexOf(x),right:fmt(x[0]),explain:[x[1]+' = '+fmt(x[0]),note],hp:x[1],hr:fmt(x[0]),icon:'🔢'};
 }
 const SDIG=['','일','이','삼','사','오','육','칠','팔','구'];
-function sinoPart(x){let o='';const th=Math.floor(x/1000),h=Math.floor(x%1000/100),t=Math.floor(x%100/10),u=x%10;
+function sinoPart(x: number){let o='';const th=Math.floor(x/1000),h=Math.floor(x%1000/100),t=Math.floor(x%100/10),u=x%10;
   if(th)o+=(th>1?SDIG[th]:'')+'천';if(h)o+=(h>1?SDIG[h]:'')+'백';if(t)o+=(t>1?SDIG[t]:'')+'십';if(u)o+=SDIG[u];return o;}
 /** Сумма 1..99999 китайскими числами: 3500 → 삼천오백, 10000 → 만 (일 перед 만, 천, 백, 십 не говорят) */
-function sinoNum(n){const man=Math.floor(n/10000),r=n%10000;return (man?(man>1?sinoPart(man):'')+'만':'')+sinoPart(r);}
-const fmtMoney=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')+'원';
+function sinoNum(n: number){const man=Math.floor(n/10000),r=n%10000;return (man?(man>1?sinoPart(man):'')+'만':'')+sinoPart(r);}
+const fmtMoney=(n: number)=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')+'원';
 function genPrice(){
   if(storyOn('price'))return S.levels.price==='long'?genPriceStory(5,10):genPriceStory(1,3);
   const kind=rnd(['t','t','h','m','mix']);
   const n=kind==='t'?(1+Math.floor(Math.random()*9))*1000:kind==='h'?(1+Math.floor(Math.random()*9))*1000+500:kind==='m'?(1+Math.floor(Math.random()*9))*10000:(1+Math.floor(Math.random()*4))*10000+(1+Math.floor(Math.random()*9))*1000;
   const key='pr:'+n;
   const cands=[n*10<100000?n*10:n/10,n+1000<100000?n+1000:n-1000,n>=10000?(n%10000===0?n/10:n-(n%10000)):n+500,n+10000<100000?n+10000:n-10000,n>1000?n-1000:n+2000];
-  const bad=[];for(const c of cands){const v=Math.round(c);if(v>0&&v<100000&&v!==n&&!bad.includes(v))bad.push(v);if(bad.length>=3)break;}
+  const bad: number[]=[];for(const c of cands){const v=Math.round(c);if(v>0&&v<100000&&v!==n&&!bad.includes(v))bad.push(v);if(bad.length>=3)break;}
   let g=0;while(bad.length<3&&g++<50){const v=(1+Math.floor(Math.random()*19))*500;if(v!==n&&!bad.includes(v))bad.push(v);}
   const set=shuffle([n,...bad]);
-  const readable=n=>sinoNum(n)+' 원';
-  const parts=[];if(n>=10000)parts.push(Math.floor(n/10000)===1?'만 (10 000)':sinoPart(Math.floor(n/10000))+'만');if(n%10000)parts.push(sinoPart(n%10000));
+  const readable=(n: number)=>sinoNum(n)+' 원';
+  const parts: string[]=[];if(n>=10000)parts.push(Math.floor(n/10000)===1?'만 (10 000)':sinoPart(Math.floor(n/10000))+'만');if(n%10000)parts.push(sinoPart(n%10000));
   const how=fmtMoney(n)+' = '+parts.join(' + ');
   if(Math.random()<.5){
     return {type:'choice',mode:'price',key:key,word:null,label:'Прочитай цену по-корейски',prompt:fmtMoney(n),promptKo:false,options:set.map(v=>({text:readable(v),ko:true})),correct:set.indexOf(n),
@@ -1352,7 +1353,7 @@ function genPrice(){
     right:fmtMoney(n),explain:[readable(n)+' = '+fmtMoney(n),how],teach:readable(n)+'이에요.',trans:'Это стоит '+fmtMoney(n)+'.',hp:readable(n),hr:fmtMoney(n),icon:'💴'};
 }
 const COUNTERS=['병','잔','개','그릇','명','마리','권','장'];
-function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k];return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
+function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k]!;return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
 function genCount(){
   if(storyOn('count'))return S.levels.count==='long'?genCountStory(5,10):genCountStory(2,4);
   const pool=countPool();
@@ -1360,7 +1361,7 @@ function genCount(){
   const p=D.PB[i]!;
   const opts=shuffle(p[3]).map(t=>({text:t,ko:true}));
   const parts=p[0].split('___');
-  return {type:'choice',mode:'count',key:'cn:'+i,label:'Вставь счётное слово или число',sentence:{pre:parts[0],post:parts[1]},ru:p[1],
+  return {type:'choice',mode:'count',key:'cn:'+i,label:'Вставь счётное слово или число',sentence:{pre:parts[0]!,post:parts[1]!},ru:p[1],
     options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],hp:p[0].replace('___','…'),hr:p[2],icon:'🥤'};
 }
 /* ---------- по разделам грамматики: «Быть и отрицание», «Место и направление», «Указатели», «Вежливость» ---------- */
@@ -1369,7 +1370,7 @@ function genNeg(){
   if(storyOn('neg'))return S.levels.neg==='long'?genNegStory(5,10):genNegStory(2,4);
   const pool=D.S.filter(r=>/^[а-яё]+$/i.test(r[2]));
   const w=pickW(pool,r=>'ng:'+r[0]);
-  const ko=w[0],hasB=jong(ko[ko.length-1])>0;
+  const ko=w[0],hasB=jong(ko[ko.length-1]!)>0;
   const neg=Math.random()<.5;
   const aff=ko+(hasB?'이에요':'예요'),affBad=ko+(hasB?'예요':'이에요');
   const no=ko+(hasB?'이':'가')+' 아니에요',noBad=ko+(hasB?'가':'이')+' 아니에요';
@@ -1386,9 +1387,9 @@ const PLACES: Place[]=[['학교','в школу','в школе',['공부해요'
 function genPlace(){
   if(storyOn('place'))return S.levels.place==='long'?genPlaceStory(5,10):genPlaceStory(2,4);
   const p=pickW(PLACES,x=>'pl:'+x[0]);
-  const acts=p.slice(3);
+  const acts=p.slice(3) as [string,string][];
   const t=rnd(acts.length?['go','be','do','do']:['go','be']);
-  let pre='저는 '+p[0],post,ru,right,why;
+  let pre='저는 '+p[0],post: string,ru: string,right: string,why: string;
   if(t==='go'){post=' 가요.';ru='Я иду '+p[1]+'.';right='에';why='Куда идёшь (가요) → 에';}
   else if(t==='be'){post=' 있어요.';ru='Я '+p[2]+'.';right='에';why='Где находишься (있어요) → 에';}
   else{const a=rnd(acts);post=' '+a[0]+'.';ru=cap1(p[2])+' '+a[1]+'.';right='에서';why='Где что-то делаешь ('+a[0]+') → 에서';}
@@ -1396,13 +1397,13 @@ function genPlace(){
   return {type:'choice',mode:'place',key:'pl:'+p[0]+':'+t+post,word:null,label:'Вставь частицу места',sentence:{pre:pre,post:post},ru:ru,
     options:opts,correct:opts.findIndex(o=>o.text===right),right:right,explain:[pre+right+post,why],hp:pre+' ___'+post,hr:right,icon:'📍'};
 }
-const DEM=[
+const DEM: [string,string][][]=[
   [['이','этот (рядом со мной)'],['그','тот (рядом с тобой или уже известный)'],['저','вон тот (далеко от обоих)']],
   [['이것','эта вещь (рядом со мной)'],['그것','та вещь (рядом с тобой)'],['저것','вон та вещь (далеко от обоих)']],
   [['여기','здесь (рядом со мной)'],['거기','там (рядом с тобой)'],['저기','вон там (далеко от обоих)']],
 ];
 /** Примеры для «Этот, тот, вон тот»: по одному предложению на каждое слово (слова из словаря сайта). */
-const DEM_EX={'이':'이 사람은 친구예요.','그':'그 사람은 선생님이에요.','저':'저 사람은 학생이에요.','이것':'이것은 책이에요.','그것':'그것은 가방이에요.','저것':'저것은 나무예요.','여기':'여기는 학교예요.','거기':'거기는 공원이에요.','저기':'저기는 식당이에요.'};
+const DEM_EX: Record<string, string>={'이':'이 사람은 친구예요.','그':'그 사람은 선생님이에요.','저':'저 사람은 학생이에요.','이것':'이것은 책이에요.','그것':'그것은 가방이에요.','저것':'저것은 나무예요.','여기':'여기는 학교예요.','거기':'거기는 공원이에요.','저기':'저기는 식당이에요.'};
 function genDem(){
   if(storyOn('dem'))return S.levels.dem==='long'?genDemStory(5,10):genDemStory(2,4);
   const fam=rnd(DEM);
@@ -1413,9 +1414,9 @@ function genDem(){
   if(toKo)return {type:'choice',mode:'dem',key:'dm:'+w[0]+':k',word:null,label:'Выбери слово',prompt:w[1],promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:DEM_EX[w[0]],hp:w[1],hr:w[0],icon:'👉'};
   return {type:'choice',mode:'dem',key:'dm:'+w[0]+':r',word:null,label:'Что значит слово?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1]})),correct:set.indexOf(w),right:w[1],explain:[w[0]+' — '+w[1],note],teach:DEM_EX[w[0]],hp:w[0],hr:w[1],icon:'👉'};
 }
-const POLITE=[['고마워','друзьям (самое неформальное)'],['고마워요','знакомым и близким старше тебя'],['감사해요','коллегам, товарищам'],['감사합니다','по работе, начальнику (формально)']];
+const POLITE: [string,string][]=[['고마워','друзьям (самое неформальное)'],['고마워요','знакомым и близким старше тебя'],['감사해요','коллегам, товарищам'],['감사합니다','по работе, начальнику (формально)']];
 /** Примеры для «Уровня вежливости»: по предложению на каждую форму «спасибо» (слова из словаря сайта). */
-const POLITE_EX={'고마워':'정말 고마워.','고마워요':'정말 고마워요.','감사해요':'정말 감사해요.','감사합니다':'선생님, 감사합니다.'};
+const POLITE_EX: Record<string, string>={'고마워':'정말 고마워.','고마워요':'정말 고마워요.','감사해요':'정말 감사해요.','감사합니다':'선생님, 감사합니다.'};
 function genPolite(){
   if(storyOn('polite'))return S.levels.polite==='long'?genPoliteStory(5,10):genPoliteStory(2,4);
   const w=pickW(POLITE,x=>'po:'+x[0]);
@@ -1425,18 +1426,18 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,fut:genFut,only:genOnly};
-function genQuestion(){
+const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,fut:genFut,only:genOnly};
+function genQuestion(): Question{
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);
-  return GEN[m]();
+  return GEN[m]!();
 }
 
 /* ---------- отрисовка ---------- */
 /** Выключает перетаскивание плиток прошлого задания (`lib/dragdrop.ts`). */
-let dragOff=null;
+let dragOff: (()=>void)|null=null;
 function stopDrag(){if(dragOff){dragOff();dragOff=null;}}
-function renderQuestion(q){
+function renderQuestion(q: Question){
   closeStoryWin();stopDrag();
   S.cur=q;S.answered=false;S.lastKey=q.key;
   clearTimeout(S.timer);
