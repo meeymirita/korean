@@ -34,15 +34,6 @@ export function shake(el: Element | null | undefined) {
   gsap.fromTo(el, { x: 0 }, { x: 0, duration: 0.4, ease: 'none', keyframes: { x: [0, -7, 7, -5, 5, -2, 0] }, clearProps: 'transform' })
 }
 
-/** Линия «рисуется» от начала к концу. */
-export function drawLine(path: SVGPathElement | null | undefined, then?: () => void) {
-  if (!path) return then?.()
-  if (calm()) return void setTimeout(() => then?.(), 400)
-  const len = path.getTotalLength()
-  gsap.fromTo(path, { strokeDasharray: len, strokeDashoffset: len, opacity: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: 'power1.out' })
-  gsap.to(path, { opacity: 0, duration: 0.3, delay: 0.35, ease: 'power1.in', onComplete: then })
-}
-
 const SPARKS = ['🌸', '✨', '⭐', '💮', '🌷']
 
 /** Всплеск звёзд и лепестков из точки экрана (конец раунда). */

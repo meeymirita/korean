@@ -91,7 +91,8 @@
 .study .rs-opt:not(:disabled):hover { border-color: var(--gold); background: var(--gold-soft); }
 .study .rs-opt:disabled { cursor: default; }
 /* вариант можно утащить на вопрос: пока тянем, вопрос обводится */
-.study .rs-opt:not(:disabled) { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+/* touch-action: none, а не pan-y: с pan-y на iPad браузер забирал жест пера при сдвиге вверх или вниз, вариант «срывался», страница дёргалась */
+.study .rs-opt:not(:disabled) { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .study .rs-opt.dragging { position: relative; z-index: 20; cursor: grabbing; background: var(--surface); border-color: var(--gold); box-shadow: 0 10px 24px rgba(48, 56, 120, .22); }
 .study .rs-q.drop { border-radius: 16px; outline: 3px dashed transparent; outline-offset: 10px; transition: outline-color .15s, background .15s; }
 .study .rs-q .rs-fill { color: var(--ok, #2f9e6e); border-bottom: 3px solid currentColor; font-weight: inherit; animation: rs-fill .35s ease-out; }
@@ -444,7 +445,7 @@ html[data-theme='dark'] .study .cb-lvl { color: #fff; background: rgba(22, 24, 5
 .study .sy-tile { min-width: 64px; height: 64px; padding: 0 14px; font-size: 30px; font-weight: 700; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
 .study .sy-tile:hover:not(:disabled):not(.picked) { border-color: var(--gold); background: var(--gold-soft); }
 .study .sy-tile:disabled { opacity: .35; cursor: default; }
-.study .sy-tile { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.study .sy-tile { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .study .sy-back { min-width: 56px; height: 64px; font-size: 22px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 16px; cursor: pointer; }
 .study .sy-back:disabled { opacity: .35; cursor: default; }
 

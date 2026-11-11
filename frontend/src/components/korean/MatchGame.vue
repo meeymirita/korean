@@ -3,7 +3,7 @@ import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { shuffle } from '@/data/korean/tasks'
 import { shown, statKey, type TWord } from '@/data/korean/trainer'
-import { burst, cascade, drawLine, pop, shake } from '@/lib/fx'
+import { burst, cascade, pop, shake } from '@/lib/fx'
 import { useProgressStore } from '@/stores/progress'
 import { formatClock, useTimerStore } from '@/stores/timer'
 
@@ -24,7 +24,6 @@ const done = computed(() => matched.value.size === props.words.length)
 
 /* ---------- карточки, линии и перетаскивание ---------- */
 const board = ref<HTMLElement>()
-const flashEl = ref<SVGPathElement>()
 const cards = new Map<string, HTMLElement>()
 const setCard = (side: 'l' | 'r', id: number) => (el: unknown) => {
   if (el) cards.set(side + id, el as HTMLElement)
@@ -110,22 +109,39 @@ const dragPath = computed(() => {
   const b = board.value.getBoundingClientRect()
   return curve(a.x, a.y, d.x - b.left, d.y - b.top)
 })
-/** Линия между верно найденной парой: рисуется и гаснет. */
-const flash = ref('')
-async function celebrate(l: number, r: number) {
-  const a = cards.get('l' + l)
-  const b = cards.get('r' + r)
-  pop(a)
-  pop(b)
-  if (!a || !b || !board.value) return
+/** Точка под пером или пальцем на конце линии, которую ведут. */
+const dragDot = computed(() => {
+  const d = drag.value
+  if (!d?.moved || !board.value) return null
+  const b = board.value.getBoundingClientRect()
+  return { x: d.x - b.left, y: d.y - b.top }
+})
+/** Линии верно найденных пар: остаются до конца раунда. */
+interface Link { id: number; d: string; x1: number; y1: number; x2: number; y2: number }
+const links = ref<Link[]>([])
+function linkOf(id: number): Link | null {
+  const a = cards.get('l' + id)
+  const b = cards.get('r' + id)
+  if (!a || !b || !board.value) return null
   const p1 = anchor(a, 'l')
   const p2 = anchor(b, 'r')
-  flash.value = curve(p1.x, p1.y, p2.x, p2.y)
-  await nextTick()
-  drawLine(flashEl.value, () => (flash.value = ''))
+  return { id, d: curve(p1.x, p1.y, p2.x, p2.y), x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y }
 }
+function celebrate(l: number, r: number) {
+  // линию считаем до анимации карточек: «вскакивание» на миг меняет их размер
+  const link = linkOf(l)
+  if (link) links.value = [...links.value, link]
+  pop(cards.get('l' + l))
+  pop(cards.get('r' + r))
+}
+/** Размер окна изменился: карточки переехали, линии пересчитываются. */
+const relink = () => (links.value = links.value.map(x => linkOf(x.id)).filter((x): x is Link => !!x))
 
-onMounted(() => cascade(board.value?.querySelectorAll('.mg-card') ?? []))
+onMounted(() => {
+  cascade(board.value?.querySelectorAll('.mg-card') ?? [])
+  window.addEventListener('resize', relink)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', relink))
 watch(done, v => {
   if (!v) return
   void nextTick(() => {
@@ -149,7 +165,7 @@ function pick(side: 'l' | 'r', id: number) {
     // засчитываем слово, если в этом раунде в нём не ошибались
     if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match' })
     matched.value = new Set(matched.value).add(l)
-    void celebrate(l, r)
+    celebrate(l, r)
   } else {
     mistakes.value++
     if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match' })
@@ -178,8 +194,19 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 
     <div ref="board" class="mg-board" @dragstart.prevent @contextmenu.prevent>
       <svg class="mg-lines" aria-hidden="true">
+        <defs>
+          <linearGradient id="mg-grad" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#f49ac6" />
+            <stop offset="100%" stop-color="#86b6f6" />
+          </linearGradient>
+        </defs>
+        <g v-for="x in links" :key="x.id" class="kept">
+          <path :d="x.d" pathLength="1" />
+          <circle :cx="x.x1" :cy="x.y1" r="4.5" />
+          <circle :cx="x.x2" :cy="x.y2" r="4.5" />
+        </g>
         <path v-if="dragPath" :d="dragPath" class="drag" />
-        <path v-if="flash" ref="flashEl" :d="flash" class="done" />
+        <circle v-if="dragDot" :cx="dragDot.x" :cy="dragDot.y" r="6" class="drag-dot" />
       </svg>
       <div class="mg-col">
         <button
@@ -251,7 +278,8 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-refresh:hover { border-color: var(--gold); background: var(--gold-soft); }
 .study .mg-progress { height: 4px; margin-top: 10px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
 .study .mg-progress i { display: block; height: 100%; background: var(--gold); transition: width .3s; }
-.study .mg-board { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+/* между колонками широкий просвет: в нём видно линии и удобно вести пером */
+.study .mg-board { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 14px clamp(56px, 14%, 170px); margin-top: 18px; }
 .study .mg-col { display: flex; flex-direction: column; gap: 8px; }
 .study .mg-card { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
   min-height: 56px; padding: 10px 14px; font-size: 16px; text-align: left; background: var(--surface); border: 1px solid var(--line);
@@ -263,12 +291,19 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-card.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); opacity: .55; cursor: default; }
 .study .mg-card.bad { background: var(--bad-bg); border-color: var(--bad); }
 .study .mg-card.over { border-color: var(--gold); background: var(--gold-soft); transform: scale(1.03); }
-/* тянем слово к переводу: touch-action оставляет вертикальную прокрутку пальцем, горизонтальное движение отдаёт нам */
-.study .mg-card:not(:disabled) { touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+/* тянем слово к переводу: всё движение по карточке наше (touch-action: none). С pan-y браузер на iPad забирал жест пера при малейшем сдвиге вверх или вниз:
+   страница дёргалась, линия обрывалась (pointercancel). Прокручивать страницу можно по просвету между колонками и по полям. */
+.study .mg-card:not(:disabled) { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
 .study .mg-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 2; }
-.study .mg-lines path { fill: none; stroke-width: 3; stroke-linecap: round; }
-.study .mg-lines .drag { stroke: var(--gold); stroke-dasharray: 2 7; }
-.study .mg-lines .done { stroke: var(--ok); }
+.study .mg-lines path { fill: none; stroke: url(#mg-grad); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 2px 5px rgba(150, 130, 230, .35)); }
+.study .mg-lines circle { fill: #fff; stroke: url(#mg-grad); stroke-width: 3; }
+.study .mg-lines .drag { opacity: .85; }
+.study .mg-lines .drag-dot { fill: #f49ac6; stroke: #fff; stroke-width: 2.5; }
+/* найденная пара: линия «рисуется» от слова к переводу и остаётся, чуть бледнее */
+.study .mg-lines .kept { opacity: .7; }
+.study .mg-lines .kept path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: mg-draw .38s ease-out forwards; }
+@keyframes mg-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .study .mg-lines .kept path { animation: none; stroke-dashoffset: 0; } }
 .study .mg-end { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px;
   padding: 18px 22px; border-radius: 16px; background: var(--gold-soft); border: 1px solid var(--line); }
 .study .mg-end > div:first-child { display: flex; flex-direction: column; gap: 2px; }
@@ -280,5 +315,5 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-actions button { transition: transform .15s cubic-bezier(.34, 1.56, .64, 1); border: 1px solid var(--gold); background: var(--gold); color: #fff; border-radius: 12px; padding: 10px 18px; font-weight: 600; }
 .study .mg-actions button:active { transform: scale(.94); }
 .study .mg-actions button:first-child:not(:last-child) { background: transparent; color: var(--ink); }
-@media (max-width: 560px) { .study .mg-board { gap: 8px; } .study .mg-card { padding: 8px 10px; font-size: 14px; } .study .mg-card.ko b { font-size: 18px; } }
+@media (max-width: 560px) { .study .mg-board { gap: 8px 40px; } .study .mg-card { padding: 8px 10px; font-size: 14px; } .study .mg-card.ko b { font-size: 18px; } }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { dragDrop } from '@/lib/dragdrop'
 import { blockPoints, partPoints, type ExamBlock, type ExamPiece, type PartAnswers, type PointResult } from '@/data/korean/exam'
 
 /**
@@ -101,6 +102,34 @@ function check() {
   checked.value = true
   emit('saved', points)
 }
+/**
+ * Перетаскивание (`lib/dragdrop.ts`): плитку банка можно перетащить в пропуск своего блока, слово в строку своего предложения.
+ * Нажатия работают как раньше; нажатие на заполненный пропуск или на слово в строке возвращает его.
+ */
+const root = ref<HTMLElement>()
+let dragOff = () => {}
+onMounted(() => {
+  const el = root.value
+  if (!el) return
+  dragOff = dragDrop({
+    tiles: el.querySelectorAll('.er-bank .er-tile'),
+    targets: () => (checked.value ? [] : el.querySelectorAll('button.er-gap, .er-built')),
+    onDrop(tile, target) {
+      if (checked.value) return
+      const key = target.dataset.key ?? ''
+      if (tile.dataset.tile !== undefined && target.classList.contains('er-gap') && key.startsWith(tile.dataset.bi + ':')) {
+        gap[key] = tile.dataset.tile
+        active.value = gapKeys(Number(tile.dataset.bi)).find(k => !gap[k]) ?? ''
+      } else if (tile.dataset.word !== undefined && target.classList.contains('er-built') && key === tile.dataset.item) {
+        const [bi, i] = key.split(':').map(Number)
+        const k = Number(tile.dataset.word)
+        if (!(built[key] ?? []).includes(k)) addWord(bi!, i!, k)
+      }
+    },
+  })
+})
+onBeforeUnmount(() => dragOff())
+
 const answered = computed(() => {
   let n = 0
   props.blocks.forEach((b, bi) => {
@@ -115,7 +144,7 @@ const answered = computed(() => {
 </script>
 
 <template>
-  <div class="er">
+  <div ref="root" class="er">
     <p class="er-top">Часть <b>{{ part }}</b> из {{ parts }}: <b>{{ total }}</b> пунктов. Результаты и разбор будут после последней части.</p>
 
     <section v-for="(b, bi) in blocks" :key="b.id" class="er-block">
@@ -124,7 +153,7 @@ const answered = computed(() => {
 
       <template v-if="b.kind === 'gaps'">
         <div v-if="!b.typed" class="er-bank" role="group" aria-label="Плитки">
-          <button v-for="t in b.bank" :key="t" type="button" class="er-tile ko" :disabled="checked" @click="putTile(bi, t)">{{ t }}</button>
+          <button v-for="t in b.bank" :key="t" type="button" class="er-tile ko" :data-bi="bi" :data-tile="t" :disabled="checked" @click="putTile(bi, t)">{{ t }}</button>
         </div>
         <ol class="er-sents">
           <li v-for="(s, si) in b.sentences" :key="si">
@@ -133,7 +162,7 @@ const answered = computed(() => {
                 <template v-if="!isGap(p)">{{ p }}</template>
                 <template v-else>
                   <input v-if="b.typed" v-model="gap[`${bi}:${si}:${pi}`]" class="er-gap ko" :disabled="checked" size="3" lang="ko" autocomplete="off" spellcheck="false" :aria-label="`Пропуск ${si + 1}`" />
-                  <button v-else type="button" class="er-gap ko" :class="{ on: active === `${bi}:${si}:${pi}` }" @click="gap[`${bi}:${si}:${pi}`] ? clearGap(`${bi}:${si}:${pi}`) : (active = `${bi}:${si}:${pi}`)">{{ gap[`${bi}:${si}:${pi}`] || '＿' }}</button>
+                  <button v-else type="button" class="er-gap ko" :data-key="`${bi}:${si}:${pi}`" :class="{ on: active === `${bi}:${si}:${pi}` }" @click="gap[`${bi}:${si}:${pi}`] ? clearGap(`${bi}:${si}:${pi}`) : (active = `${bi}:${si}:${pi}`)">{{ gap[`${bi}:${si}:${pi}`] || '＿' }}</button>
                 </template>
               </template>
             </div>
@@ -168,12 +197,12 @@ const answered = computed(() => {
         <ol class="er-sents">
           <li v-for="(it, i) in b.items" :key="i">
             <div class="er-ru">{{ it.ru }}</div>
-            <div class="er-built ko">
+            <div class="er-built ko" :data-key="`${bi}:${i}`">
               <button v-for="(k, at) in built[`${bi}:${i}`] ?? []" :key="at" type="button" class="er-tile ko on" :disabled="checked" @click="dropWord(bi, i, at)">{{ it.words[k] }}</button>
-              <span v-if="!(built[`${bi}:${i}`] ?? []).length" class="er-empty">нажимай на слова ниже</span>
+              <span v-if="!(built[`${bi}:${i}`] ?? []).length" class="er-empty">нажимай на слова ниже или перетаскивай их сюда</span>
             </div>
             <div class="er-bank">
-              <button v-for="(w, k) in it.words" :key="k" type="button" class="er-tile ko" :disabled="checked || (built[`${bi}:${i}`] ?? []).includes(k)" @click="addWord(bi, i, k)">{{ w }}</button>
+              <button v-for="(w, k) in it.words" :key="k" type="button" class="er-tile ko" :data-item="`${bi}:${i}`" :data-word="k" :disabled="checked || (built[`${bi}:${i}`] ?? []).includes(k)" @click="addWord(bi, i, k)">{{ w }}</button>
             </div>
           </li>
         </ol>
@@ -213,6 +242,10 @@ const answered = computed(() => {
 .er-tile { box-sizing: border-box; min-width: 46px; height: var(--h); padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; background: transparent; font-size: 18px; line-height: 1; cursor: pointer; color: inherit; }
 .er-tile:not(:disabled):hover { border-color: var(--pink, #d64da9); }
 .er-tile.on { border-color: var(--pink, #d64da9); background: rgba(214, 77, 169, .1); }
+/* перетаскивание плиток в пропуск и слов в строку (lib/dragdrop.ts) */
+.er-bank .er-tile { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.er-tile.dragging { position: relative; border-color: var(--pink, #d64da9); background: var(--surface, #fff); box-shadow: 0 12px 28px rgba(110, 90, 190, .28); cursor: grabbing; }
+.er-gap.drop-over, .er-built.drop-over { border-color: var(--pink, #d64da9); background: rgba(214, 77, 169, .1); }
 .er-tile:disabled { cursor: default; opacity: .5; }
 .er-sents { margin: 0; padding: 0 0 0 34px; display: grid; gap: 20px 48px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .er-sents > li { min-width: 0; padding-left: 4px; }

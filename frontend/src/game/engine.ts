@@ -12,6 +12,7 @@ import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
 import { STORIES } from './stories'
 import { LONG_SENTENCES, checkLong, longText, longTrap, longWords } from './long-sentences'
+import { dragDrop } from '@/lib/dragdrop'
 import { PFAMS } from './families'
 import { ptextPool } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
@@ -1422,8 +1423,11 @@ function genQuestion(){
 }
 
 /* ---------- отрисовка ---------- */
+/** Выключает перетаскивание плиток прошлого задания (`lib/dragdrop.ts`). */
+let dragOff=null;
+function stopDrag(){if(dragOff){dragOff();dragOff=null;}}
 function renderQuestion(q){
-  closeStoryWin();
+  closeStoryWin();stopDrag();
   S.cur=q;S.answered=false;S.lastKey=q.key;
   clearTimeout(S.timer);
   const card=$('#card');card.innerHTML='';
@@ -1505,6 +1509,9 @@ function renderQuestion(q){
     acts.append(chk,clr,gb);if(!S.blitz.on)acts.appendChild(hb);card.appendChild(acts);
     card.appendChild(el('div','scheme','Не все плитки нужны: среди них есть лишние (с неверной частицей, временем или местом). Не знаешь слово — нажми «Показать переводы» (клавиша T) или наведи на плитку. Клавиши: 1–9 — выбрать слово, Enter — проверить, Backspace — убрать последнее, H — подсказка.'));
     q.sel=[];drawBuild();
+    // плитку можно перетащить в строку ответа: встаёт туда, где её отпустили (нажатие по-прежнему ставит в конец)
+    dragOff=dragDrop({tiles:tiles.querySelectorAll('.tile'),targets:function(){return S.answered?[]:[slots];},
+      onDrop:function(tile,target,x,y){dropTile(+tile.dataset.i,x,y);}});
   }
   const fb=el('div','feedback');fb.id='fb';fb.setAttribute('aria-live','polite');card.appendChild(fb);
 }
@@ -1527,7 +1534,8 @@ function drawBuild(){
   const q=S.cur;const slots=$('#slots');slots.innerHTML='';slots.className='slots'+(S.gloss?' gloss':'');
   q.sel.forEach((ti,pos)=>{
     const b=el('button','slot',q.tiles[ti]);b.type='button';b.appendChild(el('span','tg',tileGloss(q.tiles[ti])));
-    b.addEventListener('click',()=>{if(S.answered)return;q.sel.splice(pos,1);drawBuild();});
+    // нажатие на слово в ответе возвращает его в плитки: плитка «вскакивает», чтобы было видно, куда оно ушло
+    b.addEventListener('click',()=>{if(S.answered)return;q.sel.splice(pos,1);drawBuild();pop(document.querySelector('#tiles .tile[data-i="'+ti+'"]'));});
     slots.appendChild(b);
   });
   document.querySelectorAll('#tiles .tile').forEach(b=>b.classList.toggle('used',q.sel.includes(+b.dataset.i)));
@@ -1535,6 +1543,14 @@ function drawBuild(){
 function pickTile(i){
   if(S.answered)return;const q=S.cur;if(i>=q.tiles.length||q.sel.includes(i))return;
   q.sel.push(i);drawBuild();
+}
+/** Плитку отпустили над строкой ответа в точке (x, y): слово встаёт перед тем словом, левее середины которого его отпустили. */
+function dropTile(i,x,y){
+  if(S.answered)return;const q=S.cur;if(!q||q.type!=='build'||i>=q.tiles.length||q.sel.includes(i))return;
+  const kids=[...document.querySelectorAll('#slots .slot')];
+  let pos=kids.findIndex(function(c){const r=c.getBoundingClientRect();return y<r.top||(y<=r.bottom&&x<r.left+r.width/2);});
+  if(pos<0)pos=q.sel.length;
+  q.sel.splice(pos,0,i);drawBuild();
 }
 function toggleGloss(){
   S.gloss=!S.gloss;save();
@@ -1628,6 +1644,13 @@ function drawStory(card,q){
     b.addEventListener('click',function(){tapTile(i);});bank.appendChild(b);
   });
   card.appendChild(bank);
+  // плитку можно перетащить прямо в пропуск (нажатием тоже работает); в банке она остаётся: её можно ставить много раз
+  dragOff=dragDrop({tiles:bank.querySelectorAll('.tile'),targets:function(){return q.checked?[]:box.querySelectorAll('button.gap');},
+    onDrop:function(tile,gap){
+      if(q.checked||S.cur!==q)return;
+      const k=+gap.id.slice(2);
+      q.gaps[k].picked=q.bank[+tile.id.slice(2)];q.sel=null;q.active=k;paintStory(q);pop(gap);
+    }});
   }
   const note=el('div','ruline');note.id='snote';card.appendChild(note);
   const acts=el('div','acts');
@@ -1662,7 +1685,7 @@ function paintStory(q){
   if(note)note.classList.toggle('need',!!q.need);
   if(note&&q.need&&!q.checked){note.textContent='Заполни все пропуски: осталось '+(q.gaps.length-filled)+' (обведены рамкой).';paintStoryInfo(q);return;}
   if(note&&q.input)note.textContent=q.checked?'':'Впиши форму в каждое поле: заполнено '+filled+' из '+q.gaps.length+'. Enter проверяет.';
-  else if(note)note.textContent=q.checked?'':q.sel!==null?('Выбрано «'+q.bank[q.sel]+'»: нажми на пропуск'):('Заполнено '+filled+' из '+q.gaps.length+(filled?'. Нажми на заполненный пропуск, чтобы убрать ответ.':'. Нажми плитку, потом пропуск.'));
+  else if(note)note.textContent=q.checked?'':q.sel!==null?('Выбрано «'+q.bank[q.sel]+'»: нажми на пропуск'):('Заполнено '+filled+' из '+q.gaps.length+(filled?'. Нажми на заполненный пропуск, чтобы убрать ответ.':'. Перетащи плитку в пропуск или нажми плитку, потом пропуск.'));
   paintStoryInfo(q);
 }
 /** Кнопка «Разбор» у предложения оживает после проверки и красится по результату. */
@@ -1682,7 +1705,8 @@ function tapGap(k){
   const q=S.cur;if(!q||q.type!=='story'||q.checked)return;
   const g=q.gaps[k];
   if(q.sel!==null){g.picked=q.bank[q.sel];q.sel=null;}
-  else if(g.picked!==null)g.picked=null;
+  // ответ убран из пропуска: его плитка в банке «вскакивает», видно, куда он вернулся
+  else if(g.picked!==null){pop($('#bt'+q.bank.indexOf(g.picked)));g.picked=null;}
   q.active=k;
   paintStory(q);
 }
@@ -2130,6 +2154,7 @@ drawCats();syncToggles();updateStats();renderList();drawLives();
 renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();
 return ()=>{
+  stopDrag();
   document.removeEventListener('keydown',onKeydown);
   document.removeEventListener('click',onDocClick);
   closeStoryWin();
