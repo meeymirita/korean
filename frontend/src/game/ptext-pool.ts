@@ -1,6 +1,7 @@
 import { analyze } from '@/data/korean/parse'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { EXCHANGES } from './dialogs'
+import { LONG_SENTENCES, longText } from './long-sentences'
 import { RULE_SENTENCES, STORIES } from './stories'
 
 /** Частица в предложении: где стоит, какая, к какой карточке грамматики относится и почему. */
@@ -22,6 +23,8 @@ export function ptextPool(): PtextSentence[] {
     all[e[2]] = e[3]
   }
   for (const x of RULE_SENTENCES) all[x.ko] = x.ru
+  // длинные предложения уровня «Мастер»; без тех, где у пропуска был бы второй верный вариант
+  for (const x of LONG_SENTENCES) if (x.pool !== false) all[longText(x)] = x.ru
   const out: PtextSentence[] = []
   for (const ko of Object.keys(all)) {
     const segs = analyze(ko)

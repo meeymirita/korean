@@ -10,6 +10,7 @@ import { TRANSLATIONS } from '@/data/korean/translations'
 import '@/assets/breakdown.css'
 import { EXCHANGES } from './dialogs'
 import { STORIES } from './stories'
+import { LONG_SENTENCES, checkLong, longText, longTrap, longWords } from './long-sentences'
 import { PFAMS } from './families'
 import { ptextPool } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
@@ -84,7 +85,7 @@ if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 const wantFam=hooks.fam&&hooks.fam();
 if(PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
-if(![1,2,3,'any'].includes(S.level))S.level='any';
+if(![1,2,3,4,'any'].includes(S.level))S.level='any';
 Object.keys(S.levels).forEach(k=>{if(!['simple','story','long'].includes(S.levels[k]))S.levels[k]='simple';});
 
 /* ---------- выбор с весами (ошибки возвращаются чаще) ---------- */
@@ -212,7 +213,7 @@ function genPart(){
     options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],
     hp:p[0].replace('___','…'),hr:p[2],icon:'🧩'};
 }
-const LEVEL_NAME={1:'простой',2:'средний',3:'сложный'};
+const LEVEL_NAME={1:'простой',2:'средний',3:'сложный',4:'мастер'};
 /* перевод плитки: «дедушка + 는 — тема» */
 const PART_ROLE={'은':'тема','는':'тема','이':'подлежащее','가':'подлежащее','을':'объект','를':'объект','에':'куда / где','에서':'где (действие)',
   '하고':'и / с','이에요':'быть','예요':'быть','도':'тоже','의':'чей','로':'чем / куда','으로':'чем / куда','와':'и / с','과':'и / с',
@@ -256,8 +257,26 @@ function genBuildStory(lo,hi){
     label:'Рассказ «'+b.st.title+'»: предложение '+(b.i+1)+' из '+n+(before?' (до этого: '+before+')':''),
     ru:x.ru,tiles:tiles,accept:[right],right:right,note:'Предложение '+(b.i+1)+' рассказа «'+b.st.title+'»',explain:[right+'.',x.ru],hp:x.ru,hr:right,icon:'🏗️'};
 }
+/** «Собери предложение: Мастер»: длинное предложение из двух частей (`long-sentences.ts`). Группы внутри части можно ставить в любом порядке, сказуемое последнее (`checkLong`); лишние плитки с неверной частицей. */
+function genBuildLong(){
+  const all=LONG_SENTENCES.map(function(x,i){return i;});
+  const fit=all.filter(function(i){const t=LONG_SENTENCES[i].t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');});
+  const pool=fit.length?fit:all;
+  const rest=pool.filter(function(i){return 'bl:'+i!==S.lastKey;});
+  const i=rnd(rest.length?rest:pool),x=LONG_SENTENCES[i];
+  const words=longWords(x),right=words.join(' '),text=longText(x);
+  const spare=[];
+  shuffle(words.slice()).forEach(function(w){
+    const t=longTrap(w);
+    if(t&&spare.length<2&&!words.includes(t)&&!spare.includes(t))spare.push(t);
+  });
+  return {type:'build',mode:'build',key:'bl:'+i,level:4,label:'Собери предложение · '+LEVEL_NAME[4],ru:x.ru,tiles:shuffle([...words,...spare]),
+    accept:[right],check:function(w){return checkLong(x,w);},right:right,note:x.note,explain:[text,x.note],teach:text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
+}
 function genBuild(){
   if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,4);
+  // «Мастер» только в самом режиме и в «Миксе»: в блице и на выживании длинное предложение не успеть собрать
+  if(S.level===4&&!S.blitz.on&&!S.surv.on)return genBuildLong();
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
   let level,seed,tm=mode;
   const missed=Object.keys(S.miss).filter(k=>/^b:/.test(k)&&k!==S.lastKey);
@@ -265,7 +284,7 @@ function genBuild(){
     const p=parseBuildKey(rnd(missed));
     if(p){level=p.level;tm=p.mode;seed=p.seed;}
   }
-  if(!seed){level=S.level==='any'?rnd([1,2,2,3]):S.level;seed=1+Math.floor(Math.random()*2147483000);}
+  if(!seed){level=S.level==='any'?rnd([1,2,2,3]):S.level===4?3:S.level;seed=1+Math.floor(Math.random()*2147483000);}
   const b=makeBuild(level,tm,seed);
   return {type:'build',mode:'build',key:b.key,level:level,label:'Собери предложение · '+LEVEL_NAME[level],ru:b.ru,tiles:b.tiles,
     accept:b.accept,right:b.right,note:b.note,explain:[b.right+'.',b.note],hp:b.ru,hr:b.right,icon:'🏗️'};
@@ -1457,7 +1476,7 @@ function renderQuestion(q){
     setTimeout(()=>inp.focus({preventScroll:true}),0);
   }else{
     const lv=el('div','levels');
-    [['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный']].forEach(function(x){
+    [['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер']].forEach(function(x){
       const b=el('button','chip'+(S.level===x[0]?' on':''),x[1]);b.type='button';
       b.addEventListener('click',function(){S.level=x[0];save();renderQuestion(genBuild());});
       lv.appendChild(b);
@@ -1538,7 +1557,7 @@ function checkBuild(){
   if(!q.sel.length)return;
   const words=q.sel.map(i=>q.tiles[i]);
   const ans=words.join(' ');
-  const ok=q.accept.includes(ans);
+  const ok=q.check?q.check(words):q.accept.includes(ans);
   document.querySelectorAll('#tiles .tile').forEach(b=>b.disabled=true);
   const slots=$('#slots');
   if(ok){

@@ -29,6 +29,7 @@ export async function data() {
   const { TRANSLATIONS } = await load('/src/data/korean/translations.ts')
   const { STORIES, RULE_SENTENCES } = await load('/src/game/stories.ts')
   const { EXCHANGES } = await load('/src/game/dialogs.ts')
+  const { LONG_SENTENCES, longText } = await load('/src/game/long-sentences.ts')
   const grammar = G.filter(g => g.st === 'ok').map(g => ({
     id: g.id,
     ko: plain(g.ko),
@@ -42,6 +43,7 @@ export async function data() {
   for (const st of STORIES) for (const x of st.sents) all.set(x.ko, x.ru)
   for (const e of EXCHANGES) all.set(e[0], e[1]).set(e[2], e[3])
   for (const x of RULE_SENTENCES) all.set(x.ko, x.ru)
+  for (const x of LONG_SENTENCES) all.set(longText(x), x.ru)
   const sentences = [...all].map(([ko, ru]) => ({ ko, ru }))
   return { grammar, sentences }
 }
