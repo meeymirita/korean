@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
 import { CATN, D, type Word } from '@/data/korean/words'
 import yunaImg from '@/assets/home/yuna-review.webp'
+import { cascade, pop } from '@/lib/fx'
 
 const cat = ref('')
 const open = ref(false)
@@ -11,6 +12,10 @@ const open = ref(false)
 const deck = ref<Word[]>([])
 const pos = ref(0)
 const word = computed(() => deck.value[pos.value] ?? D[0]!)
+const flipEl = ref<HTMLElement>()
+const countEl = ref<HTMLElement>()
+/** Новая карточка выезжает, как задания в тренажёрах (`lib/fx.ts`; при «уменьшить движение» появляется сразу). */
+const enter = () => void nextTick(() => flipEl.value && cascade([flipEl.value]))
 
 function shuffle() {
   const pool = (cat.value ? D.filter(d => d.c.includes(cat.value)) : D).slice()
@@ -21,11 +26,16 @@ function shuffle() {
   deck.value = pool
   pos.value = 0
   open.value = false
+  enter()
+  pop(countEl.value)
 }
 function next() {
   open.value = false
   if (pos.value + 1 >= deck.value.length) shuffle()
-  else pos.value++
+  else {
+    pos.value++
+    enter()
+  }
 }
 function onKey(e: KeyboardEvent) {
   if ((e.target as HTMLElement).tagName === 'SELECT') return
@@ -56,7 +66,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <div class="rv-deck">
         <!-- переворот: карточка стоит на месте и вращается вокруг вертикальной оси; ключ по слову, чтобы новая карточка появлялась лицом без вращения (иначе на миг виден ответ) -->
         <div class="rv-persp">
-          <div :key="word.k + ':' + pos" class="rv-flip" :class="{ flipped: open }" role="button" tabindex="0" :aria-pressed="open" aria-label="Перевернуть карточку" @click="open = !open" @keydown.enter.stop.prevent="open = !open">
+          <div :key="word.k + ':' + pos" ref="flipEl" class="rv-flip" :class="{ flipped: open }" role="button" tabindex="0" :aria-pressed="open" aria-label="Перевернуть карточку" @click="open = !open" @keydown.enter.stop.prevent="open = !open">
             <div class="fc rv-face rv-front" :aria-hidden="open">
               <div class="big">{{ word.k }}</div>
               <div class="hint">нажми, чтобы перевернуть</div>
@@ -70,7 +80,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           </div>
         </div>
         <div class="rv-top">
-          <span class="rv-count">{{ pos + 1 }} / {{ deck.length }}</span>
+          <span ref="countEl" class="rv-count">{{ pos + 1 }} / {{ deck.length }}</span>
           <button type="button" class="rv-icon" title="Перемешать колоду" aria-label="Перемешать колоду" @click="shuffle">⇄</button>
         </div>
         <div class="rv-bottom"><MarkStar kind="w" :id="word.k" /></div>
