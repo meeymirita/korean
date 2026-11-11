@@ -182,7 +182,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     </div>
 
     <template v-if="weakRuleRows.length">
-      <h2 class="today-h">Слабые правила <small>точность за 30 дней</small></h2>
+      <h2 class="today-h">Слабые правила <small>точность за 30 дней</small> <RouterLink v-if="weakRuleRows.some(r => r.id.startsWith('rule:'))" :to="{ path: '/game/home', query: { game: 'rule', weak: '1' } }" class="mk-link">потренировать слабые места →</RouterLink></h2>
       <div class="pg-weak-rules">
         <div v-for="rule in weakRuleRows" :key="rule.id" class="pg-weak-rule">
           <div class="pg-weak-rule-head"><span>{{ rule.label }}</span><b>{{ rule.accuracy }}%</b></div>

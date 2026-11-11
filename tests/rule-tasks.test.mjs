@@ -2,7 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { ruleTasks, ruleSession, trainableRule, RULE_TASK_BASE } = await load('/src/data/korean/rule-tasks.ts')
+const { ruleTasks, ruleSession, mixedSession, trainableRule, RULE_TASK_BASE } = await load('/src/data/korean/rule-tasks.ts')
 const { G } = await load('/src/data/korean/grammar.ts')
 after(close)
 
@@ -79,5 +79,15 @@ describe('«Потренировать это правило»: серия из 
     const { ALL_GAMES, TOOL_IDS } = await load('/src/data/games.ts')
     assert.ok(TOOL_IDS.includes('rule'))
     assert.ok(ALL_GAMES.some(g => g.id === 'rule' && g.to === '/game/home?game=rule'))
+  })
+
+  test('«Слабые места»: серия из двух правил поровну, номера подряд, без правил пусто', () => {
+    const [a, b] = G.filter(g => g.st === 'ok' && trainableRule(g))
+    const tasks = mixedSession([a, b], 10)
+    assert.equal(tasks.length, 10)
+    tasks.forEach((t, i) => assert.equal(t.id, RULE_TASK_BASE + i))
+    assert.equal(tasks.filter(t => t.gram === a.id).length, 5)
+    assert.equal(tasks.filter(t => t.gram === b.id).length, 5)
+    assert.deepEqual(mixedSession([], 10), [])
   })
 })

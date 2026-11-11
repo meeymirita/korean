@@ -103,3 +103,12 @@ export function ruleSession(g: Gram, n = 10): Task[] {
   }
   return out
 }
+
+/** «Слабые места»: одна серия из заданий нескольких правил поровну, вперемешку; номера подряд с `RULE_TASK_BASE`. */
+export function mixedSession(cards: Gram[], n = 10): Task[] {
+  if (!cards.length) return []
+  const per = Math.ceil(n / cards.length)
+  return shuffle(cards.flatMap(g => ruleSession(g, per)))
+    .slice(0, n)
+    .map((t, i) => ({ ...t, id: RULE_TASK_BASE + i }))
+}
