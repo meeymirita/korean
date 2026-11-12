@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
 import { CATN, D, type Word } from '@/data/korean/words'
+import { PAIR_SETS, SETS, pool } from '@/data/korean/trainer'
 import yunaImg from '@/assets/home/yuna-review.webp'
 import { cascade, pop } from '@/lib/fx'
 
@@ -12,18 +13,27 @@ const open = ref(false)
 const deck = ref<Word[]>([])
 const pos = ref(0)
 const word = computed(() => deck.value[pos.value] ?? D[0]!)
+/** Те же группы, что в «Найди пару»: наборы по грамматике и предложения берутся из `trainer.ts`, темы словаря из самого словаря. */
+const isSet = (c: string) => SETS.some(s => s.id === c) || PAIR_SETS.some(s => s.id === c)
+const DICT = new Set(D.map(d => d.k))
+/** звёздочка «отметить слово» только у слов словаря (у предложений и форм её нет) */
+const canMark = computed(() => DICT.has(word.value.k))
+/** лицо карточки: у вопросительных предложений предложение с пропуском */
+const front = computed(() => (word.value as { blank?: string }).blank ?? word.value.k)
+/** длинное (предложение) пишется мельче, чтобы помещалось на карточке */
+const long = computed(() => isSet(cat.value) && front.value.length > 8)
 const flipEl = ref<HTMLElement>()
 const countEl = ref<HTMLElement>()
 /** Новая карточка выезжает, как задания в тренажёрах (`lib/fx.ts`; при «уменьшить движение» появляется сразу). */
 const enter = () => void nextTick(() => flipEl.value && cascade([flipEl.value]))
 
 function shuffle() {
-  const pool = (cat.value ? D.filter(d => d.c.includes(cat.value)) : D).slice()
-  for (let i = pool.length - 1; i > 0; i--) {
+  const cards: Word[] = (isSet(cat.value) ? pool(cat.value) : cat.value ? D.filter(d => d.c.includes(cat.value)) : D).slice()
+  for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[pool[i], pool[j]] = [pool[j]!, pool[i]!]
+    ;[cards[i], cards[j]] = [cards[j]!, cards[i]!]
   }
-  deck.value = pool
+  deck.value = cards
   pos.value = 0
   open.value = false
   enter()
@@ -59,6 +69,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
       <select v-model="cat" @change="shuffle">
         <option value="">Все слова</option>
         <option v-for="(name, c) in CATN" :key="c" :value="c">{{ name }}</option>
+        <optgroup label="Грамматика">
+          <option v-for="s in SETS" :key="s.id" :value="s.id">{{ s.title }}</option>
+        </optgroup>
+        <optgroup label="Предложения">
+          <option v-for="s in PAIR_SETS" :key="s.id" :value="s.id">{{ s.title }}</option>
+        </optgroup>
       </select>
       <span class="kbd">пробел — перевернуть · → — следующая</span>
     </div>
@@ -68,12 +84,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <div class="rv-persp">
           <div :key="word.k + ':' + pos" ref="flipEl" class="rv-flip" :class="{ flipped: open }" role="button" tabindex="0" :aria-pressed="open" aria-label="Перевернуть карточку" @click="open = !open" @keydown.enter.stop.prevent="open = !open">
             <div class="fc rv-face rv-front" :aria-hidden="open">
-              <div class="big">{{ word.k }}</div>
+              <div class="big" :class="{ long }">{{ front }}</div>
               <div class="hint">нажми, чтобы перевернуть</div>
             </div>
             <div class="fc rv-face rv-back" :aria-hidden="!open">
-              <div class="big">{{ word.k }}</div>
-              <div class="ans">
+              <div class="big" :class="{ long }">{{ word.k }}</div>
+              <div class="ans" :class="{ long }">
                 {{ word.r }}<b>{{ word.t }}</b><small>{{ word.s }}</small>
               </div>
             </div>
@@ -83,7 +99,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <span ref="countEl" class="rv-count">{{ pos + 1 }} / {{ deck.length }}</span>
           <button type="button" class="rv-icon" title="Перемешать колоду" aria-label="Перемешать колоду" @click="shuffle">⇄</button>
         </div>
-        <div class="rv-bottom"><MarkStar kind="w" :id="word.k" /></div>
+        <div v-if="canMark" class="rv-bottom"><MarkStar kind="w" :id="word.k" /></div>
       </div>
       <img class="rv-yuna" :src="yunaImg" alt="" aria-hidden="true" draggable="false" />
     </div>
@@ -119,6 +135,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .review-page .rv-bottom .mark-star { width: 40px; height: 40px; font-size: 18px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, .6); }
 .review-page .rv-yuna { --w: 100%; --x: 0px; --y: 0px; width: var(--w); max-width: 600px; justify-self: end; align-self: end; height: auto;
   transform: translate(var(--x), var(--y)); pointer-events: none; user-select: none; }
+/* предложения и длинные слова: мельче и с переносом, перевод тоже */
+.review-page .fc .big.long { font-size: clamp(26px, 3.6vw, 44px); line-height: 1.25; overflow-wrap: anywhere; }
+.review-page .fc .ans.long b { font-size: 26px; line-height: 1.25; }
 @media (max-width: 900px) {
   .review-page .rv-stage { grid-template-columns: 1fr; }
   .review-page .rv-yuna { max-width: 280px; justify-self: center; }
