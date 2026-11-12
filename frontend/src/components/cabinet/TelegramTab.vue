@@ -90,6 +90,11 @@ function send(t: Topic) {
   return call(t, '/api/notify/topic', { topic: t.id, text }, `Отправлено в тему «${t.name}».`)
 }
 
+/** Недельный отчёт по занятиям сразу, не дожидаясь воскресенья: сервер рисует PDF за последние семь дней. */
+function weekly(t: Topic) {
+  return call(t, '/api/notify/study-weekly', {}, 'Недельный отчёт отправлен в тему «' + t.name + '».')
+}
+
 /** Настоящее сообщение темы с выдуманными данными. У «Отчёта по занятиям» это PDF: его рисует сайт, как после остановки таймера. */
 async function sample(t: Topic) {
   if (t.id === 'study') {
@@ -129,6 +134,7 @@ async function sample(t: Topic) {
             </div>
             <div class="tg-line">
               <button type="button" class="tg-btn main" :disabled="busy !== '' || !t.ready || !info.group" @click="sample(t)">{{ busy === t.id ? 'Отправляю…' : 'Пример сообщения' }}</button>
+              <button v-if="t.id === 'study'" type="button" class="tg-btn soft" :disabled="busy !== '' || !t.ready || !info.group" @click="weekly(t)">Отчёт за неделю сейчас</button>
               <button type="button" class="tg-btn danger" :disabled="busy !== '' || !t.ready || !info.group" @click="clear(t)">Очистить тему</button>
             </div>
             <div class="tg-line">

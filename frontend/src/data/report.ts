@@ -22,7 +22,7 @@ export const SOURCE_NAMES: Record<string, string> = {
 }
 
 /** Названия режимов, которых нет в каталоге игр. */
-const EXTRA_MODES: Record<string, string> = {
+export const EXTRA_MODES: Record<string, string> = {
   match: 'Найди пару',
   typing: 'Напиши перевод',
   syllables: 'Собери по слогам',

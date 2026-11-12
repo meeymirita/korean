@@ -6,6 +6,7 @@ import { Owner } from '../auth/auth.js'
 import { ConfirmService } from '../auth/confirm.service.js'
 import { TG_TOPICS, studyCaption, type TgTopic } from '../mail/templates.js'
 import { NotifyService } from './notify.service.js'
+import { StudyWeeklyService } from '../study/study-weekly.service.js'
 
 /** /api/notify: темы Telegram-группы и пробная отправка в тему (только владельцу). */
 @Owner()
@@ -14,6 +15,7 @@ export class NotifyController {
   constructor(
     private readonly notify: NotifyService,
     private readonly confirm: ConfirmService,
+    private readonly weeklyStudy: StudyWeeklyService,
   ) {}
 
   @Get('topics')
@@ -83,6 +85,19 @@ export class NotifyController {
     const when = typeof body?.when === 'string' ? body.when.replace(/\s+/g, ' ').trim().slice(0, 80) : ''
     try {
       await this.notify.sendFileToTopic('study', `zanyatie-${stamp}.pdf`, file.buffer, studyCaption({ when, seconds: num(body?.seconds), answers, ok: Math.min(answers, num(body?.ok)) }), 'application/pdf')
+      return { ok: true, message: '' }
+    } catch (e) {
+      return { ok: false, message: (e as Error).message.slice(0, 160) }
+    }
+  }
+
+  /** Недельный отчёт по занятиям прямо сейчас (за семь дней до сегодня), не дожидаясь воскресенья. Всегда 200: результат в { ok, message }. */
+  @Post('study-weekly')
+  @HttpCode(200)
+  async studyWeekly() {
+    if (!this.notify.topicReady('study')) return { ok: false, message: 'тема «Отчёт по занятиям» не настроена: нужен TELEGRAM_TOPIC_STUDY в .env' }
+    try {
+      await this.weeklyStudy.send(new Date(), true)
       return { ok: true, message: '' }
     } catch (e) {
       return { ok: false, message: (e as Error).message.slice(0, 160) }

@@ -412,8 +412,8 @@ export function studyLine(o: StudyReport): string {
   return parts.join(' · ')
 }
 
-/** Подпись к PDF-файлу отчёта о занятии (обычный текст: у подписи документа нет разметки). */
-export const studyCaption = (o: StudyReport): string => `${TG_HEART.study} Отчёт о занятии\n${o.when}\n${studyLine(o)}`
+/** Подпись к PDF-файлу отчёта о занятии или за неделю (обычный текст: у подписи документа нет разметки). */
+export const studyCaption = (o: StudyReport, title = 'Отчёт о занятии'): string => `${TG_HEART.study} ${title}\n${o.when}\n${studyLine(o)}`
 
 /** Сообщение темы «Отчёт по занятиям» без файла: для кнопки «Пример сообщения». Сам отчёт приходит PDF-файлом с такой же подписью. */
 export function studyMail(o: StudyReport): Mail {

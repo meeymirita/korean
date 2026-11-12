@@ -17,6 +17,7 @@ COPY prisma ./prisma
 COPY prisma.config.ts ./
 RUN npx prisma generate
 COPY src ./src
+COPY assets ./assets
 RUN npm run build
 
 FROM build AS test
@@ -32,6 +33,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 COPY --from=build /app/dist ./dist
+COPY assets ./assets
 COPY scripts ./scripts
 RUN mkdir -p /data && chown -R node:node /app /data
 USER node

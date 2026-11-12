@@ -4,7 +4,8 @@ import { NotifyController } from '../src/notify/notify.controller'
 /** Приём PDF отчёта о занятии: POST /api/notify/study-report. */
 function make(ready = true) {
   const notify = { topicReady: vi.fn(() => ready), sendFileToTopic: vi.fn(async () => undefined) }
-  return { notify, c: new NotifyController(notify as never, {} as never) }
+  const weekly = { send: vi.fn(async () => true) }
+  return { notify, weekly, c: new NotifyController(notify as never, {} as never, weekly as never) }
 }
 const pdf = (text = '%PDF-1.4 лист') => ({ buffer: Buffer.from(text) }) as Express.Multer.File
 
@@ -36,6 +37,17 @@ describe('отчёт о занятии: приём файла', () => {
     const [, name, , caption] = notify.sendFileToTopic.mock.calls[0] as unknown as string[]
     expect(name).toMatch(/^zanyatie-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}\.pdf$/)
     expect(caption).toContain('верных: 100%')
+  })
+
+  it('«Отчёт за неделю сейчас»: сервер шлёт недельный лист, даже пустой; без темы и при сбое понятный ответ', async () => {
+    const { c, weekly } = make()
+    expect(await c.studyWeekly()).toEqual({ ok: true, message: '' })
+    expect(weekly.send).toHaveBeenCalledWith(expect.any(Date), true)
+    weekly.send.mockRejectedValueOnce(new Error('Telegram 400'))
+    expect(await c.studyWeekly()).toEqual({ ok: false, message: 'Telegram 400' })
+    const off = make(false)
+    expect(await off.c.studyWeekly()).toMatchObject({ ok: false })
+    expect(off.weekly.send).not.toHaveBeenCalled()
   })
 
   it('Telegram не принял: ошибка возвращается текстом', async () => {
