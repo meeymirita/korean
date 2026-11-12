@@ -40,5 +40,5 @@ export const ACHIEVEMENTS: Achievement[] = [
   A('l5', 'star', 'Огонёк', 'Дойти до 5 уровня', p => [levelOf(p.xp), 5]),
   A('l10', 'bulb', 'Свеча', 'Дойти до 10 уровня', p => [levelOf(p.xp), 10]),
   A('l20', 'sparkle', 'Звезда', 'Дойти до 20 уровня', p => [levelOf(p.xp), 20]),
-  A('l40', 'goldstar', 'Вечность', 'Дойти до 40 уровня', p => [levelOf(p.xp), 40]),
+  A('l40', 'goldstar', 'Солнце', 'Дойти до 40 уровня', p => [levelOf(p.xp), 40]),
 ]

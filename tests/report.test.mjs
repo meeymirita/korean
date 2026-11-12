@@ -102,10 +102,13 @@ describe('сайт: данные отчёта', () => {
 })
 
 describe('сайт: звания и уровни', () => {
-  test('таблица званий покрывает все 40 уровней без пропусков', async () => {
+  test('таблица званий покрывает все 100 уровней без пропусков', async () => {
     const { rankTable, MAX_LEVEL, xpFor } = await load('/src/data/levels.ts')
     const t = rankTable()
-    assert.equal(t.length, 9)
+    assert.equal(MAX_LEVEL, 100)
+    assert.equal(t.length, 21)
+    assert.equal(new Set(t.map(r => r.name)).size, 21)
+    assert.equal(t.at(-1).name, 'Вечность')
     assert.equal(t[0].from, 1)
     assert.equal(t.at(-1).to, MAX_LEVEL)
     t.slice(1).forEach((r, i) => assert.equal(r.from, t[i].to + 1))
