@@ -1,31 +1,20 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { closeSearch, searchOpen, searchQuery as q, toggleSearch } from '@/composables/useSearchWindow'
 import { useGrammarModal } from '@/composables/useGrammarModal'
-import { hl } from '@/data/korean/render'
-import { mergeSearchResults, resultFromSearchReply, search, searchRemote, snippet, type SearchResult } from '@/data/korean/search'
+import { useSiteSearch } from '@/composables/useSiteSearch'
+import { snippet } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
-import { parseQuery } from '@/data/korean/words'
 
 const { open: openGrammar } = useGrammarModal()
 const input = ref<HTMLInputElement>()
-const result = ref<SearchResult | null>(search(q.value))
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-let searchRequest = 0
-const qs = computed(() => parseQuery(q.value))
-const h = (t: string) => hl(t, qs.value)
-
-const LIMIT = 6
-const more = reactive<Record<string, boolean>>({})
-const take = <T,>(key: string, list: T[]) => (more[key] ? list : list.slice(0, LIMIT))
-const rest = (key: string, n: number) => (!more[key] && n > LIMIT ? n - LIMIT : 0)
+const { result, h, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
 /** Что раскрыто прямо в окне: ключ вида «w:12», «s:предложение», «c:вкладка:номер». Никуда не переходим. */
 const opened = ref<string | null>(null)
 const toggle = (k: string) => (opened.value = opened.value === k ? null : k)
 
 const tabName = (id: string) => refTabs.find(t => t.id === id)?.menu ?? id
-const chunkTabs = computed(() => refTabs.filter(t => result.value?.chunks[t.id]?.length))
 
 watch(searchOpen, async o => {
   document.body.style.overflow = o ? 'hidden' : ''
@@ -38,16 +27,7 @@ watch(searchOpen, async o => {
 watch(q, value => {
   opened.value = null
   Object.keys(more).forEach(k => delete more[k])
-  result.value = search(value)
-  clearTimeout(searchTimer)
-  const request = ++searchRequest
-  searchTimer = setTimeout(async () => {
-    const remote = await searchRemote(value)
-    if (request === searchRequest && remote) {
-      // индекс только дополняет локальный поиск (опечатки), но не заменяет его
-      result.value = mergeSearchResults(search(value), resultFromSearchReply(remote))
-    }
-  }, 180)
+  run(value)
 })
 
 
@@ -70,8 +50,7 @@ function canOpenByKey(target: EventTarget | null) {
 }
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
-  clearTimeout(searchTimer)
-  searchRequest++
+  stop()
   document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
 })

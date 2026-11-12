@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import DashboardHome from '@/components/korean/DashboardHome.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
-import { hl } from '@/data/korean/render'
-import { mergeSearchResults, resultFromSearchReply, search, searchRemote, snippet, type SearchResult } from '@/data/korean/search'
-import { refTabs } from '@/data/korean/sections'
-import { parseQuery } from '@/data/korean/words'
+import { useSiteSearch } from '@/composables/useSiteSearch'
+import { snippet } from '@/data/korean/search'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { useProgressStore } from '@/stores/progress'
 import { lastVisited } from '@/composables/useLastVisited'
@@ -18,19 +16,8 @@ const { open } = useGrammarModal()
 
 const q = ref(String(useRoute().query.q ?? ''))
 const input = ref<HTMLInputElement>()
-const result = ref<SearchResult | null>(search(q.value))
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-let searchRequest = 0
-const qs = computed(() => parseQuery(q.value))
-const h = (t: string) => hl(t, qs.value)
-
-const LIMIT = 6
-const more = reactive<Record<string, boolean>>({})
-const take = <T,>(key: string, list: T[]) => (more[key] ? list : list.slice(0, LIMIT))
-const rest = (key: string, n: number) => (!more[key] && n > LIMIT ? n - LIMIT : 0)
+const { result, h, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
 const openSentence = ref('')
-
-const chunkTabs = computed(() => refTabs.filter(t => result.value?.chunks[t.id]?.length))
 
 function onKey(e: KeyboardEvent) {
   if (e.key === '/' && (e.target as HTMLElement).tagName !== 'INPUT') {
@@ -41,24 +28,12 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('keydown', onKey)
   input.value?.focus()
-  watch(q, value => {
-    result.value = search(value)
-    clearTimeout(searchTimer)
-    const request = ++searchRequest
-    searchTimer = setTimeout(async () => {
-      const remote = await searchRemote(value)
-      if (request === searchRequest && remote) {
-        // индекс только дополняет локальный поиск (опечатки), но не заменяет его
-        result.value = mergeSearchResults(search(value), resultFromSearchReply(remote))
-      }
-    }, 180)
-  }, { immediate: true })
+  watch(q, run, { immediate: true })
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
-  clearTimeout(searchTimer)
-  searchRequest++
+  stop()
 })
 </script>
 
