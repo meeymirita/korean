@@ -1811,12 +1811,12 @@ function finish(ok: boolean,chosen: string,qq?: FinishQ,quiet?: boolean){
     const m=q.key&&S.miss[q.key];if(m){m.n--;if(m.n<=0)delete S.miss[q.key];}
     const msgs: string[]=[];
     const pr=hooks.record({word:q.word||null,ok:true,mode:S.mode,detail:{q:q.hp,a:q.hr,...(q.mode?{g:q.mode}:{})},xp:q.xp!==undefined?q.xp:(q.level===3?20:q.level===2?15:10)+(B.streak>=5&&B.streak%5===0?5:0)});
-    if(pr.bloomed)msgs.push('🌸 Слово «'+q.word+'» расцвело в саду!');
-    if(pr.levelUp)msgs.push('⭐ Новый уровень '+pr.level+': '+pr.title+'!');
-    if(pr.goalReached)msgs.push('🎯 Цель дня выполнена!');
-    if([5,10,20,50].includes(B.streak))msgs.push('🔥 Серия из '+B.streak+' верных подряд!');
-    if([50,100,250,500,1000].includes(A.ok))msgs.push('🏅 '+A.ok+' верных ответов за всё время!');
-    if(A.ok%10===0){msgs.push('🍞 Испёкся ещё один хлебушек!');const l=$('#nLoaf');l.classList.remove('pop');void l.offsetWidth;l.classList.add('pop');}
+    if(pr.bloomed)msgs.push('Слово «'+q.word+'» расцвело в саду!');
+    if(pr.levelUp)msgs.push('Новый уровень '+pr.level+': '+pr.title+'!');
+    if(pr.goalReached)msgs.push('Цель дня выполнена!');
+    if([5,10,20,50].includes(B.streak))msgs.push('Серия из '+B.streak+' верных подряд!');
+    if([50,100,250,500,1000].includes(A.ok))msgs.push(A.ok+' верных ответов за всё время!');
+    if(A.ok%10===0){msgs.push('Испёкся ещё один хлебушек!');const l=$('#nLoaf');l.classList.remove('pop');void l.offsetWidth;l.classList.add('pop');}
     if(msgs.length)toast(msgs[0]!);
     if(S.surv.on)S.surv.ok++;
   }else{B.bad++;A.bad++;B.streak=0;bm.bad++;
@@ -1898,10 +1898,10 @@ function showFeedback(q: Question,ok: boolean){
   if(q.type==='story'){
     // рассказ: только итог; разбор каждого предложения открывается кнопкой «Разбор» справа от него
     const gaps=q.gaps||[];const right=gaps.filter(g=>g.ok).length;
-    fb.appendChild(el('div','fbh','Рассказ пройден: верно '+right+' из '+gaps.length+(q.bonus?' · бонус +'+q.bonus+' к опыту':'')+(ok?' 🔥':'')));
+    fb.appendChild(el('div','fbh','Рассказ пройден: верно '+right+' из '+gaps.length+(q.bonus?' · бонус +'+q.bonus+' к опыту':'')));
     fb.appendChild(el('div','fbt','Нажми «Разбор» справа от предложения, чтобы увидеть, что верно и как оно собрано, или «Разбор всего» под текстом.'));
   }else{
-    fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' 🔥 ×'+streak:'')):'Не так. Правильно: '+q.right));
+    fb.appendChild(el('div','fbh',ok?('Верно!'+(streak>=3?' Серия ×'+streak:'')):'Не так. Правильно: '+q.right));
     // полный разбор «Как собрано» (как в словаре): предложение из задания или пример слова; в блице на него нет времени
     const teach=S.blitz.on?'':teachOf(q);
     const bd=teach?drawBreakdown(teach,transOf(q,teach),isWordExample(q,teach)?q.word:''):null;
@@ -1941,7 +1941,7 @@ function updateStats(){
   $('#xpTxt').textContent=P.max?'максимум':P.into+' / '+P.span;$('#xpBar').style.width=P.pct+'%';
   const g=P.todayOk;
   $('#goalMax').textContent=String(P.goal);$('#goalN').textContent=String(Math.min(g,P.goal));$('#goalBar').style.width=Math.min(100,g/P.goal*100)+'%';
-  $('#goalTxt').textContent=g>=P.goal?'готово 🎉':'ещё '+(P.goal-g);
+  $('#goalTxt').textContent=g>=P.goal?'готово':'ещё '+(P.goal-g);
 }
 function renderList(){
   const list=$('#list');list.innerHTML='';
