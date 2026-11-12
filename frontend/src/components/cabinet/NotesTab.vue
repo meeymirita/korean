@@ -199,7 +199,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
     <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено. Попробуйте другое слово или уберите тег из поиска.</p>
 
     <ul class="nt-list">
-      <li v-for="n in shown" :key="n.id" class="nt-card" :class="{ click: editing !== n.id }" @click="editing !== n.id && (openedId = n.id)">
+      <li v-for="n in shown" :key="n.id" class="nt-card" :class="{ click: editing !== n.id }" :tabindex="editing !== n.id ? 0 : undefined" @click="editing !== n.id && (openedId = n.id)" @keydown.enter.self="editing !== n.id && (openedId = n.id)">
         <template v-if="editing === n.id">
           <input v-model="editTitle" :maxlength="MAX_TITLE" :class="{ at: editTitle.length >= MAX_TITLE }" aria-label="Название" />
           <textarea v-model="editText" :maxlength="MAX_TEXT" :class="{ at: editText.length >= MAX_TEXT }" rows="5" aria-label="Описание"></textarea>
