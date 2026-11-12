@@ -9,7 +9,7 @@ const props = defineProps<{ group: boolean; topics: { id: string; name: string; 
 /** Редактор закреплённого сообщения в «General»: текст, баннер, предпросмотр; кнопки сами идут под сообщением (переходы в темы). */
 const progress = useProgressStore()
 const toast = useToastStore()
-const HEART: Record<string, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️' }
+const HEART: Record<string, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️', study: '💚' }
 const auth = () => ({ Authorization: `Bearer ${progress.bearer}` })
 
 const text = ref('')

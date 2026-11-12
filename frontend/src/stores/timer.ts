@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { dayKey, useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
+import { MIN_REPORT_SECONDS, sendStudyReport } from '@/lib/studyReport'
 
 /** Секунды уходят в базу не чаще раза в это время и при остановке. */
 const FLUSH_EVERY = 30
@@ -45,6 +46,10 @@ export const useTimerStore = defineStore('timer', () => {
   let remindTimer: ReturnType<typeof setInterval> | undefined
   let last = 0
   let lastRemind = 0
+  /** когда запущен текущий отсчёт: по этому отрезку собирается отчёт в Telegram */
+  let startedAt = 0
+  /** сколько секунд было на счётчике в момент запуска (счётчик после паузы идёт дальше) */
+  let startedWith = 0
 
   const available = computed(() => progress.unlocked && !progress.isGuest)
   /** сегодня всего, с учётом ещё не записанных секунд */
@@ -71,7 +76,8 @@ export const useTimerStore = defineStore('timer', () => {
     if (running.value || !available.value) return
     running.value = true
     reminder.value = false
-    last = Date.now()
+    startedWith = session.value
+    last = startedAt = Date.now()
     tick = setInterval(step, 1000)
     toast.ok('Таймер запущен')
   }
@@ -83,6 +89,9 @@ export const useTimerStore = defineStore('timer', () => {
     running.value = false
     flush()
     toast.info(`Таймер остановлен · ${formatClock(session.value)}`)
+    // отчёт о занятии PDF-файлом в Telegram: только владельцу и не за случайное короткое нажатие
+    const seconds = session.value - startedWith
+    if (available.value && seconds >= MIN_REPORT_SECONDS) void sendStudyReport({ start: startedAt, end: Date.now(), seconds })
   }
 
   function toggle() {

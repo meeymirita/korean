@@ -12,16 +12,16 @@ export interface ReportPdfSpec {
   date: string
 }
 
-const W = 1240
-const H = 1754
-const M = 70
-const KO = '"Noto Sans KR", "Archivo", sans-serif'
-const LAT = '"Archivo", "Noto Sans KR", sans-serif'
-const INK = '#25264f'
-const MUTED = '#7a7aa3'
-const VIOLET = '#6a4fd4'
+export const W = 1240
+export const H = 1754
+export const M = 70
+export const KO = '"Noto Sans KR", "Archivo", sans-serif'
+export const LAT = '"Archivo", "Noto Sans KR", sans-serif'
+export const INK = '#25264f'
+export const MUTED = '#7a7aa3'
+export const VIOLET = '#6a4fd4'
 
-async function loadFonts() {
+export async function loadFonts() {
   try {
     await Promise.all([
       document.fonts.load('700 40px "Archivo"', 'Абв Abc'),
@@ -35,7 +35,7 @@ async function loadFonts() {
   }
 }
 
-function page(): { c: HTMLCanvasElement; g: CanvasRenderingContext2D } {
+export function page(): { c: HTMLCanvasElement; g: CanvasRenderingContext2D } {
   const c = document.createElement('canvas')
   c.width = W
   c.height = H

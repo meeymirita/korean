@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NotifyService } from '../src/notify/notify.service'
-import { TG_HEART, TG_TOPICS, backupMail, codeMail, digestMail, reminderMail, sampleMail } from '../src/mail/templates'
+import { TG_HEART, TG_TOPICS, backupMail, codeMail, digestMail, reminderMail, sampleMail, studyCaption, studyLine } from '../src/mail/templates'
 
 const mail = (configured = false) => ({ configured: () => configured, send: vi.fn() })
 
@@ -136,7 +136,7 @@ describe('уведомления: Telegram с запасом на почту', (
         // сердечко темы: обычное или анимированное (с этим же сердечком про запас внутри тега)
         expect(m.tg?.html).toMatch(new RegExp(`(<tg-emoji emoji-id="\\d+">${fallback}</tg-emoji>|${fallback}) <b>우리말</b>`))
       }
-      expect(new Set(TG_TOPICS.map(t => TG_HEART[t])).size).toBe(6)
+      expect(new Set(TG_TOPICS.map(t => TG_HEART[t])).size).toBe(TG_TOPICS.length)
     })
 
     it('«Пример сообщения» шлёт настоящий шаблон с выдуманными данными строго в тему', async () => {
@@ -313,5 +313,22 @@ describe('уведомления: Telegram с запасом на почту', (
     expect(line.form).toMatchObject({ chat_id: '-100123', message_thread_id: '17', caption: 'Подпись', document: { file: 'otchet.md' } })
     vi.stubEnv('TELEGRAM_TOPIC_ALERT', '')
     await expect(n.sendFileToTopic('alert', 'o.md', 'x', 'y')).rejects.toThrow(/не настроена/)
+  })
+
+  it('отчёт о занятии уходит PDF-файлом в свою тему с подписью-итогом', async () => {
+    const file = path.join(mkdtempSync(path.join(tmpdir(), 'tg-')), 'tg.jsonl')
+    vi.stubEnv('TELEGRAM_DUMP_FILE', file)
+    vi.stubEnv('TELEGRAM_GROUP_ID', '-100123')
+    const n = new NotifyService(mail() as never)
+    expect(n.topicReady('study')).toBe(false)
+    vi.stubEnv('TELEGRAM_TOPIC_STUDY', '21')
+    expect(n.topicReady('study')).toBe(true)
+    const caption = studyCaption({ when: '12 ноября 2026 г. · 19:02–19:54', seconds: 2980, answers: 206, ok: 159 })
+    expect(caption).toBe('💚 Отчёт о занятии\n12 ноября 2026 г. · 19:02–19:54\n50 мин по таймеру · ответов: 206 · верных: 77% · ошибок: 47')
+    expect(studyLine({ when: '', seconds: 3900, answers: 0, ok: 0 })).toBe('1 ч 05 мин по таймеру · ответов: 0')
+    await n.sendFileToTopic('study', 'zanyatie.pdf', Buffer.from('%PDF-1.4 x'), caption, 'application/pdf')
+    const line = JSON.parse(readFileSync(file, 'utf8').trim())
+    expect(line.method).toBe('sendDocument')
+    expect(line.form).toMatchObject({ chat_id: '-100123', message_thread_id: '21', caption, document: { file: 'zanyatie.pdf', size: 10, type: 'application/pdf' } })
   })
 })

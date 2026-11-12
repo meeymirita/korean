@@ -112,3 +112,37 @@ describe('таймер занятий', () => {
     assert.equal(timer.reminder, false)
   })
 })
+
+describe('отчёт о занятии в Telegram', () => {
+  /** Ждёт, пока отработают цепочки промисов отправки (таймеры в тесте подменены, поэтому без setTimeout). */
+  const settle = async () => {
+    for (let i = 0; i < 50; i++) await Promise.resolve()
+  }
+  const calls = () => {
+    const urls = []
+    globalThis.fetch = async url => {
+      urls.push(String(url))
+      throw new TypeError('Failed to fetch')
+    }
+    return urls
+  }
+
+  test('занятие от минуты: после остановки запрашиваются ответы за это время', async () => {
+    const urls = calls()
+    timer.start()
+    run(90)
+    timer.stop()
+    await settle()
+    assert.ok(urls.some(u => u.includes('/api/report/answers?days=1&limit=5000')), urls.join(' '))
+    assert.match(toast.items.at(-1).text, /Отчёт о занятии не отправлен/)
+  })
+
+  test('короче минуты отчёт не собирается', async () => {
+    const urls = calls()
+    timer.start()
+    run(40)
+    timer.stop()
+    await settle()
+    assert.equal(urls.filter(u => u.includes('/api/report/answers')).length, 0)
+  })
+})

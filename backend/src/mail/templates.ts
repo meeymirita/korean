@@ -9,13 +9,13 @@ export interface Mail {
   topic?: TgTopic
 }
 
-export const TG_TOPICS = ['login', 'remind', 'digest', 'lesson', 'backup', 'alert'] as const
+export const TG_TOPICS = ['login', 'remind', 'digest', 'lesson', 'backup', 'alert', 'study'] as const
 export type TgTopic = (typeof TG_TOPICS)[number]
 /** Названия тем группы, как в Telegram и на вкладке «Telegram» кабинета. */
-export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remind: 'Напоминания', digest: 'Подборка слов', lesson: 'Созвон', backup: 'Копии', alert: 'Тревоги' }
+export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remind: 'Напоминания', digest: 'Подборка слов', lesson: 'Созвон', backup: 'Копии', alert: 'Тревоги', study: 'Отчёт по занятиям' }
 
 /** Сердечко темы: по нему сразу видно, откуда сообщение. */
-export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️' }
+export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️', study: '💚' }
 
 /**
  * Анимированные (премиум) эмодзи тем из набора lolityanmur1_by_fStikBot: белая бабочка у «Копий», фиолетовая у «Подборки слов», котик у «Напоминаний».
@@ -41,6 +41,7 @@ export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
   lesson: 'напоминание про урок с Лерой',
   backup: 'отчёты о резервных копиях',
   alert: 'если что-то сломалось или копия не удалась',
+  study: 'PDF с отчётом после каждого занятия с таймером',
 }
 
 /** Цвет всех кнопок: синяя (Telegram знает только синюю primary, зелёную success и красную danger). Решение владельца 2026-11-08. */
@@ -389,7 +390,36 @@ export function sampleMail(topic: TgTopic): Mail {
       return backupMail({ kind: 'test' })
     case 'alert':
       return backupMail({ kind: 'disk-fail', detail: 'пример: на Диске закончилось место' })
+    case 'study':
+      return studyMail({ when: '12 ноября 2026 г. · 19:02–19:54', seconds: 2980, answers: 206, ok: 159 })
   }
+}
+
+/** Итог одного занятия с таймером: когда шло (строка уже по-русски, по часам владельца), секунд по таймеру, ответов и сколько из них верных. */
+export interface StudyReport {
+  when: string
+  seconds: number
+  answers: number
+  ok: number
+}
+
+/** «50 мин по таймеру · ответов: 206 · верных: 77% · ошибок: 47». */
+export function studyLine(o: StudyReport): string {
+  const m = Math.round(o.seconds / 60)
+  const time = m < 1 ? 'меньше минуты' : m >= 60 ? `${Math.floor(m / 60)} ч ${String(m % 60).padStart(2, '0')} мин` : `${m} мин`
+  const parts = [`${time} по таймеру`, `ответов: ${o.answers}`]
+  if (o.answers > 0) parts.push(`верных: ${Math.round((o.ok / o.answers) * 100)}%`, `ошибок: ${o.answers - o.ok}`)
+  return parts.join(' · ')
+}
+
+/** Подпись к PDF-файлу отчёта о занятии (обычный текст: у подписи документа нет разметки). */
+export const studyCaption = (o: StudyReport): string => `${TG_HEART.study} Отчёт о занятии\n${o.when}\n${studyLine(o)}`
+
+/** Сообщение темы «Отчёт по занятиям» без файла: для кнопки «Пример сообщения». Сам отчёт приходит PDF-файлом с такой же подписью. */
+export function studyMail(o: StudyReport): Mail {
+  const text = `${o.when}\n${studyLine(o)}`
+  const tg = tgCard({ topic: 'study', title: 'Отчёт о занятии', lead: text, foot: 'Настоящий отчёт приходит PDF-файлом, когда останавливается таймер занятий.' })
+  return { subject: '우리말: отчёт о занятии', text, html: esc(text), tg, topic: 'study' }
 }
 
 /** Напоминание об экзамене по правилам: что пора сдать или подтвердить (тема «Напоминания»). */

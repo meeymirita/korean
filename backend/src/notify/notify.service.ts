@@ -1,7 +1,7 @@
 /**
  * Уведомления: Telegram (основной путь) с запасом на почту.
  * .env: TELEGRAM_BOT_TOKEN (из @BotFather), TELEGRAM_CHAT_ID (число; узнать: написать боту /start и открыть getUpdates).
- * Группа с темами: TELEGRAM_GROUP_ID (число -100…), TELEGRAM_TOPIC_LOGIN|REMIND|DIGEST|LESSON|BACKUP|ALERT (номера тем), каждое уведомление уходит
+ * Группа с темами: TELEGRAM_GROUP_ID (число -100…), TELEGRAM_TOPIC_LOGIN|REMIND|DIGEST|LESSON|BACKUP|ALERT|STUDY (номера тем), каждое уведомление уходит
  * в свою тему с баннером (<TELEGRAM_BANNER_BASE>/tg/tg-<тема>.png, файлы лежат в frontend/public/tg). С группой личный чат (TELEGRAM_CHAT_ID) не используется вовсе, код входа тоже идёт в тему «Вход».
  * Для тестов: TELEGRAM_DUMP_FILE=путь — сообщения не уходят, а дописываются строками JSON в файл.
  */
@@ -131,15 +131,20 @@ export class NotifyService {
     return typeof r === 'object' && r ? r.message_id : undefined
   }
 
-  /** Файл (текст) в тему группы: например, недельный отчёт в «Тревоги». Номер запоминается, тему можно очистить кнопкой. Ошибка, если тема не настроена. */
-  async sendFileToTopic(topic: TgTopic, filename: string, content: string, caption: string) {
+  /** Настроена ли тема группы (есть группа и номер темы). */
+  topicReady(topic: TgTopic): boolean {
+    return !!this.telegram() && !!this.route({ topic } as Mail)?.message_thread_id
+  }
+
+  /** Файл в тему группы: текст (недельный отчёт в «Тревоги») или байты со своим типом (PDF отчёта о занятии). Номер запоминается, тему можно очистить кнопкой. Ошибка, если тема не настроена. */
+  async sendFileToTopic(topic: TgTopic, filename: string, content: string | Uint8Array, caption: string, type = 'text/markdown;charset=utf-8') {
     const to = this.route({ topic } as Mail)
     if (!to?.message_thread_id) throw new Error(`тема «${TG_TOPIC_NAMES[topic]}» не настроена: нужны TELEGRAM_GROUP_ID и TELEGRAM_TOPIC_${topic.toUpperCase()} в .env`)
     const f = new FormData()
     f.set('chat_id', String(to.chat_id))
     f.set('message_thread_id', String(to.message_thread_id))
     f.set('caption', caption.slice(0, 1000))
-    f.set('document', new Blob([content], { type: 'text/markdown;charset=utf-8' }), filename)
+    f.set('document', new Blob([content as BlobPart], { type }), filename)
     const r = await this.tgRaw('sendDocument', f)
     const id = typeof r === 'object' && r ? r.message_id : undefined
     if (id) await this.remember(topic, [id])

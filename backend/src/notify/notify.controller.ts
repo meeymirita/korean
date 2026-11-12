@@ -4,7 +4,7 @@ import { memoryStorage } from 'multer'
 import type { Request } from 'express'
 import { Owner } from '../auth/auth.js'
 import { ConfirmService } from '../auth/confirm.service.js'
-import { TG_TOPICS, type TgTopic } from '../mail/templates.js'
+import { TG_TOPICS, studyCaption, type TgTopic } from '../mail/templates.js'
 import { NotifyService } from './notify.service.js'
 
 /** /api/notify: темы Telegram-группы и пробная отправка в тему (только владельцу). */
@@ -64,6 +64,28 @@ export class NotifyController {
       return { ok: true, message: '', removed }
     } catch (e) {
       return { ok: false, message: (e as Error).message.slice(0, 160), removed: 0 }
+    }
+  }
+
+  /**
+   * Отчёт о занятии: сайт рисует PDF, когда останавливается таймер, и присылает его сюда; файл уходит в тему «Отчёт по занятиям».
+   * Всегда 200: результат в { ok, message }; тема не настроена: { ok: false, skipped: true } (сайт молчит).
+   */
+  @Post('study-report')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('pdf', { storage: memoryStorage(), limits: { fileSize: 12 * 1024 * 1024, files: 1, fields: 8, parts: 10 } }))
+  async studyReport(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { when?: unknown; stamp?: unknown; seconds?: unknown; answers?: unknown; ok?: unknown }) {
+    if (!this.notify.topicReady('study')) return { ok: false, skipped: true, message: 'тема «Отчёт по занятиям» не настроена: нужен TELEGRAM_TOPIC_STUDY в .env' }
+    if (!file || file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') return { ok: false, message: 'нужен PDF-файл отчёта' }
+    const num = (v: unknown) => Math.max(0, Math.floor(Number(v)) || 0)
+    const answers = num(body?.answers)
+    const stamp = typeof body?.stamp === 'string' && /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(body.stamp) ? body.stamp : new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-')
+    const when = typeof body?.when === 'string' ? body.when.replace(/\s+/g, ' ').trim().slice(0, 80) : ''
+    try {
+      await this.notify.sendFileToTopic('study', `zanyatie-${stamp}.pdf`, file.buffer, studyCaption({ when, seconds: num(body?.seconds), answers, ok: Math.min(answers, num(body?.ok)) }), 'application/pdf')
+      return { ok: true, message: '' }
+    } catch (e) {
+      return { ok: false, message: (e as Error).message.slice(0, 160) }
     }
   }
 

@@ -90,8 +90,20 @@ function send(t: Topic) {
   return call(t, '/api/notify/topic', { topic: t.id, text }, `Отправлено в тему «${t.name}».`)
 }
 
-/** Настоящее сообщение темы с выдуманными данными. */
-function sample(t: Topic) {
+/** Настоящее сообщение темы с выдуманными данными. У «Отчёта по занятиям» это PDF: его рисует сайт, как после остановки таймера. */
+async function sample(t: Topic) {
+  if (t.id === 'study') {
+    busy.value = t.id
+    try {
+      await (await import('@/lib/studyReport')).sendStudySample()
+      toast.ok(`Пример отчёта отправлен в тему «${t.name}».`)
+    } catch (e) {
+      toast.error('Не получилось: ' + errText(e))
+    } finally {
+      busy.value = ''
+    }
+    return
+  }
   return call(t, '/api/notify/sample', { topic: t.id }, `Пример отправлен в тему «${t.name}».`)
 }
 </script>
