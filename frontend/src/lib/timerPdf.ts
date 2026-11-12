@@ -10,6 +10,8 @@ export interface TimerPdfSpec {
   /** секунд по таймеру */
   seconds: number
   answers: AnswerItem[]
+  /** картинка в шапке листа; по умолчанию баннер темы из `public/tg` */
+  banner?: string
 }
 
 type G = CanvasRenderingContext2D
@@ -49,6 +51,32 @@ function header(g: G, spec: TimerPdfSpec) {
   g.fillStyle = '#4a4a78'
   g.font = `400 30px ${LAT}`
   g.fillText(`${dateLong(spec.start)} · ${clock(spec.start)}–${clock(spec.end)}`, M + 44, M + 192)
+}
+
+/** Картинка шапки (баннер темы «Отчёт по занятиям»): не загрузилась, рисуем прежнюю шапку с текстом. */
+function loadBanner(src: string): Promise<HTMLImageElement | null> {
+  return new Promise(res => {
+    const img = new Image()
+    img.onload = () => res(img)
+    img.onerror = () => res(null)
+    img.src = src
+  })
+}
+
+/** Шапка картинкой во всю ширину листа (2:1), под ней строка с датой и временем занятия. Возвращает высоту шапки. */
+function picture(g: G, img: HTMLImageElement, spec: TimerPdfSpec): number {
+  const w = W - M * 2
+  const h = Math.round((w * img.naturalHeight) / img.naturalWidth)
+  g.save()
+  g.beginPath()
+  g.roundRect(M, M, w, h, 36)
+  g.clip()
+  g.drawImage(img, M, M, w, h)
+  g.restore()
+  g.fillStyle = '#4a4a78'
+  g.font = `400 28px ${LAT}`
+  g.fillText(`${dateLong(spec.start)} · ${clock(spec.start)}–${clock(spec.end)}`, M, M + h + 52)
+  return h + 60
 }
 
 function tiles(g: G, items: [string, string][], y: number) {
@@ -286,7 +314,10 @@ export async function renderTimerPdf(spec: TimerPdfSpec): Promise<Blob> {
     return M + 40
   }
 
-  header(cur.g, spec)
+  const img = await loadBanner(spec.banner ?? '/tg/tg-study.png')
+  // с картинкой шапка выше прежней (230): всё, что ниже, сдвигается
+  const shift = img ? picture(cur.g, img, spec) - 230 : 0
+  if (!img) header(cur.g, spec)
   tiles(
     cur.g,
     [
@@ -296,11 +327,12 @@ export async function renderTimerPdf(spec: TimerPdfSpec): Promise<Blob> {
       [String(bad), 'ошибок'],
       [String(sessions.length), 'упражнений'],
     ],
-    330,
+    330 + shift,
   )
-  chart(cur.g, { ...spec, answers }, sessions, color, 530, 480)
+  chart(cur.g, { ...spec, answers }, sessions, color, 530 + shift, 480)
 
-  let y = 1080
+  // таблица начинается на первом листе, только если там поместятся хотя бы три строки
+  let y = next(1080 + shift, 100 + 54 * 3)
   cur.g.fillStyle = INK
   cur.g.font = `700 32px ${LAT}`
   cur.g.fillText('Что было на занятии', M, y)
