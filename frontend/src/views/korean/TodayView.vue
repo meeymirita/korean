@@ -16,7 +16,7 @@ import { G } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { ruleTasks } from '@/data/korean/rule-tasks'
 import { randomTasks, randomWords, type Task } from '@/data/korean/tasks'
-import { dayKey, useProgressStore } from '@/stores/progress'
+import { dayKey, newRound, useProgressStore } from '@/stores/progress'
 import { isChecklist, useTodaySetsStore, type SavedSet, type SetData, type SnapTask } from '@/stores/todaySets'
 import { useToastStore } from '@/stores/toast'
 
@@ -96,15 +96,18 @@ function onChecked(r: WordsCheckResult) {
 }
 
 /* ---------- ответы и новый набор ---------- */
+/** Номер занятия для отчёта: набор дня один на день (обновление страницы его не дробит), «Новые задания» начинают следующее. */
+let round = 'today-' + dayKey()
 const saved = ref(restored?.saved ?? false)
 function answer(id: number, option: string) {
   if (id in picked.value) return
   picked.value = { ...picked.value, [id]: option }
   saved.value = false
   const t = all.value.find(x => x.id === id)
-  if (t) progress.record({ word: t.word, ok: option === t.answer, source: 'today', detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: option === t.answer ? undefined : option } })
+  if (t) progress.record({ word: t.word, ok: option === t.answer, source: 'today', detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: option === t.answer ? undefined : option, r: round } })
 }
 function newTasks() {
+  round = newRound()
   tasks.value = randomTasks(TASKS, progress.data.settings.cats)
   picked.value = Object.fromEntries(Object.entries(picked.value).filter(([id]) => ruleItems.value.some(t => t.id === Number(id))))
   saved.value = false

@@ -22,7 +22,7 @@ import SyllablesView from '@/views/korean/SyllablesView.vue'
 import KeyboardView from '@/views/korean/KeyboardView.vue'
 import RuleView from '@/views/korean/RuleView.vue'
 import { ICON } from '@/game/icons'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 import { themeDark, toggleTheme } from '@/lib/theme'
 import catWow from '@/assets/game/cat-wow.webp'
 import yunaSit from '@/assets/game/yuna-sit.webp'
@@ -76,8 +76,10 @@ function goBack() {
 let dispose: (() => void) | undefined
 function startEngine() {
   dispose?.()
+  // номер занятия для отчёта: один на каждый запуск режима игры
+  const round = newRound()
   dispose = initGame({
-    record: (o: { word: string | null; ok: boolean; xp?: number; mode?: string; detail?: { q?: string; a?: string; y?: string } }) => progress.record({ ...o, source: 'game' }),
+    record: (o: { word: string | null; ok: boolean; xp?: number; mode?: string; detail?: { q?: string; a?: string; y?: string; g?: string } }) => progress.record({ ...o, source: 'game', detail: { ...o.detail, r: round } }),
     importXp: (n: number) => progress.importXp(n),
     state: () => ({ ...progress.info, todayOk: progress.todayOk, goal: progress.goal }),
     cats: () => progress.data.settings.gameCats,
