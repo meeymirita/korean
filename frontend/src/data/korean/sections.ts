@@ -28,7 +28,7 @@ export const sections: Section[] = [
   { id: 'sentences', num: '05', menu: 'Примеры', kicker: 'Из словаря', title: 'Примеры предложений', sub: 'все предложения из словаря', private: true, group: 'ref' },
   { id: 'numbers', num: '05', menu: 'Числа', kicker: 'Счёт', title: 'Числа и счёт', sub: 'цены, количество, счётные слова', private: true, group: 'ref' },
   { id: 'trainers', num: '06', menu: 'Тренажёры', kicker: 'Игры', title: 'Тренажёры слов', sub: 'найди пару и напиши перевод', private: true, group: 'extra' },
-  { id: 'review', num: '07', menu: 'Повторение', kicker: 'Карточки', title: 'Повторение', sub: 'случайная карточка — нажми, чтобы увидеть ответ', private: true },
+  { id: 'review', num: '07', menu: 'Повторение', kicker: 'Карточки', title: 'Повторение', sub: 'вспомни слово, переверни карточку и отметь: помню или не помню', private: true },
   { id: 'quick', num: '09', menu: '5 минут', kicker: 'Быстрый набор', title: '5 минут', sub: 'десять заданий вперемешку: слабые слова, правило и новое', private: true, group: 'extra' },
   { id: 'mistakes', num: '10', menu: 'Мои ошибки', kicker: 'Слабые места', title: 'Мои ошибки', sub: 'слова, в которых ошибаешься чаще всего, и быстрая тренировка', private: true, group: 'extra' },
   { id: 'marks', num: '11', menu: 'Важное', kicker: 'Закладки', title: 'Важное', sub: 'слова и правила, отмеченные звёздочкой', private: true, group: 'extra' },

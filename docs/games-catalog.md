@@ -84,7 +84,7 @@
 |---|---|---|
 | `/korean/mistakes` | `MistakesView.vue` (на `TaskSession`) | Тренировка по словам с частыми ошибками: [`mistakes.md`](trainers/mistakes.md) |
 | `/korean/forms` | `FormsView.vue` | Не игра — таблица спряжений с поиском, `data/korean/conjugation.ts` |
-| `/korean/review` | `ReviewView.vue` | Карточки слов на повторение, `data/review.ts` (`dueWords`) |
+| `/korean/review` | `ReviewView.vue` | Раунд карточек «Помню / Не помню»: порция из двух полей, первыми слова, которые пора повторить, `data/review.ts` (`pickSession`, `newToday`); описание в `docs/progress.md` |
 | `/korean/today` | `TodayView.vue` | Набор дня: правило + 10 слов + 15 заданий; чек-лист — `data/checklist.ts` (ссылается на `ALL_GAMES` из `games.ts`) |
 | `/korean/marks` | `MarksView.vue` | Не тренажёр — список закладок (⭐ у слов и правил) |
 

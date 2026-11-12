@@ -83,3 +83,79 @@ export function weekSummary(p: ProgressData, now = new Date()): WeekSummary {
     learned,
   }
 }
+
+/* ---------- раунд «Повторения» (карточки «Помню / Не помню») ---------- */
+
+/** Пометка в журнале у первого ответа по новому слову: по ней считается, сколько новых слов уже было сегодня. */
+export const NEW_NOTE = 'новое слово'
+
+export interface SessionCard {
+  word: Word
+  /** ключ слова в прогрессе; null у предложений и примеров (в очки слов не идут) */
+  key: string | null
+  /** due — пора повторить; new — ещё не встречалось; extra — закрепление (срок повторения не подошёл или это предложение) */
+  kind: 'due' | 'new' | 'extra'
+}
+
+const mix = <T>(list: T[], rnd: () => number): T[] => {
+  const a = list.slice()
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1))
+    ;[a[i], a[j]] = [a[j]!, a[i]!]
+  }
+  return a
+}
+
+/** Сколько новых слов уже показано сегодня в «Повторении» (по журналу ответов). */
+export function newToday(p: ProgressData, now = new Date()): number {
+  const day = dayKey(now)
+  const seen = new Set<string>()
+  for (const e of p.log) {
+    if (e.s !== 'review' || e.d?.n !== NEW_NOTE || !e.w) continue
+    if (dayKey(new Date(e.t)) === day) seen.add(e.w)
+  }
+  return seen.size
+}
+
+/**
+ * Раунд «Повторения» из карточек выбранной группы: первыми слова, которые пора повторить (сначала с ошибками, потом самые просроченные),
+ * затем новые (не больше `newLeft`), остаток добирается закреплением: самые слабые из тех, чей срок ещё не подошёл, и предложения.
+ */
+export function pickSession(cards: Word[], p: ProgressData, o: { size: number; newLeft: number; now?: number; rnd?: () => number }): SessionCard[] {
+  const now = o.now ?? Date.now()
+  const rnd = o.rnd ?? Math.random
+  const due: { word: Word; wrong: boolean; overdue: number }[] = []
+  const fresh: Word[] = []
+  const rest: { word: Word; stat: WordStat }[] = []
+  const loose: Word[] = []
+  const taken = new Set<string>()
+  for (const word of cards) {
+    const id = `${word.n}:${word.k}`
+    if (taken.has(id)) continue
+    taken.add(id)
+    if (word.n >= 13000) {
+      loose.push(word)
+      continue
+    }
+    const stat = p.words[word.k]
+    if (!stat || stat.ok + stat.bad === 0) {
+      fresh.push(word)
+      continue
+    }
+    const wait = intervalDays(stat.streak) * DAY
+    const age = now - stat.last
+    if (age < wait) rest.push({ word, stat })
+    else due.push({ word, wrong: stat.streak < KNOWN_STREAK && stat.bad > 0, overdue: wait ? age / wait : 1 + age / DAY })
+  }
+  due.sort((a, b) => Number(b.wrong) - Number(a.wrong) || b.overdue - a.overdue)
+  rest.sort((a, b) => a.stat.streak - b.stat.streak || a.stat.last - b.stat.last)
+
+  const size = Math.max(1, Math.floor(o.size))
+  const key = (w: Word) => (w.n >= 13000 ? null : w.k)
+  const out: SessionCard[] = due.slice(0, size).map(d => ({ word: d.word, key: key(d.word), kind: 'due' as const }))
+  const news = mix(fresh, rnd).slice(0, Math.max(0, Math.min(Math.floor(o.newLeft), size - out.length)))
+  out.push(...news.map(word => ({ word, key: key(word), kind: 'new' as const })))
+  const extra = [...rest.map(r => r.word), ...mix(loose, rnd)].slice(0, size - out.length)
+  out.push(...extra.map(word => ({ word, key: key(word), kind: 'extra' as const })))
+  return out
+}

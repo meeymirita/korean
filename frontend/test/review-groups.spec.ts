@@ -14,15 +14,19 @@ describe('«Повторение»: выбор группы', () => {
     w.unmount()
   })
 
-  it('набор по грамматике даёт колоду из своих слов, у предложений нет звёздочки', async () => {
+  it('набор по грамматике даёт раунд из своих слов, у предложений нет звёздочки', async () => {
+    localStorage.clear()
     const w = await mountSuspended(ReviewView)
     const select = w.find('select')
     await select.setValue('qwords')
-    expect(w.find('.rv-count').text()).toBe(`1 / ${pool('qwords').length}`)
+    // слова набора ещё не встречались: в раунд идут новые, не больше пяти в день
+    expect(w.find('.rv-count').text()).toBe('осталось 5')
     expect(pool('qwords').map(x => x.k)).toContain(w.find('.rv-front .big').text())
 
     await select.setValue('qsent')
-    expect(w.find('.rv-count').text()).toBe(`1 / ${pool('qsent').length}`)
+    // предложения в очки слов не идут: раунд из десяти на закрепление
+    expect(w.find('.rv-count').text()).toBe('осталось 10')
+    expect(pool('qsent').map(x => x.blank)).toContain(w.find('.rv-front .big').text())
     // спереди предложение с пропуском, сзади целое
     expect(w.find('.rv-front .big').text()).toContain('___')
     expect(w.find('.rv-back .big').text()).not.toContain('___')
@@ -30,7 +34,7 @@ describe('«Повторение»: выбор группы', () => {
     expect(w.find('.rv-bottom').exists()).toBe(false)
 
     await select.setValue('sent')
-    expect(w.find('.rv-count').text()).toBe(`1 / ${pool('sent').length}`)
+    expect(w.find('.rv-count').text()).toBe('осталось 10')
     expect(w.find('.rv-bottom').exists()).toBe(false)
 
     await select.setValue('')

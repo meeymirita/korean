@@ -103,7 +103,7 @@ const SOURCES: [string, string][] = [
   ['game', 'Игра «Хлебушек»'],
   ['trainer', 'Тренажёры'],
   ['today', 'Сегодня'],
-  ['review', 'Повторение в кабинете'],
+  ['review', 'Повторение'],
   ['quick', '5 минут'],
 ]
 const total = computed(() =>

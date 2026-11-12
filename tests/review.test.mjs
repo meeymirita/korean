@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { close, load, stubLocalStorage } from './_load.mjs'
 
 stubLocalStorage()
-const { intervalDays, dueWords, weekSummary } = await load('/src/data/review.ts')
+const review = await load('/src/data/review.ts')
+const { intervalDays, dueWords, weekSummary } = review
 const { normalize, dayKey, KNOWN_STREAK } = await load('/src/stores/progress.ts')
 const { D } = await load('/src/data/korean/words.ts')
 after(close)
@@ -100,5 +101,58 @@ describe('weekSummary', () => {
       NOW,
     )
     assert.deepEqual(w.learned.map(x => x.k), [B, A])
+  })
+})
+
+describe('раунд «Повторения»: pickSession и newToday', () => {
+  const { pickSession, newToday, NEW_NOTE } = review
+  const now = NOW.getTime()
+  const cards = D.slice(0, 12)
+  const [w0, w1, w2, w3] = cards.map(c => c.k)
+  const rnd = () => 0.5
+
+  test('первыми идут слова с ошибками, потом просроченные, потом новые, остаток закреплением', () => {
+    const p = data({
+      words: {
+        [w0]: { ok: 3, bad: 0, streak: 3, last: now - 20 * DAY }, // просрочено
+        [w1]: { ok: 0, bad: 2, streak: 0, last: now - DAY }, // с ошибкой
+        [w2]: { ok: 2, bad: 0, streak: 2, last: now - DAY }, // срок не подошёл (3 дня)
+        [w3]: { ok: 4, bad: 0, streak: 4, last: now }, // срок не подошёл, сильнее
+      },
+    })
+    const s = pickSession(cards, p, { size: 6, newLeft: 2, now, rnd })
+    assert.deepEqual(s.map(c => c.kind), ['due', 'due', 'new', 'new', 'extra', 'extra'])
+    assert.deepEqual(s.slice(0, 2).map(c => c.word.k), [w1, w0])
+    assert.deepEqual(s.slice(4).map(c => c.word.k), [w2, w3])
+    assert.ok(s.every(c => c.key === c.word.k))
+  })
+
+  test('новых не больше остатка на день, раунд не больше размера', () => {
+    const p = data({})
+    assert.equal(pickSession(cards, p, { size: 10, newLeft: 5, now, rnd }).length, 5)
+    assert.equal(pickSession(cards, p, { size: 3, newLeft: 5, now, rnd }).length, 3)
+    assert.equal(pickSession(cards, p, { size: 10, newLeft: 0, now, rnd }).length, 0)
+    assert.equal(pickSession(cards, p, { size: 10, newLeft: -2, now, rnd }).length, 0)
+  })
+
+  test('предложения (номера от 13000) идут закреплением и без ключа слова', () => {
+    const sent = [{ ...D[0], n: 14000, k: '물 주세요.' }, { ...D[1], n: 14001, k: '뭐예요?' }]
+    const s = pickSession(sent, data({}), { size: 10, newLeft: 0, now, rnd })
+    assert.deepEqual(s.map(c => [c.kind, c.key]), [['extra', null], ['extra', null]])
+  })
+
+  test('newToday считает разные новые слова из сегодняшних ответов «Повторения»', () => {
+    const t = NOW.getTime()
+    const p = data({
+      log: [
+        { t, w: w0, ok: true, s: 'review', d: { n: NEW_NOTE } },
+        { t, w: w0, ok: false, s: 'review', d: { n: NEW_NOTE } },
+        { t, w: w1, ok: false, s: 'review', d: { n: NEW_NOTE } },
+        { t, w: w2, ok: true, s: 'review' },
+        { t, w: w3, ok: true, s: 'trainer', d: { n: NEW_NOTE } },
+        { t: t - 2 * DAY, w: w3, ok: true, s: 'review', d: { n: NEW_NOTE } },
+      ],
+    })
+    assert.equal(newToday(p, NOW), 2)
   })
 })
