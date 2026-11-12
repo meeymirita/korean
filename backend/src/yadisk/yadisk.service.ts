@@ -128,6 +128,11 @@ export class YaDiskService {
     return href
   }
 
+  /** Файл заменили или удалили: ссылка из памяти больше не годится. */
+  forgetLink(remote: string) {
+    this.links.delete(remote)
+  }
+
   /** Временная ссылка на скачивание (живёт около 30 минут): для видео и больших файлов. */
   async link(remote: string): Promise<string> {
     if (process.env.YADISK_DUMP_DIR) return this.dump(remote)
@@ -169,10 +174,10 @@ export class YaDiskService {
     return r.__status !== 404
   }
 
-  /** Удаляет файл или папку насовсем (минуя корзину). */
-  async remove(remote: string) {
+  /** Удаляет файл или папку насовсем (минуя корзину); с `permanently = false` файл уходит в корзину Диска. */
+  async remove(remote: string, permanently = true) {
     if (process.env.YADISK_DUMP_DIR) return void rmSync(this.dump(remote), { recursive: true, force: true })
-    const r = (await this.api('DELETE', '/resources', { path: this.full(remote), permanently: true })) as { __status?: number }
+    const r = (await this.api('DELETE', '/resources', { path: this.full(remote), permanently })) as { __status?: number }
     void r // 404 — файла уже нет
   }
 

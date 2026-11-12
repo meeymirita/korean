@@ -27,7 +27,7 @@
    Картинки/…                       копия живой папки «Картинки» (копируется прямо на Диске, без загрузки)
 Картинки/                      живая плоская папка: все картинки и файлы календаря, картинки сайта, обложка визитки (имена уникальны)
 korean_video/                  44 видеоурока: lesson-01.mp4 … lesson-30.mp4, lesson-16-1/2, part2-01 … part2-13 (залиты владельцем руками)
-korean_grammar/                29 картинок карточек грамматики: lesson-1…10.webp и own-<id>.webp
+korean_grammar/                картинки карточек грамматики: lesson-1…10.webp и own-<id>.webp (владелец загружает и удаляет их прямо в открытой карточке)
 проверка связи.txt             создаётся кнопкой «Проверить отправку»
 ```
 Запасная копия `korean_grammar` лежит у владельца на компьютере (`~/Desktop/korean_grammar`), видео в `~/Movies/Korean-videos/`.
@@ -53,9 +53,12 @@ handle_path /video/* {
 ```
 Старая папка `/var/sites/korean-video` больше не нужна (можно удалить). Откат раздачи: вернуть в блок `root * /var/sites/korean-video`, `header Cache-Control "public, max-age=86400"`, `file_server`.
 
-**Картинки грамматики.** `frontend/src/data/korean/grammarPhotos.ts` держит список имён `KEYS` и строит адрес `/api/pic/grammar/<имя>.webp` (`backend/src/pic/pic.controller.ts`, тот же приём: 302 на Диск, папка `korean_grammar`). В репозитории картинок больше нет.
-Заменить картинку: положить на Диск в `korean_grammar` файл с тем же именем (`own-<id>.webp`, `lesson-N.webp`, ширина около 1200, формат webp); сменится через 10–20 минут, деплой не нужен.
-Новая картинка к новой карточке: файл в `korean_grammar` и имя в `KEYS`, потом пуш. PNG в webp: `cwebp -q 82 файл.png -o own-<id>.webp` (так сделаны `own-past_my`, `own-future_my`, `own-man` и замены 2026-11-10). Имён в `KEYS` 29; урочная карточка может брать картинку своей (`TWIN` в `grammarPhotos.ts`: `past` → `own-past_my`). Без картинки: `own-pyeong` (평음).
+**Картинки грамматики.** У карточки одно фото: файл `own-<id>.webp` (своя карточка) или `lesson-N.webp` (пройденный урок части 1) в папке `korean_grammar`; имя считает `photoKey` в `frontend/src/data/korean/grammarPhotos.ts`, урочная карточка может брать картинку своей (`TWIN`: `past` → `own-past_my`). Сайт открывает `/api/pic/grammar/<имя>.webp` (`backend/src/pic/pic.controller.ts`, тот же приём: 302 на Диск). В репозитории картинок нет.
+**Управление фото в открытой карточке (2026-11-12, только владелец, `GrammarModal.vue` + `composables/useGrammarPhotos.ts`).** При наведении на фото справа или на метку «Фото» в шапке появляются «Заменить» и «Удалить» (на планшете и телефоне кнопки на фото видны всегда); у карточки без фото стоит «＋ Загрузить фото» и метка «＋ Фото». Кнопки есть там, где фото показано: у своих карточек и у пройденных уроков части 1, открытых из «Мои карточки». Сервер:
+- `GET /api/pic/grammar` (открыт всем): `{ keys }`, имена файлов папки без расширения; сервер помнит список минуту. Сайт спрашивает его один раз за заход; до ответа и при сбое Диска работает список `PHOTO_KEYS` из кода, поэтому новое фото появляется без пуша;
+- `POST /api/pic/grammar/<имя>/file` (владелец): PNG, JPG, webp или GIF до 12 МБ; сервер поворачивает по EXIF, уменьшает до ширины 1280, сохраняет webp (качество 82) прямо на Диск поверх прежнего файла и сбрасывает ссылку из памяти (`forgetLink`);
+- `DELETE /api/pic/grammar/<имя>` (владелец, на сайте через `askConfirm`): файл уходит в **корзину Диска**, оттуда его можно вернуть.
+После загрузки сайт сам открывает фото с `?fresh=<время>`. У других посетителей заменённое фото сменится в течение 10–20 минут. Руками по-прежнему можно: положить в `korean_grammar` файл с нужным именем (webp, ширина около 1200).
 **Картинка не показывается после замены файла:** сервер помнит ссылку Диска 20 минут, браузер перенаправление 10 минут, а ссылка на заменённый файл уже мертва. Окно грамматики при ошибке загрузки один раз просит `?fresh=<время>`: сервер берёт новую ссылку (не чаще раза в 30 секунд на файл) и отвечает `no-store`. В CSP сайта для `img-src` и `media-src` разрешены `*.yandex.ru` и `*.yandex.net`, иначе включённая CSP заблокирует картинки и видео. Картинку «하고» заменили так: PNG → webp через `sharp` (`resize width 1280`, `quality 82`) → в `korean_grammar/own-hago.webp`.
 
 **Уведомления в Telegram:** см. `docs/telegram.md`.
@@ -91,9 +94,9 @@ curl -s -H "Authorization: OAuth $Y" https://cloud-api.yandex.net/v1/disk | grep
 |---|---|
 | работа с Диском (загрузка, скачивание, копирование, список, удаление, зеркало, `syncMedia`) | `backend/src/yadisk/yadisk.service.ts` |
 | копии на Диск, чистка старых | `backend/src/admin/backup-archive.service.ts`, `backup-status.controller.ts` |
-| видео, картинки грамматики | `backend/src/video/`, `backend/src/pic/` |
+| видео, картинки грамматики (раздача, список, загрузка и удаление владельцем) | `backend/src/video/`, `backend/src/pic/` |
 | сеансы входа | `backend/src/auth/` (`auth.service.ts`, `auth.guard.ts`, `session.controller.ts`, `twofa.service.ts`) |
 | блоки кабинета | `frontend/src/components/cabinet/` (`BackupBlock`, `TwoFaBlock`, `ReminderBlock`, `DigestBlock`, `LessonBlock`), окно входа `frontend/src/components/AuthGate.vue` |
-| список картинок грамматики | `frontend/src/data/korean/grammarPhotos.ts` |
+| имена картинок грамматики, список с Диска и кнопки владельца | `frontend/src/data/korean/grammarPhotos.ts`, `frontend/src/composables/useGrammarPhotos.ts`, `frontend/src/components/korean/GrammarModal.vue` |
 | загрузка видео с компьютера | `scripts/upload-videos.mjs` (токен из окружения или `.env`) |
-| тесты | `backend/test/yadisk.service.spec.ts`, `pic.controller.spec.ts`, `tests/owner-session.test.mjs` (Telegram: `docs/telegram.md`) |
+| тесты | `backend/test/yadisk.service.spec.ts`, `pic.controller.spec.ts`, `frontend/test/grammar-photos.spec.ts`, `tests/owner-session.test.mjs` (Telegram: `docs/telegram.md`) |

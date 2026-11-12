@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import PhotoViewer from '@/components/korean/PhotoViewer.vue'
-import { photoOf } from '@/data/korean/grammarPhotos'
+import { useGrammarPhotos } from '@/composables/useGrammarPhotos'
 import yunaGrammar from '@/assets/home/yuna-grammar.webp'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, SECS, tabOf } from '@/data/korean/grammar'
@@ -53,6 +53,9 @@ const list = computed(() => {
 /** Карточки выбранной вкладки. В разметку попадают все вкладки (скрытые через v-show): поисковики видят все карточки, а не одну вкладку. */
 const shown = computed(() => list.value.filter(g => inTab(g, cur.value)))
 const { open } = useGrammarModal()
+/** у каких карточек есть фото: список с Яндекс.Диска (до ответа сервера список из кода) */
+const { photoOf, load: loadPhotos } = useGrammarPhotos()
+onMounted(() => void loadPhotos())
 const route = useRoute()
 /** /korean/grammar?g=ayo сразу открывает карточку */
 onMounted(() => {
