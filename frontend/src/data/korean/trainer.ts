@@ -42,6 +42,9 @@ const SENT_WORDS: TWord[] = Object.entries(STUDY_TRANSLATIONS)
 const EXAMPLE_WORDS: TWord[] = STUDY.filter(d => d.s && d.s.length <= 40 && !/[()]/.test(d.k)).map((d, i) => mk(15000 + i, d.k, d.r, d.s, { label: d.s }))
 const SET_WORDS: Record<string, TWord[]> = { verbs: VERBS, adjectives: ADJECTIVES, qwords: QWORDS, qsent: QSENT, sent: SENT_WORDS, example: EXAMPLE_WORDS }
 
+/** Тема словаря: если слов меньше, чем размер раунда, недостающие добираются из всего словаря. У наборов по грамматике и предложений добавки нет: в «Вопросительные слова» не должны попадать посторонние слова, раунд там не больше набора. */
+export const fillsFromDict = (cat: string) => !(cat in SET_WORDS)
+
 /** Слова для тренажёров: без скобок и очень длинных переводов. */
 export const pool = (cat: string): TWord[] =>
   SET_WORDS[cat] ??

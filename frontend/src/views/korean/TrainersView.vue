@@ -8,7 +8,7 @@ import MatchGame from '@/components/korean/MatchGame.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import TypingQuiz from '@/components/korean/TypingQuiz.vue'
 import { CATN } from '@/data/korean/words'
-import { DIR_LABEL, type Direction, PAIR_SETS, SETS, dirsFor, isPairSet, pickRound, pool, shown } from '@/data/korean/trainer'
+import { DIR_LABEL, type Direction, PAIR_SETS, SETS, dirsFor, fillsFromDict, isPairSet, pickRound, pool, shown } from '@/data/korean/trainer'
 
 type Mode = 'match' | 'type'
 
@@ -24,8 +24,8 @@ if (mode.value === 'type' && isPairSet(cat.value)) cat.value = ''
 const available = computed(() => pool(cat.value))
 /** Различных слов в теме (переводы не повторяются, как и в раунде). */
 const poolSize = computed(() => pickRound(available.value, 1000).length)
-/** В теме мало слов: недостающие добираются из всего словаря (там, где задания только «слово ↔ перевод»); у предложений и форм глаголов этого нет. */
-const canFill = computed(() => !['qsent', 'verbs', 'adjectives', 'sent', 'example'].includes(cat.value))
+/** В теме словаря мало слов: недостающие добираются из всего словаря; у наборов по грамматике и предложений этого нет (раунд не больше набора). */
+const canFill = computed(() => fillsFromDict(cat.value))
 const roundSize = computed(() => (canFill.value ? size.value : Math.max(1, Math.min(size.value, poolSize.value))))
 /** Раунд: слова темы, а если их меньше нужного, добавка из остального словаря (без повторов перевода). */
 function makeRound() {
@@ -53,6 +53,10 @@ const setCat = (c: string) => {
   start()
 }
 const setMode = (m: Mode) => (mode.value = m)
+/** Что делать в выбранном режиме (подпись под заголовком). */
+const sub = computed(() => (mode.value === 'match' ? 'соедини слово с переводом: нажми оба или проведи линию' : 'введи ответ с клавиатуры'))
+/** Галочка «показывать чтение» нужна, только если у слов раунда есть чтение (у предложений его нет). */
+const hasReading = computed(() => round.value.some(w => w.r))
 // новый раунд при любой смене режима, в том числе кнопкой «Назад»
 watch(mode, m => {
   // предложения и примеры бывают только в «Найди пару»
@@ -63,7 +67,7 @@ watch(mode, m => {
 
 <template>
   <div class="wrap">
-    <SectionHead id="trainers" />
+    <SectionHead id="trainers" :sub="sub" />
 
     <div class="chips">
       <button class="chip" :class="{ on: mode === 'match' }" @click="setMode('match')"><Icon name="hearts" /> Найди пару</button>
@@ -100,7 +104,7 @@ watch(mode, m => {
           <option v-for="d in dirs" :key="d" :value="d">{{ DIR_LABEL[d] }}</option>
         </select>
       </label>
-      <label v-if="mode === 'match'" class="chk"><input v-model="showReading" type="checkbox" /> показывать чтение</label>
+      <label v-if="mode === 'match' && hasReading" class="chk"><input v-model="showReading" type="checkbox" /> показывать чтение</label>
     </div>
     <p v-if="filled" class="tr-note">В этой теме всего {{ poolSize }} слов, остальные в раунде добраны из всего словаря.</p>
     <p v-else-if="!canFill && poolSize < size" class="tr-note">В этой теме всего {{ poolSize }}, поэтому в раунде их {{ roundSize }}.</p>
