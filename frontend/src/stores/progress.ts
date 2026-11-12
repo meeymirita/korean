@@ -25,6 +25,8 @@ export interface AnswerDetail {
   y?: string
   /** Rule card ID or normalized grammar mode used by the weak-rules overview. */
   g?: string
+  /** Как отвечал: способ и что было на экране (пока пишет «Найди пару»), для разбора спорных случаев. */
+  n?: string
 }
 export interface LogEntry {
   t: number
@@ -121,6 +123,7 @@ function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
   const out: AnswerDetail = {}
   for (const k of ['q', 'a', 'y'] as const) if (typeof d[k] === 'string' && d[k]) out[k] = d[k]!.slice(0, 300)
   if (typeof d.g === 'string' && d.g) out.g = d.g.slice(0, 80)
+  if (typeof d.n === 'string' && d.n) out.n = d.n.slice(0, 600)
   return Object.keys(out).length ? out : undefined
 }
 /** Очков у слова, с которых оно считается выученным: верный ответ +1, ошибка −1 (не ниже 0). */

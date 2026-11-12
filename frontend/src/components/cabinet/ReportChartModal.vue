@@ -41,7 +41,7 @@ interface Item {
   t: number
   w: string | null
   ok: boolean
-  d?: { q?: string; a?: string; y?: string }
+  d?: { q?: string; a?: string; y?: string; n?: string }
 }
 const only = ref<'' | 'bad' | 'ok'>('bad')
 const list = ref<{ items: Item[]; ok: number; bad: number } | null>(null)
@@ -132,6 +132,7 @@ const stats = computed(() => {
                 <b class="ko">{{ a.d?.q ?? a.w ?? 'без слова' }}</b>
                 <span v-if="a.d?.a" class="rc-ans">верно: <i class="ko">{{ a.d.a }}</i></span>
                 <span v-if="!a.ok && a.d?.y" class="rc-ans wrong">ты ответил: <i class="ko">{{ a.d.y }}</i></span>
+                <span v-if="a.d?.n" class="rc-ans rc-how">как: <i class="ko">{{ a.d.n }}</i></span>
                 <time>{{ when(a.t) }}</time>
               </div>
             </li>
@@ -181,6 +182,8 @@ const stats = computed(() => {
 .rc-ans { display: block; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
 .rc-ans i { font-style: normal; color: var(--ink); }
 .rc-ans.wrong i { color: #c23b86; }
+.rc-ans.rc-how { font-size: 11.5px; }
+.rc-ans.rc-how i { color: var(--muted); }
 .rc-list time { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); opacity: .8; }
 .rc-none, .rc-more { margin: 6px 2px; font-size: 13px; color: var(--muted); }
 @media (max-width: 860px) { .rc-cols { grid-template-columns: 1fr; } .rc-right { max-height: 420px; } }

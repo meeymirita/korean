@@ -296,7 +296,7 @@ export class ProgressService {
     }
   }
 
-  /** Подробности ответа для истории: q — вопрос, a — верный ответ, y — что выбрал; всё необязательно, строки короткие. */
+  /** Подробности ответа для истории: q — вопрос, a — верный ответ, y — что выбрал, n — как отвечал (способ и что было на экране); всё необязательно, строки короткие. */
   private detail(v: unknown): string {
     if (v == null) return ''
     if (typeof v !== 'object' || Array.isArray(v)) return bad('invalid op')
@@ -304,6 +304,7 @@ export class ProgressService {
     const out: Record<string, string> = {}
     for (const k of ['q', 'a', 'y']) if (o[k] != null) out[k] = str(o[k], 300)
     if (o.g != null) out.g = str(o.g, 80)
+    if (o.n != null) out.n = str(o.n, 600)
     return Object.keys(out).length ? JSON.stringify(out) : ''
   }
 

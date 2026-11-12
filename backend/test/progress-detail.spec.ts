@@ -8,4 +8,10 @@ describe('answer detail', () => {
     const detail = (service as unknown as { detail(value: unknown): string }).detail({ q: 'Вопрос', a: 'Ответ', g: 'eun' })
     expect(JSON.parse(detail)).toEqual({ q: 'Вопрос', a: 'Ответ', g: 'eun' })
   })
+
+  it('keeps the note about how the answer was given', async () => {
+    const service = new ProgressService({} as Db)
+    const detail = (service as unknown as { detail(value: unknown): string }).detail({ q: '작다', a: 'маленький', y: 'мало', n: 'линией' })
+    expect(JSON.parse(detail)).toEqual({ q: '작다', a: 'маленький', y: 'мало', n: 'линией' })
+  })
 })

@@ -2,7 +2,7 @@
 import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { shuffle } from '@/data/korean/tasks'
-import { shown, statKey, type TWord } from '@/data/korean/trainer'
+import { matchDetail, shown, statKey, type TWord } from '@/data/korean/trainer'
 import { burst, cascade, pop, shake } from '@/lib/fx'
 import { useProgressStore } from '@/stores/progress'
 import { formatClock, useTimerStore } from '@/stores/timer'
@@ -53,6 +53,8 @@ const drag = ref<Drag | null>(null)
 const over = ref<string | null>(null)
 let start = { x: 0, y: 0 }
 let suppressClick = false
+/** Как соединили пару: для журнала ответов. */
+let via: 'линией' | 'нажатием' = 'нажатием'
 
 /** Запас вокруг карточки, в котором линия всё ещё считается доведённой: пером и пальцем трудно попасть точно, а между карточками есть щели. */
 const REACH_X = 28
@@ -121,8 +123,10 @@ function finishAt(x: number, y: number) {
   const t = cardAt(x, y, d.side)
   if (!t || wrong.value) return
   selL.value = selR.value = null
+  via = 'линией'
   pick(d.side, d.id)
   pick(t.side, t.id)
+  via = 'нажатием'
 }
 const up = (e: PointerEvent) => finishAt(e.clientX, e.clientY)
 /** Браузер прервал жест (на планшете так бывает и без нашей вины): считаем линию доведённой до последней точки, а не теряем её. */
@@ -181,6 +185,20 @@ watch(done, v => {
 })
 
 
+/** Текст карточки, как он показан на экране (без переносов). */
+const cardText = (key: string) => (cards.get(key)?.textContent ?? '').replace(/\s+/g, ' ').trim()
+/** Подробности для журнала: что соединили, как, и что ещё оставалось на экране. */
+function detailOf(word: TWord, picked: TWord) {
+  const open = (side: 'l' | 'r', list: TWord[]) => list.filter(w => !matched.value.has(w.n)).map(w => cardText(side + w.n))
+  return matchDetail(word, picked, {
+    via,
+    leftText: cardText('l' + word.n),
+    rightText: cardText('r' + picked.n),
+    leftOpen: open('l', left.value),
+    rightOpen: open('r', right.value),
+  })
+}
+
 function pick(side: 'l' | 'r', id: number) {
   if (matched.value.has(id) || wrong.value) return
   if (side === 'l') selL.value = id
@@ -191,14 +209,17 @@ function pick(side: 'l' | 'r', id: number) {
   const r = selR.value
   selL.value = selR.value = null
   const word = props.words.find(x => x.n === l)
+  const picked = props.words.find(x => x.n === r)
+  // до смены состояния: в журнал идёт то, что было на экране в момент ответа
+  const detail = word && picked ? detailOf(word, picked) : undefined
   if (l === r) {
     // засчитываем слово, если в этом раунде в нём не ошибались
-    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match' })
+    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match', detail })
     matched.value = new Set(matched.value).add(l)
     celebrate(l, r)
   } else {
     mistakes.value++
-    if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match' })
+    if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match', detail })
     missed.value = new Set(missed.value).add(l)
     wrong.value = { l, r }
     shake(cards.get('l' + l))

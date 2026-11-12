@@ -113,5 +113,31 @@ export const labelOf = (dir: Direction) =>
     fill: 'Вставь пропущенное слово',
   })[dir]
 
+/** Что было на экране в момент ответа в «Найди пару» (тексты берутся с самих карточек, а не из данных: так видно и ошибку показа). */
+export interface MatchShot {
+  /** как соединили */
+  via: 'линией' | 'нажатием'
+  /** текст на карточке слева и справа, которые соединили */
+  leftText: string
+  rightText: string
+  /** несоединённые карточки слева и справа, сверху вниз, как на экране */
+  leftOpen: string[]
+  rightOpen: string[]
+}
+/**
+ * Запись в журнал ответов для «Найди пару»: q — слово слева, a — его перевод, y — с чем соединили (при ошибке),
+ * n — способ и всё, что было на экране. `picked` — слово, чей перевод выбрали справа.
+ */
+export function matchDetail(word: TWord, picked: TWord, shot: MatchShot) {
+  const ok = word.n === picked.n
+  const n = [
+    shot.via,
+    `соединено: «${shot.leftText}» и «${shot.rightText}»`,
+    `слева оставались: ${shot.leftOpen.join(' · ')}`,
+    `справа оставались: ${shot.rightOpen.join(' · ')}`,
+  ].join('; ')
+  return { q: word.k, a: shown(word), ...(ok ? {} : { y: shown(picked) }), n }
+}
+
 /** Слово для общего прогресса; целые предложения (вопросительные) как слова не считаем. */
 export const statKey = (w: TWord): string | null => (w.n >= 13000 ? null : w.k)
