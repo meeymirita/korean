@@ -4,12 +4,14 @@ import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { closeSearch, searchOpen, searchQuery as q, toggleSearch } from '@/composables/useSearchWindow'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { useSiteSearch } from '@/composables/useSiteSearch'
+import { hl } from '@/data/korean/render'
 import { snippet } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
 
 const { open: openGrammar } = useGrammarModal()
 const input = ref<HTMLInputElement>()
-const { result, h, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
+const { result, qs, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
+const h = (t: string) => hl(t, qs.value)
 /** Что раскрыто прямо в окне: ключ вида «w:12», «s:предложение», «c:вкладка:номер». Никуда не переходим. */
 const opened = ref<string | null>(null)
 const toggle = (k: string) => (opened.value = opened.value === k ? null : k)

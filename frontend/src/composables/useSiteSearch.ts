@@ -1,5 +1,4 @@
 import { computed, reactive, ref, type Ref } from 'vue'
-import { hl } from '@/data/korean/render'
 import { mergeSearchResults, resultFromSearchReply, search, searchRemote, type SearchResult } from '@/data/korean/search'
 import { refTabs } from '@/data/korean/sections'
 import { parseQuery } from '@/data/korean/words'
@@ -15,9 +14,8 @@ export function useSiteSearch(q: Ref<string>) {
   const result = ref<SearchResult | null>(search(q.value))
   let timer: ReturnType<typeof setTimeout> | undefined
   let request = 0
+  /** Слова запроса для подсветки. Саму обёртку `h` над `hl` каждый экран объявляет у себя: за этим следит тест на `v-html`. */
   const qs = computed(() => parseQuery(q.value))
-  /** Подсветка найденного в тексте. */
-  const h = (t: string) => hl(t, qs.value)
 
   const more = reactive<Record<string, boolean>>({})
   const take = <T,>(key: string, list: T[]) => (more[key] ? list : list.slice(0, LIMIT))
@@ -41,5 +39,5 @@ export function useSiteSearch(q: Ref<string>) {
     clearTimeout(timer)
     request++
   }
-  return { result, h, more, take, rest, chunkTabs, run, stop }
+  return { result, qs, more, take, rest, chunkTabs, run, stop }
 }

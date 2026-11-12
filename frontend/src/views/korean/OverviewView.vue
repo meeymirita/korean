@@ -6,6 +6,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import DashboardHome from '@/components/korean/DashboardHome.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { useSiteSearch } from '@/composables/useSiteSearch'
+import { hl } from '@/data/korean/render'
 import { snippet } from '@/data/korean/search'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { useProgressStore } from '@/stores/progress'
@@ -16,7 +17,8 @@ const { open } = useGrammarModal()
 
 const q = ref(String(useRoute().query.q ?? ''))
 const input = ref<HTMLInputElement>()
-const { result, h, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
+const { result, qs, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
+const h = (t: string) => hl(t, qs.value)
 const openSentence = ref('')
 
 function onKey(e: KeyboardEvent) {
