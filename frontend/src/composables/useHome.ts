@@ -61,6 +61,17 @@ export function useHomePicks() {
   return { seed: seed.value, rule: picks.rule, phrase: picks.phrase, phrases: picks.phrases }
 }
 
+/**
+ * Правило и две фразы для главной раздела (`/korean/home`) на этот день: выбор от даты, обновление страницы его не меняет,
+ * в полночь он другой (решение владельца 2026-11-12). На самой главной `/` фраза по-прежнему меняется при каждом обновлении (`useHomePicks`).
+ */
+export function homeDaily(day: string) {
+  return withSeed('home-day:' + day, () => {
+    const { phrase } = pickPhrase()
+    return { rule: randomRule(), phrases: [phrase, pickOther([phrase])] }
+  })
+}
+
 const START = new Date(2026, 5, 1)
 export const plural = (n: number, forms: [string, string, string]) =>
   forms[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : 2]

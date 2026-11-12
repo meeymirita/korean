@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
-import { useHomePicks } from '@/composables/useHome'
+import { homeDaily } from '@/composables/useHome'
 import { withSeed } from '@/lib/seeded'
 import { shuffle } from '@/data/korean/tasks'
 import BlockBgLayer from '@/components/korean/BlockBgLayer.vue'
@@ -35,8 +35,8 @@ const percent = computed(() => Math.round((known.value / D.length) * 100))
 const dueCount = computed(() => (progress.unlocked ? dueWords(progress.data).length : 0))
 const dueLabel = computed(() => plural(dueCount.value, ['слово', 'слова', 'слов']))
 
-/** Пять слов на сегодня: набор один на весь день (от даты), меняется в полночь, как набор «Сегодня». Фраза и правило меняются при каждой загрузке. */
-const { rule: HOME_RULE, phrases: HOME_PHRASES } = useHomePicks()
+/** Пять слов, правило и фразы на сегодня: набор один на весь день (от даты), меняется в полночь, как набор «Сегодня»; обновление страницы его не меняет. */
+const { rule: HOME_RULE, phrases: HOME_PHRASES } = homeDaily(dayKey())
 const words = withSeed('home-words:' + dayKey(), () => shuffle(D).slice(0, 5))
 
 /** Фоны трёх блоков меняются в режиме редактирования (шестерёнка в углу блока): подмена хранится на сервере и видна всем. */
