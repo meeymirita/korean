@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import AnalyticsPanel from '@/components/cabinet/AnalyticsPanel.vue'
 import ReportChartModal from '@/components/cabinet/ReportChartModal.vue'
+import ReportSessions from '@/components/cabinet/ReportSessions.vue'
 import { usePersisted } from '@/composables/usePersisted'
 import { groupReport, percent, spent, type ReportGroup, type ReportRow } from '@/data/report'
 import { errText, fetchT } from '@/lib/http'
@@ -134,6 +135,8 @@ const date = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'nu
         </table>
       </section>
       <p class="rp-note">Время по режимам примерное: считается по промежуткам между ответами. Время «по таймеру» точное, но общее.</p>
+
+      <ReportSessions v-if="groups.length" :groups="groups" :days="days" />
 
       <AnalyticsPanel :groups="groups" :days="days" />
     </template>

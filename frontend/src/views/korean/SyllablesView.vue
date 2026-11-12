@@ -7,7 +7,7 @@ import { usePersisted } from '@/composables/usePersisted'
 import { isCorrect, SYLLABLE_LEVELS, syllableTasks, type SyllableLevel, type SyllableTask } from '@/data/korean/syllables'
 import { dragDrop } from '@/lib/dragdrop'
 import { burst, cascade, pop, shake } from '@/lib/fx'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 
 interface Tile {
   /** номер плитки в задании */
@@ -17,6 +17,8 @@ interface Tile {
 
 const ROUND = 10
 const progress = useProgressStore()
+/** Номер серии для журнала. */
+const round = newRound()
 const weak = () => mistakeWords(progress.data, 30).map(m => m.word.k)
 /** Уровень по длине слова; помнится после обновления страницы. */
 const level = usePersisted<SyllableLevel>('syl_level', 'any', v => SYLLABLE_LEVELS.some(l => l.id === v))
@@ -98,8 +100,14 @@ watch(picked, p => {
   result.value = ok ? 'ok' : 'bad'
   if (ok) right.value++
   else missed.value.push(task)
-  // у фраз нет слова в словаре (номер от 16000): в общий прогресс слов они не идут
-  if (task.word.n < 16000) progress.record({ word: task.word.k, ok, source: 'trainer', mode: 'syllables' })
+  // у фраз нет слова в словаре (номер от 16000): в общий прогресс слов они не идут, но в журнал ответов пишутся
+  progress.record({
+    word: task.word.n < 16000 ? task.word.k : null,
+    ok,
+    source: 'trainer',
+    mode: 'syllables',
+    detail: { q: `Собери: ${task.word.t}`, a: task.word.k, y: ok ? undefined : letters.value.join(''), r: round },
+  })
   ;(ok ? pop : shake)(slotsBox.value)
 })
 watch([picked, result, current], () => void nextTick(wireDrag), { flush: 'post' })

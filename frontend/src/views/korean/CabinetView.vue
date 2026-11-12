@@ -11,7 +11,6 @@ import NotificationsTab from '@/components/cabinet/NotificationsTab.vue'
 import TelegramTab from '@/components/cabinet/TelegramTab.vue'
 import OverviewTab from '@/components/cabinet/OverviewTab.vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
-import ReportTab from '@/components/cabinet/ReportTab.vue'
 import RepeatTab from '@/components/cabinet/RepeatTab.vue'
 import ServiceLinks from '@/components/cabinet/ServiceLinks.vue'
 import SettingsTab from '@/components/cabinet/SettingsTab.vue'
@@ -70,8 +69,12 @@ const shortcuts = useShortcutsStore()
 const q = route.query.tab
 // магазин из кабинета убран: старый адрес ?tab=shop ведёт на страницу магазина
 if (route.query.tab === 'shop') void router.replace('/korean/shop')
+// отчёт вынесен на свою страницу: старый адрес ?tab=report ведёт туда
+if (route.query.tab === 'report') void router.replace('/korean/report')
+/** Нажатие на вкладку; «Отчёт» открывает отдельную страницу. */
+const openTab = (id: CabinetTab) => (id === 'report' ? void router.push('/korean/report') : (tab.value = id))
 const OWNER_ONLY = ['images', 'report', 'notifications', 'telegram', 'services']
-const TABS = ['repeat', 'week', 'report', 'notes', 'images', 'notifications', 'telegram', 'settings', 'services']
+const TABS = ['repeat', 'week', 'notes', 'images', 'notifications', 'telegram', 'settings', 'services']
 const tab = ref<CabinetTab>(typeof q === 'string' && TABS.includes(q) && !(OWNER_ONLY.includes(q) && progress.isGuest) ? (q as CabinetTab) : 'overview')
 /** Вкладка записывается в адрес (?tab=…), поэтому после обновления страницы остаёмся на ней. */
 watch(tab, t => {
@@ -83,6 +86,7 @@ watch(
   () => route.query.tab,
   raw => {
     const v = raw
+    if (v === 'report') return void router.replace('/korean/report')
     const next = (typeof v === 'string' && TABS.includes(v) && !(OWNER_ONLY.includes(v) && progress.isGuest) ? v : 'overview') as CabinetTab
     if (next !== tab.value) tab.value = next
   },
@@ -131,14 +135,13 @@ const tabs = computed<[CabinetTab, string][]>(() => [
     </p>
 
     <div class="chips cb-tabs">
-      <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="tab = id">{{ label }}<kbd v-if="shortcuts.labelOf('cab:' + id)" class="kb">{{ shortcuts.labelOf('cab:' + id) }}</kbd></button>
+      <button v-for="[id, label] in tabs" :key="id" class="chip" :class="{ on: tab === id }" @click="openTab(id)">{{ label }}<kbd v-if="shortcuts.labelOf('cab:' + id)" class="kb">{{ shortcuts.labelOf('cab:' + id) }}</kbd></button>
     </div>
 
     <LevelsModal v-if="levelsOpen" :info="progress.info" @close="levelsOpen = false" />
     <OverviewTab v-if="tab === 'overview'" />
     <RepeatTab v-else-if="tab === 'repeat'" />
     <WeekTab v-else-if="tab === 'week'" />
-    <ReportTab v-else-if="tab === 'report'" />
     <NotesTab v-else-if="tab === 'notes'" />
     <ImagesTab v-else-if="tab === 'images'" />
     <NotificationsTab v-else-if="tab === 'notifications'" />

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { D, type Word } from '@/data/korean/words'
 import { shuffle, short } from '@/data/korean/tasks'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 
 /** Проверка слов дня тремя играми подряд: пары, перевод, собери предложение. Итог уходит наверх, чтобы попасть в сохранённый набор. */
 export interface WordsCheckResult {
@@ -18,7 +18,10 @@ const progress = useProgressStore()
 
 type Stage = 'pairs' | 'quiz' | 'build' | 'end'
 const stage = ref<Stage>('pairs')
-const rec = (word: string, ok: boolean, mode: string) => progress.record({ word, ok, source: 'today', mode })
+/** Номер проверки для журнала: три игры подряд идут одним занятием на каждую. */
+const round = newRound()
+const rec = (word: string, ok: boolean, mode: string, detail: { q: string; a: string; y?: string }) =>
+  progress.record({ word, ok, source: 'today', mode, detail: { ...detail, r: round } })
 
 /* ---------- 1. пары ---------- */
 const left = ref(shuffle(props.words))
@@ -40,7 +43,7 @@ function pick(side: 'l' | 'r', n: number) {
   selL.value = selR.value = null
   const w = props.words.find(x => x.n === l)!
   if (l === r) {
-    rec(w.k, !missed.value.has(l), 'check-pairs')
+    rec(w.k, !missed.value.has(l), 'check-pairs', { q: w.k, a: short(w.t), ...(missed.value.has(l) ? { y: 'с ошибкой: сначала соединено не с тем переводом' } : {}) })
     matched.value = new Set(matched.value).add(l)
     if (matched.value.size === props.words.length) setTimeout(() => (stage.value = 'quiz'), 500)
   } else {
@@ -63,7 +66,7 @@ function answerQuiz(o: string) {
   qPicked.value = o
   const ok = o === short(q.value.w.t)
   if (ok) qRight.value++
-  rec(q.value.w.k, ok, 'check-quiz')
+  rec(q.value.w.k, ok, 'check-quiz', { q: q.value.w.k, a: short(q.value.w.t), ...(ok ? {} : { y: o }) })
   setTimeout(() => {
     qPicked.value = null
     if (qi.value + 1 < quizItems.length) qi.value++
@@ -99,7 +102,7 @@ function take(i: number) {
   const ok = built.value.join(' ') === b.value.tokens.join(' ')
   bState.value = ok ? 'ok' : 'bad'
   if (ok) bRight.value++
-  rec(b.value.w.k, ok, 'check-build')
+  rec(b.value.w.k, ok, 'check-build', { q: `Собери: ${b.value.ru}`, a: b.value.tokens.join(' '), ...(ok ? {} : { y: built.value.join(' ') }) })
 }
 function back(i: number) {
   if (bState.value !== 'play') return

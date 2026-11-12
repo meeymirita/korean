@@ -4,13 +4,15 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { shuffle } from '@/data/korean/tasks'
 import { matchDetail, shown, statKey, type TWord } from '@/data/korean/trainer'
 import { burst, cascade, pop, shake } from '@/lib/fx'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 import { formatClock, useTimerStore } from '@/stores/timer'
 
 const props = defineProps<{ words: TWord[]; showReading: boolean }>()
 const emit = defineEmits<{ again: []; retry: [words: TWord[]] }>()
 
 const progress = useProgressStore()
+/** Номер раунда для журнала (компонент создаётся заново на каждый раунд). */
+const round = newRound()
 const timer = useTimerStore()
 const left = ref(shuffle(props.words))
 const right = ref(shuffle(props.words))
@@ -186,17 +188,21 @@ watch(done, v => {
 
 
 /** Текст карточки, как он показан на экране (без переносов). */
-const cardText = (key: string) => (cards.get(key)?.textContent ?? '').replace(/\s+/g, ' ').trim()
+const cardText = (key: string) => {
+  const el = cards.get(key)
+  // innerText разделяет слово и чтение (они в разных строках карточки), textContent склеил бы их
+  return (el?.innerText ?? el?.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
 /** Подробности для журнала: что соединили, как, и что ещё оставалось на экране. */
 function detailOf(word: TWord, picked: TWord) {
   const open = (side: 'l' | 'r', list: TWord[]) => list.filter(w => !matched.value.has(w.n)).map(w => cardText(side + w.n))
-  return matchDetail(word, picked, {
+  return { r: round, ...matchDetail(word, picked, {
     via,
     leftText: cardText('l' + word.n),
     rightText: cardText('r' + picked.n),
     leftOpen: open('l', left.value),
     rightOpen: open('r', right.value),
-  })
+  }) }
 }
 
 function pick(side: 'l' | 'r', id: number) {

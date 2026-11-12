@@ -80,5 +80,6 @@ export const PAGES: GuideCard[] = [
   { icon: 'notebook', title: 'Что я уже знаю', text: 'Пройденная грамматика на одной странице: формула и пример. Удобно открыть перед созвоном.', to: '/korean/know', private: true },
   { icon: 'grammar', title: 'Мастерская грамматики', text: 'Конструктор «слово + частица + глагол с окончанием»: собирается предложение и по шагам объясняется каждая форма.', to: '/korean/lab', private: true },
   { icon: 'book', title: 'Полезные сайты', text: 'Подборка внешних сайтов для практики: словари, уроки, произношение, языковой обмен и экзамен TOPIK.', to: '/korean/sites', private: true },
+  { icon: 'notebook', title: 'Отчёт', text: 'Все ответы по режимам: графики, PDF и каждое занятие целиком, с вопросом, верным ответом, твоим ответом и временем.', to: '/korean/report', private: true },
   { icon: 'grammar', title: 'Сервисы', text: 'Для владельца: что запущено на сервере, журналы, поисковый индекс и ссылки на Grafana и Prometheus.', to: '/korean/services', private: true },
 ]

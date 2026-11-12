@@ -3,12 +3,14 @@ import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { makeTask, type Task } from '@/data/korean/tasks'
 import type { Word } from '@/data/korean/words'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 
 const props = defineProps<{ words: Word[] }>()
 const emit = defineEmits<{ done: [] }>()
 
 const progress = useProgressStore()
+/** Номер серии для журнала. */
+const round = newRound()
 const tasks = ref<Task[]>(
   props.words.map((w, i) => (Math.random() < 0.5 ? makeTask('tr', w, i) : makeTask('back', w, i)) ?? makeTask('tr', w, i)!).filter(Boolean),
 )
@@ -26,7 +28,7 @@ function answer(option: string) {
   picked.value = option
   const ok = option === t.answer
   results.value.push(ok)
-  progress.record({ word: t.word, ok, source: 'review', detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option } })
+  progress.record({ word: t.word, ok, source: 'review', detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, r: round } })
 }
 function next() {
   idx.value++

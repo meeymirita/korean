@@ -11,7 +11,7 @@ import type { Task } from '@/data/korean/tasks'
 import { dragDrop } from '@/lib/dragdrop'
 import { burst, cascade, pop, shake } from '@/lib/fx'
 import { itemIcon, itemName } from '@/data/shop'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 import { useShopStore } from '@/stores/shop'
 
 /**
@@ -22,6 +22,8 @@ const props = defineProps<{ tasks: Task[]; source: string; /** режим для
 const emit = defineEmits<{ again: [] }>()
 
 const progress = useProgressStore()
+/** Номер серии для журнала. */
+const round = newRound()
 const shop = useShopStore()
 /** Задания серии: «Повтор вопроса» переносит текущее в конец. */
 const list = ref<Task[]>([...props.tasks])
@@ -204,7 +206,7 @@ function commit(option: string) {
   }
   // повтор после ошибки засчитывается (ошибка −1, верно +1); второй верный ответ на то же задание не начисляется
   if (!already) {
-    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, ...(t.gram ? { g: t.gram } : {}) } })
+    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, ...(t.gram ? { g: t.gram } : {}), r: round } })
   }
   ;(ok ? pop : shake)(zone.value)
 }

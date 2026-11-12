@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { visit } from '@/composables/useLastVisited'
 import '@/assets/home/fonts.css'
@@ -31,6 +31,8 @@ watch(() => route.path, visit, { immediate: true })
 watch(() => route.fullPath, () => (peek.value = false))
 
 /** Режим «только задание»: боковое меню спрятано, страница на всю ширину. Выбор помнится на устройстве; клавиша F переключает. */
+/** Страница без бокового меню, на всю ширину (отчёт): назад ведёт кнопка на самой странице. */
+const bare = computed(() => route.path === '/korean/report')
 const FOCUS_KEY = 'focus_mode'
 const focus = ref(false)
 try {
@@ -99,8 +101,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="study study-shell sky" :class="{ focus, peek, pinned: route.path === '/korean/shop' }">
-    <aside class="study-side" @mouseenter="peekOpen" @mouseleave="peekClose()">
+  <div class="study study-shell sky" :class="{ focus, peek, bare, pinned: route.path === '/korean/shop' }">
+    <aside v-if="!bare" class="study-side" @mouseenter="peekOpen" @mouseleave="peekClose()">
       <RouterLink to="/" class="brand brand-row brand-home" title="На главную страницу">
         <span class="brand-mark">✳︎</span>
         <div>
@@ -148,7 +150,7 @@ onBeforeUnmount(() => {
         <button class="theme-btn" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()"><span aria-hidden="true">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая' : 'Тёмная' }}</button>
       </div>
     </aside>
-    <button v-if="focus" class="side-show" title="Наведи, чтобы открыть меню; нажми, чтобы закрепить (клавиша F)" aria-label="Показать меню" @mouseenter="peekOpen" @mouseleave="peekClose()" @focus="peekOpen" @click="setFocus(false)">☰ Меню</button>
+    <button v-if="focus && !bare" class="side-show" title="Наведи, чтобы открыть меню; нажми, чтобы закрепить (клавиша F)" aria-label="Показать меню" @mouseenter="peekOpen" @mouseleave="peekClose()" @focus="peekOpen" @click="setFocus(false)">☰ Меню</button>
     <main class="study-main">
       <Breadcrumbs />
       <AuthGate v-if="route.meta.private && !progress.unlocked" />

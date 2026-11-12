@@ -46,6 +46,7 @@ export const sections: Section[] = [
   { id: 'keyboard', num: '21', menu: 'Клавиатура', kicker: 'Тренажёр', title: 'Печать на корейском', sub: 'от букв до предложений: учись печатать вслепую на корейской раскладке', private: true, group: 'extra' },
   { id: 'sites', num: '22', menu: 'Сайты', kicker: 'Практика', title: 'Полезные сайты', sub: 'словари, уроки, произношение и общение с носителями', private: true, group: 'extra' },
   { id: 'services', num: '23', menu: 'Сервисы', kicker: 'Сервер', title: 'Сервисы', sub: 'контейнеры, журналы, поиск, Grafana и Prometheus', private: true, owner: true, group: 'extra' },
+  { id: 'report', num: '25', menu: 'Отчёт', kicker: 'Кабинет', title: 'Отчёт', sub: 'все ответы по режимам: графики, PDF и каждое занятие целиком', private: true, owner: true, group: 'extra' },
   { id: 'exam', num: '24', menu: 'Итоговая оценка', kicker: 'Экзамен', title: 'Итоговая оценка', sub: 'один большой экзамен по всему пройденному: 85% верных и ни одно правило ниже 70%', private: true, owner: true },
 ]
 

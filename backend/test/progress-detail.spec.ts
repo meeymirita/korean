@@ -14,4 +14,10 @@ describe('answer detail', () => {
     const detail = (service as unknown as { detail(value: unknown): string }).detail({ q: '작다', a: 'маленький', y: 'мало', n: 'линией' })
     expect(JSON.parse(detail)).toEqual({ q: '작다', a: 'маленький', y: 'мало', n: 'линией' })
   })
+
+  it('keeps the round ID that splits answers into sessions', async () => {
+    const service = new ProgressService({} as Db)
+    const detail = (service as unknown as { detail(value: unknown): string }).detail({ q: '작다', r: 'mabc123' })
+    expect(JSON.parse(detail)).toEqual({ q: '작다', r: 'mabc123' })
+  })
 })

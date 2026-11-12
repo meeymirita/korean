@@ -105,6 +105,7 @@ const PAGES: Record<string, Seo> = {
   '/korean/exam': { title: `Итоговая оценка · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/know': { title: `Что я уже знаю · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/lab': { title: `Мастерская грамматики · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/korean/report': { title: `Отчёт · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/services': { title: `Сервисы · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/sites': { title: `Полезные сайты · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/game/home': { title: `Игры на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },

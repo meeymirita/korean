@@ -147,7 +147,7 @@ const stats = computed(() => {
 
 <style>
 .rc { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(32, 38, 92, .45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.rc .rc-box.study { position: relative; min-height: 0; width: min(1080px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
+.rc .rc-box.study { position: relative; min-height: 0; width: min(1560px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
   background: linear-gradient(160deg, #fff 0%, #fdf3fb 55%, #eef4ff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 30px 70px -20px rgba(80, 70, 160, .55); }
 .rc-x { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(143, 124, 240, .12); color: var(--muted); font-size: 14px; cursor: pointer; transition: background .15s; }
 .rc-x:hover { background: rgba(214, 77, 169, .18); color: var(--pink); }
@@ -166,8 +166,8 @@ const stats = computed(() => {
 .rc-tip { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: rgba(143, 124, 240, .08); border: 1px dashed rgba(143, 124, 240, .35); }
 .rc-tip .ic-img { margin-top: 1px; }
 .rc-tip p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
-.rc-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
-.rc-right { display: flex; flex-direction: column; min-height: 0; max-height: calc(100vh - 170px); padding: 14px 14px 10px; border-radius: 20px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(143, 124, 240, .22); }
+.rc-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr); gap: 18px; align-items: start; }
+.rc-right { display: flex; flex-direction: column; min-height: 0; height: calc(100vh - 170px); max-height: calc(100vh - 170px); padding: 14px 14px 10px; border-radius: 20px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(143, 124, 240, .22); }
 .rc-rh h3 { margin: 0 0 8px; font-size: 18px; color: var(--ink); }
 .rc-seg { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(143, 124, 240, .1); margin-bottom: 10px; }
 .study .rc-seg button { flex: 1; padding: 4px 8px; border: 0; border-radius: 999px; background: none; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
@@ -186,6 +186,6 @@ const stats = computed(() => {
 .rc-ans.rc-how i { color: var(--muted); }
 .rc-list time { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); opacity: .8; }
 .rc-none, .rc-more { margin: 6px 2px; font-size: 13px; color: var(--muted); }
-@media (max-width: 860px) { .rc-cols { grid-template-columns: 1fr; } .rc-right { max-height: 420px; } }
+@media (max-width: 860px) { .rc-cols { grid-template-columns: 1fr; } .rc-right { height: auto; max-height: 70vh; } }
 @media (max-width: 640px) { .rc-sum { grid-template-columns: repeat(2, 1fr); } .rc .rc-cat { height: 60px; } .rc .rc-box h2 { font-size: 20px; } }
 </style>

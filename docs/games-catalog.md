@@ -100,7 +100,7 @@
 - **Зависимости тем, конструктор, вежливый и разговорный стиль** → уже есть, `data/korean/lab.ts` (`DEPS`, `build`, `STYLES`).
 - **Готовая выжимка по пройденному** → шаблон уже есть, `data/korean/pages.ts` (`cheatHtml` / `talkHtml` / …),
   рисуется `RichView.vue` во вкладках `ref/*`.
-- **Личная статистика / графики** → в кабинете уже есть вкладка отчётов: `ReportTab.vue` + `ReportChartModal.vue`
+- **Личная статистика / графики** → уже есть страница отчёта `/korean/report`: `ReportTab.vue` + `ReportChartModal.vue` + `ReportSessions.vue` (все ответы по занятиям; новый режим попадает туда сам, если пишет `progress.record` с `detail` и номером раунда `r`)
   + `data/report.ts`, сервер — `GET /api/report/*`. Расширять её, не заводить вторую вкладку аналитики.
 - **Напоминание на своё время** → готовый паттерн `{enabled, time, lastSent}` в
   `backend/src/reminders/reminder.service.ts` и `backend/src/digest/digest.service.ts` (оба тикают раз в минуту).

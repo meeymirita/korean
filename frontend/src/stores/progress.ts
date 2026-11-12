@@ -27,7 +27,11 @@ export interface AnswerDetail {
   g?: string
   /** Как отвечал: способ и что было на экране (пока пишет «Найди пару»), для разбора спорных случаев. */
   n?: string
+  /** Номер раунда или серии (`newRound`): по нему отчёт делит ответы на занятия. */
+  r?: string
 }
+/** Номер раунда для журнала: один на раунд или серию заданий. */
+export const newRound = (): string => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 export interface LogEntry {
   t: number
   w: string | null
@@ -124,6 +128,7 @@ function cleanDetail(d?: AnswerDetail): AnswerDetail | undefined {
   for (const k of ['q', 'a', 'y'] as const) if (typeof d[k] === 'string' && d[k]) out[k] = d[k]!.slice(0, 300)
   if (typeof d.g === 'string' && d.g) out.g = d.g.slice(0, 80)
   if (typeof d.n === 'string' && d.n) out.n = d.n.slice(0, 600)
+  if (typeof d.r === 'string' && d.r) out.r = d.r.slice(0, 40)
   return Object.keys(out).length ? out : undefined
 }
 /** Очков у слова, с которых оно считается выученным: верный ответ +1, ошибка −1 (не ниже 0). */

@@ -105,6 +105,10 @@
 /* режим «только задание»: меню спрятано, страница на всю ширину */
 .study-shell.sky.focus { grid-template-columns: 0px minmax(0, 1fr); gap: 0; max-width: 2400px; }
 .study-shell.sky.focus .study-main .wrap { max-width: 2000px; }
+/* страница без бокового меню (отчёт): одна колонка на всю ширину окна */
+.study-shell.bare { grid-template-columns: minmax(0, 1fr); }
+.study-shell.sky.bare > .study-main { grid-column: 1; }
+.study-shell.sky.bare .study-main .wrap, .study-shell.sky.bare .study-main .crumbs { max-width: none; }
 .study-shell.sky.focus .study-main > .wrap:first-child { padding-top: 70px; } /* страница без хлебных крошек: сверху место под кнопку «Меню» */
 .study-shell.sky .study-side { transition: opacity .2s ease, visibility .3s; }
 .study-shell.sky.focus .study-side { min-width: 0; overflow: hidden; opacity: 0; visibility: hidden; pointer-events: none; }

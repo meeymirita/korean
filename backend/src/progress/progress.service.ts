@@ -190,9 +190,9 @@ export class ProgressService {
     return { source, mode: mode ?? null, days: out }
   }
 
-  /** Сами ответы раздела или режима за период: слово, верно ли, вопрос / верный ответ / что выбрано. Новые сверху, не больше 300.
+  /** Сами ответы раздела или режима за период: слово, верно ли, вопрос / верный ответ / что выбрано. Новые сверху, не больше `limit` (300, страница отчёта просит больше).
    * Без `source` (пустая строка) — по всем разделам сразу: так собирается общий «Дневник ошибок». */
-  async answersOf(source: string, mode: string | undefined, days: number, only?: 'ok' | 'bad') {
+  async answersOf(source: string, mode: string | undefined, days: number, only?: 'ok' | 'bad', limit = 300) {
     const where = {
       ...(source ? { source } : {}),
       ...(mode !== undefined ? { mode } : {}),
@@ -202,7 +202,7 @@ export class ProgressService {
     const count = (ok: number) => orm.answer.count({ where: { ...where, ok } })
     const items = (await orm.answer.findMany({
       where: { ...where, ...(only === 'ok' ? { ok: 1 } : only === 'bad' ? { ok: 0 } : {}) },
-      orderBy: [{ t: 'desc' }, { id: 'desc' }], take: 300,
+      orderBy: [{ t: 'desc' }, { id: 'desc' }], take: limit,
       select: { t: true, word: true, ok: true, detail: true, source: true, mode: true },
     })).map(r => ({ t: Number(r.t), w: r.word, ok: !!r.ok, source: r.source, mode: r.mode, ...(r.detail ? { d: parseDetail(r.detail) } : {}) }))
     const [ok, bad] = await Promise.all([count(1), count(0)])
@@ -296,7 +296,7 @@ export class ProgressService {
     }
   }
 
-  /** Подробности ответа для истории: q — вопрос, a — верный ответ, y — что выбрал, n — как отвечал (способ и что было на экране); всё необязательно, строки короткие. */
+  /** Подробности ответа для истории: q — вопрос, a — верный ответ, y — что выбрал, n — как отвечал (способ и что было на экране), r — номер раунда (по нему отчёт делит ответы на занятия); всё необязательно, строки короткие. */
   private detail(v: unknown): string {
     if (v == null) return ''
     if (typeof v !== 'object' || Array.isArray(v)) return bad('invalid op')
@@ -305,6 +305,7 @@ export class ProgressService {
     for (const k of ['q', 'a', 'y']) if (o[k] != null) out[k] = str(o[k], 300)
     if (o.g != null) out.g = str(o.g, 80)
     if (o.n != null) out.n = str(o.n, 600)
+    if (o.r != null) out.r = str(o.r, 40)
     return Object.keys(out).length ? JSON.stringify(out) : ''
   }
 

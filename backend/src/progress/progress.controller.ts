@@ -46,12 +46,13 @@ export class ProgressController {
     return this.progress.series(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 365) : 0)
   }
 
-  /** GET /api/report/answers?source=game&mode=type&days=30&only=bad|ok: сами ответы (новые сверху, не больше 300) для окна графика.
+  /** GET /api/report/answers?source=game&mode=type&days=30&only=bad|ok&limit=1000: сами ответы (новые сверху, по умолчанию 300, не больше 5000) для окна графика и страницы отчёта.
    * Без `source` — по всем разделам сразу (общий «Дневник ошибок»). */
   @Get('report/answers')
   @Owner()
-  answers(@Query('source') source?: string, @Query('mode') mode?: string, @Query('days') days?: string, @Query('only') only?: string) {
-    return this.progress.answersOf(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 3650) : 0, only === 'bad' || only === 'ok' ? only : undefined)
+  answers(@Query('source') source?: string, @Query('mode') mode?: string, @Query('days') days?: string, @Query('only') only?: string, @Query('limit') limit?: string) {
+    const take = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Math.min(Number(limit), 5000) : 300
+    return this.progress.answersOf(String(source ?? ''), mode === undefined ? undefined : mode === '-' ? '' : mode, Number(days) > 0 ? Math.min(Number(days), 3650) : 0, only === 'bad' || only === 'ok' ? only : undefined, take)
   }
 
   /** POST /api/ops: пачка действий { ops: [{ type: 'answer' | 'reset' | 'profile' | 'settings' | 'import', … }] }. */
