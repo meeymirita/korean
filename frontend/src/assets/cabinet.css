@@ -5,6 +5,8 @@
 .study .pg-v { margin-top: 6px; font-family: var(--serif); font-size: 46px; font-weight: 600; line-height: 1; }
 .study .pg-v small { font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 400; color: var(--muted); }
 .study .pg-t { margin-top: 4px; font-size: 15px; font-weight: 600; }
+.study .pg-rank { display: flex; align-items: center; gap: 8px; }
+.study .pg-rank .rank-pic { width: 48px; height: 48px; }
 .study .pg-s { margin-top: 8px; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
 .study .pg-bar { height: 7px; margin-top: 10px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
 .study .pg-bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; transition: width .4s; }

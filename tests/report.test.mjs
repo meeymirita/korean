@@ -109,6 +109,12 @@ describe('сайт: звания и уровни', () => {
     assert.equal(t.length, 21)
     assert.equal(new Set(t.map(r => r.name)).size, 21)
     assert.equal(t.at(-1).name, 'Вечность')
+    // у каждого звания своя картинка, лишних файлов нет
+    const { readdirSync } = await import('node:fs')
+    const pics = readdirSync(new URL('../frontend/src/assets/levels/', import.meta.url)).filter(f => f.endsWith('.webp')).sort()
+    assert.deepEqual(pics, t.map(r => `rank-${r.from}.webp`).sort())
+    const { rankStart } = await load('/src/data/levels.ts')
+    assert.deepEqual([1, 4, 5, 13, 99, 100, 250].map(rankStart), [1, 1, 5, 10, 95, 100, 100])
     assert.equal(t[0].from, 1)
     assert.equal(t.at(-1).to, MAX_LEVEL)
     t.slice(1).forEach((r, i) => assert.equal(r.from, t[i].to + 1))

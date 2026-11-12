@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
+import RankPic from '@/components/RankPic.vue'
 import { MAX_LEVEL, rankTable, type LevelInfo } from '@/data/levels'
 
 /** Окно «Все уровни»: звания, уровни внутри них и сколько очков нужно до каждого. Текущий уровень выделен. */
@@ -33,7 +34,7 @@ const state = (level: number) => (level < props.info.level ? 'done' : level === 
           <small>{{ info.max ? 'Максимальный уровень, выше только свои рекорды' : `${num(info.into)} из ${num(info.span)} очков до уровня ${info.level + 1}` }}</small>
         </div>
         <section v-for="r in ranks" :key="r.name" class="lv-rank" :class="{ cur: info.level >= r.from && info.level <= r.to }">
-          <h3>{{ r.name }} <small>уровни {{ r.from }}–{{ r.to }}</small></h3>
+          <h3><RankPic :level="r.from" /><span>{{ r.name }} <small>{{ r.from === r.to ? `уровень ${r.from}` : `уровни ${r.from}–${r.to}` }}</small></span></h3>
           <ul>
             <li v-for="l in r.levels" :key="l.level" :class="state(l.level)">
               <b>{{ l.level }}</b>
@@ -63,7 +64,8 @@ const state = (level: number) => (level < props.info.level ? 'done' : level === 
 .lv-now small { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
 .lv-rank { margin-bottom: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(143, 124, 240, .18); }
 .lv-rank.cur { border-color: rgba(214, 77, 169, .45); background: #fff; box-shadow: 0 10px 26px -18px rgba(214, 77, 169, .6); }
-.lv .lv-rank h3 { margin: 0 0 8px; font-size: 18px; color: var(--ink); }
+.lv .lv-rank h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 18px; color: var(--ink); }
+.lv-rank:not(.cur) .rank-pic { width: 52px; height: 52px; }
 .lv-rank h3 small { margin-left: 6px; font-size: 12.5px; font-weight: 400; color: var(--muted); }
 .lv-rank ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
 .lv-rank li { padding: 8px 10px; border-radius: 14px; text-align: center; background: rgba(143, 124, 240, .07); border: 1px solid transparent; }

@@ -12,6 +12,7 @@ import { ACHIEVEMENTS } from '@/data/achievements'
 import { achievedAt, markAchieved } from '@/lib/achievedDates'
 import { useShareCard } from '@/composables/useShareCard'
 import { MAX_LEVEL } from '@/data/levels'
+import RankPic from '@/components/RankPic.vue'
 import { CATN, D } from '@/data/korean/words'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import { formatSpent, useTimerStore } from '@/stores/timer'
@@ -121,7 +122,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       <div class="pg-card">
         <div class="pg-k">Уровень</div>
         <div class="pg-v"><span v-count="info.level">{{ info.level }}</span> <small>из {{ MAX_LEVEL }}</small></div>
-        <div class="pg-t">{{ info.title }}</div>
+        <div class="pg-t pg-rank"><RankPic :level="info.level" />{{ info.title }}</div>
         <div class="pg-bar"><i :style="{ width: info.pct + '%' }"></i></div>
         <div class="pg-s">{{ info.max ? 'максимальный уровень' : `${info.into} / ${info.span} очков до следующего` }} · всего {{ info.xp }}</div>
         <button type="button" class="pg-lvl-btn" @click="levelsOpen = true">Все уровни</button>

@@ -35,7 +35,10 @@ const RANKS: [number, string][] = [
   [100, 'Вечность'],
 ]
 
-export const rankOf = (level: number) => [...RANKS].reverse().find(([from]) => level >= from)![1]
+const rankAt = (level: number) => [...RANKS].reverse().find(([from]) => level >= from) ?? RANKS[0]!
+export const rankOf = (level: number) => rankAt(level)[1]
+/** Первый уровень звания, к которому относится уровень: по нему названа картинка звания (`assets/levels/rank-<N>.webp`). */
+export const rankStart = (level: number) => rankAt(level)[0]
 
 /** Все звания с границами: с какого и по какой уровень, сколько очков нужно на первый уровень звания. */
 export function rankTable() {
