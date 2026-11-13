@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import LevelsModal from '@/components/cabinet/LevelsModal.vue'
 import { RouterLink } from 'vue-router'
 import LineChart from '@/components/charts/LineChart.vue'
@@ -14,6 +14,10 @@ import { useShareCard } from '@/composables/useShareCard'
 import { MAX_LEVEL } from '@/data/levels'
 import RankPic from '@/components/RankPic.vue'
 import { CATN, D } from '@/data/korean/words'
+import TaskSession from '@/components/korean/TaskSession.vue'
+import { STALE_DAYS, STALE_DRILL, STALE_PAGE, WEAK_LIMIT, staleTasks, staleWords, topicOrAll, weakWords } from '@/data/korean/stale'
+import { usePersisted } from '@/composables/usePersisted'
+import type { Task } from '@/data/korean/tasks'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import { formatSpent, useTimerStore } from '@/stores/timer'
 
@@ -69,16 +73,22 @@ const byCategory = computed(() =>
   }),
 )
 
-const weak = computed(() =>
-  D.filter(d => {
-    const w = words.value[d.k]
-    return w && w.streak < KNOWN_STREAK && w.bad > 0
-  })
-    .map(d => ({ d, w: words.value[d.k]! }))
-    .sort((a, b) => b.w.bad - b.w.ok - (a.w.bad - a.w.ok) || b.w.bad - a.w.bad)
-    .slice(0, 12),
-)
+/** Фильтр слабых слов по теме словаря (пусто: все темы), помнится до закрытия вкладки. */
+const weakTopic = usePersisted('ov_weak_topic', '', v => topicOrAll(v) === v)
+const weak = computed(() => weakWords(progress.data, topicOrAll(weakTopic.value), WEAK_LIMIT))
 
+/** «Давно не видел»: «сейчас» берётся только на клиенте, на сервере список пуст (нет расхождения при отрисовке). */
+const now = ref(0)
+onMounted(() => (now.value = Date.now()))
+const stale = computed(() => (now.value ? staleWords(progress.data, now.value) : []))
+const staleShown = ref(STALE_PAGE)
+const staleDrillTasks = ref<Task[]>([])
+const staleDrilling = ref(false)
+const staleAgo = (days: number) => (days >= 60 ? `${Math.floor(days / 30)} мес. назад` : `${days} дн. назад`)
+function startStale() {
+  staleDrillTasks.value = staleTasks(progress.data, now.value, STALE_DRILL)
+  staleDrilling.value = staleDrillTasks.value.length > 0
+}
 
 /** Бьётся после каждой новой отметки даты, чтобы achievements пересчитался и подхватил её из localStorage. */
 const dateTick = ref(0)
@@ -205,6 +215,12 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
     <p class="pg-legend"><i class="known"></i> выучено <i class="learning"></i> в процессе</p>
 
     <h2 class="today-h">Над чем стоит поработать <RouterLink v-if="weak.length" to="/korean/mistakes" class="mk-link">все ошибки →</RouterLink></h2>
+    <label class="pg-filter">Тема
+      <select v-model="weakTopic" aria-label="Тема слабых слов">
+        <option value="">Все</option>
+        <option v-for="(name, id) in CATN" :key="id" :value="id">{{ name }}</option>
+      </select>
+    </label>
     <div v-if="weak.length" class="pg-weak">
       <div v-for="x in weak" :key="x.d.n" class="pg-w">
         <b class="ko">{{ x.d.k }}</b>
@@ -212,7 +228,30 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <small>верно {{ x.w.ok }} · неверно {{ x.w.bad }}</small>
       </div>
     </div>
+    <p v-else-if="weakTopic" class="pg-empty">В этой теме слабых слов нет.</p>
     <p v-else class="pg-empty">Слабых слов пока нет: ошибёшься в слове, и оно появится здесь.</p>
+
+    <section v-if="stale.length || staleDrilling" class="pg-stale" aria-label="Давно не видел">
+      <h2 class="today-h">Давно не видел <small>последний ответ старше {{ STALE_DAYS }} дней, слов: {{ stale.length }}</small></h2>
+      <template v-if="staleDrilling">
+        <button type="button" class="chip" @click="staleDrilling = false">← К списку</button>
+        <TaskSession :tasks="staleDrillTasks" source="trainer" mode="stale" again-label="Ещё серию" @again="startStale" />
+      </template>
+      <template v-else>
+        <p class="pg-note">Обзор того, что забылось. Расписание повторений живёт на вкладке «Повторить».</p>
+        <div class="pg-stale-list">
+          <div v-for="x in stale.slice(0, staleShown)" :key="x.d.k" class="pg-stale-row">
+            <b class="ko">{{ x.d.k }}</b>
+            <span>{{ x.d.t }}</span>
+            <small>{{ staleAgo(x.days) }} · {{ x.w.streak >= KNOWN_STREAK ? 'выучено' : 'не выучено' }}, очки {{ x.w.streak }}</small>
+          </div>
+        </div>
+        <div class="pg-stale-act">
+          <button v-if="stale.length > staleShown" type="button" class="chip" @click="staleShown += STALE_PAGE">Показать ещё {{ Math.min(STALE_PAGE, stale.length - staleShown) }}</button>
+          <button type="button" class="chip on pg-stale-go" :title="`Серия до ${STALE_DRILL} заданий по этим словам`" @click="startStale">Повторить их</button>
+        </div>
+      </template>
+    </section>
 
     <h2 class="today-h">Достижения <small>{{ doneCount }} из {{ achievements.length }}</small></h2>
     <div class="pg-ach">
@@ -250,5 +289,12 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
 .pg-weak-rule-track { height: 7px; margin: 8px 0; overflow: hidden; border-radius: 8px; background: var(--line); }
 .pg-weak-rule-track i { display: block; height: 100%; border-radius: inherit; background: var(--pink, #d64da9); }
 .pg-weak-rule-foot small { color: var(--muted); }
+.pg-filter { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.pg-filter select { padding: 5px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; font: inherit; }
+.pg-stale-list { display: grid; gap: 6px; margin-top: 12px; max-width: 740px; }
+.pg-stale-row { display: grid; grid-template-columns: minmax(70px, 120px) 1fr; gap: 2px 12px; align-items: baseline; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.pg-stale-row b { font-size: 18px; }
+.pg-stale-row small { grid-column: 2; color: var(--muted); }
+.pg-stale-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .pg-weak-rule-foot a { color: var(--link, #1f82ae); font-size: 13px; }
 </style>
