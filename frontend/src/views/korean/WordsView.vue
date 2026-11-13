@@ -14,6 +14,8 @@ import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { EXTRA } from '@/data/korean/study'
 import NewWordDrawer from '@/components/korean/NewWordDrawer.vue'
+import TaskSession from '@/components/korean/TaskSession.vue'
+import { DRILL_SIZE, topicProgress, topicTasks } from '@/data/korean/topics'
 import { useNewWordsStore, type NewWord } from '@/stores/newWords'
 import yunaBook from '@/assets/home/yuna-book.webp'
 
@@ -48,6 +50,21 @@ function openWord(d: Word) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 const input = ref<HTMLInputElement>()
+
+/** «Закрепление по темам»: полоска «выучено N из M» и серия «Добить тему» только по ещё не выученным словам (`data/korean/topics.ts`). */
+const topics = computed(() => topicProgress(progress.data).filter(t => t.total > 0))
+/** Тема, по которой идёт серия (пусто: показан список слов). */
+const drill = ref('')
+const drillName = computed(() => CATN[drill.value] ?? '')
+const drillTasks = ref<ReturnType<typeof topicTasks>>([])
+const nextDrill = () => {
+  drillTasks.value = topicTasks(progress.data, drill.value)
+  if (!drillTasks.value.length) drill.value = ''
+}
+function startDrill(id: string) {
+  drill.value = id
+  nextDrill()
+}
 
 const qs = computed(() => parseQuery(q.value))
 const pool = computed(() => D.filter(d => (!cat.value || d.c.includes(cat.value)) && (!fav.value || markedWords.value.has(d.k))))
@@ -151,7 +168,30 @@ const shareWord = (d: Word) =>
     </div>
 
     <NewWordDrawer :open="formOpen" :edit="editing" @close="formOpen = false" />
-    <div v-if="rows.length" class="tb">
+    <section v-if="drill" class="wd-drill" aria-label="Добить тему">
+      <div class="wd-drill-head">
+        <h2>Добить тему: {{ drillName }}</h2>
+        <button type="button" class="chip" @click="drill = ''">← К списку слов</button>
+      </div>
+      <TaskSession :tasks="drillTasks" source="trainer" mode="topic" again-label="Ещё серию" @again="nextDrill" />
+    </section>
+    <section v-else-if="!qs.length && !fav && !picked" class="wd-topics" aria-label="Закрепление по темам">
+      <h2 class="wd-topics-h">Закрепление по темам</h2>
+      <div class="wd-topics-grid">
+        <div v-for="t in topics" :key="t.id" class="wd-topic" :class="{ done: t.known === t.total }">
+          <div class="wd-topic-top">
+            <b>{{ t.name }}</b>
+            <span class="wd-topic-n">выучено {{ t.known }} из {{ t.total }}</span>
+          </div>
+          <div class="pg-bar" role="progressbar" :aria-valuenow="t.known" aria-valuemin="0" :aria-valuemax="t.total" :aria-label="`Выучено слов темы «${t.name}»`">
+            <i :style="{ width: t.pct + '%' }"></i>
+          </div>
+          <span v-if="t.known === t.total" class="wd-topic-done">Тема выучена</span>
+          <button v-else type="button" class="wd-topic-go" :title="`Серия до ${DRILL_SIZE} заданий по словам, которые ещё не выучены`" @click="startDrill(t.id)">Добить тему</button>
+        </div>
+      </div>
+    </section>
+    <div v-if="rows.length && !drill" class="tb">
       <div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
       <template v-for="(d, i) in rows" :key="d.n">
         <div v-show="i < limit" class="row">
@@ -176,10 +216,10 @@ const shareWord = (d: Word) =>
         </div>
       </template>
     </div>
-    <button v-if="rows.length > limit" type="button" class="words-more" @click="more">
+    <button v-if="rows.length > limit && !drill" type="button" class="words-more" @click="more">
       Показать ещё {{ Math.min(PAGE, rows.length - limit) }} <small>(осталось {{ rows.length - limit }})</small>
     </button>
-    <div v-if="!rows.length" class="empty">
+    <div v-if="!rows.length && !drill" class="empty">
       <Cat :name="fav && !q ? 'read' : 'think'" />
       <template v-if="fav && !q">Звёздочек пока нет: нажми ☆ рядом со словом, и оно появится здесь.</template>
       <template v-else>Ничего не нашлось по «<span v-html="esc(q)"></span>».<br />Попробуй другое слово или русскую форму («ем» → «есть»).</template>
@@ -200,6 +240,18 @@ const shareWord = (d: Word) =>
 .words-more { display: block; margin: 18px auto 6px; padding: 12px 28px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--pink); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .2s, background .2s; }
 .words-more small { color: var(--muted); font-weight: 500; }
 .words-more:hover { border-color: var(--pink); background: #fff; }
+/* «Закрепление по темам»: карточка темы с полоской (полоска `.pg-bar` общая с кабинетом) */
+.study .wd-topics-h, .study .wd-drill-head h2 { margin: 22px 0 10px; font-size: 18px; font-weight: 700; }
+.study .wd-drill-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.study .wd-drill-head .chip { cursor: pointer; font: inherit; font-weight: 600; color: var(--ink); }
+.study .wd-topics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.study .wd-topic { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.study .wd-topic-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; }
+.study .wd-topic-n { font-size: 13px; font-weight: 600; color: var(--muted); }
+.study .wd-topic.done .pg-bar i { background: var(--ok); }
+.study .wd-topic-go { align-self: flex-start; margin-top: 10px; padding: 8px 16px; font: inherit; font-size: 14px; font-weight: 700; color: #37378f; background: linear-gradient(100deg, #f8b9e9, #9de4ff); border: 0; border-radius: 99px; cursor: pointer; transition: filter .2s; }
+.study .wd-topic-go:hover { filter: brightness(1.05); }
+.study .wd-topic-done { margin-top: 10px; padding: 8px 0; font-size: 14px; font-weight: 700; color: var(--ok); }
 /* Юна на «Словах»: двигай здесь */
 .words-yuna {
   --h: min(80vh, 840px);   /* высота картинки */

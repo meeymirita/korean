@@ -31,6 +31,7 @@ export const EXTRA_MODES: Record<string, string> = {
   pairs: 'Похожие, но разные',
   quick: '5 минут',
   mistakes: 'Мои ошибки',
+  topic: 'Добить тему',
   cards: 'Повторение: карточки',
   'check-pairs': 'Проверка слов: найди пару',
   'check-quiz': 'Проверка слов: выбери перевод',
