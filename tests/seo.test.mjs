@@ -23,7 +23,7 @@ describe('SEO', () => {
   })
 
   test('закрытые токеном страницы помечены noindex', () => {
-    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/culture', '/korean/exam', '/korean/forms', '/korean/garden', '/korean/grammar', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/ref/alphabet', '/korean/ref/cheat', '/korean/ref/hangul', '/korean/ref/numbers', '/korean/ref/reading', '/korean/ref/sentences', '/korean/ref/talk', '/korean/report', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/korean/words', '/upload'])
+    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/clip', '/korean/culture', '/korean/exam', '/korean/forms', '/korean/garden', '/korean/grammar', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/ref/alphabet', '/korean/ref/cheat', '/korean/ref/hangul', '/korean/ref/numbers', '/korean/ref/reading', '/korean/ref/sentences', '/korean/ref/talk', '/korean/report', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/korean/words', '/upload'])
     for (const p of privatePaths()) assert.equal(seoFor(p).noindex, true)
   })
 

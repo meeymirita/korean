@@ -23,6 +23,8 @@ export interface Segment {
   explain?: string
   /** id карточки грамматики */
   g?: string
+  /** словарная форма слова («가요» → 가다, «학교» → 학교); у частиц и окончаний нет */
+  lemma?: string
 }
 
 /** Названия нижних согласных (받침) по индексу из Unicode. */
@@ -46,6 +48,7 @@ interface Entry {
   type: 'word' | 'verb' | 'ending'
   explain?: string
   g?: string
+  lemma?: string
 }
 
 /** Словарь для разбора: слова, формы глаголов и несколько служебных слов. */
@@ -57,13 +60,13 @@ const add = (k: string, e: Entry) => {
 for (const w of D) {
   const k = clean(w.k)
   if (!k || /[()]/.test(k)) continue
-  add(k, { k, r: w.r, gloss: short(w.t), type: 'word' })
+  add(k, { k, r: w.r, gloss: short(w.t), type: 'word', lemma: k })
 }
 for (const [list, g] of [[VERBS, 'ayo'], [ADJECTIVES, 'adj']] as const) {
   for (const e of list) {
     const base = short(e.t)
-    if (e.form) add(e.form, { k: e.form, r: '', gloss: `${base} (настоящее время, от ${e.k})`, type: 'verb', explain: e.s || undefined, g })
-    if (e.past) add(e.past, { k: e.past, r: '', gloss: `${base} (прошедшее время, от ${e.k})`, type: 'verb', explain: e.s || undefined })
+    if (e.form) add(e.form, { k: e.form, r: '', gloss: `${base} (настоящее время, от ${e.k})`, type: 'verb', explain: e.s || undefined, g, lemma: e.k })
+    if (e.past) add(e.past, { k: e.past, r: '', gloss: `${base} (прошедшее время, от ${e.k})`, type: 'verb', explain: e.s || undefined, lemma: e.k })
   }
 }
 /**
@@ -137,7 +140,7 @@ const FORMS: [string, string, string][] = [
 ]
 const FUNC_MAP = new Map<string, Entry>([
   ...FUNC.map(([k, r, gloss]) => [k, { k, r, gloss, type: 'word' } as Entry] as const),
-  ...FORMS.map(([k, r, gloss]) => [k, { k, r, gloss, type: 'verb' } as Entry] as const),
+  ...FORMS.map(([k, r, gloss]) => [k, { k, r, gloss, type: 'verb', lemma: /от ([가-힣]+)/.exec(gloss)?.[1] } as Entry] as const),
   // «-(으)ㄹ 거예요»: само 거예요 одно и то же, а перед ним форма основы с ㄹ / 을 (см. futureBase)
   ['거예요', { k: '거예요', r: 'коеё', gloss: 'будущее время, планы («буду…»)', type: 'ending', explain: 'Основа глагола + ㄹ / 을 + 거예요: так говорят о планах и будущем; пишется 거예요, читается [꺼예요]', g: 'future_my' } as Entry] as const,
 ])
@@ -223,6 +226,7 @@ const entrySeg = (tok: string, e: Entry): Segment => ({
   gloss: e.gloss,
   explain: e.explain,
   g: e.g,
+  lemma: e.lemma,
 })
 
 const particleSeg = (p: Particle, stem: string): Segment => {
@@ -289,7 +293,7 @@ function analyzeToken(tok: string, depth = 0): Segment[] | null {
   const fb = futureBase(tok)
   if (fb) {
     const base = LEX.get(fb)?.gloss ?? fb
-    return [{ text: tok, type: 'verb', gloss: `${base} (форма перед 거예요, от ${fb})`, explain: `${fb.slice(0, -1)} + ${tok.endsWith('을') ? '을' : 'ㄹ'} → ${tok}: основа с ㄹ / 을 перед 거예요`, g: 'future_my' }]
+    return [{ text: tok, type: 'verb', lemma: fb, gloss: `${base} (форма перед 거예요, от ${fb})`, explain: `${fb.slice(0, -1)} + ${tok.endsWith('을') ? '을' : 'ㄹ'} → ${tok}: основа с ㄹ / 을 перед 거예요`, g: 'future_my' }]
   }
 
   // «공부해요», «협력해요»: существительное + 하다 в настоящем времени
@@ -365,6 +369,19 @@ function refineE(segs: Segment[]): Segment[] {
     if (motion) return { ...x, g: 'gada', gloss: 'куда (направление движения)', explain: `Глагол движения (идти, приходить): 에 показывает, куда` }
     return { ...x, g: 'iss', gloss: 'где находится', explain: `После слова места 에 вместе с 있다 / 없다 говорит, где что-то находится` }
   })
+}
+
+/**
+ * Слово без частицы на конце («학교에서» → 학교): для слов, которых нет в словаре платформы и разбор их не режет.
+ * Берёт первую подходящую по 받침 частицу из списка разбора, без неё возвращает null.
+ */
+export function particleStem(tok: string): string | null {
+  for (const p of PARTICLES) {
+    if (tok.length <= p.form.length || !tok.endsWith(p.form)) continue
+    const stem = tok.slice(0, -p.form.length)
+    if (fits(p, stem)) return stem
+  }
+  return null
 }
 
 /** Разбирает предложение на слова, частицы и окончания. */
