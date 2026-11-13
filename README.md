@@ -87,5 +87,6 @@ docs/       документация по темам
 | [`docs/shop.md`](docs/shop.md) | монетки Юны и магазин |
 | [`docs/chat.md`](docs/chat.md) | помощник-чат |
 | [`docs/home-and-theme.md`](docs/home-and-theme.md) | главная, «О платформе», тема, общие окна, SEO |
+| [`docs/ideas.md`](docs/ideas.md) | идеи улучшений и нового функционала |
 
 Правила для разработки и договорённости с владельцем: [`CLAUDE.md`](CLAUDE.md).
