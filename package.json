@@ -15,6 +15,7 @@
     "server:build": "npm --prefix backend run build",
     "server:dev": "npm --prefix backend run dev",
     "test": "npm --prefix backend run build && npm run test:nest && npm run test:nuxt && node --test \"tests/*.test.mjs\"",
+    "test:quick": "node scripts/test-quick.mjs",
     "test:nest": "npm --prefix backend test",
     "test:nuxt": "npm --prefix frontend test"
   },

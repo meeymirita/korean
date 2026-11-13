@@ -170,7 +170,7 @@
 ## Как проверять
 
 - CI на GitHub (типы, сборка, тесты, `npm audit`, на Node 22 как в образах Docker и на Node 24 как на ноутбуке владельца) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
-- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`). Отдельно `npm run test:nest`, `npm run test:nuxt`.
+- Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`). Отдельно `npm run test:nest`, `npm run test:nuxt`. Быстро и без базы: `npm run test:quick` (все `tests/*.test.mjs`, которым не нужен сервер, по одному файлу, около минуты; можно часть имени: `npm run test:quick -- keyboard`).
   **Игровые тесты `frontend/test` разнесены по файлам** (`game.spec.ts`, `game-stories.spec.ts`, `game-variants.spec.ts`): один большой файл упирается в память Node (процесс падает с `SIGABRT`). Новые игровые тесты клади в отдельный файл.
 - Покрытие (без порога, только цифры): `npm --prefix backend run test:coverage`, `npm --prefix frontend run test:coverage` (`@vitest/coverage-v8`; полный прогон тяжёлый, на ноутбуке запускай с одним файлом: `npx vitest run test/<файл>.spec.ts --coverage --coverage.include=src`).
 - Линтер: `npm run lint` (`oxlint` с типами, настройки `.oxlintrc.json`; ловит забытый `await` и неиспользуемое, идёт в CI). После `npm install` в корне, если тесты не находят `pinia` или `vue`: `node scripts/link-test-deps.mjs`.
