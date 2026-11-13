@@ -9,6 +9,9 @@ export interface Profile {
 /** Настройки кабинета и тренажёров. */
 export interface Settings {
   goal: number
+  /** недельная цель: дней занятий (1–7) и верных ответов; нет в старых данных: берётся 5 и 100 (study/week-goal.ts) */
+  weekDays?: number
+  weekOk?: number
   cats: string[]
   gameCats: Record<string, number> | null
   /** закладки: «w:слово» и «g:id правила» */

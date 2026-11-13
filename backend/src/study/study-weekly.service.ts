@@ -4,6 +4,7 @@ import { logError } from '../log.js'
 import { studyCaption } from '../mail/templates.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { modeName } from './mode-names.js'
+import { weekGoalOf, weekGoalResult } from './week-goal.js'
 import { renderWeeklyPdf, weekLabel, type WeeklySpec } from './weekly-pdf.js'
 
 /** Сколько строк ошибок попадает в лист (повторы одной ошибки идут одной строкой). */
@@ -126,12 +127,23 @@ export class StudyWeeklyService implements OnModuleInit, OnModuleDestroy {
     const answers = spec.days.reduce((s, d) => s + d.ok + d.bad, 0)
     const seconds = spec.days.reduce((s, d) => s + d.seconds, 0)
     if (!force && !answers && !seconds) return false
-    const pdf = await renderWeeklyPdf({ ...spec, banner: await this.banner() })
+    const pdf = await renderWeeklyPdf({ ...spec, goal: await this.goal(spec), banner: await this.banner() })
     const from = spec.days[0]!.day
     const to = spec.days.at(-1)!.day
     const caption = studyCaption({ when: weekLabel(from, to), seconds, answers, ok: spec.days.reduce((s, d) => s + d.ok, 0) }, 'Отчёт за неделю')
     await this.notify.sendFileToTopic('study', `nedelya-${from}-${to}.pdf`, pdf, caption, 'application/pdf')
     return true
+  }
+
+  /** Итог недельной цели (пн–вс недели, в которую попал последний день листа) по цели из настроек владельца. */
+  async goal(spec: Pick<WeeklySpec, 'days'>) {
+    let settings: { weekDays?: unknown; weekOk?: unknown } | null = null
+    try {
+      settings = JSON.parse((await this.db.getMeta('settings')) ?? 'null')
+    } catch {
+      settings = null
+    }
+    return weekGoalResult(spec.days, weekGoalOf(settings))
   }
 
   /** Данные листа из базы: ответы и время по таймеру за семь дней. */

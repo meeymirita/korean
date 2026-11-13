@@ -6,6 +6,7 @@ import { errText } from '@/lib/http'
 import { CHECK_DEFAULT, CHECK_MAX, CHECK_MIN, checklistFor, clampCheckSize, snapshot } from '@/data/checklist'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import WeekGoalRing from '@/components/korean/WeekGoalRing.vue'
 import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsCheck.vue'
 import { askConfirm } from '@/composables/useConfirm'
 import { useGrammarModal } from '@/composables/useGrammarModal'
@@ -318,6 +319,7 @@ import yunaChecklist from '@/assets/home/yuna-checklist.webp'
     </template>
 
     <template v-else-if="tab === 'today'">
+      <WeekGoalRing />
       <div v-if="finished" class="td-fin" role="status">
         <b>На сегодня всё закончено.</b> Верно {{ right }} из {{ all.length }}. Хочешь ещё раз — нажми «Новый набор на сегодня» сверху.
       </div>

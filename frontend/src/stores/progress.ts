@@ -3,7 +3,7 @@ import { cleanBindings } from '@/lib/shortcuts'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { COIN_RULES } from '@/data/coins'
-import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf, xpFor } from '@/data/levels'
+import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf, validWeekDays, validWeekOk, xpFor } from '@/data/levels'
 import { canAddMark, cleanMarks, markKey, type MarkKind } from '@/lib/marks'
 import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
 import { errText, fetchT } from '@/lib/http'
@@ -53,6 +53,9 @@ export interface Profile {
 
 export interface Settings {
   goal: number
+  /** недельная цель: дней занятий и верных ответов (нет: 5 и 100, см. data/weekgoal.ts) */
+  weekDays?: number
+  weekOk?: number
   /** темы словаря для «Сегодня» (пусто — все) */
   cats: string[]
   /** группы слов игры (null — как выбрано в самой игре) */
@@ -100,7 +103,7 @@ export type Op =
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
   | { type: 'time'; day: string; seconds: number }
   | { type: 'mood'; day: string; mood: 'easy' | 'ok' | 'hard' }
-  | { type: 'settings'; goal?: number; cats?: string[]; gameCats?: Record<string, number> | null; marks?: string[]; keys?: Record<string, string> }
+  | { type: 'settings'; goal?: number; weekDays?: number; weekOk?: number; cats?: string[]; gameCats?: Record<string, number> | null; marks?: string[]; keys?: Record<string, string> }
   | { type: 'import'; data: ProgressData }
 
 export interface GuestToken {
@@ -197,6 +200,8 @@ export function normalize(raw: unknown): ProgressData | null {
     },
     settings: {
       goal: GOAL_OPTIONS.includes(Number(settings.goal)) ? Number(settings.goal) : DAILY_GOAL,
+      ...(validWeekDays(settings.weekDays) ? { weekDays: settings.weekDays } : {}),
+      ...(validWeekOk(settings.weekOk) ? { weekOk: settings.weekOk } : {}),
       cats: Array.isArray(settings.cats) ? settings.cats.filter(c => typeof c === 'string') : [],
       gameCats: settings.gameCats && typeof settings.gameCats === 'object' ? settings.gameCats : null,
       marks: cleanMarks(settings.marks),
@@ -426,6 +431,8 @@ export const useProgressStore = defineStore('progress', () => {
   function setSettings(s: Partial<Settings>) {
     const cur = data.value.settings
     if (s.goal !== undefined && GOAL_OPTIONS.includes(s.goal)) cur.goal = s.goal
+    if (validWeekDays(s.weekDays)) cur.weekDays = s.weekDays
+    if (validWeekOk(s.weekOk)) cur.weekOk = s.weekOk
     if (s.cats) cur.cats = s.cats
     if (s.gameCats !== undefined) cur.gameCats = s.gameCats
     if (s.marks) cur.marks = s.marks
@@ -434,6 +441,8 @@ export const useProgressStore = defineStore('progress', () => {
     queue({
       type: 'settings',
       ...(s.goal !== undefined && GOAL_OPTIONS.includes(s.goal) ? { goal: s.goal } : {}),
+      ...(validWeekDays(s.weekDays) ? { weekDays: s.weekDays } : {}),
+      ...(validWeekOk(s.weekOk) ? { weekOk: s.weekOk } : {}),
       ...(s.cats ? { cats: s.cats } : {}),
       ...(s.gameCats !== undefined ? { gameCats: s.gameCats } : {}),
       ...(s.marks ? { marks: s.marks } : {}),

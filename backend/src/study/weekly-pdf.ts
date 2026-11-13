@@ -17,11 +17,15 @@ export interface WeeklySpec {
   mistakes: { mode: string; q: string; a: string; y: string; n: number }[]
   /** сколько ошибок было всего (в `mistakes` попадают не все) */
   mistakesTotal: number
+  /** итог недельной цели (пн–вс); нет: строки в отчёте нет */
+  goal?: WeekGoalResult
   /** картинка шапки (баннер темы); нет: шапка с текстом */
   banner?: Buffer
   /** когда собран отчёт, уже текстом */
   made: string
 }
+
+import { weekGoalLine, type WeekGoalResult } from './week-goal.js'
 
 type G = SKRSContext2D
 
@@ -376,7 +380,12 @@ export async function renderWeeklyPdf(spec: WeeklySpec): Promise<Buffer> {
     ],
     330 + shift,
   )
-  chart(cur.g, spec, 530 + shift, 480)
+  if (spec.goal) {
+    cur.g.fillStyle = spec.goal.done ? '#3a7d63' : MUTED
+    cur.g.font = `700 24px ${LAT}`
+    cur.g.fillText(weekGoalLine(spec.goal), M, 492 + shift)
+  }
+  chart(cur.g, spec, 540 + shift, 480)
 
   // таблица начинается на первом листе, только если там поместятся хотя бы три строки
   let y = next(1080 + shift, 100 + 54 * 3)

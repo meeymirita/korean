@@ -7,7 +7,8 @@ import GuestAccess from '@/components/cabinet/GuestAccess.vue'
 import StorageBlock from '@/components/cabinet/StorageBlock.vue'
 import BackupBlock from '@/components/cabinet/BackupBlock.vue'
 import TwoFaBlock from '@/components/cabinet/TwoFaBlock.vue'
-import { GOAL_OPTIONS } from '@/data/levels'
+import { GOAL_OPTIONS, WEEK_DAYS_RANGE, WEEK_OK_OPTIONS } from '@/data/levels'
+import { weekGoalSettings } from '@/data/weekgoal'
 import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
@@ -24,6 +25,8 @@ const progress = useProgressStore()
 const siteImages = useSiteImagesStore()
 const profile = computed(() => progress.data.profile)
 const settings = computed(() => progress.data.settings)
+const weekGoal = computed(() => weekGoalSettings(settings.value))
+const WEEK_DAYS = Array.from({ length: WEEK_DAYS_RANGE[1] - WEEK_DAYS_RANGE[0] + 1 }, (_, i) => WEEK_DAYS_RANGE[0] + i)
 const message = ref('')
 const toast = useToastStore()
 /** Любое сообщение настроек дублируется плашкой; ошибки (нужна, не получилось, не файл) показываются красным. */
@@ -299,6 +302,19 @@ async function refreshPublic() {
       <p>Сколько верных ответов в день считать выполненной целью.</p>
       <div class="st-goals">
         <button v-for="g in GOAL_OPTIONS" :key="g" class="chip" :class="{ on: settings.goal === g }" @click="(progress.setSettings({ goal: g }), toast.ok(`Цель дня: ${g}`))">{{ g }}</button>
+      </div>
+    </div>
+
+    <div class="st-block">
+      <h3>Цель недели</h3>
+      <p>Неделя считается с понедельника. Цель выполнена, когда набраны оба числа; итог приходит и в воскресный отчёт в Telegram.</p>
+      <h4 class="st-path-h">Дней занятий в неделю</h4>
+      <div class="st-goals">
+        <button v-for="n in WEEK_DAYS" :key="n" class="chip" :class="{ on: weekGoal.days === n }" @click="(progress.setSettings({ weekDays: n }), toast.ok(`Цель недели: ${n} дн.`))">{{ n }}</button>
+      </div>
+      <h4 class="st-path-h">Верных ответов за неделю</h4>
+      <div class="st-goals">
+        <button v-for="n in WEEK_OK_OPTIONS" :key="n" class="chip" :class="{ on: weekGoal.ok === n }" @click="(progress.setSettings({ weekOk: n }), toast.ok(`Цель недели: ${n} верных`))">{{ n }}</button>
       </div>
     </div>
 

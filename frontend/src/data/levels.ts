@@ -5,6 +5,16 @@ export const MAX_LEVEL = 100
 export const DAILY_GOAL = 20
 export const GOAL_OPTIONS = [10, 20, 50]
 
+/** Недельная цель (пн–вс): дней занятий и верных ответов. Парные границы на сервере: backend/src/study/week-goal.ts (менять в обоих, тест следит). */
+export const WEEK_DAYS_DEFAULT = 5
+export const WEEK_OK_DEFAULT = 100
+export const WEEK_DAYS_RANGE = [1, 7] as const
+export const WEEK_OK_RANGE = [10, 1000] as const
+/** Быстрый выбор в настройках; допустимо любое целое из WEEK_OK_RANGE. */
+export const WEEK_OK_OPTIONS = [50, 100, 150, 200, 300, 500]
+export const validWeekDays = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= WEEK_DAYS_RANGE[0] && (n as number) <= WEEK_DAYS_RANGE[1]
+export const validWeekOk = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= WEEK_OK_RANGE[0] && (n as number) <= WEEK_OK_RANGE[1]
+
 /** Очки, с которых начинается уровень L: растёт квадратично (2-й уровень — 60 очков, 40-й — около 47 тысяч, 100-й — 297 тысяч). */
 export const xpFor = (L: number) => 30 * L * (L - 1)
 

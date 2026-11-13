@@ -8,6 +8,7 @@ import { Db } from '../db/db.service.js'
 import { pruneImages } from '../images/images.service.js'
 import { ACHIEVEMENTS, DAILY, DAILY_ALL, GRAMMAR_MODES, WEEKLY } from './coins.js'
 import { Profile, Settings } from './progress.types.js'
+import { validWeekDays, validWeekOk } from '../study/week-goal.js'
 
 /** Слово считается выученным после стольких верных ответов подряд. */
 /** очков слова, с которых оно выучено (верный ответ +1, ошибка −1) */
@@ -62,8 +63,8 @@ const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: 
 /** Метки: `w` слово, `g` правило, `d`/`u` урок, `k` слово большого словаря `/dict`; лимиты те же, что в `frontend/src/lib/marks.ts` (менять в обоих). */
 const MARK = /^[wgduk]:.{1,40}$/
 const MAX_MARKS = 500
-const KEY_ID = /^(nav|cab):[a-z]{1,20}$/
 const MAX_K_MARKS = 500
+const KEY_ID = /^(nav|cab):[a-z]{1,20}$/
 const KEY_COMBO = /^mod(\+alt)?(\+shift)?\+[A-Za-z0-9]{1,20}$/
 const MAX_KEYS = 40
 const MOOD_DAYS = 400
@@ -523,6 +524,8 @@ export class ProgressService {
   private async settings(op: Record<string, unknown>) {
     const cur = await this.json<Settings>('settings', DEFAULT_SETTINGS)
     if (op.goal !== undefined) cur.goal = GOALS.includes(op.goal as number) ? (op.goal as number) : bad('invalid goal')
+    if (op.weekDays !== undefined) cur.weekDays = validWeekDays(op.weekDays) ? op.weekDays : bad('invalid weekDays')
+    if (op.weekOk !== undefined) cur.weekOk = validWeekOk(op.weekOk) ? op.weekOk : bad('invalid weekOk')
     if (op.cats !== undefined) {
       if (!Array.isArray(op.cats) || op.cats.length > 30) bad('invalid cats')
       cur.cats = (op.cats as unknown[]).map(c => str(c, 40))
