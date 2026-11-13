@@ -196,6 +196,7 @@ model Event {
   t    BigInt
   type String
   info String @default("")
+  @@index([t], map: "events_t")
   @@map("events")
 }
 
