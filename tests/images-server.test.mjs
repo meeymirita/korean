@@ -66,7 +66,8 @@ describe('сервер: картинки', () => {
     assert.equal((await s.call('GET', `/api/images/${note.id}/file`, OWNER)).status, 200)
     const junk = await (await s.upload(OWNER, PNG, 'x.png', '', { kind: 'что-то' })).json()
     assert.equal(junk.kind, 'gallery', 'неизвестное назначение — обычная картинка')
-    await s.call('DELETE', `/api/images/${junk.id}`, OWNER)
+    await s.call('DELETE', `/api/images/${junk.id}`, OWNER) // обычная картинка уходит в корзину
+    assert.equal((await s.call('DELETE', `/api/images/${junk.id}/permanent`, OWNER)).status, 200)
     // убранные из заметок картинки удаляются, но не раньше чем через час: свежая остаётся
     await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 1, notes: [] })
     assert.equal((await s.call('GET', `/api/images/${note.id}/file`, OWNER)).status, 200, 'свежая ещё не удаляется')
@@ -84,7 +85,9 @@ describe('сервер: картинки', () => {
     assert.ok(!(await files(s.dir, 'uploads')).some(f => f.startsWith(gone.id)), 'файл удалён')
     assert.ok(!(await files(s.dir, 'thumbs')).some(f => f.startsWith(gone.id)), 'миниатюра удалена')
     await s.call('PUT', '/api/notes', OWNER, { v: 1, updated: 3, notes: [] })
-    assert.equal((await s.call('GET', `/api/images/${kept.id}/file`, OWNER)).status, 404, 'после удаления заметки и её картинка уходит')
+    assert.equal((await s.call('GET', `/api/images/${kept.id}/file`, OWNER)).status, 200, 'заметка в корзине: её картинка ждёт восстановления')
+    assert.equal((await s.call('DELETE', '/api/notes/n', OWNER)).status, 200)
+    assert.equal((await s.call('GET', `/api/images/${kept.id}/file`, OWNER)).status, 404, 'заметка стёрта из корзины: и её картинка уходит')
   })
 
   test('описание: меняется отдельно от названия, лишнее — 400, пустой запрос — 400', async () => {
@@ -146,7 +149,7 @@ describe('сервер: картинки', () => {
     assert.equal((await (await s.call('GET', '/api/images', OWNER)).json()).items.length, 1)
     assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER)).status, 404, 'живую картинку навсегда не удалить')
     await s.call('DELETE', `/api/images/${id}`, OWNER)
-    assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER, undefined, { 'X-Confirm-Token': 'неверный' })).status, 403)
+    assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER, undefined, { 'X-Confirm-Token': 'wrong' })).status, 403)
     assert.deepEqual(await files(s.dir, 'uploads'), [`${id}.png`], 'без токена ничего не стёрто')
     assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER)).status, 200)
     assert.deepEqual(await files(s.dir, 'uploads'), [])

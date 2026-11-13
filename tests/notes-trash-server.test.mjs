@@ -22,7 +22,7 @@ describe('сервер: закрепление, корзина и напомин
   })
 
   test('убранная из списка заметка уходит в корзину, а не стирается', async () => {
-    await s.call('PUT', '/api/notes', OWNER, body([note('a'), note('b'), note('c', { pinned: true })], 11))
+    await s.call('PUT', '/api/notes', OWNER, body([note('a'), note('b', { created: 5 }), note('c', { pinned: true })], 11))
     assert.deepEqual((await live()).map(n => n.id), ['c', 'b', 'a'])
     const t = await trash()
     assert.equal(t.days, 30)
@@ -41,7 +41,7 @@ describe('сервер: закрепление, корзина и напомин
 
   test('окончательное удаление просит повторный токен', async () => {
     await s.call('PUT', '/api/notes', OWNER, body([note('a'), note('b'), note('c', { pinned: true })], 12)) // d снова в корзине
-    assert.equal((await s.call('DELETE', '/api/notes/d', OWNER, undefined, { 'X-Confirm-Token': 'неверный' })).status, 403)
+    assert.equal((await s.call('DELETE', '/api/notes/d', OWNER, undefined, { 'X-Confirm-Token': 'wrong' })).status, 403)
     assert.equal((await trash()).items.length, 1)
     assert.equal((await s.call('DELETE', '/api/notes/a', OWNER)).status, 404, 'живую заметку так не удалить')
     assert.equal((await s.call('DELETE', '/api/notes/d', OWNER)).status, 200)

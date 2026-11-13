@@ -24,7 +24,9 @@ const at = (h, m) => new Date(2026, 10, 2, h, m)
 describe('письмо-подборка: расписание', () => {
   test('выключено и рано — письма нет; в своё время — одно, второе в тот же день не уходит', async () => {
     const { svc, sent } = fake()
-    assert.equal(await svc.tick(at(13, 0)), 'off')
+    assert.equal(await svc.tick(at(13, 0)), 'early', 'по умолчанию включено на 19:00')
+    await svc.set({ enabled: false }, at(9, 0))
+    assert.equal(await svc.tick(at(20, 0)), 'off')
     await svc.set({ enabled: true, time: '12:00' }, at(9, 0))
     assert.equal(await svc.tick(at(11, 59)), 'early')
     assert.equal(await svc.tick(at(12, 0)), 'sent')
@@ -41,7 +43,7 @@ describe('письмо-подборка: расписание', () => {
     assert.equal(await svc.tick(new Date(2026, 10, 3, 12, 0)), 'sent')
   })
 
-  test('письмо содержит 10 слов и 5 предложений по умолчанию, числа настраиваются', async () => {
+  test('письмо содержит 8 слов и 5 предложений по умолчанию, числа настраиваются', async () => {
     const { svc, sent } = fake()
     await svc.set({ enabled: true, time: '12:00', words: 3, sentences: 2 }, at(9, 0))
     await svc.tick(at(12, 0))
@@ -53,7 +55,7 @@ describe('письмо-подборка: расписание', () => {
     assert.ok(text.includes('Слова:') && text.includes('Предложения:'))
     const def = fake()
     const defs = await def.svc.get()
-    assert.deepEqual([defs.words, defs.sentences], [10, 5])
+    assert.deepEqual([defs.words, defs.sentences], [8, 5])
     assert.equal(digestMail({ words: [['a', 'б']], sentences: [], time: '12:00' }).subject, 'Повторение: 12:00 · 1 слово')
   })
 
