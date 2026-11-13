@@ -31,6 +31,8 @@ const idx = ref(0)
 const picked = ref<string | null>(null)
 const missed = ref<Task[]>([])
 const right = ref(0)
+/** Сколько заданий в текущей серии (при «Ещё раз ошибки» это только неверные прошлой серии). */
+const size = ref(props.tasks.length)
 const scheduledRetries = new Set<number>()
 const completedTasks = new Set<number>()
 /** Отметка «как прошло»: одна на серию, после неё кнопки заменяются подтверждением. */
@@ -147,31 +149,35 @@ onMounted(() => {
 let roundId = Math.random().toString(36).slice(2, 12)
 watch(finished, v => {
   if (!v) return
-  progress.roundDone(roundId, props.tasks.length, right.value)
+  progress.roundDone(roundId, size.value, right.value)
   void nextTick(() => {
     const r = document.querySelector('.rs-end')?.getBoundingClientRect()
-    if (r && right.value >= props.tasks.length / 2) burst(r.left + r.width / 2, r.top + 40)
+    if (r && right.value >= size.value / 2) burst(r.left + r.width / 2, r.top + 40)
   })
 })
 
-watch(
-  () => props.tasks,
-  () => {
-    list.value = [...props.tasks]
-    resetItems()
-    roundId = Math.random().toString(36).slice(2, 12)
-    idx.value = 0
-    picked.value = null
-    missed.value = []
-    right.value = 0
-    scheduledRetries.clear()
-    completedTasks.clear()
-    moodSet.value = null
-    times.value = []
-    shownAt.value = Date.now()
-    elapsed.value = 0
-  },
-)
+/** Начинает серию заново с этими заданиями (новый набор или «Ещё раз ошибки этой серии»). */
+function restart(tasks: Task[]) {
+  list.value = [...tasks]
+  size.value = tasks.length
+  resetItems()
+  roundId = Math.random().toString(36).slice(2, 12)
+  idx.value = 0
+  picked.value = null
+  missed.value = []
+  right.value = 0
+  scheduledRetries.clear()
+  completedTasks.clear()
+  moodSet.value = null
+  times.value = []
+  shownAt.value = Date.now()
+  elapsed.value = 0
+}
+watch(() => props.tasks, () => restart(props.tasks))
+/** Повторяет только те задания, которые остались неверными в итоге (их список показан на экране итога). */
+function retryMissed() {
+  if (missed.value.length) restart(missed.value)
+}
 
 function answer(option: string) {
   const t = current.value
@@ -304,10 +310,10 @@ onBeforeUnmount(() => {
       <button v-if="picked !== null && pending === null" class="rs-next" @click="next">{{ idx + 1 < list.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">
-      <Cat :name="right === tasks.length ? 'cheer' : right * 2 >= tasks.length ? 'happy' : 'sad'" />
-      <div class="pg-v">{{ right }} <small>из {{ tasks.length }}</small></div>
+      <Cat :name="right === size ? 'cheer' : right * 2 >= size ? 'happy' : 'sad'" />
+      <div class="pg-v">{{ right }} <small>из {{ size }}</small></div>
       <p v-if="pace" class="rs-pace">Время: {{ clock(pace.total) }}, в среднем {{ pace.avg }} с на задание. Дольше всего: задание {{ pace.slowest + 1 }}.</p>
-      <p><template v-if="right === tasks.length"><Icon name="sakura" /> Всё верно!</template><template v-else>Слова с ошибками вернутся в повторение. Вот что не получилось:</template></p>
+      <p><template v-if="right === size"><Icon name="sakura" /> Всё верно!</template><template v-else>Слова с ошибками вернутся в повторение. Вот что не получилось:</template></p>
       <ul v-if="missed.length" class="qk-miss">
         <li v-for="t in missed" :key="t.id"><span class="ko">{{ t.prompt }}</span> → <b class="ko">{{ t.answer }}</b></li>
       </ul>
@@ -320,6 +326,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="pg-btns">
         <button class="rs-start" @click="emit('again')">{{ againLabel ?? 'Ещё раз' }}</button>
+        <button v-if="missed.length" class="rs-start plain" type="button" @click="retryMissed">Ещё раз ошибки этой серии</button>
         <slot name="after" />
       </div>
     </div>

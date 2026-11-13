@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { dragDrop } from '@/lib/dragdrop'
+import { askConfirm } from '@/composables/useConfirm'
 import { blockPoints, partPoints, type ExamBlock, type ExamPiece, type PartAnswers, type PointResult } from '@/data/korean/exam'
 
 /**
@@ -36,6 +38,41 @@ function pause() {
 props.blocks.forEach((b, bi) => {
   if (b.kind === 'match') b.items.forEach((_, i) => (pick[`${bi}:${i}`] = ''))
 })
+
+
+/**
+ * Несохранённые ответы: текущие ответы отличаются от тех, с которых часть началась (пустые или восстановленные из черновика).
+ * Пока они есть, закрытие и перезагрузка вкладки спрашивают подтверждение (`beforeunload`, только в браузере), а уход по ссылке сайта или кнопкой «Назад» ловит `askConfirm`.
+ * Страница экзамена зовёт `release()` перед своим переходом после успешного сохранения, чтобы вопрос не появлялся.
+ */
+const snap = () => JSON.stringify([gap, pick, built, verdict])
+const baseline = snap()
+const dirty = computed(() => !checked.value && snap() !== baseline)
+let released = false
+function release() {
+  released = true
+  unwarn()
+}
+function warn(e: BeforeUnloadEvent) {
+  if (released || !dirty.value) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+let warning = false
+function unwarn() {
+  if (!warning) return
+  warning = false
+  window.removeEventListener('beforeunload', warn)
+}
+async function leave() {
+  if (released || !dirty.value) return true
+  const yes = await askConfirm({ title: 'Ответы не сохранены', text: 'Если уйти сейчас, ответы этой части пропадут. Можно нажать «Сохранить и выйти».', ok: 'Уйти без сохранения', cancel: 'Остаться', danger: true })
+  if (yes) release()
+  return yes
+}
+onBeforeRouteLeave(leave)
+onBeforeRouteUpdate(leave)
+defineExpose({ release })
 
 const isGap = (p: ExamPiece): p is { answer: string; accept?: string[]; rule: string } => typeof p !== 'string'
 /** Сравнение вписанных форм: пробелы не важны (안 가요 = 안가요). */
@@ -109,6 +146,10 @@ function check() {
 const root = ref<HTMLElement>()
 let dragOff = () => {}
 onMounted(() => {
+  if (import.meta.client) {
+    window.addEventListener('beforeunload', warn)
+    warning = true
+  }
   const el = root.value
   if (!el) return
   dragOff = dragDrop({
@@ -128,7 +169,10 @@ onMounted(() => {
     },
   })
 })
-onBeforeUnmount(() => dragOff())
+onBeforeUnmount(() => {
+  dragOff()
+  unwarn()
+})
 
 const answered = computed(() => {
   let n = 0

@@ -25,6 +25,7 @@ const toast = useToastStore()
 const draft = ref<ExamDraft | null>(null)
 const ready = ref(false)
 const busy = ref(false)
+const run = ref<InstanceType<typeof ExamRun> | null>(null)
 const now = ref(Date.now())
 /** Итог только что законченной попытки (показывается сразу, потом доступен в разборе попыток). */
 const finished = ref<{ attempt: ExamAttempt; row?: ExamResultRow } | null>(null)
@@ -106,6 +107,7 @@ async function pause(answers: PartAnswers) {
   busy.value = false
   if (err) return void toast.error(`Не сохранилось: ${err}`)
   toast.ok('Ответы сохранены, можно продолжить позже')
+  run.value?.release()
   home()
 }
 
@@ -126,6 +128,7 @@ async function saved(points: PointResult[]) {
   if (results.some(r => !r)) {
     busy.value = false
     toast.ok(`Часть ${partNo.value} сохранена`)
+    run.value?.release()
     return home()
   }
   const sum = summarize(results as PointResult[][])
@@ -162,7 +165,7 @@ const summaryText = (a: ExamAttempt) =>
     <template v-if="view === 'run' && ready">
       <template v-if="draft && blocks.length">
         <p class="intro">Итоговая оценка, часть {{ partNo }} из {{ EXAM_PARTS }}. Без подсказок и предметов Юны.</p>
-        <ExamRun :key="'p' + partNo + ':' + draft.startedAt" :blocks="blocks" :part="partNo" :parts="draft.parts.length" :initial="draft.partial?.part === partNo ? draft.partial.answers : undefined" @saved="saved" @pause="pause" />
+        <ExamRun ref="run" :key="'p' + partNo + ':' + draft.startedAt" :blocks="blocks" :part="partNo" :parts="draft.parts.length" :initial="draft.partial?.part === partNo ? draft.partial.answers : undefined" @saved="saved" @pause="pause" />
         <p class="ex-exit"><button class="ex-link" type="button" :disabled="busy" @click="home">Выйти из экзамена (ответы этой части не сохранятся)</button></p>
       </template>
       <p v-else class="empty">Черновика экзамена нет. <button class="ex-link" type="button" @click="home">Назад</button></p>
