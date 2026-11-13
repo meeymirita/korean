@@ -120,7 +120,7 @@ const tabs = computed<[CabinetTab, string][]>(() => [
           <Avatar :avatar="progress.data.profile.avatar" :size="64" />
           <div>
             <b>{{ progress.data.profile.name ? `Привет, ${progress.data.profile.name}!` : 'Привет!' }}</b>
-            <small><Icon name="star" /> уровень {{ progress.info.level }} · {{ progress.info.title }} · <Icon name="fire" /> серия {{ progress.streak }}</small>
+            <small><Icon name="star" /> уровень {{ progress.info.level }} · {{ progress.info.title }} · <Icon name="fire" /> дней занятий {{ progress.studyDays }}</small>
             <small v-if="!progress.data.profile.name"><br />Имя можно задать в «Настройках».</small>
           </div>
         </div>

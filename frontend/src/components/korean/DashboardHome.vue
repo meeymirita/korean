@@ -132,7 +132,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
           <div class="pline"><div :style="{ width: percent + '%' }"></div></div>
           <div class="stats">
             <div><strong>{{ known }}</strong><small>слов</small></div>
-            <div><strong>{{ progress.streak }}</strong><small>дней подряд</small></div>
+            <div><strong>{{ progress.studyDays }}</strong><small>дней занятий</small></div>
             <div><strong>{{ grammarDone }}</strong><small>правил</small></div>
             <div><strong>{{ answers }}</strong><small>ответов</small></div>
           </div>

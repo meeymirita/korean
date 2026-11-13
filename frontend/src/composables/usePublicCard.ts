@@ -21,13 +21,13 @@ export function usePublicCard() {
   const busy = ref(false)
   const headers = (json = false) => ({ Authorization: `Bearer ${progress.bearer}`, ...(json ? { 'Content-Type': 'application/json' } : {}) })
 
-  /** Что показывается на странице: имя, значок, уровень, серия, счётчики. Ответы и слова по одному не публикуются. */
+  /** Что показывается на странице: имя, значок, уровень, дни занятий, счётчики. Ответы и слова по одному не публикуются. */
   const card = computed(() => ({
     name: progress.data.profile.name,
     avatar: progress.data.profile.avatar,
     level: progress.info.level,
     title: progress.info.title,
-    streak: progress.streak,
+    streak: progress.studyDays, // имя поля осталось прежним ради сервера и старых карточек: это дни занятий
     learned: D.filter(d => progress.status(d.k) === 'known').length,
     answers: Object.values(progress.data.sources).reduce((n, s) => n + s.ok + s.bad, 0),
     days: days,
@@ -60,7 +60,7 @@ export function usePublicCard() {
       kicker: 'мой путь в корейском',
       title: c.name || 'Изучаю корейский',
       sub: `уровень ${c.level} · ${c.title}`,
-      lines: [`${c.days} дней в пути · серия ${c.streak}`, `выучено слов: ${c.learned} · ответов: ${c.answers}`],
+      lines: [`${c.days} дней в пути · дней занятий ${c.streak}`, `выучено слов: ${c.learned} · ответов: ${c.answers}`],
       icon: (EMOJI_ICON[c.avatar] ?? 'sakura'),
       footer: 'korean.meeymirita.ru/me',
     })

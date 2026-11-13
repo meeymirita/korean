@@ -98,20 +98,13 @@ export class ReminderService implements OnModuleInit {
     return (await (await this.db.orm()).day.findUnique({ where: { day }, select: { total: true } }))?.total ?? 0
   }
 
-  /** Серия дней с верными ответами, оканчивающаяся вчера: именно её письмо просит не прерывать. */
-  private async streakBefore(day: string) {
-    const d = new Date(day + 'T12:00:00')
-    let n = 0
-    for (;;) {
-      d.setDate(d.getDate() - 1)
-      const ok = (await (await this.db.orm()).day.findUnique({ where: { day: dayOf(d) }, select: { ok: true } }))?.ok ?? 0
-      if (ok <= 0) return n
-      n++
-    }
+  /** Сколько разных дней уже были ответы (до сегодняшнего): письмо называет число, ничем не грозя. */
+  private async studyDaysBefore(day: string) {
+    return (await this.db.orm()).day.count({ where: { total: { gt: 0 }, day: { lt: day } } })
   }
 
   private async deliver(day: string) {
-    const m = reminderMail({ streak: await this.streakBefore(day), site: process.env.SITE_URL })
+    const m = reminderMail({ studyDays: await this.studyDaysBefore(day), site: process.env.SITE_URL })
     await this.notify.send(m, await this.to())
   }
 

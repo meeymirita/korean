@@ -330,31 +330,8 @@ export const useProgressStore = defineStore('progress', () => {
   const todayOk = computed(() => data.value.days[dayKey()] ?? 0)
   const goalDone = computed(() => todayOk.value >= goal.value)
 
-  /** Серия дней подряд: если сегодня ещё не занималась, считается от вчера. */
-  const streak = computed(() => {
-    const days = data.value.days
-    const d = new Date()
-    if (!(dayKey(d) in days)) d.setDate(d.getDate() - 1)
-    let n = 0
-    while (dayKey(d) in days) {
-      n++
-      d.setDate(d.getDate() - 1)
-    }
-    return n
-  })
-  const bestStreak = computed(() => {
-    const keys = Object.keys(data.value.days).sort()
-    let best = 0
-    let run = 0
-    let prev: Date | null = null
-    for (const k of keys) {
-      const cur = new Date(k + 'T00:00:00')
-      run = prev && Math.round((cur.getTime() - prev.getTime()) / 86_400_000) === 1 ? run + 1 : 1
-      best = Math.max(best, run)
-      prev = cur
-    }
-    return best
-  })
+  /** Дней занятий: сколько разных дней были ответы. Пропуск дня ничего не сбрасывает (решение владельца, 2026-11-13). */
+  const studyDays = computed(() => Object.keys(data.value.days).length)
 
   const status = (word: string): WordStatus => {
     const w = data.value.words[word]
@@ -735,7 +712,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   return {
-    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, streak, bestStreak, status, record, roundDone, importXp, setProfile, setSettings, addTime,
+    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, studyDays, status, record, roundDone, importXp, setProfile, setSettings, addTime,
     token, bearer, session, sessionCreatedAt, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }

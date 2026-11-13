@@ -401,19 +401,15 @@ export class ProgressService {
     const okCount = await orm.answer.count({ where: { ok: 1 } })
     const grammar = await orm.answer.count({ where: { mode: { in: [...GRAMMAR_MODES] } } })
     const buys = await orm.coinLog.count({ where: { kind: 'buy' } })
-    let streakDays = 0
-    const d = new Date(day + 'T00:00:00Z')
-    while (streakDays < 7 && await orm.day.findFirst({ where: { day: d.toISOString().slice(0, 10), total: { gt: 0 } }, select: { day: true } })) {
-      streakDays++
-      d.setUTCDate(d.getUTCDate() - 1)
-    }
+    // дней занятий: сколько разных дней были ответы (пропуск ничего не сбрасывает)
+    const studyDays = await orm.day.count({ where: { total: { gt: 0 } } })
     const maxCombo = Number(await this.db.getMeta('maxcombo') ?? 0)
     const ach: Record<string, { now: number; goal: number }> = {
       first: { now: okCount, goal: 100 },
       master: { now: okCount, goal: 500 },
       grammar: { now: grammar, goal: 100 },
       flawless: { now: maxCombo, goal: 20 },
-      steady: { now: streakDays, goal: 7 },
+      steady: { now: studyDays, goal: 7 },
       collector: { now: buys, goal: 10 },
     }
     const total = (await orm.day.findUnique({ where: { day }, select: { total: true } }))?.total ?? 0

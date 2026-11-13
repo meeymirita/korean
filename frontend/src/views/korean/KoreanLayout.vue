@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
         </span>
         <span><Icon name="star" /> Уровень {{ progress.info.level }} · {{ progress.info.title }}</span>
         <span class="lv-bar"><i :style="{ width: progress.info.pct + '%' }"></i></span>
-        <small><Icon name="fire" /> серия {{ progress.streak }} · <Icon name="target" /> {{ Math.min(progress.todayOk, progress.goal) }} / {{ progress.goal }} сегодня</small>
+        <small><Icon name="fire" /> дней занятий {{ progress.studyDays }} · <Icon name="target" /> {{ Math.min(progress.todayOk, progress.goal) }} / {{ progress.goal }} сегодня</small>
       </RouterLink>
       <RouterLink v-else to="/korean/cabinet" class="study-level">
         <span><Icon name="lock" /> Войти по токену</span>

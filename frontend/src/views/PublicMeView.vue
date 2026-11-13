@@ -62,7 +62,7 @@ useSeoMeta({ robots: () => (state.value === 'open' ? 'index, follow, max-image-p
       </div>
       <div class="stats">
         <div><b>{{ card.days }}</b><small>дней в пути</small></div>
-        <div><b>{{ card.streak }}</b><small>дней подряд</small></div>
+        <div><b>{{ card.streak }}</b><small>дней занятий</small></div>
         <div><b>{{ card.learned }}</b><small>слов выучено</small></div>
         <div><b>{{ card.answers }}</b><small>ответов</small></div>
       </div>

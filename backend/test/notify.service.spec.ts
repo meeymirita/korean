@@ -19,6 +19,13 @@ describe('уведомления: Telegram с запасом на почту', (
     await expect(n.send(reminderMail(), 'a@b.c')).rejects.toThrow()
   })
 
+  it('напоминание называет число дней занятий и не грозит потерей', () => {
+    const m = reminderMail({ studyDays: 12 })
+    expect(m.text).toContain('Дней занятий уже 12')
+    expect(m.text).not.toMatch(/оборвётся|серия/i)
+    expect(reminderMail().text).not.toContain('Дней занятий')
+  })
+
   it('с Telegram сообщение уходит в чат с кнопкой, в стиле письма', async () => {
     const file = path.join(mkdtempSync(path.join(tmpdir(), 'tg-')), 'tg.jsonl')
     vi.stubEnv('TELEGRAM_DUMP_FILE', file)
@@ -26,7 +33,7 @@ describe('уведомления: Telegram с запасом на почту', (
     const m = mail(true)
     const n = new NotifyService(m as never)
     expect(n.label('a@b.c')).toBe('Telegram')
-    await n.send(reminderMail({ streak: 3, site: 'https://x.test' }), 'a@b.c')
+    await n.send(reminderMail({ studyDays: 3, site: 'https://x.test' }), 'a@b.c')
     const sent = JSON.parse(readFileSync(file, 'utf8').trim())
     expect(sent.parse_mode).toBe('HTML')
     expect(sent.text).toContain('우리말')

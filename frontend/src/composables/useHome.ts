@@ -96,7 +96,7 @@ export function useHome() {
       ? {
           locked: false,
           title: 'Привет' + (progress.data.profile.name ? ', ' + progress.data.profile.name : '') + '!',
-          sub: `Уровень ${progress.info.level} · ${progress.info.title} · серия ${progress.streak}`,
+          sub: `Уровень ${progress.info.level} · ${progress.info.title} · дней занятий ${progress.studyDays}`,
         }
       : {
           locked: true,

@@ -67,7 +67,7 @@ const journey = computed(() => {
     { n: String(answers), t: `ответов${answers ? `, верных ${Math.round((ok / answers) * 100)}%` : ''}` },
     { n: studyTime(sum(d.time)), t: 'времени занятий' },
     { n: `${progress.info.level} · ${progress.info.title}`, t: 'уровень и звание' },
-    { n: String(progress.bestStreak), t: 'лучшая серия дней' },
+    { n: String(progress.studyDays), t: 'дней занятий' },
   ]
 })
 
@@ -178,7 +178,7 @@ async function restore(e: Event) {
   message.value = (await progress.importJson(text)) ? 'Копия загружена.' : 'Не получилось: это не файл прогресса.'
 }
 async function reset() {
-  const text = 'Уровень, очки, серия дней, выученные слова, время занятий и история обнулятся. Профиль и настройки останутся. Это нельзя отменить.'
+  const text = 'Уровень, очки, счётчик дней занятий, выученные слова, время занятий и история обнулятся. Профиль и настройки останутся. Это нельзя отменить.'
   if (progress.needsConfirm()) {
     // с сервером сброс защищён: токен вводится ещё раз, проверяет его сам сервер, ошибка остаётся в окне
     const done = await askTokenDo({ title: 'Сбросить весь прогресс?', text: text + ' Введите токен, чтобы подтвердить.', ok: 'Сбросить' }, token => progress.reset(token))

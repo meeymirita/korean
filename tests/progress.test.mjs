@@ -123,25 +123,24 @@ describe('record', () => {
   })
 })
 
-describe('серия дней', () => {
-  test('считается от вчера, если сегодня ещё не занимались', () => {
+describe('дни занятий', () => {
+  test('считаются разные дни, в которые были ответы', () => {
     store.data.days = { [daysAgo(1)]: 5, [daysAgo(2)]: 3 }
-    assert.equal(store.streak, 2)
-  })
-
-  test('сегодняшний день входит в серию', () => {
+    assert.equal(store.studyDays, 2)
     store.data.days = { [daysAgo(0)]: 1, [daysAgo(1)]: 5, [daysAgo(2)]: 3 }
-    assert.equal(store.streak, 3)
+    assert.equal(store.studyDays, 3)
   })
 
-  test('пропуск дня обрывает серию', () => {
+  test('пропуск дня ничего не сбрасывает', () => {
     store.data.days = { [daysAgo(1)]: 5, [daysAgo(3)]: 3 }
-    assert.equal(store.streak, 1)
+    assert.equal(store.studyDays, 2)
+    store.data.days = { [daysAgo(40)]: 1, [daysAgo(30)]: 1, [daysAgo(0)]: 1 }
+    assert.equal(store.studyDays, 3)
   })
 
-  test('лучшая серия за всё время', () => {
-    store.data.days = { [daysAgo(10)]: 1, [daysAgo(9)]: 1, [daysAgo(8)]: 1, [daysAgo(7)]: 1, [daysAgo(1)]: 1, [daysAgo(0)]: 1 }
-    assert.equal(store.bestStreak, 4)
+  test('нет занятий: ноль', () => {
+    store.data.days = {}
+    assert.equal(store.studyDays, 0)
   })
 })
 

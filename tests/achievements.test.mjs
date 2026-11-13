@@ -11,7 +11,7 @@ const data = patch => normalize({ v: 1, ...patch })
 const byId = id => ACHIEVEMENTS.find(a => a.id === id)
 
 describe('достижения: сотня дней и тысяча за месяц', () => {
-  test('d100: цель 100, текущее — серия дней подряд', () => {
+  test('d100: цель 100, текущее — число дней занятий (не подряд)', () => {
     const [cur, goal] = byId('d100').progress(data({}), 42)
     assert.deepEqual([cur, goal], [42, 100])
   })

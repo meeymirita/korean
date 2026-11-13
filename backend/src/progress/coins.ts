@@ -25,7 +25,7 @@ export const ACHIEVEMENTS = [
   { id: 'master', name: 'Словарный мастер', text: '500 правильных ответов', coins: 100 },
   { id: 'grammar', name: 'Грамматик', text: '100 заданий по грамматике', coins: 80 },
   { id: 'flawless', name: 'Без ошибок', text: '20 правильных ответов подряд', coins: 50 },
-  { id: 'steady', name: 'Постоянство', text: 'Заниматься 7 дней подряд', coins: 100 },
+  { id: 'steady', name: 'Постоянство', text: 'Позаниматься в 7 разных дней', coins: 100 },
   { id: 'collector', name: 'Коллекционер', text: 'Купить 10 предметов в магазине', coins: 70 },
 ] as const
 

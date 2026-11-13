@@ -223,8 +223,8 @@ ${step(part ? 4 : 3, 'Распакуйте', `${pre(unpackCmd)}<br><span style="
 }
 
 export interface ReminderMailOptions {
-  /** серия дней с верными ответами, оканчивающаяся вчера */
-  streak?: number
+  /** сколько разных дней уже были ответы (до сегодняшнего) */
+  studyDays?: number
   /** адрес сайта для кнопки */
   site?: string
 }
@@ -233,9 +233,8 @@ export interface ReminderMailOptions {
 export function reminderMail(o: ReminderMailOptions = {}): Mail {
   const site = (o.site || 'https://korean.meeymirita.ru').replace(/\/$/, '')
   const link = `${site}/korean/quick`
-  const streak = o.streak && o.streak > 0 ? o.streak : 0
-  const days = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней')
-  const lead = streak ? `Сегодня ещё не было ни одного ответа. Серия ${streak} ${days(streak)} подряд оборвётся, если не позаниматься. Хватит пяти минут.` : 'Сегодня ещё не было ни одного ответа. Хватит пяти минут: десять заданий вперемешку.'
+  const studyDays = o.studyDays && o.studyDays > 0 ? o.studyDays : 0
+  const lead = studyDays ? `Сегодня ещё не было ни одного ответа. Дней занятий уже ${studyDays}: сегодня будет ещё один. Хватит пяти минут.` : 'Сегодня ещё не было ни одного ответа. Хватит пяти минут: десять заданий вперемешку.'
   const html = `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Пора заниматься</title></head>
 <body style="margin:0;padding:0;background:#f1eaff">
@@ -377,7 +376,7 @@ export function sampleMail(topic: TgTopic): Mail {
     case 'login':
       return codeMail('4827', 'login')
     case 'remind':
-      return reminderMail({ streak: 6 })
+      return reminderMail({ studyDays: 6 })
     case 'digest':
       return digestMail({
         words: [['안녕하세요', 'здравствуйте'], ['감사합니다', 'спасибо'], ['학교', 'школа'], ['친구', 'друг'], ['물', 'вода']],

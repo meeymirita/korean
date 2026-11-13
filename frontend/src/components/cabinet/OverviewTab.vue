@@ -85,7 +85,7 @@ const dateTick = ref(0)
 const achievements = computed(() => {
   void dateTick.value
   return ACHIEVEMENTS.map(a => {
-    const [cur, g] = a.progress(progress.data, progress.streak)
+    const [cur, g] = a.progress(progress.data, progress.studyDays)
     const done = cur >= g
     return { ...a, cur: Math.min(cur, g), goal: g, done, date: done ? achievedAt(a.id) : null }
   })
@@ -113,7 +113,7 @@ const total = computed(() =>
 
 const { share, busy: sharing } = useShareCard()
 const shareAch = (a: (typeof achievements.value)[number]) =>
-  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Серия: ${progress.streak}`], icon: 'trophy' }, `достижение-${a.id}`)
+  share({ kicker: 'достижение', title: a.title, sub: a.desc, lines: [`Уровень ${progress.info.level} · ${progress.info.title}`, `Дней занятий: ${progress.studyDays}`], icon: 'trophy' }, `достижение-${a.id}`)
 </script>
 
 <template>
@@ -128,10 +128,9 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <button type="button" class="pg-lvl-btn" @click="levelsOpen = true">Все уровни</button>
       </div>
       <div class="pg-card">
-        <div class="pg-k">Серия дней</div>
-        <div class="pg-v"><Icon name="fire" /> <span v-count="progress.streak">{{ progress.streak }}</span></div>
-        <div class="pg-t">лучшая серия: {{ progress.bestStreak }}</div>
-        <div class="pg-s">заниматься нужно хотя бы раз в день</div>
+        <div class="pg-k">Дней занятий</div>
+        <div class="pg-v"><Icon name="fire" /> <span v-count="progress.studyDays">{{ progress.studyDays }}</span></div>
+        <div class="pg-s">считаются дни, в которые были ответы; пропуск ничего не сбрасывает</div>
       </div>
       <div class="pg-card">
         <div class="pg-k">Время занятий</div>
@@ -158,7 +157,6 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
       <div class="pg-rec">
         <div v-if="records.bestDay" class="pg-recc"><span class="k">Лучший день</span><b v-count="records.bestDay.n">{{ records.bestDay.n }}</b><small>верных · {{ dayLabel(records.bestDay.key) }}</small></div>
         <div v-if="records.bestWeek" class="pg-recc"><span class="k">Лучшая неделя</span><b v-count="records.bestWeek.n">{{ records.bestWeek.n }}</b><small>верных · {{ weekLabel(records.bestWeek.key) }}</small></div>
-        <div v-if="records.longestStreak" class="pg-recc"><span class="k">Самая длинная серия</span><b v-count="records.longestStreak">{{ records.longestStreak }}</b><small>{{ records.longestStreak === 1 ? 'день' : 'дн.' }} подряд</small></div>
         <div v-if="records.bestTime" class="pg-recc"><span class="k">Дольше всего занимался</span><b>{{ formatSpent(records.bestTime.n) }}</b><small>{{ dayLabel(records.bestTime.key) }}</small></div>
       </div>
     </template>
