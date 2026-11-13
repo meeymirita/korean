@@ -5,12 +5,14 @@ import { afterEach, expect } from 'vitest'
 import markupRaw from '@/game/markup.html?raw'
 import { initGame } from '@/game/engine'
 import { iconImg } from '@/game/icons'
-import { GAME_GROUPS } from '@/data/games'
+import { GAME_GROUPS, TOOL_IDS } from '@/data/games'
 
 /** Разметка игры так, как её собирает страница `/game/home` (иконки подставлены, фон кота не нужен). */
 const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 
-export const ENGINE_MODES = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).filter(id => !['match', 'pairs', 'particles', 'translate', 'syllables', 'typewords', 'quick', 'keyboard', 'rule', 'ptext', 'fut', 'only'].includes(id))
+/** Режимы движка: всё из каталога, кроме тренажёров со своим экраном (`TOOL_IDS`: новый тренажёр попадает сюда сам) и режимов, которые проверяются отдельно. */
+const NOT_ENGINE: string[] = [...TOOL_IDS, 'typewords', 'ptext', 'fut', 'only']
+export const ENGINE_MODES = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).filter(id => !NOT_ENGINE.includes(id))
 export const NEW_MODES = ['days', 'when', 'too', 'num', 'price', 'count', 'neg', 'place', 'dem', 'polite']
 
 let dispose: (() => void) | undefined
