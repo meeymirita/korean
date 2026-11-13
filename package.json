@@ -20,7 +20,7 @@
     "test:nuxt": "npm --prefix frontend test"
   },
   "devDependencies": {
-    "@types/node": "^24.13.4",
+    "@types/node": "^26.6.6",
     "oxlint": "^1.93.0",
     "oxlint-tsgolint": "^7.0.2006",
     "typescript": "~6.0.0",
