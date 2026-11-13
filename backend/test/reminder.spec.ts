@@ -6,7 +6,7 @@ function setup({ enabled = true, time = '19:00', lastSent = '', days = [], answe
   const db = {
     getMeta: vi.fn(async () => stored),
     setMeta: vi.fn(async (_key: string, value: string) => { stored = value }),
-    orm: vi.fn(async () => ({ day: { findUnique: vi.fn(async () => ({ total: answers, ok: 0 })) } })),
+    orm: vi.fn(async () => ({ day: { findUnique: vi.fn(async () => ({ total: answers, ok: 0 })), count: vi.fn(async () => 3) } })),
   }
   const notify = { ready: vi.fn(() => ready), label: vi.fn(() => 'm***@example.org'), send: vi.fn(async () => { if (sendError) throw new Error('mail down') }) }
   const twofa = { email: vi.fn(async () => 'me@example.org') }
