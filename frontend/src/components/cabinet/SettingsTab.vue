@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref, watch } from 'vue'
-import { errText } from '@/lib/http'
+import { errText, fetchT, LONG_TIMEOUT } from '@/lib/http'
 import Avatar from '@/components/Avatar.vue'
 import GuestAccess from '@/components/cabinet/GuestAccess.vue'
 import StorageBlock from '@/components/cabinet/StorageBlock.vue'
@@ -134,6 +134,28 @@ function download() {
   a.download = `progress-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(a.href)
+}
+const wordsBusy = ref(false)
+/** «Скачать мои слова»: CSV с сервера (только владелец), в файл через Blob. */
+async function downloadWords() {
+  if (wordsBusy.value) return
+  wordsBusy.value = true
+  try {
+    const res = await fetchT('/api/words/export', { headers: { Authorization: `Bearer ${progress.bearer}` } }, LONG_TIMEOUT)
+    if (!res.ok) throw new Error(res.status === 403 ? 'гостю недоступно' : `сервер ответил ${res.status}`)
+    const count = Number(res.headers.get('X-Words-Count') ?? 0)
+    const blob = new Blob([await res.arrayBuffer()], { type: 'text/csv;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `my-words-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+    toast.ok(count ? `Файл со словами скачан: ${count}.` : 'Файл скачан, но слов пока нет: только заголовок.')
+  } catch (e) {
+    toast.error('Не получилось скачать слова: ' + errText(e))
+  } finally {
+    wordsBusy.value = false
+  }
 }
 async function restore(e: Event) {
   const input = e.target as HTMLInputElement
@@ -316,6 +338,7 @@ async function refreshPublic() {
         </form>
         <div class="pg-btns">
           <button class="plain" @click="download">⬇ Скачать копию</button>
+          <button v-if="!progress.isGuest" class="plain" :disabled="wordsBusy" @click="downloadWords">⬇ Скачать мои слова (CSV)</button>
           <label class="pg-file plain">⬆ Загрузить копию<input type="file" accept="application/json,.json" @change="restore" /></label>
           <button class="plain danger" @click="reset">Сбросить прогресс</button>
         </div>
