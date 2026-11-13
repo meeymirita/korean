@@ -2,10 +2,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Откат деплоя возвращает прежний код, но не схему базы (scripts/deploy.sh). Поэтому миграция обязана быть совместима с прежним кодом:
 // только добавлять таблицы, столбцы и индексы. Всё, что стирает или переименовывает, прежний код ломает, а данные теряет.
-const DIR = new URL('../backend/prisma/migrations/', import.meta.url).pathname
+const DIR = fileURLToPath(new URL('../backend/prisma/migrations/', import.meta.url))
 const FORBIDDEN = [
   [/\bDROP\s+(TABLE|COLUMN|INDEX|TYPE|SCHEMA|CONSTRAINT|DEFAULT|NOT\s+NULL)\b/i, 'DROP'],
   [/\bALTER\s+TABLE\b[^;]*\bDROP\b/i, 'ALTER TABLE … DROP'],

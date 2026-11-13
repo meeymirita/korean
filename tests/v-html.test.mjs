@@ -2,10 +2,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Токен владельца лежит в localStorage, поэтому чужая разметка на странице недопустима: всё, что вставляется через v-html,
 // обязано пройти экранирование (esc, hl) или быть разметкой из кода сайта (F и blk размечают данные грамматики, не ввод).
-const SRC = new URL('../frontend/src/', import.meta.url).pathname
+const SRC = fileURLToPath(new URL('../frontend/src/', import.meta.url))
 const walk = d => readdirSync(d).flatMap(f => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]))
 
 /** Выражения без esc/hl/F: каждое проверено руками, причина записана. Новое место сюда попадает только с объяснением. */
