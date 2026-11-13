@@ -125,7 +125,7 @@ const showAnswer = computed(() => (current.value ? answerText(current.value, pro
         <ul>
           <li v-for="r in results.filter(x => !x.ok)" :key="r.w.n">
             <b class="ko">{{ r.w.k }}</b> — {{ shown(r.w) }}
-            <small v-if="r.given">(ты написала: {{ r.given }})</small>
+            <small v-if="r.given">(твой ответ: {{ r.given }})</small>
           </li>
         </ul>
       </template>
