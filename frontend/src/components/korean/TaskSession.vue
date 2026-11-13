@@ -8,6 +8,8 @@ import { MOODS, type Mood } from '@/data/mood'
 import { nextCombo } from '@/data/coins'
 import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
+import { useGrammarModal } from '@/composables/useGrammarModal'
+import { G } from '@/data/korean/grammar'
 import { dragDrop } from '@/lib/dragdrop'
 import { burst, cascade, pop, shake } from '@/lib/fx'
 import { itemIcon, itemName } from '@/data/shop'
@@ -22,6 +24,7 @@ const props = defineProps<{ tasks: Task[]; source: string; /** режим для
 const emit = defineEmits<{ again: [] }>()
 
 const progress = useProgressStore()
+const { open: openRule } = useGrammarModal()
 /** Номер серии для журнала. */
 const round = newRound()
 const shop = useShopStore()
@@ -58,6 +61,8 @@ const blank = computed(() => {
   return i < 0 ? null : [p.slice(0, i), p.slice(i + 3)]
 })
 const finished = computed(() => idx.value >= list.value.length)
+/** Карточки правил задания (`Task.rules`): список со ссылками после ответа. */
+const ruleCards = computed(() => (current.value?.rules ?? []).flatMap(id => G.filter(g => g.id === id)))
 
 /* ---------- предметы из магазина ---------- */
 const owner = computed(() => progress.unlocked && !progress.isGuest)
@@ -306,6 +311,15 @@ onBeforeUnmount(() => {
         </ul>
         <p v-if="current.pairOf || current.prompt.includes('＿')" class="rs-sub">Как устроено верное предложение:</p>
         <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" />
+      </div>
+      <div v-if="picked !== null && pending === null && ruleCards.length" class="rs-rules">
+        <p class="rs-sub">Правила в этом предложении:</p>
+        <ul class="rs-wl">
+          <li v-for="g in ruleCards" :key="g.id">
+            <span><b class="ko">{{ g.ko }}</b>: {{ g.d }}.</span>
+            <button type="button" class="xb-b" @click="openRule(g.id)">Открыть правило</button>
+          </li>
+        </ul>
       </div>
       <button v-if="picked !== null && pending === null" class="rs-next" @click="next">{{ idx + 1 < list.length ? 'Дальше →' : 'Итог' }}</button>
     </template>

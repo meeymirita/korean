@@ -365,3 +365,5 @@
 .study .rs-wl li.bad b { color: var(--bad); }
 .study .rs-wl li.ok b { color: var(--ok); }
 .study .rs-wl em { color: var(--muted); font-style: normal; }
+.study .rs-rules { margin: 10px 0 4px; }
+.study .rs-rules .rs-wl li { flex-wrap: wrap; justify-content: space-between; align-items: center; }

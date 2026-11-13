@@ -22,6 +22,7 @@
 | [`particles.md`](particles.md) | Частицы и окончания | `?game=particles` | `ParticlesView.vue` |
 | [`pairs.md`](pairs.md) | Похожие, но разные | `?game=pairs` | `PairsView.vue` |
 | [`translate.md`](translate.md) | Переведи предложение | `?game=translate` | `TranslateView.vue` |
+| [`explain.md`](explain.md) | Переведи и объясни | `?game=explain` | `ExplainTranslateView.vue` |
 | [`rule.md`](rule.md) | Потренировать правило | `?game=rule&g=<id карточки>` | `RuleView.vue` |
 | [`syllables.md`](syllables.md) | Собери по слогам | `?game=syllables` | `SyllablesView.vue` |
 | [`keyboard.md`](keyboard.md) | Печать на корейском | `?game=keyboard` | `KeyboardView.vue` |

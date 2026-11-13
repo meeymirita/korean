@@ -47,24 +47,33 @@ export function translateTasks(dir: TranslateDir = 'mix', n = 10, level: Transla
   for (const idx of shuffle(PAIRS.map((_, i) => i).filter(i => inLevel(PAIRS[i]![0], level)))) {
     if (out.length >= n) break
     const toRu = dir === 'ko-ru' || (dir === 'mix' && Math.random() < 0.5)
-    const [ko, ru] = PAIRS[idx]!
-    const wrong = distractors(idx, toRu ? 1 : 0)
-    if (wrong.length < 3) continue
-    const answer = toRu ? ru : ko
-    const other = (s: string) => PAIRS.find(p => p[toRu ? 1 : 0] === s)?.[toRu ? 0 : 1]
-    const options = shuffle([answer, ...wrong])
-    out.push({
-      id: out.length,
-      kind: toRu ? 'tr' : 'back',
-      title: toRu ? 'Переведи на русский' : 'Переведи на корейский',
-      prompt: toRu ? ko : ru,
-      options,
-      answer,
-      sentence: ko,
-      pairOf: Object.fromEntries(options.flatMap(o => { const v = other(o); return v ? [[o, v]] : [] })),
-    })
+    const task = sentenceTask(idx, toRu, out.length)
+    if (task) out.push(task)
   }
   return out
+}
+
+/** Номер пары «предложение / перевод» в наборе заданий по корейскому предложению; -1, если его нет среди предложений для заданий. */
+export const pairIndex = (ko: string) => PAIRS.findIndex(p => p[0] === ko)
+
+/** Одно задание «переведи предложение» с четырьмя вариантами; null, если не нашлось трёх неверных вариантов. */
+export function sentenceTask(idx: number, toRu: boolean, id: number): Task | null {
+  const [ko, ru] = PAIRS[idx]!
+  const wrong = distractors(idx, toRu ? 1 : 0)
+  if (wrong.length < 3) return null
+  const answer = toRu ? ru : ko
+  const other = (s: string) => PAIRS.find(p => p[toRu ? 1 : 0] === s)?.[toRu ? 0 : 1]
+  const options = shuffle([answer, ...wrong])
+  return {
+    id,
+    kind: toRu ? 'tr' : 'back',
+    title: toRu ? 'Переведи на русский' : 'Переведи на корейский',
+    prompt: toRu ? ko : ru,
+    options,
+    answer,
+    sentence: ko,
+    pairOf: Object.fromEntries(options.flatMap(o => { const v = other(o); return v ? [[o, v]] : [] })),
+  }
 }
 
 /** Рассказы из учебника целиком: подсказка не нужна, в разборе после ответа первое предложение рассказа. Неверные варианты: другие рассказы, по возможности такой же длины. */

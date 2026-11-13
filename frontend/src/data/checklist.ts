@@ -34,6 +34,7 @@ const TRAINER: Record<string, { source: string; mode?: string }> = {
   particles: { source: 'trainer', mode: 'particles' },
   rule: { source: 'trainer', mode: 'rule' },
   translate: { source: 'trainer', mode: 'translate' },
+  explain: { source: 'trainer', mode: 'explain' },
   quick: { source: 'quick' },
 }
 
