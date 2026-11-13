@@ -57,6 +57,35 @@ korean.meeymirita.ru {
 ```
 После правки: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. `/api/*` и `/video/*` должны стоять выше общего `handle`. Content-Security-Policy сайт ставит сам (пока в режиме отчёта, см. ниже), в Caddy её не добавляй. Строку `@assets … immutable` не добавляй: Caddy навешивал её и на 404 и 502 во время деплоя, и браузеры запоминали ошибку на год (Nuxt сам ставит нужный заголовок на найденные файлы).
 
+### Страница обслуживания на время деплоя (вставляет владелец руками)
+Пока контейнеры перезапускаются, Caddy отдаёт голый 502. Страница `docker/caddy/maintenance.html` (самодостаточная, сама обновляется раз в 15 секунд) это исправляет. Хостовый Caddy вне репозитория, поэтому делается руками:
+```
+mkdir -p /var/www/maintenance
+cp /var/sites/korean/docker/caddy/maintenance.html /var/www/maintenance/
+```
+В блок `korean.meeymirita.ru` перед закрывающей `}` добавить:
+```
+    handle_errors {
+        @down expression {http.error.status_code} in [502, 503, 504]
+        handle @down {
+            header Cache-Control "no-store"
+            header Retry-After "15"
+            @api path /api/*
+            handle @api {
+                respond `{"error":"maintenance"}` 503
+            }
+            handle {
+                root * /var/www/maintenance
+                rewrite * /maintenance.html
+                file_server {
+                    status 503
+                }
+            }
+        }
+    }
+```
+Дальше `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`. `no-store` обязателен: иначе браузер запомнит ошибку (см. предупреждение про `@assets` выше). Файл после правки в репозитории копируй заново. Проверка: `docker compose stop frontend`, открыть сайт (страница с 우리말), `docker compose start frontend`.
+
 ## Dependabot
 Раз в неделю открывает pull request-ы (`dependabot/...`), CI показывает, ничего ли не сломалось. Крупные обновления (смена первой цифры: TypeScript 7, `@types/node` 26, `actions/checkout` 7) не сливай вслепую;
 мелкие (`minor-and-patch`) обычно безопасны. Слил в `main`: выкладка пойдёт сама после зелёного CI. Сомневаешься: закрой, Dependabot предложит снова.

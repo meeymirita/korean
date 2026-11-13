@@ -41,4 +41,23 @@
 	handle {
 		reverse_proxy frontend:3000
 	}
+	# страница обслуживания, пока сайт или API не отвечают (деплой, перезапуск): статус 503, браузер её не запоминает
+	handle_errors {
+		@down expression {http.error.status_code} in [502, 503, 504]
+		handle @down {
+			header Cache-Control "no-store"
+			header Retry-After "15"
+			@api path /api/*
+			handle @api {
+				respond `{"error":"maintenance"}` 503
+			}
+			handle {
+				root * /srv/maintenance
+				rewrite * /maintenance.html
+				file_server {
+					status 503
+				}
+			}
+		}
+	}
 }
