@@ -2,12 +2,15 @@
 import Icon from '@/components/Icon.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { errText } from '@/lib/http'
+import NoteGlyph from '@/components/cabinet/NoteGlyph.vue'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
+import TrashPanel from '@/components/cabinet/TrashPanel.vue'
 import NoteModal from '@/components/cabinet/NoteModal.vue'
 import TagInput from '@/components/cabinet/TagInput.vue'
 import { useAllTags } from '@/composables/useAllTags'
 import { MAX_NOTE_IMAGES, MAX_NOTES, MAX_TEXT, MAX_TITLE, PREVIEW, useNotesStore, type Note } from '@/stores/notes'
-import { askConfirm } from '@/composables/useConfirm'
+import { askConfirm, askTokenDo } from '@/composables/useConfirm'
+import { formatRemind } from '@/lib/notesMeta'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
@@ -143,12 +146,59 @@ function saveEdit() {
   editing.value = null
 }
 async function remove(n: Note) {
-  const yes = await askConfirm({ title: `Удалить заметку «${n.title}»?`, text: 'Это нельзя отменить.', ok: 'Удалить', danger: true })
+  // у владельца удаление мягкое: заметка 30 дней лежит в корзине; у гостя заметки только в памяти и стираются сразу
+  const yes = await askConfirm(store.owner
+    ? { title: `Убрать заметку «${n.title}» в корзину?`, text: 'Она будет лежать в корзине 30 дней, её можно вернуть.', ok: 'В корзину', danger: true }
+    : { title: `Удалить заметку «${n.title}»?`, text: 'Это нельзя отменить.', ok: 'Удалить', danger: true })
   if (yes) {
     store.remove(n.id)
-    toast.ok('Заметка удалена')
+    toast.ok(store.owner ? 'Заметка в корзине' : 'Заметка удалена')
     openedId.value = null
+    if (showTrash.value) void openTrash()
   }
+}
+
+function pin(n: Note) {
+  if (store.togglePin(n.id)) toast.ok(n.pinned ? 'Заметка закреплена' : 'Заметка откреплена')
+}
+function setRemind(n: Note, value: string | null) {
+  if (store.update(n.id, { remindAt: value })) toast.ok(value ? 'Напоминание поставлено' : 'Напоминание убрано')
+}
+
+/* ---------- корзина ---------- */
+const showTrash = ref(false)
+const trashLoading = ref(false)
+const trashError = ref('')
+async function openTrash() {
+  trashLoading.value = true
+  trashError.value = ''
+  try {
+    await store.loadTrash()
+  } catch (e) {
+    trashError.value = errText(e)
+  } finally {
+    trashLoading.value = false
+  }
+}
+function toggleTrash() {
+  showTrash.value = !showTrash.value
+  if (showTrash.value) void openTrash()
+}
+async function restore(id: string) {
+  try {
+    await store.restore(id)
+    toast.ok('Заметка возвращена')
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+async function purge(id: string) {
+  const n = store.trash.find(x => x.id === id)
+  const done = await askTokenDo(
+    { title: `Удалить заметку «${n?.title ?? ''}» навсегда?`, text: 'Вернуть её будет нельзя. Введите свой токен, чтобы подтвердить.', ok: 'Удалить навсегда' },
+    token => store.purge(id, token),
+  )
+  if (done) toast.ok('Заметка удалена навсегда')
 }
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
@@ -191,6 +241,11 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
       <span class="nt-total">{{ store.notes.length }} / {{ MAX_NOTES }}</span>
     </div>
 
+    <div v-if="store.owner" class="nt-bin">
+      <button type="button" :class="{ on: showTrash }" :aria-expanded="showTrash" @click="toggleTrash">Корзина{{ store.trashLoaded ? ` (${store.trash.length})` : '' }}</button>
+    </div>
+    <TrashPanel v-if="store.owner && showTrash" noun="Заметки" :items="store.trash.map(n => ({ id: n.id, title: n.title, sub: n.text.slice(0, 80), deletedAt: n.deletedAt }))" :loading="trashLoading" :error="trashError" @restore="restore" @purge="purge" />
+
     <div v-if="noteTags.length" class="tg-filter">
       <button v-for="t in noteTags" :key="t" type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click="toggleTag(t)">#{{ t }}</button>
     </div>
@@ -199,7 +254,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
     <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено. Попробуйте другое слово или уберите тег из поиска.</p>
 
     <ul class="nt-list">
-      <li v-for="n in shown" :key="n.id" class="nt-card" :class="{ click: editing !== n.id }" :tabindex="editing !== n.id ? 0 : undefined" @click="editing !== n.id && (openedId = n.id)" @keydown.enter.self="editing !== n.id && (openedId = n.id)">
+      <li v-for="n in shown" :key="n.id" class="nt-card" :class="{ click: editing !== n.id, pinned: n.pinned }" :tabindex="editing !== n.id ? 0 : undefined" @click="editing !== n.id && (openedId = n.id)" @keydown.enter.self="editing !== n.id && (openedId = n.id)">
         <template v-if="editing === n.id">
           <input v-model="editTitle" :maxlength="MAX_TITLE" :class="{ at: editTitle.length >= MAX_TITLE }" aria-label="Название" />
           <textarea v-model="editText" :maxlength="MAX_TEXT" :class="{ at: editText.length >= MAX_TEXT }" rows="5" aria-label="Описание"></textarea>
@@ -215,19 +270,21 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
         </template>
         <template v-else>
           <div class="nt-head">
-            <h4>{{ n.title }}</h4>
+            <h4>{{ n.title }}<span v-if="n.pinned" class="nt-flags" title="Закреплена"><NoteGlyph name="pin" /></span></h4>
             <time>{{ when(n.created) }}<span v-if="n.updated - n.created > 60_000"> · изм. {{ when(n.updated) }}</span></time>
           </div>
           <p v-if="n.text" class="nt-text">{{ preview(n) }}</p>
+          <p v-if="n.remindAt" class="nt-remind"><NoteGlyph name="clock" /> Напомнить {{ formatRemind(n.remindAt) }}</p>
           <ul v-if="n.tags.length" class="tg-tags"><li v-for="t in n.tags" :key="t"><button type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click.stop="toggleTag(t)">#{{ t }}</button></li></ul>
           <NoteImages v-if="canImages" :ids="n.images" />
           <div class="nt-acts">
+            <button v-if="store.owner" class="plain" @click.stop="pin(n)"><NoteGlyph name="pin" /> {{ n.pinned ? 'Открепить' : 'Закрепить' }}</button>
             <button class="plain" @click.stop="startEdit(n)">Изменить</button>
             <button class="plain danger" @click.stop="remove(n)">Удалить</button>
           </div>
         </template>
       </li>
     </ul>
-    <NoteModal v-if="opened" :note="opened" :images="canImages" @close="openedId = null" @edit="startEdit(opened)" @remove="remove(opened)" />
+    <NoteModal v-if="opened" :note="opened" :images="canImages" :owner="store.owner" @close="openedId = null" @edit="startEdit(opened)" @remove="remove(opened)" @pin="pin(opened)" @remind="v => setRemind(opened!, v)" />
   </div>
 </template>

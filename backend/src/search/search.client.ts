@@ -178,8 +178,8 @@ export class SearchClient {
     try {
       const db = await this.db.orm()
       const [notes, images] = await Promise.all([
-        db.note.findMany({ select: { id: true, title: true, text: true, tags: true } }),
-        db.image.findMany({ where: { kind: 'gallery' }, select: { id: true, name: true, caption: true, description: true, tags: true } }),
+        db.note.findMany({ where: { deletedAt: null }, select: { id: true, title: true, text: true, tags: true } }),
+        db.image.findMany({ where: { kind: 'gallery', deletedAt: null }, select: { id: true, name: true, caption: true, description: true, tags: true } }),
       ])
       const documents = [
         ...notes.map(note => ({ id: `note:${note.id}`, category: 'note', title: note.title, text: [note.title, note.text, note.tags].join(' ') })),

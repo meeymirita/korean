@@ -144,7 +144,7 @@
 
 `pages/` (файловый роутинг, тонкие обёртки над `views/`) · `views/` (экраны) · `components/` (`cabinet/`, `korean/`, `charts/`, `garden/`, `home/`) · `composables/` · `stores/` (`progress`, `notes`, `images`, `shop`, `timer`, `toast`…) ·
 `lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (игра на чистом DOM: `engine.ts`, `build.ts`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
-Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `logs`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов).
+Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `trash` (корзина 30 дней), `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `logs`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов).
 
 ## Документация (читай нужный файл перед работой)
 

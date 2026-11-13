@@ -109,7 +109,7 @@ export async function start({ dir, env = {} } = {}) {
   }
   /** Опасные запросы владельца (создание гостя, сброс и загрузка копии) сайт шлёт с повторным токеном: хелпер делает так же, если не задан свой заголовок. */
   const dangerous = (method, url, body) =>
-    method === 'POST' && (url === '/api/guests' || (url === '/api/ops' && Array.isArray(body?.ops) && body.ops.some(o => o?.type === 'reset' || o?.type === 'import')))
+    (method === 'DELETE' && (/^\/api\/notes\/[^/]+$/.test(url) || /^\/api\/images\/[a-f0-9]+\/permanent$/.test(url))) || method === 'POST' && (url === '/api/guests' || (url === '/api/ops' && Array.isArray(body?.ops) && body.ops.some(o => o?.type === 'reset' || o?.type === 'import')))
   /** call('GET', '/api/notes', токен, тело, свои заголовки) */
   const call = (method, url, token, body, extra = {}) =>
     fetch(base + url, {

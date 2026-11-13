@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
+import NoteGlyph from '@/components/cabinet/NoteGlyph.vue'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
 import type { Note } from '@/stores/notes'
 
-defineProps<{ note: Note; images: boolean }>()
-const emit = defineEmits<{ close: []; edit: []; remove: [] }>()
+/** owner: закрепление и «Напомнить в» есть только у владельца (гость ничего не сохраняет). */
+defineProps<{ note: Note; images: boolean; owner: boolean }>()
+const emit = defineEmits<{ close: []; edit: []; remove: []; pin: []; remind: [value: string | null] }>()
+
+const onRemind = (e: Event) => emit('remind', (e.target as HTMLInputElement).value || null)
 
 const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
@@ -27,12 +31,18 @@ onBeforeUnmount(() => {
     <div class="nm-wrap" @click.self="emit('close')">
       <article class="nm-box" role="dialog" aria-modal="true" :aria-label="note.title">
         <button class="nm-x" aria-label="Закрыть" @click="emit('close')">✕</button>
-        <h2>{{ note.title }}</h2>
+        <h2>{{ note.title }}<span v-if="note.pinned" class="nt-flags" title="Закреплена"><NoteGlyph name="pin" /></span></h2>
         <time>{{ when(note.created) }}<span v-if="note.updated - note.created > 60_000"> · изменена {{ when(note.updated) }}</span></time>
         <ul v-if="note.tags.length" class="nm-tags"><li v-for="t in note.tags" :key="t">#{{ t }}</li></ul>
         <p v-if="note.text" class="nm-text">{{ note.text }}</p>
         <NoteImages v-if="images && note.images.length" :ids="note.images" big />
+        <label v-if="owner" class="nm-remind"><NoteGlyph name="clock" /> Напомнить в
+          <input type="datetime-local" :value="note.remindAt ?? ''" aria-label="Напомнить в" @change="onRemind" />
+          <button v-if="note.remindAt" type="button" class="plain" @click.prevent="emit('remind', null)">Убрать</button>
+          <small>По времени сервера. Сообщение придёт в Telegram, в тему «Напоминания», один раз.</small>
+        </label>
         <div class="nm-acts">
+          <button v-if="owner" class="plain" :class="{ on: note.pinned }" @click="emit('pin')"><NoteGlyph name="pin" /> {{ note.pinned ? 'Открепить' : 'Закрепить' }}</button>
           <button class="plain" @click="emit('edit')">Изменить</button>
           <button class="plain danger" @click="emit('remove')">Удалить</button>
         </div>

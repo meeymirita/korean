@@ -11,6 +11,7 @@ import { GuestsModule } from './guests/guests.module.js'
 import { HealthController } from './health.controller.js'
 import { ImagesModule } from './images/images.module.js'
 import { NotesModule } from './notes/notes.module.js'
+import { TrashModule } from './trash/trash.module.js'
 import { NewWordsModule } from './newwords/newwords.module.js'
 import { PlansModule } from './plans/plans.module.js'
 import { SiteImgModule } from './siteimg/siteimg.module.js'
@@ -34,7 +35,7 @@ import { YaDiskModule } from './yadisk/yadisk.module.js'
 import { WordsExportModule } from './wordsexport/wordsexport.module.js'
 
 @Module({
-  imports: [PicModule, VideoModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, WordsExportModule, AdminModule, SearchModule, DictModule],
+  imports: [PicModule, VideoModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, WordsExportModule, AdminModule, SearchModule, DictModule],
   controllers: [HealthController, MetricsController, CspReportController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })

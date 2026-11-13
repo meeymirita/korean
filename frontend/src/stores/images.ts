@@ -4,6 +4,11 @@ import { useProgressStore } from '@/stores/progress'
 import { LONG_TIMEOUT, errText, fetchT } from '@/lib/http'
 import { cleanTags } from '@/lib/tags'
 
+/** Картинка из корзины: deletedAt в мс. */
+export interface TrashedImage extends ImageItem {
+  deletedAt: number
+}
+
 export interface ImageItem {
   id: string
   name: string
@@ -117,12 +122,47 @@ export const useImagesStore = defineStore('images', () => {
     }
   }
 
+  /** Картинка уходит в корзину на 30 дней: файлы остаются на сервере, место не освобождается до окончательного удаления. */
   async function remove(id: string) {
     const res = await fetchT(`/api/images/${id}`, { method: 'DELETE', headers: headers() })
     if (!res.ok && res.status !== 404) throw new Error(`ошибка сервера ${res.status}`)
-    const it = items.value.find(i => i.id === id)
-    if (it) used.value = Math.max(0, used.value - it.size)
     items.value = items.value.filter(i => i.id !== id)
+    trashLoaded.value = false
+  }
+
+  /* ---------- корзина (30 дней) ---------- */
+  const trash = ref<TrashedImage[]>([])
+  const trashLoaded = ref(false)
+
+  async function loadTrash() {
+    const res = await fetchT('/api/images/trash', { headers: headers() })
+    if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+    const d = (await res.json()) as { items: TrashedImage[] }
+    trash.value = d.items.map(i => ({ ...i, tags: i.tags ?? [] }))
+    trashLoaded.value = true
+  }
+
+  async function restore(id: string) {
+    const res = await fetchT(`/api/images/${id}/restore`, { method: 'POST', headers: headers() })
+    if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+    const back = trash.value.find(i => i.id === id)
+    trash.value = trash.value.filter(i => i.id !== id)
+    if (back) {
+      const { deletedAt: _d, ...item } = back
+      items.value = [...items.value, item].sort((a, b) => b.created - a.created)
+    }
+  }
+
+  /** Стирает насовсем (файлы и копию на Диске); confirm — повторно введённый токен, его проверяет сервер. */
+  async function purge(id: string, confirm: string) {
+    if (!/^[\x20-\x7e]+$/.test(confirm)) throw new Error('неверный токен подтверждения')
+    const res = await fetchT(`/api/images/${id}/permanent`, { method: 'DELETE', headers: { ...headers(), 'X-Confirm-Token': confirm } })
+    if (res.status === 403) throw new Error('неверный токен подтверждения')
+    if (res.status === 429) throw new Error('слишком много попыток, подождите несколько минут')
+    if (!res.ok && res.status !== 404) throw new Error(`ошибка сервера ${res.status}`)
+    const it = trash.value.find(i => i.id === id)
+    if (it) used.value = Math.max(0, used.value - it.size)
+    trash.value = trash.value.filter(i => i.id !== id)
     for (const kind of ['file', 'thumb']) {
       const key = `${id}/${kind}`
       void blobs.get(key)?.then(u => URL.revokeObjectURL(u))
@@ -151,5 +191,5 @@ export const useImagesStore = defineStore('images', () => {
     blobs.clear()
   }
 
-  return { items, tagCounts, used, limit, maxFile, loaded, check, load, upload, update, remove, blobUrl, release }
+  return { items, tagCounts, used, limit, maxFile, loaded, trash, trashLoaded, check, load, upload, update, remove, loadTrash, restore, purge, blobUrl, release }
 })

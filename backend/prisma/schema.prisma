@@ -67,6 +67,14 @@ model Note {
   tags    String @default("[]")
   created BigInt
   updated BigInt
+  /// закреплена сверху списка
+  pinned  Boolean @default(false)
+  /// когда убрана в корзину (мс); null: заметка живая
+  deletedAt BigInt? @map("deleted_at")
+  /// «Напомнить в»: ГГГГ-ММ-ДДTЧЧ:ММ по часам сервера; null: без напоминания
+  remindAt  String? @map("remind_at")
+  /// напоминание уже отправлено (метка ставится до отправки)
+  remindSent Boolean @default(false) @map("remind_sent")
   @@map("notes")
 }
 
@@ -94,6 +102,8 @@ model Image {
   width       Int    @default(0)
   height      Int    @default(0)
   created     BigInt
+  /// когда убрана в корзину (мс); null: картинка живая
+  deletedAt   BigInt? @map("deleted_at")
   @@map("images")
 }
 

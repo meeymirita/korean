@@ -132,8 +132,23 @@ describe('сервер: картинки', () => {
     }
   })
 
-  test('удаление убирает запись и оба файла', async () => {
+  test('удаление уводит картинку в корзину: из списка пропала, файлы на месте', async () => {
     assert.equal((await s.call('DELETE', `/api/images/${id}`, OWNER)).status, 200)
+    assert.equal((await (await s.call('GET', '/api/images', OWNER)).json()).items.length, 0)
+    assert.deepEqual(await files(s.dir, 'uploads'), [`${id}.png`])
+    assert.deepEqual(await files(s.dir, 'thumbs'), [`${id}.webp`])
+    const trash = await (await s.call('GET', '/api/images/trash', OWNER)).json()
+    assert.deepEqual([trash.days, trash.items.map(i => i.id)], [30, [id]])
+  })
+
+  test('восстановление возвращает картинку в список; окончательное удаление просит токен и стирает файлы', async () => {
+    assert.equal((await s.call('POST', `/api/images/${id}/restore`, OWNER)).status, 200)
+    assert.equal((await (await s.call('GET', '/api/images', OWNER)).json()).items.length, 1)
+    assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER)).status, 404, 'живую картинку навсегда не удалить')
+    await s.call('DELETE', `/api/images/${id}`, OWNER)
+    assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER, undefined, { 'X-Confirm-Token': 'неверный' })).status, 403)
+    assert.deepEqual(await files(s.dir, 'uploads'), [`${id}.png`], 'без токена ничего не стёрто')
+    assert.equal((await s.call('DELETE', `/api/images/${id}/permanent`, OWNER)).status, 200)
     assert.deepEqual(await files(s.dir, 'uploads'), [])
     assert.deepEqual(await files(s.dir, 'thumbs'), [])
     assert.equal((await s.call('GET', `/api/images/${id}/file`, OWNER)).status, 404)

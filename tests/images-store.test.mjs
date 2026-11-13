@@ -96,12 +96,12 @@ describe('список, загрузка, подпись, удаление', () 
     assert.deepEqual([store.items[0].caption, store.items[0].description], ['Мой кот', 'Спит на диване'])
   })
 
-  test('удаление: картинка пропадает, место освобождается, повторное удаление не ошибка', async () => {
+  test('удаление: картинка уходит в корзину (из списка пропадает, место занято до окончательного удаления), повторное удаление не ошибка', async () => {
     globalThis.fetch = reply(200, { items: [item('a', { size: 700 }), item('b')], used: 1700, limit: MB, maxFile: MB })
     await store.load()
     globalThis.fetch = reply(200, { ok: true })
     await store.remove('a')
-    assert.deepEqual([store.items.map(i => i.id), store.used], [['b'], 1000])
+    assert.deepEqual([store.items.map(i => i.id), store.used], [['b'], 1700])
     globalThis.fetch = reply(404)
     await store.remove('b')
     assert.equal(store.items.length, 0)

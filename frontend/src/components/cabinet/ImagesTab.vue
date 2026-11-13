@@ -3,9 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { errText } from '@/lib/http'
 import TagInput from '@/components/cabinet/TagInput.vue'
+import TrashPanel from '@/components/cabinet/TrashPanel.vue'
 import { useAllTags } from '@/composables/useAllTags'
 import { useToastStore } from '@/stores/toast'
-import { askConfirm } from '@/composables/useConfirm'
+import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { ALLOWED, MAX_CAPTION, MAX_DESCRIPTION, formatSize, useImagesStore, type ImageItem } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
 import { searchPrivateRemote } from '@/data/korean/search'
@@ -156,15 +157,55 @@ async function saveInfo() {
   }
 }
 async function remove(it: ImageItem) {
-  const yes = await askConfirm({ title: `Удалить картинку «${it.caption || it.name}»?`, text: 'Это нельзя отменить.', ok: 'Удалить', danger: true })
+  const yes = await askConfirm({ title: `Убрать картинку «${it.caption || it.name}» в корзину?`, text: 'Она будет лежать в корзине 30 дней, её можно вернуть. Файл на Диске не удаляется.', ok: 'В корзину', danger: true })
   if (!yes) return
   try {
     await store.remove(it.id)
-    delete thumbs.value[it.id]
-    toast.ok('Картинка удалена')
+    toast.ok('Картинка в корзине')
     if (openId.value === it.id) openId.value = null
+    if (showTrash.value) void openTrash()
   } catch (e) {
     errors.value = [errText(e)]
+  }
+}
+
+/* ---------- корзина ---------- */
+const showTrash = ref(false)
+const trashLoading = ref(false)
+const trashError = ref('')
+async function openTrash() {
+  trashLoading.value = true
+  trashError.value = ''
+  try {
+    await store.loadTrash()
+    store.trash.forEach(showThumb)
+  } catch (e) {
+    trashError.value = errText(e)
+  } finally {
+    trashLoading.value = false
+  }
+}
+function toggleTrash() {
+  showTrash.value = !showTrash.value
+  if (showTrash.value) void openTrash()
+}
+async function restore(id: string) {
+  try {
+    await store.restore(id)
+    toast.ok('Картинка возвращена')
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+async function purge(id: string) {
+  const it = store.trash.find(i => i.id === id)
+  const done = await askTokenDo(
+    { title: `Удалить картинку «${it?.caption || it?.name || ''}» навсегда?`, text: 'Файл и копия на Диске будут стёрты, вернуть нельзя. Введите свой токен, чтобы подтвердить.', ok: 'Удалить навсегда' },
+    token => store.purge(id, token),
+  )
+  if (done) {
+    delete thumbs.value[id]
+    toast.ok('Картинка удалена навсегда')
   }
 }
 function onKey(e: KeyboardEvent) {
@@ -208,6 +249,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     <div v-if="imageTags.length" class="tg-filter">
       <button v-for="t in imageTags" :key="t" type="button" class="tg-tag" :class="{ on: tagFilter === t }" @click="tagFilter = tagFilter === t ? '' : t">#{{ t }}</button>
     </div>
+
+    <div class="nt-bin">
+      <button type="button" :class="{ on: showTrash }" :aria-expanded="showTrash" @click="toggleTrash">Корзина{{ store.trashLoaded ? ` (${store.trash.length})` : '' }}</button>
+    </div>
+    <TrashPanel v-if="showTrash" noun="Картинки" :items="store.trash.map(i => ({ id: i.id, title: i.caption || i.name, sub: formatSize(i.size), deletedAt: i.deletedAt }))" :loading="trashLoading" :error="trashError" @restore="restore" @purge="purge">
+      <template #thumb="{ item }"><img v-if="thumbs[item.id]" class="tr-thumb" :src="thumbs[item.id]" alt="" /><span v-else class="tr-thumb"></span></template>
+    </TrashPanel>
 
     <p v-if="failed" class="cb-empty">Не получилось загрузить список картинок. Проверьте связь и обновите страницу.</p>
     <p v-else-if="store.loaded && !store.items.length" class="cb-empty">Картинок пока нет. Загрузите первую.</p>

@@ -429,3 +429,25 @@ export function examMail(titles: string[], site?: string): Mail {
   const tg = tgCard({ topic: 'remind', title: 'Итоговая оценка', lead, foot: 'Проверка без подсказок, нужно набрать 85%. Пересдача через сутки.', button: { text: 'Пройти', url: link } })
   return { subject: '우리말: пора пройти итоговую проверку', text, html: esc(text), tg, topic: 'remind' }
 }
+
+/** Напоминание о незаконченном экзамене: сохранена часть N из M, остальное ждёт (тема «Напоминания»). */
+export function examDraftMail(saved: number, parts: number, site?: string): Mail {
+  const link = `${(site || 'https://korean.meeymirita.ru').replace(/\/$/, '')}/korean/exam`
+  const lead = `Экзамен не закончен: часть ${saved} из ${parts} сохранена, остальное ждёт.`
+  const text = `${lead}\n\nПродолжить: ${link}`
+  const tg = tgCard({ topic: 'remind', title: 'Итоговая оценка', lead, foot: 'Ответы сохранены, можно продолжить с того же места.', button: { text: 'Продолжить', url: link } })
+  return { subject: '우리말: экзамен не закончен', text, html: esc(text), tg, topic: 'remind' }
+}
+
+/** Напоминание по заметке: заголовок, начало текста (до 200 знаков) и кнопка на кабинет. */
+export function noteRemindMail(o: { title: string; text: string; site?: string }): Mail {
+  const site = (o.site || 'https://korean.meeymirita.ru').replace(/\/$/, '')
+  const link = `${site}/korean/cabinet?tab=notes`
+  const text = o.text.replace(/\s+/g, ' ').trim()
+  const lead = text.length > 200 ? text.slice(0, 200).trimEnd() + '…' : text
+  const title = o.title.slice(0, 100)
+  const plain = `Напоминание по заметке (우리말)\n\n${title}${lead ? `\n${lead}` : ''}\n\nОткрыть: ${link}`
+  const html = `<p><b>${esc(title)}</b></p>${lead ? `<p>${esc(lead)}</p>` : ''}<p><a href="${esc(link)}">Открыть заметки</a></p>`
+  const tg = tgCard({ topic: 'remind', title, lead, foot: 'Напоминание по заметке: время ставится в самой заметке.', button: { text: 'Открыть заметки', url: link } })
+  return { subject: `우리말: напоминание, ${title}`, text: plain, html, tg, topic: 'remind' }
+}

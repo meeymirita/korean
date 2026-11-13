@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Header, HttpCode, Param, Patch, Post, Query, Req, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common'
+import type { Request } from 'express'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { createReadStream } from 'node:fs'
 import { memoryStorage } from 'multer'
 import { Owner } from '../auth/auth.js'
+import { ConfirmService } from '../auth/confirm.service.js'
 import { MAX_IMAGE } from '../config.js'
 import { ImagesService } from './images.service.js'
 
@@ -10,7 +12,7 @@ import { ImagesService } from './images.service.js'
 @Owner()
 @Controller('images')
 export class ImagesController {
-  constructor(private readonly images: ImagesService) {}
+  constructor(private readonly images: ImagesService, private readonly confirm: ConfirmService) {}
 
   @Get()
   /** ?kind=gallery (по умолчанию) | note | cover */
@@ -23,6 +25,12 @@ export class ImagesController {
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE, files: 1, fields: 5, fieldSize: 4096, parts: 7, headerPairs: 30 } }))
   add(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { caption?: unknown; description?: unknown; kind?: unknown; tags?: unknown }) {
     return this.images.add(file, body?.caption, body?.description, body?.kind, body?.tags)
+  }
+
+  /** Корзина «Картинок» (30 дней). */
+  @Get('trash')
+  trash() {
+    return this.images.trash()
   }
 
   @Get(':id/file')
@@ -46,8 +54,22 @@ export class ImagesController {
     return this.images.update(id, body)
   }
 
+  /** Картинка «Картинок» уходит в корзину (файлы остаются); вложение заметки и обложка стираются сразу. */
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.images.remove(id)
+  }
+
+  @Post(':id/restore')
+  @HttpCode(200)
+  restore(@Param('id') id: string) {
+    return this.images.restore(id)
+  }
+
+  /** Удалить из корзины насовсем (стираются файлы и копия на Диске): только с повторным токеном (X-Confirm-Token). */
+  @Delete(':id/permanent')
+  async purge(@Req() req: Request, @Param('id') id: string) {
+    await this.confirm.require(req)
+    return this.images.purge(id)
   }
 }

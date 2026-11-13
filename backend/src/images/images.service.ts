@@ -14,6 +14,7 @@ import { Events } from '../events/events.service.js'
 import { parseTags, readTags } from '../tags.js'
 import { SearchClient } from '../search/search.client.js'
 import { YaDiskService } from '../yadisk/yadisk.service.js'
+import { TRASH_DAYS } from '../trash/trash.js'
 
 /** Назначение картинки: «Картинки» в кабинете (gallery), вложение заметки (note), обложка кабинета (cover). Списки у каждого свои. */
 export const KINDS = ['gallery', 'note', 'cover'] as const
@@ -106,9 +107,15 @@ export class ImagesService {
   /** Занятое место считается по всем картинкам, а в списке только выбранного назначения (по умолчанию «Картинки»). */
   async list(kind: unknown = 'gallery') {
     const k: Kind = KINDS.includes(kind as Kind) ? (kind as Kind) : 'gallery'
-    const items = (await (await this.db.orm()).image.findMany({ where: { kind: k }, orderBy: [{ created: 'desc' }, { id: 'desc' }] }) as (Omit<ImageRow, 'tags' | 'size' | 'created'> & { tags: string; size: bigint; created: bigint })[])
-      .map(r => ({ ...r, size: Number(r.size), created: Number(r.created), tags: readTags(r.tags) }))
+    const rows = await (await this.db.orm()).image.findMany({ where: { kind: k, deletedAt: null }, orderBy: [{ created: 'desc' }, { id: 'desc' }] })
+    const items = rows.map(({ deletedAt: _d, ...r }) => ({ ...r, size: Number(r.size), created: Number(r.created), tags: readTags(r.tags) }))
     return { items, used: await this.usedBytes(), limit: MAX_IMAGES_TOTAL, maxFile: MAX_IMAGE }
+  }
+
+  /** Корзина «Картинок»: убранные картинки, свежие сверху; `deletedAt` в мс, `days` срок хранения. Файлы лежат на месте. */
+  async trash() {
+    const rows = await (await this.db.orm()).image.findMany({ where: { kind: 'gallery', deletedAt: { not: null } }, orderBy: { deletedAt: 'desc' } })
+    return { days: TRASH_DAYS, items: rows.map(r => ({ ...r, size: Number(r.size), created: Number(r.created), tags: readTags(r.tags), deletedAt: Number(r.deletedAt) })) }
   }
 
   private async usedBytes() {
@@ -198,13 +205,53 @@ export class ImagesService {
     return { ok: true }
   }
 
-  async remove(id: string) {
-    const row = await this.find(id)
-    await (await this.db.orm()).image.delete({ where: { id } })
-    await Promise.all([this.file(row), this.thumb(id)].map(p => unlink(p).catch(() => undefined)))
+  /** Файлы и запись картинки стираются насовсем (в том числе зеркало на Диске). */
+  private async erase(row: Pick<ImageRow, 'id' | 'ext' | 'name'>) {
+    await (await this.db.orm()).image.delete({ where: { id: row.id } })
+    await Promise.all([this.file(row), this.thumb(row.id)].map(p => unlink(p).catch(() => undefined)))
     this.disk.unmirror(this.file(row))
     await this.events.log('image_deleted', row.name)
     this.search.schedulePrivateReindex()
+  }
+
+  /** Картинка «Картинок» уходит в корзину на 30 дней: файлы, миниатюра и копия на Диске остаются. Вложения заметок и обложки стираются сразу, как раньше. */
+  async remove(id: string) {
+    const row = await this.find(id)
+    if (row.kind !== 'gallery') {
+      await this.erase(row)
+      return { ok: true }
+    }
+    await (await this.db.orm()).image.updateMany({ where: { id, deletedAt: null }, data: { deletedAt: BigInt(Date.now()) } })
+    await this.events.log('image_trashed', row.name)
+    this.search.schedulePrivateReindex()
+    return { ok: true, trashed: true }
+  }
+
+  private async inTrash(id: string) {
+    const row = await this.find(id)
+    const raw = await (await this.db.orm()).image.findFirst({ where: { id, deletedAt: { not: null } }, select: { id: true } })
+    if (!raw) throw new NotFoundException({ error: 'not found' })
+    return row
+  }
+
+  async restore(id: string) {
+    const row = await this.inTrash(id)
+    await (await this.db.orm()).image.update({ where: { id }, data: { deletedAt: null } })
+    await this.events.log('image_restored', row.name)
+    this.search.schedulePrivateReindex()
     return { ok: true }
+  }
+
+  /** Удалить из корзины насовсем (вызывающий уже проверил повторный токен). */
+  async purge(id: string) {
+    await this.erase(await this.inTrash(id))
+    return { ok: true }
+  }
+
+  /** Автоочистка: стирает картинки, убранные в корзину не позже `cutoff` (мс). Возвращает число стёртых. */
+  async purgeOlderThan(cutoff: number) {
+    const old = await (await this.db.orm()).image.findMany({ where: { deletedAt: { not: null, lte: BigInt(cutoff) } }, select: { id: true, ext: true, name: true } })
+    for (const r of old) await this.erase(r)
+    return old.length
   }
 }

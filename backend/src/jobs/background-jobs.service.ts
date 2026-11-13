@@ -9,6 +9,8 @@ export const JOB_SCHEDULES = [
   { id: 'digest-minute', repeat: { every: 60_000 }, name: 'digest.tick' },
   { id: 'reminder-minute', repeat: { every: 60_000 }, name: 'reminder.tick' },
   { id: 'backup-nightly', repeat: { pattern: '30 2 * * *', tz: 'Asia/Novosibirsk' }, name: 'backup.run' },
+  { id: 'trash-daily', repeat: { pattern: '40 3 * * *', tz: 'Asia/Novosibirsk' }, name: 'trash.purge' },
+  { id: 'notes-remind-minute', repeat: { every: 60_000 }, name: 'notes.remind' },
 ] as const
 
 @Injectable()
@@ -56,7 +58,7 @@ export class BackgroundJobs implements OnApplicationBootstrap, OnModuleDestroy {
       this.producer.on('error', error => this.logger.error(`Ошибка Redis producer: ${error.message}`))
 
       for (const schedule of JOB_SCHEDULES) {
-        const repeat = schedule.id === 'backup-nightly'
+        const repeat = schedule.id === 'backup-nightly' || schedule.id === 'trash-daily'
           ? { ...schedule.repeat, tz: process.env.TZ || schedule.repeat.tz }
           : schedule.repeat
         await this.queue.upsertJobScheduler(schedule.id, repeat, { name: schedule.name })
@@ -86,7 +88,9 @@ export class BackgroundJobs implements OnApplicationBootstrap, OnModuleDestroy {
     const tick = Number(process.env.REMINDER_TICK_MS) || 60_000
     every('digest.tick', tick)
     every('reminder.tick', tick)
+    every('notes.remind', tick)
     every('backup.run', 6 * 3600_000, true)
+    every('trash.purge', 6 * 3600_000, true)
   }
 
   async onModuleDestroy() {
