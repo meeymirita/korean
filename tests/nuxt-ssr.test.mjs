@@ -123,7 +123,8 @@ describe('Nuxt: закрытые страницы, ошибки, перенап�
 
   test('CSP в режиме отчёта: разрешены свои файлы и встроенные скрипты страницы по хэшу', async () => {
     const { createHash } = await import('node:crypto')
-    for (const p of ['/', '/korean/words', '/dict', '/korean/home']) {
+    // /about и /history собраны заранее и отдаются файлами: заголовок им ставится перед ответом
+    for (const p of ['/', '/korean/words', '/dict', '/korean/home', '/about', '/history']) {
       const res = await get(p)
       const csp = res.headers.get('content-security-policy-report-only')
       assert.ok(csp, `нет заголовка CSP у ${p}`)

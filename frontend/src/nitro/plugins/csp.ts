@@ -2,9 +2,10 @@
 // политика разрешает только свои файлы и те встроенные скрипты, которые сайт сам положил в HTML (по их хэшу).
 // Пока режим «только отчёт» (заголовок Content-Security-Policy-Report-Only): браузер ничего не блокирует, а о нарушениях
 // сообщает на /api/csp-report, они видны в журнале событий. Включить по-настоящему: CSP_ENFORCE=1 в окружении сайта.
-// Готовые заранее страницы (prerender) отдаются файлами без этого заголовка; страницы из кэша Nitro хранят заголовок вместе с HTML.
+// Готовые заранее страницы (prerender: /about, /history) отдаются файлами мимо render:html: им заголовок ставится перед ответом
+// по хэшам скриптов из самого файла; страницы из кэша Nitro хранят заголовок вместе с HTML.
 import { createHash } from 'node:crypto'
-import { setResponseHeader } from 'h3'
+import { getResponseHeader, setResponseHeader } from 'h3'
 import { defineNitroPlugin } from 'nitropack/runtime'
 
 /** Встроенные скрипты без src. Блоки данных (JSON, JSON-LD) браузер не исполняет, им хэш не нужен; карте импорта (importmap) нужен. */
@@ -41,10 +42,30 @@ export function cspPolicy(hashes: string[]): string {
   ].join('; ')
 }
 
+/** Текст готовой страницы из тела ответа (файл приходит буфером); остальное (потоки, пустой ответ 304) пропускается. */
+export function htmlOf(body: unknown): string {
+  if (typeof body === 'string') return body
+  if (body instanceof Uint8Array) return Buffer.from(body).toString('utf8')
+  return ''
+}
+
 export default defineNitroPlugin(nitroApp => {
   const header = process.env.CSP_ENFORCE === '1' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'
   nitroApp.hooks.hook('render:html', (html, { event }) => {
     const all = [...html.head, ...html.bodyPrepend, ...html.body, ...html.bodyAppend].join('')
     setResponseHeader(event, header, cspPolicy(inlineScriptHashes(all)))
+  })
+  // готовые файлы страниц: тело ответа уже прочитано, хэши считаются по нему (страниц мало, политика запоминается по адресу и длине)
+  const ready = new Map<string, { size: number; policy: string }>()
+  nitroApp.hooks.hook('beforeResponse', (event, response) => {
+    if (getResponseHeader(event, header)) return
+    if (!String(getResponseHeader(event, 'content-type') ?? '').includes('text/html')) return
+    const html = htmlOf(response.body)
+    if (!html) return
+    const known = ready.get(event.path)
+    if (known?.size === html.length) return setResponseHeader(event, header, known.policy)
+    const policy = cspPolicy(inlineScriptHashes(html))
+    if (ready.size < 50) ready.set(event.path, { size: html.length, policy })
+    setResponseHeader(event, header, policy)
   })
 })
