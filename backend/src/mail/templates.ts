@@ -358,10 +358,10 @@ export function digestMail(o: DigestMailOptions): Mail {
 </td></tr></table>
 </body></html>`
   const text = `Подборка на сегодня (우리말)\n\n${lead}\n${nw ? `\nСлова:\n${o.words.map(([k, r]) => `${k} — ${r}`).join('\n')}\n` : ''}${ns ? `\nПредложения:\n${o.sentences.map(([k, r]) => `${k}\n  ${r}`).join('\n')}\n` : ''}\nПовторить на сайте: ${link}\n\nВремя и число слов: кабинет, «Настройки».`
-  // Telegram: «Проверь себя»: слово жирным, перевод под спойлером (сначала вспомни, потом нажми), без значков перед словами
-  const wordsTg = o.words.map(([k, r]) => `<b>${esc(k)}</b> — <tg-spoiler>${esc(r)}</tg-spoiler>`).join('\n')
-  const sentTg = o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n<tg-spoiler>${esc(r)}</tg-spoiler>`).join('\n\n')
-  const tg = tgCard({ topic: 'digest', title: 'Проверь себя', lead: 'Вспомни перевод, потом нажми на закрашенное.', body: [wordsTg, sentTg].filter(Boolean).join('\n\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
+  // Telegram: «Выписать в тетрадь»: слово жирным, перевод открыто (его надо переписать), без значков перед словами
+  const wordsTg = o.words.map(([k, r]) => `<b>${esc(k)}</b> — ${esc(r)}`).join('\n')
+  const sentTg = o.sentences.map(([k, r]) => `<b>${esc(k)}</b>\n${esc(r)}`).join('\n\n')
+  const tg = tgCard({ topic: 'digest', title: 'Выписать в тетрадь', lead: 'Перепиши слова и предложения в тетрадь, потом вспомни перевод.', body: [wordsTg, sentTg].filter(Boolean).join('\n\n'), foot: `Приходит в ${o.time}. Время и число слов: кабинет, «Настройки».`, button: { text: 'Повторить на сайте', url: link } })
   return { subject: `Повторение: ${o.time} · ${what}`, text, html, tg, topic: 'digest' }
 }
 

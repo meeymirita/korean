@@ -26,7 +26,7 @@ export interface DigestSettings {
 
 export const MAX_WORDS = 30
 export const MAX_SENTENCES = 15
-const DEFAULT: DigestSettings = { enabled: false, time: '12:00', words: 10, sentences: 5, lastSent: '' }
+const DEFAULT: DigestSettings = { enabled: true, time: '19:00', words: 8, sentences: 5, lastSent: '' }
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 const pad = (n: number) => String(n).padStart(2, '0')
 const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
@@ -66,7 +66,7 @@ export class DigestService implements OnModuleInit {
     try {
       const v = JSON.parse(await this.db.getMeta('digest') ?? '{}') as Partial<DigestSettings>
       return {
-        enabled: v.enabled === true,
+        enabled: typeof v.enabled === 'boolean' ? v.enabled : DEFAULT.enabled,
         time: typeof v.time === 'string' && TIME.test(v.time) ? v.time : DEFAULT.time,
         words: count(v.words, MAX_WORDS, DEFAULT.words),
         sentences: count(v.sentences, MAX_SENTENCES, DEFAULT.sentences),

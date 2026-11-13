@@ -87,7 +87,7 @@ describe('сервер: подборка по времени', () => {
     assert.equal((await s.call('GET', '/api/digest', g.token)).status, 403)
 
     const st = await (await s.call('GET', '/api/digest', OWNER)).json()
-    assert.deepEqual([st.enabled, st.time, st.words, st.sentences, st.mailReady], [false, '12:00', 10, 5, true])
+    assert.deepEqual([st.enabled, st.time, st.words, st.sentences, st.mailReady], [true, '19:00', 8, 5, true])
     assert.ok(!JSON.stringify(st).includes('me@example.org'))
     for (const bad of [{ time: '25:00' }, { words: -1 }, { words: 31 }, { sentences: 16 }, { words: 2.5 }, { enabled: 'yes' }]) assert.equal((await s.call('PUT', '/api/digest', OWNER, bad)).status, 400, JSON.stringify(bad))
     assert.equal((await s.call('PUT', '/api/digest', OWNER, { enabled: true, words: 0, sentences: 0 })).status, 400)
@@ -105,6 +105,6 @@ describe('сервер: подборка по времени', () => {
       if (t.trim()) row = JSON.parse(t.trim().split('\n')[0])
       else await new Promise(r => setTimeout(r, 100))
     }
-    assert.match(row.subject, /^Повторение: 12:00 · 10 слов и 5 предложений$/)
+    assert.match(row.subject, /^Повторение: 19:00 · 8 слов и 5 предложений$/)
   })
 })

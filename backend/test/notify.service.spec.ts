@@ -168,12 +168,13 @@ describe('уведомления: Telegram с запасом на почту', (
       expect(sampleMail('digest').tg?.button).toMatchObject({ style: 'primary', text: 'Повторить на сайте', iconEmojiId: '5262881392114543892' })
     })
 
-    it('подборка: «Проверь себя», слово жирным, перевод под спойлером, без значков перед словами', () => {
+    it('подборка: «Выписать в тетрадь», слово жирным, перевод открыто, без значков перед словами', () => {
       const html = sampleMail('digest').tg!.html
       expect(html).not.toContain('<blockquote>')
-      expect(html).toContain('<b>안녕하세요</b> — <tg-spoiler>здравствуйте</tg-spoiler>')
-      expect(html).toContain('<b>저는 학생이에요.</b>\n<tg-spoiler>Я студент(ка).</tg-spoiler>')
-      expect(html).toContain('Проверь себя')
+      expect(html).toContain('<b>안녕하세요</b> — здравствуйте')
+      expect(html).not.toContain('tg-spoiler')
+      expect(html).toContain('<b>저는 학생이에요.</b>\nЯ студент(ка).')
+      expect(html).toContain('Выписать в тетрадь')
       expect(sampleMail('login').tg?.html).toContain('💙 <i>Если вы не входили')
     })
 
