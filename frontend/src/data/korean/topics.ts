@@ -42,11 +42,10 @@ export function topicProgress(p: ProgressData): TopicProgress[] {
 }
 
 /**
- * Серия «Добить тему»: по одному заданию на не выученные слова темы (не больше `size`, первыми самые слабые из случайных с равными очками).
- * Все выучены: пустой список. Задания те же, что в «5 минутах» (`makeTask`), поэтому очки и ответы идут общим путём `TaskSession`.
+ * Серия заданий по списку слов: по одному заданию на слово (не больше `size`), первыми самые слабые, с равными очками случайно.
+ * Общая для «Добить тему» и «Потренировать важные слова». Задания те же, что в «5 минутах» (`makeTask`), поэтому очки и ответы идут общим путём `TaskSession`.
  */
-export function topicTasks(p: ProgressData, id: string, size = DRILL_SIZE): Task[] {
-  const list = unlearnedWords(p, id)
+export function drillTasks(p: ProgressData, list: Word[], size = DRILL_SIZE): Task[] {
   const byStreak = new Map<number, Word[]>()
   for (const d of list) {
     const s = p.words[d.k]?.streak ?? 0
@@ -65,3 +64,6 @@ export function topicTasks(p: ProgressData, id: string, size = DRILL_SIZE): Task
   }
   return shuffle(out).map((t, i) => ({ ...t, id: i }))
 }
+
+/** Серия «Добить тему»: по ещё не выученным словам темы. Все выучены: пустой список. */
+export const topicTasks = (p: ProgressData, id: string, size = DRILL_SIZE): Task[] => drillTasks(p, unlearnedWords(p, id), size)
