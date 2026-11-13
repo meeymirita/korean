@@ -19,7 +19,8 @@ export function explain(t: Task, picked: string): Explanation {
   const gram = card ? { id: card.id, title: card.ko } : undefined
   const head = `Ты выбрал «${picked}», а верно «${t.answer}».`
   let why: string
-  if (t.kind === 'rule' && card) why = `Здесь работает правило «${card.ko}»: ${card.d}.`
+  if (t.note) why = t.note
+  else if (t.kind === 'rule' && card) why = `Здесь работает правило «${card.ko}»: ${card.d}.`
   else if (t.kind === 'form') why = t.title.includes('прошедшее') ? PAST : PRESENT
   else if (t.kind === 'blank') why = `В примере пропущено слово «${t.answer}»${t.hint ? ` (${t.hint})` : ''}.`
   else if (t.kind === 'back') why = `По-корейски «${t.prompt}» это ${t.answer}.`

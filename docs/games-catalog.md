@@ -71,6 +71,8 @@
 | pairs | `korean/PairsView.vue` | «Похожие, но разные»: [`pairs.md`](trainers/pairs.md) |
 | translate | `korean/TranslateView.vue` | «Переведи предложение»: [`translate.md`](trainers/translate.md) |
 | explain | `korean/ExplainTranslateView.vue` | «Переведи и объясни» (выбор перевода, разбор и правила после ответа): [`explain.md`](trainers/explain.md) |
+| speech | `korean/PartOfSpeechView.vue` | «Определи часть речи» (глагол, прилагательное, вопросительное слово; `data/korean/part-of-speech.ts`): [`speech.md`](trainers/speech.md) |
+| chain | `korean/ChainView.vue` | «Цепочки слов» (слово на последний слог предыдущего, из `STUDY`): [`chain.md`](trainers/chain.md) |
 | rule | `korean/RuleView.vue` | «Потренировать правило» (`&g=<id карточки>`): [`rule.md`](trainers/rule.md) |
 | syllables | `korean/SyllablesView.vue` | «Собери по слогам»: [`syllables.md`](trainers/syllables.md) |
 | keyboard | `korean/KeyboardView.vue` | «Печать на корейском»: [`keyboard.md`](trainers/keyboard.md) |

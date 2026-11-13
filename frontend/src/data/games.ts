@@ -3,7 +3,7 @@
  * Режимы движка «Хлебушек» (word, rev, form…) и тренажёры (TOOL_IDS) показываются на месте каталога, сверху ссылка «К списку игр».
  */
 /** Игры-тренажёры (компоненты Vue); остальные id в каталоге это режимы движка «Хлебушек». */
-export const TOOL_IDS = ['match', 'quick', 'particles', 'pairs', 'translate', 'explain', 'syllables', 'rule', 'keyboard'] as const
+export const TOOL_IDS = ['match', 'quick', 'particles', 'pairs', 'translate', 'explain', 'chain', 'speech', 'syllables', 'rule', 'keyboard'] as const
 
 export interface GameCard {
   id: string
@@ -33,6 +33,8 @@ export const GAME_GROUPS: GameGroup[] = [
       { id: 'match', name: 'Найди пару', desc: 'Соедини слова и их переводы', icon: 'hearts', to: '/game/home?game=match' },
       { id: 'typewords', name: 'Напиши перевод', desc: 'Введи перевод с клавиатуры', icon: 'pencil', to: '/game/home?game=match&mode=type' },
       { id: 'pairs', name: 'Похожие, но разные', desc: 'Выбери верное из похожих слов', icon: 'book', to: '/game/home?game=pairs' },
+      { id: 'speech', name: 'Определи часть речи', desc: 'Глагол, прилагательное или вопросительное слово', icon: 'grammar', to: '/game/home?game=speech' },
+      { id: 'chain', name: 'Цепочки слов', desc: 'Слово на последний слог предыдущего', icon: 'comet', to: '/game/home?game=chain' },
     ],
   },
   {
