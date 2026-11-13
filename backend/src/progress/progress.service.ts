@@ -59,9 +59,11 @@ const IMAGE_ID = /^[a-f0-9]{16}$/
 /** За одно действие таймера можно записать не больше часа. */
 const MAX_TIME_OP = 3600
 const DEFAULT_SETTINGS: Settings = { goal: 20, cats: [], gameCats: null, marks: [], keys: {} }
-const MARK = /^[wgdu]:.{1,40}$/
+/** Метки: `w` слово, `g` правило, `d`/`u` урок, `k` слово большого словаря `/dict`; лимиты те же, что в `frontend/src/lib/marks.ts` (менять в обоих). */
+const MARK = /^[wgduk]:.{1,40}$/
 const MAX_MARKS = 500
 const KEY_ID = /^(nav|cab):[a-z]{1,20}$/
+const MAX_K_MARKS = 500
 const KEY_COMBO = /^mod(\+alt)?(\+shift)?\+[A-Za-z0-9]{1,20}$/
 const MAX_KEYS = 40
 const MOOD_DAYS = 400
@@ -533,9 +535,11 @@ export class ProgressService {
       } else bad('invalid gameCats')
     }
     if (op.marks !== undefined) {
-      if (!Array.isArray(op.marks) || op.marks.length > MAX_MARKS) bad('invalid marks')
-      const list = (op.marks as unknown[]).map(m => (typeof m === 'string' && MARK.test(m) ? m : bad('invalid marks')))
-      cur.marks = [...new Set(list)]
+      if (!Array.isArray(op.marks) || op.marks.length > MAX_MARKS + MAX_K_MARKS) bad('invalid marks')
+      const list = [...new Set((op.marks as unknown[]).map(m => (typeof m === 'string' && MARK.test(m) ? m : bad('invalid marks'))))]
+      const kCount = list.filter(m => m.startsWith('k:')).length
+      if (kCount > MAX_K_MARKS || list.length - kCount > MAX_MARKS) bad('invalid marks')
+      cur.marks = list
     }
     if (op.keys !== undefined) {
       const k = op.keys as Record<string, unknown> | null

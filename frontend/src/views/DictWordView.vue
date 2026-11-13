@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import DictShell from '@/components/dict/DictShell.vue'
+import DictStar from '@/components/dict/DictStar.vue'
 import { conjugate, withParticles } from '@/lib/conjugate'
 import { mainEntry, type DictWord } from '@/lib/dictApi'
 import { useDictRecent } from '@/composables/useDictRecent'
@@ -135,6 +136,7 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
         <span class="chip">{{ main.pos }}</span>
         <span class="chip lvl">{{ main.level === 'нет' ? 'без уровня' : main.level }}</span>
         <span v-if="main.cat" class="cat" lang="ko">{{ main.cat }}</span>
+        <DictStar :word="main.word" />
       </section>
 
       <p class="lead" lang="ru">{{ lead }}</p>
