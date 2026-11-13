@@ -1,9 +1,10 @@
 /** Итоговая оценка: результаты экзаменов по правилам. Хранит только результат (лучший, последний, когда сдавать снова), задания строит сайт. */
 import { BadRequestException, HttpException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Db } from '../db/db.service.js'
-import { examMail } from '../mail/templates.js'
+import { examDraftMail, examMail } from '../mail/templates.js'
 import { NotifyService } from '../notify/notify.service.js'
 import { logError } from '../log.js'
+import { draftRemind } from './draft-remind.js'
 
 const KEY = 'exams'
 const NOTIFIED = 'exams:notified'
@@ -19,6 +20,8 @@ export const MIN_RULE = 0.7
 /** С какой доли верных по правилу оно считается «своим». */
 export const OWN_RULE = 0.8
 const DRAFT = 'exams:draft'
+/** Ключ единственного экзамена в `exams` (сайт отправляет итог с id `final`). */
+const FINAL = 'final'
 const MAX_DRAFT = 600_000
 
 export interface ExamResult {
@@ -157,10 +160,11 @@ export class ExamsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async saveDraft(body: unknown) {
+  async saveDraft(body: unknown, now = Date.now()) {
     const text = JSON.stringify(body ?? null)
     if (!body || typeof body !== 'object' || Array.isArray(body) || text.length > MAX_DRAFT) throw new BadRequestException({ error: 'неверный черновик экзамена' })
-    await this.db.setMeta(DRAFT, text)
+    // время последнего сохранения ставит сервер: по нему считается напоминание (старые черновики без поля считаются по startedAt)
+    await this.db.setMeta(DRAFT, JSON.stringify({ ...(body as object), savedAt: now }))
     return { ok: true }
   }
 
@@ -177,13 +181,16 @@ export class ExamsService implements OnModuleInit, OnModuleDestroy {
   /** Раз в день после 12:00 по времени сервера: одно сообщение со списком того, что пора пройти. */
   async remind(now = new Date()): Promise<'none' | 'early' | 'already' | 'sent' | 'failed'> {
     if (now.getHours() < 12) return 'early'
-    const list = this.due(await this.read(), now.getTime())
-    if (!list.length) return 'none'
+    const all = await this.read()
+    const list = this.due(all, now.getTime())
+    // черновик не тронут 3 суток: если нет другого напоминания, шлём о нём (одно сообщение в день на экзамен)
+    const stale = list.length ? null : draftRemind((await this.draft()).draft, now.getTime(), all[FINAL]?.at ?? 0)
+    if (!list.length && !stale) return 'none'
     const day = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
     if ((await this.db.getMeta(NOTIFIED)) === day) return 'already'
     await this.db.setMeta(NOTIFIED, day)
     try {
-      await this.notify.send(examMail(list.map(x => x.title), process.env.SITE_URL))
+      await this.notify.send(stale ? examDraftMail(stale.saved, stale.parts, process.env.SITE_URL) : examMail(list.map(x => x.title), process.env.SITE_URL))
       return 'sent'
     } catch (e) {
       logError('напоминание об экзамене не отправилось:', (e as Error).message)
