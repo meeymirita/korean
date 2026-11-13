@@ -46,7 +46,7 @@
 .game .prompt{font-size:clamp(26px,6vw,43px);font-weight: 500;line-height:1.2;margin:4px 0 6px;overflow-wrap:anywhere}
 .game .prompt.ko,.game .sentence,.game .opt .t.ko,.game .slot,.game .tile,.game .fbh .ko{font-family:var(--ko)}
 .game .sentence{font-size:clamp(22px,5vw,33px);font-weight: 500;line-height:1.5;margin:4px 0 4px;overflow-wrap:anywhere}
-.game .gap{display:inline-block;min-width:2.2em;text-align:center;border-bottom:3px solid var(--accent);color:var(--accent);margin:0 4px}
+.game .gap{display:inline-block;min-width:2.2em;white-space:nowrap;text-align:center;border-bottom:3px solid var(--accent);color:var(--accent);margin:0 4px}
 .game .gap.ok{color:var(--ok);border-color:var(--ok)}
 .game .gap.bad{color:var(--bad);border-color:var(--bad)}
 .game .reading{font-size:15px;color:var(--muted);margin-bottom:4px}
@@ -177,7 +177,7 @@
 .game .story{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}
 .game .story-row{display:flex;align-items:flex-start;gap:12px}
 .game .story-s{flex:1;min-width:0;font-family:var(--ko);font-size:clamp(18px,3.4vw,24px);line-height:1.9;overflow-wrap:anywhere}
-.game .story .gap{min-width:2.2em;padding:0 6px;margin:0 3px;background:none;border:0;border-bottom:3px solid var(--line);font:inherit;color:var(--muted);cursor:pointer}
+.game .story .gap{min-width:2.2em;white-space:nowrap;max-width:100%;padding:0 6px;margin:0 3px;background:none;border:0;border-bottom:3px solid var(--line);font:inherit;color:var(--muted);cursor:pointer}
 .game .story .gap.filled{color:var(--ink);border-color:var(--accent)}
 .game .story .gap.now{border-color:var(--accent);background:var(--accent-soft)}
 .game .story .gap.ok{color:var(--ok);border-color:var(--ok)}
