@@ -35,7 +35,7 @@ export class MusicController {
     return this.music.streamUrl(id)
   }
 
-  /** Файл с компьютера: multipart, поле file (до 350 МБ), необязательное поле title. Ответ сразу после получения файла, дальше идёт задание. */
+  /** Файл с компьютера: multipart, поле file (до 350 МБ), необязательные поля title и category (quiet или nightcore, по умолчанию quiet). Ответ сразу после получения файла, дальше идёт задание. */
   @Post('upload')
   @HttpCode(202)
   @UseInterceptors(
@@ -45,23 +45,23 @@ export class MusicController {
         filename: (_req, file, cb) => cb(null, `${randomBytes(8).toString('hex')}.${extOf(file.originalname) || 'bin'}`),
       }),
       fileFilter: (_req, file, cb) => cb(null, UPLOAD_EXT.has(extOf(file.originalname))),
-      limits: { fileSize: MAX_TRACK, files: 1, fields: 3, fieldSize: 1024, parts: 5, headerPairs: 30 },
+      limits: { fileSize: MAX_TRACK, files: 1, fields: 4, fieldSize: 1024, parts: 5, headerPairs: 30 },
     }),
   )
-  upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { title?: unknown }) {
-    return this.music.startUpload(file, body?.title)
+  upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { title?: unknown; category?: unknown }) {
+    return this.music.startUpload(file, body?.title, body?.category)
   }
 
-  /** Скачать по ссылке (yt-dlp): `{ url }`. Ответ сразу, ход виден в GET /api/music (jobs). */
+  /** Скачать по ссылке (yt-dlp): `{ url, category? }`. Ответ сразу, ход виден в GET /api/music (jobs). */
   @Post('url')
   @HttpCode(202)
-  addUrl(@Body() body: { url?: unknown }) {
-    return this.music.startUrl(body?.url)
+  addUrl(@Body() body: { url?: unknown; category?: unknown }) {
+    return this.music.startUrl(body?.url, body?.category)
   }
 
   @Patch(':id')
-  rename(@Param('id') id: string, @Body() body: { title?: unknown }) {
-    return this.music.rename(id, body?.title)
+  update(@Param('id') id: string, @Body() body: { title?: unknown; category?: unknown }) {
+    return this.music.update(id, body ?? {})
   }
 
   @Delete(':id')

@@ -39,8 +39,9 @@ class FakeAudio extends EventTarget {
 }
 
 const TRACKS = [
-  { id: 'aaaaaaaaaaaaaaaa', title: 'Первая песня', duration: 83, size: 1000, created: 1, source: 'upload', cover: null },
-  { id: 'bbbbbbbbbbbbbbbb', title: 'Вторая песня', duration: 3725, size: 2000, created: 2, source: 'url', cover: '/api/music/bbbbbbbbbbbbbbbb/cover?e=9&s=x' },
+  { id: 'aaaaaaaaaaaaaaaa', title: 'Первая песня', duration: 83, size: 1000, created: 1, source: 'upload', category: 'quiet', cover: null },
+  { id: 'bbbbbbbbbbbbbbbb', title: 'Вторая песня', duration: 3725, size: 2000, created: 2, source: 'url', category: 'quiet', cover: '/api/music/bbbbbbbbbbbbbbbb/cover?e=9&s=x' },
+  { id: 'cccccccccccccccc', title: 'Ночная песня', duration: 120, size: 3000, created: 3, source: 'upload', category: 'nightcore', cover: null },
 ]
 const calls: { url: string; method: string; body?: string }[] = []
 let urlReply: () => Response
@@ -53,6 +54,7 @@ beforeEach(() => {
   store.playing = false
   store.repeat = 'all'
   store.shuffle = false
+  store.tab = 'quiet'
   localStorage.clear()
   calls.length = 0
   who.unlocked = true
@@ -65,6 +67,7 @@ beforeEach(() => {
     if (url === '/api/music' && !init?.method) return new Response(JSON.stringify({ tracks: TRACKS, jobs: [] }))
     if (/\/url$/.test(url) && !init?.method) return new Response(JSON.stringify({ url: '/api/music/x/stream?e=9&s=y' }))
     if (url === '/api/music/url') return urlReply()
+    if (/^\/api\/music\/[a-f0-9]{16}$/.test(url) && init?.method === 'PATCH') return new Response('{}')
     return new Response('{}', { status: 404 })
   })
 })
@@ -106,6 +109,46 @@ describe('музыкальный плеер', () => {
     const covers = rows.map(r => r.querySelector<HTMLImageElement>('.mp-play > img')!.getAttribute('src'))
     expect(covers[1]).toContain('/api/music/bbbbbbbbbbbbbbbb/cover')
     expect(covers[0], 'своя обложка не пришла: берётся из набора').toBeTruthy()
+    w.unmount()
+  })
+
+  it('вкладки: «Тихая музыка» и Nightcore показывают свои песни, очередь идёт по вкладке играющей песни', async () => {
+    const w = await mountSuspended(MusicPlayer)
+    await flushPromises()
+    const store = useMusicStore()
+    await w.find('.mp-fab').trigger('click')
+    const tabs = [...document.querySelectorAll('.mp-tabs button')]
+    expect(tabs.map(t => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['Тихая музыка 2', 'Nightcore 1'])
+    expect(document.querySelectorAll('.mp-list li')).toHaveLength(2)
+
+    ;(tabs[1] as HTMLButtonElement).click()
+    await flushPromises()
+    expect(store.tab).toBe('nightcore')
+    expect([...document.querySelectorAll('.mp-list li b')].map(b => b.textContent)).toEqual(['Ночная песня'])
+    expect(JSON.parse(localStorage.getItem('music_v1')!).tab, 'вкладка запоминается').toBe('nightcore')
+
+    // играет песня тихой вкладки, пользователь ушёл смотреть Nightcore: «дальше» остаётся в тихой вкладке
+    await store.play('aaaaaaaaaaaaaaaa')
+    await store.advance(true)
+    expect(store.currentId).toBe('bbbbbbbbbbbbbbbb')
+    expect(store.tab).toBe('nightcore')
+    w.unmount()
+  })
+
+  it('песню можно перенести в другую вкладку из меню «⋮»', async () => {
+    const w = await mountSuspended(MusicPlayer)
+    await flushPromises()
+    const store = useMusicStore()
+    await w.find('.mp-fab').trigger('click')
+    document.querySelector<HTMLButtonElement>('.mp-list li .mp-more .mp-ic')!.click()
+    await flushPromises()
+    const move = [...document.querySelectorAll<HTMLButtonElement>('.mp-menu button')].find(b => b.textContent!.includes('Nightcore'))!
+    move.click()
+    await flushPromises()
+    const patch = calls.find(c => c.method === 'PATCH')!
+    expect(patch.url).toBe('/api/music/aaaaaaaaaaaaaaaa')
+    expect(JSON.parse(patch.body!)).toEqual({ category: 'nightcore' })
+    expect(store.tracks.find(t => t.id === 'aaaaaaaaaaaaaaaa')!.category).toBe('nightcore')
     w.unmount()
   })
 
@@ -166,7 +209,7 @@ describe('музыкальный плеер', () => {
     document.querySelector<HTMLFormElement>('.mp-url')!.dispatchEvent(new Event('submit', { cancelable: true }))
     await flushPromises()
     const post = calls.find(c => c.url === '/api/music/url' && c.method === 'POST')!
-    expect(JSON.parse(post.body!)).toEqual({ url: 'https://youtu.be/abc' })
+    expect(JSON.parse(post.body!)).toEqual({ url: 'https://youtu.be/abc', category: 'quiet' })
     expect(input.value, 'после успеха поле очищается').toBe('')
 
     urlReply = () => new Response('{}', { status: 409 })

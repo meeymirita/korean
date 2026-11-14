@@ -5,6 +5,14 @@ import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
 /** Песня из списка владельца (сервер: `backend/src/music`). `cover`: подписанная ссылка или null (тогда рисуется обложка из набора). */
+/** Вкладки плеера: тихая музыка и Nightcore (решение владельца 2026-11-14). Тот же список на сервере (`music.util.ts`). */
+export const CATEGORIES = [
+  { id: 'quiet', name: 'Тихая музыка' },
+  { id: 'nightcore', name: 'Nightcore' },
+] as const
+export type Category = (typeof CATEGORIES)[number]['id']
+const isCategory = (v: unknown): v is Category => CATEGORIES.some(c => c.id === v)
+
 export interface Track {
   id: string
   title: string
@@ -12,6 +20,7 @@ export interface Track {
   size: number
   created: number
   source: 'upload' | 'url'
+  category: Category
   cover: string | null
 }
 
@@ -45,6 +54,7 @@ const POLL_MS = 1000
 const REPEAT: RepeatMode[] = ['off', 'all', 'one']
 
 interface Saved {
+  tab: Category
   id: string
   time: number
   volume: number
@@ -53,11 +63,12 @@ interface Saved {
 }
 
 function readSaved(): Saved {
-  const d: Saved = { id: '', time: 0, volume: 0.8, repeat: 'all', shuffle: false }
+  const d: Saved = { tab: 'quiet', id: '', time: 0, volume: 0.8, repeat: 'all', shuffle: false }
   try {
     const r = JSON.parse(localStorage.getItem(KEY) || 'null') as Partial<Saved> | null
     if (!r || typeof r !== 'object') return d
     return {
+      tab: isCategory(r.tab) ? r.tab : d.tab,
       id: typeof r.id === 'string' ? r.id : '',
       time: typeof r.time === 'number' && r.time >= 0 ? r.time : 0,
       volume: typeof r.volume === 'number' && r.volume >= 0 && r.volume <= 1 ? r.volume : d.volume,
@@ -84,7 +95,7 @@ export const useMusicStore = defineStore('music', () => {
   const loadError = ref('')
   const open = ref(false)
 
-  const saved = import.meta.client ? readSaved() : { id: '', time: 0, volume: 0.8, repeat: 'all' as RepeatMode, shuffle: false }
+  const saved = import.meta.client ? readSaved() : { tab: 'quiet' as Category, id: '', time: 0, volume: 0.8, repeat: 'all' as RepeatMode, shuffle: false }
   const currentId = ref(saved.id)
   const playing = ref(false)
   const time = ref(saved.time)
@@ -94,8 +105,17 @@ export const useMusicStore = defineStore('music', () => {
   const repeat = ref<RepeatMode>(saved.repeat)
   const shuffle = ref(saved.shuffle)
 
+  /** Открытая вкладка списка. */
+  const tab = ref<Category>(saved.tab)
+  /** Песни открытой вкладки (их показывает список). */
+  const visible = computed(() => tracks.value.filter(t => t.category === tab.value))
   const current = computed(() => tracks.value.find(t => t.id === currentId.value) ?? null)
-  const index = computed(() => tracks.value.findIndex(t => t.id === currentId.value))
+  /** Очередь: песни той вкладки, в которой играет текущая (переключение вкладки музыку не сбивает). */
+  const queue = computed(() => {
+    const cat = current.value?.category ?? tab.value
+    return tracks.value.filter(t => t.category === cat)
+  })
+  const index = computed(() => queue.value.findIndex(t => t.id === currentId.value))
   /** Задания для показа: готовые исчезают через 3 секунды, неудавшиеся остаются, пока их не уберут крестиком. */
   const hiddenJobs = ref<string[]>([])
   const shownJobs = computed(() => jobs.value.filter(j => !hiddenJobs.value.includes(j.id)))
@@ -112,7 +132,7 @@ export const useMusicStore = defineStore('music', () => {
     if (!force && Date.now() - lastSave < 5000) return
     lastSave = Date.now()
     try {
-      localStorage.setItem(KEY, JSON.stringify({ id: currentId.value, time: time.value, volume: volume.value, repeat: repeat.value, shuffle: shuffle.value } satisfies Saved))
+      localStorage.setItem(KEY, JSON.stringify({ tab: tab.value, id: currentId.value, time: time.value, volume: volume.value, repeat: repeat.value, shuffle: shuffle.value } satisfies Saved))
     } catch {
       /* без запоминания */
     }
@@ -183,7 +203,7 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   async function play(id?: string) {
-    const target = id ?? currentId.value ?? tracks.value[0]?.id
+    const target = id ?? (currentId.value || visible.value[0]?.id)
     if (!target) return
     try {
       if (target !== currentId.value || !el().src) {
@@ -211,13 +231,13 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   function randomOther() {
-    const others = tracks.value.filter(t => t.id !== currentId.value)
+    const others = queue.value.filter(t => t.id !== currentId.value)
     return others.length ? others[Math.floor(Math.random() * others.length)]!.id : currentId.value
   }
 
   /** Следующая песня; `manual`: нажали кнопку (в конце списка при «без повтора» переходим к первой), иначе песня закончилась сама. */
   async function advance(manual: boolean) {
-    if (!tracks.value.length) return
+    if (!queue.value.length) return
     if (!manual && repeat.value === 'one') {
       el().currentTime = 0
       await el().play().catch(() => undefined)
@@ -227,19 +247,19 @@ export const useMusicStore = defineStore('music', () => {
     if (shuffle.value) nextId = randomOther()
     else {
       const i = index.value + 1
-      if (i >= tracks.value.length) {
+      if (i >= queue.value.length) {
         if (!manual && repeat.value === 'off') return void pause()
-        nextId = tracks.value[0]!.id
-      } else nextId = tracks.value[i]!.id
+        nextId = queue.value[0]!.id
+      } else nextId = queue.value[i]!.id
     }
     await play(nextId)
   }
 
   async function prev() {
-    if (!tracks.value.length) return
+    if (!queue.value.length) return
     if (time.value > 3) return seek(0)
-    const i = index.value <= 0 ? tracks.value.length - 1 : index.value - 1
-    await play(shuffle.value ? randomOther() : tracks.value[i]!.id)
+    const i = index.value <= 0 ? queue.value.length - 1 : index.value - 1
+    await play(shuffle.value ? randomOther() : queue.value[i]!.id)
   }
 
   function seek(sec: number) {
@@ -268,6 +288,11 @@ export const useMusicStore = defineStore('music', () => {
 
   function cycleRepeat() {
     repeat.value = REPEAT[(REPEAT.indexOf(repeat.value) + 1) % REPEAT.length]!
+    save(true)
+  }
+
+  function setTab(c: Category) {
+    tab.value = c
     save(true)
   }
 
@@ -329,7 +354,7 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   /* ---------- добавить ---------- */
-  function sendFile(file: File, item: UploadItem) {
+  function sendFile(file: File, item: UploadItem, category: Category) {
     return new Promise<void>(resolve => {
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/music/upload')
@@ -349,17 +374,19 @@ export const useMusicStore = defineStore('music', () => {
       xhr.ontimeout = xhr.onerror
       const form = new FormData()
       form.append('file', file)
+      form.append('category', category)
       xhr.send(form)
     })
   }
 
   /** Файлы с компьютера (выбрать или перетащить): по одному, чтобы не забивать канал. */
   async function uploadFiles(files: File[]) {
+    const cat = tab.value // вкладка, открытая в момент выбора файлов
     for (const file of files) {
       uploads.value.push({ key: Date.now() + Math.random(), name: file.name, percent: 0 })
       const item = uploads.value[uploads.value.length - 1]! // реактивная запись: сюда пишет процент передачи
       if (file.size > MAX_TRACK_MB * 1024 * 1024) item.error = `Файл ${Math.round(file.size / 1048576)} МБ: больше лимита ${MAX_TRACK_MB} МБ`
-      else await sendFile(file, item)
+      else await sendFile(file, item, cat)
       if (item.error) toast.error(`${file.name}: ${item.error}`)
       await load()
       // строка передачи уходит, как только задание сервера видно в списке
@@ -376,7 +403,7 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   async function addUrl(url: string) {
-    const res = await fetchT('/api/music/url', { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ url }) })
+    const res = await fetchT('/api/music/url', { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ url, category: tab.value }) })
     if (res.status === 409) throw new Error('Уже идёт скачивание по ссылке: дождись конца')
     if (res.status === 400) throw new Error('Нужна ссылка вида https://…')
     if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
@@ -389,6 +416,14 @@ export const useMusicStore = defineStore('music', () => {
     const t = tracks.value.find(x => x.id === id)
     if (t) t.title = ((await res.json()) as Track).title
     if (id === currentId.value) mediaSession()
+  }
+
+  /** Переносит песню в другую вкладку. */
+  async function setCategory(id: string, category: Category) {
+    const res = await fetchT(`/api/music/${id}`, { method: 'PATCH', headers: jsonHeaders(), body: JSON.stringify({ category }) })
+    if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
+    const t = tracks.value.find(x => x.id === id)
+    if (t) t.category = category
   }
 
   async function remove(id: string) {
@@ -406,7 +441,7 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   return {
-    tracks, jobs, shownJobs, uploads, loaded, loadError, open, current, currentId, index, playing, time, length, volume, muted, repeat, shuffle, busy,
-    load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, uploadFiles, dismissUpload, dismissJob, addUrl, rename, remove,
+    tracks, visible, queue, tab, jobs, shownJobs, uploads, loaded, loadError, open, current, currentId, index, playing, time, length, volume, muted, repeat, shuffle, busy,
+    load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, setTab, setCategory, uploadFiles, dismissUpload, dismissJob, addUrl, rename, remove,
   }
 })

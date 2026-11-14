@@ -25,6 +25,16 @@ export function titleFromName(name: string): string {
   return (base || 'Без названия').slice(0, 150)
 }
 
+/** Вкладки плеера: тихая музыка и Nightcore (решение владельца 2026-11-14). Тот же список в `stores/music.ts`. */
+export const CATEGORIES = ['quiet', 'nightcore'] as const
+export type Category = (typeof CATEGORIES)[number]
+
+/** Вкладка из запроса: не указана: `quiet`; чужое значение: null (запрос отклоняется). */
+export function cleanCategory(v: unknown): Category | null {
+  if (v === undefined || v === null || v === '') return 'quiet'
+  return typeof v === 'string' && (CATEGORIES as readonly string[]).includes(v) ? (v as Category) : null
+}
+
 export const cleanTitle = (v: unknown): string | null => {
   if (typeof v !== 'string') return null
   const t = v.replace(/\s+/g, ' ').trim()

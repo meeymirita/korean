@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanTitle, cleanUrl, downloadArgs, fixUploadName, infoArgs, parseProgress, signPath, titleFromName, verifySigned, ytdlpError } from '../src/music/music.util'
+import { cleanCategory, cleanTitle, cleanUrl, downloadArgs, fixUploadName, infoArgs, parseProgress, signPath, titleFromName, verifySigned, ytdlpError } from '../src/music/music.util'
 
 // Музыкальный плеер: чистые функции (без базы и сети).
 describe('музыка: подпись ссылок', () => {
@@ -54,6 +54,14 @@ describe('музыка: проверка ввода', () => {
     expect(cleanTitle('я'.repeat(151))).toBeNull()
     expect(titleFromName('Моя_песня__тихая.mp3')).toBe('Моя песня тихая')
     expect(titleFromName('')).toBe('Без названия')
+  })
+
+  it('вкладка: не указана: тихая музыка, известные принимаются, чужая отклоняется', () => {
+    expect(cleanCategory(undefined)).toBe('quiet')
+    expect(cleanCategory('')).toBe('quiet')
+    expect(cleanCategory('nightcore')).toBe('nightcore')
+    expect(cleanCategory('quiet')).toBe('quiet')
+    for (const bad of ['jazz', 'QUIET', 5, {}, 'quiet ']) expect(cleanCategory(bad)).toBeNull()
   })
 
   it('кириллица в имени загруженного файла: латиница-кракозябры исправляются, нормальное имя не трогается', () => {

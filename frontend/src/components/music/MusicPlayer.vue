@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { askConfirm } from '@/composables/useConfirm'
 import { errText } from '@/lib/http'
-import { useMusicStore, type Track } from '@/stores/music'
+import { CATEGORIES, useMusicStore, type Category, type Track } from '@/stores/music'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 import { PLAYER_IMG as IMG, coverFor, formatTime } from '@/components/music/playerAssets'
@@ -90,6 +90,21 @@ async function removeTrack(t: Track) {
   }
 }
 
+const tabName = computed(() => CATEGORIES.find(c => c.id === store.tab)?.name ?? '')
+const count = (c: Category) => store.tracks.filter(t => t.category === c).length
+const otherTab = (t: Track) => CATEGORIES.find(c => c.id !== t.category)!
+
+async function moveTrack(t: Track) {
+  menuFor.value = ''
+  const to = otherTab(t)
+  try {
+    await store.setCategory(t.id, to.id)
+    toast.ok(`«${t.title}» теперь во вкладке «${to.name}»`)
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+
 const rowPlay = (t: Track) => (store.currentId === t.id && store.playing ? store.pause() : void store.play(t.id))
 const seekTo = (e: Event) => store.seek((Number((e.target as HTMLInputElement).value) / 100) * (store.length || 0))
 const onKey = (e: KeyboardEvent) => {
@@ -158,9 +173,15 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
             </div>
           </div>
 
+          <div class="mp-tabs" role="tablist" aria-label="Вкладки плеера">
+            <button v-for="c in CATEGORIES" :key="c.id" type="button" role="tab" :aria-selected="store.tab === c.id" :class="{ on: store.tab === c.id }" @click="store.setTab(c.id)">
+              {{ c.name }} <small>{{ count(c.id) }}</small>
+            </button>
+          </div>
+
           <div class="mp-scroll">
-            <ul v-if="store.tracks.length" class="mp-list">
-              <li v-for="t in store.tracks" :key="t.id" :class="{ cur: t.id === store.currentId }">
+            <ul v-if="store.visible.length" class="mp-list">
+              <li v-for="t in store.visible" :key="t.id" :class="{ cur: t.id === store.currentId }">
                 <button type="button" class="mp-play" :aria-label="t.id === store.currentId && store.playing ? 'Пауза' : 'Играть'" @click="rowPlay(t)">
                   <img :src="t.cover ?? coverFor(t.id)" alt="" draggable="false" />
                   <span class="mp-play-ic"><img :src="t.id === store.currentId && store.playing ? IMG.pause : IMG.play" alt="" /></span>
@@ -171,6 +192,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
                   <button type="button" class="mp-ic" aria-label="Действия" :aria-expanded="menuFor === t.id" @click="menuFor = menuFor === t.id ? '' : t.id"><img :src="IMG.more" alt="" /></button>
                   <div v-if="menuFor === t.id" class="mp-menu">
                     <button type="button" @click="startRename(t)">Переименовать</button>
+                    <button type="button" @click="moveTrack(t)">В «{{ otherTab(t).name }}»</button>
                     <button type="button" class="mp-del" @click="removeTrack(t)">Удалить</button>
                   </div>
                 </div>
@@ -178,11 +200,12 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
             </ul>
             <div v-else-if="store.loaded" class="mp-empty">
               <img :src="IMG.sleepCat" alt="" draggable="false" />
-              <p>Пока нет песен. Добавь файл или ссылку ниже.</p>
+              <p>Во вкладке «{{ tabName }}» пока пусто. Добавь файл или ссылку ниже.</p>
             </div>
             <p v-if="store.loadError" class="mp-err">Не получилось загрузить список: {{ store.loadError }}</p>
 
             <section class="mp-add" aria-label="Добавить песню">
+              <p class="mp-where">Новые песни попадут во вкладку «{{ tabName }}»</p>
               <div class="mp-drop" :class="{ over: dragOver }" @dragover.prevent="dragOver = true" @dragleave="dragOver = false" @drop.prevent="onDrop">
                 <img :src="IMG.add" alt="" draggable="false" />
                 <span>Перетащи файлы сюда</span>
@@ -220,7 +243,8 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 <style>
 /* Музыкальный плеер (макет владельца): светлая панель справа, розовые кнопки; классы с префиксом mp- */
 .mp-root, .mp-panel { --mp-pink: #e86bc0; --mp-pink-d: #d64da9; --mp-ink: #2b2a5c; --mp-muted: #8a86b8; --mp-line: #eadff7; }
-.mp-fab { position: fixed; right: 18px; bottom: 76px; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; padding: 0; cursor: pointer;
+/* кнопка стоит левее «Таймера» внизу справа (над таймером всплывает его напоминание, его закрывать нельзя) */
+.mp-fab { position: fixed; right: 236px; bottom: 18px; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; padding: 0; cursor: pointer;
   background: rgba(255, 255, 255, .94); border: 1px solid #fff; border-radius: 50%; box-shadow: 0 10px 26px rgba(100, 87, 170, .28); transition: transform .2s, box-shadow .2s, background .2s; }
 .mp-fab img { width: 34px; height: 34px; object-fit: contain; }
 .mp-fab:hover { transform: translateY(-2px); box-shadow: 0 0 0 3px rgba(232, 107, 192, .35), 0 12px 28px rgba(100, 87, 170, .3); }
@@ -229,7 +253,8 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-fab-eq { animation: mp-eq 1s ease-in-out infinite alternate; }
 @keyframes mp-eq { from { transform: scaleY(.7); } to { transform: scaleY(1.05); } }
 
-.mp-mini { position: fixed; right: 82px; bottom: 76px; z-index: 41; display: flex; align-items: center; gap: 6px; max-width: min(380px, calc(100vw - 110px)); padding: 6px 10px 6px 6px;
+/* мини-плеер по центру у самого верха экрана */
+.mp-mini { position: fixed; top: 12px; left: 0; right: 0; margin-inline: auto; width: max-content; z-index: 41; display: flex; align-items: center; gap: 6px; max-width: min(400px, calc(100vw - 24px)); padding: 6px 10px 6px 6px;
   color: var(--mp-ink); background: rgba(255, 255, 255, .95); border: 1px solid #fff; border-radius: 30px; box-shadow: 0 10px 26px rgba(100, 87, 170, .25); }
 .mp-mini-cover { width: 42px; height: 42px; object-fit: cover; border-radius: 12px; flex: none; }
 .mp-mini-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; font-size: 13px; line-height: 1.25; }
@@ -240,10 +265,10 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-mini .mp-ic { width: 30px; height: 30px; }
 .mp-mini .mp-ic-main { width: 38px; height: 38px; }
 .mp-mini-enter-active, .mp-mini-leave-active { transition: opacity .2s, transform .2s; }
-.mp-mini-enter-from, .mp-mini-leave-to { opacity: 0; transform: translateX(14px); }
-@media (max-width: 560px) { .mp-mini-text small, .mp-mini .mp-ic:nth-of-type(1) { display: none; } }
+.mp-mini-enter-from, .mp-mini-leave-to { opacity: 0; transform: translateY(-14px); }
+@media (max-width: 560px) { .mp-mini-text small, .mp-mini .mp-ic:nth-of-type(1) { display: none; } .mp-fab { right: 150px; bottom: 10px; } }
 
-.mp-panel { position: fixed; z-index: 48; top: 12px; right: 12px; bottom: 12px; width: min(440px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 14px; overflow: hidden;
+.mp-panel { position: fixed; z-index: 48; top: 12px; right: 12px; bottom: 12px; width: min(clamp(440px, 46vw, 900px), calc(100vw - 24px)); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 14px; overflow: hidden;
   color: var(--mp-ink); background: linear-gradient(165deg, #fff7fd 0%, #f1efff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 24px 60px rgba(70, 55, 140, .35); }
 .mp-panel-enter-active, .mp-panel-leave-active { transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .25s; }
 .mp-panel-enter-from, .mp-panel-leave-to { transform: translateX(32px); opacity: 0; }
@@ -260,7 +285,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-tog.on { opacity: 1; filter: drop-shadow(0 0 6px rgba(232, 107, 192, .6)); }
 .mp-tog em { position: absolute; right: 4px; top: 4px; font-size: 10px; font-style: normal; font-weight: 800; color: #fff; background: var(--mp-pink-d); border-radius: 8px; padding: 0 4px; }
 
-.mp-now { position: relative; flex: none; height: 168px; border-radius: 22px; overflow: hidden; background: #f3e9fb; }
+.mp-now { position: relative; flex: none; height: clamp(168px, 30vh, 340px); border-radius: 22px; overflow: hidden; background: #f3e9fb; }
 .mp-cover { width: 100%; height: 100%; object-fit: cover; }
 .mp-deco { position: absolute; right: 6px; bottom: 30px; width: 88px; height: auto; filter: drop-shadow(0 4px 8px rgba(70, 55, 140, .3)); pointer-events: none; }
 .mp-now-text { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; padding: 22px 16px 10px; color: #fff; background: linear-gradient(to top, rgba(40, 25, 90, .75), transparent); }
@@ -272,6 +297,12 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-ctl { display: flex; align-items: center; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
 .mp-vol { display: flex; align-items: center; gap: 2px; flex: 1 1 110px; min-width: 110px; }
 
+.mp-tabs { display: flex; gap: 8px; flex: none; }
+.mp-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; font: inherit; font-size: 14px; font-weight: 700; color: var(--mp-muted); cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 99px; transition: color .15s, background .15s; }
+.mp-tabs button small { font-size: 12px; font-weight: 600; opacity: .8; }
+.mp-tabs button:hover { color: var(--mp-pink-d); }
+.mp-tabs button.on { color: #fff; background: linear-gradient(100deg, var(--mp-pink), var(--mp-pink-d)); box-shadow: 0 6px 14px rgba(214, 77, 169, .3); }
+.mp-where { margin: 0; font-size: 12px; color: var(--mp-muted); }
 .mp-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 0 8px; display: flex; flex-direction: column; gap: 12px; }
 .mp-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .mp-list li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 16px; transition: background .15s; position: relative; }
@@ -323,6 +354,7 @@ html[data-theme='dark'] .mp-panel { background: linear-gradient(165deg, #2b2450 
 html[data-theme='dark'] .mp-fab, html[data-theme='dark'] .mp-mini { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
 html[data-theme='dark'] .mp-list li:hover { background: rgba(255, 255, 255, .06); }
 html[data-theme='dark'] .mp-list li.cur { background: linear-gradient(90deg, rgba(232, 107, 192, .3), rgba(125, 107, 240, .25)); }
+html[data-theme='dark'] .mp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
 html[data-theme='dark'] .mp-menu, html[data-theme='dark'] .mp-url input, html[data-theme='dark'] .mp-rename { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
 html[data-theme='dark'] .mp-menu button { color: var(--mp-ink); }
 html[data-theme='dark'] .mp-menu button:hover { background: rgba(255, 255, 255, .08); }

@@ -44,10 +44,11 @@ describe('сервер: музыкальный плеер', () => {
     }
     throw new Error('задание не закончилось')
   }
-  const uploadFile = (name, bytes, title) => {
+  const uploadFile = (name, bytes, title, category) => {
     const form = new FormData()
     form.append('file', new Blob([bytes]), name)
     if (title) form.append('title', title)
+    if (category) form.append('category', category)
     return fetch(s.base + '/api/music/upload', { method: 'POST', headers: { Authorization: `Bearer ${OWNER}` }, body: form })
   }
 
@@ -116,6 +117,32 @@ describe('сервер: музыкальный плеер', () => {
     const job = await waitJob((await res.json()).job)
     assert.equal(job.stage, 'error')
     assert.match(job.error, /недоступно/)
+  })
+
+  test('вкладки: по умолчанию «тихая музыка», можно указать Nightcore, перенести и отклонить чужую', async () => {
+    const quiet = await uploadFile('а.mp3', Buffer.alloc(500, 1), 'Тихая')
+    assert.equal(quiet.status, 202)
+    const night = await uploadFile('б.mp3', Buffer.alloc(500, 2), 'Найткор', 'nightcore')
+    assert.equal(night.status, 202)
+    assert.equal((await uploadFile('в.mp3', Buffer.alloc(500, 3), 'Чужая', 'jazz')).status, 400)
+    await waitJob((await quiet.json()).job)
+    await waitJob((await night.json()).job)
+    const cats = Object.fromEntries((await get('/api/music')).tracks.map(t => [t.title, t.category]))
+    assert.equal(cats['Тихая'], 'quiet')
+    assert.equal(cats['Найткор'], 'nightcore')
+
+    const url = await s.call('POST', '/api/music/url', OWNER, { url: 'https://example.com/watch?v=nc', category: 'nightcore' })
+    assert.equal(url.status, 202)
+    assert.equal((await waitJob((await url.json()).job)).stage, 'done')
+    assert.equal((await get('/api/music')).tracks.filter(t => t.source === 'url' && t.category === 'nightcore').length >= 1, true, 'ссылка с вкладкой nightcore')
+    assert.equal((await s.call('POST', '/api/music/url', OWNER, { url: 'https://example.com/x', category: 'jazz' })).status, 400)
+
+    const t = (await get('/api/music')).tracks.find(x => x.title === 'Тихая')
+    const moved = await s.call('PATCH', `/api/music/${t.id}`, OWNER, { category: 'nightcore' })
+    assert.equal((await moved.json()).category, 'nightcore')
+    assert.equal((await s.call('PATCH', `/api/music/${t.id}`, OWNER, { category: 'jazz' })).status, 400)
+    assert.equal((await s.call('PATCH', `/api/music/${t.id}`, OWNER, {})).status, 400, 'пустое изменение')
+    assert.equal((await (await s.call('PATCH', `/api/music/${t.id}`, OWNER, { title: 'Новое' })).json()).category, 'nightcore', 'вкладка не слетает при смене названия')
   })
 
   test('переименовать и удалить; после удаления файл не открывается', async () => {

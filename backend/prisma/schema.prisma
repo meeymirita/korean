@@ -228,6 +228,8 @@ model Track {
   size     BigInt @default(0)
   /// upload или ссылка, с которой скачали
   source   String @default("upload")
+  /// вкладка плеера: quiet (тихая музыка) или nightcore
+  category String @default("quiet")
   created  BigInt
 
   @@map("tracks")

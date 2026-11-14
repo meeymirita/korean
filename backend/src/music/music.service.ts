@@ -9,7 +9,7 @@ import { DATA_DIR, MAX_TRACK, MAX_TRACK_MB, MUSIC_DIR, MUSIC_TMP, TOKEN } from '
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
-import { PLAYABLE_EXT, cleanTitle, cleanUrl, downloadArgs, extOf, fixUploadName, infoArgs, parseProgress, signPath, titleFromName, ytdlpError } from './music.util.js'
+import { PLAYABLE_EXT, cleanCategory, cleanTitle, cleanUrl, downloadArgs, extOf, fixUploadName, infoArgs, parseProgress, signPath, titleFromName, ytdlpError } from './music.util.js'
 
 export type JobStage = 'info' | 'download' | 'convert' | 'save' | 'done' | 'error'
 
@@ -35,6 +35,8 @@ export interface TrackOut {
   size: number
   created: number
   source: string
+  /** вкладка плеера: quiet или nightcore */
+  category: string
   cover: string | null
 }
 
@@ -93,7 +95,7 @@ export class MusicService {
   }
 
   /* ---------- список ---------- */
-  private out(r: { id: string; title: string; cover: string; duration: number; size: bigint; created: bigint; source: string }): TrackOut {
+  private out(r: { id: string; title: string; cover: string; duration: number; size: bigint; created: bigint; source: string; category: string }): TrackOut {
     return {
       id: r.id,
       title: r.title,
@@ -101,6 +103,7 @@ export class MusicService {
       size: Number(r.size),
       created: Number(r.created),
       source: r.source === 'upload' ? 'upload' : 'url',
+      category: r.category === 'nightcore' ? 'nightcore' : 'quiet',
       cover: r.cover ? signPath(`/api/music/${r.id}/cover`, TOKEN) : null,
     }
   }
@@ -127,11 +130,22 @@ export class MusicService {
     return { ...(await this.resolve(name)), name }
   }
 
-  async rename(id: string, title: unknown) {
-    const t = cleanTitle(title)
-    if (!t) throw new BadRequestException({ error: 'invalid title' })
+  /** Меняет название и/или вкладку песни; чего нет в запросе, остаётся как было. */
+  async update(id: string, body: { title?: unknown; category?: unknown }) {
+    const data: { title?: string; category?: string } = {}
+    if (body.title !== undefined) {
+      const t = cleanTitle(body.title)
+      if (!t) throw new BadRequestException({ error: 'invalid title' })
+      data.title = t
+    }
+    if (body.category !== undefined) {
+      const c = cleanCategory(body.category)
+      if (!c) throw new BadRequestException({ error: 'invalid category' })
+      data.category = c
+    }
+    if (!Object.keys(data).length) throw new BadRequestException({ error: 'nothing to change' })
     try {
-      const r = await (await this.db.orm()).track.update({ where: { id }, data: { title: t } })
+      const r = await (await this.db.orm()).track.update({ where: { id }, data })
       return this.out(r)
     } catch {
       throw new NotFoundException({ error: 'not found' })
@@ -168,22 +182,26 @@ export class MusicService {
   }
 
   /** Файл с компьютера уже лежит во временной папке: определяем длительность и обложку, отправляем на хранение, записываем в список. */
-  startUpload(file: { path: string; originalname: string; size: number } | undefined, title: unknown) {
+  startUpload(file: { path: string; originalname: string; size: number } | undefined, title: unknown, category: unknown) {
     if (!file) throw new BadRequestException({ error: 'no file' })
+    const cat = cleanCategory(category)
+    if (!cat) throw new BadRequestException({ error: 'invalid category' })
     const ext = extOf(file.originalname)
     const job = this.newJob('upload', cleanTitle(title) ?? titleFromName(fixUploadName(file.originalname)))
-    void this.finish(job, file.path, ext, null, 'upload', file.size).catch(e => this.fail(job, (e as Error).message))
+    void this.finish(job, file.path, ext, null, 'upload', cat, file.size).catch(e => this.fail(job, (e as Error).message))
     return { job: job.id }
   }
 
   /** Скачивание по ссылке через yt-dlp: по одному заданию за раз (ноутбук владельца и сервер небольшие). */
-  startUrl(url: unknown) {
+  startUrl(url: unknown, category: unknown) {
     const u = cleanUrl(url)
     if (!u) throw new BadRequestException({ error: 'invalid url' })
+    const cat = cleanCategory(category)
+    if (!cat) throw new BadRequestException({ error: 'invalid category' })
     if (this.ytdlpBusy) throw new ConflictException({ error: 'busy' })
     this.ytdlpBusy = true
     const job = this.newJob('url', u)
-    void this.runYtdlp(job, u)
+    void this.runYtdlp(job, u, cat)
       .catch(e => this.fail(job, (e as Error).message))
       .finally(() => (this.ytdlpBusy = false))
     return { job: job.id }
@@ -211,7 +229,7 @@ export class MusicService {
     })
   }
 
-  private async runYtdlp(job: Job, url: string) {
+  private async runYtdlp(job: Job, url: string, category: string) {
     const bin = process.env.YTDLP_BIN || 'yt-dlp'
     // файл cookies YouTube (необязательно): лежит в папке данных рядом с базой, docs/music.md
     const cookiesFile = process.env.YTDLP_COOKIES || path.join(DATA_DIR, 'youtube-cookies.txt')
@@ -249,14 +267,14 @@ export class MusicService {
         file = out
         ext = 'm4a'
       }
-      await this.finish(job, file, ext, cover ? path.join(dir, cover) : null, 'url', undefined, typeof info.duration === 'number' ? Math.round(info.duration) : 0)
+      await this.finish(job, file, ext, cover ? path.join(dir, cover) : null, 'url', category, undefined, typeof info.duration === 'number' ? Math.round(info.duration) : 0)
     } finally {
       await rm(dir, { recursive: true, force: true })
     }
   }
 
   /** Общий конец обоих путей: длительность, обложка, сохранение в хранилище и запись в список. */
-  private async finish(job: Job, file: string, ext: string, cover: string | null, source: string, size?: number, knownDuration = 0) {
+  private async finish(job: Job, file: string, ext: string, cover: string | null, source: string, category: string, size?: number, knownDuration = 0) {
     try {
       job.stage = 'save'
       if (!existsSync(file)) return this.fail(job, 'Файл пропал')
@@ -272,7 +290,7 @@ export class MusicService {
       }
       const name = `${id}.${ext}`
       await this.put(name, file)
-      await (await this.db.orm()).track.create({ data: { id, title: job.title, file: name, cover: coverFile, duration, size: BigInt(bytes), source: source === 'upload' ? 'upload' : 'url', created: BigInt(Date.now()) } })
+      await (await this.db.orm()).track.create({ data: { id, title: job.title, file: name, cover: coverFile, duration, size: BigInt(bytes), source: source === 'upload' ? 'upload' : 'url', category, created: BigInt(Date.now()) } })
       job.trackId = id
       job.percent = 100
       job.stage = 'done'
