@@ -83,6 +83,7 @@ export const GAME_GROUPS: GameGroup[] = [
     icon: 'pen',
     games: [
       { id: 'form', name: 'Выбери форму', desc: 'Глагол в настоящем или прошедшем времени', icon: 'pen', to: '/game/home?game=form' },
+      { id: 'tenses', name: 'Смесь времён', desc: 'Текст, где время определяет слово: 어제, 지금, 내일; все формы глаголов в одних плитках', icon: 'clock', to: '/game/home?game=tenses' },
       { id: 'type', name: 'Напиши правильную форму', desc: 'Введи форму глагола с клавиатуры', icon: 'pencil', to: '/game/home?game=type' },
     ],
   },

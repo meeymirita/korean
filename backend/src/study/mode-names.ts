@@ -42,6 +42,7 @@ export const MODE_NAMES: Record<string, string> = {
   "spot": "Найди верное",
   "stale": "Давно не видел",
   "syllables": "Собери по слогам",
+  "tenses": "Смесь времён",
   "too": "Тоже (도)",
   "topic": "Добить тему",
   "translate": "Переведи предложение",

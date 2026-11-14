@@ -48,7 +48,7 @@ test('группы по разделам грамматики: каждая иг
   assert.deepEqual(byId.be, ['neg'])
   assert.deepEqual(byId.particles, ['pair', 'ptext', 'expert', 'part', 'particles', 'err', 'only'])
   assert.deepEqual(byId.place, ['place'])
-  assert.deepEqual(byId.verbs, ['form', 'type'])
+  assert.deepEqual(byId.verbs, ['form', 'tenses', 'type'])
   assert.deepEqual(byId.questions, ['qw', 'dem'])
   assert.deepEqual(byId.talk, ['dlg', 'polite'])
   const all = GAME_GROUPS.flatMap(g => g.games.map(x => x.id))

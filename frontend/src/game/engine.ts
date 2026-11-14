@@ -1284,6 +1284,33 @@ function genToo(){
     explain:[x[0]+right+x[1],at?'С 에 и 에서 частица 도 добавляется: 에도, 에서도.':'도 заменяет 은/는, 이/가, 을/를: вместе с ними её не ставят.'],hp:x[0]+' ___'+x[1],hr:right,icon:'➕'};
 }
 
+/** «Смесь времён»: текст, где время глагола определяет слово времени (어제 → прошедшее, 지금 / 오늘 → настоящее, 내일 / 주말에 → будущее). Плитки: все три формы каждого глагола. */
+const TENSE_TIMES: {t: string;tense: 'past'|'now'|'fut'}[]=[
+  {t:'어제',tense:'past'},{t:'지금',tense:'now'},{t:'오늘',tense:'now'},{t:'내일',tense:'fut'},{t:'주말에',tense:'fut'},{t:'토요일에',tense:'fut'},
+];
+const TENSE_NAME={past:'прошедшее: 어제 («вчера»)',now:'настоящее: 지금 / 오늘 («сейчас / сегодня»)',fut:'будущее: 내일 / 주말에 / 토요일에 → -(으)ㄹ 거예요'};
+function genTenses(){
+  const n=8+Math.floor(Math.random()*3);
+  const verbs=FUT_NOW.map(function(x){return {obj:x[0],verb:x[1],now:x[2],past:x[5]};}).filter(function(x){return !!futureForm(x.verb);});
+  const combos: {v: typeof verbs[number];tm: typeof TENSE_TIMES[number]}[]=[];
+  verbs.forEach(function(v){TENSE_TIMES.forEach(function(tm){combos.push({v:v,tm:tm});});});
+  const picked: typeof combos=[];const perVerb: Record<string,number>={};const perTense: Record<string,number>={};
+  shuffle(combos).forEach(function(c){
+    if(picked.length>=n)return;
+    if((perVerb[c.v.verb]||0)>=2||(perTense[c.tm.tense]||0)>=Math.ceil(n/3)+1)return;
+    if(picked.some(function(x){return x.v===c.v&&x.tm.tense===c.tm.tense;}))return;
+    picked.push(c);perVerb[c.v.verb]=(perVerb[c.v.verb]||0)+1;perTense[c.tm.tense]=(perTense[c.tm.tense]||0)+1;
+  });
+  const bank=new Set<string>();
+  const sents: SentIn[]=picked.map(function(c){
+    const f=futureForm(c.v.verb)!;
+    const right=c.tm.tense==='past'?c.v.past:c.tm.tense==='now'?c.v.now:f;
+    [c.v.now,c.v.past,f,futWrongMark(c.v.verb)].forEach(function(t){bank.add(t);});
+    const pre=c.tm.t+' '+c.v.obj+' ';
+    return {ko:pre+right+' ('+c.v.verb+').',ru:'',noTr:true,pieces:[pre,{right:right,why:c.tm.t+' → '+TENSE_NAME[c.tm.tense]+'. '+c.v.verb+' → '+right},' ('+c.v.verb+').']};
+  });
+  return makeStory('tenses','Смесь времён ('+plural(sents.length)+'): в скобках глагол, форму определяет слово времени',sents,[...bank],'🕰️');
+}
 /* «Планы»: -(으)ㄹ 거예요. Часть 1: форма будущего в предложении, часть 2: «сейчас или потом» (지금 и 내일) */
 /** [начало, конец, глагол, перевод, настоящее, прошедшее] */
 const FUT_S: [string,string,string,string,string,string][]=[
@@ -1504,7 +1531,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,weak:genWeak,fut:genFut,only:genOnly};
+const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,tenses:genTenses,weak:genWeak,fut:genFut,only:genOnly};
 function genQuestion(): Question{
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);
