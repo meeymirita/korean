@@ -7,7 +7,7 @@ import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import Avatar from '@/components/Avatar.vue'
 import AuthGate from '@/components/AuthGate.vue'
-import SearchWindow from '@/components/SearchWindow.vue'
+import SearchHost from '@/components/SearchHost.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 import Breadcrumbs from '@/components/korean/Breadcrumbs.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
@@ -163,7 +163,7 @@ onBeforeUnmount(() => {
         <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
       </button>
     </div>
-    <SearchWindow />
+    <SearchHost />
     <GrammarModal />
   </div>
 </template>

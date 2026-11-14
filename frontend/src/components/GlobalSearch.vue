@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import '@/assets/sky.css'
-import SearchWindow from '@/components/SearchWindow.vue'
+import SearchHost from '@/components/SearchHost.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 
 const route = useRoute()
@@ -14,7 +14,7 @@ const route = useRoute()
       <span class="ic">⌕</span><span class="t">Поиск</span><kbd>⌘K</kbd>
     </button>
   </div>
-  <SearchWindow />
+  <SearchHost />
 </template>
 
 <style>

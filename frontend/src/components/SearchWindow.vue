@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
-import { closeSearch, searchOpen, searchQuery as q, toggleSearch } from '@/composables/useSearchWindow'
+import { closeSearch, searchOpen, searchQuery as q } from '@/composables/useSearchWindow'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { useSiteSearch } from '@/composables/useSiteSearch'
 import { hl } from '@/data/korean/render'
@@ -25,7 +25,7 @@ watch(searchOpen, async o => {
     input.value?.focus()
     input.value?.select()
   } else opened.value = null
-})
+}, { immediate: true }) // окно подгружается при первом открытии: searchOpen уже true
 watch(q, value => {
   opened.value = null
   Object.keys(more).forEach(k => delete more[k])
@@ -33,27 +33,8 @@ watch(q, value => {
 })
 
 
-function onKey(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-    e.preventDefault()
-    toggleSearch()
-  } else if (e.key === 'Escape' && searchOpen.value) closeSearch()
-  else if (e.key === '/' && !searchOpen.value && !e.ctrlKey && !e.metaKey && !e.altKey && canOpenByKey(e.target)) {
-    e.preventDefault()
-    toggleSearch()
-  }
-}
-/** «/» открывает окно поиска, если человек не печатает, нет другого окна и на странице нет своего поля поиска (оно ловит «/» само). */
-function canOpenByKey(target: EventTarget | null) {
-  const el = target as HTMLElement | null
-  if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return false
-  if (document.querySelector('[data-page-search], [role="dialog"]') || location.pathname.startsWith('/game')) return false
-  return true
-}
-onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
   stop()
-  document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
 })
 </script>

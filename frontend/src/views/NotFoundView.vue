@@ -3,7 +3,7 @@ import Cat from '@/components/Cat.vue'
 import { RouterLink, useRoute } from 'vue-router'
 import '@/assets/home/fonts.css'
 import { openSearch } from '@/composables/useSearchWindow'
-import SearchWindow from '@/components/SearchWindow.vue'
+import SearchHost from '@/components/SearchHost.vue'
 
 const route = useRoute()
 const LINKS = [
@@ -28,7 +28,7 @@ const LINKS = [
     <nav class="links">
       <RouterLink v-for="l in LINKS" :key="l.to" :to="l.to"><span class="ko">{{ l.ko }}</span>{{ l.text }}</RouterLink>
     </nav>
-    <SearchWindow />
+    <SearchHost />
   </main>
 </template>
 
