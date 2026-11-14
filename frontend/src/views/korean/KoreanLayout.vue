@@ -13,7 +13,7 @@ import Breadcrumbs from '@/components/korean/Breadcrumbs.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
 import NotificationsBell from '@/components/korean/NotificationsBell.vue'
 import MusicButton from '@/components/music/MusicButton.vue'
-import { sections } from '@/data/korean/sections'
+import { MENU_ICONS, sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
 import { themeDark, toggleTheme } from '@/lib/theme'
@@ -22,8 +22,6 @@ import { useProgressStore } from '@/stores/progress'
 import { useShortcutsStore } from '@/stores/shortcuts'
 
 const counts: Record<string, number> = { words: D.length, grammar: G.length }
-/** Значки пунктов меню: имена иконок из src/lib/icons.ts */
-const icons: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura' }
 const progress = useProgressStore()
 const route = useRoute()
 const router = useRouter()
@@ -115,7 +113,7 @@ onBeforeUnmount(() => {
         <template v-for="s in sections.filter(s => !s.group && !(s.owner && progress.isGuest))" :key="s.id">
         <RouterLink :to="`/korean/${s.id}`">
           <span class="line"></span>
-          <span class="ic"><Icon :name="icons[s.id] ?? 'star'" /></span>
+          <span class="ic"><Icon :name="MENU_ICONS[s.id] ?? 'star'" /></span>
           <span>{{ s.menu }}</span>
           <kbd v-if="shortcuts.labelOf('nav:' + s.id)" class="kb">{{ shortcuts.labelOf('nav:' + s.id) }}</kbd>
           <span v-if="s.private && !progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
@@ -125,7 +123,7 @@ onBeforeUnmount(() => {
         </RouterLink>
         <RouterLink v-if="s.id === 'today'" to="/game/home">
           <span class="line"></span>
-          <span class="ic"><Icon :name="icons.game!" /></span>
+          <span class="ic"><Icon :name="MENU_ICONS.game!" /></span>
           <span>Игра на слова</span>
           <kbd v-if="shortcuts.labelOf('nav:game')" class="kb">{{ shortcuts.labelOf('nav:game') }}</kbd>
           <span v-if="!progress.unlocked" class="lock" title="Откроется после входа по токену"><Icon name="lock" /></span>
