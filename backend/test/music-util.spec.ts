@@ -18,6 +18,8 @@ describe('музыка: подпись ссылок', () => {
 
 describe('музыка: yt-dlp', () => {
   it('процент из строки вывода', () => {
+    expect(parseProgress('  5.0%'), 'так печатает настоящий yt-dlp').toBe(5)
+    expect(parseProgress('\u001b[0;94m 42.5%\u001b[0m')).toBe(42.5)
     expect(parseProgress('download:  12.3%')).toBe(12.3)
     expect(parseProgress('[download]  45.0% of 3.2MiB')).toBe(45)
     expect(parseProgress('download: 100.0%')).toBe(100)

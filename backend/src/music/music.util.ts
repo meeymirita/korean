@@ -61,9 +61,13 @@ export function verifySigned(p: string, e: unknown, s: unknown, secret: string, 
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
-/** Процент из строки вывода yt-dlp (`--progress-template download:%(progress._percent_str)s`), например « 12.3%» → 12.3. */
+/**
+ * Процент из строки вывода yt-dlp. С `--progress-template download:%(progress._percent_str)s` настоящий yt-dlp печатает просто « 12.3%»
+ * (слово «download:» в шаблоне только указывает тип); на всякий случай понимаем и «download: 12.3%», и обычное «[download]  12.3% of …».
+ */
 export function parseProgress(line: string): number | null {
-  const m = /^\s*download:\s*([\d.]+)%/.exec(line) ?? /\[download\]\s+([\d.]+)%/.exec(line)
+  const clean = line.replace(/\x1b\[[0-9;]*m/g, '')
+  const m = /^\s*(?:download:\s*)?([\d.]+)%\s*$/.exec(clean) ?? /\[download\]\s+([\d.]+)%/.exec(clean)
   if (!m) return null
   const n = Number(m[1])
   return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : null

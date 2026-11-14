@@ -20,7 +20,7 @@ if (a.includes('--dump-single-json')) {
 }
 const out = a[a.indexOf('-o') + 1].replace('%(ext)s', 'm4a')
 setTimeout(() => {
-  console.log('download:  10.0%'); console.log('download: 100.0%')
+  console.log('  10.0%'); console.log(' 100.0%') // настоящий yt-dlp печатает процент без слова download:
   fs.writeFileSync(out, Buffer.alloc(4096, 7))
   fs.writeFileSync(out.replace(/\\.m4a$/, '.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0xd9]))
   process.exit(0)
