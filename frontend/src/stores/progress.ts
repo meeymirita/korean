@@ -117,6 +117,8 @@ const KEY = 'progress_v1'
 const TOKEN_KEY = 'progress_token'
 const VERIFIED_KEY = 'progress_verified'
 const SESSION_KEY = 'progress_session'
+/** Вместо токена при входе по коду из Telegram или почты (токен тогда не вводился): пометка, не секрет; сайт ходит на сервер с сеансом (`ses:<сеанс>`). */
+const CODE_TOKEN = 'ses'
 /** Когда появился текущий сеанс двухфакторного входа: для напоминания «скоро истечёт» в колокольчике (см. useNotices.ts). */
 const SESSION_CREATED_KEY = 'progress_session_created'
 const ROLE_KEY = 'progress_role'
@@ -265,7 +267,7 @@ export const useProgressStore = defineStore('progress', () => {
   /** Токен подошёл, но сервер просит ещё код из письма. */
   const needs2fa = ref(false)
   /** Что идёт в заголовке Authorization после «Bearer»: токен, а после двухфакторного входа «токен сеанс». */
-  const bearer = computed(() => (session.value ? `${token.value} ${session.value}` : token.value))
+  const bearer = computed(() => (token.value === CODE_TOKEN ? `ses:${session.value}` : session.value ? `${token.value} ${session.value}` : token.value))
   /** токен хотя бы раз подошёл серверу: до этого функции сайта закрыты */
   const verified = ref(stored(VERIFIED_KEY) === '1')
   const sync = ref<SyncState>(token.value ? 'idle' : 'off')
@@ -498,7 +500,7 @@ export const useProgressStore = defineStore('progress', () => {
     } catch {
       /* без тела */
     }
-    if (error === 'session') return lock('сеанс закончился, введите токен снова')
+    if (error === 'session') return lock('сеанс закончился, войдите снова')
     if (error !== '2fa') return lock(error === 'expired' ? 'срок гостевого доступа закончился' : 'неверный токен')
     session.value = ''
     write(SESSION_KEY, null)
@@ -654,6 +656,17 @@ export const useProgressStore = defineStore('progress', () => {
     return unlocked.value
   }
 
+  /** Вход по коду без токена: сеанс выдан сервером за верный код (Telegram или почта). Возвращает true, если сайт открылся. */
+  async function connectSession(id: string) {
+    needs2fa.value = false
+    token.value = CODE_TOKEN
+    write(TOKEN_KEY, CODE_TOKEN)
+    verified.value = false
+    setSession(id)
+    await init()
+    return unlocked.value
+  }
+
   function disconnect() {
     lock('')
   }
@@ -731,7 +744,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   return {
     data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, studyDays, status, record, roundDone, importXp, setProfile, setSettings, addTime,
-    token, bearer, session, sessionCreatedAt, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, disconnect, exportJson, importJson, reset, needsConfirm,
+    token, bearer, session, sessionCreatedAt, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, connectSession, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }
 })
