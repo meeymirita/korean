@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import SearchResults from '@/components/SearchResults.vue'
 import { closeSearch, searchOpen, searchQuery as q } from '@/composables/useSearchWindow'
 import { useSiteSearch } from '@/composables/useSiteSearch'
@@ -8,14 +8,14 @@ const input = ref<HTMLInputElement>()
 const site = useSiteSearch(q)
 const { result, more, run, stop } = site
 
-watch(searchOpen, async o => {
+watch(searchOpen, o => {
   document.body.style.overflow = o ? 'hidden' : ''
-  if (o) {
-    await nextTick()
-    input.value?.focus()
-    input.value?.select()
-  }
 }, { immediate: true }) // окно подгружается при первом открытии: searchOpen уже true
+// фокус ставим, когда поле появилось в DOM: при первом (ленивом) открытии одного такта мало
+watch(input, el => {
+  el?.focus()
+  el?.select()
+}, { flush: 'post' })
 watch(q, value => {
   Object.keys(more).forEach(k => delete more[k])
   run(value)

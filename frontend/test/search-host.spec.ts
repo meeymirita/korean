@@ -16,6 +16,7 @@ describe('окно поиска: ленивая загрузка', () => {
     // первая загрузка окна тянет словарь и переводы: в тестовой среде это занимает заметное время
     await vi.waitFor(() => expect(document.querySelector('[role="dialog"]'), 'окно загрузилось и показано').not.toBeNull(), { timeout: 15_000 })
     expect(document.querySelector<HTMLInputElement>('.sw input')).not.toBeNull()
+    await vi.waitFor(() => expect(document.activeElement, 'при первом открытии фокус сразу в поле').toBe(document.querySelector('.sw input')))
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(searchOpen.value).toBe(false)
