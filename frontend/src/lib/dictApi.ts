@@ -18,6 +18,8 @@ export interface DictHit {
   wordLen: number
   senses: DictHitSense[]
   moreSenses: number
+  /** переводы по одному, строчными (главные значения): по ним строятся страницы «X по-корейски» */
+  tr?: string[]
 }
 export interface DictSearch {
   query: string

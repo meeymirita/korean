@@ -73,7 +73,7 @@ export default defineNuxtConfig({
     '/me': { swr: 60 },
     // большой словарь: страницы рисуются на сервере из API и кэшируются на час (слова в базе не меняются), поисковик получает быстрый готовый HTML
     // (в разработке кэш выключен: иначе после правок виден старый HTML и Vue ругается на «Hydration mismatch»)
-    ...(process.env.NODE_ENV === 'development' ? {} : { '/dict': { swr: 3600 }, '/dict/**': { swr: 3600 } }),
+    ...(process.env.NODE_ENV === 'development' ? {} : { '/dict': { swr: 3600 }, '/dict/**': { swr: 3600 }, '/ru': { swr: 3600 }, '/ru/**': { swr: 3600 } }),
     // закрытые страницы и всё, что зависит от localStorage: только в браузере
     ...Object.fromEntries(priv.map(p => [p, { ssr: false }])),
     '/korean/ref': { ssr: false },
@@ -98,7 +98,7 @@ export default defineNuxtConfig({
     // Правило Allow длиннее Disallow, поэтому /korean/home открыт при закрытом /korean/. Строки Sitemap: добавляет модуль sitemap сам.
     groups: [{
       userAgent: '*',
-      allow: ['/', '/dict', '/about', '/history', '/me', '/korean/home', '/api/public/'],
+      allow: ['/', '/dict', '/ru', '/about', '/history', '/me', '/korean/home', '/api/public/'],
       disallow: ['/api/', '/game', '/upload', '/korean/', ...priv],
     }],
   },

@@ -106,6 +106,8 @@ useHead({
   script: [{ key: 'dict-ld', type: 'application/ld+json', innerHTML: () => (seoEntry.value ? JSON.stringify(wordJsonLd(seoEntry.value, pageUrl.value)) : '') }],
 })
 const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
+/** Ссылки на страницы «X по-корейски»: только русские слова из переводов (по ним есть страницы). */
+const ruLinks = computed(() => [...new Set((main.value?.tr ?? []).filter(t => /^[а-яё]+(?:-[а-яё]+)?$/.test(t) && t.length >= 3 && t.length <= 24))].slice(0, 4))
 </script>
 
 <template>
@@ -137,6 +139,7 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
       </section>
 
       <p class="lead" lang="ru">{{ lead }}</p>
+      <p v-if="ruLinks.length" class="rulinks">По-русски: <RouterLink v-for="t in ruLinks" :key="t" :to="`/ru/${encodeURIComponent(t)}`">{{ t }} по-корейски</RouterLink></p>
 
       <nav v-if="data?.navigation" class="word-nav" aria-label="Алфавитная навигация">
         <RouterLink v-if="data.navigation.previous" :to="`/dict/${encodeURIComponent(data.navigation.previous)}`" rel="prev">← Предыдущее · <span lang="ko">{{ data.navigation.previous }}</span></RouterLink>
@@ -216,6 +219,9 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
 .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; }
 .head h1, .none h1 { margin: 0; font-size: clamp(40px, 7vw, 60px); line-height: 1.1; font-weight: 700; }
 .pron { color: var(--muted); font-size: 18px; }
+.rulinks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0 0; font-size: 13.5px; color: var(--muted); }
+.rulinks a { padding: 3px 12px; border-radius: 999px; background: var(--pink); color: var(--accent); font-weight: 600; text-decoration: none; }
+.rulinks a:hover { background: var(--accent); color: #fff; }
 .chip { padding: 4px 14px; border-radius: 999px; background: var(--pink); color: var(--accent); font-size: 13px; font-weight: 600; }
 .chip.lvl { background: var(--soft); color: var(--accent2); }
 .cat { margin-left: auto; font-size: 12.5px; color: var(--muted); }
