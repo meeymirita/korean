@@ -17,6 +17,11 @@ const { progress, days, daysWord, hello, due, dueText } = useHome()
 const homeLinks = computed(() => (progress.unlocked ? HOME_LINKS : HOME_LINKS.filter(l => l.to === '/dict')))
 const { seed, rule: HOME_RULE, phrase: HOME_PHRASE } = useHomePicks()
 const guide = ref(false)
+/**
+ * Кнопка видео-обзора скрыта по просьбе владельца (2026-11-14): вместо неё ссылка на «О платформе». Окно и видео оставлены:
+ * чтобы вернуть кнопку, поставь `SHOW_DEMO = true`.
+ */
+const SHOW_DEMO = false
 /** Окно с видео-обзором платформы: видео грузится, только когда окно открыто. */
 const demo = ref(false)
 /** Файл лежит в public/: путь строкой, чтобы сборка не пыталась его подключать как модуль. */
@@ -91,7 +96,8 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
       <section class="center">
         <div class="kick-row">
           <div class="kicker">личное пространство · с 1 июня</div>
-          <button type="button" class="demo-link" aria-haspopup="dialog" @click="demo = true">▶ посмотреть видео-демонстрацию</button>
+          <button v-if="SHOW_DEMO" type="button" class="demo-link" aria-haspopup="dialog" @click="demo = true">▶ посмотреть видео-демонстрацию</button>
+          <RouterLink v-else to="/about" class="demo-link">о платформе →</RouterLink>
         </div>
 
         <h1 class="title">
@@ -236,7 +242,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 .center { display: flex; flex-direction: column; justify-content: center; min-height: 0; padding-left: clamp(10px, 2vw, 30px); }
 .kick-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 18px; margin-bottom: clamp(14px, 2.4vh, 22px); }
 .kicker { display: flex; align-items: center; gap: 10px; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--soft); }
-.home .demo-link { padding: 0 0 3px; font: inherit; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); background: none; border: 0; border-bottom: 1px solid currentColor; cursor: pointer; transition: .2s; }
+.home .demo-link { text-decoration: none; padding: 0 0 3px; font: inherit; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); background: none; border: 0; border-bottom: 1px solid currentColor; cursor: pointer; transition: .2s; }
 .home .demo-link:hover { color: var(--accent2); }
 .kicker::before { content: ""; width: 24px; height: 1px; background: var(--accent); }
 .title { font-size: clamp(40px, min(7.4vw, 10vh), 104px); line-height: .92; letter-spacing: -.035em; font-weight: 800; margin: 0 0 clamp(14px, 2.2vh, 28px); }
