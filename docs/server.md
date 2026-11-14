@@ -30,6 +30,7 @@
 | `admin/`, `events/` | архив и статус копий (`docs/backup.md`), состояние контейнеров, журналы сервисов и отчёт для разбора неполадок (`/api/ops/*`), журнал событий (последние 2000) |
 | `exams/`, `study/` | итоговый экзамен (`/api/exams`, черновик, напоминание `draft-remind.ts`); недельный отчёт: цель недели, названия режимов, PDF (`weekly-pdf.ts`, `study-weekly.service.ts`) |
 | `newwords/`, `wordsexport/` | записанные слова и временный токен чтения; CSV «моих слов» |
+| `env-check.ts` | реестр переменных окружения (`ENV_VARS`) и проверка формата при старте: время `ЧЧ:ММ`, день 0–6, порты, адреса, Telegram наполовину, опечатки в именах; только предупреждения в журнал. Новая переменная в коде: допиши в реестр (тест `tests/env-registry.test.mjs`) |
 | `csp-report.controller.ts`, `metrics.*`, `health.controller.ts`, `container-metrics.service.ts` | приём отчётов CSP, метрики Prometheus (`/api/metrics`), проверка здоровья |
 
 ## Таблицы базы

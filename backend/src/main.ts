@@ -11,6 +11,7 @@ import { DATA_DIR, MAX_JSON, PORT, SWAGGER, TOKEN } from './config.js'
 import { RateLimiter, requestTimeout, securityHeaders } from './security.js'
 import { DOCS_PATH, setupSwagger } from './swagger.js'
 import { MetricsService } from './metrics.service.js'
+import { checkEnv } from './env-check.js'
 
 async function bootstrap() {
   if (!TOKEN) {
@@ -18,6 +19,7 @@ async function bootstrap() {
     process.exit(1)
   }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: ['error', 'warn'], bodyParser: false })
+  for (const problem of checkEnv()) console.warn(`ВНИМАНИЕ (.env): ${problem}`)
   if (TOKEN.length < 20) console.warn('ВНИМАНИЕ: токен короче 20 символов, его легко подобрать. Замени: openssl rand -base64 24')
   app.disable('x-powered-by')
   // за Caddy (на сервере или в Docker-сети): настоящий адрес берётся из X-Forwarded-For только от своих прокси (loopback и частные сети Docker).
