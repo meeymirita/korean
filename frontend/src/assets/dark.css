@@ -20,7 +20,7 @@ html[data-theme='dark'] .study.sky {
   --bad-bg: rgba(255, 143, 126, .14);
   --shadow: 0 18px 45px rgba(0, 0, 0, .35);
 }
-html[data-theme='dark'] .study.sky:not(.study-modal), html[data-theme='dark'] body:has(.study-shell.sky) {
+html[data-theme='dark'] .study.sky:not(.study-modal), html[data-theme='dark']:has(.study-shell.sky) {
   background-color: #14152b;
   background-image: linear-gradient(rgba(14, 15, 40, .72), rgba(14, 15, 40, .72)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), url('./game/bg.webp');
   background-position: 0 0, 0 0, center top -230px;

@@ -21,7 +21,8 @@
   font-family: 'Archivo', 'Noto Sans KR', sans-serif;
   color: var(--ink);
 }
-.study.sky:not(.study-modal), body:has(.study-shell.sky) {
+/* Фон раздела рисуется на `html` (холст страницы), а не на `body`: оболочка раздела не шире 1640 px, и на широких окнах слева и справа оставались серые полосы цвета html. */
+.study.sky:not(.study-modal), html:has(.study-shell.sky) {
   /* фон как на странице игры: храм среди облаков и сакуры (src/assets/game/bg.webp) */
   background-color: #f1dff7;
   background-image: linear-gradient(rgba(255, 255, 255, .26), rgba(255, 255, 255, .26)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), url('./game/bg.webp');
@@ -30,6 +31,7 @@
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
+body:has(.study-shell.sky) { background: transparent; }
 .study.sky h1, .study.sky h2, .study.sky h3 { letter-spacing: -.01em; }
 .study.sky .kicker, .study.sky .row.h { letter-spacing: .12em; font-weight: 600; }
 .study.sky .kicker::before { background: var(--pink); }
