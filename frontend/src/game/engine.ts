@@ -7,6 +7,7 @@ import { makeBuild, parseBuildKey, type Level, type TenseMode } from './build'
 import { analyze, SEG_LABEL, type Segment } from '@/data/korean/parse'
 import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
+import { itemIcon, itemName } from '@/data/shop'
 import { STUDY, STUDY_TRANSLATIONS } from '@/data/korean/study'
 import '@/assets/breakdown.css'
 import { EXCHANGES, type Exchange } from './dialogs'
@@ -1436,8 +1437,74 @@ function genQuestion(): Question{
 /** Выключает перетаскивание плиток прошлого задания (`lib/dragdrop.ts`). */
 let dragOff: (()=>void)|null=null;
 function stopDrag(){if(dragOff){dragOff();dragOff=null;}}
+/* ---------- предметы Юны (docs/shop.md): подсказка, 50/50, повтор, второй шанс; только вопросы с вариантами ---------- */
+const shopCount=(id: string)=>(hooks.items?hooks.items.count(id):0);
+/** идёт трата предмета на сервере: ответы не принимаются, чтобы не записать их раньше решения */
+let securing=false;
+/** номер неверного варианта, который ждёт решения «Второго шанса» */
+let pendingBad: number|null=null;
+function shopImg(id: string){const im=document.createElement('img');im.src=itemIcon(id);im.alt='';im.className='shop-ic';return im;}
+function shopBar(q: ChoiceQ){
+  if(!hooks.items||S.blitz.on)return null;
+  const wide=q.options.length>2;
+  const defs=([['hint','Подсказка'],['fifty','50/50'],['skip','Повтор']] as [string,string][]).filter(d=>wide||d[0]==='skip');
+  const have=defs.filter(d=>shopCount(d[0])>0);
+  if(!have.length)return null;
+  const bar=el('div','acts shop');bar.id='shopBar';
+  have.forEach(d=>{
+    const b=el('button','ghost item');b.type='button';b.title=itemName(d[0]);
+    b.append(shopImg(d[0]),d[1]+' ×'+shopCount(d[0]));
+    b.addEventListener('click',()=>{void useShop(d[0]);});bar.appendChild(b);
+  });
+  return bar;
+}
+async function useShop(id: string){
+  const q=S.cur as ChoiceQ|null;
+  if(!q||q.type!=='choice'||S.answered||securing||pendingBad!==null||!hooks.items)return;
+  const wrongLeft=()=>[...document.querySelectorAll<HTMLButtonElement>('#opts .opt')].map((b,i)=>({b,i})).filter(x=>x.i!==q.correct&&!x.b.disabled);
+  if(id==='hint'&&(q.shopHint||wrongLeft().length<2))return;
+  if(id==='fifty'&&wrongLeft().length<2)return;
+  securing=true;
+  const ok=await hooks.items.use(id);
+  securing=false;
+  if(!ok||S.cur!==q||S.answered)return;
+  if(id==='skip'){next();return;}
+  const drop=(n: number)=>shuffle(wrongLeft()).slice(0,Math.min(n,wrongLeft().length-1)).forEach(x=>{x.b.disabled=true;x.b.classList.add('dim');});
+  if(id==='hint'){
+    q.shopHint=true;q.xp=Math.min(q.xp??5,5); // ответ с подсказкой даёт 5 очков
+    const o=q.options[q.correct]!;
+    const line=el('div','hintline','Подсказка Юны: ответ начинается с «'+[...(o.k||o.text)][0]+'»');
+    $('#opts').after(line);drop(1);
+  }else drop(2);
+  const bar=$('#shopBar');if(bar){bar.remove();const nb=shopBar(q);if(nb)($('#opts').parentElement as HTMLElement).appendChild(nb);}
+}
+/** Неверный вариант при запасе «Второго шанса»: пока не записываем, предлагаем исправить или оставить ошибку. */
+function offerSecond(q: ChoiceQ,i: number){
+  const btns=[...document.querySelectorAll<HTMLButtonElement>('#opts .opt')];
+  btns.forEach(b=>{b.disabled=true;});
+  btns[i]?.classList.add('bad','shake');
+  pendingBad=i;
+  const bar=el('div','acts shop');bar.id='secondBar';
+  bar.appendChild(el('span','',"Неверно. Есть «Второй шанс» (×"+shopCount('second')+"): ошибка не запишется."));
+  const fix=el('button','ghost item');fix.type='button';fix.append(shopImg('second'),'Исправить');
+  const fixIt=async()=>{
+    if(securing||!hooks.items||S.answered)return;
+    securing=true;
+    const ok=await hooks.items.use('second');
+    securing=false;
+    if(!ok||S.cur!==q||S.answered)return;
+    pendingBad=null;q.chanced=true;bar.remove();
+    btns.forEach((b,k)=>{if(k===i){b.classList.remove('bad','shake');b.classList.add('dim');}else if(!b.classList.contains('dim'))b.disabled=false;});
+  };
+  fix.addEventListener('click',()=>{void fixIt();});
+  const keep=el('button','ghost item','Оставить ошибку');keep.type='button';
+  keep.addEventListener('click',()=>{if(securing||S.answered)return;pendingBad=null;bar.remove();settleChoice(q,i);});
+  bar.append(fix,keep);
+  $('#opts').after(bar);
+}
+
 function renderQuestion(q: Question){
-  closeStoryWin();stopDrag();
+  closeStoryWin();stopDrag();pendingBad=null;
   S.cur=q;S.answered=false;S.lastKey=q.key;
   clearTimeout(S.timer);
   const card=$('#card');card.innerHTML='';
@@ -1473,6 +1540,7 @@ function renderQuestion(q: Question){
       const hb=el('button','ghost hint');hb.innerHTML=iconImg('sparkle')+' 50/50 · '+S.hints;hb.type='button';hb.id='hintBtn';hb.disabled=S.hints<=0;
       hb.addEventListener('click',useHint);acts.appendChild(hb);card.appendChild(acts);
     }
+    const sb=shopBar(q as ChoiceQ);if(sb)card.appendChild(sb);
   }else if(q.type==='type'){
     card.appendChild(el('div','prompt'+(q.promptKo?' ko':''),q.prompt));
     if(q.reading&&S.reading)card.appendChild(el('div','reading',q.reading));
@@ -1785,7 +1853,13 @@ function openStoryWin(q: StoryQ,si: number){
   x.focus({preventScroll:true});
 }
 function answerChoice(i: number){
-  if(S.answered)return;const q=S.cur as ChoiceQ;
+  if(S.answered||securing||pendingBad!==null)return;const q=S.cur as ChoiceQ;
+  // есть «Второй шанс»: неверный ответ пока не записываем
+  if(i!==q.correct&&!q.chanced&&!S.blitz.on&&shopCount('second')>0){offerSecond(q,i);return;}
+  settleChoice(q,i);
+}
+/** Ответ с выбором принят окончательно: подсветка, запись в прогресс и разбор. */
+function settleChoice(q: ChoiceQ,i: number){
   const ok=i===q.correct;
   const btns=document.querySelectorAll<HTMLButtonElement>('#opts .opt');
   btns.forEach((b,k)=>{b.disabled=true;if(k===q.correct)b.classList.add('ok');else if(k===i)b.classList.add('bad');});

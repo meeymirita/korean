@@ -157,6 +157,9 @@
 .game .tiles.gloss .tile .tg,.game .slots.gloss .slot .tg{display:block}
 .game .tile,.game .slot{text-align:center}
 .game .ghost.hint{padding:7px 14px;font-size:12px}
+.game .acts.shop{align-items:center;font-size:12px}
+.game .ghost.item{display:inline-flex;align-items:center;gap:6px;padding:5px 14px 5px 8px;font-size:12px;font-weight:600}
+.game .shop-ic{width:22px;height:22px;object-fit:contain}
 
 /* во весь экран: без боковых отступов, шире блоки (размер шрифтов прежний) */
 .game .game-top{max-width:none;padding:18px clamp(16px,2.4vw,40px) 0}

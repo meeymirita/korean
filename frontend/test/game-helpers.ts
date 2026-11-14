@@ -15,19 +15,20 @@ const NOT_ENGINE: string[] = [...TOOL_IDS, 'typewords', 'ptext', 'fut', 'only']
 export const ENGINE_MODES = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).filter(id => !NOT_ENGINE.includes(id))
 export const NEW_MODES = ['days', 'when', 'too', 'num', 'price', 'count', 'neg', 'place', 'dem', 'polite']
 
+type GameHooksItems = NonNullable<Parameters<typeof initGame>[0]['items']>
 let dispose: (() => void) | undefined
-export const records: { word: string | null; ok: boolean; mode?: string }[] = []
+export const records: { word: string | null; ok: boolean; mode?: string; xp?: number }[] = []
 export const grammarOpened: string[] = []
 
 /** Запускает игру в режиме `mode`. `keepSave: true` оставляет сохранение в localStorage (проверка, что настройки подхватываются). */
-export function start(mode: string, keepSave = false) {
+export function start(mode: string, keepSave = false, items?: GameHooksItems) {
   dispose?.() // прежний экземпляр игры снимает свои обработчики клавиш
   records.length = 0
   grammarOpened.length = 0
   if (!keepSave) localStorage.clear()
   document.body.innerHTML = `<div id="root">${markup}</div>`
   dispose = initGame({
-    record: (o: { word: string | null; ok: boolean; mode?: string }) => {
+    record: (o: { word: string | null; ok: boolean; mode?: string; xp?: number }) => {
       records.push(o)
       return {}
     },
@@ -37,6 +38,7 @@ export function start(mode: string, keepSave = false) {
     mode: () => mode,
     saveCats: () => {},
     grammar: (id: string) => grammarOpened.push(id),
+    ...(items ? { items } : {}),
   })
 }
 afterEach(() => {
