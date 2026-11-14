@@ -47,6 +47,12 @@ export interface UploadItem {
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
+/** Плеер доступен только владельцу с токеном (гостю и без входа кнопки и окна нет). Свой признак у каждого компонента. */
+export function useMusicAvailable() {
+  const progress = useProgressStore()
+  return computed(() => progress.unlocked && !progress.isGuest)
+}
+
 const KEY = 'music_v1'
 /** Лимит одной песни, МБ: то же число в backend/src/config.ts (`MAX_TRACK_MB`) и в Caddy (docker/caddy/Caddyfile). */
 export const MAX_TRACK_MB = 350
@@ -252,6 +258,13 @@ export const useMusicStore = defineStore('music', () => {
         nextId = queue.value[0]!.id
       } else nextId = queue.value[i]!.id
     }
+    // песня в очереди одна (длинный сборник): «дальше» начинает её заново, а не молчит
+    if (nextId === currentId.value && audio?.src) {
+      audio.currentTime = 0
+      time.value = 0
+      await audio.play().catch(() => undefined)
+      return
+    }
     await play(nextId)
   }
 
@@ -288,6 +301,18 @@ export const useMusicStore = defineStore('music', () => {
 
   function cycleRepeat() {
     repeat.value = REPEAT[(REPEAT.indexOf(repeat.value) + 1) % REPEAT.length]!
+    save(true)
+  }
+
+  /** Останавливает звук и убирает мини-плеер: песня снимается (после «закрыть» играть нужно выбрать заново). */
+  function stop() {
+    pause()
+    currentId.value = ''
+    pendingSeek = 0
+    if (audio) audio.removeAttribute('src')
+    time.value = 0
+    length.value = 0
+    retried = ''
     save(true)
   }
 
@@ -442,6 +467,6 @@ export const useMusicStore = defineStore('music', () => {
 
   return {
     tracks, visible, queue, tab, jobs, shownJobs, uploads, loaded, loadError, open, current, currentId, index, playing, time, length, volume, muted, repeat, shuffle, busy,
-    load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, setTab, setCategory, uploadFiles, dismissUpload, dismissJob, addUrl, rename, remove,
+    load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, stop, setTab, setCategory, uploadFiles, dismissUpload, dismissJob, addUrl, rename, remove,
   }
 })

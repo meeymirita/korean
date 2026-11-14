@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import MusicPlayer from '@/components/music/MusicPlayer.vue'
+import MusicButton from '@/components/music/MusicButton.vue'
 import { MAX_TRACK_MB, useMusicStore } from '@/stores/music'
 import { coverFor, formatTime } from '@/components/music/playerAssets'
 
@@ -87,22 +88,85 @@ describe('музыкальный плеер', () => {
   it('без входа и у гостя кнопки нет и список не запрашивается', async () => {
     who.unlocked = false
     const a = await mountSuspended(MusicPlayer)
-    expect(a.find('.mp-fab').exists()).toBe(false)
+    expect(a.find('.mp-root').exists()).toBe(false)
     a.unmount()
     who.unlocked = true
     who.owner = false
     const b = await mountSuspended(MusicPlayer)
-    expect(b.find('.mp-fab').exists()).toBe(false)
+    expect(b.find('.mp-root').exists()).toBe(false)
     b.unmount()
     expect(calls.filter(c => c.url === '/api/music')).toHaveLength(0)
+  })
+
+  it('кнопка открытия: только у владельца, открывает и закрывает меню, при игре подсвечена', async () => {
+    who.unlocked = false
+    const none = await mountSuspended(MusicButton)
+    expect(none.find('.mp-fab').exists()).toBe(false)
+    none.unmount()
+    who.unlocked = true
+    const w = await mountSuspended(MusicButton, { props: { variant: 'fixed' } })
+    const store = useMusicStore()
+    expect(w.find('.mp-fab').classes()).toContain('mp-fab-fixed')
+    expect(w.find('.mp-fab').attributes('aria-expanded')).toBe('false')
+    await w.find('.mp-fab').trigger('click')
+    expect(store.open).toBe(true)
+    expect(w.find('.mp-fab').attributes('aria-expanded')).toBe('true')
+    await w.find('.mp-fab').trigger('click')
+    expect(store.open).toBe(false)
+    await store.load()
+    await store.play('aaaaaaaaaaaaaaaa')
+    await flushPromises()
+    expect(w.find('.mp-fab').classes()).toContain('on')
+    store.stop()
+    w.unmount()
+  })
+
+  it('мини-плеер: полоса времени перематывает, «закрыть» останавливает музыку и убирает плеер', async () => {
+    const w = await mountSuspended(MusicPlayer)
+    await flushPromises()
+    const store = useMusicStore()
+    await store.play('bbbbbbbbbbbbbbbb')
+    await flushPromises()
+    const mini = w.find('.mp-mini').element // мини-плеер не в Teleport: ищем в самом компоненте
+    expect(mini).not.toBeNull()
+    // у FakeAudio нет длительности: берётся длительность песни из списка
+    store.length = 3725
+    const seek = mini.querySelector<HTMLInputElement>('.mp-mini-seek')!
+    seek.value = '50'
+    seek.dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(Math.round(store.time), 'перемотка на середину песни').toBe(1863)
+    const close = mini.querySelector<HTMLButtonElement>('button[aria-label^="Закрыть плеер"]')!
+    close.click()
+    await flushPromises()
+    expect(store.playing).toBe(false)
+    expect(store.currentId).toBe('')
+    expect(w.find('.mp-mini').exists(), 'мини-плеер исчез').toBe(false)
+    w.unmount()
+  })
+
+  it('в очереди одна песня (длинный сборник): «дальше» начинает её заново, а не молчит', async () => {
+    const w = await mountSuspended(MusicPlayer)
+    await flushPromises()
+    const store = useMusicStore()
+    store.tab = 'nightcore' // во вкладке Nightcore одна песня
+    await store.play('cccccccccccccccc')
+    store.time = 500
+    await store.advance(true)
+    expect(store.currentId).toBe('cccccccccccccccc')
+    expect(store.time, 'началась сначала').toBe(0)
+    expect(store.playing).toBe(true)
+    store.stop()
+    w.unmount()
   })
 
   it('у владельца: кнопка открывает меню со списком, песни с длительностью', async () => {
     const w = await mountSuspended(MusicPlayer)
     await flushPromises()
-    expect(w.find('.mp-fab').exists()).toBe(true)
+    expect(w.find('.mp-root').exists()).toBe(true)
     expect(document.querySelector('.mp-panel')).toBeNull()
-    await w.find('.mp-fab').trigger('click')
+    useMusicStore().open = true
+    await flushPromises()
     const rows = [...document.querySelectorAll('.mp-list li')]
     expect(rows.map(r => r.querySelector('b')?.textContent)).toEqual(['Первая песня', 'Вторая песня'])
     expect(rows.map(r => r.querySelector('small')?.textContent)).toEqual(['1:23', '1:02:05'])
@@ -116,7 +180,8 @@ describe('музыкальный плеер', () => {
     const w = await mountSuspended(MusicPlayer)
     await flushPromises()
     const store = useMusicStore()
-    await w.find('.mp-fab').trigger('click')
+    useMusicStore().open = true
+    await flushPromises()
     const tabs = [...document.querySelectorAll('.mp-tabs button')]
     expect(tabs.map(t => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['Тихая музыка 2', 'Nightcore 1'])
     expect(document.querySelectorAll('.mp-list li')).toHaveLength(2)
@@ -139,7 +204,8 @@ describe('музыкальный плеер', () => {
     const w = await mountSuspended(MusicPlayer)
     await flushPromises()
     const store = useMusicStore()
-    await w.find('.mp-fab').trigger('click')
+    useMusicStore().open = true
+    await flushPromises()
     document.querySelector<HTMLButtonElement>('.mp-list li .mp-more .mp-ic')!.click()
     await flushPromises()
     const move = [...document.querySelectorAll<HTMLButtonElement>('.mp-menu button')].find(b => b.textContent!.includes('Nightcore'))!
@@ -156,13 +222,13 @@ describe('музыкальный плеер', () => {
     const w = await mountSuspended(MusicPlayer)
     await flushPromises()
     const store = useMusicStore()
-    await w.find('.mp-fab').trigger('click')
+    useMusicStore().open = true
+    await flushPromises()
     document.querySelectorAll<HTMLButtonElement>('.mp-list li .mp-play')[0]!.click()
     await flushPromises()
     expect(calls.some(c => c.url === '/api/music/aaaaaaaaaaaaaaaa/url')).toBe(true)
     expect(store.currentId).toBe('aaaaaaaaaaaaaaaa')
     expect(store.playing).toBe(true)
-    expect(w.find('.mp-fab').classes()).toContain('on')
     document.querySelectorAll<HTMLButtonElement>('.mp-list li .mp-play')[0]!.click()
     await flushPromises()
     expect(store.playing).toBe(false)
@@ -202,7 +268,8 @@ describe('музыкальный плеер', () => {
   it('добавить по ссылке: запрос уходит с адресом; «уже идёт скачивание» показывается под полем', async () => {
     const w = await mountSuspended(MusicPlayer)
     await flushPromises()
-    await w.find('.mp-fab').trigger('click')
+    useMusicStore().open = true
+    await flushPromises()
     const input = document.querySelector<HTMLInputElement>('.mp-url input')!
     input.value = 'https://youtu.be/abc'
     input.dispatchEvent(new Event('input'))

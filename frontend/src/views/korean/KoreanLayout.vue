@@ -12,6 +12,7 @@ import { openSearch } from '@/composables/useSearchWindow'
 import Breadcrumbs from '@/components/korean/Breadcrumbs.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
 import NotificationsBell from '@/components/korean/NotificationsBell.vue'
+import MusicButton from '@/components/music/MusicButton.vue'
 import { sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
@@ -157,6 +158,7 @@ onBeforeUnmount(() => {
       <NuxtPage v-else />
     </main>
     <div class="topbar-fixed">
+      <ClientOnly><MusicButton /></ClientOnly>
       <NotificationsBell v-if="progress.unlocked" />
       <!-- на главной раздела своё поле поиска: кнопку не дублируем (⌘K и «/» работают везде) -->
       <button v-if="route.path !== '/korean/home'" class="sw-btn" title="Поиск по платформе (Ctrl/⌘ + K или «/»)" @click="openSearch()">

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { askConfirm } from '@/composables/useConfirm'
 import { errText } from '@/lib/http'
-import { CATEGORIES, useMusicStore, type Category, type Track } from '@/stores/music'
+import { CATEGORIES, useMusicAvailable, useMusicStore, type Category, type Track } from '@/stores/music'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 import { PLAYER_IMG as IMG, coverFor, formatTime } from '@/components/music/playerAssets'
@@ -16,7 +16,7 @@ const progress = useProgressStore()
 const toast = useToastStore()
 
 /** Музыка личная: гостю и без токена кнопки нет. */
-const show = computed(() => progress.unlocked && !progress.isGuest)
+const show = useMusicAvailable()
 onMounted(() => void (show.value && store.load()))
 watch(show, v => v && void store.load())
 
@@ -122,19 +122,15 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
         <div class="mp-mini-text">
           <b>{{ store.current.title }}</b>
           <small>{{ formatTime(store.time) }} / {{ formatTime(store.length || store.current.duration) }}</small>
-          <i class="mp-mini-bar"><i :style="{ width: pct + '%' }"></i></i>
+          <input class="mp-mini-seek" type="range" min="0" max="100" step="0.1" :value="pct" aria-label="Перемотка" @input="seekTo" />
         </div>
         <button type="button" class="mp-ic" aria-label="Предыдущая" @click="store.prev()"><img :src="IMG.prev" alt="" /></button>
         <button type="button" class="mp-ic mp-ic-main" :aria-label="store.playing ? 'Пауза' : 'Играть'" @click="store.toggle()"><img :src="store.playing ? IMG.pause : IMG.play" alt="" /></button>
         <button type="button" class="mp-ic" aria-label="Следующая" @click="store.advance(true)"><img :src="IMG.next" alt="" /></button>
-        <button type="button" class="mp-ic" aria-label="Развернуть плеер" @click="store.open = true"><img :src="IMG.playlist" alt="" /></button>
+        <button type="button" class="mp-ic" aria-label="Развернуть плеер" title="Развернуть" @click="store.open = true"><img :src="IMG.playlist" alt="" /></button>
+        <button type="button" class="mp-ic" aria-label="Закрыть плеер и остановить музыку" title="Закрыть и остановить" @click="store.stop()"><img :src="IMG.close" alt="" /></button>
       </div>
     </Transition>
-
-    <button type="button" class="mp-fab" :class="{ on: store.playing, open: store.open }" :aria-label="store.open ? 'Закрыть плеер' : 'Открыть плеер'" :aria-expanded="store.open" title="Музыка" @click="store.open = !store.open">
-      <img v-if="store.playing" class="mp-fab-eq" :src="IMG.equalizer" alt="" draggable="false" />
-      <img v-else :src="IMG.note" alt="" draggable="false" />
-    </button>
 
     <Teleport to="body">
       <Transition name="mp-panel">
@@ -243,36 +239,25 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 <style>
 /* Музыкальный плеер (макет владельца): светлая панель справа, розовые кнопки; классы с префиксом mp- */
 .mp-root, .mp-panel { --mp-pink: #e86bc0; --mp-pink-d: #d64da9; --mp-ink: #2b2a5c; --mp-muted: #8a86b8; --mp-line: #eadff7; }
-/* кнопка стоит левее «Таймера» внизу справа (над таймером всплывает его напоминание, его закрывать нельзя) */
-.mp-fab { position: fixed; right: 236px; bottom: 18px; z-index: 41; width: 54px; height: 54px; display: grid; place-items: center; padding: 0; cursor: pointer;
-  background: rgba(255, 255, 255, .94); border: 1px solid #fff; border-radius: 50%; box-shadow: 0 10px 26px rgba(100, 87, 170, .28); transition: transform .2s, box-shadow .2s, background .2s; }
-.mp-fab img { width: 34px; height: 34px; object-fit: contain; }
-.mp-fab:hover { transform: translateY(-2px); box-shadow: 0 0 0 3px rgba(232, 107, 192, .35), 0 12px 28px rgba(100, 87, 170, .3); }
-.mp-fab.on { background: linear-gradient(140deg, #f7a6dc, var(--mp-pink-d)); }
-.mp-fab.on:hover { box-shadow: 0 0 0 3px rgba(255, 255, 255, .6), 0 12px 28px rgba(214, 77, 169, .45); }
-.mp-fab-eq { animation: mp-eq 1s ease-in-out infinite alternate; }
-@keyframes mp-eq { from { transform: scaleY(.7); } to { transform: scaleY(1.05); } }
-
 /* мини-плеер по центру у самого верха экрана */
-.mp-mini { position: fixed; top: 12px; left: 0; right: 0; margin-inline: auto; width: max-content; z-index: 41; display: flex; align-items: center; gap: 6px; max-width: min(400px, calc(100vw - 24px)); padding: 6px 10px 6px 6px;
+.mp-mini { position: fixed; top: 12px; left: 0; right: 0; margin-inline: auto; width: max-content; z-index: 41; display: flex; align-items: center; gap: 6px; max-width: min(470px, calc(100vw - 24px)); padding: 6px 10px 6px 6px;
   color: var(--mp-ink); background: rgba(255, 255, 255, .95); border: 1px solid #fff; border-radius: 30px; box-shadow: 0 10px 26px rgba(100, 87, 170, .25); }
 .mp-mini-cover { width: 42px; height: 42px; object-fit: cover; border-radius: 12px; flex: none; }
 .mp-mini-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; font-size: 13px; line-height: 1.25; }
 .mp-mini-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .mp-mini-text small { color: var(--mp-muted); font-size: 11px; }
-.mp-mini-bar { display: block; height: 3px; margin-top: 3px; border-radius: 3px; background: var(--mp-line); overflow: hidden; }
-.mp-mini-bar i { display: block; height: 100%; background: var(--mp-pink); }
+.mp-mini-seek { width: 100%; height: 14px; margin: 2px 0 0; accent-color: var(--mp-pink-d); cursor: pointer; }
 .mp-mini .mp-ic { width: 30px; height: 30px; }
 .mp-mini .mp-ic-main { width: 38px; height: 38px; }
 .mp-mini-enter-active, .mp-mini-leave-active { transition: opacity .2s, transform .2s; }
 .mp-mini-enter-from, .mp-mini-leave-to { opacity: 0; transform: translateY(-14px); }
-@media (max-width: 560px) { .mp-mini-text small, .mp-mini .mp-ic:nth-of-type(1) { display: none; } .mp-fab { right: 150px; bottom: 10px; } }
+@media (max-width: 560px) { .mp-mini-text small, .mp-mini .mp-ic:nth-of-type(1) { display: none; } }
 
 .mp-panel { position: fixed; z-index: 48; top: 12px; right: 12px; bottom: 12px; width: min(clamp(440px, 46vw, 900px), calc(100vw - 24px)); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 14px; overflow: hidden;
   color: var(--mp-ink); background: linear-gradient(165deg, #fff7fd 0%, #f1efff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 24px 60px rgba(70, 55, 140, .35); }
 .mp-panel-enter-active, .mp-panel-leave-active { transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .25s; }
 .mp-panel-enter-from, .mp-panel-leave-to { transform: translateX(32px); opacity: 0; }
-@media (prefers-reduced-motion: reduce) { .mp-panel-enter-active, .mp-panel-leave-active, .mp-mini-enter-active, .mp-mini-leave-active, .mp-fab { transition: none; } .mp-fab-eq { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mp-panel-enter-active, .mp-panel-leave-active, .mp-mini-enter-active, .mp-mini-leave-active { transition: none; } }
 
 .mp-head { display: flex; align-items: center; gap: 10px; }
 .mp-head > img { width: 30px; height: 30px; object-fit: contain; }
@@ -351,7 +336,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 
 html[data-theme='dark'] .mp-root, html[data-theme='dark'] .mp-panel { --mp-ink: #ece9ff; --mp-muted: #a49fd6; --mp-line: #3b3866; }
 html[data-theme='dark'] .mp-panel { background: linear-gradient(165deg, #2b2450 0%, #1f1e42 100%); border-color: #3b3866; }
-html[data-theme='dark'] .mp-fab, html[data-theme='dark'] .mp-mini { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
+html[data-theme='dark'] .mp-mini { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
 html[data-theme='dark'] .mp-list li:hover { background: rgba(255, 255, 255, .06); }
 html[data-theme='dark'] .mp-list li.cur { background: linear-gradient(90deg, rgba(232, 107, 192, .3), rgba(125, 107, 240, .25)); }
 html[data-theme='dark'] .mp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
