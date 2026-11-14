@@ -20,14 +20,6 @@ export const RESERVED_COMBOS: Record<Combo, string> = {
   'mod+KeyK': 'Поиск по платформе',
 }
 
-/** Занятое без модификатора: не конфликтует с сочетаниями, но показывается в списке, чтобы было понятно, что тут трогать не нужно. */
-export const RESERVED_KEYS: { keys: string; what: string }[] = [
-  { keys: '⌘K / Ctrl+K и «/»', what: 'Поиск по платформе' },
-  { keys: 'F', what: 'Спрятать или показать боковое меню' },
-  { keys: 'Esc', what: 'Закрыть окно' },
-  { keys: '1–4 и Enter', what: 'Ответ и «Дальше» в заданиях' },
-]
-
 /** Эти сочетания забирает браузер раньше страницы: перехватить их нельзя. */
 const BROWSER_KEYS = ['KeyT', 'KeyN', 'KeyW', 'KeyQ', 'Tab', 'PageUp', 'PageDown', ...Array.from({ length: 10 }, (_, i) => `Digit${i}`)]
 const BROWSER = new Set<Combo>(BROWSER_KEYS.flatMap(k => [`mod+${k}`, `mod+shift+${k}`]))

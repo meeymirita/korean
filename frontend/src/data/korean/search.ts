@@ -216,21 +216,6 @@ export function mergeSearchResults(local: SearchResult | null, remote: SearchRes
   return { ...merged, total }
 }
 
-/** Склеивает страницы выдачи, не теряя группировку, используемую поисковыми окнами. */
-export function appendSearchResults(current: SearchResult, next: SearchResult): SearchResult {
-  const chunks: Record<string, Chunk[]> = { ...current.chunks }
-  for (const [tab, items] of Object.entries(next.chunks)) chunks[tab] = [...(chunks[tab] ?? []), ...items]
-  return {
-    words: [...current.words, ...next.words],
-    grammar: [...current.grammar, ...next.grammar],
-    chunks,
-    letters: [...current.letters, ...next.letters],
-    sentences: [...current.sentences, ...next.sentences],
-    forms: [...current.forms, ...next.forms],
-    total: next.total,
-  }
-}
-
 /** Ищет через серверный Meilisearch; null означает, что включился локальный запасной поиск. */
 export async function searchRemote(raw: string, offset = 0, category?: SearchCategory): Promise<SearchReply | null> {
   const query = parseQuery(raw).join(' ')

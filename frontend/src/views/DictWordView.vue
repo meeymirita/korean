@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import DictShell from '@/components/dict/DictShell.vue'
+import DictSense from '@/components/dict/DictSense.vue'
 import DictStar from '@/components/dict/DictStar.vue'
 import { conjugate, withParticles } from '@/lib/conjugate'
 import { mainEntry, type DictWord } from '@/lib/dictApi'
@@ -26,10 +27,6 @@ const entries = computed(() => data.value?.entries ?? [])
 const main = computed(() => (entries.value.length ? mainEntry(entries.value) : undefined))
 const q = ref('')
 const search = () => void router.push({ path: '/dict', query: q.value.trim() ? { q: q.value.trim() } : {} })
-
-/** Перевод: слова. Если у значения только описание без перевода, описание идёт в «Значение», а «Перевод» не показываем. */
-const ruList = (s: { ru: { t: string; d: string }[] }) => s.ru.map(r => r.t).filter(Boolean).join('; ')
-const defOf = (s: { ru: { t: string; d: string }[] }) => (ruList(s) ? s.ru[0]?.d ?? '' : s.ru.map(r => r.d).filter(Boolean).join(' '))
 
 /* ---------- значения: у слов с десятками значений показываем первые, остальные по кнопке ---------- */
 const SHOWN = 6
@@ -154,15 +151,7 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
           <p v-if="entries.length > 1" class="hom">Слово №{{ e.hom || 1 }} · {{ e.pos }}</p>
           <div v-for="(s, i) in (openAll ? e.senses : e.senses.slice(0, SHOWN))" :key="i" class="sense">
             <p v-if="e.senses.length > 1" class="sn"><span>{{ i + 1 }}</span>Значение {{ i + 1 }}</p>
-            <dl class="kv">
-              <template v-if="ruList(s)"><dt>Перевод</dt><dd class="ru">{{ ruList(s) }}</dd></template>
-              <template v-if="defOf(s)"><dt>Значение</dt><dd>{{ defOf(s) }}</dd></template>
-              <template v-if="s.ko"><dt>Определение</dt><dd lang="ko">{{ s.ko }}</dd></template>
-              <template v-if="s.sent[0]">
-                <dt>Пример</dt>
-                <dd class="exv"><span lang="ko">{{ s.sent[0] }}</span></dd>
-              </template>
-            </dl>
+            <DictSense :sense="s" />
           </div>
           <button v-if="!openAll && e.senses.length > SHOWN" type="button" class="allbtn" @click="openAll = true">Показать все значения ({{ e.senses.length }})</button>
         </article>
@@ -237,11 +226,6 @@ const lead = computed(() => (seoEntry.value ? wordLead(seoEntry.value) : ''))
 .sense { padding: 18px 20px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, .6); }
 .sn { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 12px; font-weight: 700; color: var(--accent); }
 .sn span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: var(--pink); }
-.kv { margin: 0; min-width: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px 16px; }
-.kv dt { padding-top: 3px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.kv dd { margin: 0; color: #14173a; font-size: 15px; line-height: 1.55; }
-.kv dd.ru { font-size: 19px; font-weight: 700; color: #43308c; line-height: 1.4; }
-.exv { display: flex; flex-direction: column; gap: 4px; }
 .allbtn { align-self: flex-start; padding: 9px 20px; border: 1px solid #cbbcff; border-radius: 999px; background: #fff; color: #43308c; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 12px; }
 .tabs button { padding: 10px 20px; border: 1px solid rgba(255, 255, 255, .85); border-radius: 999px; background: rgba(255, 255, 255, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: inherit; font-size: 14px; font-weight: 600; color: #43308c; cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }

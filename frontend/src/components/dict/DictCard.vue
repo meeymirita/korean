@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import type { DictHit } from '@/lib/dictApi'
+import DictSense from '@/components/dict/DictSense.vue'
 
 defineProps<{ hit: DictHit; saved?: boolean; canSave?: boolean }>()
 defineEmits<{ open: [hit: DictHit]; save: [hit: DictHit] }>()
-
-/** Перевод: слова. Если у значения только описание без перевода, описание идёт в «Значение», а «Перевод» не показываем. */
-const ruList = (s: { ru: { t: string; d: string }[] }) => s.ru.map(r => r.t).filter(Boolean).join('; ')
-const defOf = (s: { ru: { t: string; d: string }[] }) => (ruList(s) ? s.ru[0]?.d ?? '' : s.ru.map(r => r.d).filter(Boolean).join(' '))
 </script>
 
 <template>
@@ -22,12 +19,7 @@ const defOf = (s: { ru: { t: string; d: string }[] }) => (ruList(s) ? s.ru[0]?.d
     </header>
     <div v-for="(s, i) in hit.senses" :key="i" class="sense">
       <p v-if="hit.senses.length > 1 || hit.moreSenses" class="sn"><span>{{ i + 1 }}</span>Значение {{ i + 1 }}</p>
-      <dl class="kv">
-        <template v-if="ruList(s)"><dt>Перевод</dt><dd class="ru">{{ ruList(s) }}</dd></template>
-        <template v-if="defOf(s)"><dt>Значение</dt><dd>{{ defOf(s) }}</dd></template>
-        <template v-if="s.ko"><dt>Определение</dt><dd lang="ko">{{ s.ko }}</dd></template>
-        <template v-if="s.sent[0]"><dt>Пример</dt><dd class="exv"><span lang="ko">{{ s.sent[0] }}</span></dd></template>
-      </dl>
+      <DictSense :sense="s" />
     </div>
     <footer class="more">
       <span v-if="hit.moreSenses" class="lab">ещё значений: {{ hit.moreSenses }}</span>
@@ -50,11 +42,6 @@ const defOf = (s: { ru: { t: string; d: string }[] }) => (ruList(s) ? s.ru[0]?.d
 .sense + .sense { margin-top: 20px; padding-top: 20px; border-top: 1px dotted var(--bg); }
 .sn { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; font-weight: 700; color: var(--a); }
 .sn span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--bg); }
-.kv { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px 16px; }
-.kv dt { padding-top: 3px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.kv dd { margin: 0; color: #14173a; font-size: 15px; line-height: 1.55; }
-.kv dd.ru { font-size: 18px; font-weight: 700; color: var(--t); line-height: 1.4; }
-.exv { display: flex; flex-direction: column; gap: 4px; }
 .more { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; pointer-events: none; }
 .more > * { pointer-events: auto; }
 .lab { margin-left: 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
