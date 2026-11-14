@@ -23,6 +23,18 @@ describe('сервер: прогресс в базе', () => {
     assert.deepEqual(p.settings, { goal: 20, cats: [], gameCats: null, marks: [], keys: {} })
   })
 
+  test('ответ без награды (печать на корейском): строка журнала есть, очков, слов и счётчиков дня нет', async () => {
+    const before = await read()
+    assert.equal((await ops({ type: 'answer', t: 5000, day, word: null, ok: true, source: 'trainer', mode: 'keyboard', reward: false, detail: { q: 'Набери: 사람', a: '사람', n: '2 нажатий за 3 с, 40 в минуту' } })).status, 200)
+    const after = await read()
+    assert.equal(after.xp, before.xp)
+    assert.equal(after.coins, before.coins)
+    assert.deepEqual([after.days, after.all, after.words], [before.days, before.all, before.words])
+    const was = before.sources.trainer ?? { ok: 0, bad: 0 }
+    assert.deepEqual(after.sources.trainer, { ok: was.ok + 1, bad: was.bad })
+    assert.deepEqual([after.log[0].s, after.log[0].m, after.log[0].d.a], ['trainer', 'keyboard', '사람'])
+  })
+
   test('время занятий суммируется по дням, лишнее отклоняется', async () => {
     assert.equal((await ops({ type: 'time', day, seconds: 30 }, { type: 'time', day, seconds: 45 }, { type: 'time', day: '2026-10-29', seconds: 60 })).status, 200)
     const p = await read()

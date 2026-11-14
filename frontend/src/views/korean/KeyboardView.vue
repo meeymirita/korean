@@ -6,7 +6,7 @@ import {
   CUSTOM_KINDS, CUSTOM_SOURCES, KB_CUSTOM, KB_LEVELS, customLabel, customPool, kbItems, keyCount, randomCustom, searchCustom,
   type CustomItem, type CustomKind, type CustomSource, type KbLevel,
 } from '@/data/korean/keyboard'
-import { useProgressStore } from '@/stores/progress'
+import { newRound, useProgressStore } from '@/stores/progress'
 import { KEY_LABELS, keysOfText, matches, ROWS } from '@/lib/hangulKeys'
 
 type Tab = KbLevel | 'custom'
@@ -49,6 +49,10 @@ const items = ref<string[]>([])
 const idx = ref(0)
 const pos = ref(0)
 const errors = ref(0)
+/** Ошибки и время начала текущего слова: по ним пишется строка в журнал ответов */
+const itemErrors = ref(0)
+const itemStart = ref(0)
+let round = newRound()
 const flash = ref(false)
 const startedAt = ref(0)
 const result = ref<{ cpm: number; acc: number; sec: number; best: boolean } | null>(null)
@@ -91,6 +95,9 @@ function start() {
   idx.value = 0
   pos.value = 0
   errors.value = 0
+  itemErrors.value = 0
+  itemStart.value = 0
+  round = newRound()
   startedAt.value = 0
   result.value = null
   void nextTick(() => inputEl.value?.focus())
@@ -116,21 +123,47 @@ function finish() {
   result.value = { cpm, acc, sec: Math.round(sec), best: isBest }
 }
 
+/** Слово или предложение набрано: строка в журнал ответов (отчёт), без очков, монеток и цели дня (`reward: false`). «Верно» = без ошибок. */
+function logItem() {
+  const sec = Math.max(1, Math.round((Date.now() - itemStart.value) / 1000))
+  const strokes = keys.value.length
+  const ok = itemErrors.value === 0
+  account.record({
+    word: null,
+    ok,
+    source: 'trainer',
+    mode: 'keyboard',
+    reward: false,
+    detail: {
+      q: dictation.value ? `Диктовка: ${ruOfCur.value}` : `Набери: ${cur.value}`,
+      a: cur.value,
+      y: ok ? undefined : `ошибок: ${itemErrors.value}`,
+      n: `${strokes} нажатий за ${sec} с, ${Math.round((strokes / sec) * 60)} в минуту`,
+      r: round,
+    },
+  })
+  itemErrors.value = 0
+  itemStart.value = 0
+}
+
 function onKey(e: KeyboardEvent) {
   if (result.value || !next.value) return
   if (/^(Shift|Control|Alt|Meta|CapsLock|Tab|Escape)/.test(e.code) || e.ctrlKey || e.metaKey || e.altKey) return
   e.preventDefault()
   if (e.code === 'Backspace' || e.repeat) return
   if (!startedAt.value) startedAt.value = Date.now()
+  if (!itemStart.value) itemStart.value = Date.now()
   if (matches(next.value.key, e)) {
     pos.value++
     if (pos.value >= keys.value.length) {
+      logItem()
       idx.value++
       pos.value = 0
       if (idx.value >= items.value.length) finish()
     }
   } else {
     errors.value++
+    itemErrors.value++
     flash.value = true
     setTimeout(() => (flash.value = false), 180)
   }

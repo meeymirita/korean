@@ -323,6 +323,11 @@ export class ProgressService {
     const gain = ok ? (op.xp == null ? 10 : int(op.xp, 0, 1000)) : 0
 
     const detail = this.detail(op.detail)
+    if (op.reward === false) {
+      // без награды (печать на корейском): только строка журнала; слово, очки, монетки, серия и счётчики дня не меняются
+      await (await this.db.orm()).answer.create({ data: { t: BigInt(t), word: null, ok: ok ? 1 : 0, source, mode, xp: 0, detail } })
+      return
+    }
     const had = Number(await this.db.getMeta('xp') ?? 0)
     // ошибка отнимает очки, но уровень не падает: ниже начала текущего уровня очки не опускаются
     const active = await this.active()

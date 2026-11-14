@@ -97,7 +97,7 @@ export type Role = 'owner' | 'guest'
 
 /** Действие, которое уходит на сервер (POST /api/ops); сервер раскладывает его по таблицам базы. */
 export type Op =
-  | { type: 'answer'; t: number; day: string; word: string | null; ok: boolean; source: string; mode?: string; xp: number }
+  | { type: 'answer'; t: number; day: string; word: string | null; ok: boolean; source: string; mode?: string; xp?: number; reward?: boolean }
   | { type: 'round'; t: number; day: string; id: string; size: number; right: number }
   | { type: 'reset' }
   | { type: 'profile'; name?: string; avatar?: string; cover?: string }
@@ -342,12 +342,24 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /* ---------- запись ответа ---------- */
-  function record(o: { word?: string | null; ok: boolean; source: string; xp?: number; mode?: string; detail?: AnswerDetail }) {
+  /**
+   * Запись ответа. `reward: false` (печать на корейском): ответ попадает только в журнал и счётчик раздела, а слово, очки, монетки,
+   * серия подряд, счётчики дня и цель дня не трогаются (так же на сервере, `progress.service.ts`).
+   */
+  function record(o: { word?: string | null; ok: boolean; source: string; xp?: number; mode?: string; detail?: AnswerDetail; reward?: boolean }) {
     const now = Date.now()
     const d = data.value
     const before = levelOf(d.xp)
     const src = (d.sources[o.source] ??= { ok: 0, bad: 0 })
     o.ok ? src.ok++ : src.bad++
+    if (o.reward === false) {
+      const plain = cleanDetail(o.detail)
+      d.log.unshift({ t: now, w: null, ok: o.ok, s: o.source, ...(o.mode ? { m: o.mode } : {}), ...(plain ? { d: plain } : {}) })
+      if (d.log.length > LOG_MAX) d.log.length = LOG_MAX
+      d.updated = now
+      queue({ type: 'answer', t: now, day: dayKey(), word: null, ok: o.ok, source: o.source, mode: o.mode, reward: false, ...(plain ? { detail: plain } : {}) })
+      return { level: before, levelUp: false, goalReached: false, bloomed: false, title: levelInfo(d.xp).title }
+    }
 
     let bloomed = false
     if (o.word) {
