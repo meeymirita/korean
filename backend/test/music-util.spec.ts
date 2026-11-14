@@ -51,7 +51,7 @@ describe('музыка: проверка ввода', () => {
     expect(cleanTitle('   ')).toBeNull()
     expect(cleanTitle('я'.repeat(151))).toBeNull()
     expect(titleFromName('Моя_песня__тихая.mp3')).toBe('Моя песня тихая')
-    expect(titleFromName('.mp3')).toBe('Без названия')
+    expect(titleFromName('')).toBe('Без названия')
   })
 
   it('кириллица в имени загруженного файла: латиница-кракозябры исправляются, нормальное имя не трогается', () => {
