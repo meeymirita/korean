@@ -105,7 +105,7 @@
 - Новые предложения, переводы и задания перед внесением сверяй со списком «Проверка нейросетями: чему научились» в `docs/data.md` (я без рода, один верный ответ, только пройденное).
 - Менял словарь или `translations.ts`: `node scripts/digest-pool.mjs` и `node scripts/build-words-json.mjs` (публичный `/words.json` для сверки на дубли); менял словарь или пройденные темы: `node scripts/chat-curriculum.mjs`. Тесты следят. Менял грамматику, статус карточки, переводы, рассказы или диалоги: `node scripts/build-study-data.mjs` (открытые `GET /api/public/grammar` и `/api/public/sentences`: пройденная грамматика и все предложения, решение владельца 2026-11-10).
 - Поменял сервер: пересобери и перезапусти локальный (`npm run server:build`, затем `pkill -f "node dist/main.js"; npm run server`; в Docker `docker compose up -d --build backend`), иначе сайт «не видит» новых возможностей. Всё, что вызывает async-методы сервера (в том числе проверки `confirm.require`), обязательно с `await`: без него защита молча не срабатывает.
-- **Тесты перед коммитом (решение владельца, 2026-11-06):** менялся код (`backend/src`, `frontend/src`, `scripts`, тесты) — коммить только при зелёных тестах: смотри строку `ℹ fail 0` до `git commit` (`npm test | grep …` возвращает код `grep`, а не тестов; полный прогон около 3 минут; нужны PostgreSQL, Redis, Meilisearch, `DATABASE_URL` и **накатанные миграции** (`npm --prefix backend run db:migrate`), рецепт с временными контейнерами: `docs/docker.md`, «Данные для тестов»; один тест напоминаний (`tests/reminder-server.test.mjs`) иногда падает один раз из-за таймеров: перезапусти его и весь набор).
+- **Тесты перед коммитом (решение владельца, 2026-11-06):** менялся код (`backend/src`, `frontend/src`, `scripts`, тесты) — коммить только при зелёных тестах: смотри строку `ℹ fail 0` до `git commit` (`npm test | grep …` возвращает код `grep`, а не тестов; полный прогон около 3 минут; нужны PostgreSQL, Redis, Meilisearch, `DATABASE_URL` и **накатанные миграции** (`npm --prefix backend run db:migrate`), рецепт с временными контейнерами: `docs/docker.md`, «Данные для тестов».
   Менялись только текст, документация, картинка или `.env.example`: тесты не гонять, сразу коммит и пуш (CI проверит). Мелкая правка кода: хватит затронутого теста и `npm run type-check`.
 - Тесты, которым нужен `tests/_load.mjs`, обязаны вызывать `after(close)`, иначе `npm test` зависает. Таймеры двигай по секунде (`mock.timers.tick(1000)` в цикле).
 - Пакеты ставить можно любые, если дают пользу и не тяжелят сборку (смотри размер, свежесть, `npm audit`; тяжёлое грузи лениво): `npm install <пакет>`, затем `npm test` и `npm run build`; серверные в `backend/`.
@@ -127,7 +127,7 @@
 
 ## Стек и запуск
 
-Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + Prisma + PostgreSQL, Node 22.18+ или 24.12+), `docker/` (Dockerfile, Caddyfile, Prometheus, Grafana), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
+Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + Prisma + PostgreSQL, Node 26+ (LTS)), `docker/` (Dockerfile, Caddyfile, Prometheus, Grafana), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
 (три отдельных `node_modules`; корневой нужен тестам, `scripts/link-test-deps.mjs` делает `vue` и `pinia` ссылками на копии из `frontend/`). **Пути `src/...` везде считай от `frontend/`.**
 
 - Установка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci && npm --prefix backend run db:generate` (Prisma Client; тестам нужны PostgreSQL, Redis, Meilisearch и `pg_dump` 17+: как поднять, в `docs/docker.md`, последний раздел).
@@ -170,7 +170,7 @@
 
 ## Как проверять
 
-- CI на GitHub (типы, сборка, тесты, `npm audit`, на Node 22 как в образах Docker и на Node 24 как на ноутбуке владельца) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
+- CI на GitHub (типы, сборка, тесты, `npm audit`, на Node 26 LTS: те же образы Docker и тот же Node у владельца, одна проверка, решение 2026-11-14) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
 - Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`). Отдельно `npm run test:nest`, `npm run test:nuxt`. Быстро и без базы: `npm run test:quick` (все `tests/*.test.mjs`, которым не нужен сервер, по одному файлу, около минуты; можно часть имени: `npm run test:quick -- keyboard`).
   **Игровые тесты `frontend/test` разнесены по файлам** (`game.spec.ts`, `game-stories.spec.ts`, `game-variants.spec.ts`): один большой файл упирается в память Node (процесс падает с `SIGABRT`). Новые игровые тесты клади в отдельный файл.
 - Покрытие (без порога, только цифры) раз в неделю считает отдельный workflow `Coverage` (`.github/workflows/coverage.yml`; запустить сейчас: `gh workflow run Coverage`, цифры на странице запуска). Локально: `npm --prefix backend run test:coverage`, `npm --prefix frontend run test:coverage` (`@vitest/coverage-v8`; полный прогон тяжёлый, на ноутбуке запускай с одним файлом: `npx vitest run test/<файл>.spec.ts --coverage --coverage.include=src`).

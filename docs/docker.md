@@ -79,7 +79,7 @@ npm --prefix backend run db:migrate    # обязательно: иначе те
 npm test
 docker stop kt-pg kt-redis kt-meili
 ```
-Редкая нестабильность: `tests/reminder-server.test.mjs` (таймеры) иногда падает один раз; перезапусти только его (`node --test tests/reminder-server.test.mjs`), затем весь набор.
+Раньше иногда падали тесты напоминаний (`reminder-server`, `lesson-server`): два тика подряд могли послать два письма. С 2026-11-14 тики не накладываются (`ticking` в `reminder.service.ts` и `lesson.service.ts`), нестабильности нет; если упадёт снова, это новая ошибка.
 
 ## Свои адреса для сервисов (Grafana, Prometheus, Meilisearch)
 

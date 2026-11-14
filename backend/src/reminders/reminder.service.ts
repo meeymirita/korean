@@ -108,8 +108,21 @@ export class ReminderService implements OnModuleInit {
     await this.notify.send(m, await this.to())
   }
 
+  /** Идёт ли проверка: следующий тик не начинается, пока не закончилась предыдущая (иначе два тика подряд, оба до записи метки, шлют два письма). */
+  private ticking = false
+
   /** Одна проверка (раз в минуту). Возвращает, что сделано: для тестов. */
   async tick(now = new Date()): Promise<Tick> {
+    if (this.ticking) return 'already'
+    this.ticking = true
+    try {
+      return await this.tickOnce(now)
+    } finally {
+      this.ticking = false
+    }
+  }
+
+  private async tickOnce(now: Date): Promise<Tick> {
     const s = await this.get()
     if (!s.enabled) return 'off'
     if (s.days.length && !s.days.includes(now.getDay())) return 'off'
