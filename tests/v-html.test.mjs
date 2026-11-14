@@ -14,7 +14,6 @@ const STATIC = {
   'components/korean/GrammarModal.vue': { "current.b.map(blk).join('')": 'блоки карточки грамматики из data/korean/grammar.ts' },
   'components/cabinet/TelegramGuide.vue': { preview: 'текст экранируется, обратно разрешены только теги b, i, u, s, code и ссылки http(s)' },
   'views/korean/RichView.vue': { html: 'готовые страницы справочника из data/korean/pages.ts' },
-  'views/GameHomeView.vue': { markup: 'статичный файл game/markup.html' },
 }
 
 const SAFE_CALL = /^(esc|hl|F)\(/

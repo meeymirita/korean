@@ -1,34 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import markupRaw from '@/game/markup.html?raw'
-import { initGame } from '@/game/engine'
-import { iconImg } from '@/game/icons'
+import { describe, expect, it } from 'vitest'
+import { boot, closeHelp } from './game-helpers'
 import { futureForm } from '@/data/korean/conjugation'
 
 // «Выбери форму»: будущее время -(ㄹ)을 거예요 (отдельный файл: игровые тесты в одном файле упираются в память).
-const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
-let dispose: (() => void) | undefined
-
 function start(save?: object) {
-  dispose?.()
-  localStorage.clear()
-  if (save) localStorage.setItem('hleb_game_v1', JSON.stringify(save))
-  document.body.innerHTML = `<div id="root">${markup}</div>`
-  dispose = initGame({
-    record: () => ({}),
-    importXp: () => {},
-    state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }),
-    cats: () => null,
-    mode: () => 'form',
-    saveCats: () => {},
-    grammar: () => {},
-  })
-  document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+  boot({ mode: () => 'form' }, false, save)
+  closeHelp()
 }
-afterEach(() => {
-  dispose?.()
-  dispose = undefined
-  document.body.innerHTML = ''
-})
 
 /** Играет n вопросов, возвращает подписи, плитки и подчёркнутое слово каждого вопроса (всегда выбирает первый вариант). */
 function play(n: number) {

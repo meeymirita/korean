@@ -11,8 +11,8 @@ import { usePersisted } from '@/composables/usePersisted'
 import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
 import { searchGamesRemote } from '@/data/korean/search'
 import { initGame } from '@/game/engine'
-import markupRaw from '@/game/markup.html?raw'
-import { iconImg } from '@/game/icons'
+import GameShell from '@/components/game/GameShell.vue'
+import { createGameView } from '@/game/view'
 import TrainersView from '@/views/korean/TrainersView.vue'
 import QuickView from '@/views/korean/QuickView.vue'
 import ParticlesView from '@/views/korean/ParticlesView.vue'
@@ -44,9 +44,8 @@ const { open: openGrammar } = useGrammarModal()
 onMounted(() => document.body.classList.add('on-game-home'))
 onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
 const bgStyle = { '--gx-bg': `url(${bg})` }
-/** «← К списку игр», название и кнопки страницы вынесены в общую строку `.gh-back` (у тренажёров и игр движка одна и та же). */
-const markup = markupRaw
-  .replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
+/** Что движок «Хлебушек» показывает оболочке игры (счёт, списки, блиц, окна); пишет его `initGame`. */
+const gameView = createGameView()
 
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
 const route = useRoute()
@@ -97,7 +96,7 @@ function startEngine() {
       count: (id: string) => (progress.unlocked && !progress.isGuest ? shop.count(id) : 0),
       use: async (id: string) => !shop.busy && !!(await shop.use(id)),
     },
-  })
+  }, gameView)
 }
 /** Запас предметов нужен к первому вопросу, но игра не ждёт медленный сервер дольше двух секунд. */
 const loadShop = () =>
@@ -227,7 +226,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
       <AuthGate v-if="!progress.unlocked" />
       <template v-else-if="inGame">
         <section v-if="tool" class="gh-panel gh-tool"><component :is="tool" :key="game" /></section>
-        <div v-else v-html="markup"></div>
+        <GameShell v-else :view="gameView" />
       </template>
       <section v-else class="gh-panel">
         <div class="gh-tabs" role="tablist">
