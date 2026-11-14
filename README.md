@@ -85,6 +85,7 @@ docs/       документация по темам
 | [`docs/progress.md`](docs/progress.md) | тренажёры, «Сегодня», прогресс, кабинет, заметки, гости |
 | [`docs/game.md`](docs/game.md), [`docs/games-catalog.md`](docs/games-catalog.md) | игра «Хлебушек» и каталог режимов |
 | [`docs/shop.md`](docs/shop.md) | монетки Юны и магазин |
+| [`docs/music.md`](docs/music.md) | музыкальный плеер: песни на Диске, загрузка файлом и по ссылке, подписанные ссылки |
 | [`docs/chat.md`](docs/chat.md) | помощник-чат |
 | [`docs/home-and-theme.md`](docs/home-and-theme.md) | главная, «О платформе», тема, общие окна, SEO |
 | [`docs/ideas.md`](docs/ideas.md) | идеи улучшений и нового функционала |
