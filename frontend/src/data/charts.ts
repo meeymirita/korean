@@ -24,17 +24,22 @@ export interface WeakRule {
   bad: number
   accuracy: number
   family?: string
+  /** игра, где это тренируется (если у правила нет текстов по семейству частиц) */
+  game?: string
 }
+
+/** «Слабое» правило: точность ниже этого порога и хотя бы одна ошибка (100% и «0 ошибок» слабыми не бывают). */
+export const WEAK_BELOW = 90
 
 /** Accuracy by grammar rule from the same answer journal used by cabinet reports. */
 export function weakRules(log: ProgressData['log'], days = 30, now = Date.now()): WeakRule[] {
   const since = now - days * 86_400_000
   const groups = new Map<string, WeakRule>()
-  const categories: Record<string, { label: string; family?: string }> = {
+  const categories: Record<string, { label: string; family?: string; game?: string }> = {
     part: { label: 'Частицы', family: 'all' }, particles: { label: 'Частицы', family: 'all' },
-    ptext: { label: 'Семейства частиц', family: 'all' }, form: { label: 'Формы' }, type: { label: 'Формы' },
-    num: { label: 'Числа' }, count: { label: 'Числа' }, price: { label: 'Числа' },
-    when: { label: 'Время' }, days: { label: 'Время' },
+    ptext: { label: 'Семейства частиц', family: 'all' }, form: { label: 'Формы', game: 'form' }, type: { label: 'Формы', game: 'form' },
+    num: { label: 'Числа', game: 'num' }, count: { label: 'Числа', game: 'num' }, price: { label: 'Числа', game: 'num' },
+    when: { label: 'Время', game: 'when' }, days: { label: 'Время', game: 'when' },
   }
   for (const answer of log) {
     if (answer.t < since || (answer.s !== 'trainer' && answer.s !== 'game')) continue
@@ -52,6 +57,6 @@ export function weakRules(log: ProgressData['log'], days = 30, now = Date.now())
     groups.set(group.id, stat)
   }
   return [...groups.values()].map(row => ({ ...row, accuracy: Math.round(row.ok / (row.ok + row.bad) * 100) }))
-    .filter(row => row.ok + row.bad >= 3)
+    .filter(row => row.ok + row.bad >= 3 && row.bad > 0 && row.accuracy < WEAK_BELOW)
     .sort((a, b) => a.accuracy - b.accuracy || b.bad - a.bad)
 }

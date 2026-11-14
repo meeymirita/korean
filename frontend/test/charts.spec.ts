@@ -28,4 +28,18 @@ describe('weak rules chart data', () => {
       expect.objectContaining({ id: 'mode:part', label: 'Частицы', family: 'all', accuracy: 67 }),
     ])
   })
+
+  it('слабыми считаются только правила с ошибками и точностью ниже 90%: 100% и «0 ошибок» в список не попадают', () => {
+    const now = Date.UTC(2026, 10, 9)
+    const mk = (g: string, ok: boolean): LogEntry => ({ t: now - 1, w: null, ok, s: 'game', d: { g } })
+    const log: LogEntry[] = [
+      mk('num', true), mk('num', true), mk('num', true), // «Числа»: 3 верно, 0 ошибок
+      ...Array.from({ length: 13 }, () => mk('when', true)), mk('when', false), mk('when', false), mk('when', false), // «Время»: 81%
+      ...Array.from({ length: 9 }, () => mk('form', true)), mk('form', false), // «Формы»: 90% ровно, не слабое
+    ]
+    const rows = weakRules(log, 30, now)
+    expect(rows.map(r => r.label)).toEqual(['Время'])
+    expect(rows[0]).toMatchObject({ accuracy: 81, game: 'when' })
+    expect(rows[0]!.family, 'у «Времени» нет текстов по частицам: ссылка ведёт в игру').toBeUndefined()
+  })
 })

@@ -43,7 +43,8 @@ const answerSeries = computed(() => [
   { name: 'Верных', values: ans.value.map(a => a.ok), color: '#7a63e8' },
 ])
 const weakRuleRows = computed(() => weakRules(progress.data.log, 30))
-const ruleLink = (family?: string) => ({ path: '/game/home', query: { game: 'ptext', ...(family ? { fam: family } : {}) } })
+/** Куда ведёт «слабое» правило: тексты по семейству частиц, если они есть, иначе игра, где это тренируется (числа, время, формы) или «Потренировать правило». */
+const ruleLink = (r: { family?: string; game?: string }) => (r.family ? { path: '/game/home', query: { game: 'ptext', fam: r.family } } : { path: '/game/home', query: { game: r.game ?? 'rule' } })
 const goal = computed(() => progress.goal)
 const mood = computed(() => moodSummary(progress.data.moods))
 const moodColor = (s: number | null) => (s === null ? '' : s < 1.67 ? 'm1' : s < 2.34 ? 'm2' : 'm3')
@@ -196,7 +197,7 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
         <div v-for="rule in weakRuleRows" :key="rule.id" class="pg-weak-rule">
           <div class="pg-weak-rule-head"><span>{{ rule.label }}</span><b>{{ rule.accuracy }}%</b></div>
           <div class="pg-weak-rule-track" role="img" :aria-label="`${rule.label}: верно ${rule.accuracy}% из ${rule.ok + rule.bad} ответов`"><i :style="{ width: `${rule.accuracy}%` }"></i></div>
-          <div class="pg-weak-rule-foot"><small>{{ rule.ok }} верно · {{ rule.bad }} ошибок</small><RouterLink :to="ruleLink(rule.family)">Тексты по правилу →</RouterLink></div>
+          <div class="pg-weak-rule-foot"><small>{{ rule.ok }} верно · {{ rule.bad }} ошибок</small><RouterLink :to="ruleLink(rule)">{{ rule.family ? 'Тексты по правилу →' : 'Потренировать →' }}</RouterLink></div>
         </div>
       </div>
     </template>
