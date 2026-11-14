@@ -91,7 +91,8 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
   background: radial-gradient(circle at 92% 4%, rgba(201, 228, 255, .55) 0, transparent 30%), radial-gradient(circle at 4% 96%, rgba(255, 209, 236, .5) 0, transparent 28%); }
 .about > * { position: relative; max-width: 1560px; width: 100%; margin: 0 auto; }
 .about a { color: inherit; text-decoration: none; }
-.about button { font: inherit; cursor: pointer; border: 0; color: inherit; background: none; text-align: left; }
+/* сброс стилей кнопок с нулевой специфичностью (:where): иначе он перебивал фон у кнопок .open, .card и .shot (у закрытых страниц это кнопки, а не ссылки) */
+:where(.about) button { font: inherit; cursor: pointer; border: 0; color: inherit; background: none; text-align: left; }
 .ko { font-family: 'Noto Sans KR', 'Archivo', sans-serif; }
 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
