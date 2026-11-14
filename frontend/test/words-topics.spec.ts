@@ -24,22 +24,20 @@ describe('«Слова»: закрепление по темам', () => {
     w.unmount()
   })
 
-  it('блок можно свернуть и развернуть, состояние помнится', async () => {
+  it('блок при открытии страницы всегда свёрнут, кнопка разворачивает и сворачивает его', async () => {
     localStorage.clear()
     sessionStorage.clear()
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     const btn = w.find('.wd-topics-toggle')
-    expect(btn.attributes('aria-expanded')).toBe('true')
-    expect(w.find('.wd-topics-body').classes()).not.toContain('closed')
-    await btn.trigger('click')
     expect(btn.attributes('aria-expanded')).toBe('false')
     expect(w.find('.wd-topics-body').classes()).toContain('closed')
     expect(w.find('.wd-topics-body').attributes('inert')).toBeDefined()
+    await btn.trigger('click')
+    expect(btn.attributes('aria-expanded')).toBe('true')
+    expect(w.find('.wd-topics-body').classes()).not.toContain('closed')
     w.unmount()
     const again = await mountSuspended(WordsView, { route: '/korean/words' })
-    expect(again.find('.wd-topics-body').classes(), 'после повторного открытия остаётся свёрнутым').toContain('closed')
-    await again.find('.wd-topics-toggle').trigger('click')
-    expect(again.find('.wd-topics-body').classes()).not.toContain('closed')
+    expect(again.find('.wd-topics-body').classes(), 'после повторного открытия снова свёрнут').toContain('closed')
     again.unmount()
   })
 

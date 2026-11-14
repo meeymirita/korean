@@ -26,8 +26,8 @@ const marked = computed(() => markedWords.value.size)
 /** Иконки вкладок-тем (имена из src/lib/icons.ts) */
 const CAT_ICON: Record<string, string> = { Люди: 'user', природа: 'sprout', окружение: 'home', еда: 'bread', место: 'target', животные: 'cat-q', одежда: 'sparkle', событие: 'party', тело: 'heart', наречие: 'comet', эмоции: 'hearts' }
 const fav = usePersisted('words_fav', false, v => typeof v === 'boolean')
-/** «Закрепление по темам» можно свернуть (помнится до закрытия вкладки) */
-const topicsOpen = usePersisted('words_topics_open', true, v => typeof v === 'boolean')
+/** «Закрепление по темам»: при каждом открытии страницы свёрнуто, разворачивается кнопкой (решение владельца 2026-11-14) */
+const topicsOpen = ref(false)
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
@@ -252,7 +252,8 @@ const shareWord = (d: Word) =>
 .study .wd-topics-h, .study .wd-drill-head h2 { margin: 22px 0 10px; font-size: 18px; font-weight: 700; }
 .study .wd-drill-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
 .study .wd-drill-head .chip { cursor: pointer; font: inherit; font-weight: 600; color: var(--ink); }
-.study .wd-topics-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.study .wd-topics-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; font: inherit; font-size: 15px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #e86bc0, #d64da9); border: 0; border-radius: 99px; box-shadow: 0 6px 16px rgba(214, 77, 169, .3); cursor: pointer; }
+.study .wd-topics-toggle:hover { filter: brightness(1.06); }
 .study .wd-topics-arrow { display: inline-block; transition: transform .2s; }
 .study .wd-topics-arrow.open { transform: rotate(90deg); }
 .study .wd-topics-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .25s ease; }
