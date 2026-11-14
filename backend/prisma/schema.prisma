@@ -214,3 +214,21 @@ model DictVisit {
   @@index([day], map: "dict_visits_day")
   @@map("dict_visits")
 }
+
+/// Музыкальный плеер: песня владельца; файл и обложка лежат на Диске (папка korean_music) или, без Диска, в data/music
+model Track {
+  id       String @id
+  title    String
+  /// имя файла в хранилище: <id>.<расширение>
+  file     String
+  /// имя обложки в хранилище или пусто
+  cover    String @default("")
+  /// длительность в секундах (0: не определили)
+  duration Int    @default(0)
+  size     BigInt @default(0)
+  /// upload или ссылка, с которой скачали
+  source   String @default("upload")
+  created  BigInt
+
+  @@map("tracks")
+}

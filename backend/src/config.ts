@@ -61,6 +61,11 @@ export const MAX_NOTE_TEXT = 5000
 export const MAX_IMAGE = 50 * 1024 * 1024
 /** IMAGES_QUOTA_MB нужна только тестам, чтобы не заливать полгигабайта. */
 export const MAX_IMAGES_TOTAL = Number(process.env.IMAGES_QUOTA_MB || 1024) * 1024 * 1024
+/** Музыка: без Яндекс.Диска песни лежат здесь; временные файлы загрузки и скачивания по ссылке во второй папке. */
+export const MUSIC_DIR = path.join(DATA_DIR, 'music')
+export const MUSIC_TMP = path.join(DATA_DIR, 'music-tmp')
+/** Одна песня (чаще всего это сборник на несколько часов): до 1,5 ГБ. */
+export const MAX_TRACK = 1536 * 1024 * 1024
 export const MAX_CAPTION = 200
 export const MAX_DESCRIPTION = 1000
 /** Картинок в одной заметке. */
