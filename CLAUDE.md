@@ -99,7 +99,7 @@
 - Предметы магазина получает сам любой новый режим на `TaskSession.vue`; цены и условия менять только в `backend/src/progress/coins.ts` и `COINS` (сайт держит копию в `src/data/coins.ts`, `shop.ts`), потом перезапустить сервер.
 - **Новая страница** = файл в `src/pages/` (закрытая токеном: `definePageMeta({ private: true })`) + запись в `src/data/seo.ts` (заголовок до 75 знаков, описание 60–190, закрытая `noindex`)
   + пункт в `src/data/korean/crumbs.ts` (хлебные крошки) + в шторку «Что здесь есть» (`src/data/guide.ts`). Sitemap и robots Nuxt строит сам по `seo.ts`. Тег `yandex-verification` в `nuxt.config.ts` не удалять.
-- Заметное изменение: запись в начало `HISTORY` (`src/data/history.ts`, тест следит за форматом). Изменил страницу: обнови слайд и скриншот в «О платформе» (`src/data/about.ts`, `src/assets/about/`)
+- Заметное изменение: запись в начало `HISTORY` (`src/data/history.ts`, тест следит за форматом). Изменил страницу: обнови слайд и скриншот в «О платформе» (`src/data/about.ts`, `src/assets/about/`, скрипт `scripts/about-shots.mjs`, `docs/home-and-theme.md`)
   (README без скриншотов; число слов и правил в нём сверяет `tests/readme.test.mjs`).
 - Менял `dark.css`: `node scripts/build-night.mjs` (собирает `night.css`, тест следит).
 - Новые предложения, переводы и задания перед внесением сверяй со списком «Проверка нейросетями: чему научились» в `docs/data.md` (я без рода, один верный ответ, только пройденное).

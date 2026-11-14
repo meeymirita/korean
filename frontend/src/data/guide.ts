@@ -9,6 +9,13 @@ export interface GuideCard {
 
 const game = (mode: string) => `/game/home?game=${mode}`
 
+/**
+ * Имя скриншота страницы или игры по её адресу (файл `assets/about/<имя>.webp`, его снимает `scripts/about-shots.mjs`):
+ * `/` → `home`, `/korean/ref/hangul` → `korean-ref-hangul`, `/game/home?game=word` → `game-home-game-word`.
+ * Одни и те же картинки идут в окно «Что здесь есть» на главной и на страницу «О платформе».
+ */
+export const shotName = (to: string) => to.replace(/^\//, '').replace(/[/?=&#]+/g, '-').replace(/-+$/, '') || 'home'
+
 /** Игры страницы /game/play: режимы и особые партии. */
 export const GAMES: GuideCard[] = [
   { icon: 'dice', title: 'Микс', text: 'Вопросы из всех режимов вперемешку. Ошибки возвращаются чаще.', to: game('mix'), private: true },
