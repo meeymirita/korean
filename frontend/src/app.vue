@@ -4,6 +4,7 @@ import GlobalSearch from '@/components/GlobalSearch.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import StudyTimer from '@/components/StudyTimer.vue'
+import MusicPlayer from '@/components/music/MusicPlayer.vue'
 import SiteImageEditor from '@/components/SiteImageEditor.vue'
 import { BRAND, SITE, canonicalOf, seoMetaFor } from '@/data/seo'
 
@@ -49,6 +50,7 @@ useSchemaOrg([
   <GlobalSearch v-if="route.path !== '/' && route.path !== '/upload' && !route.path.startsWith('/dict') && !route.path.startsWith('/korean')" />
   <ClientOnly>
     <StudyTimer />
+    <MusicPlayer />
     <SiteImageEditor />
   </ClientOnly>
   <ConfirmDialog />
