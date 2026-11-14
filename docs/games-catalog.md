@@ -11,7 +11,7 @@
 
 ## Встроенная игра «Хлебушек» — `/game/home?game=<id>`
 
-Один движок на все 27 режимов (в 24 из них есть уровни-тексты «Рассказ» и «Длинный», см. `docs/trainers/bread-game.md`) (14 общих и 10 по темам грамматики): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
+Один движок на все 32 режима (в 24 из них есть уровни-тексты «Рассказ» и «Длинный», у четырёх ещё «Эксперт 8–12», см. `docs/trainers/bread-game.md`): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
 и переключение режимов — `GameHomeView.vue`. Слова движка свои (`src/game/words.ts`), это не тот же массив,
 что общий словарь `data/korean/words.ts`.
 

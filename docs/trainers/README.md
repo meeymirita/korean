@@ -15,7 +15,7 @@
 
 | Файл | Тренажёр | id / адрес | Экран |
 |---|---|---|---|
-| [`bread-game.md`](bread-game.md) | «Хлебушек»: игра на 27 режимов, в 24 из них уровни-тексты | `/game/home?game=<id режима>` | `GameHomeView.vue` + `src/game/` |
+| [`bread-game.md`](bread-game.md) | «Хлебушек»: игра на 32 режима, в 24 из них уровни-тексты | `/game/home?game=<id режима>` | `GameHomeView.vue` + `src/game/` |
 | [`match.md`](match.md) | Найди пару | `?game=match` (`&mode=match`) | `TrainersView.vue` → `MatchGame.vue` |
 | [`typing.md`](typing.md) | Напиши перевод | `?game=match&mode=type` | `TrainersView.vue` → `TypingQuiz.vue` |
 | [`quick.md`](quick.md) | 5 минут | `?game=quick` | `QuickView.vue` |
