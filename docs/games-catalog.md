@@ -11,8 +11,7 @@
 
 ## Встроенная игра «Хлебушек» — `/game/home?game=<id>`
 
-Один движок на все 27 режимов (в 24 из них есть уровни-тексты «Рассказ» и «Длинный», см. `docs/trainers/bread-game.md`) (14 общих и 10 по темам грамматики): `src/game/engine.ts` (`initGame()`, без типов — `@ts-nocheck`, чистый DOM
-без Vue), разметка `src/game/markup.html`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
+Один движок на все 27 режимов (в 24 из них есть уровни-тексты «Рассказ» и «Длинный», см. `docs/trainers/bread-game.md`) (14 общих и 10 по темам грамматики): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
 и переключение режимов — `GameHomeView.vue`. Слова движка свои (`src/game/words.ts`), это не тот же массив,
 что общий словарь `data/korean/words.ts`.
 
@@ -52,7 +51,7 @@
 
 Общие на всю игру рекорды: `S.all{ok,bad,best,bestBlitz,bestSurv,xp}` и `S.ses{ok,bad,streak,best}` в `engine.ts`.
 Рекорды по каждому режиму — `S.all.byMode[id]{ok,bad,best}`, обновляются в `finish()`, показываются вкладкой
-«Рекорды» (`#tabRecords`) рядом с «История» / «Слабые слова» / «Слова» в `markup.html`. Обнуляются вместе с
+«Рекорды» (`#tabRecords`) рядом с «История» / «Слабые слова» / «Слова» в `components/game/GameStats.vue`. Обнуляются вместе с
 остальной статистикой игры кнопкой «Сбросить статистику игры».
 
 Подсказка по режиму (кнопка «?» на экране задания) — `MODE_HELP` в `modes.ts`; тест `tests/grammar-data.test.mjs`
@@ -72,7 +71,6 @@
 | translate | `korean/TranslateView.vue` | «Переведи предложение»: [`translate.md`](trainers/translate.md) |
 | explain | `korean/ExplainTranslateView.vue` | «Переведи и объясни» (выбор перевода, разбор и правила после ответа): [`explain.md`](trainers/explain.md) |
 | speech | `korean/PartOfSpeechView.vue` | «Определи часть речи» (глагол, прилагательное, вопросительное слово; `data/korean/part-of-speech.ts`): [`speech.md`](trainers/speech.md) |
-| chain | `korean/ChainView.vue` | «Цепочки слов» (слово на последний слог предыдущего, из `STUDY`): [`chain.md`](trainers/chain.md) |
 | rule | `korean/RuleView.vue` | «Потренировать правило» (`&g=<id карточки>`): [`rule.md`](trainers/rule.md) |
 | syllables | `korean/SyllablesView.vue` | «Собери по слогам»: [`syllables.md`](trainers/syllables.md) |
 | keyboard | `korean/KeyboardView.vue` | «Печать на корейском»: [`keyboard.md`](trainers/keyboard.md) |

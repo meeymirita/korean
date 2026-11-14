@@ -18,8 +18,13 @@
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 		-Server
 	}
-	request_body {
+	# обычные запросы до 60 МБ; песни (музыкальный плеер) до 350 МБ только на своём маршруте
+	@usual not path /api/music/upload
+	request_body @usual {
 		max_size 60MB
+	}
+	request_body /api/music/upload {
+		max_size 350MB
 	}
 	@assets path /_nuxt/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"

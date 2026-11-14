@@ -31,11 +31,12 @@ import { JobsModule } from './jobs/jobs.module.js'
 import { NotifyModule } from './notify/notify.module.js'
 import { PicModule } from './pic/pic.module.js'
 import { VideoModule } from './video/video.module.js'
+import { MusicModule } from './music/music.module.js'
 import { YaDiskModule } from './yadisk/yadisk.module.js'
 import { WordsExportModule } from './wordsexport/wordsexport.module.js'
 
 @Module({
-  imports: [PicModule, VideoModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, WordsExportModule, AdminModule, SearchModule, DictModule],
+  imports: [PicModule, VideoModule, MusicModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, WordsExportModule, AdminModule, SearchModule, DictModule],
   controllers: [HealthController, MetricsController, CspReportController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })

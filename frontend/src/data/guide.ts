@@ -9,6 +9,13 @@ export interface GuideCard {
 
 const game = (mode: string) => `/game/home?game=${mode}`
 
+/**
+ * Имя скриншота страницы или игры по её адресу (файл `assets/about/<имя>.webp`, его снимает `scripts/about-shots.mjs`):
+ * `/` → `home`, `/korean/ref/hangul` → `korean-ref-hangul`, `/game/home?game=word` → `game-home-game-word`.
+ * Одни и те же картинки идут в окно «Что здесь есть» на главной и на страницу «О платформе».
+ */
+export const shotName = (to: string) => to.replace(/^\//, '').replace(/[/?=&#]+/g, '-').replace(/-+$/, '') || 'home'
+
 /** Игры страницы /game/play: режимы и особые партии. */
 export const GAMES: GuideCard[] = [
   { icon: 'dice', title: 'Микс', text: 'Вопросы из всех режимов вперемешку. Ошибки возвращаются чаще.', to: game('mix'), private: true },
@@ -65,7 +72,6 @@ export const PAGES: GuideCard[] = [
   { icon: 'board', title: 'Собери слово по слогам', text: 'По переводу собираешь корейское слово из плиток-слогов; среди плиток есть лишние. Сначала слова с ошибками.', to: '/game/home?game=syllables', private: true },
   { icon: 'pencil', title: 'Печать на корейском', text: 'Тренажёр слепой печати: буквы, слоги, слова и предложения, а во вкладке «Свои слова и предложения» набор собираешь сам. Подсвечивается нужная клавиша, считаются скорость и точность.', to: '/game/home?game=keyboard', private: true },
   { icon: 'arrows', title: 'Переведи предложение', text: 'Целое предложение: с корейского на русский, с русского на корейский или вперемешку, четыре варианта.', to: '/game/home?game=translate', private: true },
-  { icon: 'arrows', title: 'Цепочки слов', text: 'Как в игре 끝말잇기: берёшь последний слог слова и выбираешь из четырёх слово, которое с него начинается. Верное слово становится следующим в цепочке из 12 звеньев; после ответа виден перевод.', to: '/game/home?game=chain', private: true },
   { icon: 'grammar', title: 'Переведи и объясни', text: 'Выбери перевод предложения; после ответа видно, из чего оно собрано, и какие пройденные правила в нём работают, со ссылкой на каждую карточку.', to: '/game/home?game=explain', private: true },
   { icon: 'grammar', title: 'Определи часть речи', text: 'Слово из твоего словаря: глагол, прилагательное или вопросительное слово? После ответа объяснение и пример в предложении.', to: '/game/home?game=speech', private: true },
   { icon: 'hearts', title: 'Похожие, но разные', text: 'Выбери верное слово среди похожих: из той же темы или с теми же слогами. Сначала слова, в которых ошибался.', to: '/game/home?game=pairs', private: true },

@@ -37,7 +37,8 @@ async function bootstrap() {
   const server = await app.listen(PORT, process.env.HOST || '127.0.0.1')
   // медленные и зависшие соединения закрываются (защита от «медленных» атак)
   server.headersTimeout = 15_000
-  server.requestTimeout = 190_000
+  // 30 минут: песни (сборники на несколько часов) весят сотни мегабайт; зависание соединения всё равно ловит тайм-аут простоя (security.ts)
+  server.requestTimeout = 1_800_000
   server.keepAliveTimeout = 5_000
   server.maxHeadersCount = 60
   server.maxRequestsPerSocket = 200

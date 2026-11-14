@@ -2,7 +2,7 @@
 import { D } from './words'
 import { ADJS, ALLW, CATS, FORMS, MODE_HELP, MODES, VERBS, W, type Entry, type FormEntry } from './modes'
 import type { BuildQ, ChoiceQ, GameHooks, GameState, Piece, Question, SentIn, StoryGap, StoryPart, StoryQ } from './types'
-import { iconImg, MODE_ICON } from './icons'
+import { iconImg } from './icons'
 import { makeBuild, parseBuildKey, type Level, type TenseMode } from './build'
 import { analyze, SEG_LABEL, type Segment } from '@/data/korean/parse'
 import { D as DICT } from '@/data/korean/words'
@@ -19,6 +19,8 @@ import { ptextPool, type PtextMark } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
 import { syllableRows } from '@/data/alphabet'
 import { askConfirm } from '@/composables/useConfirm'
+import { nextTick } from 'vue'
+import type { GameTab, GameView } from './view'
 import { gsap } from 'gsap'
 import { burst, cascade, pop } from '@/lib/fx'
 import { motionCalm } from '@/lib/motion'
@@ -28,9 +30,9 @@ const POOLS: Record<string, unknown>={};
 /** Пул считается один раз на страницу: при первом обращении, дальше берётся готовый. Вид записей задаёт функция, которая его собирает. */
 function memo<T>(key: string,make: ()=>T): T{if(!(key in POOLS))POOLS[key]=make();return POOLS[key] as T;}
 
-/** Запускает игру на уже отрисованной разметке; возвращает функцию очистки. */
-/** hooks: общий прогресс сайта (record, importXp, state) — передаёт GameView. */
-export function initGame(hooks: GameHooks) {
+/** Запускает игру на уже отрисованной оболочке (`components/game/GameShell.vue`); возвращает функцию очистки. */
+/** hooks: общий прогресс сайта (record, importXp, state); view: то, что движок показывает оболочке (`./view.ts`). */
+export function initGame(hooks: GameHooks, view: GameView) {
 'use strict';
 /* ---------- данные ---------- */
 /** Подпись задания, в которой само задание (вопрос или длинная инструкция), пишется крупно: «Сегодня 월요일. Какой день был вчера?» */
@@ -1890,7 +1892,7 @@ function finish(ok: boolean,chosen: string,qq?: FinishQ,quiet?: boolean){
     if(pr.goalReached)msgs.push('Цель дня выполнена!');
     if([5,10,20,50].includes(B.streak))msgs.push('Серия из '+B.streak+' верных подряд!');
     if([50,100,250,500,1000].includes(A.ok))msgs.push(A.ok+' верных ответов за всё время!');
-    if(A.ok%10===0){msgs.push('Испёкся ещё один хлебушек!');const l=$('#nLoaf');l.classList.remove('pop');void l.offsetWidth;l.classList.add('pop');}
+    if(A.ok%10===0)msgs.push('Испёкся ещё один хлебушек!');
     if(msgs.length)toast(msgs[0]!);
     if(S.surv.on)S.surv.ok++;
   }else{B.bad++;A.bad++;B.streak=0;bm.bad++;
@@ -2002,106 +2004,34 @@ function next(){
 }
 
 function updateStats(){
-  const B=S.ses,A=S.all;
-  $('#nOk').textContent=String(B.ok);$('#nBad').textContent=String(B.bad);
-  const tot=B.ok+B.bad;$('#nAcc').textContent=tot?Math.round(B.ok/tot*100)+'%':'–';
-  $('#nStreak').textContent=String(B.streak);$('#nBest').textContent=String(Math.max(B.best,A.best));
-  $('#nLoaf').textContent=String(Math.floor(A.ok/10));
-  $('#loafTxt').textContent=(A.ok%10)+' / 10';
-  $('#loafBar').style.width=((A.ok%10)*10)+'%';
-  $('#allTime').textContent='За всё время: '+A.ok+' верно, '+A.bad+' неверно'+(bestBlitz()?' · лучший блиц ('+S.blitzSecs+' с): '+bestBlitz():'')+(bestSurv()?' · выживание ('+survName()+'): '+bestSurv():'');
+  const B=S.ses,A=S.all,st=view.stats;
+  st.ok=B.ok;st.bad=B.bad;
+  const tot=B.ok+B.bad;st.acc=tot?Math.round(B.ok/tot*100)+'%':'–';
+  st.streak=B.streak;st.best=Math.max(B.best,A.best);
+  st.loaves=Math.floor(A.ok/10);st.loafTxt=(A.ok%10)+' / 10';st.loafPct=(A.ok%10)*10;
+  st.allTime='За всё время: '+A.ok+' верно, '+A.bad+' неверно'+(bestBlitz()?' · лучший блиц ('+S.blitzSecs+' с): '+bestBlitz():'')+(bestSurv()?' · выживание ('+survName()+'): '+bestSurv():'');
   const P=hooks.state();
-  $('#lvlN').textContent=String(P.level);$('#lvlName').textContent=P.title;
-  $('#xpTxt').textContent=P.max?'максимум':P.into+' / '+P.span;$('#xpBar').style.width=P.pct+'%';
+  st.lvlN=P.level;st.lvlName=P.title;st.xpTxt=P.max?'максимум':P.into+' / '+P.span;st.xpPct=P.pct;
   const g=P.todayOk;
-  $('#goalMax').textContent=String(P.goal);$('#goalN').textContent=String(Math.min(g,P.goal));$('#goalBar').style.width=Math.min(100,g/P.goal*100)+'%';
-  $('#goalTxt').textContent=g>=P.goal?'готово':'ещё '+(P.goal-g);
+  st.goalMax=P.goal;st.goalN=Math.min(g,P.goal);st.goalPct=Math.min(100,g/P.goal*100);st.goalTxt=g>=P.goal?'готово':'ещё '+(P.goal-g);
 }
+/** Списки справа: оболочка рисует их сама из этих копий (поиск по словам тоже на её стороне). */
 function renderList(){
-  const list=$('#list');list.innerHTML='';
-  $('#tabHist').classList.toggle('on',S.tab==='hist');$('#tabWeak').classList.toggle('on',S.tab==='weak');$('#tabWords').classList.toggle('on',S.tab==='words');$('#tabRecords').classList.toggle('on',S.tab==='records');
-  $('#wq').hidden=S.tab!=='words';
-  if(S.tab==='records'){
-    MODES.forEach(m=>{
-      const r=S.all.byMode[m.id];
-      const it=el('div','item rec');it.style.gridTemplateColumns='28px 1fr auto';
-      const mk=el('span','mk');mk.innerHTML=iconImg(MODE_ICON[m.id]!);it.appendChild(mk);
-      const b=el('div');b.appendChild(el('div','',m.name));
-      b.appendChild(el('div','muted',r?('верно '+r.ok+', неверно '+r.bad):'ещё не играл(а)'));
-      it.appendChild(b);
-      it.appendChild(el('div','recbest',r&&r.best?('рекорд '+r.best):'—'));
-      list.appendChild(it);
-    });
-    return;
-  }
-  if(S.tab==='words'){
-    const w=$<HTMLInputElement>('#wq').value.trim().toLowerCase();
-    const hit=w?ALLW.filter(x=>[x.ko,x.rd,x.ru].some(s=>s.toLowerCase().includes(w))):ALLW;
-    list.appendChild(el('div','empty',w?('Найдено: '+hit.length):('Всего слов в игре: '+hit.length+'. Начни вводить, чтобы найти нужное.')));
-    hit.slice(0,60).forEach(x=>{
-      const it=el('div','item');it.style.gridTemplateColumns='1fr';
-      const row=el('div');row.appendChild(el('span','ko',x.ko));row.append(' · '+x.rd+' — '+x.ru);
-      it.appendChild(row);list.appendChild(it);
-    });
-    if(hit.length>60)list.appendChild(el('div','empty','Показаны первые 60, уточни запрос.'));
-    return;
-  }
-  if(S.tab==='hist'){
-    if(!S.hist.length){list.appendChild(el('div','empty','Здесь появятся твои ответы: слово, перевод и что выбрал.'));return;}
-    S.hist.forEach(h=>{
-      const it=el('div','item '+(h.ok?'ok':'bad'));
-      it.appendChild(el('span','mk',h.ok?'✓':'✗'));
-      const b=el('div');
-      const main=el('div');
-      const ko=/[ㄱ-힝]/.test(h.p);
-      main.appendChild(el('span',ko?'ko':'',h.p));main.append(' → ');
-      main.appendChild(el('span',/[ㄱ-힝]/.test(h.r)?'ko':'',h.r));
-      b.appendChild(main);
-      if(!h.ok&&h.you)b.appendChild(el('div','you','ты: '+h.you));
-      it.appendChild(b);list.appendChild(it);
-    });
-  }else{
-    const ent=Object.values(S.miss).sort((a,b)=>b.n-a.n);
-    if(!ent.length){list.appendChild(el('div','empty','Пока нет слабых мест. Ошибся в слове — оно появится здесь и будет выпадать чаще.'));return;}
-    ent.forEach(m=>{
-      const it=el('div','item bad');it.appendChild(el('span','mk','●'.repeat(Math.min(m.n,3))));
-      it.style.gridTemplateColumns='36px 1fr';
-      it.appendChild(el('div','',m.l));list.appendChild(it);
-    });
-  }
+  view.tab=S.tab as GameTab;
+  view.hist=S.hist.map(h=>({...h}));
+  view.weak=Object.values(S.miss).sort((x,y)=>y.n-x.n).map(m=>({...m}));
+  view.byMode=JSON.parse(JSON.stringify(S.all.byMode)) as GameView['byMode'];
 }
 
-/* ---------- интерфейс ---------- */
+/* ---------- интерфейс: оболочка читает `view`, её кнопки вызывают `view.actions` ---------- */
 let toastT: ReturnType<typeof setTimeout>|undefined;
-function toast(t: string){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),1800);}
+function toast(t: string){view.toast.text=t;view.toast.on=true;clearTimeout(toastT);toastT=setTimeout(()=>{view.toast.on=false;},1800);}
 function drawCats(){
-  const box=$('#cats');box.innerHTML='';
-  CATS.forEach(c=>{
-    const lb=el('label',S.cats[c.id]?'on':'');
-    const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!S.cats[c.id];
-    cb.addEventListener('change',()=>{
-      S.cats[c.id]=cb.checked?1:0;
-      if(!Object.values(S.cats).some(Boolean)){S.cats[c.id]=1;cb.checked=true;}
-      save();hooks.saveCats?.(S.cats);drawCats();
-    });
-    lb.append(cb,' '+c.name+' ('+W[c.id].length+')');box.appendChild(lb);
-  });
+  view.cats=CATS.map(c=>({id:c.id,name:c.name,count:W[c.id].length,on:!!S.cats[c.id]}));
 }
 function syncToggles(){
-  $<HTMLInputElement>('#cbRead').checked=S.reading;$<HTMLSelectElement>('#tense').value=S.tense;$<HTMLSelectElement>('#fut').value=S.fut;$<HTMLSelectElement>('#blitzSecs').value=String(S.blitzSecs);$<HTMLSelectElement>('#survLives').value=String(S.survLives);
-  if(!S.blitz.on)$('#blitzBtn').innerHTML=blitzLabel();
-  $('#lbRead').classList.toggle('on',S.reading);
+  view.reading=S.reading;view.tense=S.tense;view.fut=S.fut;view.blitzSecs=S.blitzSecs;view.survLives=S.survLives;
 }
-$('#cbRead').addEventListener('change',e=>{S.reading=(e.target as HTMLInputElement).checked;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);});
-$('#tense').addEventListener('change',e=>{S.tense=(e.target as HTMLSelectElement).value;save();});
-$('#fut').addEventListener('change',e=>{S.fut=(e.target as HTMLSelectElement).value;save();});
-$('#blitzSecs').addEventListener('change',e=>{if(S.blitz.on){syncToggles();return;}S.blitzSecs=+(e.target as HTMLSelectElement).value;save();syncToggles();updateStats();});
-$('#survLives').addEventListener('change',e=>{if(S.surv.on){syncToggles();return;}S.survLives=+(e.target as HTMLSelectElement).value;save();syncToggles();updateStats();});
-$('#tabHist').addEventListener('click',()=>{S.tab='hist';renderList();});
-$('#tabWeak').addEventListener('click',()=>{S.tab='weak';renderList();});
-$('#tabWords').addEventListener('click',()=>{S.tab='words';renderList();$('#wq').focus({preventScroll:true});});
-$('#tabRecords').addEventListener('click',()=>{S.tab='records';renderList();});
-$('#wq').addEventListener('input',renderList);
 /** Сброс статистики игры после подтверждения в своём окне. */
 async function resetStats(){
   const yes=await askConfirm({title:'Сбросить статистику игры?',text:'Сбросится только прогресс этой игры: счёт, рекорды, испечённые хлебушки, слабые слова и история ответов. Уровень, цель дня, слова и остальной прогресс сайта останутся как есть.',ok:'Сбросить статистику игры',danger:true});
@@ -2109,23 +2039,25 @@ async function resetStats(){
   S.all={ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}};S.miss={};S.ses={ok:0,bad:0,streak:0,best:0};S.hist=[];S.hints=3;
   save();updateStats();renderList();next();
 }
-$('#resetBtn').addEventListener('click',()=>void resetStats());
+/** Окно итога блица и выживания. */
+function showOver(title: string,big: string,text: string){
+  Object.assign(view.over,{on:true,title,big,text});
+  void nextTick(()=>document.getElementById('overAgain')?.focus());
+}
 
 /* ---------- блиц ---------- */
 /** Рекорды по вариантам: у блица на 60 секунд и выживания на 3 жизни прежние поля `bestBlitz` и `bestSurv`, у остальных вариантов свои ячейки. */
 const bestBlitz=()=>S.blitzSecs===60?S.all.bestBlitz:((S.all.bestBlitzBy||{})[S.blitzSecs]||0);
 const bestSurv=()=>S.survLives===3?S.all.bestSurv:((S.all.bestSurvBy||{})[S.survLives]||0);
 const survName=()=>S.survLives===0?'без ограничения':S.survLives+' жизни';
-const blitzLabel=()=>iconImg('rocket')+' Блиц '+S.blitzSecs+' секунд';
 function startBlitz(){
   if(S.surv.on){toast('Сначала закончи выживание');return;}
   clearInterval(S.blitz.iv);
   const secs=S.blitzSecs;
   S.blitz={on:true,left:secs,total:secs,ok:0,bad:0,iv:undefined};
-  $('#timer').classList.add('on');$('#timerBar').style.width='100%';
-  $('#blitzBtn').innerHTML='<span class="gi">⏹</span> Остановить блиц';
+  view.blitzOn=true;view.timer.on=true;view.timer.pct=100;
   S.blitz.iv=setInterval(()=>{
-    S.blitz.left--;$('#timerBar').style.width=Math.max(0,S.blitz.left/S.blitz.total*100)+'%';
+    S.blitz.left--;view.timer.pct=Math.max(0,S.blitz.left/S.blitz.total*100);
     if(S.blitz.left<=0)endBlitz();
   },1000);
   next();
@@ -2133,54 +2065,44 @@ function startBlitz(){
 function endBlitz(){
   clearInterval(S.blitz.iv);clearTimeout(S.timer);
   const b=S.blitz;b.on=false;
-  $('#timer').classList.remove('on');$('#blitzBtn').innerHTML=blitzLabel();
+  view.timer.on=false;view.blitzOn=false;
   const tot=b.ok+b.bad;
   let rec='';
   if(b.ok>bestBlitz()){
     if(S.blitzSecs===60)S.all.bestBlitz=b.ok;else(S.all.bestBlitzBy||(S.all.bestBlitzBy={}))[S.blitzSecs]=b.ok;
     rec=' Новый рекорд!';save();updateStats();
   }
-  S.lastOver='blitz';$('#overT').textContent='Время вышло!';
-  $('#overBig').textContent=String(b.ok);
-  $('#overTxt').textContent='верных ответов за '+b.total+' секунд. Неверных: '+b.bad+(tot?', точность '+Math.round(b.ok/tot*100)+'%':'')+'.'+rec;
-  $('#over').classList.add('on');$('#overAgain').focus();
+  S.lastOver='blitz';
+  showOver('Время вышло!',String(b.ok),'верных ответов за '+b.total+' секунд. Неверных: '+b.bad+(tot?', точность '+Math.round(b.ok/tot*100)+'%':'')+'.'+rec);
   if(S.cur)S.answered=true;
 }
-$('#blitzBtn').addEventListener('click',()=>{if(S.blitz.on)endBlitz();else startBlitz();});
 
 /* ---------- выживание: три жизни ---------- */
 function drawLives(){
-  const box=$('#lives');
-  if(!S.surv.on){box.className='lives';box.textContent='';return;}
-  box.className='lives on';
-  if(S.surv.max===0){box.textContent='♾️  ·  верно: '+S.surv.ok+' (остановить можно кнопкой ниже)';return;}
-  box.textContent='❤️'.repeat(Math.max(0,S.surv.lives))+'🖤'.repeat(S.surv.max-Math.max(0,S.surv.lives))+'  ·  верно: '+S.surv.ok;
+  view.survOn=S.surv.on;
+  if(!S.surv.on){view.lives.on=false;view.lives.text='';return;}
+  view.lives.on=true;
+  if(S.surv.max===0){view.lives.text='♾️  ·  верно: '+S.surv.ok+' (остановить можно кнопкой ниже)';return;}
+  view.lives.text='❤️'.repeat(Math.max(0,S.surv.lives))+'🖤'.repeat(S.surv.max-Math.max(0,S.surv.lives))+'  ·  верно: '+S.surv.ok;
 }
 function startSurv(){
   if(S.blitz.on){toast('Сначала закончи блиц');return;}
   S.surv={on:true,lives:S.survLives||Infinity,max:S.survLives,ok:0};
-  $('#survBtn').innerHTML='<span class="gi">⏹</span> Остановить выживание';drawLives();next();
+  drawLives();next();
 }
 function endSurv(){
   clearTimeout(S.timer);
   const sv=S.surv;sv.on=false;
-  $('#survBtn').innerHTML=iconImg('heart')+' На выживание';drawLives();
+  drawLives();
   let rec='';
   if(sv.ok>bestSurv()){
     if(S.survLives===3)S.all.bestSurv=sv.ok;else(S.all.bestSurvBy||(S.all.bestSurvBy={}))[S.survLives]=sv.ok;
     rec=' Новый рекорд!';save();updateStats();
   }
-  S.lastOver='surv';$('#overT').textContent=sv.max===0?'Выживание остановлено':'Жизни закончились';
-  $('#overBig').textContent=String(sv.ok);
-  $('#overTxt').textContent=sv.max===0?'верных ответов за заход.'+rec:'верных ответов до '+(sv.max===3?'третьей':'пятой')+' ошибки.'+rec;
-  $('#over').classList.add('on');$('#overAgain').focus();
+  S.lastOver='surv';
+  showOver(sv.max===0?'Выживание остановлено':'Жизни закончились',String(sv.ok),sv.max===0?'верных ответов за заход.'+rec:'верных ответов до '+(sv.max===3?'третьей':'пятой')+' ошибки.'+rec);
   if(S.cur)S.answered=true;
 }
-$('#survBtn').addEventListener('click',()=>{if(S.surv.on)endSurv();else startSurv();});
-/* «Обновить вопрос»: другой вопрос в том же режиме; ответ не засчитывается ни верным, ни неверным */
-$('#refreshBtn').addEventListener('click',()=>{if($('#over').classList.contains('on'))return;next();});
-$('#overAgain').addEventListener('click',()=>{$('#over').classList.remove('on');if(S.lastOver==='surv')startSurv();else startBlitz();});
-$('#overClose').addEventListener('click',()=>{$('#over').classList.remove('on');next();});
 
 /* ---------- справка ---------- */
 let helpFrom: HTMLElement|null=null;
@@ -2188,39 +2110,42 @@ function openHelp(){
   if(S.blitz.on||S.surv.on){toast('Сначала закончи игру на время или выживание');return;}
   helpFrom=document.activeElement as HTMLElement|null;
   clearTimeout(S.timer);
-  $('#help').classList.add('on');$('#helpX').focus({preventScroll:true});$('#help .box').scrollTop=0;
+  view.help=true;
+  void nextTick(()=>{document.getElementById('helpX')?.focus({preventScroll:true});const box=document.querySelector('#help .box');if(box)box.scrollTop=0;});
 }
 function closeHelp(){
-  $('#help').classList.remove('on');
+  view.help=false;
   if(!S.seenHelp){S.seenHelp=true;save();}
   if(helpFrom&&helpFrom.focus)helpFrom.focus();
 }
-/** Список игр в окне «Как играть» собирается из MODES и MODE_HELP: новая игра попадает в справку сама и текст не устаревает. */
-function drawHelpModes(){
-  const ul=$('#helpModes');if(!ul)return;ul.textContent='';
-  MODES.forEach(m=>{
-    const h=MODE_HELP[m.id];
-    const li=el('li');
-    const mk=el('span','hm-ico');mk.innerHTML=iconImg(MODE_ICON[m.id]!);li.appendChild(mk);
-    li.appendChild(el('b','',m.name));
-    // общий абзац про уровни стоит в справке один раз, из подсказки режима он убирается
-    li.appendChild(document.createTextNode(': '+(h?h[0].split(' Над заданием три уровня')[0]:'вопросы из разных игр вперемешку.')));
-    if(h)li.appendChild(el('div','hm-ex',h[1]));
-    ul.appendChild(li);
-  });
-}
-drawHelpModes();
-$('#helpBtn').addEventListener('click',openHelp);
-$('#helpX').addEventListener('click',closeHelp);
-$('#helpOk').addEventListener('click',closeHelp);
-$('#help').addEventListener('click',e=>{if((e.target as HTMLElement).id==='help')closeHelp();});
+view.actions={
+  // «Обновить вопрос»: другой вопрос в том же режиме; ответ не засчитывается ни верным, ни неверным
+  refresh:()=>{if(view.over.on)return;next();},
+  toggleBlitz:()=>{if(S.blitz.on)endBlitz();else startBlitz();},
+  toggleSurv:()=>{if(S.surv.on)endSurv();else startSurv();},
+  openHelp,closeHelp,
+  overAgain:()=>{view.over.on=false;if(S.lastOver==='surv')startSurv();else startBlitz();},
+  overClose:()=>{view.over.on=false;next();},
+  resetStats:()=>{void resetStats();},
+  setTab:(t)=>{S.tab=t;renderList();},
+  toggleCat:(id,on)=>{
+    S.cats[id]=on?1:0;
+    if(!Object.values(S.cats).some(Boolean))S.cats[id]=1;
+    save();hooks.saveCats?.(S.cats);drawCats();
+  },
+  setReading:(on)=>{S.reading=on;save();syncToggles();if(S.cur&&!S.answered)renderQuestion(S.cur);},
+  setTense:(v)=>{S.tense=v;save();syncToggles();},
+  setFut:(v)=>{S.fut=v;save();syncToggles();},
+  setBlitzSecs:(n)=>{if(S.blitz.on){syncToggles();return;}S.blitzSecs=n;save();syncToggles();updateStats();},
+  setSurvLives:(n)=>{if(S.surv.on){syncToggles();return;}S.survLives=n;save();syncToggles();updateStats();},
+};
 
 /* ---------- клавиши ---------- */
 const onKeydown=(e: KeyboardEvent)=>{
   if(S.win){if(e.key==='Escape')closeStoryWin();return;}
   if(e.key==='Escape')closeTips();
-  if($('#help').classList.contains('on')){if(e.key==='Escape')closeHelp();return;}
-  if($('#over').classList.contains('on'))return;
+  if(view.help){if(e.key==='Escape')closeHelp();return;}
+  if(view.over.on)return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const t=e.target as HTMLElement|null;if(t&&(t.tagName==='SELECT'||t.tagName==='INPUT'))return;
   if(S.cur&&S.cur.type==='choice'&&!S.answered&&(e.key==='h'||e.key==='р')&&$('#hintBtn')){e.preventDefault();useHint();}
@@ -2240,6 +2165,7 @@ const onDocClick=(e: MouseEvent)=>{const t=e.target as HTMLElement|null;if(!(t&&
 document.addEventListener('click',onDocClick);
 
 /* ---------- старт ---------- */
+Object.assign(view,{wq:'',blitzOn:false,survOn:false,help:false});Object.assign(view.over,{on:false});Object.assign(view.timer,{on:false,pct:100});Object.assign(view.toast,{on:false});
 drawCats();syncToggles();updateStats();renderList();drawLives();
 renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();

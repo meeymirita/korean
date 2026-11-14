@@ -11,8 +11,8 @@ import { usePersisted } from '@/composables/usePersisted'
 import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
 import { searchGamesRemote } from '@/data/korean/search'
 import { initGame } from '@/game/engine'
-import markupRaw from '@/game/markup.html?raw'
-import { iconImg } from '@/game/icons'
+import GameShell from '@/components/game/GameShell.vue'
+import { createGameView } from '@/game/view'
 import TrainersView from '@/views/korean/TrainersView.vue'
 import QuickView from '@/views/korean/QuickView.vue'
 import ParticlesView from '@/views/korean/ParticlesView.vue'
@@ -20,7 +20,6 @@ import PairsView from '@/views/korean/PairsView.vue'
 import TranslateView from '@/views/korean/TranslateView.vue'
 import ExplainTranslateView from '@/views/korean/ExplainTranslateView.vue'
 import PartOfSpeechView from '@/views/korean/PartOfSpeechView.vue'
-import ChainView from '@/views/korean/ChainView.vue'
 import SyllablesView from '@/views/korean/SyllablesView.vue'
 import KeyboardView from '@/views/korean/KeyboardView.vue'
 import RuleView from '@/views/korean/RuleView.vue'
@@ -44,14 +43,13 @@ const { open: openGrammar } = useGrammarModal()
 onMounted(() => document.body.classList.add('on-game-home'))
 onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
 const bgStyle = { '--gx-bg': `url(${bg})` }
-/** «← К списку игр», название и кнопки страницы вынесены в общую строку `.gh-back` (у тренажёров и игр движка одна и та же). */
-const markup = markupRaw
-  .replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
+/** Что движок «Хлебушек» показывает оболочке игры (счёт, списки, блиц, окна); пишет его `initGame`. */
+const gameView = createGameView()
 
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
 const route = useRoute()
 const game = computed(() => (typeof route.query.game === 'string' ? route.query.game : ''))
-const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView, pairs: PairsView, translate: TranslateView, explain: ExplainTranslateView, speech: PartOfSpeechView, chain: ChainView, syllables: SyllablesView, rule: RuleView, keyboard: KeyboardView }
+const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView, pairs: PairsView, translate: TranslateView, explain: ExplainTranslateView, speech: PartOfSpeechView, syllables: SyllablesView, rule: RuleView, keyboard: KeyboardView }
 const tool = computed(() => (TOOL_IDS as readonly string[]).includes(game.value) ? TOOLS[game.value as keyof typeof TOOLS] : null)
 const engineOn = computed(() => !!game.value && !tool.value && ALL_GAMES.some(g => g.id === game.value))
 const current = computed(() => ALL_GAMES.find(g => g.id === game.value))
@@ -97,7 +95,7 @@ function startEngine() {
       count: (id: string) => (progress.unlocked && !progress.isGuest ? shop.count(id) : 0),
       use: async (id: string) => !shop.busy && !!(await shop.use(id)),
     },
-  })
+  }, gameView)
 }
 /** Запас предметов нужен к первому вопросу, но игра не ждёт медленный сервер дольше двух секунд. */
 const loadShop = () =>
@@ -227,7 +225,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
       <AuthGate v-if="!progress.unlocked" />
       <template v-else-if="inGame">
         <section v-if="tool" class="gh-panel gh-tool"><component :is="tool" :key="game" /></section>
-        <div v-else v-html="markup"></div>
+        <GameShell v-else :view="gameView" />
       </template>
       <section v-else class="gh-panel">
         <div class="gh-tabs" role="tablist">
@@ -325,4 +323,12 @@ body.on-game-home .study.sky .sw-btn { top: 52px; right: 236px; }
 .gh :is(.gh-backlink, .gh-name) { padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; background: rgba(255, 255, 255, .9); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 6px 18px rgba(100, 87, 170, .16); }
 .gh .gh-backlink:hover { color: var(--pink); }
 .gh .gh-tool { margin-top: 10px; }
+/* узкий экран: шапка переносится на вторую строку и кнопки мельче, иначе страница уезжает вправо */
+@media (max-width: 560px) {
+  .gh .gh-back { flex-wrap: wrap; gap: 8px 10px; }
+  .gh .game-top.gx-top { flex-wrap: wrap; }
+  .gh.game .gx-tools { gap: 6px; }
+  .gh.game .gx-round { width: 40px; height: 40px; font-size: 16px; }
+  .gh :is(.gh-backlink, .gh-name) { padding: 6px 12px; font-size: 12px; }
+}
 </style>

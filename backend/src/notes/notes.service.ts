@@ -22,6 +22,8 @@ export interface Note {
   pinned: boolean
   /** «Напомнить в»: ГГГГ-ММ-ДДTЧЧ:ММ по часам сервера или null */
   remindAt: string | null
+  /** ручной порядок (перетаскивание) или null: по умолчанию, новые сверху */
+  pos: number | null
 }
 
 const isStr = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max
@@ -40,8 +42,8 @@ export class NotesService {
     return { v: 1, updated: Number(updated), notes: rows.map(r => this.out(r)) }
   }
 
-  private out(r: { id: string; title: string; text: string; images: string; tags: string; created: bigint; updated: bigint; pinned: boolean; remindAt: string | null }): Note {
-    return { id: r.id, title: r.title, text: r.text, images: this.parseImages(r.images), tags: readTags(r.tags), created: Number(r.created), updated: Number(r.updated), pinned: r.pinned, remindAt: r.remindAt }
+  private out(r: { id: string; title: string; text: string; images: string; tags: string; created: bigint; updated: bigint; pinned: boolean; remindAt: string | null; pos: number | null }): Note {
+    return { id: r.id, title: r.title, text: r.text, images: this.parseImages(r.images), tags: readTags(r.tags), created: Number(r.created), updated: Number(r.updated), pinned: r.pinned, remindAt: r.remindAt, pos: r.pos }
   }
 
   private parseImages(raw: string): string[] {
@@ -74,9 +76,11 @@ export class NotesService {
       if (!tags) throw new BadRequestException({ error: 'invalid notes' })
       ids.add(n.id)
       if (n.pinned !== undefined && typeof n.pinned !== 'boolean') throw new BadRequestException({ error: 'invalid notes' })
+      const pos = n.pos ?? null
+      if (pos !== null && (!Number.isInteger(pos) || pos < 0 || pos > 100_000)) throw new BadRequestException({ error: 'invalid notes' })
       const remindAt = n.remindAt ?? null
       if (remindAt !== null && (typeof remindAt !== 'string' || !REMIND_AT.test(remindAt))) throw new BadRequestException({ error: 'invalid notes' })
-      notes.push({ id: n.id, title: n.title, text: n.text, images, tags, created: n.created, updated: n.updated, pinned: n.pinned === true, remindAt })
+      notes.push({ id: n.id, title: n.title, text: n.text, images, tags, created: n.created, updated: n.updated, pinned: n.pinned === true, remindAt, pos })
     }
     return { updated: num(data.updated) ? data.updated : 0, notes }
   }

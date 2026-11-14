@@ -30,7 +30,7 @@ export const EXTRA_MODES: Record<string, string> = {
   translate: 'Переведи предложение',
   pairs: 'Похожие, но разные',
   quick: '5 минут',
-  chain: 'Цепочки слов',
+  chain: 'Цепочки слов', // режима больше нет, подпись для старых ответов в журнале
   mistakes: 'Мои ошибки',
   topic: 'Добить тему',
   stale: 'Давно не видел',

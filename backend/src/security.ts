@@ -195,7 +195,7 @@ export class RateLimiter implements OnModuleInit, OnModuleDestroy {
       res.setHeader('Retry-After', String(wait))
       return void res.status(429).json({ error: 'locked' })
     }
-    const heavy = req.method === 'POST' && /^\/api\/(images|guests)/.test(req.path)
+    const heavy = req.method === 'POST' && /^\/api\/(images|guests|music)/.test(req.path)
     if (!this.hit(this.all, ip, LIMIT_PER_MIN) || (heavy && !this.hit(this.heavy, ip, HEAVY_PER_MIN))) {
       res.setHeader('Retry-After', '60')
       return void res.status(429).json({ error: 'too many requests' })
@@ -224,7 +224,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 
 /** Таймаут на запрос: зависшее соединение закрывается. Для загрузки картинок время больше. */
 export function requestTimeout(req: Request, res: Response, next: NextFunction) {
-  const ms = req.method === 'POST' && req.path.startsWith('/api/images') ? UPLOAD_TIMEOUT : RESPONSE_TIMEOUT
+  const ms = req.method === 'POST' && (req.path.startsWith('/api/images') || req.path === '/api/music/upload') ? UPLOAD_TIMEOUT : RESPONSE_TIMEOUT
   req.setTimeout(ms)
   res.setTimeout(ms, () => {
     if (!res.headersSent) res.status(503).json({ error: 'timeout' })

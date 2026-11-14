@@ -4,10 +4,14 @@ import GlobalSearch from '@/components/GlobalSearch.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import StudyTimer from '@/components/StudyTimer.vue'
+import MusicPlayer from '@/components/music/MusicPlayer.vue'
+import MusicButton from '@/components/music/MusicButton.vue'
 import SiteImageEditor from '@/components/SiteImageEditor.vue'
 import { BRAND, SITE, canonicalOf, seoMetaFor } from '@/data/seo'
 
 const route = useRoute()
+// кнопка плеера: в шапке раздела (рядом с колокольчиком) и игр она своя, на остальных страницах закреплена в правом верхнем углу
+const fixedMusic = computed(() => !route.path.startsWith('/korean') && !route.path.startsWith('/game'))
 
 // заголовок, описание, canonical и превью ссылки для каждой страницы (src/data/seo.ts): на сервере уходят в готовый HTML
 const meta = computed(() => seoMetaFor(route.path))
@@ -49,6 +53,8 @@ useSchemaOrg([
   <GlobalSearch v-if="route.path !== '/' && route.path !== '/upload' && !route.path.startsWith('/dict') && !route.path.startsWith('/korean')" />
   <ClientOnly>
     <StudyTimer />
+    <MusicPlayer />
+    <MusicButton v-if="fixedMusic" variant="fixed" />
     <SiteImageEditor />
   </ClientOnly>
   <ConfirmDialog />

@@ -56,7 +56,7 @@ test('группы по разделам грамматики: каждая иг
 })
 
 test('игры: кнопки «Микс» в строке игры больше нет, режимы выбираются в каталоге', () => {
-  const markup = readFileSync(new URL('../frontend/src/game/markup.html', import.meta.url), 'utf8')
+  const markup = readFileSync(new URL('../frontend/src/components/game/GameShell.vue', import.meta.url), 'utf8')
   const engine = readFileSync(new URL('../frontend/src/game/engine.ts', import.meta.url), 'utf8')
   assert.ok(!markup.includes('id="modes"'))
   assert.ok(!engine.includes('drawModes'))

@@ -2,13 +2,11 @@
 // Игровые проверки разнесены по файлам (game-*.spec.ts): каждый вопрос оставляет в happy-dom около 2,5 МБ мусора, который сборщик не успевает убрать,
 // поэтому один файл с тысячей вопросов занимал больше 3 ГБ и падал на CI (SIGABRT). Каждый файл идёт в своём процессе: держи в файле не больше ~500 вопросов.
 import { afterEach, expect } from 'vitest'
-import markupRaw from '@/game/markup.html?raw'
+import { mount, type VueWrapper } from '@vue/test-utils'
+import GameShell from '@/components/game/GameShell.vue'
 import { initGame } from '@/game/engine'
-import { iconImg } from '@/game/icons'
+import { createGameView } from '@/game/view'
 import { GAME_GROUPS, TOOL_IDS } from '@/data/games'
-
-/** Разметка игры так, как её собирает страница `/game/home` (иконки подставлены, фон кота не нужен). */
-const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
 
 /** Режимы движка: всё из каталога, кроме тренажёров со своим экраном (`TOOL_IDS`: новый тренажёр попадает сюда сам) и режимов, которые проверяются отдельно. */
 const NOT_ENGINE: string[] = [...TOOL_IDS, 'typewords', 'ptext', 'fut', 'only']
@@ -17,16 +15,23 @@ export const NEW_MODES = ['days', 'when', 'too', 'num', 'price', 'count', 'neg',
 
 type GameHooksItems = NonNullable<Parameters<typeof initGame>[0]['items']>
 let dispose: (() => void) | undefined
+let shell: VueWrapper | undefined
 export const records: { word: string | null; ok: boolean; mode?: string; xp?: number }[] = []
 export const grammarOpened: string[] = []
 
-/** Запускает игру в режиме `mode`. `keepSave: true` оставляет сохранение в localStorage (проверка, что настройки подхватываются). */
-export function start(mode: string, keepSave = false, items?: GameHooksItems) {
+type GameHooks = Parameters<typeof initGame>[0]
+
+/** Запускает игру на оболочке `GameShell`. `over` подменяет или дополняет хуки страницы, `save` кладёт сохранение игры до запуска, `keepSave: true` оставляет сохранение, что уже лежит. */
+export function boot(over: Partial<GameHooks> = {}, keepSave = false, save?: object) {
   dispose?.() // прежний экземпляр игры снимает свои обработчики клавиш
+  shell?.unmount()
   records.length = 0
   grammarOpened.length = 0
   if (!keepSave) localStorage.clear()
-  document.body.innerHTML = `<div id="root">${markup}</div>`
+  if (save) localStorage.setItem('hleb_game_v1', JSON.stringify(save))
+  document.body.innerHTML = '<div id="root"></div>'
+  const view = createGameView()
+  shell = mount(GameShell, { props: { view }, attachTo: document.getElementById('root')! })
   dispose = initGame({
     record: (o: { word: string | null; ok: boolean; mode?: string; xp?: number }) => {
       records.push(o)
@@ -35,15 +40,23 @@ export function start(mode: string, keepSave = false, items?: GameHooksItems) {
     importXp: () => {},
     state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }),
     cats: () => null,
-    mode: () => mode,
     saveCats: () => {},
     grammar: (id: string) => grammarOpened.push(id),
-    ...(items ? { items } : {}),
-  })
+    ...over,
+  }, view)
 }
+
+/** Запускает игру в режиме `mode`. `keepSave: true` оставляет сохранение в localStorage (проверка, что настройки подхватываются). */
+export function start(mode: string, keepSave = false, items?: GameHooksItems) {
+  boot({ mode: () => mode, ...(items ? { items } : {}) }, keepSave)
+}
+/** Закрывает окно «Как играть», которое игра открывает при первом запуске. */
+export const closeHelp = () => document.querySelector<HTMLButtonElement>('#helpOk')?.click()
 afterEach(() => {
   dispose?.()
   dispose = undefined
+  shell?.unmount()
+  shell = undefined
   document.body.innerHTML = ''
 })
 

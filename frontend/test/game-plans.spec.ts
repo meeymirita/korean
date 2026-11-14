@@ -1,32 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import markupRaw from '@/game/markup.html?raw'
-import { initGame } from '@/game/engine'
-import { iconImg } from '@/game/icons'
+import { describe, expect, it } from 'vitest'
+import { boot, closeHelp } from './game-helpers'
 
 // Режимы «Планы (-(으)ㄹ 거예요)» и «Только (만)» (отдельный файл: игровые тесты в одном файле упираются в память).
-const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
-let dispose: (() => void) | undefined
-
 function start(mode: string) {
-  dispose?.()
-  localStorage.clear()
-  document.body.innerHTML = `<div id="root">${markup}</div>`
-  dispose = initGame({
-    record: () => ({}),
-    importXp: () => {},
-    state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }),
-    cats: () => null,
-    mode: () => mode,
-    saveCats: () => {},
-    grammar: () => {},
-  })
-  document.querySelector<HTMLButtonElement>('#helpOk')?.click()
+  boot({ mode: () => mode })
+  closeHelp()
 }
-afterEach(() => {
-  dispose?.()
-  dispose = undefined
-  document.body.innerHTML = ''
-})
 
 const opts = () => [...document.querySelectorAll<HTMLButtonElement>('#opts .opt')]
 const optText = (b: Element) => (b.querySelector('.t')?.textContent ?? '').trim()

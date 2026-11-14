@@ -37,6 +37,7 @@ docker compose up -d --build
 
 ## Резервные копии и восстановление
 
+- В образ `backend` кроме `pg_dump` ставятся `ffmpeg` и `yt-dlp` для музыкального плеера (`docs/music.md`); `yt-dlp` обновляется при каждой пересборке образа.
 - Внутри `backend`: ночной `pg_dump` в `/data/backups/app-ДАТА.dump` (30 штук) и полный зашифрованный архив на Яндекс.Диск (почта только запасной путь, `docs/backup.md`; внутри `pg_dump`).
 - На хосте: `bash scripts/backup-docker.sh` (таймер: `scripts/install-backup-timer.sh`) делает снимок базы с проверкой, файлы жёсткими ссылками, копию `.env`, складывает в `/var/backups/korean` (14 штук), пишет `backup-status.json` и `backup.prom` для Grafana; `OFFSITE_RSYNC=user@host:/путь` в `.env` отправляет копии на другой сервер.
 - Восстановление базы из `app.dump`: `docker compose stop backend frontend`, `docker compose exec -T postgres pg_restore --clean --if-exists --no-owner -U korean -d korean < app.dump`, `docker compose up -d`. Файлы вернуть в том `app-data`: `docker compose cp ПАПКА/files/. backend:/data/` (потом `docker compose exec -u root backend chown -R node:node /data`).
@@ -78,7 +79,7 @@ npm --prefix backend run db:migrate    # обязательно: иначе те
 npm test
 docker stop kt-pg kt-redis kt-meili
 ```
-Редкая нестабильность: `tests/reminder-server.test.mjs` (таймеры) иногда падает один раз; перезапусти только его (`node --test tests/reminder-server.test.mjs`), затем весь набор.
+Раньше иногда падали тесты напоминаний (`reminder-server`, `lesson-server`): два тика подряд могли послать два письма. С 2026-11-14 тики не накладываются (`ticking` в `reminder.service.ts` и `lesson.service.ts`), нестабильности нет; если упадёт снова, это новая ошибка.
 
 ## Свои адреса для сервисов (Grafana, Prometheus, Meilisearch)
 

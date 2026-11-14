@@ -27,6 +27,12 @@ export interface DragDropOptions {
   overClass?: string
   /** Класс плитки, пока её тянут (по умолчанию `dragging`). */
   dragClass?: string
+  /** Селектор «ручки» внутри плитки: тянуть можно только за неё (остальная плитка прокручивается и нажимается как обычно). Нет ручки в плитке: плитка не тянется. */
+  handle?: string
+  /** Перетаскивание закончилось (над целью или нет): так экран может не принять отпускание кнопки за нажатие на плитку. */
+  onEnd?: () => void
+  /** `false`: плитка после бросания остаётся там, где её отпустили, и её возвращает сам вызывающий (например, плавной перестановкой). По умолчанию `true`. */
+  resetOnDrop?: boolean
 }
 
 /** Насколько точка может не дотянуть до цели, чтобы всё равно считаться попаданием (пальцем и пером трудно попасть в узкий пропуск). */
@@ -79,13 +85,15 @@ export function dragDrop(o: DragDropOptions): () => void {
   const point = (d: DraggableItem) => ({ x: d.pointerX - window.scrollX, y: d.pointerY - window.scrollY })
   const find = (d: DraggableItem) => {
     const p = point(d)
-    return targetAt(o.targets(), p.x, p.y, (d.target as HTMLElement).getBoundingClientRect())
+    // саму тянутую плитку целью не считаем: она едет под точкой и всегда «выигрывала» бы у соседних
+    const targets = Array.from(o.targets()).filter(t => t !== d.target)
+    return targetAt(targets, p.x, p.y, (d.target as HTMLElement).getBoundingClientRect())
   }
 
   load().then(Draggable => {
     if (dead) return
-    items = Draggable.create(Array.from(o.tiles), {
-      type: 'x,y',
+    const config = {
+      type: 'x,y' as const,
       zIndexBoost: true,
       minimumMovement: 6,
       onDragStart(this: DraggableItem) {
@@ -100,15 +108,23 @@ export function dragDrop(o: DragDropOptions): () => void {
         const p = point(this)
         setOver(null)
         tile.classList.remove(dragClass)
+        o.onEnd?.()
         if (target) {
           // плитка сразу на своём месте в банке: ответ показывает сама цель
-          gsap.set(tile, { x: 0, y: 0, clearProps: 'transform' })
+          if (o.resetOnDrop !== false) gsap.set(tile, { x: 0, y: 0, clearProps: 'transform' })
           o.onDrop(tile, target, p.x, p.y)
         } else {
           gsap.to(tile, { x: 0, y: 0, duration: 0.28, ease: 'back.out(1.6)', clearProps: 'transform' })
         }
       },
-    })
+    }
+    const tiles = Array.from(o.tiles)
+    items = o.handle
+      ? tiles.flatMap(t => {
+          const trigger = t.querySelector(o.handle!)
+          return trigger ? Draggable.create(t, { ...config, trigger }) : []
+        })
+      : Draggable.create(tiles, config)
     // без перетаскивания всё по-прежнему работает нажатием: ошибку плагина (старый браузер, тестовая среда) не показываем
   }).catch(() => {})
 

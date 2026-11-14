@@ -1,40 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import markupRaw from '@/game/markup.html?raw'
-import { initGame } from '@/game/engine'
-import { iconImg } from '@/game/icons'
+import { describe, expect, it } from 'vitest'
+import { boot, records } from './game-helpers'
 import { D as DICT } from '@/data/korean/words'
 import { D as GD } from '@/game/words'
 import { EXCHANGES } from '@/game/dialogs'
 import { STORIES } from '@/game/stories'
 
 // Тексты «Рассказ» и «Длинный» в режимах, добавленных позже (отдельный файл: общий `game.spec.ts` уже занимает много памяти).
-const markup = markupRaw.replace('CAT_SLEEP', '').replace(/ICON\((\w+)\)/g, (_, n: string) => iconImg(n))
-let dispose: (() => void) | undefined
-const records: { word: string | null; ok: boolean; mode?: string }[] = []
-
-function start(mode: string) {
-  dispose?.()
-  records.length = 0
-  localStorage.clear()
-  document.body.innerHTML = `<div id="root">${markup}</div>`
-  dispose = initGame({
-    record: (o: { word: string | null; ok: boolean; mode?: string }) => {
-      records.push(o)
-      return {}
-    },
-    importXp: () => {},
-    state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }),
-    cats: () => null,
-    mode: () => mode,
-    saveCats: () => {},
-    grammar: () => {},
-  })
-}
-afterEach(() => {
-  dispose?.()
-  dispose = undefined
-  document.body.innerHTML = ''
-})
+const start = (mode: string) => boot({ mode: () => mode })
 
 describe('тексты: «Слово → перевод» и «Перевод → слово»', () => {
   const chip = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')].find(b => b.textContent?.includes(text))!
@@ -540,11 +512,7 @@ describe('«Тексты по правилу» (ptext)', () => {
   })
 
   it('открытие по ссылке: правило берётся из адреса (?fam=)', () => {
-    dispose?.()
-    records.length = 0
-    localStorage.clear()
-    document.body.innerHTML = `<div id="root">${markup}</div>`
-    dispose = initGame({ record: () => ({}), importXp: () => {}, state: () => ({ level: 1, title: 'Искра', max: false, into: 0, span: 100, pct: 0, todayOk: 0, goal: 20 }), cats: () => null, mode: () => 'ptext', fam: () => 'object', saveCats: () => {}, grammar: () => {} })
+    boot({ mode: () => 'ptext', fam: () => 'object' })
     document.querySelector<HTMLButtonElement>('#helpOk')?.click()
     expect(fam('을 / 를').classList.contains('on')).toBe(true)
   })

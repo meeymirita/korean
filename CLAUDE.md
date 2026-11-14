@@ -65,7 +65,7 @@
 - Звука нет и не нужно. Никаких японских и китайских знаков, декоративные надписи только хангылем. Название везде **우리말**.
 - Дизайн пастельный розово-голубой по макетам владельца (шрифты Archivo / Noto Sans KR, вес 600–700; на странице игры мельче на 1–3 px и вес 500).
   Никаких смайликов в строке тренажёров и хлеба 🍞 в меню. Значок вкладки розовая ✳ (`public/favicon.svg`).
-- Видео-обзор платформы на главной **само не открывается** (решение 2026-11-09), только по ссылке «посмотреть видео-демонстрацию».
+- Видео-обзор платформы на главной **само не открывается** (решение 2026-11-09). С 2026-11-14 кнопка «посмотреть видео-демонстрацию» скрыта по просьбе владельца (`SHOW_DEMO` в `HomeView.vue`), вместо неё ссылка «о платформе →» на `/about`.
 - Игры с текстами: плитку можно **перетащить в пропуск или поставить нажатием** (решение владельца 2026-11-11, отменяет «только нажатием» от 2026-11-08; перетаскивание только через общий помощник `src/lib/dragdrop.ts` на GSAP Draggable, свои обработчики pointer-событий не писать; у всего, что тянут, `touch-action: none`, иначе на iPad перо «срывается»; с 2026-11-11 на помощнике игра, экзамен, «Слоги» и варианты ответа тренажёров, `vuedraggable` удалён; единственное исключение линии в «Найди пару»: там не переносят плитку, а ведут линию), нажатие на заполненный пропуск возвращает ответ, выбранная плитка после вставки снимается, проверка **в конце** по кнопке (она доступна всегда и обводит пустые пропуски), перевод предложения в значке слева открывается и прячется нажатием, бонус за итог (решения 2026-11-08 и 2026-11-10).
 - Картинки заметок и раздел «Картинки» это два разных раздела (у картинки есть назначение `kind`).
 - Вместо `confirm()`/`alert()` свои окна; уведомления свои (`useToastStore`), `vue-toastification` отклонён.
@@ -99,13 +99,13 @@
 - Предметы магазина получает сам любой новый режим на `TaskSession.vue`; цены и условия менять только в `backend/src/progress/coins.ts` и `COINS` (сайт держит копию в `src/data/coins.ts`, `shop.ts`), потом перезапустить сервер.
 - **Новая страница** = файл в `src/pages/` (закрытая токеном: `definePageMeta({ private: true })`) + запись в `src/data/seo.ts` (заголовок до 75 знаков, описание 60–190, закрытая `noindex`)
   + пункт в `src/data/korean/crumbs.ts` (хлебные крошки) + в шторку «Что здесь есть» (`src/data/guide.ts`). Sitemap и robots Nuxt строит сам по `seo.ts`. Тег `yandex-verification` в `nuxt.config.ts` не удалять.
-- Заметное изменение: запись в начало `HISTORY` (`src/data/history.ts`, тест следит за форматом). Изменил страницу: обнови слайд и скриншот в «О платформе» (`src/data/about.ts`, `src/assets/about/`)
+- Заметное изменение: запись в начало `HISTORY` (`src/data/history.ts`, тест следит за форматом). Изменил страницу: обнови слайд и скриншот в «О платформе» (`src/data/about.ts`, `src/assets/about/`, скрипт `scripts/about-shots.mjs`, `docs/home-and-theme.md`)
   (README без скриншотов; число слов и правил в нём сверяет `tests/readme.test.mjs`).
 - Менял `dark.css`: `node scripts/build-night.mjs` (собирает `night.css`, тест следит).
 - Новые предложения, переводы и задания перед внесением сверяй со списком «Проверка нейросетями: чему научились» в `docs/data.md` (я без рода, один верный ответ, только пройденное).
 - Менял словарь или `translations.ts`: `node scripts/digest-pool.mjs` и `node scripts/build-words-json.mjs` (публичный `/words.json` для сверки на дубли); менял словарь или пройденные темы: `node scripts/chat-curriculum.mjs`. Тесты следят. Менял грамматику, статус карточки, переводы, рассказы или диалоги: `node scripts/build-study-data.mjs` (открытые `GET /api/public/grammar` и `/api/public/sentences`: пройденная грамматика и все предложения, решение владельца 2026-11-10).
 - Поменял сервер: пересобери и перезапусти локальный (`npm run server:build`, затем `pkill -f "node dist/main.js"; npm run server`; в Docker `docker compose up -d --build backend`), иначе сайт «не видит» новых возможностей. Всё, что вызывает async-методы сервера (в том числе проверки `confirm.require`), обязательно с `await`: без него защита молча не срабатывает.
-- **Тесты перед коммитом (решение владельца, 2026-11-06):** менялся код (`backend/src`, `frontend/src`, `scripts`, тесты) — коммить только при зелёных тестах: смотри строку `ℹ fail 0` до `git commit` (`npm test | grep …` возвращает код `grep`, а не тестов; полный прогон около 3 минут; нужны PostgreSQL, Redis, Meilisearch, `DATABASE_URL` и **накатанные миграции** (`npm --prefix backend run db:migrate`), рецепт с временными контейнерами: `docs/docker.md`, «Данные для тестов»; один тест напоминаний (`tests/reminder-server.test.mjs`) иногда падает один раз из-за таймеров: перезапусти его и весь набор).
+- **Тесты перед коммитом (решение владельца, 2026-11-06):** менялся код (`backend/src`, `frontend/src`, `scripts`, тесты) — коммить только при зелёных тестах: смотри строку `ℹ fail 0` до `git commit` (`npm test | grep …` возвращает код `grep`, а не тестов; полный прогон около 3 минут; нужны PostgreSQL, Redis, Meilisearch, `DATABASE_URL` и **накатанные миграции** (`npm --prefix backend run db:migrate`), рецепт с временными контейнерами: `docs/docker.md`, «Данные для тестов».
   Менялись только текст, документация, картинка или `.env.example`: тесты не гонять, сразу коммит и пуш (CI проверит). Мелкая правка кода: хватит затронутого теста и `npm run type-check`.
 - Тесты, которым нужен `tests/_load.mjs`, обязаны вызывать `after(close)`, иначе `npm test` зависает. Таймеры двигай по секунде (`mock.timers.tick(1000)` в цикле).
 - Пакеты ставить можно любые, если дают пользу и не тяжелят сборку (смотри размер, свежесть, `npm audit`; тяжёлое грузи лениво): `npm install <пакет>`, затем `npm test` и `npm run build`; серверные в `backend/`.
@@ -127,7 +127,7 @@
 
 ## Стек и запуск
 
-Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + Prisma + PostgreSQL, Node 22.18+ или 24.12+), `docker/` (Dockerfile, Caddyfile, Prometheus, Grafana), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
+Папки: `frontend/` (Nuxt 4, SSR, Vue 3, Pinia, `srcDir: 'src'`), `backend/` (NestJS 12 + Prisma + PostgreSQL, Node 26+ (LTS)), `docker/` (Dockerfile, Caddyfile, Prometheus, Grafana), в корне `tests/`, `docs/`, `scripts/`, `.github/` и `package.json` только для тестов
 (три отдельных `node_modules`; корневой нужен тестам, `scripts/link-test-deps.mjs` делает `vue` и `pinia` ссылками на копии из `frontend/`). **Пути `src/...` везде считай от `frontend/`.**
 
 - Установка: `npm ci && npm --prefix frontend ci && npm --prefix backend ci && npm --prefix backend run db:generate` (Prisma Client; тестам нужны PostgreSQL, Redis, Meilisearch и `pg_dump` 17+: как поднять, в `docs/docker.md`, последний раздел).
@@ -143,7 +143,7 @@
 ## Структура `frontend/src`
 
 `pages/` (файловый роутинг, тонкие обёртки над `views/`) · `views/` (экраны) · `components/` (`cabinet/`, `korean/`, `charts/`, `garden/`, `home/`) · `composables/` · `stores/` (`progress`, `notes`, `images`, `shop`, `timer`, `toast`…) ·
-`lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (игра на чистом DOM: `engine.ts`, `build.ts`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
+`lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (движок игры: `engine.ts` рисует карточку вопроса на чистом DOM, `build.ts`, `view.ts`; оболочка игры на Vue в `components/game/`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
 Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `trash` (корзина 30 дней), `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `logs`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов).
 
 ## Документация (читай нужный файл перед работой)
@@ -159,6 +159,7 @@
 | `docs/disk-and-telegram.md` | **Яндекс.Диск**: что где лежит на Диске (копии, картинки, видео, картинки грамматики), переменные `.env`, вход на 4 часа, поломки |
 | `docs/telegram.md` | **Telegram**: уведомления в группу с темами, баннеры, оформление, анимированные эмодзи, вкладка «Telegram» в кабинете, очистка, поломки |
 | `docs/shop.md` | монетки Юны и магазин |
+| `docs/music.md` | **музыкальный плеер**: кнопка на всех страницах, песни на Диске, загрузка файлом и по ссылке (yt-dlp), подписанные ссылки, лимиты Caddy |
 | `docs/chat.md` | помощник-чат (OpenRouter) |
 | `docs/server.md` | сервер: таблицы, API, защита, двухфакторный вход |
 | `docs/docker.md` | **Docker-стек**: сервисы, первый запуск, обновление, копии, мониторинг, поиск |
@@ -169,7 +170,7 @@
 
 ## Как проверять
 
-- CI на GitHub (типы, сборка, тесты, `npm audit`, на Node 22 как в образах Docker и на Node 24 как на ноутбуке владельца) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
+- CI на GitHub (типы, сборка, тесты, `npm audit`, на Node 26 LTS: те же образы Docker и тот же Node у владельца, одна проверка, решение 2026-11-14) идёт на каждый push; Dependabot раз в неделю предлагает обновления (крупные не сливать вслепую).
 - Тесты: `npm test` (сборка сервера, Nest-тесты `backend/test`, Nuxt-тесты `frontend/test`, затем `tests/*.test.mjs`). Отдельно `npm run test:nest`, `npm run test:nuxt`. Быстро и без базы: `npm run test:quick` (все `tests/*.test.mjs`, которым не нужен сервер, по одному файлу, около минуты; можно часть имени: `npm run test:quick -- keyboard`).
   **Игровые тесты `frontend/test` разнесены по файлам** (`game.spec.ts`, `game-stories.spec.ts`, `game-variants.spec.ts`): один большой файл упирается в память Node (процесс падает с `SIGABRT`). Новые игровые тесты клади в отдельный файл.
 - Покрытие (без порога, только цифры) раз в неделю считает отдельный workflow `Coverage` (`.github/workflows/coverage.yml`; запустить сейчас: `gh workflow run Coverage`, цифры на странице запуска). Локально: `npm --prefix backend run test:coverage`, `npm --prefix frontend run test:coverage` (`@vitest/coverage-v8`; полный прогон тяжёлый, на ноутбуке запускай с одним файлом: `npx vitest run test/<файл>.spec.ts --coverage --coverage.include=src`).

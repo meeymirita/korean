@@ -32,7 +32,7 @@ export const ENV_VARS: Record<string, EnvKind> = {
   STUDY_WEEKLY: 'flag', STUDY_WEEKDAY: 'weekday', STUDY_TIME: 'time',
   // копии
   BACKUP_DIR: 'path', BACKUP_AUTO: 'flag', BACKUP_EVERY_DAYS: 'int', BACKUP_MAIL_TO: 'string', BACKUP_PASSPHRASE: 'secret', BACKUP_WATCH_MS: 'int',
-  YADISK_TOKEN: 'secret', YADISK_ROOT: 'string', YADISK_KEEP: 'int', YADISK_SYNC_DELAY_MS: 'int', YADISK_DUMP_DIR: 'path',
+  YADISK_TOKEN: 'secret', YADISK_ROOT: 'string', YADISK_KEEP: 'int', YADISK_SYNC_DELAY_MS: 'int', YADISK_DUMP_DIR: 'path', YTDLP_BIN: 'path', YTDLP_COOKIES: 'path',
   // Docker и мониторинг
   DOCKER_API_URL: 'url', COMPOSE_PROJECT_NAME: 'string', PROMETHEUS_URL: 'url',
 }

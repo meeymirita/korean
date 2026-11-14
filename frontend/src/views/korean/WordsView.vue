@@ -26,6 +26,8 @@ const marked = computed(() => markedWords.value.size)
 /** Иконки вкладок-тем (имена из src/lib/icons.ts) */
 const CAT_ICON: Record<string, string> = { Люди: 'user', природа: 'sprout', окружение: 'home', еда: 'bread', место: 'target', животные: 'cat-q', одежда: 'sparkle', событие: 'party', тело: 'heart', наречие: 'comet', эмоции: 'hearts' }
 const fav = usePersisted('words_fav', false, v => typeof v === 'boolean')
+/** «Закрепление по темам»: при каждом открытии страницы свёрнуто, разворачивается кнопкой (решение владельца 2026-11-14) */
+const topicsOpen = ref(false)
 const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
@@ -176,7 +178,12 @@ const shareWord = (d: Word) =>
       <TaskSession :tasks="drillTasks" source="trainer" mode="topic" again-label="Ещё серию" @again="nextDrill" />
     </section>
     <section v-else-if="!qs.length && !fav && !picked" class="wd-topics" aria-label="Закрепление по темам">
-      <h2 class="wd-topics-h">Закрепление по темам</h2>
+      <h2 class="wd-topics-h">
+        <button type="button" class="wd-topics-toggle" :aria-expanded="topicsOpen" aria-controls="wd-topics-body" @click="topicsOpen = !topicsOpen">
+          <span class="wd-topics-arrow" :class="{ open: topicsOpen }" aria-hidden="true">▸</span>Закрепление по темам
+        </button>
+      </h2>
+      <div id="wd-topics-body" class="wd-topics-body" :class="{ closed: !topicsOpen }" :inert="!topicsOpen">
       <div class="wd-topics-grid">
         <div v-for="t in topics" :key="t.id" class="wd-topic" :class="{ done: t.known === t.total }">
           <div class="wd-topic-top">
@@ -189,6 +196,7 @@ const shareWord = (d: Word) =>
           <span v-if="t.known === t.total" class="wd-topic-done">Тема выучена</span>
           <button v-else type="button" class="wd-topic-go" :title="`Серия до ${DRILL_SIZE} заданий по словам, которые ещё не выучены`" @click="startDrill(t.id)">Добить тему</button>
         </div>
+      </div>
       </div>
     </section>
     <div v-if="rows.length && !drill" class="tb">
@@ -244,6 +252,14 @@ const shareWord = (d: Word) =>
 .study .wd-topics-h, .study .wd-drill-head h2 { margin: 22px 0 10px; font-size: 18px; font-weight: 700; }
 .study .wd-drill-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
 .study .wd-drill-head .chip { cursor: pointer; font: inherit; font-weight: 600; color: var(--ink); }
+.study .wd-topics-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; font: inherit; font-size: 15px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #e86bc0, #d64da9); border: 0; border-radius: 99px; box-shadow: 0 6px 16px rgba(214, 77, 169, .3); cursor: pointer; }
+.study .wd-topics-toggle:hover { filter: brightness(1.06); }
+.study .wd-topics-arrow { display: inline-block; transition: transform .2s; }
+.study .wd-topics-arrow.open { transform: rotate(90deg); }
+.study .wd-topics-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .25s ease; }
+.study .wd-topics-body.closed { grid-template-rows: 0fr; }
+.study .wd-topics-body > .wd-topics-grid { min-height: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .study .wd-topics-body, .study .wd-topics-arrow { transition: none; } }
 .study .wd-topics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .study .wd-topic { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .study .wd-topic-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; }

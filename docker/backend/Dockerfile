@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS base
+FROM node:26-bookworm-slim AS base
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && install -d /usr/share/postgresql-common/pgdg \
@@ -7,6 +7,15 @@ RUN apt-get update \
  && apt-get update \
  && apt-get install -y --no-install-recommends postgresql-client-17 rsync \
  && rm -rf /var/lib/apt/lists/*
+
+# Музыкальный плеер (docs/music.md): ffmpeg (длительность, обложка, перекодирование) и yt-dlp (скачивание по ссылке).
+# yt-dlp: готовый бинарник без Python; обновляется при каждой пересборке образа (YouTube часто меняется: если скачивание перестало работать, пересобери образ).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg \
+ && rm -rf /var/lib/apt/lists/* \
+ && case "$(dpkg --print-architecture)" in arm64) YT=yt-dlp_linux_aarch64 ;; *) YT=yt-dlp_linux ;; esac \
+ && curl -fsSL "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$YT" -o /usr/local/bin/yt-dlp \
+ && chmod 755 /usr/local/bin/yt-dlp
 
 FROM base AS build
 WORKDIR /app

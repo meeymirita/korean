@@ -23,6 +23,8 @@ export const DISK_DIRS = {
   /** внутри папки копии и отдельная живая папка в корне: картинки и файлы */
   media: 'Картинки',
   video: 'korean_video',
+  /** музыкальный плеер: песни `<id>.<расширение>` и обложки `<id>.jpg` */
+  music: 'korean_music',
   /** картинки карточек грамматики: lesson-N.webp и own-<id>.webp */
   grammar: 'korean_grammar',
 } as const

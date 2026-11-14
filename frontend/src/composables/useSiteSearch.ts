@@ -8,13 +8,13 @@ const LIMIT = 6
 
 /**
  * Общий поиск по платформе для окна поиска и главной раздела: локальный результат сразу, индекс дополняет его чуть позже.
- * Разметка у экранов разная (окно раскрывает на месте, главная ведёт на страницы), поэтому общая только логика.
+ * Разметку результатов рисует `components/SearchResults.vue` (режим `inline` раскрывает на месте, `link` ведёт на страницы).
  */
 export function useSiteSearch(q: Ref<string>) {
   const result = ref<SearchResult | null>(search(q.value))
   let timer: ReturnType<typeof setTimeout> | undefined
   let request = 0
-  /** Слова запроса для подсветки. Саму обёртку `h` над `hl` каждый экран объявляет у себя: за этим следит тест на `v-html`. */
+  /** Слова запроса для подсветки. Обёртку `h` над `hl` объявляет тот, кто рисует результаты: за этим следит тест на `v-html`. */
   const qs = computed(() => parseQuery(q.value))
 
   const more = reactive<Record<string, boolean>>({})

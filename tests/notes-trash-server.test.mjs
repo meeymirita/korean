@@ -21,6 +21,13 @@ describe('сервер: закрепление, корзина и напомин
     assert.equal((await s.call('PUT', '/api/notes', OWNER, body([note('a', { pinned: 'да' })]))).status, 400)
   })
 
+  test('ручной порядок (pos) сохраняется и отдаётся; неверный pos отклоняется', async () => {
+    await s.call('PUT', '/api/notes', OWNER, body([note('a', { pos: 2 }), note('b', { pos: 0 }), note('c', { pos: null })], 9))
+    const got = await live()
+    assert.deepEqual(Object.fromEntries(got.map(x => [x.id, x.pos])), { a: 2, b: 0, c: null })
+    for (const bad of [-1, 1.5, 'x', 200000]) assert.equal((await s.call('PUT', '/api/notes', OWNER, body([note('a', { pos: bad })]))).status, 400, String(bad))
+  })
+
   test('убранная из списка заметка уходит в корзину, а не стирается', async () => {
     await s.call('PUT', '/api/notes', OWNER, body([note('a'), note('b', { created: 5 }), note('c', { pinned: true })], 11))
     assert.deepEqual((await live()).map(n => n.id), ['c', 'b', 'a'])
