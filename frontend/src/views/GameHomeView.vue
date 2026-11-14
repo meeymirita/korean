@@ -20,7 +20,6 @@ import PairsView from '@/views/korean/PairsView.vue'
 import TranslateView from '@/views/korean/TranslateView.vue'
 import ExplainTranslateView from '@/views/korean/ExplainTranslateView.vue'
 import PartOfSpeechView from '@/views/korean/PartOfSpeechView.vue'
-import ChainView from '@/views/korean/ChainView.vue'
 import SyllablesView from '@/views/korean/SyllablesView.vue'
 import KeyboardView from '@/views/korean/KeyboardView.vue'
 import RuleView from '@/views/korean/RuleView.vue'
@@ -50,7 +49,7 @@ const gameView = createGameView()
 /** Что открыто на странице: ничего (каталог), тренажёр (компонент Vue) или режим движка «Хлебушек». Выбор лежит в адресе ?game=… */
 const route = useRoute()
 const game = computed(() => (typeof route.query.game === 'string' ? route.query.game : ''))
-const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView, pairs: PairsView, translate: TranslateView, explain: ExplainTranslateView, speech: PartOfSpeechView, chain: ChainView, syllables: SyllablesView, rule: RuleView, keyboard: KeyboardView }
+const TOOLS = { match: TrainersView, quick: QuickView, particles: ParticlesView, pairs: PairsView, translate: TranslateView, explain: ExplainTranslateView, speech: PartOfSpeechView, syllables: SyllablesView, rule: RuleView, keyboard: KeyboardView }
 const tool = computed(() => (TOOL_IDS as readonly string[]).includes(game.value) ? TOOLS[game.value as keyof typeof TOOLS] : null)
 const engineOn = computed(() => !!game.value && !tool.value && ALL_GAMES.some(g => g.id === game.value))
 const current = computed(() => ALL_GAMES.find(g => g.id === game.value))
