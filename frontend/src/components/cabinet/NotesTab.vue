@@ -82,12 +82,40 @@ function setupDrag() {
     handle: '.nt-grip',
     overClass: 'nt-over',
     dragClass: 'nt-dragging',
-    onDrop: (tile, target) => {
-      const from = tile.dataset.id
-      const to = target.dataset.id
-      if (from && to) store.move(from, to)
-    },
+    resetOnDrop: false,
+    onEnd: () => (lastDragEnd = Date.now()),
+    onDrop: (tile, target) => void drop(el, tile, target),
   })
+}
+/** Отпускание кнопки после перетаскивания не должно открывать карточку (браузер присылает «клик» на карточке, под которой отпустили). */
+let lastDragEnd = 0
+const justDragged = () => Date.now() - lastDragEnd < 400
+const openCard = (n: Note) => { if (editing.value !== n.id && !justDragged()) openedId.value = n.id }
+
+/** Заметку бросили на место другой: остальные плавно сдвигаются, а брошенная плавно садится на своё место (приём FLIP на gsap). */
+async function drop(el: HTMLElement, tile: HTMLElement, target: HTMLElement) {
+  const from = tile.dataset.id
+  const to = target.dataset.id
+  if (!from || !to) return
+  const cards = Array.from(el.querySelectorAll('.nt-card'))
+  let state: unknown = null
+  let Flip: typeof import('gsap/Flip').Flip | null = null
+  try {
+    const [{ gsap }, mod] = await Promise.all([import('gsap'), import('gsap/Flip')])
+    Flip = mod.Flip
+    gsap.registerPlugin(Flip)
+    state = Flip.getState(cards)
+    gsap.set(tile, { x: 0, y: 0, clearProps: 'transform' })
+  } catch {
+    tile.style.transform = ''
+  }
+  if (!store.move(from, to)) {
+    // та же группа или нечего менять: карточка возвращается на место
+    if (Flip && state) Flip.from(state as never, { duration: 0.3, ease: 'power2.out' })
+    return
+  }
+  await nextTick()
+  if (Flip && state) Flip.from(state as never, { duration: 0.35, ease: 'power2.inOut' })
 }
 watch([shown, canSort], () => void nextTick(setupDrag), { flush: 'post' })
 onMounted(() => void nextTick(setupDrag))
@@ -279,7 +307,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
     <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено. Попробуйте другое слово или уберите тег из поиска.</p>
 
     <ul ref="list" class="nt-list">
-      <li v-for="n in shown" :key="n.id" class="nt-card" :data-id="n.id" :class="{ click: editing !== n.id, pinned: n.pinned }" :tabindex="editing !== n.id ? 0 : undefined" @click="editing !== n.id && (openedId = n.id)" @keydown.enter.self="editing !== n.id && (openedId = n.id)">
+      <li v-for="n in shown" :key="n.id" class="nt-card" :data-id="n.id" :class="{ click: editing !== n.id, pinned: n.pinned }" :tabindex="editing !== n.id ? 0 : undefined" @click="openCard(n)" @keydown.enter.self="openCard(n)">
         <template v-if="editing === n.id">
           <input v-model="editTitle" :maxlength="MAX_TITLE" :class="{ at: editTitle.length >= MAX_TITLE }" aria-label="Название" />
           <textarea v-model="editText" :maxlength="MAX_TEXT" :class="{ at: editText.length >= MAX_TEXT }" rows="5" aria-label="Описание"></textarea>
