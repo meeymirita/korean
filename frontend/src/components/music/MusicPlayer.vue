@@ -122,7 +122,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
         <div class="mp-mini-text">
           <b>{{ store.current.title }}</b>
           <small>{{ formatTime(store.time) }} / {{ formatTime(store.length || store.current.duration) }}</small>
-          <input class="mp-mini-seek" type="range" min="0" max="100" step="0.1" :value="pct" aria-label="Перемотка" @input="seekTo" />
+          <input class="mp-mini-seek" type="range" min="0" max="100" step="0.1" :value="pct" :style="{ '--p': pct + '%' }" aria-label="Перемотка" @input="seekTo" />
         </div>
         <button type="button" class="mp-ic" aria-label="Предыдущая" @click="store.prev()"><img :src="IMG.prev" alt="" /></button>
         <button type="button" class="mp-ic mp-ic-main" :aria-label="store.playing ? 'Пауза' : 'Играть'" @click="store.toggle()"><img :src="store.playing ? IMG.pause : IMG.play" alt="" /></button>
@@ -151,7 +151,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
           </div>
 
           <div class="mp-seek">
-            <input type="range" min="0" max="100" step="0.1" :value="pct" :disabled="!store.current" aria-label="Время песни" @input="seekTo" />
+            <input type="range" min="0" max="100" step="0.1" :value="pct" :style="{ '--p': pct + '%' }" :disabled="!store.current" aria-label="Время песни" @input="seekTo" />
             <div class="mp-times"><span>{{ formatTime(store.time) }}</span><span>{{ formatTime(store.length || store.current?.duration || 0) }}</span></div>
           </div>
 
@@ -165,7 +165,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
             </button>
             <div class="mp-vol">
               <button type="button" class="mp-ic" :aria-label="store.muted ? 'Включить звук' : 'Выключить звук'" @click="store.toggleMute()"><img :src="store.muted || store.volume === 0 ? IMG.mute : IMG.volume" alt="" /></button>
-              <input type="range" min="0" max="100" :value="store.muted ? 0 : Math.round(store.volume * 100)" aria-label="Громкость" @input="store.setVolume(Number(($event.target as HTMLInputElement).value) / 100)" />
+              <input type="range" min="0" max="100" :value="store.muted ? 0 : Math.round(store.volume * 100)" :style="{ '--p': (store.muted ? 0 : Math.round(store.volume * 100)) + '%' }" aria-label="Громкость" @input="store.setVolume(Number(($event.target as HTMLInputElement).value) / 100)" />
             </div>
           </div>
 
@@ -246,7 +246,6 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-mini-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; font-size: 13px; line-height: 1.25; }
 .mp-mini-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .mp-mini-text small { color: var(--mp-muted); font-size: 11px; }
-.mp-mini-seek { width: 100%; height: 14px; margin: 2px 0 0; accent-color: var(--mp-pink-d); cursor: pointer; }
 .mp-mini .mp-ic { width: 30px; height: 30px; }
 .mp-mini .mp-ic-main { width: 38px; height: 38px; }
 .mp-mini-enter-active, .mp-mini-leave-active { transition: opacity .2s, transform .2s; }
@@ -277,7 +276,18 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-now-text small { font-size: 12px; opacity: .85; }
 .mp-now-text b { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.mp-seek input, .mp-vol input { width: 100%; accent-color: var(--mp-pink-d); cursor: pointer; }
+/* ползунки времени и громкости: тонкая полоска с розовой заливкой (--p: сколько пройдено) и узкий бегунок-палочка вместо кружка */
+.mp-seek input, .mp-vol input, .mp-mini-seek { --mp-th: 3px; --mp-bar: 12px; -webkit-appearance: none; appearance: none; width: 100%; height: 16px; margin: 0; padding: 0; background: transparent; cursor: pointer; }
+.mp-mini-seek { --mp-th: 2px; --mp-bar: 9px; height: 12px; margin-top: 2px; }
+.mp-seek input:disabled { opacity: .5; cursor: default; }
+.mp-seek input::-webkit-slider-runnable-track, .mp-vol input::-webkit-slider-runnable-track, .mp-mini-seek::-webkit-slider-runnable-track {
+  height: var(--mp-th); border-radius: 3px; background: linear-gradient(90deg, var(--mp-pink-d) var(--p, 0%), var(--mp-line) var(--p, 0%)); }
+.mp-seek input::-webkit-slider-thumb, .mp-vol input::-webkit-slider-thumb, .mp-mini-seek::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 3px; height: var(--mp-bar); margin-top: calc((var(--mp-th) - var(--mp-bar)) / 2); border: 0; border-radius: 2px; background: var(--mp-pink-d); transition: transform .15s; }
+.mp-seek input:hover::-webkit-slider-thumb, .mp-vol input:hover::-webkit-slider-thumb, .mp-mini-seek:hover::-webkit-slider-thumb { transform: scaleY(1.25); }
+.mp-seek input::-moz-range-track, .mp-vol input::-moz-range-track, .mp-mini-seek::-moz-range-track { height: var(--mp-th); border-radius: 3px; background: var(--mp-line); }
+.mp-seek input::-moz-range-progress, .mp-vol input::-moz-range-progress, .mp-mini-seek::-moz-range-progress { height: var(--mp-th); border-radius: 3px; background: var(--mp-pink-d); }
+.mp-seek input::-moz-range-thumb, .mp-vol input::-moz-range-thumb, .mp-mini-seek::-moz-range-thumb { width: 3px; height: var(--mp-bar); border: 0; border-radius: 2px; background: var(--mp-pink-d); }
 .mp-times { display: flex; justify-content: space-between; font-size: 12px; color: var(--mp-muted); }
 .mp-ctl { display: flex; align-items: center; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
 .mp-vol { display: flex; align-items: center; gap: 2px; flex: 1 1 110px; min-width: 110px; }
