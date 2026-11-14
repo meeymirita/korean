@@ -61,8 +61,8 @@ const done = computed(() => total.value - left.value)
 /** Те же группы, что в «Найди пару»: наборы по грамматике и предложения берутся из `trainer.ts`, темы словаря из слов для заданий (`STUDY`). */
 const isSet = (c: string) => SETS.some(s => s.id === c) || PAIR_SETS.some(s => s.id === c)
 const DICT = new Set(D.map(d => d.k))
-/** звёздочка «отметить слово» только у слов словаря (у предложений и форм её нет) */
-const canMark = computed(() => !!card.value && DICT.has(card.value.word.k))
+/** звёздочка «отметить слово» только у слов словаря (у предложений и форм её нет, даже если фраза есть и в словаре) */
+const canMark = computed(() => !!card.value && !PAIR_SETS.some(s => s.id === cat.value) && DICT.has(card.value.word.k))
 /** лицо карточки: у вопросительных предложений предложение с пропуском */
 const front = computed(() => (card.value ? ((card.value.word as { blank?: string }).blank ?? card.value.word.k) : ''))
 /** длинное (предложение) пишется мельче, чтобы помещалось на карточке */
