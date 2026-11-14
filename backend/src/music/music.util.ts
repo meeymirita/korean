@@ -102,7 +102,7 @@ export function ytdlpError(stderr: string): string {
   const lines = stderr.split('\n').map(l => l.trim()).filter(Boolean)
   const err = [...lines].reverse().find(l => /^ERROR:/i.test(l)) ?? lines[lines.length - 1] ?? 'неизвестная ошибка'
   const text = err.replace(/^ERROR:\s*/i, '').replace(/\[[^\]]+\]\s*/, '').slice(0, 220)
-  if (/sign in to confirm|not a bot|cookies/i.test(text)) return 'YouTube просит подтвердить, что это не бот. Нужен файл cookies (YTDLP_COOKIES, docs/music.md)'
+  if (/sign in to confirm|not a bot|cookies/i.test(text)) return 'YouTube просит подтвердить, что это не бот. Нужен файл cookies (data/youtube-cookies.txt, docs/music.md)'
   if (/private|unavailable|removed|not available/i.test(text)) return 'Видео недоступно (закрыто, удалено или недоступно в стране сервера)'
   if (/unsupported url/i.test(text)) return 'Эта ссылка не поддерживается'
   return text

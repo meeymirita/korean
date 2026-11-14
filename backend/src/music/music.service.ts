@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { copyFile, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { MAX_TRACK, MUSIC_DIR, MUSIC_TMP, TOKEN } from '../config.js'
+import { DATA_DIR, MAX_TRACK, MUSIC_DIR, MUSIC_TMP, TOKEN } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
@@ -213,7 +213,9 @@ export class MusicService {
 
   private async runYtdlp(job: Job, url: string) {
     const bin = process.env.YTDLP_BIN || 'yt-dlp'
-    const cookies = process.env.YTDLP_COOKIES && existsSync(process.env.YTDLP_COOKIES) ? process.env.YTDLP_COOKIES : undefined
+    // файл cookies YouTube (необязательно): лежит в папке данных рядом с базой, docs/music.md
+    const cookiesFile = process.env.YTDLP_COOKIES || path.join(DATA_DIR, 'youtube-cookies.txt')
+    const cookies = existsSync(cookiesFile) ? cookiesFile : undefined
     const dir = path.join(MUSIC_TMP, job.id)
     mkdirSync(dir, { recursive: true })
     try {

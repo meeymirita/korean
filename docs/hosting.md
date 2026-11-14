@@ -38,8 +38,12 @@ korean.meeymirita.ru {
         Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
         -Server
     }
-    request_body {
+    @usual not path /api/music/upload
+    request_body @usual {
         max_size 60MB
+    }
+    request_body /api/music/upload {
+        max_size 1536MB
     }
     @pages path / /index.html /sitemap.xml /robots.txt /manifest.webmanifest
     header @pages Cache-Control "no-cache"
