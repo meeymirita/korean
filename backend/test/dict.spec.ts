@@ -3,7 +3,7 @@ import { applyVocab, buildDocs, rankOf, toDoc, type RawEntry } from '../src/dict
 import { COLLECTIONS } from '../src/dict/dict.collections'
 import { VOCAB } from '../src/dict/dict.vocab'
 import { dictionaryForms } from '../src/dict/dict.hangul'
-import { DictService, INDEX_VERSION, isIndexFresh, sitemapNeighbors } from '../src/dict/dict.service'
+import { DictService, INDEX_VERSION, isIndexFresh, sitemapNeighbors, sitemapWordList } from '../src/dict/dict.service'
 
 const entry = (over: Partial<RawEntry> = {}): RawEntry => ({
   word: '학생',
@@ -57,6 +57,19 @@ describe('большой словарь: алфавитные соседи', () 
     expect(sitemapNeighbors(words, '가다')).toEqual({ previous: null, next: '나다' })
     expect(sitemapNeighbors(words, '다다')).toEqual({ previous: '나다', next: null })
     expect(sitemapNeighbors(words, '없다')).toEqual({ previous: null, next: null })
+  })
+})
+
+describe('большой словарь: слова в карте сайта', () => {
+  const vocab: [number, string, string, string][] = [[1, '가다', '동사', 'A'], [2, '나무', '명사', 'A'], [3, '가다', '보조', 'A']]
+  it('в карту идут только слова списка для изучающих (по одному разу, по алфавиту), редкие остаются вне карты', () => {
+    expect(sitemapWordList(new Set(['희귀어', '나무', '가다', '다람쥐']), vocab, false)).toEqual(['가다', '나무'])
+  })
+  it('SITEMAP_ALL возвращает все слова', () => {
+    expect(sitemapWordList(new Set(['희귀어', '나무']), vocab, true)).toEqual(['나무', '희귀어'])
+  })
+  it('если ни одно слово списка не нашлось в индексе, в карту идут все (карта не остаётся пустой)', () => {
+    expect(sitemapWordList(new Set(['희귀어', '다람쥐']), vocab, false)).toEqual(['다람쥐', '희귀어'])
   })
 })
 

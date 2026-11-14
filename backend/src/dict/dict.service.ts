@@ -5,6 +5,7 @@ import path from 'node:path'
 import { buildDocs, type DictDoc, type RawEntry } from './dict.data.js'
 import { dictionaryForms, isPredicate } from './dict.hangul.js'
 import { COLLECTIONS, collectionBySlug } from './dict.collections.js'
+import { VOCAB } from './dict.vocab.js'
 
 const INDEX = 'krdict'
 const BATCH = 4000
@@ -64,6 +65,18 @@ export const shortRu = (ru: string, max = 2) => {
   const all = [...new Set(ru.split('; ').map(x => x.trim()).filter(Boolean))]
   const short = all.filter(x => x.length <= 40)
   return (short.length ? short : all).slice(0, max).join('; ')
+}
+
+/**
+ * Слова для карты сайта: только «Словарь для изучающих» (`VOCAB`, около 5 тысяч слов с частотой и уровнем A/B/C): это самые полезные страницы.
+ * Остальные слова остаются открытыми (`index, follow`) и находятся по ссылкам с алфавитных указателей, но в карту не идут: Google охотнее
+ * берёт небольшую карту хороших страниц, чем 45 тысяч тонких. `SITEMAP_ALL=1` в `.env` возвращает в карту все слова; если список не нашёлся в индексе, тоже все.
+ */
+export const sitemapWordList = (all: Set<string>, vocab: readonly (readonly [number, string, string, string])[] = VOCAB, includeAll = process.env.SITEMAP_ALL === '1'): string[] => {
+  if (includeAll) return [...all].sort()
+  const learner = new Set(vocab.map(v => v[1]))
+  const picked = [...all].filter(w => learner.has(w))
+  return (picked.length ? picked : [...all]).sort()
 }
 
 /** Соседние разные слова в уже отсортированном алфавитном списке. */
@@ -152,7 +165,7 @@ export class DictService implements OnApplicationBootstrap {
   private sitemapCache: { at: number; urls: { loc: string }[] } | null = null
   private sitemapLoading: Promise<{ loc: string }[]> | null = null
 
-  /** Все слова словаря для карты сайта (sitemap.xml): адреса `/dict/<слово>`, по одному на слово (омонимы сливаются). Кэш на 6 часов. */
+  /** Карта сайта (sitemap.xml): подборки, указатели и слова для изучающих `/dict/<слово>` (`sitemapWordList`), по одному на слово (омонимы сливаются). Кэш на 6 часов. */
   async sitemap(): Promise<{ loc: string }[]> {
     this.notWhileIndexing()
     const TTL = 6 * 60 * 60_000
@@ -180,7 +193,7 @@ export class DictService implements OnApplicationBootstrap {
         { loc: '/dict/a' },
         ...CHOSEONG.filter(letter => letterCounts.has(letter)).map(letter => ({ loc: `/dict/a/${letter}` })),
         ...[...syllableCounts.keys()].sort().map(syllable => ({ loc: `/dict/a/${syllable}` })),
-        ...[...words].sort().map(w => ({ loc: `/dict/${w}` })),
+        ...sitemapWordList(words).map(w => ({ loc: `/dict/${w}` })),
       ]
       for (const [initial, count] of [...letterCounts, ...syllableCounts]) {
         for (let page = 2; page <= Math.ceil(count / ALPHABET_PAGE_SIZE); page++) urls.push({ loc: `/dict/a/${initial}/${page}` })
