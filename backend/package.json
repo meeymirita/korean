@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage --coverage.reporter=text-summary --coverage.include=src"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.12.0"
+    "node": ">=26.0.0"
   },
   "dependencies": {
     "@napi-rs/canvas": "1.0.13",
@@ -41,7 +41,7 @@
     "@swc/core": "^1.16.21",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "^5.0.5",
@@ -56,5 +56,13 @@
     "@nestjs/cli": {
       "minimatch": "^11.0.4"
     }
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.1": true,
+    "@swc/core@1.16.21": true,
+    "msgpackr-extract@3.0.6": true,
+    "prisma@7.10.1": true,
+    "@scarf/scarf": false,
+    "fsevents": false
   }
 }

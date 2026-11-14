@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   check:
-    name: Проверка (Node ${{ matrix.node }})
+    name: Проверка (Node 26)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -61,17 +61,13 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
-    strategy:
-      fail-fast: false
-      matrix:
-        # Node 22: ровно та версия, что в образах Docker на сервере (docker/*/Dockerfile).
-        node: [22, 24]
+    # одна версия Node 26 (LTS): та же, что в образах Docker на сервере (docker/*/Dockerfile) и у владельца (решение 2026-11-14)
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 26
           cache: npm
           cache-dependency-path: |
             package-lock.json
