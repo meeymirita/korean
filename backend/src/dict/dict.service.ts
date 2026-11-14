@@ -79,6 +79,23 @@ export const sitemapWordList = (all: Set<string>, vocab: readonly (readonly [num
   return (picked.length ? picked : [...all]).sort()
 }
 
+/** Русское слово для страницы «X по-корейски»: одно слово кириллицей, 3–24 знака, возможен один дефис (без пробелов и скобок). */
+export const isRuWord = (s: string) => s.length >= 3 && s.length <= 24 && /^[а-яё]+(?:-[а-яё]+)?$/.test(s)
+/** Сколько русских слов идёт в карту сайта (самые частые по списку для изучающих). */
+const RU_SITEMAP_MAX = 3000
+/** Сколько русских слов показывает указатель /ru (остальные находятся поиском и ссылками со страниц слов). */
+const RU_INDEX_SHOWN = 400
+
+/** Русские слова из переводов слов списка для изучающих, лучшие первыми (по самому частому корейскому слову с таким переводом). */
+export const ruWordList = (docs: { tr?: string[]; freq?: number }[], max = RU_SITEMAP_MAX): string[] => {
+  const best = new Map<string, number>()
+  for (const d of docs) {
+    if (typeof d.freq !== 'number') continue
+    for (const t of d.tr ?? []) if (isRuWord(t) && d.freq < (best.get(t) ?? Infinity)) best.set(t, d.freq)
+  }
+  return [...best].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], 'ru')).slice(0, max).map(([w]) => w)
+}
+
 /** Соседние разные слова в уже отсортированном алфавитном списке. */
 export const sitemapNeighbors = (words: string[], word: string) => {
   const index = words.indexOf(word)
@@ -162,6 +179,7 @@ export class DictService implements OnApplicationBootstrap {
     }
   }
 
+  private ruCache: string[] = []
   private sitemapCache: { at: number; urls: { loc: string }[] } | null = null
   private sitemapLoading: Promise<{ loc: string }[]> | null = null
 
@@ -173,12 +191,17 @@ export class DictService implements OnApplicationBootstrap {
     if (this.sitemapLoading) return this.sitemapLoading
     this.sitemapLoading = (async () => {
       const words = new Set<string>()
+      const learnerDocs: { tr?: string[]; freq?: number }[] = []
       for (let offset = 0; ; offset += 1000) {
-        const page = await this.req<{ results?: { word: string }[]; total?: number }>(`/indexes/${INDEX}/documents?fields=word&limit=1000&offset=${offset}`, {}, [404], 20_000)
+        const page = await this.req<{ results?: { word: string; tr?: string[]; freq?: number }[]; total?: number }>(`/indexes/${INDEX}/documents?fields=word,tr,freq&limit=1000&offset=${offset}`, {}, [404], 20_000)
         const rows = page?.results ?? []
-        for (const r of rows) if (r.word && !/[\s/?#%]/.test(r.word)) words.add(r.word)
+        for (const r of rows) {
+          if (r.word && !/[\s/?#%]/.test(r.word)) words.add(r.word)
+          if (typeof r.freq === 'number') learnerDocs.push({ tr: r.tr, freq: r.freq })
+        }
         if (rows.length < 1000) break
       }
+      const ru = ruWordList(learnerDocs)
       const letterCounts = new Map<string, number>()
       const syllableCounts = new Map<string, number>()
       for (const word of words) {
@@ -194,14 +217,41 @@ export class DictService implements OnApplicationBootstrap {
         ...CHOSEONG.filter(letter => letterCounts.has(letter)).map(letter => ({ loc: `/dict/a/${letter}` })),
         ...[...syllableCounts.keys()].sort().map(syllable => ({ loc: `/dict/a/${syllable}` })),
         ...sitemapWordList(words).map(w => ({ loc: `/dict/${w}` })),
+        // русско-корейские страницы «школа по-корейски»: самые частые русские слова из переводов
+        ...(ru.length ? [{ loc: '/ru' }, ...ru.map(w => ({ loc: `/ru/${w}` }))] : []),
       ]
       for (const [initial, count] of [...letterCounts, ...syllableCounts]) {
         for (let page = 2; page <= Math.ceil(count / ALPHABET_PAGE_SIZE); page++) urls.push({ loc: `/dict/a/${initial}/${page}` })
       }
-      if (urls.length && !this.indexing) this.sitemapCache = { at: Date.now(), urls }
+      if (urls.length && !this.indexing) {
+        this.sitemapCache = { at: Date.now(), urls }
+        this.ruCache = ru
+      }
       return urls
     })().finally(() => { this.sitemapLoading = null })
     return this.sitemapLoading
+  }
+
+  /** Страница «X по-корейски»: слова, у которых X это точный перевод (по убыванию «популярности»), и слова с X среди значений. 404, если точных нет. */
+  async ruWord(raw: string) {
+    const q = raw.replace(/\s+/g, ' ').trim().toLowerCase()
+    if (!isRuWord(q)) throw new NotFoundException({ error: 'not found' })
+    this.notWhileIndexing()
+    const r = await this.req<{ hits?: DictDoc[] }>(`/indexes/${INDEX}/search`, {
+      method: 'POST',
+      body: JSON.stringify({ q: '', limit: 30, filter: `tr = ${q1(q)}`, sort: ['rank:desc'] }),
+    }, [404])
+    const exact = r?.hits ?? []
+    if (!exact.length) throw new NotFoundException({ error: 'not found' })
+    const ids = new Set(exact.map(h => h.id))
+    const related = (await this.search(q)).hits.filter(h => !ids.has(h.id)).slice(0, 12)
+    return { q, exact: exact.map(slim), related }
+  }
+
+  /** Указатель /ru: самые частые русские слова (то же, что идёт в карту сайта; список собирается вместе с картой). */
+  async ruIndex() {
+    if (!this.ruCache.length) await this.sitemap()
+    return { total: this.ruCache.length, words: this.ruCache.slice(0, RU_INDEX_SHOWN) }
   }
 
   async status() {

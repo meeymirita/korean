@@ -3,7 +3,7 @@ import { applyVocab, buildDocs, rankOf, toDoc, type RawEntry } from '../src/dict
 import { COLLECTIONS } from '../src/dict/dict.collections'
 import { VOCAB } from '../src/dict/dict.vocab'
 import { dictionaryForms } from '../src/dict/dict.hangul'
-import { DictService, INDEX_VERSION, isIndexFresh, sitemapNeighbors, sitemapWordList } from '../src/dict/dict.service'
+import { DictService, INDEX_VERSION, isIndexFresh, isRuWord, ruWordList, sitemapNeighbors, sitemapWordList } from '../src/dict/dict.service'
 
 const entry = (over: Partial<RawEntry> = {}): RawEntry => ({
   word: '학생',
@@ -386,5 +386,24 @@ describe('большой словарь: частотный список и по
     expect(urls).toContainEqual({ loc: '/dict/학생' })
     expect(urls).toContainEqual({ loc: '/dict/가다' })
     expect(urls.some(({ loc }) => /%25/i.test(loc))).toBe(false)
+  })
+})
+
+describe('русско-корейские страницы «X по-корейски»', () => {
+  it('русское слово: одно слово кириллицей, 3–24 знака, возможен дефис', () => {
+    for (const ok of ['школа', 'кто-то', 'ёлка']) expect(isRuWord(ok), ok).toBe(true)
+    for (const bad of ['', 'до', 'school', 'красивая девушка', 'дом (здание)', 'а'.repeat(25), '--', 'кто--то', 'Школа']) expect(isRuWord(bad), bad).toBe(false)
+  })
+
+  it('список русских слов: только переводы слов списка для изучающих, самые частые первыми, без повторов и без фраз', () => {
+    const docs = [
+      { freq: 5, tr: ['школа', 'учебное заведение'] },
+      { freq: 1, tr: ['дом', 'здание (дом)'] },
+      { freq: 3, tr: ['школа', 'занятия'] },
+      { tr: ['редкость'] }, // не из списка для изучающих
+    ]
+    // «школа» берёт лучшее место (3) из двух слов и делит его с «занятия»: при равенстве по алфавиту
+    expect(ruWordList(docs)).toEqual(['дом', 'занятия', 'школа'])
+    expect(ruWordList(docs, 2)).toEqual(['дом', 'занятия'])
   })
 })

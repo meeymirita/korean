@@ -76,6 +76,22 @@ export class DictController {
     return this.dict.word(word)
   }
 
+  /** Страница «X по-корейски»: слова с точным русским переводом X (открытая, как и страница слова). */
+  @Public()
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+  @Get('ru-word/:q')
+  ruWord(@Param('q') q: string) {
+    return this.dict.ruWord(q)
+  }
+
+  /** Указатель русско-корейских страниц: самые частые русские слова. */
+  @Public()
+  @Header('Cache-Control', 'public, max-age=3600')
+  @Get('ru-index')
+  ruIndex() {
+    return this.dict.ruIndex()
+  }
+
   /** Адреса всех слов для карты сайта (читает Nuxt при сборке sitemap.xml). Слова с пробелом (выражения) не включаются: у них неудобные адреса. */
   @Public()
   @Header('Cache-Control', 'public, max-age=3600')
