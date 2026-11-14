@@ -187,6 +187,10 @@
 .study .nt-card { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s, transform .2s; }
 .study .nt-card:hover { border-color: var(--gold); }
 .study .nt-card.click { cursor: pointer; }
+.study .nt-grip { margin-right: 8px; padding: 0 4px; font: inherit; line-height: 1; color: var(--muted); background: none; border: 0; border-radius: 6px; cursor: grab; touch-action: none; }
+.study .nt-grip:hover { color: var(--pink); }
+.study .nt-card.nt-dragging { z-index: 5; background: var(--surface); cursor: grabbing; box-shadow: 0 14px 34px rgba(100, 87, 170, .3); }
+.study .nt-card.nt-over { border-color: var(--pink); outline: 2px dashed var(--pink); outline-offset: 2px; }
 .study .nt-head h4 { margin: 0; font-family: var(--serif); font-size: 24px; font-weight: 600; line-height: 1.15; overflow-wrap: anywhere; }
 .study .nt-head time { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); }
 .study .nt-text { margin: 0; flex: 1; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useProgressStore } from '@/stores/progress'
 import { errText, fetchT } from '@/lib/http'
 import { cleanTags } from '@/lib/tags'
-import { cleanRemind, sortNotes } from '@/lib/notesMeta'
+import { cleanRemind, moveOrder, sortNotes } from '@/lib/notesMeta'
 
 export interface Note {
   id: string
@@ -19,6 +19,8 @@ export interface Note {
   pinned: boolean
   /** «Напомнить в»: ГГГГ-ММ-ДДTЧЧ:ММ по часам сервера (только у владельца) */
   remindAt: string | null
+  /** ручной порядок (перетаскивание); null: по умолчанию, новые сверху */
+  pos: number | null
 }
 
 /** Заметка из корзины: deletedAt в мс. */
@@ -68,6 +70,7 @@ export function normalizeNotes(raw: unknown): NotesData {
       updated: Number(n.updated) || 0,
       pinned: n.pinned === true,
       remindAt: cleanRemind(n.remindAt),
+      pos: Number.isInteger(n.pos) && (n.pos as number) >= 0 && (n.pos as number) <= 100_000 ? (n.pos as number) : null,
     })
   }
   return { v: 1, updated: Number(r.updated) || 0, notes }
@@ -112,7 +115,7 @@ export const useNotesStore = defineStore('notes', () => {
     const x = text.trim().slice(0, MAX_TEXT)
     if ((!t && !x && !images.length) || full.value) return null
     const now = Date.now()
-    const note: Note = { id: newId(), title: t || 'Без названия', text: x, images: images.slice(0, MAX_NOTE_IMAGES), tags: cleanTags(tags), created: now, updated: now, pinned: false, remindAt: null }
+    const note: Note = { id: newId(), title: t || 'Без названия', text: x, images: images.slice(0, MAX_NOTE_IMAGES), tags: cleanTags(tags), created: now, updated: now, pinned: false, remindAt: null, pos: null }
     data.value.notes.push(note)
     touch()
     return note
@@ -144,6 +147,19 @@ export const useNotesStore = defineStore('notes', () => {
     const n = data.value.notes.find(x => x.id === id)
     if (!n || !synced()) return false
     return update(id, { pinned: !n.pinned })
+  }
+
+  /** Переносит заметку на место другой (перетаскивание) и запоминает порядок. false: нечего менять или заметки в разных группах (закреплённые / нет). */
+  function move(id: string, onto: string) {
+    const order = moveOrder(notes.value, id, onto)
+    if (!order) return false
+    const byId = new Map(data.value.notes.map(n => [n.id, n]))
+    order.forEach((nid, i) => {
+      const n = byId.get(nid)
+      if (n) n.pos = i
+    })
+    touch()
+    return true
   }
 
   /** Корзина, закрепление и напоминание есть только у владельца: у гостя заметки в памяти и удаляются сразу. */
@@ -255,5 +271,5 @@ export const useNotesStore = defineStore('notes', () => {
     { deep: true, flush: 'sync' },
   )
 
-  return { data, notes, tagCounts, full, status, message, owner, trash, trashLoaded, add, update, remove, togglePin, loadTrash, restore, purge, init, push }
+  return { data, notes, tagCounts, full, status, message, owner, trash, trashLoaded, add, update, remove, togglePin, move, loadTrash, restore, purge, init, push }
 })

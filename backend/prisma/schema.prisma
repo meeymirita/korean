@@ -75,6 +75,8 @@ model Note {
   remindAt  String? @map("remind_at")
   /// напоминание уже отправлено (метка ставится до отправки)
   remindSent Boolean @default(false) @map("remind_sent")
+  /// ручной порядок (перетаскивание); null: по умолчанию, новые сверху
+  pos Int?
   @@map("notes")
 }
 

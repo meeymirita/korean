@@ -12,9 +12,31 @@ const plural = (n: number, one: string, few: string, many: string) => {
 }
 export const daysLeftLabel = (n: number) => (n <= 0 ? 'сегодня будет удалено' : `осталось ${n} ${plural(n, 'день', 'дня', 'дней')}`)
 
-/** Закреплённые первыми; внутри групп прежний порядок: новые сверху. Исходный массив не меняется. */
-export function sortNotes<T extends { pinned?: boolean; created: number }>(list: readonly T[]): T[] {
-  return [...list].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.created - a.created)
+/**
+ * Закреплённые первыми; внутри групп: сначала заметки без ручного места (новые сверху), потом расставленные вручную по `pos`.
+ * Так новая заметка всегда сверху, а перетащенный порядок не сбивается. Исходный массив не меняется.
+ */
+export function sortNotes<T extends { pinned?: boolean; created: number; pos?: number | null }>(list: readonly T[]): T[] {
+  return [...list].sort((a, b) => {
+    const byPin = Number(!!b.pinned) - Number(!!a.pinned)
+    if (byPin) return byPin
+    const pa = a.pos ?? null
+    const pb = b.pos ?? null
+    if (pa === null && pb === null) return b.created - a.created
+    if (pa === null) return -1
+    if (pb === null) return 1
+    return pa - pb || b.created - a.created
+  })
+}
+
+/** Куда встанет заметка `id`, если перетащить её на место заметки `onto`: новый порядок id, или null (та же или чужая группа закреплённых). */
+export function moveOrder<T extends { id: string; pinned?: boolean }>(sorted: readonly T[], id: string, onto: string): string[] | null {
+  const from = sorted.findIndex(n => n.id === id)
+  const to = sorted.findIndex(n => n.id === onto)
+  if (from < 0 || to < 0 || from === to || !!sorted[from]!.pinned !== !!sorted[to]!.pinned) return null
+  const ids = sorted.map(n => n.id)
+  ids.splice(to, 0, ids.splice(from, 1)[0]!)
+  return ids
 }
 
 /** «Напомнить в»: ГГГГ-ММ-ДДTЧЧ:ММ по часам сервера (тот же формат, что у поля datetime-local). */

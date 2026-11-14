@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { dragDrop } from '@/lib/dragdrop'
 import { errText } from '@/lib/http'
 import NoteGlyph from '@/components/cabinet/NoteGlyph.vue'
 import NoteImages from '@/components/cabinet/NoteImages.vue'
@@ -66,7 +67,31 @@ watch(query, value => {
     if (request === searchRequest && reply) remoteNoteIds.value = reply.hits.map(hit => hit.id.slice('note:'.length))
   }, 180)
 })
-onBeforeUnmount(() => { clearTimeout(searchTimer); searchRequest++ })
+/** Порядок заметок меняется перетаскиванием за значок ⠿ (только когда виден весь список: без поиска, тега и правки). */
+const list = ref<HTMLElement>()
+const canSort = computed(() => !query.value.trim() && !tagFilter.value && editing.value === null && shown.value.length > 1)
+let stopDrag = () => {}
+function setupDrag() {
+  stopDrag()
+  stopDrag = () => {}
+  const el = list.value
+  if (!canSort.value || !el) return
+  stopDrag = dragDrop({
+    tiles: el.querySelectorAll('.nt-card'),
+    targets: () => el.querySelectorAll('.nt-card'),
+    handle: '.nt-grip',
+    overClass: 'nt-over',
+    dragClass: 'nt-dragging',
+    onDrop: (tile, target) => {
+      const from = tile.dataset.id
+      const to = target.dataset.id
+      if (from && to) store.move(from, to)
+    },
+  })
+}
+watch([shown, canSort], () => void nextTick(setupDrag), { flush: 'post' })
+onMounted(() => void nextTick(setupDrag))
+onBeforeUnmount(() => { clearTimeout(searchTimer); searchRequest++; stopDrag() })
 
 const noteTags = computed(() => [...store.tagCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')).map(([t]) => t))
 const toggleTag = (t: string) => (tagFilter.value = tagFilter.value === t ? '' : t)
@@ -253,8 +278,8 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
     <p v-if="!store.notes.length" class="cb-empty">Заметок пока нет. Напишите первую выше: название и несколько слов.</p>
     <p v-else-if="!shown.length" class="cb-empty">Ничего не найдено. Попробуйте другое слово или уберите тег из поиска.</p>
 
-    <ul class="nt-list">
-      <li v-for="n in shown" :key="n.id" class="nt-card" :class="{ click: editing !== n.id, pinned: n.pinned }" :tabindex="editing !== n.id ? 0 : undefined" @click="editing !== n.id && (openedId = n.id)" @keydown.enter.self="editing !== n.id && (openedId = n.id)">
+    <ul ref="list" class="nt-list">
+      <li v-for="n in shown" :key="n.id" class="nt-card" :data-id="n.id" :class="{ click: editing !== n.id, pinned: n.pinned }" :tabindex="editing !== n.id ? 0 : undefined" @click="editing !== n.id && (openedId = n.id)" @keydown.enter.self="editing !== n.id && (openedId = n.id)">
         <template v-if="editing === n.id">
           <input v-model="editTitle" :maxlength="MAX_TITLE" :class="{ at: editTitle.length >= MAX_TITLE }" aria-label="Название" />
           <textarea v-model="editText" :maxlength="MAX_TEXT" :class="{ at: editText.length >= MAX_TEXT }" rows="5" aria-label="Описание"></textarea>
@@ -270,7 +295,7 @@ const when = (t: number) => new Date(t).toLocaleString('ru-RU', { day: 'numeric'
         </template>
         <template v-else>
           <div class="nt-head">
-            <h4>{{ n.title }}<span v-if="n.pinned" class="nt-flags" title="Закреплена"><NoteGlyph name="pin" /></span></h4>
+            <h4><button v-if="canSort" type="button" class="nt-grip" aria-label="Перетащить заметку" title="Потяни, чтобы поменять порядок" @click.stop>⠿</button>{{ n.title }}<span v-if="n.pinned" class="nt-flags" title="Закреплена"><NoteGlyph name="pin" /></span></h4>
             <time>{{ when(n.created) }}<span v-if="n.updated - n.created > 60_000"> · изм. {{ when(n.updated) }}</span></time>
           </div>
           <p v-if="n.text" class="nt-text">{{ preview(n) }}</p>
