@@ -35,7 +35,7 @@ export class MusicController {
     return this.music.streamUrl(id)
   }
 
-  /** Файл с компьютера: multipart, поле file (до 1,5 ГБ), необязательное поле title. Ответ сразу после получения файла, дальше идёт задание. */
+  /** Файл с компьютера: multipart, поле file (до 350 МБ), необязательное поле title. Ответ сразу после получения файла, дальше идёт задание. */
   @Post('upload')
   @HttpCode(202)
   @UseInterceptors(

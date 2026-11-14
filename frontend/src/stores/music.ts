@@ -39,6 +39,8 @@ export interface UploadItem {
 export type RepeatMode = 'off' | 'all' | 'one'
 
 const KEY = 'music_v1'
+/** Лимит одной песни, МБ: то же число в backend/src/config.ts (`MAX_TRACK_MB`) и в Caddy (docker/caddy/Caddyfile). */
+export const MAX_TRACK_MB = 350
 const POLL_MS = 1000
 const REPEAT: RepeatMode[] = ['off', 'all', 'one']
 
@@ -337,7 +339,7 @@ export const useMusicStore = defineStore('music', () => {
       }
       xhr.onload = () => {
         if (xhr.status === 202) item.percent = 100
-        else item.error = xhr.status === 400 ? 'Не подходит: нужен звуковой файл (mp3, m4a, ogg, flac, wav)' : xhr.status === 413 ? 'Файл слишком большой' : `Ошибка сервера ${xhr.status}`
+        else item.error = xhr.status === 400 ? 'Не подходит: нужен звуковой файл (mp3, m4a, ogg, flac, wav)' : xhr.status === 413 ? `Файл больше ${MAX_TRACK_MB} МБ` : `Ошибка сервера ${xhr.status}`
         resolve()
       }
       xhr.onerror = () => {
@@ -356,7 +358,8 @@ export const useMusicStore = defineStore('music', () => {
     for (const file of files) {
       uploads.value.push({ key: Date.now() + Math.random(), name: file.name, percent: 0 })
       const item = uploads.value[uploads.value.length - 1]! // реактивная запись: сюда пишет процент передачи
-      await sendFile(file, item)
+      if (file.size > MAX_TRACK_MB * 1024 * 1024) item.error = `Файл ${Math.round(file.size / 1048576)} МБ: больше лимита ${MAX_TRACK_MB} МБ`
+      else await sendFile(file, item)
       if (item.error) toast.error(`${file.name}: ${item.error}`)
       await load()
       // строка передачи уходит, как только задание сервера видно в списке

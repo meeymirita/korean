@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import MusicPlayer from '@/components/music/MusicPlayer.vue'
-import { useMusicStore } from '@/stores/music'
+import { MAX_TRACK_MB, useMusicStore } from '@/stores/music'
 import { coverFor, formatTime } from '@/components/music/playerAssets'
 
 // Музыкальный плеер: кнопка только у владельца, список, воспроизведение через подписанную ссылку, добавление по ссылке.
@@ -142,6 +142,18 @@ describe('музыкальный плеер', () => {
     await store.advance(false)
     expect(store.playing, 'без повтора после последней песни звук останавливается').toBe(false)
     w.unmount()
+  })
+
+  it('файл больше лимита отклоняется сразу, без передачи на сервер', async () => {
+    const store = useMusicStore()
+    store.uploads = []
+    const big = new File([''], 'Сборник.mp3')
+    Object.defineProperty(big, 'size', { value: (MAX_TRACK_MB + 1) * 1024 * 1024 })
+    await store.uploadFiles([big])
+    expect(store.uploads).toHaveLength(1)
+    expect(store.uploads[0]!.error).toContain(`больше лимита ${MAX_TRACK_MB} МБ`)
+    expect(MAX_TRACK_MB, 'сборники владельца весят до 330 МБ').toBeGreaterThanOrEqual(330)
+    store.uploads = []
   })
 
   it('добавить по ссылке: запрос уходит с адресом; «уже идёт скачивание» показывается под полем', async () => {

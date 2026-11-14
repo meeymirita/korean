@@ -64,8 +64,9 @@ export const MAX_IMAGES_TOTAL = Number(process.env.IMAGES_QUOTA_MB || 1024) * 10
 /** Музыка: без Яндекс.Диска песни лежат здесь; временные файлы загрузки и скачивания по ссылке во второй папке. */
 export const MUSIC_DIR = path.join(DATA_DIR, 'music')
 export const MUSIC_TMP = path.join(DATA_DIR, 'music-tmp')
-/** Одна песня (чаще всего это сборник на несколько часов): до 1,5 ГБ. */
-export const MAX_TRACK = 1536 * 1024 * 1024
+/** Одна песня: до 350 МБ (решение владельца 2026-11-14: сборники весят до 330 МБ; то же число в Caddy и на сайте). */
+export const MAX_TRACK_MB = 350
+export const MAX_TRACK = MAX_TRACK_MB * 1024 * 1024
 export const MAX_CAPTION = 200
 export const MAX_DESCRIPTION = 1000
 /** Картинок в одной заметке. */

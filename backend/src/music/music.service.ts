@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { copyFile, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { DATA_DIR, MAX_TRACK, MUSIC_DIR, MUSIC_TMP, TOKEN } from '../config.js'
+import { DATA_DIR, MAX_TRACK, MAX_TRACK_MB, MUSIC_DIR, MUSIC_TMP, TOKEN } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
@@ -261,7 +261,7 @@ export class MusicService {
       job.stage = 'save'
       if (!existsSync(file)) return this.fail(job, 'Файл пропал')
       const bytes = size ?? statSync(file).size
-      if (bytes > MAX_TRACK) return this.fail(job, 'Файл больше 1,5 ГБ')
+      if (bytes > MAX_TRACK) return this.fail(job, `Файл больше ${MAX_TRACK_MB} МБ`)
       const id = newId()
       const duration = knownDuration || (await this.probe(file))
       let coverFile = ''
