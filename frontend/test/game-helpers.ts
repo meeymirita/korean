@@ -9,7 +9,7 @@ import { createGameView } from '@/game/view'
 import { GAME_GROUPS, TOOL_IDS } from '@/data/games'
 
 /** Режимы движка: всё из каталога, кроме тренажёров со своим экраном (`TOOL_IDS`: новый тренажёр попадает сюда сам) и режимов, которые проверяются отдельно. */
-const NOT_ENGINE: string[] = [...TOOL_IDS, 'typewords', 'ptext', 'fut', 'only', 'expert', 'tenses', 'weak']
+const NOT_ENGINE: string[] = [...TOOL_IDS, 'typewords', 'ptext', 'fut', 'only', 'expert', 'tenses', 'weak', 'finderr', 'oddone']
 export const ENGINE_MODES = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).filter(id => !NOT_ENGINE.includes(id))
 export const NEW_MODES = ['days', 'when', 'too', 'num', 'price', 'count', 'neg', 'place', 'dem', 'polite']
 

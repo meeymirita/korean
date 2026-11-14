@@ -1284,6 +1284,35 @@ function genToo(){
     explain:[x[0]+right+x[1],at?'С 에 и 에서 частица 도 добавляется: 에도, 에서도.':'도 заменяет 은/는, 이/가, 을/를: вместе с ними её не ставят.'],hp:x[0]+' ___'+x[1],hr:right,icon:'➕'};
 }
 
+/** Пары частиц, где замена всегда ошибка (выбор по 받침): так «ошибка» в тексте точно ошибка. */
+const SWAP: Record<string,string>={'은':'는','는':'은','이':'가','가':'이','을':'를','를':'을','와':'과','과':'와'};
+/** «Найди ошибки»: 6–8 предложений, в 1–3 из них частица заменена на неверную пару; у каждого предложения вердикт «верно» / «ошибка». */
+function genFindErrors(){
+  const n=6+Math.floor(Math.random()*3);
+  const bad=1+Math.floor(Math.random()*3);
+  const pool=shuffle(ptextPool().map(function(x){return {x:x,gaps:x.marks.filter(function(m){return !!SWAP[m.text];})};}).filter(function(c){return c.gaps.length&&c.x.ko.length<60;})).slice(0,n);
+  const wrongAt=new Set(shuffle(pool.map(function(_,i){return i;})).slice(0,bad));
+  const sents: SentIn[]=pool.map(function(c,i){
+    if(!wrongAt.has(i))return {ko:c.x.ko,ru:c.x.ru,pieces:[c.x.ko+'  →  ',{right:'верно',why:'Здесь всё верно.'}]};
+    const g=rnd(c.gaps);const fake=c.x.ko.slice(0,g.at)+SWAP[g.text]+c.x.ko.slice(g.at+g.text.length);
+    return {ko:fake,ru:c.x.ru,pieces:[fake+'  →  ',{right:'ошибка',why:'Верно было: '+c.x.ko+' ('+g.text+', а не '+SWAP[g.text]+')'}]};
+  });
+  return makeStory('finderr','Найди ошибки ('+plural(n)+'): в тексте есть неверные частицы',sents,['верно','ошибка'],'🔎');
+}
+/** «Лишнее предложение»: рассказ из учебника и одно предложение из другого рассказа; нужно отметить, какое лишнее. */
+function genOddOne(){
+  const stories=shuffle(STORIES.filter(function(st){return st.sents.length>=5;}));
+  const a=stories[0]!,b=stories[1]!;
+  const take=shuffle(a.sents.map(function(_,i){return i;})).slice(0,6).sort(function(x,y){return x-y;}).map(function(i){return a.sents[i]!;});
+  const odd=rnd(b.sents);
+  const at=1+Math.floor(Math.random()*take.length);
+  const all=[...take.slice(0,at),odd,...take.slice(at)];
+  const sents: SentIn[]=all.map(function(x){
+    const isOdd=x===odd;
+    return {ko:x.ko,ru:x.ru,pieces:[x.ko+'  →  ',{right:isOdd?'лишнее':'подходит',why:isOdd?'Это из другого рассказа («'+b.title+'»), а текст про «'+a.title+'».':'Подходит к рассказу «'+a.title+'».'}]};
+  });
+  return makeStory('oddone','Лишнее предложение: рассказ «'+a.title+'», одно предложение из другого',sents,['подходит','лишнее'],'🧐');
+}
 /** «Смесь времён»: текст, где время глагола определяет слово времени (어제 → прошедшее, 지금 / 오늘 → настоящее, 내일 / 주말에 → будущее). Плитки: все три формы каждого глагола. */
 const TENSE_TIMES: {t: string;tense: 'past'|'now'|'fut'}[]=[
   {t:'어제',tense:'past'},{t:'지금',tense:'now'},{t:'오늘',tense:'now'},{t:'내일',tense:'fut'},{t:'주말에',tense:'fut'},{t:'토요일에',tense:'fut'},
@@ -1531,7 +1560,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,tenses:genTenses,weak:genWeak,fut:genFut,only:genOnly};
+const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,tenses:genTenses,finderr:genFindErrors,oddone:genOddOne,weak:genWeak,fut:genFut,only:genOnly};
 function genQuestion(): Question{
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);

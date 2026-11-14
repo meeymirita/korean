@@ -66,6 +66,7 @@ export const GAME_GROUPS: GameGroup[] = [
       { id: 'part', name: 'Частицы и счёт', desc: 'Вставь частицу или счётное слово', icon: 'macaron', to: '/game/home?game=part' },
       { id: 'particles', name: 'Частицы и окончания', desc: 'Девять правил со своими наборами', icon: 'wand', to: '/game/home?game=particles' },
       { id: 'err', name: 'Найди ошибку', desc: 'Найди неверное слово в предложении', icon: 'eraser', to: '/game/home?game=err' },
+      { id: 'finderr', name: 'Найди ошибки в тексте', desc: 'Текст из 6–8 предложений: в каких частица неверная, отметь «верно» или «ошибка»', icon: 'eraser', to: '/game/home?game=finderr' },
       { id: 'only', name: 'Только (만)', desc: '«Только» или «тоже»: 만 и 도, а ещё 에만, 에서만', icon: 'sparkle', to: '/game/home?game=only' },
     ],
   },
@@ -118,6 +119,7 @@ export const GAME_GROUPS: GameGroup[] = [
     games: [
       { id: 'dlg', name: 'Диалог', desc: 'Выбери подходящий ответ собеседнику', icon: 'mail', to: '/game/home?game=dlg' },
       { id: 'polite', name: 'Уровень вежливости', desc: 'Как сказать «спасибо» другу и начальнику', icon: 'star', to: '/game/home?game=polite' },
+      { id: 'oddone', name: 'Лишнее предложение', desc: 'В рассказ вставили чужое предложение: найди, какое лишнее', icon: 'board', to: '/game/home?game=oddone' },
     ],
   },
   {
