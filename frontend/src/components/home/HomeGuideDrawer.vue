@@ -2,6 +2,8 @@
 import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import AccessRequest from '@/components/home/AccessRequest.vue'
+import type { GuideCard } from '@/data/guide'
 import { GAMES, PAGES } from '@/data/guide'
 import { shotUrl } from '@/lib/aboutShots'
 import { useProgressStore } from '@/stores/progress'
@@ -16,6 +18,15 @@ const box = ref<HTMLElement>()
 /** Игры: выпадающий список; картинки не запрашиваются, пока список ни разу не раскрывали. */
 const gamesOpen = ref(false)
 const gamesSeen = ref(false)
+/** Закрытая страница без токена: вместо перехода показываем окно «Запросить доступ» с Telegram автора. */
+const ask = ref<GuideCard | null>(null)
+const locked = (c: GuideCard) => !!c.private && !progress.unlocked
+const onCard = (c: GuideCard) => {
+  if (locked(c)) ask.value = c
+  else open.value = false
+}
+/** Разделы: тоже сворачиваются (при открытии окна развёрнуты). */
+const pagesOpen = ref(true)
 watch(gamesOpen, v => v && (gamesSeen.value = true))
 watch(open, v => v && box.value?.scrollTo({ top: 0 }))
 
@@ -39,16 +50,22 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         </header>
         <p v-if="!progress.unlocked" class="note"><Icon name="lock" /> Закрытое открывается после входа по токену</p>
 
-        <h3 class="sec">Разделы <small>{{ PAGES.length }}</small></h3>
-        <div class="grid">
-          <RouterLink v-for="c in PAGES" :key="c.title" :to="c.to" class="card" @click="open = false">
-            <span class="ph">
-              <img v-if="shotUrl(c.to)" :src="shotUrl(c.to)" :alt="`Страница «${c.title}»`" loading="lazy" decoding="async" />
-              <em v-if="c.private && !progress.unlocked" class="lk" title="Откроется после входа"><Icon name="lock" /></em>
-            </span>
-            <b>{{ c.title }}</b>
-            <span class="tx">{{ c.text }}</span>
-          </RouterLink>
+        <button type="button" class="sec acc-btn" :class="{ on: pagesOpen }" :aria-expanded="pagesOpen" aria-controls="guide-pages" @click="pagesOpen = !pagesOpen">
+          <span class="chev" aria-hidden="true">▸</span>Разделы <small>{{ PAGES.length }}</small>
+        </button>
+        <div id="guide-pages" class="acc" :class="{ open: pagesOpen }" :inert="!pagesOpen">
+          <div class="acc-in">
+            <div class="grid">
+              <component :is="locked(c) ? 'button' : RouterLink" v-for="c in PAGES" :key="c.title" :to="locked(c) ? undefined : c.to" :type="locked(c) ? 'button' : undefined" class="card" @click="onCard(c)">
+                <span class="ph">
+                  <img v-if="shotUrl(c.to)" :src="shotUrl(c.to)" :alt="`Страница «${c.title}»`" loading="lazy" decoding="async" />
+                  <em v-if="c.private && !progress.unlocked" class="lk" title="Откроется после входа"><Icon name="lock" /></em>
+                </span>
+                <b>{{ c.title }}</b>
+                <span class="tx">{{ c.text }}</span>
+              </component>
+            </div>
+          </div>
         </div>
 
         <button type="button" class="sec acc-btn" :class="{ on: gamesOpen }" :aria-expanded="gamesOpen" aria-controls="guide-games" @click="gamesOpen = !gamesOpen">
@@ -57,20 +74,21 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <div id="guide-games" class="acc" :class="{ open: gamesOpen }" :inert="!gamesOpen">
           <div class="acc-in">
             <div v-if="gamesSeen" class="grid">
-              <RouterLink v-for="c in GAMES" :key="c.title" :to="c.to" class="card" @click="open = false">
+              <component :is="locked(c) ? 'button' : RouterLink" v-for="c in GAMES" :key="c.title" :to="locked(c) ? undefined : c.to" :type="locked(c) ? 'button' : undefined" class="card" @click="onCard(c)">
                 <span class="ph">
                   <img v-if="shotUrl(c.to)" :src="shotUrl(c.to)" :alt="`Игра «${c.title}»`" loading="lazy" decoding="async" />
                   <em v-if="c.private && !progress.unlocked" class="lk" title="Откроется после входа"><Icon name="lock" /></em>
                 </span>
                 <b>{{ c.title }}</b>
                 <span class="tx">{{ c.text }}</span>
-              </RouterLink>
+              </component>
             </div>
           </div>
         </div>
       </aside>
     </div>
   </Transition>
+  <AccessRequest :open="!!ask" :title="ask?.title" @close="ask = null" />
 </template>
 
 <style scoped>
@@ -85,10 +103,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .x { flex: none; width: 42px; height: 42px; border: 1px solid #fff; border-radius: 50%; background: rgba(255, 255, 255, .8); color: #20265c; font: inherit; font-size: 16px; cursor: pointer; transition: .2s; }
 .x:hover { background: #fff; color: #d64da9; }
 .note { margin: 0; color: #6c70a8; }
-.sec { margin: 8px 0 0; font-size: 22px; font-weight: 700; color: #20265c; }
-.sec small { margin-left: 6px; font-size: 14px; font-weight: 600; color: #8f7cf0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 16px; }
-.card { display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 16px; color: #20265c; background: rgba(255, 255, 255, .75); border: 1px solid #fff; border-radius: 20px;
+.card { display: flex; flex-direction: column; gap: 6px; font: inherit; text-align: left; cursor: pointer; padding: 10px 10px 16px; color: #20265c; background: rgba(255, 255, 255, .75); border: 1px solid #fff; border-radius: 20px;
   box-shadow: 0 8px 22px rgba(100, 87, 170, .1); transition: transform .2s, box-shadow .2s; }
 .card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(100, 87, 170, .22); }
 .ph { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 14px; background: linear-gradient(135deg, #f3e4fa, #e1e5ff); }

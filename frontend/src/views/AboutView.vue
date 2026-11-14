@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import AccessRequest from '@/components/home/AccessRequest.vue'
 import '@/assets/home/fonts.css'
 import { ABOUT_SLIDES } from '@/data/about'
 import { GAMES, PAGES } from '@/data/guide'
@@ -12,6 +14,11 @@ import { useProgressStore } from '@/stores/progress'
  * и сетка всех игр. Скриншоты те же, что в окне «Что здесь есть» на главной (`lib/aboutShots.ts`, `scripts/about-shots.mjs`).
  */
 const progress = useProgressStore()
+/** Закрытая страница без токена: вместо перехода окно «Запросить доступ» с Telegram автора. */
+type Link = { to: string; title: string; private?: boolean }
+const ask = ref<Link | null>(null)
+const locked = (c: Link) => !!c.private && !progress.unlocked
+const target = (c: Link) => ({ is: locked(c) ? 'button' : RouterLink, to: locked(c) ? undefined : c.to, type: locked(c) ? 'button' : undefined })
 const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 </script>
 
@@ -42,15 +49,15 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
     </section>
 
     <section v-for="(s, n) in ABOUT_SLIDES" :id="s.id" :key="s.id" class="row" :class="{ flip: n % 2 === 1 }">
-      <RouterLink :to="s.to" class="shot" :aria-label="`Открыть: ${s.title}`">
+      <component :is="target(s).is" :to="target(s).to" :type="target(s).type" class="shot" :aria-label="`Открыть: ${s.title}`" @click="locked(s) && (ask = s)">
         <img :src="shotUrl(s.to)" :alt="`Страница «${s.title}»`" loading="lazy" decoding="async" />
-      </RouterLink>
+      </component>
       <div class="info">
         <div class="no">{{ String(n + 1).padStart(2, '0') }} / {{ ABOUT_SLIDES.length }}</div>
         <h2>{{ s.title }}</h2>
         <p>{{ s.text }}</p>
         <p v-if="s.private && !progress.unlocked" class="lock"><Icon name="lock" /> Откроется после входа по токену</p>
-        <RouterLink :to="s.to" class="open">Открыть страницу →</RouterLink>
+        <component :is="target(s).is" :to="target(s).to" :type="target(s).type" class="open" @click="locked(s) && (ask = s)">Открыть страницу →</component>
       </div>
     </section>
 
@@ -59,13 +66,15 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
       <h2>{{ GAMES.length }} режимов игры на слова</h2>
       <p class="lead">Каждая игра берёт слова и правила только из пройденного. Нажми на карточку, чтобы открыть режим.</p>
       <div class="grid">
-        <RouterLink v-for="g in GAMES" :key="g.title" :to="g.to" class="card">
+        <component :is="target(g).is" v-for="g in GAMES" :key="g.title" :to="target(g).to" :type="target(g).type" class="card" @click="locked(g) && (ask = g)">
           <span class="ph"><img v-if="shotUrl(g.to)" :src="shotUrl(g.to)" :alt="`Игра «${g.title}»`" loading="lazy" decoding="async" /></span>
           <b>{{ g.title }}</b>
           <span class="tx">{{ g.text }}</span>
-        </RouterLink>
+        </component>
       </div>
     </section>
+
+    <AccessRequest :open="!!ask" :title="ask?.title" @close="ask = null" />
 
     <footer class="foot">
       <RouterLink to="/korean/home" class="open">{{ progress.unlocked ? 'Перейти на платформу →' : 'Войти по токену →' }}</RouterLink>
@@ -82,7 +91,7 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
   background: radial-gradient(circle at 92% 4%, rgba(201, 228, 255, .55) 0, transparent 30%), radial-gradient(circle at 4% 96%, rgba(255, 209, 236, .5) 0, transparent 28%); }
 .about > * { position: relative; max-width: 1560px; width: 100%; margin: 0 auto; }
 .about a { color: inherit; text-decoration: none; }
-.about button { font: inherit; cursor: pointer; border: 0; color: inherit; background: none; }
+.about button { font: inherit; cursor: pointer; border: 0; color: inherit; background: none; text-align: left; }
 .ko { font-family: 'Noto Sans KR', 'Archivo', sans-serif; }
 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
@@ -114,6 +123,7 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
 .row.flip { grid-template-columns: minmax(300px, 1fr) minmax(0, 1.55fr); }
 .row.flip .shot { order: 2; }
 .shot { display: block; overflow: hidden; border: 1px solid #fff; border-radius: 26px; background: #fff; box-shadow: 0 40px 90px -36px rgba(80, 70, 160, .5); aspect-ratio: 16 / 10; transition: transform .35s, box-shadow .35s; }
+button.shot { padding: 0; width: 100%; }
 .shot:hover { transform: translateY(-4px); box-shadow: 0 50px 100px -34px rgba(80, 70, 160, .6); }
 .shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .info { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
@@ -121,7 +131,7 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
 .info h2 { margin: 0; font-size: clamp(32px, 3.8vw, 56px); line-height: 1.04; letter-spacing: -.03em; font-weight: 800; }
 .info p { margin: 0; max-width: 620px; line-height: 1.75; font-size: clamp(16px, 1.25vw, 19px); color: #6c70a8; }
 .info .lock { font-size: 14px; }
-.open { display: inline-flex; margin-top: 8px; padding: 15px 30px; border-radius: 3px; background: var(--ink); color: #fff !important; font-size: 14px; font-weight: 600; transition: .22s; }
+.open { display: inline-flex; margin-top: 8px; font: inherit; cursor: pointer; border: 0; padding: 15px 30px; border-radius: 3px; background: var(--ink); color: #fff !important; font-size: 14px; font-weight: 600; transition: .22s; }
 .open:hover { background: var(--accent2); transform: translateY(-2px); }
 
 .games { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; scroll-margin-top: 24px; }
