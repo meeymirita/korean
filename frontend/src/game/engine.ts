@@ -966,6 +966,15 @@ function genOrdStory(lo: number,hi: number){
  * «Эксперт»: один текст, где в каждом предложении своё правило (частицы всех шести правил, счётные слова и частицы из «Частицы и счёт», окончания глаголов).
  * Перевода у предложений нет (виден в разборе после проверки), кроме тех, где без него неоднозначно (도, 만, 은/는, 이/가); плитки общие на все пропуски. Размер: 5, 10 или 15 пропусков.
  */
+/** «Слабые места»: задание из правила, где у владельца меньше 90% (по журналу ответов); пока слабых нет, обычный микс. */
+function genWeak(): Question{
+  const list=(hooks.weak&&hooks.weak())||[];
+  if(!list.length)return GEN[rnd(['word','form','part','pair','when','place','too'])]!();
+  const r=rnd(list);
+  if(r.game&&GEN[r.game])return GEN[r.game]!();
+  if(r.family&&PFAMS.some(f=>f.id===r.family)){S.pfam=r.family;return genPtext();}
+  return GEN.part!();
+}
 const AMBIG=['은','는','이','가','도','만'];
 function genExpert(){
   const target={simple:5,story:10,long:15}[S.levels.expert||'simple']||5;
@@ -1481,7 +1490,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,fut:genFut,only:genOnly};
+const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,weak:genWeak,fut:genFut,only:genOnly};
 function genQuestion(): Question{
   let m=S.mode;
   if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);

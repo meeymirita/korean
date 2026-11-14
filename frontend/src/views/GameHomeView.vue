@@ -10,6 +10,7 @@ import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
 import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
 import { searchGamesRemote } from '@/data/korean/search'
+import { weakRules } from '@/data/charts'
 import { initGame } from '@/game/engine'
 import GameShell from '@/components/game/GameShell.vue'
 import { createGameView } from '@/game/view'
@@ -88,6 +89,7 @@ function startEngine() {
     cats: () => progress.data.settings.gameCats,
     mode: () => game.value,
     fam: () => (typeof route.query.fam === 'string' ? route.query.fam : ''),
+    weak: () => weakRules(progress.data.log).map(r => ({ game: r.game, family: r.family })),
     saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
     grammar: (id: string) => openGrammar(id),
     // предметы Юны только у владельца (docs/shop.md)

@@ -15,6 +15,8 @@ export interface GameHooks {
   mode?: () => string | undefined
   /** Правило «Текстов по правилу» из адреса (`&fam=`). */
   fam?: () => string | undefined
+  /** Слабые правила («Слабые места»): игра берёт задания оттуда, где ошибок больше всего; `game` режим движка или `family` семья частиц. */
+  weak?: () => { game?: string; family?: string }[]
   saveCats?: (c: Record<string, number>) => void
   /** Открыть окно карточки грамматики. */
   grammar?: (id: string) => void

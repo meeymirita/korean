@@ -48,6 +48,7 @@ export const MODE_NAMES: Record<string, string> = {
   "type": "Напиши правильную форму",
   "typewords": "Напиши перевод",
   "typing": "Напиши перевод",
+  "weak": "Слабые места",
   "when": "Когда? (에)",
   "word": "Слово → перевод",
 }

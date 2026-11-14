@@ -147,6 +147,7 @@ export const GAME_GROUPS: GameGroup[] = [
 /** Отдельно от групп: быстрые режимы со смесью заданий. */
 export const GAME_MIX: GameCard[] = [
   { id: 'mix', name: 'Микс', desc: 'Все режимы вперемешку', icon: 'dice', to: '/game/home?game=mix' },
+      { id: 'weak', name: 'Слабые места', desc: 'Игра сама берёт правила, где у тебя меньше 90%: частицы, формы, числа, время', icon: 'rocket', to: '/game/home?game=weak' },
   { id: 'quick', name: '5 минут', desc: 'Десять заданий вперемешку', icon: 'rocket', to: '/game/home?game=quick' },
   { id: 'rule', name: 'Потренировать правило', desc: 'Десять заданий из примеров любой карточки', icon: 'grammar', to: '/game/home?game=rule' },
 ]
