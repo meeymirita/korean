@@ -43,22 +43,34 @@ describe('игра «Хлебушек»: прохождение режимов',
     }
   })
 
-  it('правило 에: «Когда?» не требует частицу у 오늘, 내일, 지금, 언제 и требует у остальных', () => {
+  it('правило 에: «Когда?» не требует частицу у 오늘, 내일, 지금, 언제; у остальных 에, а со «тоже» и «только» 에도 и 에만', () => {
     start('when')
-    let off = 0
-    let on = 0
-    for (let i = 0; i < 200; i++) {
+    const seen = { off: 0, on: 0, too: 0, only: 0 }
+    for (let i = 0; i < 300; i++) {
       const sentence = document.querySelector('.sentence')!.textContent ?? ''
+      const card = document.querySelector('#card')!.textContent ?? ''
       opts()[0]!.click()
       const right = optText(document.querySelector('#opts .opt.ok')!)
       const free = /^(오늘|내일|지금|언제)\s/.test(sentence.trim())
-      expect(right === '에', sentence).toBe(!free)
-      if (free) off++
-      else on++
+      if (free) {
+        expect(right, sentence).toBe('ничего не нужно')
+        seen.off++
+      } else if (right === '에도') {
+        expect(card, 'в русском «тоже»: ' + sentence).toContain('тоже')
+        seen.too++
+      } else if (right === '에만') {
+        expect(card, 'в русском «только»: ' + sentence).toContain('Только')
+        seen.only++
+      } else {
+        expect(right, sentence).toBe('에')
+        seen.on++
+      }
       ;(document.querySelector('#nextBtn') as HTMLButtonElement).click()
     }
-    expect(off).toBeGreaterThan(5)
-    expect(on).toBeGreaterThan(50)
+    expect(seen.off).toBeGreaterThan(5)
+    expect(seen.on).toBeGreaterThan(40)
+    expect(seen.too, 'вариант «тоже» встречается').toBeGreaterThan(5)
+    expect(seen.only, 'вариант «только» встречается').toBeGreaterThan(5)
   })
 
   it('цены читаются верно: 3500원 — 삼천오백, 10000원 — 만', () => {

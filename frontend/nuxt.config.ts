@@ -14,7 +14,7 @@ const priv = privatePaths()
  * Открытые страницы, которые одинаковы для всех: готовый HTML при сборке. Остальные открытые рисуются на каждый запрос:
  * /me берёт визитку из API, на главных случайные фраза, правило и слова (новые после каждого обновления, useHomePicks).
  */
-const PER_REQUEST = ['/me', '/', '/korean/home', '/dict']
+const PER_REQUEST = ['/me', '/', '/korean/home', '/dict', '/ru']
 const STATIC = pub.filter(p => !PER_REQUEST.includes(p))
 
 export default defineNuxtConfig({

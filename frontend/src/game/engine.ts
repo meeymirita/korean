@@ -527,13 +527,14 @@ function genWhenStory(lo: number,hi: number){
   const acts=shuffle(WHEN_ACT),ons=shuffle(WHEN_ON),offs=shuffle(WHEN_OFF);
   const sents: SentIn[]=[];
   for(let i=0;i<n;i++){
-    const off=Math.random()<.3;
+    const kind=whenKind(),off=kind==='off';
     const time=(off?offs[i%offs.length]:ons[i%ons.length])!,act=acts[i%acts.length]!;
-    const right=off?NOPART:'에';
-    sents.push({ko:time[0]+(off?'':'에')+' '+act[0]+'.',ru:cap1(time[1])+' '+act[1]+'.',
-      pieces:[time[0],{right:right,why:off?'С 오늘, 내일, 지금 частицу 에 не ставят: «—».':'Слово отвечает на вопрос «когда» → к нему добавляется 에.'},' '+act[0]+'.']});
+    const right=WHEN_RIGHT[kind];
+    const ruText=kind==='too'?cap1(time[1])+' тоже '+act[1]+'.':kind==='only'?'Только '+time[1]+' '+act[1]+'.':cap1(time[1])+' '+act[1]+'.';
+    sents.push({ko:time[0]+(right===NOPART?'':right)+' '+act[0]+'.',ru:ruText,
+      pieces:[time[0],{right:right,why:WHEN_WHY[kind]},' '+act[0]+'.']});
   }
-  return makeStory('when','Когда? ('+plural(n)+'): 에 или «—»',sents,['에','에서','는',NOPART],'🕒');
+  return makeStory('when','Когда? ('+plural(n)+'): 에, 에도, 에만 или «—»',sents,['에','에도','에만','에서','는',NOPART],'🕒');
 }
 /** «Этот, тот, вон тот»: сцена: у каждого предложения пометка, где предмет (рядом со мной, с тобой, далеко от обоих); в пропуск нужный указатель. */
 type Dist='near'|'mid'|'far';
@@ -1151,6 +1152,12 @@ function genDays(){
 const WHEN_ON: [string,string][]=[['월요일','в понедельник'],['화요일','во вторник'],['수요일','в среду'],['목요일','в четверг'],['금요일','в пятницу'],['토요일','в субботу'],['일요일','в воскресенье'],
   ['아침','утром'],['저녁','вечером'],['밤','ночью'],['점심','днём'],['주말','на выходных'],['평일','в будни'],['이번 주','на этой неделе'],['다음 주','на следующей неделе']];
 const WHEN_OFF: [string,string][]=[['오늘','сегодня'],['내일','завтра'],['지금','сейчас']];
+/** Что нужно после слова времени: 에 («когда»), ничего (오늘, 내일, 지금), 에도 («тоже»), 에만 («только»): всё пройденное, но выбор уже не из двух. */
+type WhenKind='on'|'off'|'too'|'only';
+const WHEN_RIGHT: Record<WhenKind,string>={on:'에',off:'—',too:'에도',only:'에만'};
+const WHEN_WHY: Record<WhenKind,string>={on:'Слово отвечает на вопрос «когда» → к нему добавляется 에.',off:'С 오늘, 내일, 지금, 언제 частицу 에 не ставят: «—».',too:'«Тоже» после слова времени: 에 + 도 → 에도.',only:'«Только» после слова времени: 에 + 만 → 에만.'};
+/** Случайный вид пропуска: чаще всего 에, потом «—», «тоже» и «только»; withoutOff: без «ничего» (для простого уровня «—» выбирается отдельно). */
+const whenKind=(withoutOff=false): WhenKind=>{const r=Math.random();return withoutOff?(r<.55?'on':r<.78?'too':'only'):r<.4?'on':r<.6?'off':r<.8?'too':'only';};
 const WHEN_ACT: [string,string,string][]=[['친구를 만나요','встречаюсь с другом','Когда ты встречаешься с другом?'],['운동해요','занимаюсь спортом','Когда ты занимаешься спортом?'],
   ['한국어를 공부해요','занимаюсь корейским','Когда ты занимаешься корейским?'],['도서관에 가요','иду в библиотеку','Когда ты идёшь в библиотеку?'],
   ['영화를 봐요','смотрю фильм','Когда ты смотришь фильм?'],['쇼핑해요','хожу по магазинам','Когда ты ходишь по магазинам?'],
@@ -1162,14 +1169,15 @@ function genWhen(){
   const act=rnd(WHEN_ACT);
   const r=Math.random();
   const q=r<.12,off=q||r<.3;
+  const kind: WhenKind=off?'off':whenKind(true);
   const time: [string,string]=q?['언제','когда']:off?rnd(WHEN_OFF):rnd(WHEN_ON);
   const post=' '+act[0]+(q?'?':'.');
-  const ru=q?act[2]:cap1(time[1])+' '+act[1]+'.';
-  const opts=shuffle(['에','에서','는',NONE]).map(t=>({text:t,ko:t!==NONE}));
-  const right=off?NONE:'에';
-  return {type:'choice',mode:'when',key:'wh:'+time[0]+':'+act[0],word:null,label:'Нужна ли частица, которая отвечает на вопрос «когда»?',sentence:{pre:time[0],post:post},ru:ru,
+  const ru=q?act[2]:kind==='too'?cap1(time[1])+' тоже '+act[1]+'.':kind==='only'?'Только '+time[1]+' '+act[1]+'.':cap1(time[1])+' '+act[1]+'.';
+  const opts=shuffle(['에','에도','에만','에서',NONE]).map(t=>({text:t,ko:t!==NONE}));
+  const right=WHEN_RIGHT[kind]===NOPART?NONE:WHEN_RIGHT[kind];
+  return {type:'choice',mode:'when',key:'wh:'+time[0]+':'+act[0]+':'+kind,word:null,label:kind==='on'||kind==='off'?'Нужна ли частица, которая отвечает на вопрос «когда»?':'Какая частица нужна после слова времени?',sentence:{pre:time[0],post:post},ru:ru,
     options:opts,correct:opts.findIndex(o=>o.text===right),right:right,
-    explain:[(off?time[0]:time[0]+'에')+post,off?'С 오늘, 내일, 지금, 언제 частицу 에 не ставят.':'Слово отвечает на вопрос «когда» → к нему добавляется 에.'],
+    explain:[time[0]+(right===NONE?'':right)+post,WHEN_WHY[kind]],
     hp:time[0]+' ___'+post,hr:right,icon:'🕒'};
 }
 

@@ -218,7 +218,7 @@ export class DictService implements OnApplicationBootstrap {
         ...[...syllableCounts.keys()].sort().map(syllable => ({ loc: `/dict/a/${syllable}` })),
         ...sitemapWordList(words).map(w => ({ loc: `/dict/${w}` })),
         // русско-корейские страницы «школа по-корейски»: самые частые русские слова из переводов
-        ...(ru.length ? [{ loc: '/ru' }, ...ru.map(w => ({ loc: `/ru/${w}` }))] : []),
+        ...ru.map(w => ({ loc: `/ru/${w}` })), // сам указатель /ru в карте от постоянных страниц (seo.ts)
       ]
       for (const [initial, count] of [...letterCounts, ...syllableCounts]) {
         for (let page = 2; page <= Math.ceil(count / ALPHABET_PAGE_SIZE); page++) urls.push({ loc: `/dict/a/${initial}/${page}` })
