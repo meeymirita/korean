@@ -4,22 +4,17 @@ import Icon from '@/components/Icon.vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import DashboardHome from '@/components/korean/DashboardHome.vue'
-import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
+import SearchResults from '@/components/SearchResults.vue'
 import { useSiteSearch } from '@/composables/useSiteSearch'
-import { hl } from '@/data/korean/render'
-import { snippet } from '@/data/korean/search'
-import { useGrammarModal } from '@/composables/useGrammarModal'
 import { useProgressStore } from '@/stores/progress'
 import { lastVisited } from '@/composables/useLastVisited'
 
 const progress = useProgressStore()
-const { open } = useGrammarModal()
 
 const q = ref(String(useRoute().query.q ?? ''))
 const input = ref<HTMLInputElement>()
-const { result, qs, more, take, rest, chunkTabs, run, stop } = useSiteSearch(q)
-const h = (t: string) => hl(t, qs.value)
-const openSentence = ref('')
+const site = useSiteSearch(q)
+const { result, run, stop } = site
 
 function onKey(e: KeyboardEvent) {
   if (e.key === '/' && (e.target as HTMLElement).tagName !== 'INPUT') {
@@ -70,66 +65,7 @@ onBeforeUnmount(() => {
         Ничего не нашлось. Попробуй другое слово или русскую форму («ем» → «есть»).
       </div>
 
-      <section v-if="result.words.length" class="ov-g">
-        <h2 class="today-h">Слова <small>{{ result.words.length }}</small></h2>
-        <RouterLink v-for="w in take('w', result.words)" :key="w.n" class="ov-r" :to="{ path: '/korean/words', query: { q: w.k } }">
-          <span class="k" v-html="h(w.k)"></span>
-          <span class="rd" v-html="h(w.r)"></span>
-          <span class="tr" v-html="h(w.t)"></span>
-        </RouterLink>
-        <button v-if="rest('w', result.words.length)" class="chip" @click="more.w = true">ещё {{ rest('w', result.words.length) }}</button>
-      </section>
-
-      <section v-if="result.grammar.length" class="ov-g">
-        <h2 class="today-h">Грамматика <small>{{ result.grammar.length }}</small></h2>
-        <button v-for="e in take('g', result.grammar)" :key="e.g.id" class="ov-r col" @click="open(e.g.id)">
-          <span><b class="k" v-html="h(e.g.ko)"></b> <span class="tr" v-html="h(e.g.ru)"></span></span>
-          <span class="rd" v-html="h(snippet(e.text, q))"></span>
-        </button>
-        <button v-if="rest('g', result.grammar.length)" class="chip" @click="more.g = true">ещё {{ rest('g', result.grammar.length) }}</button>
-      </section>
-
-      <section v-for="t in chunkTabs" :key="t.id" class="ov-g">
-        <h2 class="today-h">{{ t.menu }} <small>{{ result.chunks[t.id]!.length }}</small></h2>
-        <RouterLink v-for="(c, i) in take(t.id, result.chunks[t.id]!)" :key="i" class="ov-r col" :to="{ path: `/korean/ref/${t.id}`, query: { q } }">
-          <span v-if="c.group" class="rd grp">{{ c.group }}</span>
-          <span v-html="h(snippet(c.text, q))"></span>
-        </RouterLink>
-        <button v-if="rest(t.id, result.chunks[t.id]!.length)" class="chip" @click="more[t.id] = true">
-          ещё {{ rest(t.id, result.chunks[t.id]!.length) }}
-        </button>
-      </section>
-
-      <section v-if="result.sentences.length" class="ov-g">
-        <h2 class="today-h">Примеры предложений <small>{{ result.sentences.length }}</small></h2>
-        <template v-for="e in take('s', result.sentences)" :key="e.s">
-          <button class="ov-r col" @click="openSentence = openSentence === e.s ? '' : e.s">
-            <span class="k ko" v-html="h(e.s)"></span>
-            <span class="rd" v-html="h(e.tr)"></span>
-          </button>
-          <div v-if="openSentence === e.s" class="row-detail"><SentenceBreakdown :sentence="e.s" /></div>
-        </template>
-        <button v-if="rest('s', result.sentences.length)" class="chip" @click="more.s = true">ещё {{ rest('s', result.sentences.length) }}</button>
-      </section>
-
-      <section v-if="result.forms.length" class="ov-g">
-        <h2 class="today-h">Формы слов <small>{{ result.forms.length }}</small></h2>
-        <RouterLink v-for="c in take('f', result.forms)" :key="c.k" class="ov-r" :to="{ path: '/korean/forms', query: { q: c.k } }">
-          <span class="k ko" v-html="h(c.k)"></span>
-          <span class="rd" v-html="h(c.r)"></span>
-          <span class="tr">{{ c.present }} · {{ c.past }} · {{ c.neg }}</span>
-        </RouterLink>
-        <button v-if="rest('f', result.forms.length)" class="chip" @click="more.f = true">ещё {{ rest('f', result.forms.length) }}</button>
-      </section>
-
-      <section v-if="result.letters.length" class="ov-g">
-        <h2 class="today-h">Буквы <small>{{ result.letters.length }}</small></h2>
-        <RouterLink v-for="l in take('l', result.letters)" :key="l.char" class="ov-r" to="/korean/ref/alphabet">
-          <span class="k" v-html="h(l.char)"></span>
-          <span class="rd" v-html="h(l.text.slice(l.char.length).trim())"></span>
-        </RouterLink>
-        <button v-if="rest('l', result.letters.length)" class="chip" @click="more.l = true">ещё {{ rest('l', result.letters.length) }}</button>
-      </section>
+      <SearchResults :search="site" :q="q" mode="link" />
     </template>
 
     <DashboardHome v-else />

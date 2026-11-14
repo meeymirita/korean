@@ -334,20 +334,8 @@
 /* главная раздела: поиск по всему сайту */
 .study .ov-search { max-width: 720px; margin: 28px auto 0; }
 .study .ov-search .meta { justify-content: space-between; }
-.study .ov-g { margin-top: 8px; display: flex; flex-direction: column; align-items: flex-start; }
-.study .ov-r { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 1fr) minmax(0, 2fr); gap: 4px 16px; width: 100%;
-  align-items: baseline; padding: 10px 8px; border: 0; border-bottom: 1px solid var(--line); border-radius: 6px;
-  background: transparent; text-align: left; color: inherit; font: inherit; cursor: pointer; text-decoration: none; }
-.study .ov-r:hover { background: var(--gold-soft); }
-.study .ov-r.col { display: flex; flex-direction: column; }
-.study .ov-r .k { font-family: var(--ko); font-size: 20px; font-weight: 700; }
-.study .ov-r .k.ko { font-size: 17px; }
-.study .ov-r .rd { color: var(--muted); }
-.study .ov-r .rd.grp { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-.study .ov-g > .chip { margin-top: 10px; cursor: pointer; }
 .study .ov-card { text-decoration: none; color: inherit; }
 .study a.ov-card:hover { border-color: var(--gold); }
-@media (max-width: 700px) { .study .ov-r:not(.col) { grid-template-columns: 1fr; } }
 
 
 /* разбор предложения под ответом в «Переведи предложение» */
