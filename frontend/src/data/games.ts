@@ -62,6 +62,7 @@ export const GAME_GROUPS: GameGroup[] = [
     games: [
       { id: 'pair', name: 'Пара или нет', desc: 'Выбери верный вариант из двух, а на сложном уровне целый рассказ', icon: 'hearts', to: '/game/home?game=pair' },
       { id: 'ptext', name: 'Тексты по правилу', desc: 'Выбери правило (은/는, 이/가, 을/를, 에 / 에서, 하고 / 와 / 과, 만) и расставь частицы в предложениях и рассказах из учебника', icon: 'wand', to: '/game/home?game=ptext' },
+      { id: 'expert', name: 'Эксперт: смесь правил', desc: 'Один большой текст без перевода: частицы, счётные слова и окончания глаголов вперемешку, 5, 10 или 15 пропусков', icon: 'wand', to: '/game/home?game=expert' },
       { id: 'part', name: 'Частицы и счёт', desc: 'Вставь частицу или счётное слово', icon: 'macaron', to: '/game/home?game=part' },
       { id: 'particles', name: 'Частицы и окончания', desc: 'Девять правил со своими наборами', icon: 'wand', to: '/game/home?game=particles' },
       { id: 'err', name: 'Найди ошибку', desc: 'Найди неверное слово в предложении', icon: 'eraser', to: '/game/home?game=err' },
