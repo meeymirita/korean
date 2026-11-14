@@ -2,9 +2,11 @@
  * Защита сервера: заголовки безопасности, ограничение частоты запросов, блокировка подбора токена и таймауты.
  * Всё в памяти и без внешних пакетов. Лимиты можно менять переменными окружения (нужны тестам).
  */
-import { Injectable } from '@nestjs/common'
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { Redis } from 'ioredis'
 import type { NextFunction, Request, Response } from 'express'
 import { SWAGGER } from './config.js'
+import { logWarn } from './log.js'
 
 const num = (name: string, fallback: number) => {
   const v = Number(process.env[name])
@@ -56,15 +58,86 @@ export const isPrivateAddress = (address: string) => {
 export const isInternal = (req: Request) =>
   !req.headers['x-forwarded-for'] && !req.headers['forwarded'] && !req.headers['x-real-ip'] && isPrivateAddress(req.socket?.remoteAddress || '')
 
+/** Что нужно от Redis для хранения блокировок (тесты подставляют свою заглушку). */
+export interface BadStore {
+  set(key: string, value: string, mode: 'PX', ms: number): Promise<unknown>
+  del(key: string): Promise<unknown>
+  scan(cursor: string, match: 'MATCH', pattern: string, count: 'COUNT', n: number): Promise<[string, string[]]>
+  mget(...keys: string[]): Promise<(string | null)[]>
+}
+const PREFIX = 'rl:'
+
 @Injectable()
-export class RateLimiter {
+export class RateLimiter implements OnModuleInit, OnModuleDestroy {
   private readonly all = new Map<string, Bucket>()
   private readonly heavy = new Map<string, Bucket>()
   private readonly bad = new Map<string, Bad>()
+  /** Redis: счётчики неверных токенов и блокировки переживают перезапуск сервера. Без него всё только в памяти. */
+  private store?: BadStore
+  private redis?: Redis
+  private storeFailed = false
 
   constructor() {
     // чистим старые записи, чтобы память не росла
     setInterval(() => this.sweep(), MINUTE).unref()
+  }
+
+  async onModuleInit() {
+    const url = process.env.REDIS_URL
+    if (!url || process.env.NODE_ENV === 'test') return
+    try {
+      this.redis = new Redis(url, { maxRetriesPerRequest: 1, connectTimeout: 1500, enableOfflineQueue: false, retryStrategy: n => Math.min(n * 1000, 30_000) })
+      this.redis.on('error', () => this.storeError())
+      await Promise.race([
+        new Promise<void>(resolve => this.redis!.once('ready', () => resolve())),
+        new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Redis не ответил за 3 с')), 3000).unref()),
+      ])
+      await this.attach(this.redis as unknown as BadStore)
+    } catch (e) {
+      this.storeError(e as Error)
+    }
+  }
+
+  onModuleDestroy() {
+    this.redis?.disconnect()
+  }
+
+  /** Подключает хранилище и поднимает из него прежние счётчики (после перезапуска блокировка не сбрасывается). */
+  async attach(store: BadStore) {
+    this.store = store
+    const now = Date.now()
+    let cursor = '0'
+    do {
+      const [next, keys] = await store.scan(cursor, 'MATCH', `${PREFIX}*`, 'COUNT', 200)
+      cursor = next
+      if (!keys.length) continue
+      const values = await store.mget(...keys)
+      keys.forEach((k, i) => {
+        try {
+          const b = JSON.parse(values[i] ?? '') as Bad
+          const key = k.slice(PREFIX.length)
+          const live = b.until > now || now - b.first <= LOCK_MIN * MINUTE
+          if (live && Number.isFinite(b.n) && !this.bad.has(key)) this.bad.set(key, b)
+        } catch {
+          /* битая или чужая запись */
+        }
+      })
+    } while (cursor !== '0')
+  }
+
+  private storeError(e?: Error) {
+    if (this.storeFailed) return
+    this.storeFailed = true
+    logWarn('Блокировки подбора токена: Redis недоступен, считаются только в памяти' + (e ? ` (${e.message})` : ''))
+    setTimeout(() => (this.storeFailed = false), 10 * MINUTE).unref()
+  }
+
+  /** Записывает состояние в Redis (без ожидания: запрос не должен ждать), `null` удаляет. */
+  private persist(key: string, b: Bad | null) {
+    if (!this.store) return
+    const ttl = b ? Math.max(1000, Math.max(b.until, b.first + LOCK_MIN * MINUTE) - Date.now()) : 0
+    const op = b ? this.store.set(PREFIX + key, JSON.stringify(b), 'PX', ttl) : this.store.del(PREFIX + key)
+    op.catch(() => this.storeError())
   }
 
   private sweep() {
@@ -104,16 +177,15 @@ export class RateLimiter {
       this.bad.set(key, b)
     }
     b.n++
-    if (b.n >= BAD_LIMIT) {
-      b.until = now + LOCK_MIN * MINUTE
-      return true
-    }
-    return false
+    const locked = b.n >= BAD_LIMIT
+    if (locked) b.until = now + LOCK_MIN * MINUTE
+    this.persist(key, b)
+    return locked
   }
 
   /** Верный токен сбрасывает счётчик неверных входов этого адреса (подтверждения не трогает: они идут с уже верным токеном). */
   ok(ip: string) {
-    this.bad.delete(`auth:${ip}`)
+    if (this.bad.delete(`auth:${ip}`)) this.persist(`auth:${ip}`, null)
   }
 
   middleware = (req: Request, res: Response, next: NextFunction) => {
