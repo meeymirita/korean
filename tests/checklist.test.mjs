@@ -2,8 +2,8 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { checklistFor, answersToday, snapshot, CHECK_MIN, CHECK_MAX } = await load('/src/data/checklist.ts')
-const { ALL_GAMES } = await load('/src/data/games.ts')
+const { checklistFor, answersToday, snapshot, CHECK_MIN, CHECK_MAX, TRAINER } = await load('/src/data/checklist.ts')
+const { ALL_GAMES, TOOL_IDS } = await load('/src/data/games.ts')
 after(close)
 
 describe('чек-лист на день', () => {
@@ -68,5 +68,18 @@ describe('чек-лист на день', () => {
     const [a, b] = snapshot(items, log, '2026-11-02', [])
     assert.deepEqual([a.done, a.have, b.done, b.manual], [true, 2, false, true])
     assert.equal(snapshot(items, log, '2026-11-02', ['b'])[1].done, true)
+  })
+
+  test('все тренажёры (TOOL_IDS) считаются по журналу тренажёров: «Определи часть речи» и «Печать на корейском» раньше не засчитывались', () => {
+    for (const id of TOOL_IDS) assert.ok(TRAINER[id], `у тренажёра «${id}» нет записи в TRAINER: пункт чек-листа искал бы его ответы среди игр и не засчитывал`)
+    for (const id of ['speech', 'keyboard']) {
+      const { source, mode } = TRAINER[id]
+      assert.deepEqual([source, mode], ['trainer', id])
+      const item = { id: 'x', text: id, to: '/', goal: 2, source, mode }
+      const day = '2026-11-02'
+      const t = new Date(day + 'T12:00:00').getTime()
+      const log = [{ t, w: null, ok: true, s: 'trainer', m: id }, { t, w: null, ok: false, s: 'trainer', m: id }]
+      assert.deepEqual(snapshot([item], log, day, []).map(x => [x.have, x.done]), [[2, true]], id)
+    }
   })
 })

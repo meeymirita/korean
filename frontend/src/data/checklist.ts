@@ -26,7 +26,7 @@ export interface CheckSnap {
 const GAME_GOALS = [15, 20, 25, 30, 40, 50]
 
 /** Откуда журнал ответов знает игру: источник и режим (`record({ source, mode })`). Остальные игры каталога идут как режимы движка («game» + id). */
-const TRAINER: Record<string, { source: string; mode?: string }> = {
+export const TRAINER: Record<string, { source: string; mode?: string }> = {
   match: { source: 'trainer', mode: 'match' },
   typewords: { source: 'trainer', mode: 'typing' },
   pairs: { source: 'trainer', mode: 'pairs' },
@@ -35,6 +35,9 @@ const TRAINER: Record<string, { source: string; mode?: string }> = {
   rule: { source: 'trainer', mode: 'rule' },
   translate: { source: 'trainer', mode: 'translate' },
   explain: { source: 'trainer', mode: 'explain' },
+  // раньше этих двух не было: их ответы пишутся как trainer, а чек-лист искал game, и пункт не засчитывался
+  speech: { source: 'trainer', mode: 'speech' },
+  keyboard: { source: 'trainer', mode: 'keyboard' },
   quick: { source: 'quick' },
 }
 
