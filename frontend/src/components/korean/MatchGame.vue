@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useItemBar } from '@/composables/useItemBar'
+import { itemIcon, itemName } from '@/data/shop'
 import { shuffle } from '@/data/korean/tasks'
 import { matchDetail, shown, statKey, type TWord } from '@/data/korean/trainer'
 import { burst, cascade, pop, shake } from '@/lib/fx'
@@ -23,6 +25,56 @@ const missed = ref(new Set<number>())
 const wrong = ref<{ l: number; r: number } | null>(null)
 const mistakes = ref(0)
 const done = computed(() => matched.value.size === props.words.length)
+
+/* ---------- предметы Юны (docs/shop.md): подсказка и второй шанс; 50/50 и повтор здесь не нужны ---------- */
+const items = useItemBar()
+/** слово, чья пара подсвечена подсказкой (3 секунды); слова, по которым подсказка была, дают за верный ответ 5 очков */
+const hintId = ref<number | null>(null)
+const hinted = new Set<number>()
+let hintTimer: ReturnType<typeof setTimeout> | undefined
+/** Неверная пара, которую ещё можно отменить «Вторым шансом»: в журнал она уходит со следующей парой, в конце раунда или при выходе */
+interface PendingWrong { word: TWord; detail: Record<string, unknown> | undefined; l: number; wasMissed: boolean }
+const pendingWrong = ref<PendingWrong | null>(null)
+/** идёт трата предмета на сервере: пары не принимаются, чтобы ответ не записался до решения */
+let securing = false
+const canHint = computed(() => !done.value && !items.shop.busy && !securing)
+async function useHint() {
+  const open = left.value.find(w => !matched.value.has(w.n))
+  if (!open || !canHint.value) return
+  securing = true
+  const ok = await items.use('hint')
+  securing = false
+  if (!ok) return
+  hinted.add(open.n)
+  hintId.value = open.n
+  clearTimeout(hintTimer)
+  hintTimer = setTimeout(() => (hintId.value = null), 3000)
+}
+function flushWrong() {
+  const p = pendingWrong.value
+  if (!p) return
+  pendingWrong.value = null
+  progress.record({ word: statKey(p.word), ok: false, source: 'trainer', mode: 'match', detail: p.detail })
+}
+async function secondChance() {
+  const p = pendingWrong.value
+  if (!p || securing) return
+  securing = true
+  const ok = await items.use('second')
+  securing = false
+  if (!ok || pendingWrong.value !== p) return
+  pendingWrong.value = null
+  mistakes.value = Math.max(0, mistakes.value - 1)
+  if (!p.wasMissed) {
+    const rest = new Set(missed.value)
+    rest.delete(p.l)
+    missed.value = rest
+  }
+}
+onBeforeUnmount(() => {
+  clearTimeout(hintTimer)
+  flushWrong()
+})
 
 /* ---------- карточки, линии и перетаскивание ---------- */
 const board = ref<HTMLElement>()
@@ -206,7 +258,7 @@ function detailOf(word: TWord, picked: TWord) {
 }
 
 function pick(side: 'l' | 'r', id: number) {
-  if (matched.value.has(id) || wrong.value) return
+  if (matched.value.has(id) || wrong.value || securing) return
   if (side === 'l') selL.value = id
   else selR.value = id
   if (selL.value === null || selR.value === null) return
@@ -214,18 +266,23 @@ function pick(side: 'l' | 'r', id: number) {
   const l = selL.value
   const r = selR.value
   selL.value = selR.value = null
+  flushWrong() // прежняя неверная пара: время «Второго шанса» вышло
   const word = props.words.find(x => x.n === l)
   const picked = props.words.find(x => x.n === r)
   // до смены состояния: в журнал идёт то, что было на экране в момент ответа
   const detail = word && picked ? detailOf(word, picked) : undefined
   if (l === r) {
     // засчитываем слово, если в этом раунде в нём не ошибались
-    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match', detail })
+    if (word && !missed.value.has(l)) progress.record({ word: statKey(word), ok: true, source: 'trainer', mode: 'match', ...(hinted.has(l) ? { xp: 5 } : {}), detail })
     matched.value = new Set(matched.value).add(l)
     celebrate(l, r)
   } else {
     mistakes.value++
-    if (word) progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match', detail })
+    if (word) {
+      // есть «Второй шанс»: ошибку пока не записываем, её можно отменить кнопкой
+      if (items.count('second') > 0) pendingWrong.value = { word, detail, l, wasMissed: missed.value.has(l) }
+      else progress.record({ word: statKey(word), ok: false, source: 'trainer', mode: 'match', detail })
+    }
     missed.value = new Set(missed.value).add(l)
     wrong.value = { l, r }
     shake(cards.get('l' + l))
@@ -249,6 +306,15 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
     </div>
     <div class="mg-progress"><i :style="{ width: (matched.size / words.length) * 100 + '%' }"></i></div>
 
+    <div v-if="items.count('hint') > 0 || pendingWrong" class="rs-items">
+      <button v-if="items.count('hint') > 0" type="button" class="rs-item" :disabled="!canHint" :title="itemName('hint')" @click="useHint">
+        <img :src="itemIcon('hint')" alt="" />Подсказка <small>×{{ items.count('hint') }}</small>
+      </button>
+      <template v-if="pendingWrong">
+        <span>Неверная пара. Есть «Второй шанс» (×{{ items.count('second') }}): ошибка не запишется.</span>
+        <button type="button" class="rs-item" @click="secondChance"><img :src="itemIcon('second')" alt="" />Отменить ошибку</button>
+      </template>
+    </div>
     <div ref="board" class="mg-board" @dragstart.prevent @contextmenu.prevent>
       <svg class="mg-lines" aria-hidden="true">
         <defs>
@@ -275,6 +341,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
           :data-id="w.n"
           :class="{
             'mg-aim': over === 'l' + w.n,
+            'mg-hint': hintId === w.n,
             sel: selL === w.n,
             ok: matched.has(w.n),
             bad: wrong?.l === w.n,
@@ -297,6 +364,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
           :data-id="w.n"
           :class="{
             'mg-aim': over === 'r' + w.n,
+            'mg-hint': hintId === w.n,
             sel: selR === w.n,
             ok: matched.has(w.n),
             bad: wrong?.r === w.n,
@@ -349,6 +417,7 @@ const missedWords = computed(() => props.words.filter(w => missed.value.has(w.n)
 .study .mg-card.bad { background: var(--bad-bg); border-color: var(--bad); }
 /* карточка, к которой подвели линию: только цвет и обводка, без увеличения (от scale список «прыгал» при переходе с карточки на карточку) */
 /* класс именно mg-aim, а не over: на странице игр у `.game .over` (окно конца игры движка) стоит display: none, и карточка под линией исчезала, а колонка съезжала */
+.study .mg-card.mg-hint { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-soft); }
 .study .mg-card.mg-aim { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-soft); }
 /* тянем слово к переводу: всё движение по карточке наше (touch-action: none). С pan-y браузер на iPad забирал жест пера при малейшем сдвиге вверх или вниз:
    страница дёргалась, линия обрывалась (pointercancel). Прокручивать страницу можно по просвету между колонками и по полям. */
