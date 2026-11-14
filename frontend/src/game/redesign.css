@@ -93,7 +93,7 @@
   .gx-navbox { padding-top: 0; }
   .game .gx-cat-nav { display: none; }
   .gx-modes { display: none; }
-  .gx-body { grid-template-columns: 1fr; }
+  .gx-body { grid-template-columns: minmax(0, 1fr); }
   .game .gx-stats { grid-column: 1; grid-row: auto; }
 }
 @media (max-width: 560px) { .gx-tools { gap: 8px; } .game .gx-tools .game-menu { margin-right: 0; } .game .game-top.gx-top { flex-wrap: wrap; } }

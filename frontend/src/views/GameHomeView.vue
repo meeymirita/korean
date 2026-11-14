@@ -324,4 +324,12 @@ body.on-game-home .study.sky .sw-btn { top: 52px; right: 236px; }
 .gh :is(.gh-backlink, .gh-name) { padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; background: rgba(255, 255, 255, .9); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 6px 18px rgba(100, 87, 170, .16); }
 .gh .gh-backlink:hover { color: var(--pink); }
 .gh .gh-tool { margin-top: 10px; }
+/* узкий экран: шапка переносится на вторую строку и кнопки мельче, иначе страница уезжает вправо */
+@media (max-width: 560px) {
+  .gh .gh-back { flex-wrap: wrap; gap: 8px 10px; }
+  .gh .game-top.gx-top { flex-wrap: wrap; }
+  .gh.game .gx-tools { gap: 6px; }
+  .gh.game .gx-round { width: 40px; height: 40px; font-size: 16px; }
+  .gh :is(.gh-backlink, .gh-name) { padding: 6px 12px; font-size: 12px; }
+}
 </style>
