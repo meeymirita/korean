@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
+import StudyModal from '@/components/StudyModal.vue'
 import LineChart from '@/components/charts/LineChart.vue'
 import { errText, fetchT } from '@/lib/http'
 import { percent } from '@/data/report'
@@ -19,7 +20,6 @@ const data = ref<Reply['days'] | null>(null)
 const failed = ref('')
 
 onMounted(async () => {
-  document.addEventListener('keydown', onKey)
   try {
     const q = new URLSearchParams({ source: props.source, days: String(props.days) })
     if (props.mode !== undefined) q.set('mode', props.mode || '-')
@@ -30,10 +30,6 @@ onMounted(async () => {
     failed.value = errText(e)
   }
 })
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
-function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
-}
 
 const period = computed(() => (props.days === 7 ? 'за неделю' : props.days === 30 ? 'за месяц' : 'за всё время'))
 /* ---------- список самих ответов справа ---------- */
@@ -80,77 +76,67 @@ const stats = computed(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="rc" @click.self="emit('close')">
-      <article class="rc-box study sky" role="dialog" aria-modal="true" :aria-label="`График: ${title}`">
-        <button class="rc-x" type="button" aria-label="Закрыть" @click="emit('close')">✕</button>
-        <header class="rc-head">
-          <div>
-            <div class="rc-kick"><Icon name="chart" /> график · {{ period }}</div>
-            <h2>{{ title }}</h2>
-          </div>
-          <Cat name="think" class="rc-cat" />
-        </header>
+  <StudyModal name="rc" :label="`График: ${title}`" width="1560px" @close="emit('close')">
+    <header class="rc-head">
+      <div>
+        <div class="rc-kick"><Icon name="chart" /> график · {{ period }}</div>
+        <h2>{{ title }}</h2>
+      </div>
+      <Cat name="think" class="rc-cat" />
+    </header>
 
-        <p v-if="failed" class="empty" role="alert">Не получилось загрузить: {{ failed }}</p>
-        <p v-else-if="!data" class="empty">Загружаю…</p>
-        <div v-else class="rc-cols">
-         <div class="rc-left">
-          <LineChart class="rc-chart" :title="`Ответы по дням, последние ${data.length} дн.`" :labels="labels" :series="series" unit="отв." />
+    <p v-if="failed" class="empty" role="alert">Не получилось загрузить: {{ failed }}</p>
+    <p v-else-if="!data" class="empty">Загружаю…</p>
+    <div v-else class="rc-cols">
+     <div class="rc-left">
+      <LineChart class="rc-chart" :title="`Ответы по дням, последние ${data.length} дн.`" :labels="labels" :series="series" unit="отв." />
 
-          <div class="rc-sum">
-            <div class="a"><b>{{ stats.all }}</b><small>ответов</small></div>
-            <div class="b"><b>{{ stats.all ? stats.pct + '%' : '—' }}</b><small>верно: {{ stats.ok }} из {{ stats.all }}</small></div>
-            <div class="c"><b>{{ stats.activeDays }}</b><small>дней с занятиями</small></div>
-            <div class="d"><b>{{ stats.avg }}</b><small>ответов за день занятий</small></div>
-          </div>
+      <div class="rc-sum">
+        <div class="a"><b>{{ stats.all }}</b><small>ответов</small></div>
+        <div class="b"><b>{{ stats.all ? stats.pct + '%' : '—' }}</b><small>верно: {{ stats.ok }} из {{ stats.all }}</small></div>
+        <div class="c"><b>{{ stats.activeDays }}</b><small>дней с занятиями</small></div>
+        <div class="d"><b>{{ stats.avg }}</b><small>ответов за день занятий</small></div>
+      </div>
 
-          <p v-if="stats.best" class="rc-best"><Icon name="goldstar" /> Рекорд: <b>{{ label(stats.best.day) }}</b>, {{ stats.best.ok + stats.best.bad }} ответов, верных {{ stats.best.ok }}.</p>
+      <p v-if="stats.best" class="rc-best"><Icon name="goldstar" /> Рекорд: <b>{{ label(stats.best.day) }}</b>, {{ stats.best.ok + stats.best.bad }} ответов, верных {{ stats.best.ok }}.</p>
 
-          <div class="rc-tip">
-            <Icon name="bulb" />
-            <p>Голубая линия с заливкой показывает все ответы за день, фиолетовая только верные. Чем ближе фиолетовая к голубой, тем меньше ошибок. Наведи курсор на график, чтобы увидеть цифры за день. Дни без занятий дают ноль.</p>
-          </div>
-         </div>
+      <div class="rc-tip">
+        <Icon name="bulb" />
+        <p>Голубая линия с заливкой показывает все ответы за день, фиолетовая только верные. Чем ближе фиолетовая к голубой, тем меньше ошибок. Наведи курсор на график, чтобы увидеть цифры за день. Дни без занятий дают ноль.</p>
+      </div>
+     </div>
 
-         <aside class="rc-right" aria-label="Ответы">
-          <div class="rc-rh">
-            <h3>Ответы</h3>
-            <div class="rc-seg" role="group" aria-label="Какие показать">
-              <button type="button" :class="{ on: only === 'bad' }" @click="only = 'bad'">Ошибки{{ list ? ` · ${list.bad}` : '' }}</button>
-              <button type="button" :class="{ on: only === 'ok' }" @click="only = 'ok'">Верные{{ list ? ` · ${list.ok}` : '' }}</button>
-              <button type="button" :class="{ on: only === '' }" @click="only = ''">Все</button>
-            </div>
-          </div>
-          <p v-if="listFailed" class="empty" role="alert">Не получилось загрузить: {{ listFailed }}</p>
-          <p v-else-if="!list" class="empty">Загружаю…</p>
-          <p v-else-if="!list.items.length" class="rc-none">{{ only === 'bad' ? 'Ошибок за этот период нет.' : only === 'ok' ? 'Верных ответов за этот период нет.' : 'Ответов за этот период нет.' }}</p>
-          <ul v-else class="rc-list">
-            <li v-for="(a, i) in list.items" :key="i" :class="a.ok ? 'ok' : 'bad'">
-              <span class="rc-mark" aria-hidden="true">{{ a.ok ? '✓' : '✕' }}</span>
-              <div>
-                <b class="ko">{{ a.d?.q ?? a.w ?? 'без слова' }}</b>
-                <span v-if="a.d?.a" class="rc-ans">верно: <i class="ko">{{ a.d.a }}</i></span>
-                <span v-if="!a.ok && a.d?.y" class="rc-ans wrong">ты ответил: <i class="ko">{{ a.d.y }}</i></span>
-                <span v-if="a.d?.n" class="rc-ans rc-how">как: <i class="ko">{{ a.d.n }}</i></span>
-                <time>{{ when(a.t) }}</time>
-              </div>
-            </li>
-          </ul>
-          <p v-if="list && list.items.length >= 300" class="rc-more">Показаны последние 300.</p>
-         </aside>
+     <aside class="rc-right" aria-label="Ответы">
+      <div class="rc-rh">
+        <h3>Ответы</h3>
+        <div class="rc-seg" role="group" aria-label="Какие показать">
+          <button type="button" :class="{ on: only === 'bad' }" @click="only = 'bad'">Ошибки{{ list ? ` · ${list.bad}` : '' }}</button>
+          <button type="button" :class="{ on: only === 'ok' }" @click="only = 'ok'">Верные{{ list ? ` · ${list.ok}` : '' }}</button>
+          <button type="button" :class="{ on: only === '' }" @click="only = ''">Все</button>
         </div>
-      </article>
+      </div>
+      <p v-if="listFailed" class="empty" role="alert">Не получилось загрузить: {{ listFailed }}</p>
+      <p v-else-if="!list" class="empty">Загружаю…</p>
+      <p v-else-if="!list.items.length" class="rc-none">{{ only === 'bad' ? 'Ошибок за этот период нет.' : only === 'ok' ? 'Верных ответов за этот период нет.' : 'Ответов за этот период нет.' }}</p>
+      <ul v-else class="rc-list">
+        <li v-for="(a, i) in list.items" :key="i" :class="a.ok ? 'ok' : 'bad'">
+          <span class="rc-mark" aria-hidden="true">{{ a.ok ? '✓' : '✕' }}</span>
+          <div>
+            <b class="ko">{{ a.d?.q ?? a.w ?? 'без слова' }}</b>
+            <span v-if="a.d?.a" class="rc-ans">верно: <i class="ko">{{ a.d.a }}</i></span>
+            <span v-if="!a.ok && a.d?.y" class="rc-ans wrong">ты ответил: <i class="ko">{{ a.d.y }}</i></span>
+            <span v-if="a.d?.n" class="rc-ans rc-how">как: <i class="ko">{{ a.d.n }}</i></span>
+            <time>{{ when(a.t) }}</time>
+          </div>
+        </li>
+      </ul>
+      <p v-if="list && list.items.length >= 300" class="rc-more">Показаны последние 300.</p>
+     </aside>
     </div>
-  </Teleport>
+  </StudyModal>
 </template>
 
 <style>
-.rc { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(32, 38, 92, .45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.rc .rc-box.study { position: relative; min-height: 0; width: min(1560px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
-  background: linear-gradient(160deg, #fff 0%, #fdf3fb 55%, #eef4ff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 30px 70px -20px rgba(80, 70, 160, .55); }
-.rc-x { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(143, 124, 240, .12); color: var(--muted); font-size: 14px; cursor: pointer; transition: background .15s; }
-.rc-x:hover { background: rgba(214, 77, 169, .18); color: var(--pink); }
 .rc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 38px 14px 0; }
 .rc-kick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .rc .rc-box h2 { margin: 4px 0 0; font-size: 24px; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }

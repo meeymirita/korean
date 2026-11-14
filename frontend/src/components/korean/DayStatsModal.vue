@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed } from 'vue'
 import Icon from '@/components/Icon.vue'
+import StudyModal from '@/components/StudyModal.vue'
 import { D } from '@/data/korean/words'
 import { MOODS, dayScore } from '@/data/mood'
 import { modeName, percent, sourceName } from '@/data/report'
@@ -47,56 +48,43 @@ const hasActivity = computed(() => all > 0 || minutes > 0 || entries.value.lengt
 const time = (t: number) => new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(new Date(t))
 const label = (w: string | null, q?: string) => w ?? q ?? 'предложение'
 
-const onKey = (e: KeyboardEvent) => e.key === 'Escape' && emit('close')
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="ds" @click.self="emit('close')">
-      <article class="ds-box study sky" role="dialog" aria-modal="true" :aria-label="`Статистика: ${dateLabel}`">
-        <button class="ds-x" type="button" aria-label="Закрыть" @click="emit('close')">✕</button>
-        <header class="ds-head">
-          <div class="ds-kick"><Icon name="calendar" /> день</div>
-          <h2>{{ dateLabel }}</h2>
-        </header>
+  <StudyModal name="ds" :label="`Статистика: ${dateLabel}`" width="520px" @close="emit('close')">
+    <header class="ds-head">
+      <div class="ds-kick"><Icon name="calendar" /> день</div>
+      <h2>{{ dateLabel }}</h2>
+    </header>
 
-        <p v-if="future" class="empty">Этот день ещё не наступил.</p>
-        <p v-else-if="!hasActivity" class="empty">В этот день заданий не было.</p>
-        <template v-else>
-          <div class="ds-sum">
-            <div class="a"><b>{{ all }}</b><small>ответов</small></div>
-            <div class="b"><b>{{ all ? pct + '%' : '—' }}</b><small>верно: {{ ok }} из {{ all }}</small></div>
-            <div class="c"><b>{{ minutes || '—' }}</b><small>минут занятий</small></div>
-            <div class="d"><b v-if="mood"><Icon :name="mood.icon" /></b><b v-else>—</b><small>{{ mood?.label ?? 'настроение не отмечено' }}</small></div>
-          </div>
+    <p v-if="future" class="empty">Этот день ещё не наступил.</p>
+    <p v-else-if="!hasActivity" class="empty">В этот день заданий не было.</p>
+    <template v-else>
+      <div class="ds-sum">
+        <div class="a"><b>{{ all }}</b><small>ответов</small></div>
+        <div class="b"><b>{{ all ? pct + '%' : '—' }}</b><small>верно: {{ ok }} из {{ all }}</small></div>
+        <div class="c"><b>{{ minutes || '—' }}</b><small>минут занятий</small></div>
+        <div class="d"><b v-if="mood"><Icon :name="mood.icon" /></b><b v-else>—</b><small>{{ mood?.label ?? 'настроение не отмечено' }}</small></div>
+      </div>
 
-          <p v-if="goalDone" class="ds-goal"><Icon name="goldstar" /> Цель дня выполнена: {{ ok }} верных.</p>
+      <p v-if="goalDone" class="ds-goal"><Icon name="goldstar" /> Цель дня выполнена: {{ ok }} верных.</p>
 
-          <ul v-if="groups.length" class="ds-groups">
-            <li v-for="g in groups" :key="g.name"><span>{{ g.name }}</span><b>{{ g.ok }} верно<template v-if="g.bad"> · {{ g.bad }} ошибок</template></b></li>
-          </ul>
+      <ul v-if="groups.length" class="ds-groups">
+        <li v-for="g in groups" :key="g.name"><span>{{ g.name }}</span><b>{{ g.ok }} верно<template v-if="g.bad"> · {{ g.bad }} ошибок</template></b></li>
+      </ul>
 
-          <ul v-if="entries.length" class="ds-list">
-            <li v-for="(e, i) in entries" :key="i" :class="e.ok ? 'ok' : 'bad'">
-              <span class="mk" aria-hidden="true">{{ e.ok ? '✓' : '✕' }}</span>
-              <span class="w"><b class="ko">{{ label(e.w, e.d?.q) }}</b><small v-if="e.w && byK.get(e.w)">{{ byK.get(e.w)!.t }}</small></span>
-              <time>{{ time(e.t) }}</time>
-            </li>
-          </ul>
-        </template>
-      </article>
-    </div>
-  </Teleport>
+      <ul v-if="entries.length" class="ds-list">
+        <li v-for="(e, i) in entries" :key="i" :class="e.ok ? 'ok' : 'bad'">
+          <span class="mk" aria-hidden="true">{{ e.ok ? '✓' : '✕' }}</span>
+          <span class="w"><b class="ko">{{ label(e.w, e.d?.q) }}</b><small v-if="e.w && byK.get(e.w)">{{ byK.get(e.w)!.t }}</small></span>
+          <time>{{ time(e.t) }}</time>
+        </li>
+      </ul>
+    </template>
+  </StudyModal>
 </template>
 
 <style>
-.ds { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(32, 38, 92, .45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.ds .ds-box.study { position: relative; min-height: 0; width: min(520px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
-  background: linear-gradient(160deg, #fff 0%, #fdf3fb 55%, #eef4ff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 30px 70px -20px rgba(80, 70, 160, .55); }
-.ds-x { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(143, 124, 240, .12); color: var(--muted); font-size: 14px; cursor: pointer; }
-.ds-x:hover { background: rgba(214, 77, 169, .18); color: var(--pink); }
 .ds-head { margin: 0 38px 14px 0; }
 .ds-kick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .ds .ds-box h2 { margin: 4px 0 0; font-size: 22px; line-height: 1.2; color: var(--ink); }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
 import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
+import StudyModal from '@/components/StudyModal.vue'
 import RankPic from '@/components/RankPic.vue'
 import { MAX_LEVEL, rankTable, type LevelInfo } from '@/data/levels'
 
@@ -9,50 +9,37 @@ import { MAX_LEVEL, rankTable, type LevelInfo } from '@/data/levels'
 const props = defineProps<{ info: LevelInfo }>()
 const emit = defineEmits<{ close: [] }>()
 const ranks = rankTable()
-const onKey = (e: KeyboardEvent) => e.key === 'Escape' && emit('close')
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 const num = (n: number) => n.toLocaleString('ru-RU')
 const state = (level: number) => (level < props.info.level ? 'done' : level === props.info.level ? 'now' : 'next')
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="lv" @click.self="emit('close')">
-      <article class="lv-box study sky" role="dialog" aria-modal="true" aria-label="Все уровни">
-        <button class="lv-x" type="button" aria-label="Закрыть" @click="emit('close')">✕</button>
-        <header class="lv-head">
-          <div>
-            <div class="lv-kick"><Icon name="goldstar" /> уровни</div>
-            <h2>Все уровни</h2>
-            <p>Всего {{ MAX_LEVEL }} уровней, звание меняется каждые пять. Очки идут за верные ответы в играх, тренажёрах и «Сегодня». У тебя {{ num(info.xp) }} очков, уровень {{ info.level }} — «{{ info.title }}».</p>
-          </div>
-          <Cat name="cheer" class="lv-cat" />
-        </header>
-        <div class="lv-now">
-          <div class="lv-bar"><i :style="{ width: info.pct + '%' }"></i></div>
-          <small>{{ info.max ? 'Максимальный уровень, выше только свои рекорды' : `${num(info.into)} из ${num(info.span)} очков до уровня ${info.level + 1}` }}</small>
-        </div>
-        <section v-for="r in ranks" :key="r.name" class="lv-rank" :class="{ cur: info.level >= r.from && info.level <= r.to }">
-          <h3><RankPic :level="r.from" /><span>{{ r.name }} <small>{{ r.from === r.to ? `уровень ${r.from}` : `уровни ${r.from}–${r.to}` }}</small></span></h3>
-          <ul>
-            <li v-for="l in r.levels" :key="l.level" :class="state(l.level)">
-              <b>{{ l.level }}</b>
-              <small>{{ l.xp ? num(l.xp) + ' очков' : 'старт' }}</small>
-            </li>
-          </ul>
-        </section>
-      </article>
+  <StudyModal name="lv" label="Все уровни" width="760px" @close="emit('close')">
+    <header class="lv-head">
+      <div>
+        <div class="lv-kick"><Icon name="goldstar" /> уровни</div>
+        <h2>Все уровни</h2>
+        <p>Всего {{ MAX_LEVEL }} уровней, звание меняется каждые пять. Очки идут за верные ответы в играх, тренажёрах и «Сегодня». У тебя {{ num(info.xp) }} очков, уровень {{ info.level }} — «{{ info.title }}».</p>
+      </div>
+      <Cat name="cheer" class="lv-cat" />
+    </header>
+    <div class="lv-now">
+      <div class="lv-bar"><i :style="{ width: info.pct + '%' }"></i></div>
+      <small>{{ info.max ? 'Максимальный уровень, выше только свои рекорды' : `${num(info.into)} из ${num(info.span)} очков до уровня ${info.level + 1}` }}</small>
     </div>
-  </Teleport>
+    <section v-for="r in ranks" :key="r.name" class="lv-rank" :class="{ cur: info.level >= r.from && info.level <= r.to }">
+      <h3><RankPic :level="r.from" /><span>{{ r.name }} <small>{{ r.from === r.to ? `уровень ${r.from}` : `уровни ${r.from}–${r.to}` }}</small></span></h3>
+      <ul>
+        <li v-for="l in r.levels" :key="l.level" :class="state(l.level)">
+          <b>{{ l.level }}</b>
+          <small>{{ l.xp ? num(l.xp) + ' очков' : 'старт' }}</small>
+        </li>
+      </ul>
+    </section>
+  </StudyModal>
 </template>
 
 <style>
-.lv { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; overflow-y: auto; background: rgba(32, 38, 92, .45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-.lv .lv-box.study { position: relative; min-height: 0; width: min(760px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 24px 26px 22px;
-  background: linear-gradient(160deg, #fff 0%, #fdf3fb 55%, #eef4ff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 30px 70px -20px rgba(80, 70, 160, .55); }
-.lv-x { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(143, 124, 240, .12); color: var(--muted); font-size: 14px; cursor: pointer; }
-.lv-x:hover { background: rgba(214, 77, 169, .18); color: var(--pink); }
 .lv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 38px 12px 0; }
 .lv-kick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .lv .lv-box h2 { margin: 4px 0 6px; font-size: 24px; line-height: 1.2; color: var(--ink); }
