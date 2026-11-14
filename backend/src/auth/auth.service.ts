@@ -40,9 +40,11 @@ export class AuthService {
   }
 
   /** По заголовку Authorization: Bearer … определяет, кто пришёл. 'expired' — гостевой токен просрочен, null — токен не подошёл. */
-  async whoIs(header?: string): Promise<Who | 'expired' | null> {
+  async whoIs(header?: string): Promise<Who | 'expired' | 'session' | null> {
     const given = (header || '').replace(/^Bearer\s+/i, '')
     if (!given || given.length > 300) return null // длинную строку даже не хэшируем
+    // вход по коду без токена: «ses:сеанс» (сеанс выдан за верный код из Telegram или почты); просроченный сеанс не считается подбором токена
+    if (given.startsWith('ses:')) return (await this.twofa.validSession(given.slice(4))) ? { role: 'owner' } : 'session'
     // владелец: «токен» или, после двухфакторного входа, «токен сеанс» (через пробел)
     if (TOKEN && given.length >= TOKEN.length && same(Buffer.from(given.slice(0, TOKEN.length)), Buffer.from(TOKEN))) {
       const rest = given.slice(TOKEN.length)

@@ -58,6 +58,16 @@ export class NotifyService {
     return this.validMail(mailTo) ? maskTo(mailTo!) : ''
   }
 
+  /** Строго в выбранный канал, без запасного пути (вход по коду: человек сам выбрал, куда прислать, и подсказывать другой канал нельзя). */
+  async sendVia(channel: 'telegram' | 'mail', m: Mail, mailTo?: string) {
+    if (channel === 'telegram') {
+      if (!this.telegram()) throw new Error('Telegram не настроен')
+      return this.sendTelegram(m)
+    }
+    if (!this.mail.configured() || !this.validMail(mailTo)) throw new Error('почта не настроена')
+    await this.mail.send(mailTo!, m.subject, m.text, m.html)
+  }
+
   /** Отправляет в Telegram; не вышло или не настроен — письмом (если есть адрес). Ошибка, если не ушло никуда. */
   async send(m: Mail, mailTo?: string, files: { filename: string; path: string }[] = []) {
     let tgError: Error | undefined

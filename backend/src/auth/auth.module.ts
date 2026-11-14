@@ -5,6 +5,7 @@ import { AuthService } from './auth.service.js'
 import { ConfirmService } from './confirm.service.js'
 import { RateLimiter } from '../security.js'
 import { RoleHeadersInterceptor } from './role-headers.interceptor.js'
+import { CodeLoginController } from './code-login.controller.js'
 import { SessionController } from './session.controller.js'
 import { MailService } from '../mail/mail.service.js'
 import { TwoFaController } from './twofa.controller.js'
@@ -12,7 +13,7 @@ import { TwoFaService } from './twofa.service.js'
 
 @Global()
 @Module({
-  controllers: [SessionController, TwoFaController],
+  controllers: [SessionController, TwoFaController, CodeLoginController],
   providers: [
     AuthService,
     MailService,

@@ -25,6 +25,7 @@ export class AuthGuard implements CanActivate {
     const who = await this.auth.whoIs(req.headers.authorization)
     const ip = clientIp(req)
     if (who === 'expired') throw new UnauthorizedException({ error: 'expired' })
+    if (who === 'session') throw new UnauthorizedException({ error: 'session' })
     if (!who && (await this.auth.isInboxToken(req.headers.authorization))) {
       // временный токен входящих: только чтение помеченных @InboxRead маршрутов, всё остальное 403
       if (req.method !== 'GET' || !this.reflector.getAllAndOverride<boolean>(INBOX_READ, targets)) throw new ForbiddenException({ error: 'forbidden' })

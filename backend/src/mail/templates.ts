@@ -66,11 +66,11 @@ function tgCard(o: { topic: TgTopic; kicker?: string; title: string; lead?: stri
   return { html, button: o.button && tgButtonFor(o.topic, o.button.text, o.button.url) }
 }
 
-/** Письмо с кодом. login — вход на сайт, enable — подтверждение адреса при включении защиты. */
-export function codeMail(code: string, purpose: 'login' | 'enable', minutes = 10): Mail {
-  const login = purpose === 'login'
+/** Письмо с кодом. login — второй шаг после токена, code — вход по коду без токена, enable — подтверждение адреса при включении защиты. */
+export function codeMail(code: string, purpose: 'login' | 'enable' | 'code', minutes = 10): Mail {
+  const login = purpose !== 'enable'
   const title = login ? 'Код для входа' : 'Подтверждение почты'
-  const lead = login ? 'Вы вводите токен на сайте, и мы просим второй шаг. Введите этот код в окне входа.' : 'Введите этот код в настройках кабинета, и защита кодом из письма включится.'
+  const lead = purpose === 'code' ? 'Вы запросили вход по коду, без токена. Введите этот код в окне входа.' : login ? 'Вы вводите токен на сайте, и мы просим второй шаг. Введите этот код в окне входа.' : 'Введите этот код в настройках кабинета, и защита кодом из письма включится.'
   const digits = code.split('')
   const boxes = digits
     .map(d => `<td style="padding:0 5px"><div style="width:52px;height:64px;line-height:64px;text-align:center;font-size:34px;font-weight:700;color:#37378f;background:#f1ecff;border:1px solid #ddd3ff;border-radius:14px;font-family:Arial,Helvetica,sans-serif">${esc(d)}</div></td>`)

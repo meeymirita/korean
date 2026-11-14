@@ -19,6 +19,9 @@ const sessionMs = () => (ownerSessionHours() > 0 ? ownerSessionHours() * 3_600_0
 const CODE_TTL = 10 * 60_000
 const RESEND_AFTER = 30_000
 const MAX_TRIES = 5
+/** Вход по коду без токена: код из 6 цифр (код — единственный ключ, 4 цифр для этого мало); запросов кода не больше 6 в час на весь сайт. */
+const CODE_DIGITS = 6
+const CODE_SENDS_PER_HOUR = 6
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
 
 interface Settings {
@@ -46,7 +49,9 @@ export const maskEmail = (e: string) => {
 
 @Injectable()
 export class TwoFaService {
-  private readonly pending = new Map<'login' | 'enable', Pending>()
+  private readonly pending = new Map<'login' | 'enable' | 'code', Pending>()
+  /** Когда уходили коды входа без токена (для лимита в час). */
+  private codeSends: number[] = []
 
   constructor(
     private readonly db: Db,
@@ -137,6 +142,58 @@ export class TwoFaService {
   async verifyLogin(code: unknown): Promise<{ session: string } | null> {
     if (!this.check('login', code)) return null
     await this.events.log('2fa_login', '')
+    return { session: await this.createSession() }
+  }
+
+  /* ---------- вход по коду без токена (Telegram или почта) ---------- */
+  /** Почта владельца для кода: `REMINDER_MAIL_TO` или адрес из защиты кодом (если это почта, а не Telegram). */
+  private async ownerMail() {
+    const to = process.env.REMINDER_MAIL_TO || (await this.read()).email
+    return to.includes('@') ? to : ''
+  }
+
+  /** Какие способы доступны экрану входа: Telegram и/или почта; `CODE_LOGIN=0` выключает вход по коду совсем. */
+  async codeChannels() {
+    const enabled = process.env.CODE_LOGIN !== '0'
+    return { enabled, telegram: enabled && this.notify.telegram(), mail: enabled && this.mail.configured() && !!(await this.ownerMail()) }
+  }
+
+  /** Шлёт код в выбранный канал (строго в него). Частые запросы отклоняются (429): пауза 30 секунд и 6 кодов в час. */
+  async sendCode(channel: unknown) {
+    const ch = channel === 'telegram' || channel === 'mail' ? channel : null
+    if (!ch) throw new BadRequestException({ error: 'invalid channel' })
+    const avail = await this.codeChannels()
+    if (!avail.enabled || !avail[ch]) throw new BadRequestException({ error: 'channel unavailable' })
+    const now = Date.now()
+    const old = this.pending.get('code')
+    if (old && now - old.sent < RESEND_AFTER) throw new HttpException({ error: 'too soon', wait: Math.ceil((RESEND_AFTER - (now - old.sent)) / 1000) }, 429)
+    this.codeSends = this.codeSends.filter(t => now - t < 3_600_000)
+    if (this.codeSends.length >= CODE_SENDS_PER_HOUR) throw new HttpException({ error: 'too many', wait: Math.ceil((this.codeSends[0]! + 3_600_000 - now) / 1000) }, 429)
+    const code = String(randomInt(0, 10 ** CODE_DIGITS)).padStart(CODE_DIGITS, '0')
+    try {
+      await this.notify.sendVia(ch, codeMail(code, 'code', CODE_TTL / 60_000), ch === 'mail' ? await this.ownerMail() : undefined)
+    } catch (e) {
+      logError(`Код входа не отправился (${ch}): ${(e as Error).message}`)
+      await this.events.log('code_send_failed', ch)
+      throw new ServiceUnavailableException({ error: 'send failed' })
+    }
+    this.codeSends.push(now)
+    this.pending.set('code', { hash: sha(code), email: ch, expires: now + CODE_TTL, sent: now, tries: 0 })
+    await this.events.log('code_sent', ch)
+    return { ok: true, channel: ch }
+  }
+
+  /** Верный код: сеанс владельца без токена. Неверный возвращает null (вызывающий считает попытку подбора); пять промахов сжигают код. */
+  async verifyCode(code: unknown): Promise<{ session: string } | null> {
+    const p = this.pending.get('code')
+    if (!p || p.expires < Date.now() || typeof code !== 'string' || !/^\d{6}$/.test(code)) return null
+    if (++p.tries > MAX_TRIES) {
+      this.pending.delete('code')
+      return null
+    }
+    if (!same(sha(code), p.hash)) return null
+    this.pending.delete('code')
+    await this.events.log('code_login', p.email)
     return { session: await this.createSession() }
   }
 

@@ -27,7 +27,7 @@ export const ENV_VARS: Record<string, EnvKind> = {
   TELEGRAM_BOT_TOKEN: 'secret', TELEGRAM_CHAT_ID: 'string', TELEGRAM_GROUP_ID: 'string', TELEGRAM_BANNER_BASE: 'url',
   TELEGRAM_CUSTOM_EMOJI: 'string', TELEGRAM_DUMP_FILE: 'path',
   // напоминания, письма, отчёты
-  REMINDER_MAIL_TO: 'string', REMINDER_TICK_MS: 'int', LESSON_TICK_MS: 'int',
+  REMINDER_MAIL_TO: 'string', CODE_LOGIN: 'flag', REMINDER_TICK_MS: 'int', LESSON_TICK_MS: 'int',
   REPORT_WEEKLY: 'flag', REPORT_WEEKDAY: 'weekday', REPORT_TIME: 'time', REPORT_WATCH_MS: 'int',
   STUDY_WEEKLY: 'flag', STUDY_WEEKDAY: 'weekday', STUDY_TIME: 'time',
   // копии
