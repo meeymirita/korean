@@ -32,4 +32,26 @@ describe('режим «Эксперт»', () => {
     check.click()
     expect(document.querySelectorAll('.story .gap.ok, .story .gap.bad, .story .gap.no').length).toBeGreaterThan(0)
   })
+
+  it('чип «Эксперт 8–12» в «Куда, где», «Когда?», «Тоже», «Это или не это»: 8–12 предложений', () => {
+    for (const mode of ['place', 'when', 'too', 'neg']) {
+      start(mode)
+      closeHelp()
+      chip('Эксперт').click()
+      const rows = document.querySelectorAll('.story .story-row').length
+      expect(rows, mode).toBeGreaterThanOrEqual(8)
+      expect(rows, mode).toBeLessThanOrEqual(12)
+    }
+  })
+
+  it('«Куда, где» на Эксперте без перевода, остальные с переводом', () => {
+    start('place')
+    closeHelp()
+    chip('Эксперт').click()
+    expect(document.querySelectorAll('.story-tr:not(.off)').length).toBe(0)
+    start('too')
+    closeHelp()
+    chip('Эксперт').click()
+    expect(document.querySelectorAll('.story-tr:not(.off)').length).toBeGreaterThan(0)
+  })
 })

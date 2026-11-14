@@ -94,7 +94,7 @@ if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 const wantFam=hooks.fam&&hooks.fam();
 if(wantFam&&PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
 if(![1,2,3,4,'any'].includes(S.level))S.level='any';
-Object.keys(S.levels).forEach(k=>{if(!['simple','story','long'].includes(S.levels[k]!))S.levels[k]='simple';});
+Object.keys(S.levels).forEach(k=>{if(!['simple','story','long','expert'].includes(S.levels[k]!))S.levels[k]='simple';});
 
 /* ---------- выбор с весами (ошибки возвращаются чаще) ---------- */
 function pickW<T>(arr: T[],keyFn: (x: T)=>string): T{
@@ -1218,8 +1218,22 @@ const WHEN_ACT: [string,string,string][]=[['친구를 만나요','встреча
   ['요리를 배워요','учусь готовить','Когда ты учишься готовить?'],['집에 있어요','я дома','Когда ты дома?']];
 const NONE='ничего не нужно';
 const cap1=(s: string)=>s.charAt(0).toUpperCase()+s.slice(1);
+/**
+ * Уровень «Эксперт» текстовых режимов (куда/где, когда, тоже, это или не это): 8–12 предложений и лишние похожие плитки.
+ * Перевод прячется только там, где без него ответ однозначен (`hideTr`: «Куда, где»); в остальных он решает смысл («тоже», «только», «не»).
+ */
+const EXPERT_LV: [string,string][]=[['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10'],['expert','Эксперт 8–12']];
+function textLevel(mode: string,gen: (lo: number,hi: number)=>Question,extra: string[],hideTr: boolean): Question{
+  const lv=S.levels[mode];
+  if(lv!=='expert')return lv==='long'?gen(5,10):gen(2,4);
+  const q=gen(8,12) as StoryQ;
+  if(hideTr)q.sents.forEach(function(x){x.noTr=true;});
+  extra.forEach(function(t){if(!q.bank.includes(t))q.bank.push(t);});
+  q.bank=shuffle(q.bank);q.label='Эксперт: '+q.label;
+  return q;
+}
 function genWhen(){
-  if(storyOn('when'))return S.levels.when==='long'?genWhenStory(5,10):genWhenStory(2,4);
+  if(storyOn('when'))return textLevel('when',genWhenStory,['에서도','도'],false);
   const act=rnd(WHEN_ACT);
   const r=Math.random();
   const q=r<.12,off=q||r<.3;
@@ -1255,7 +1269,7 @@ const TOO_AT: [string,string,string,string][]=[
   ['저는 집에서 쉬어요. 공원',' 쉬어요.','Я отдыхаю дома. И в парке тоже.','에서도'],
 ];
 function genToo(){
-  if(storyOn('too'))return S.levels.too==='long'?genTooStory(5,10):genTooStory(2,4);
+  if(storyOn('too'))return textLevel('too',genTooStory,['을','를','에도','에서도','만'],false);
   const at=Math.random()<.4;
   const pool=at?TOO_AT:TOO;
   const i=pickW(pool.map((x,k)=>k),k=>(at?'ta:':'to:')+k);
@@ -1431,7 +1445,7 @@ function genCount(){
 /* ---------- по разделам грамматики: «Быть и отрицание», «Место и направление», «Указатели», «Вежливость» ---------- */
 /** «Это …» и «это не …»: 이에요/예요 и 이/가 아니에요 по 받침 */
 function genNeg(){
-  if(storyOn('neg'))return S.levels.neg==='long'?genNegStory(5,10):genNegStory(2,4);
+  if(storyOn('neg'))return textLevel('neg',genNegStory,[],false);
   const pool=D.S.filter(r=>/^[а-яё]+$/i.test(r[2]));
   const w=pickW(pool,r=>'ng:'+r[0]);
   const ko=w[0],hasB=jong(ko[ko.length-1]!)>0;
@@ -1449,7 +1463,7 @@ const PLACES: Place[]=[['학교','в школу','в школе',['공부해요'
   ['백화점','в универмаг','в универмаге',['쇼핑해요','хожу по магазинам']],['집','домой','дома',['쉬어요','отдыхаю']],['은행','в банк','в банке']];
 /** 에 (куда, где находишься) или 에서 (где действие) */
 function genPlace(){
-  if(storyOn('place'))return S.levels.place==='long'?genPlaceStory(5,10):genPlaceStory(2,4);
+  if(storyOn('place'))return textLevel('place',genPlaceStory,['에도','에만','도'],true);
   const p=pickW(PLACES,x=>'pl:'+x[0]);
   const acts=p.slice(3) as [string,string][];
   const t=rnd(acts.length?['go','be','do','do']:['go','be']);
@@ -1733,7 +1747,7 @@ function checkBuild(){
   finish(ok,ans);
 }
 /** Чипы уровня над заданием: одно предложение (как раньше), текст из 2–4 или длинный из 5–10 (в блице и на выживании всегда простой). */
-const LEVEL_LABELS: Record<string, [string,string][]>={han:[['simple','Слоги'],['story','Слова'],['long','Строки']],spot:[['simple','Простой'],['story','Текст 2–3'],['long','Длинный 4–5']],expert:[['simple','5 пропусков'],['story','10 пропусков'],['long','15 пропусков']]};
+const LEVEL_LABELS: Record<string, [string,string][]>={han:[['simple','Слоги'],['story','Слова'],['long','Строки']],spot:[['simple','Простой'],['story','Текст 2–3'],['long','Длинный 4–5']],when:EXPERT_LV,too:EXPERT_LV,neg:EXPERT_LV,place:EXPERT_LV,expert:[['simple','5 пропусков'],['story','10 пропусков'],['long','15 пропусков']]};
 function levelChips(mode: string){
   const lv=el('div','levels');
   (LEVEL_LABELS[mode]||([['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10']] as [string,string][])).forEach(function(x){
