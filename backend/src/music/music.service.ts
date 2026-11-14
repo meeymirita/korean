@@ -221,7 +221,7 @@ export class MusicService {
           const lines = buf.split('\n')
           buf = lines.pop() ?? ''
           lines.forEach(onLine)
-        } else if (out.length < 5_000_000) out += s
+        } else if (out.length < 40_000_000) out += s // название и форматы видео (у некоторых роликов JSON в несколько мегабайт)
       })
       child.stderr.on('data', d => (err = (err + String(d)).slice(-4000)))
       child.once('error', e => (clearTimeout(timer), reject(e)))
