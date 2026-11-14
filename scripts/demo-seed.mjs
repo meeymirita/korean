@@ -3,7 +3,7 @@
  * заметки, записи календаря, картинки с тегами). Нужен для скриншотов «О платформе» и чтобы показать сайт без личных данных.
  * Запуск (демо-сервер, НЕ сервер владельца: данные добавляются к тому, что уже есть):
  *   API=http://127.0.0.1:3002 TOKEN=токен-демо-сервера node scripts/demo-seed.mjs
- * Переменные: API (адрес сервера, по умолчанию http://127.0.0.1:3002), TOKEN, DAYS (сколько дней назад, 30), IMAGES=0 (без картинок).
+ * Переменные: API (адрес сервера, по умолчанию http://127.0.0.1:3002), TOKEN, DAYS (сколько дней назад, 30), IMAGES=0 (без картинок), MUSIC=0 (без песен для плеера).
  */
 import path from 'node:path'
 import { createRequire } from 'node:module'
@@ -59,6 +59,8 @@ for (let back = DAYS; back >= 0; back--) {
   ops.push({ type: 'mood', day, mood: pick(['easy', 'ok', 'ok', 'hard']) })
 }
 ops.push({ type: 'profile', name: 'Демо', avatar: '🌸' })
+// цель дня и недели, отмеченные слова («Важное»)
+ops.push({ type: 'settings', goal: 50, weekDays: 5, weekOk: 150, marks: pool.slice(0, 8).map(w => 'w:' + w.k) })
 for (let i = 0; i < ops.length; i += 500) await call('POST', '/api/ops', { ops: ops.slice(i, i + 500) })
 console.log(`ответов: ${ops.filter(o => o.type === 'answer').length}, дней: ${ops.filter(o => o.type === 'time').length}`)
 
@@ -91,8 +93,11 @@ const notes = [
   { title: 'Частицы 이 / 가 и 은 / 는', text: '이 / 가 — кто именно (новая информация), 은 / 는 — что касается (тема).\n저는 학생이에요. 누가 왔어요? 친구가 왔어요.', tags: ['грамматика', 'частицы'] },
   { title: 'Слова с урока у Леры', text: '영화관 — кинотеатр\n도서관 — библиотека\n편의점 — магазин у дома', tags: ['слова', 'лера'], images: imageIds.slice(0, 1) },
   { title: 'Прошедшее время', text: '가요 → 갔어요, 먹어요 → 먹었어요, 해요 → 했어요.', tags: ['грамматика'] },
+  { title: 'Вопросы к Лере на субботу', text: 'Когда 에, а когда 에서? Почему 학교에서 공부해요, но 학교에 가요?\nРазобрать 만 и 도 на примерах.', tags: ['лера', 'вопросы'], pinned: true },
+  { title: 'Числа и цены', text: '삼천오백 원 — 3500 вон\n만 원 — 10 000 вон\n한 개, 두 개, 세 개 — одна, две, три штуки', tags: ['слова', 'числа'] },
+  { title: 'Фразы для кафе', text: '아메리카노 한 잔 주세요. — Один американо, пожалуйста.\n얼마예요? — Сколько стоит?\n감사합니다! — Спасибо!', tags: ['фразы', 'кафе'], remindAt: dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3)) + 'T18:00' },
 ]
-await call('PUT', '/api/notes', { v: 1, updated: t, notes: notes.map((n, i) => ({ id: 'demo' + i, images: [], ...n, created: t - i * 86_400_000, updated: t - i * 86_400_000 })) })
+await call('PUT', '/api/notes', { v: 1, updated: t, notes: notes.map((n, i) => ({ id: 'demo' + i, images: [], pinned: false, remindAt: null, pos: null, ...n, created: t - i * 86_400_000, updated: t - i * 86_400_000 })) })
 console.log(`заметок: ${notes.length}`)
 
 /* ---------- календарь: созвоны с учителем по субботам и свои занятия ---------- */
@@ -108,4 +113,23 @@ for (let back = -7; back <= 21; back++) {
   }
 }
 console.log(`записей календаря: ${plans}`)
+/* ---------- публичная визитка /me ---------- */
+await call('PUT', '/api/public/settings', { enabled: true, card: { name: 'Демо', avatar: '🌸', level: 16, title: 'Факел', streak: 27, learned: 120, answers: ops.filter(o => o.type === 'answer').length, days: 27 } })
+console.log('визитка открыта')
+
+/* ---------- музыкальный плеер: три песни (короткие тона, у каждой своя высота) ---------- */
+if (process.env.MUSIC !== '0') {
+  const { spawnSync } = await import('node:child_process')
+  const songs = [['Весенний ветер', 330], ['Вечер в Сеуле', 392], ['Кофейня у реки', 440]]
+  let added = 0
+  for (const [title, hz] of songs) {
+    const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-f', 'lavfi', '-i', `sine=frequency=${hz}:duration=180`, '-c:a', 'libmp3lame', '-b:a', '48k', '-f', 'mp3', '-'], { maxBuffer: 20_000_000 })
+    if (r.status !== 0) { console.log('песни пропущены: нужен ffmpeg'); break }
+    const form = new FormData()
+    form.append('file', new Blob([r.stdout]), `${title}.mp3`)
+    const res = await fetch(API + '/api/music/upload', { method: 'POST', headers: auth, body: form })
+    if (res.ok) added++
+  }
+  if (added) console.log(`песен: ${added}`)
+}
 console.log('Готово')
