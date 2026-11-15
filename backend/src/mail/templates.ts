@@ -4,18 +4,18 @@ export interface Mail {
   text: string
   html: string
   /** версия для Telegram: HTML-разметка Telegram (b, i, code, blockquote, a) и кнопка-ссылка под сообщением */
-  tg?: { html: string; button?: { text: string; url: string; style?: 'primary' | 'success' | 'danger'; iconEmojiId?: string } }
+  tg?: { html: string; /** остальные сообщения, если карточка не влезла в одно (кнопка идёт под последним) */ parts?: string[]; button?: { text: string; url: string; style?: 'primary' | 'success' | 'danger'; iconEmojiId?: string } }
   /** тема в Telegram-группе (и имя баннера tg-<тема>.png в frontend/public/tg) */
   topic?: TgTopic
 }
 
-export const TG_TOPICS = ['login', 'remind', 'digest', 'lesson', 'backup', 'alert', 'study'] as const
+export const TG_TOPICS = ['login', 'remind', 'digest', 'lesson', 'backup', 'alert', 'study', 'rule'] as const
 export type TgTopic = (typeof TG_TOPICS)[number]
 /** Названия тем группы, как в Telegram и на вкладке «Telegram» кабинета. */
-export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remind: 'Напоминания', digest: 'Подборка слов', lesson: 'Созвон', backup: 'Копии', alert: 'Тревоги', study: 'Отчёт по занятиям' }
+export const TG_TOPIC_NAMES: Record<TgTopic, string> = { login: 'Вход', remind: 'Напоминания', digest: 'Подборка слов', lesson: 'Созвон', backup: 'Копии', alert: 'Тревоги', study: 'Отчёт по занятиям', rule: 'Правило дня' }
 
 /** Сердечко темы: по нему сразу видно, откуда сообщение. */
-export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️', study: '💚' }
+export const TG_HEART: Record<TgTopic, string> = { login: '💙', remind: '🩷', digest: '💜', lesson: '🩵', backup: '🤍', alert: '❤️', study: '💚', rule: '🧡' }
 
 /**
  * Анимированные (премиум) эмодзи тем из набора lolityanmur1_by_fStikBot: белая бабочка у «Копий», фиолетовая у «Подборки слов», котик у «Напоминаний».
@@ -42,6 +42,7 @@ export const TG_TOPIC_ABOUT: Record<TgTopic, string> = {
   backup: 'отчёты о резервных копиях',
   alert: 'если что-то сломалось или копия не удалась',
   study: 'PDF с отчётом после каждого занятия с таймером',
+  rule: 'карточка правила с картинкой в выбранное время',
 }
 
 /** Цвет всех кнопок: синяя (Telegram знает только синюю primary, зелёную success и красную danger). Решение владельца 2026-11-08. */
@@ -391,7 +392,77 @@ export function sampleMail(topic: TgTopic): Mail {
       return backupMail({ kind: 'disk-fail', detail: 'пример: на Диске закончилось место' })
     case 'study':
       return studyMail({ when: '12 ноября 2026 г. · 19:02–19:54', seconds: 2980, answers: 206, ok: 159 })
+    case 'rule':
+      return ruleMail({
+        id: 'thanks',
+        ko: '감사합니다',
+        ru: 'спасибо',
+        section: 'Вежливость',
+        about: 'как поблагодарить',
+        blocks: [
+          { type: 'text', text: 'Пример карточки: настоящая приходит из «Мои карточки» с картинкой.' },
+          { type: 'examples', examples: [{ ko: '감사합니다.', ru: 'Спасибо.' }] },
+        ],
+      }, { time: '09:00' })
   }
+}
+
+/** Карточка грамматики для Telegram (то, что отдаёт `/api/public/grammar`: разметка уже убрана). */
+export interface RuleCard {
+  id: string
+  ko: string
+  ru: string
+  section: string
+  about: string
+  blocks: ({ type: string; text?: string; head?: string[]; rows?: string[][]; examples?: { ko: string; ru: string }[] })[]
+}
+
+/** Подписи блоков карточки (у текста подписи нет). */
+const RULE_LABEL: Record<string, string> = { rule: 'Правило', warning: 'Осторожно', tip: 'Совет', correct: 'Верно', pronunciation: 'Произношение' }
+
+/** Один блок карточки в разметку Telegram; пустой блок даёт пустую строку. */
+function ruleBlock(b: RuleCard['blocks'][number]): string {
+  if (b.type === 'examples') return (b.examples ?? []).map(x => `<b>${esc(x.ko)}</b>\n${esc(x.ru)}`).join('\n')
+  if (b.type === 'table') return [b.head?.length ? `<i>${esc(b.head.join(' · '))}</i>` : '', ...(b.rows ?? []).map(r => esc(r.join(' · ')))].filter(Boolean).join('\n')
+  const t = esc(b.text ?? '')
+  if (!t) return ''
+  if (b.type === 'heading') return `<b>${t}</b>`
+  if (b.type === 'formula') return `<code>${t}</code>`
+  const label = RULE_LABEL[b.type]
+  return label ? `<b>${label}:</b> ${t}` : t
+}
+
+/** Режет блоки на сообщения не длиннее max знаков (по границам блоков, слишком длинный блок по строкам). */
+function ruleChunks(blocks: string[], max: number): string[] {
+  const out: string[] = []
+  let cur = ''
+  const push = (piece: string) => {
+    if (cur && cur.length + 2 + piece.length > max) {
+      out.push(cur)
+      cur = ''
+    }
+    cur = cur ? `${cur}\n\n${piece}` : piece
+  }
+  for (const b of blocks) {
+    if (b.length <= max) push(b)
+    else for (const line of b.split('\n')) push(line.slice(0, max))
+  }
+  if (cur) out.push(cur)
+  return out
+}
+
+/** «Правило дня»: карточка грамматики из «Мои карточки» в тему Telegram (картинку карточки сервис шлёт перед текстом отдельно). */
+export function ruleMail(card: RuleCard, o: { time: string; site?: string }): Mail {
+  const site = (o.site || 'https://korean.meeymirita.ru').replace(/\/$/, '')
+  const link = `${site}/korean/grammar?g=${encodeURIComponent(card.id)}`
+  const chunks = ruleChunks(card.blocks.map(ruleBlock).filter(Boolean), 3000)
+  const foot = `Приходит в ${o.time}. Время и включение: кабинет, «Уведомления».`
+  const h = heart('rule')
+  const button = { text: 'Открыть правило на сайте', url: link }
+  const first = tgCard({ topic: 'rule', kicker: card.section, title: `${card.ko} — ${card.ru}`, lead: card.about, body: chunks[0], foot: chunks.length > 1 ? 'Продолжение ниже.' : foot, button })
+  const parts = chunks.slice(1).map((c, i, a) => (i === a.length - 1 ? `${c}\n\n<i>${h} ${esc(foot)}</i>` : c))
+  const text = `Правило дня (우리말): ${card.ko} — ${card.ru}\n${card.about}\n\n${card.blocks.map(b => ruleBlock(b).replace(/<[^>]+>/g, '')).filter(Boolean).join('\n\n')}\n\nОткрыть: ${link}`
+  return { subject: `Правило дня: ${card.ko}`, text, html: esc(text), tg: { html: first.html, ...(parts.length ? { parts } : {}), button: first.button }, topic: 'rule' }
 }
 
 /** Итог одного занятия с таймером: когда шло (строка уже по-русски, по часам владельца), секунд по таймеру, ответов и сколько из них верных. */

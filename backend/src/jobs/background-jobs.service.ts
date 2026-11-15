@@ -11,6 +11,7 @@ export const JOB_SCHEDULES = [
   { id: 'backup-nightly', repeat: { pattern: '30 2 * * *', tz: 'Asia/Novosibirsk' }, name: 'backup.run' },
   { id: 'trash-daily', repeat: { pattern: '40 3 * * *', tz: 'Asia/Novosibirsk' }, name: 'trash.purge' },
   { id: 'notes-remind-minute', repeat: { every: 60_000 }, name: 'notes.remind' },
+  { id: 'rule-minute', repeat: { every: 60_000 }, name: 'rule.tick' },
 ] as const
 
 @Injectable()
@@ -89,6 +90,7 @@ export class BackgroundJobs implements OnApplicationBootstrap, OnModuleDestroy {
     every('digest.tick', tick)
     every('reminder.tick', tick)
     every('notes.remind', tick)
+    every('rule.tick', tick)
     every('backup.run', 6 * 3600_000, true)
     every('trash.purge', 6 * 3600_000, true)
   }

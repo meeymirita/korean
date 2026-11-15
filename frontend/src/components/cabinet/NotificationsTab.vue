@@ -2,6 +2,7 @@
 import DigestBlock from '@/components/cabinet/DigestBlock.vue'
 import LessonBlock from '@/components/cabinet/LessonBlock.vue'
 import ReminderBlock from '@/components/cabinet/ReminderBlock.vue'
+import RuleBlock from '@/components/cabinet/RuleBlock.vue'
 import { useProgressStore } from '@/stores/progress'
 
 /** Вкладка «Уведомления»: всё, что связано с почтой, в одном месте вместо нескольких блоков в «Настройках». */
@@ -14,6 +15,7 @@ const progress = useProgressStore()
       <ReminderBlock />
       <LessonBlock />
       <DigestBlock />
+      <RuleBlock />
     </template>
     <p v-else class="cb-empty">Уведомления доступны после входа по токену владельца.</p>
   </div>

@@ -15,7 +15,7 @@ describe('BullMQ scheduling policy', () => {
   })
 
   it('defines stable shared schedulers for digest, reminder, nightly backup and daily trash purge', () => {
-    expect(JOB_SCHEDULES.map(x => x.id)).toEqual(['digest-minute', 'reminder-minute', 'backup-nightly', 'trash-daily', 'notes-remind-minute'])
+    expect(JOB_SCHEDULES.map(x => x.id)).toEqual(['digest-minute', 'reminder-minute', 'backup-nightly', 'trash-daily', 'notes-remind-minute', 'rule-minute'])
     expect(JOB_SCHEDULES[2]).toMatchObject({ repeat: { pattern: '30 2 * * *', tz: 'Asia/Novosibirsk' } })
   })
 })

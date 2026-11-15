@@ -1,7 +1,7 @@
 /**
  * Уведомления: Telegram (основной путь) с запасом на почту.
  * .env: TELEGRAM_BOT_TOKEN (из @BotFather), TELEGRAM_CHAT_ID (число; узнать: написать боту /start и открыть getUpdates).
- * Группа с темами: TELEGRAM_GROUP_ID (число -100…), TELEGRAM_TOPIC_LOGIN|REMIND|DIGEST|LESSON|BACKUP|ALERT|STUDY (номера тем), каждое уведомление уходит
+ * Группа с темами: TELEGRAM_GROUP_ID (число -100…), TELEGRAM_TOPIC_LOGIN|REMIND|DIGEST|LESSON|BACKUP|ALERT|STUDY|RULE (номера тем), каждое уведомление уходит
  * в свою тему с баннером (<TELEGRAM_BANNER_BASE>/tg/tg-<тема>.png, файлы лежат в frontend/public/tg). С группой личный чат (TELEGRAM_CHAT_ID) не используется вовсе, код входа тоже идёт в тему «Вход».
  * Для тестов: TELEGRAM_DUMP_FILE=путь — сообщения не уходят, а дописываются строками JSON в файл.
  */
@@ -94,7 +94,8 @@ export class NotifyService {
       const thread = m.topic ? Number(env[`TELEGRAM_TOPIC_${m.topic.toUpperCase()}`]) : NaN
       if (!Number.isInteger(thread) || thread <= 0) return undefined
       const base = (env.TELEGRAM_BANNER_BASE || 'https://korean.meeymirita.ru').replace(/\/$/, '')
-      return { chat_id: env.TELEGRAM_GROUP_ID, message_thread_id: thread, banner: `${base}/tg/tg-${m.topic}.png?v=${BANNER_VERSION}` }
+      // у «Правила дня» вместо баннера идёт картинка самой карточки (sendRule)
+      return { chat_id: env.TELEGRAM_GROUP_ID, message_thread_id: thread, ...(m.topic === 'rule' ? {} : { banner: `${base}/tg/tg-${m.topic}.png?v=${BANNER_VERSION}` }) }
     }
     return env.TELEGRAM_CHAT_ID ? { chat_id: env.TELEGRAM_CHAT_ID } : undefined
   }
@@ -160,6 +161,24 @@ export class NotifyService {
     if (id) await this.remember(topic, [id])
   }
 
+  /** «Правило дня»: картинка карточки (если есть) и следом текст. Картинка уходит файлом (JPEG): ссылка Диска для Telegram недоступна. Ошибка, если тема не настроена. */
+  async sendRule(m: Mail, photo?: Buffer, caption = '') {
+    const to = this.route(m)
+    if (!to?.message_thread_id) throw new Error(`тема «${TG_TOPIC_NAMES.rule}» не настроена: нужны TELEGRAM_GROUP_ID и TELEGRAM_TOPIC_RULE в .env`)
+    if (photo) {
+      const f = new FormData()
+      f.set('chat_id', String(to.chat_id))
+      f.set('message_thread_id', String(to.message_thread_id))
+      f.set('parse_mode', 'HTML')
+      f.set('caption', caption.slice(0, 1000))
+      f.set('photo', new Blob([photo as BlobPart], { type: 'image/jpeg' }), 'rule.jpg')
+      const r = await this.tgRaw('sendPhoto', f)
+      const id = typeof r === 'object' && r ? r.message_id : undefined
+      if (id) await this.remember('rule', [id])
+    }
+    await this.sendTelegram(m)
+  }
+
   /** Темы группы и настроены ли они (для вкладки «Telegram» в кабинете). */
   topics() {
     const env = process.env
@@ -191,7 +210,10 @@ export class NotifyService {
     const to = this.route(m)
     if (!to) throw new Error('Telegram: не задан ни чат, ни группа с темой')
     const text = (m.tg?.html ?? plain(m.text)).slice(0, 4000)
-    const markup = m.tg?.button ? { reply_markup: { inline_keyboard: [[{ text: m.tg.button.text, url: m.tg.button.url, ...(m.tg.button.style ? { style: m.tg.button.style } : {}), ...(m.tg.button.iconEmojiId ? { icon_custom_emoji_id: m.tg.button.iconEmojiId } : {}) }]] } } : {}
+    const parts = (m.tg?.parts ?? []).map(t => t.slice(0, 4000))
+    const buttonMarkup = m.tg?.button ? { reply_markup: { inline_keyboard: [[{ text: m.tg.button.text, url: m.tg.button.url, ...(m.tg.button.style ? { style: m.tg.button.style } : {}), ...(m.tg.button.iconEmojiId ? { icon_custom_emoji_id: m.tg.button.iconEmojiId } : {}) }]] } } : {}
+    // длинная карточка идёт несколькими сообщениями: кнопка только под последним
+    const markup = parts.length ? {} : buttonMarkup
     const { banner, ...target } = to
     const sent: number[] = []
     const keep = (id?: number) => {
@@ -200,7 +222,7 @@ export class NotifyService {
     try {
       if (banner) {
         try {
-          if (text.length <= 1000) {
+          if (text.length <= 1000 && !parts.length) {
             keep(await this.tgCall('sendPhoto', { ...target, photo: banner, caption: text, parse_mode: 'HTML', ...markup }))
             return
           }
@@ -211,6 +233,9 @@ export class NotifyService {
         }
       }
       keep(await this.tgCall('sendMessage', { ...target, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...markup }))
+      for (const [i, part] of parts.entries()) {
+        keep(await this.tgCall('sendMessage', { ...target, text: part, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...(i === parts.length - 1 ? buttonMarkup : {}) }))
+      }
     } finally {
       if (m.topic && target.message_thread_id) await this.remember(m.topic, sent)
     }
