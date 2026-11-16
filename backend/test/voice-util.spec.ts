@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KNOWN_GRAMMAR, KNOWN_WORDS } from '../src/chat/curriculum'
+import { KNOWN_GRAMMAR, KNOWN_RULES, KNOWN_WORDS } from '../src/chat/curriculum'
 import { buildPrompt, SYSTEM_PROMPT } from '../src/voice/prompt'
 import { SCENES, sceneOf } from '../src/voice/scenes'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from '../src/voice/voice.util'
@@ -65,8 +65,16 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/Просят N примеров/)
     expect(SYSTEM_PROMPT).toMatch(/«Верно!» говори только о корейской фразе/)
   })
+  it('справочник правил из карточек сайта в инструкции: прошедшее и будущее время объяснены по карточкам', () => {
+    expect(KNOWN_RULES).toMatch(/았어요 \/ 었어요 \/ 였어요: основа \+ 았어요/)
+    expect(KNOWN_RULES).toMatch(/Последняя гласная основы ㅏ или ㅗ → 았어요/)
+    expect(KNOWN_RULES).toMatch(/\(으\)ㄹ 거예요: основа глагола/)
+    expect(SYSTEM_PROMPT).toContain(KNOWN_RULES)
+    expect(SYSTEM_PROMPT).toMatch(/опирайся ТОЛЬКО на этот справочник/)
+    expect(SYSTEM_PROMPT).not.toMatch(/[{}]|\*\*/.source ? /\{[a-z]\|/ : /x/)
+  })
   it('инструкция короткая: весь список слов в неё не вставляется', () => {
-    expect(SYSTEM_PROMPT.length).toBeLessThan(6600)
+    expect(SYSTEM_PROMPT.length).toBeLessThan(11500)
     expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
   })
   it('нажми-и-говори выключает автоопределение конца фразы, обычный режим включает', () => {
