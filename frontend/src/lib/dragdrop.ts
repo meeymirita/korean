@@ -135,3 +135,54 @@ export function dragDrop(o: DragDropOptions): () => void {
     items = []
   }
 }
+
+export interface EdgeDragOptions {
+  /** Ручка (край окна), за которую тянут. Ей нужен `touch-action: none`, иначе на iPad перо «срывается». */
+  handle: HTMLElement
+  /** Ручку нажали: вызывающий запоминает исходный размер. */
+  onStart?: () => void
+  /** Ручку тянут: `dx` это сдвиг по горизонтали от места нажатия (влево отрицательный). */
+  onMove: (dx: number) => void
+  /** Ручку отпустили. */
+  onEnd?: () => void
+}
+
+/**
+ * Перетаскивание края окна (растягивание) на GSAP Draggable. Двигается невидимая «заместительная» заготовка, а сама ручка стоит на месте:
+ * размер меняет вызывающий в `onMove`. Возвращает функцию, которая всё убирает (вызвать при закрытии окна).
+ */
+export function dragEdge(o: EdgeDragOptions): () => void {
+  if (typeof window === 'undefined') return () => {}
+  let dead = false
+  let stop = () => {}
+  void load().then(Draggable => {
+    if (dead) return
+    const proxy = document.createElement('div')
+    proxy.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none'
+    document.body.appendChild(proxy)
+    const [d] = Draggable.create(proxy, {
+      type: 'x',
+      trigger: o.handle,
+      zIndexBoost: false,
+      onPress() {
+        gsap.set(proxy, { x: 0 })
+        this.update()
+        o.onStart?.()
+      },
+      onDrag() {
+        o.onMove(this.x)
+      },
+      onRelease() {
+        o.onEnd?.()
+      },
+    })
+    stop = () => {
+      d?.kill()
+      proxy.remove()
+    }
+  })
+  return () => {
+    dead = true
+    stop()
+  }
+}

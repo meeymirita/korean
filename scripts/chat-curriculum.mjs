@@ -10,17 +10,46 @@ export const OUT = fileURLToPath(new URL('../backend/src/chat/curriculum.ts', im
 
 /** @typedef {{ n: number; k: string; r: string; t: string; s: string }} RawWord слово словаря сайта (dictionary.ts) */
 
+/** Без разметки сайта: цвета `{k|…}`, переносы `<br>`, жирный `**…**`. */
+const strip = t => String(t).replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<br\s*\/?>/g, ' ').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim()
+
+/** Краткие правила пройденных карточек (формула, правило, частая ошибка, один пример): голосовой собеседник объясняет строго по ним, а не по памяти модели. */
+function rulesOf(G) {
+  const seen = new Set()
+  const out = []
+  for (const g of G.filter(x => x.st === 'ok')) {
+    const key = g.ko.split(' ')[0]
+    if (seen.has(key)) continue
+    seen.add(key)
+    const f = g.b.find(x => x[0] === 'formula')?.[1]
+    const r = g.b.find(x => x[0] === 'rule')?.[1]
+    const w = g.b.find(x => x[0] === 'warn')?.[1]
+    const ex = g.b.find(x => x[0] === 'ex')?.[1]?.[0]
+    const t = `${g.ko}: ` + [f && strip(f), r && strip(r), w && 'Ошибка: ' + strip(w), ex && `Пример: ${strip(ex[0])} (${strip(ex[1])})`].filter(Boolean).join(' | ')
+    out.push(t.length > 420 ? t.slice(0, 420).replace(/[^.!?»)]*$/, '') || t.slice(0, 420) : t)
+  }
+  return out
+}
+
 /** Текст файла curriculum.ts по текущим данным сайта. */
 export async function build() {
-  /** @type {{ G: { ko: string; ru: string; st: string }[] }} */
+  /** @type {{ G: { ko: string; ru: string; st: string; b: any[][] }[] }} */
   const { G } = await load('/src/data/korean/grammar.ts')
   /** @type {{ RAW: RawWord[] }} */
   const { RAW } = await load('/src/data/korean/dictionary.ts')
   const grammar = G.filter(g => g.st === 'ok').map(g => `- ${g.ko} — ${g.ru}`)
   const words = [...new Set(RAW.map(r => r.k))]
+  // чтение кириллицей глаголов и прилагательных (ученик называет их так вслух): «мокта=먹다»
+  const readings = [...new Set(RAW.filter(r => /다$/.test(r.k) && r.r).map(r => `${r.r.split(/[ /]/)[0]}=${r.k}`))]
   return `// Файл создаёт scripts/chat-curriculum.mjs из данных сайта, руками не править.
 /** Пройденные темы грамматики (карточки со статусом «пройдено»). */
 export const KNOWN_GRAMMAR = ${JSON.stringify(grammar.join('\n'))}
+
+/** Краткие правила пройденных карточек (для голосового собеседника). */
+export const KNOWN_RULES = ${JSON.stringify(rulesOf(G).join('\n'))}
+
+/** Чтение глаголов и прилагательных кириллицей (так ученик называет их вслух). */
+export const KNOWN_READINGS = ${JSON.stringify(readings.join(' '))}
 
 /** Все слова словаря владельца. */
 export const KNOWN_WORDS = ${JSON.stringify(words.join(' '))}

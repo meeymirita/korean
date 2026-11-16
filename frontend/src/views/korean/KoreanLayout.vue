@@ -13,6 +13,7 @@ import Breadcrumbs from '@/components/korean/Breadcrumbs.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
 import NotificationsBell from '@/components/korean/NotificationsBell.vue'
 import MusicButton from '@/components/music/MusicButton.vue'
+import VoiceButton from '@/components/voice/VoiceButton.vue'
 import { MENU_ICONS, sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { G } from '@/data/korean/grammar'
@@ -156,6 +157,7 @@ onBeforeUnmount(() => {
       <NuxtPage v-else />
     </main>
     <div class="topbar-fixed">
+      <ClientOnly><VoiceButton /></ClientOnly>
       <ClientOnly><MusicButton /></ClientOnly>
       <NotificationsBell v-if="progress.unlocked" />
       <!-- на главной раздела своё поле поиска: кнопку не дублируем (⌘K и «/» работают везде) -->

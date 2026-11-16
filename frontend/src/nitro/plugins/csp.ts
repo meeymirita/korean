@@ -31,7 +31,7 @@ export function cspPolicy(hashes: string[]): string {
     "img-src 'self' data: blob: https://*.yandex.ru https://*.yandex.net",
     "media-src 'self' blob: https://*.yandex.ru https://*.yandex.net",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    "connect-src 'self' https://api.openai.com",
     "worker-src 'self' blob:",
     "frame-src 'self' blob:",
     "object-src 'none'",

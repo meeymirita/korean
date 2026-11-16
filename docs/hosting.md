@@ -35,7 +35,7 @@ korean.meeymirita.ru {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "no-referrer"
-        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+        Permissions-Policy "camera=(), microphone=(self), geolocation=(), payment=()"
         -Server
     }
     @usual not path /api/music/upload
