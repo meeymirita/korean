@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KNOWN_GRAMMAR, KNOWN_RULES, KNOWN_WORDS } from '../src/chat/curriculum'
+import { KNOWN_GRAMMAR, KNOWN_READINGS, KNOWN_RULES, KNOWN_WORDS } from '../src/chat/curriculum'
 import { buildPrompt, SYSTEM_PROMPT } from '../src/voice/prompt'
 import { SCENES, sceneOf } from '../src/voice/scenes'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from '../src/voice/voice.util'
@@ -73,8 +73,16 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/опирайся ТОЛЬКО на этот справочник/)
     expect(SYSTEM_PROMPT).not.toMatch(/[{}]|\*\*/.source ? /\{[a-z]\|/ : /x/)
   })
+  it('чтения кириллицей: «мокта», «када», «конбухада» связаны с 먹다, 가다, 공부하다', () => {
+    expect(KNOWN_READINGS).toContain('мокта=먹다')
+    expect(KNOWN_READINGS).toContain('када=가다')
+    expect(KNOWN_READINGS).toContain('конбухада=공부하다')
+    expect(SYSTEM_PROMPT).toContain(KNOWN_READINGS)
+    expect(SYSTEM_PROMPT).toMatch(/먹다 это не 있다/)
+    expect(SYSTEM_PROMPT).toMatch(/разбери КАЖДОЕ по шагам/)
+  })
   it('инструкция короткая: весь список слов в неё не вставляется', () => {
-    expect(SYSTEM_PROMPT.length).toBeLessThan(11500)
+    expect(SYSTEM_PROMPT.length).toBeLessThan(12800)
     expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
   })
   it('нажми-и-говори выключает автоопределение конца фразы, обычный режим включает', () => {

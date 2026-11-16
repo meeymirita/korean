@@ -39,12 +39,17 @@ export async function build() {
   const { RAW } = await load('/src/data/korean/dictionary.ts')
   const grammar = G.filter(g => g.st === 'ok').map(g => `- ${g.ko} — ${g.ru}`)
   const words = [...new Set(RAW.map(r => r.k))]
+  // чтение кириллицей глаголов и прилагательных (ученик называет их так вслух): «мокта=먹다»
+  const readings = [...new Set(RAW.filter(r => /다$/.test(r.k) && r.r).map(r => `${r.r.split(/[ /]/)[0]}=${r.k}`))]
   return `// Файл создаёт scripts/chat-curriculum.mjs из данных сайта, руками не править.
 /** Пройденные темы грамматики (карточки со статусом «пройдено»). */
 export const KNOWN_GRAMMAR = ${JSON.stringify(grammar.join('\n'))}
 
 /** Краткие правила пройденных карточек (для голосового собеседника). */
 export const KNOWN_RULES = ${JSON.stringify(rulesOf(G).join('\n'))}
+
+/** Чтение глаголов и прилагательных кириллицей (так ученик называет их вслух). */
+export const KNOWN_READINGS = ${JSON.stringify(readings.join(' '))}
 
 /** Все слова словаря владельца. */
 export const KNOWN_WORDS = ${JSON.stringify(words.join(' '))}
