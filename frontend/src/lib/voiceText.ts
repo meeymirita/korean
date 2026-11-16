@@ -15,3 +15,6 @@ export function splitKorean(text: string): VoicePiece[] {
 
 /** Корейская часть реплики без конечного знака: именно её разбирает «Как собрано». */
 export const koreanOnly = (t: string) => t.replace(/[.?!~]+$/, '').trim()
+
+/** Ширина окна голоса при растягивании: не уже 340 px и не шире окна браузера (с полями по 12 px). */
+export const clampPanelWidth = (w: number, viewport: number, min = 340) => Math.round(Math.max(Math.min(min, viewport - 24), Math.min(w, viewport - 24)))

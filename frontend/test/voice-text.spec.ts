@@ -19,3 +19,13 @@ describe('голос: корейские фразы в реплике', () => {
     expect(koreanOnly('뭐예요?')).toBe('뭐예요')
   })
 })
+
+describe('голос: ширина окна при растягивании', () => {
+  it('не уже 340 px и не шире окна браузера', async () => {
+    const { clampPanelWidth } = await import('@/lib/voiceText')
+    expect(clampPanelWidth(100, 1440)).toBe(340)
+    expect(clampPanelWidth(900, 1440)).toBe(900)
+    expect(clampPanelWidth(5000, 1440)).toBe(1416)
+    expect(clampPanelWidth(500, 300)).toBe(276)
+  })
+})

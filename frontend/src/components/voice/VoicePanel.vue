@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { askConfirm } from '@/composables/useConfirm'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
+import { dragEdge } from '@/lib/dragdrop'
 import { errText } from '@/lib/http'
 import { sceneIcon, VOICE_IMG as IMG } from '@/components/voice/voiceAssets'
 import { parseReply } from '@/lib/chat'
-import { koreanOnly, splitKorean } from '@/lib/voiceText'
+import { clampPanelWidth, koreanOnly, splitKorean } from '@/lib/voiceText'
 import { mmss, useVoiceAvailable, useVoiceStore } from '@/stores/voice'
 import { useToastStore } from '@/stores/toast'
 
@@ -25,6 +26,56 @@ watch(
     if (o && t === 'history') void store.loadHistory()
   },
 )
+
+/** Ширина окна: тянется за левый край (запоминается в браузере), двойное нажатие на край возвращает обычную. */
+const WIDTH_KEY = 'voice_panel_width'
+const panelW = ref(0)
+const grip = ref<HTMLElement>()
+const panel = ref<HTMLElement>()
+let startW = 0
+let offDrag: (() => void) | null = null
+onMounted(() => {
+  try {
+    const v = Number(localStorage.getItem(WIDTH_KEY))
+    if (v > 0) panelW.value = clampPanelWidth(v, window.innerWidth)
+  } catch {
+    /* без запоминания */
+  }
+})
+function setupGrip() {
+  offDrag?.()
+  offDrag = null
+  if (!grip.value) return
+  offDrag = dragEdge({
+    handle: grip.value,
+    onStart: () => (startW = panel.value?.getBoundingClientRect().width ?? 0),
+    onMove: dx => (panelW.value = clampPanelWidth(startW - dx, window.innerWidth)),
+    onEnd: () => {
+      try {
+        localStorage.setItem(WIDTH_KEY, String(panelW.value))
+      } catch {
+        /* без запоминания */
+      }
+    },
+  })
+}
+function resetWidth() {
+  panelW.value = 0
+  try {
+    localStorage.removeItem(WIDTH_KEY)
+  } catch {
+    /* без запоминания */
+  }
+}
+watch(
+  () => store.open,
+  async o => {
+    if (!o) return void (offDrag?.(), (offDrag = null))
+    await nextTick()
+    setupGrip()
+  },
+)
+onBeforeUnmount(() => offDrag?.())
 
 const log = ref<HTMLElement>()
 watch(
@@ -146,7 +197,8 @@ const onKey = (e: KeyboardEvent) => {
 
     <Teleport to="body">
       <Transition name="vp-panel">
-        <aside v-if="store.open" class="vp-panel" role="dialog" aria-label="Голосовой собеседник" @keydown="onKey">
+        <aside v-if="store.open" ref="panel" class="vp-panel" :style="panelW ? { width: panelW + 'px' } : undefined" role="dialog" aria-label="Голосовой собеседник" @keydown="onKey">
+          <div ref="grip" class="vp-grip" title="Потяни, чтобы изменить ширину (двойное нажатие: обычная)" aria-hidden="true" @dblclick="resetWidth"><i></i></div>
           <header class="vp-head">
             <img :src="IMG.mic" alt="" class="vp-hico" />
             <div class="vp-ht">
@@ -310,6 +362,10 @@ const onKey = (e: KeyboardEvent) => {
 .vp-line.user { align-self: flex-end; color: #fff; background: linear-gradient(100deg, var(--vp-pink), var(--vp-pink-d)); border-bottom-right-radius: 6px; }
 .vp-line.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--vp-line); border-bottom-left-radius: 6px; }
 
+.vp-panel { max-width: calc(100vw - 24px); }
+.vp-grip { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 16px; display: flex; align-items: center; justify-content: center; cursor: ew-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
+.vp-grip i { width: 4px; height: 56px; border-radius: 4px; background: var(--vp-pink); opacity: .35; transition: opacity .15s, height .15s; }
+.vp-grip:hover i { opacity: .9; height: 84px; }
 .vp-hico { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .vp-ht { flex: 1; min-width: 0; }
 .vp-ht h2 { flex: none; line-height: 1.1; }
