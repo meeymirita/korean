@@ -1,0 +1,232 @@
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { askConfirm } from '@/composables/useConfirm'
+import { errText } from '@/lib/http'
+import { mmss, useVoiceAvailable, useVoiceStore } from '@/stores/voice'
+import { useToastStore } from '@/stores/toast'
+
+/**
+ * Голосовой собеседник: окно справа и мини-плашка сверху, пока идёт разговор, а окно закрыто (как у музыкального плеера).
+ * Соединение живёт в `stores/voice.ts`, разговор не прерывается при переходе между страницами. Описание: `docs/voice.md`.
+ */
+const store = useVoiceStore()
+const toast = useToastStore()
+const show = useVoiceAvailable()
+onMounted(() => void (show.value && store.load()))
+watch(show, v => v && void store.load())
+watch(
+  () => [store.open, store.tab] as const,
+  ([o, t]) => {
+    if (o && show.value) void store.load()
+    if (o && t === 'history') void store.loadHistory()
+  },
+)
+
+const log = ref<HTMLElement>()
+watch(
+  () => store.lines.length,
+  async () => {
+    await nextTick()
+    log.value?.scrollTo({ top: log.value.scrollHeight, behavior: 'smooth' })
+  },
+)
+
+const moodText = computed(() => {
+  if (store.phase === 'connecting') return 'Соединяюсь…'
+  if (store.phase === 'idle') return 'Нажми на микрофон и говори'
+  return { listening: 'Слушаю', thinking: 'Думаю', speaking: 'Говорю' }[store.mood]
+})
+const leftMin = computed(() => Math.ceil((store.status?.leftSec ?? 0) / 60))
+const limitMin = computed(() => Math.round((store.status?.limitSec ?? 0) / 60))
+/** Примерная стоимость того, что потрачено сегодня, и оставшегося. */
+const money = (sec: number) => '≈ $' + (((sec / 60) * (store.status?.costPerMin ?? 0)).toFixed(2))
+const usedPct = computed(() => (store.status?.limitSec ? Math.min(100, ((store.status.limitSec - store.left) / store.status.limitSec) * 100) : 0))
+const canStart = computed(() => !!store.status?.configured && (store.status?.leftSec ?? 0) > 0)
+
+const dateText = (ms: number) => new Date(ms).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+
+async function removeItem(id: string) {
+  if (!(await askConfirm({ title: 'Удалить разговор?', text: 'Расшифровка будет стёрта. Потраченные сегодня минуты не вернутся.', ok: 'Удалить', danger: true }))) return
+  try {
+    await store.removeItem(id)
+    toast.ok('Разговор удалён')
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+
+const onKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') store.open = false
+}
+</script>
+
+<template>
+  <div v-if="show" class="vp-root">
+    <!-- мини-плашка: виден разговор, а окно закрыто -->
+    <Transition name="vp-mini">
+      <div v-if="store.live && !store.open" class="vp-mini" role="group" aria-label="Голосовой разговор идёт">
+        <i class="vp-dot" aria-hidden="true"></i>
+        <div class="vp-mini-text"><b>{{ moodText }}</b><small>{{ mmss(store.elapsed) }} · осталось {{ mmss(store.left) }}</small></div>
+        <button type="button" class="vp-ic" :class="{ off: store.muted }" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /><path v-if="store.muted" d="M4 4l16 16" /></svg>
+        </button>
+        <button type="button" class="vp-ic" aria-label="Развернуть окно разговора" title="Развернуть" @click="store.open = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M5 6h14M5 18h14" /></svg>
+        </button>
+        <button type="button" class="vp-ic vp-stop" aria-label="Закончить разговор" title="Закончить" @click="store.stop()">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+        </button>
+      </div>
+    </Transition>
+
+    <Teleport to="body">
+      <Transition name="vp-panel">
+        <aside v-if="store.open" class="vp-panel" role="dialog" aria-label="Голосовой собеседник" @keydown="onKey">
+          <header class="vp-head">
+            <h2>음성 대화</h2>
+            <button type="button" class="vp-ic" aria-label="Закрыть окно (разговор продолжится)" title="Закрыть окно" @click="store.open = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </header>
+
+          <div class="vp-tabs" role="tablist" aria-label="Вкладки">
+            <button type="button" role="tab" :aria-selected="store.tab === 'talk'" :class="{ on: store.tab === 'talk' }" @click="store.tab = 'talk'">Разговор</button>
+            <button type="button" role="tab" :aria-selected="store.tab === 'history'" :class="{ on: store.tab === 'history' }" @click="store.tab = 'history'">История</button>
+          </div>
+
+          <template v-if="store.tab === 'talk'">
+            <div ref="log" class="vp-log" aria-live="polite">
+              <p v-if="!store.lines.length" class="vp-hint">
+                {{ store.status && !store.status.configured ? 'Голос не подключён: на сервере нет ключа OpenAI (docs/voice.md).' : 'Здесь появится текст разговора. Он сохраняется, его можно открыть во вкладке «История».' }}
+              </p>
+              <div v-for="(l, i) in store.lines" :key="i" class="vp-line" :class="l.role">{{ l.text }}</div>
+            </div>
+
+            <div class="vp-ctl">
+              <button type="button" class="vp-ic" :class="{ off: store.muted }" :disabled="store.phase !== 'live'" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /><path v-if="store.muted" d="M4 4l16 16" /></svg>
+              </button>
+              <button v-if="!store.live" type="button" class="vp-rec" :disabled="!canStart" aria-label="Начать разговор" @click="store.start()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+              </button>
+              <button v-else type="button" class="vp-rec live" :disabled="store.phase === 'connecting'" aria-label="Закончить разговор" @click="store.stop()">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" /></svg>
+              </button>
+              <div class="vp-state"><b>{{ moodText }}</b><small v-if="store.live">{{ mmss(store.elapsed) }}</small></div>
+            </div>
+
+            <footer class="vp-foot">
+              <div class="vp-bar"><i :style="{ width: usedPct + '%' }"></i></div>
+              <p v-if="store.status">
+                Осталось {{ store.live ? mmss(store.left) : `${leftMin} мин` }} из {{ limitMin }} мин · потрачено сегодня {{ money(store.status.usedSec + (store.live ? store.elapsed : 0)) }}
+              </p>
+              <p v-if="store.loadError" class="vp-err">Не получилось узнать остаток: {{ store.loadError }}</p>
+            </footer>
+          </template>
+
+          <div v-else class="vp-hist">
+            <template v-if="!store.opened">
+              <ul v-if="store.history.length" class="vp-list">
+                <li v-for="h in store.history" :key="h.id">
+                  <button type="button" class="vp-item" @click="store.openItem(h.id)">
+                    <b>{{ dateText(h.started) }}</b>
+                    <small>{{ mmss(h.seconds) }} · реплик: {{ h.messages }}{{ h.live ? ' · идёт' : '' }}</small>
+                    <span v-if="h.preview">{{ h.preview }}</span>
+                  </button>
+                  <button type="button" class="vp-ic vp-del" aria-label="Удалить разговор" title="Удалить" @click="removeItem(h.id)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+                  </button>
+                </li>
+              </ul>
+              <p v-else class="vp-hint">Разговоров пока нет.</p>
+            </template>
+            <template v-else>
+              <button type="button" class="vp-back" @click="store.opened = null">← К списку</button>
+              <p class="vp-when">{{ dateText(store.opened.started) }} · {{ mmss(store.opened.seconds) }}</p>
+              <div class="vp-log vp-log-old">
+                <p v-if="!store.opened.lines.length" class="vp-hint">Текст стёрт или не успел сохраниться.</p>
+                <div v-for="(l, i) in store.opened.lines" :key="i" class="vp-line" :class="l.role">{{ l.text }}</div>
+              </div>
+            </template>
+          </div>
+        </aside>
+      </Transition>
+    </Teleport>
+  </div>
+</template>
+
+<style>
+/* Голосовой собеседник: окно в стиле музыкального плеера (светлая панель справа, розовые кнопки); классы с префиксом vp- */
+.vp-root, .vp-panel { --vp-pink: #e86bc0; --vp-pink-d: #d64da9; --vp-ink: #2b2a5c; --vp-muted: #8a86b8; --vp-line: #eadff7; }
+.vp-panel { position: fixed; z-index: 48; top: 12px; right: 12px; bottom: 12px; width: min(clamp(380px, 34vw, 600px), calc(100vw - 24px)); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 14px; overflow: hidden;
+  color: var(--vp-ink); background: linear-gradient(165deg, #fff7fd 0%, #f1efff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 24px 60px rgba(70, 55, 140, .35); }
+.vp-panel-enter-active, .vp-panel-leave-active { transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .25s; }
+.vp-panel-enter-from, .vp-panel-leave-to { transform: translateX(32px); opacity: 0; }
+.vp-head { display: flex; align-items: center; gap: 10px; }
+.vp-head h2 { margin: 0; flex: 1; font-size: 19px; font-weight: 700; }
+.vp-ic { position: relative; width: 40px; height: 40px; display: grid; place-items: center; padding: 8px; cursor: pointer; color: var(--vp-ink); background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 50%; flex: none; transition: transform .15s, background .15s; }
+.vp-ic svg { width: 100%; height: 100%; pointer-events: none; }
+.vp-ic:hover:not(:disabled) { transform: scale(1.08); }
+.vp-ic:disabled { opacity: .45; cursor: default; }
+.vp-ic.off { color: #c0392b; }
+.vp-tabs { display: flex; gap: 8px; flex: none; }
+.vp-tabs button { padding: 9px 18px; font: inherit; font-size: 14px; font-weight: 700; color: var(--vp-muted); cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 99px; transition: color .15s, background .15s; }
+.vp-tabs button:hover { color: var(--vp-pink-d); }
+.vp-tabs button.on { color: #fff; background: linear-gradient(100deg, var(--vp-pink), var(--vp-pink-d)); box-shadow: 0 6px 14px rgba(214, 77, 169, .3); }
+
+.vp-log { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+.vp-hint { margin: auto; max-width: 320px; text-align: center; font-size: 14px; line-height: 1.5; color: var(--vp-muted); }
+.vp-line { max-width: 86%; padding: 9px 14px; font-size: 15px; line-height: 1.45; border-radius: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.vp-line.user { align-self: flex-end; color: #fff; background: linear-gradient(100deg, var(--vp-pink), var(--vp-pink-d)); border-bottom-right-radius: 6px; }
+.vp-line.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--vp-line); border-bottom-left-radius: 6px; }
+
+.vp-ctl { display: flex; align-items: center; justify-content: center; gap: 18px; flex: none; padding: 6px 0; }
+.vp-rec { width: 76px; height: 76px; display: grid; place-items: center; padding: 20px; color: #fff; cursor: pointer; background: linear-gradient(140deg, var(--vp-pink), var(--vp-pink-d)); border: 0; border-radius: 50%; box-shadow: 0 10px 24px rgba(214, 77, 169, .4); transition: transform .15s, box-shadow .15s; }
+.vp-rec svg { width: 100%; height: 100%; }
+.vp-rec:hover:not(:disabled) { transform: scale(1.05); }
+.vp-rec:disabled { opacity: .5; cursor: default; box-shadow: none; }
+.vp-rec.live { background: linear-gradient(140deg, #ef7a8c, #d6455d); animation: vp-pulse 1.6s ease-in-out infinite; }
+.vp-state { display: flex; flex-direction: column; min-width: 96px; font-size: 14px; }
+.vp-state small { color: var(--vp-muted); font-size: 12px; }
+@keyframes vp-pulse { 50% { box-shadow: 0 0 0 10px rgba(214, 69, 93, .18), 0 10px 24px rgba(214, 69, 93, .4); } }
+
+.vp-foot { flex: none; padding-top: 10px; border-top: 1px solid var(--vp-line); }
+.vp-foot p { margin: 6px 0 0; font-size: 12px; color: var(--vp-muted); }
+.vp-bar { height: 5px; border-radius: 5px; background: var(--vp-line); overflow: hidden; }
+.vp-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--vp-pink), var(--vp-pink-d)); transition: width .4s; }
+.vp-err { color: #c0392b !important; }
+
+.vp-hist { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.vp-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.vp-list li { display: flex; align-items: center; gap: 8px; }
+.vp-item { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; font: inherit; text-align: left; color: inherit; cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 16px; }
+.vp-item:hover { background: #fff; }
+.vp-item b { font-size: 14px; }
+.vp-item small { font-size: 12px; color: var(--vp-muted); }
+.vp-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.vp-del { width: 34px; height: 34px; padding: 7px; color: #c0392b; }
+.vp-back { align-self: flex-start; padding: 6px 4px; font: inherit; font-size: 14px; font-weight: 700; color: var(--vp-pink-d); background: none; border: 0; cursor: pointer; }
+.vp-when { margin: 0; font-size: 12px; color: var(--vp-muted); }
+.vp-log-old { flex: 1 1 auto; }
+
+/* мини-плашка по центру у самого верха, как мини-плеер, но чуть левее него не мешает: стоит выше */
+.vp-mini { position: fixed; top: 12px; left: 0; right: 0; margin-inline: auto; width: max-content; z-index: 42; display: flex; align-items: center; gap: 8px; max-width: min(380px, calc(100vw - 24px)); padding: 6px 10px 6px 14px;
+  color: var(--vp-ink); background: rgba(255, 255, 255, .95); border: 1px solid #fff; border-radius: 30px; box-shadow: 0 10px 26px rgba(100, 87, 170, .25); }
+.vp-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: #d6455d; animation: vp-blink 1.2s ease-in-out infinite; }
+.vp-mini-text { display: flex; flex-direction: column; min-width: 0; font-size: 13px; line-height: 1.25; }
+.vp-mini-text small { color: var(--vp-muted); font-size: 11px; }
+.vp-mini .vp-ic { width: 32px; height: 32px; padding: 6px; }
+.vp-stop { color: #fff; background: #d6455d; border-color: #d6455d; }
+.vp-mini-enter-active, .vp-mini-leave-active { transition: opacity .2s, transform .2s; }
+.vp-mini-enter-from, .vp-mini-leave-to { opacity: 0; transform: translateY(-14px); }
+@keyframes vp-blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .vp-panel-enter-active, .vp-panel-leave-active, .vp-mini-enter-active, .vp-mini-leave-active { transition: none; } .vp-rec.live, .vp-dot { animation: none; } }
+
+html[data-theme='dark'] .vp-root, html[data-theme='dark'] .vp-panel { --vp-ink: #ece9ff; --vp-muted: #a49fd6; --vp-line: #3b3866; }
+html[data-theme='dark'] .vp-panel { background: linear-gradient(165deg, #2b2450 0%, #1f1e42 100%); border-color: #3b3866; }
+html[data-theme='dark'] .vp-mini { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
+html[data-theme='dark'] .vp-ic, html[data-theme='dark'] .vp-item { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
+html[data-theme='dark'] .vp-stop { background: #d6455d; border-color: #d6455d; }
+html[data-theme='dark'] .vp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
+html[data-theme='dark'] .vp-line.assistant { background: #2b2450; border-color: #3b3866; }
+</style>

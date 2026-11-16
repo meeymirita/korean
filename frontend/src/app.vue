@@ -6,6 +6,8 @@ import ToastHost from '@/components/ToastHost.vue'
 import StudyTimer from '@/components/StudyTimer.vue'
 import MusicPlayer from '@/components/music/MusicPlayer.vue'
 import MusicButton from '@/components/music/MusicButton.vue'
+import VoicePanel from '@/components/voice/VoicePanel.vue'
+import VoiceButton from '@/components/voice/VoiceButton.vue'
 import SiteImageEditor from '@/components/SiteImageEditor.vue'
 import { BRAND, SITE, canonicalOf, seoMetaFor } from '@/data/seo'
 
@@ -55,6 +57,8 @@ useSchemaOrg([
     <StudyTimer />
     <MusicPlayer />
     <MusicButton v-if="fixedMusic" variant="fixed" />
+    <VoicePanel />
+    <VoiceButton v-if="fixedMusic" variant="fixed" />
     <SiteImageEditor />
   </ClientOnly>
   <ConfirmDialog />
