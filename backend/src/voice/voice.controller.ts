@@ -43,6 +43,13 @@ export class VoiceController {
     return this.voice.end(id)
   }
 
+  /** Разбор разговора текстовой моделью (готовый отчёт отдаётся из базы; `force` пересоздаёт). */
+  @Post('sessions/:id/review')
+  @HttpCode(200)
+  review(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.voice.review(id, body?.force === true)
+  }
+
   @Delete('sessions/:id')
   remove(@Param('id') id: string) {
     return this.voice.remove(id)

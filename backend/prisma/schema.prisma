@@ -244,6 +244,8 @@ model VoiceSession {
   ended   BigInt?
   seconds Int     @default(0)
   model   String  @default("")
+  /// разбор разговора после его окончания (пишет текстовая модель по расшифровке)
+  review  String?
 
   @@index([day], map: "voice_sessions_day")
   @@map("voice_sessions")
