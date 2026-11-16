@@ -293,7 +293,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-tabs button { display: inline-flex; align-items: center; gap: 8px; }
 .vp-tabs button img { width: 20px; height: 20px; object-fit: contain; }
 .vp-tabs button.on img { filter: brightness(0) invert(1); }
-.vp-hero { flex: none; margin-top: auto; }
+.vp-hero { flex: none; }
 .vp-hero > img { display: block; width: 100%; height: auto; }
 .vp-cloud { position: relative; margin: -16px 6% 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 18px 12px; text-align: center; background: rgba(255, 255, 255, .88); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 10px 26px rgba(150, 110, 200, .22); backdrop-filter: blur(4px); }
 .vp-cloud img { width: 34px; height: 22px; object-fit: contain; }
@@ -321,7 +321,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-bd { max-width: 100%; padding: 8px; background: #fff; border: 1px solid var(--vp-line); border-radius: 14px; overflow-x: auto; }
 .vp-chk { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--vp-muted); }
 .vp-chk button { padding: 3px 12px; font: inherit; font-size: 12px; font-weight: 700; color: var(--vp-pink-d); cursor: pointer; background: rgba(255, 255, 255, .8); border: 1px solid var(--vp-line); border-radius: 99px; }
-.vp-scenes { flex: none; display: flex; flex-direction: column; gap: 8px; max-height: 38%; overflow-y: auto; }
+.vp-scenes { flex: none; margin-top: auto; display: flex; flex-direction: column; gap: 8px; max-height: 38%; overflow-y: auto; }
 .vp-sub { margin: 0; font-size: 12px; font-weight: 700; color: var(--vp-muted); }
 .vp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .vp-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 12px; font: inherit; text-align: left; color: inherit; cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 14px; }
