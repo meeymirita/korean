@@ -234,3 +234,29 @@ model Track {
 
   @@map("tracks")
 }
+
+/// Голосовой собеседник: один разговор. seconds считает сервер (от старта до конца, не больше предела), пока разговор идёт: ended пусто
+model VoiceSession {
+  id      String  @id
+  /// день по VOICE_TZ (ГГГГ-ММ-ДД): по нему считается суточный лимит минут
+  day     String
+  started BigInt
+  ended   BigInt?
+  seconds Int     @default(0)
+  model   String  @default("")
+
+  @@index([day], map: "voice_sessions_day")
+  @@map("voice_sessions")
+}
+
+/// Голосовой собеседник: реплика разговора (role: user или assistant), текст расшифровки; звук не хранится
+model VoiceMessage {
+  id      BigInt @id @default(autoincrement())
+  session String
+  t       BigInt
+  role    String
+  text    String
+
+  @@index([session], map: "voice_messages_session")
+  @@map("voice_messages")
+}

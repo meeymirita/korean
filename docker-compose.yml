@@ -41,6 +41,11 @@ services:
       CHAT_MODEL: ${CHAT_MODEL:-}
       CHAT_BASE: ${CHAT_BASE:-https://openrouter.ai/api/v1}
       CHAT_DAILY_LIMIT: ${CHAT_DAILY_LIMIT:-40}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      VOICE_MODEL: ${VOICE_MODEL:-gpt-realtime-mini}
+      VOICE_DAILY_MINUTES: ${VOICE_DAILY_MINUTES:-10}
+      VOICE_MAX_SESSION_MIN: ${VOICE_MAX_SESSION_MIN:-10}
+      VOICE_COST_PER_MIN: ${VOICE_COST_PER_MIN:-0.05}
       SITE_URL: ${SITE_URL:-https://localhost}
       SWAGGER: ${SWAGGER:-0}
       DISABLE_2FA: ${DISABLE_2FA:-0}
