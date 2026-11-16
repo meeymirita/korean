@@ -106,7 +106,7 @@ export const VOICE_MODEL = process.env.VOICE_MODEL || 'gpt-realtime-2.1-mini'
 export const VOICE_VOICE = process.env.VOICE_VOICE || 'marin'
 export const VOICE_BASE = (process.env.VOICE_BASE || 'https://api.openai.com/v1').replace(/\/+$/, '')
 /** Минут разговора в сутки (решение владельца 2026-11-16: 10) и предел одного разговора. */
-export const VOICE_DAILY_MINUTES = Number(process.env.VOICE_DAILY_MINUTES || 10)
+export const VOICE_DAILY_MINUTES = Number(process.env.VOICE_DAILY_MINUTES || 20)
 export const VOICE_MAX_SESSION_MIN = Number(process.env.VOICE_MAX_SESSION_MIN || 10)
 /** Примерная цена минуты, $: только для подсказки на экране, настоящий расход смотреть в кабинете OpenAI. */
 export const VOICE_COST_PER_MIN = Number(process.env.VOICE_COST_PER_MIN || 0.05)
