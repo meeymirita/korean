@@ -187,6 +187,7 @@ export const useVoiceStore = defineStore('voice', () => {
   let sessionId = ''
   let timer: ReturnType<typeof setInterval> | null = null
   let recorder: MediaRecorder | null = null
+  let meter: { stop: () => number } | null = null
   let chunks: Blob[] = []
   let startedAt = 0
   let lastActivity = 0
@@ -201,6 +202,8 @@ export const useVoiceStore = defineStore('voice', () => {
       recorder.stop()
     }
     recorder = null
+    meter?.stop()
+    meter = null
     stopSpeaking()
     channel?.close()
     pc?.close()
@@ -379,6 +382,7 @@ export const useVoiceStore = defineStore('voice', () => {
       stopSpeaking()
       try {
         chunks = []
+        meter = startMeter(stream!)
         recorder = new MediaRecorder(stream!)
         recorder.ondataavailable = e => e.data.size && chunks.push(e.data)
         recorder.start()
@@ -406,10 +410,15 @@ export const useVoiceStore = defineStore('voice', () => {
     if (engine.value === 'free') {
       const rec = recorder
       recorder = null
+      const loud = meter?.stop() ?? Infinity
+      meter = null
       if (!rec) return
       const tooShort = Date.now() - holdAt < 400
+      // тишина или очень тихий шум не уходят в Whisper: он на них выдумывает слова
+      const quiet = loud < MIN_LOUD_FRAMES
       rec.onstop = () => {
-        if (!tooShort) void freeHeard(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }))
+        if (quiet && !tooShort) toast.error('Не слышно речи: говори ближе к микрофону')
+        else if (!tooShort) void freeHeard(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }))
       }
       if (rec.state !== 'inactive') rec.stop()
       return
@@ -541,6 +550,38 @@ export const useVoiceStore = defineStore('voice', () => {
       u.onend = done
       u.onerror = done
       speechSynthesis.speak(u)
+    }
+  }
+
+  /** Замер громкости на время записи: сколько 50-миллисекундных кусков было громче шума комнаты. Нет WebAudio (старый браузер, тест): замер не мешает. */
+  const MIN_LOUD_FRAMES = 5
+  function startMeter(s: MediaStream): { stop: () => number } {
+    try {
+      const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!Ctx) throw new Error('no audio context')
+      const ctx = new Ctx()
+      const src = ctx.createMediaStreamSource(s)
+      const an = ctx.createAnalyser()
+      an.fftSize = 1024
+      src.connect(an)
+      const buf = new Uint8Array(an.fftSize)
+      let loud = 0
+      const t = setInterval(() => {
+        an.getByteTimeDomainData(buf)
+        let sum = 0
+        for (const v of buf) sum += ((v - 128) / 128) ** 2
+        if (Math.sqrt(sum / buf.length) > 0.02) loud++
+      }, 50)
+      return {
+        stop: () => {
+          clearInterval(t)
+          src.disconnect()
+          void ctx.close().catch(() => {})
+          return loud
+        },
+      }
+    } catch {
+      return { stop: () => Infinity }
     }
   }
 

@@ -80,30 +80,67 @@ export async function askInOrder(order: Provider[], messages: AiMsg[], opts?: { 
   throw last
 }
 
-/** Распознавание речи через Groq Whisper (бесплатно, лимит смотреть в кабинете Groq). Язык не задаём: ученик говорит и по-русски, и по-корейски. */
-export async function transcribe(audio: Buffer, mime: string): Promise<string> {
-  if (!GROQ_KEY) throw new AiError('нет ключа Groq', 503)
+/** Типичные «галлюцинации» Whisper на тишине и шуме: титры, подписи, просьбы подписаться. Это не речь ученика. */
+const WHISPER_JUNK = /(字幕|志愿者|subtitles? by|subtitled|amara\.org|thanks for watching|thank you for watching|спасибо за просмотр|продолжение следует|редактор субтитров|корректор|субтитры (сделал|создал)|dimatorzok|подписывайтесь|구독|시청해 주셔서|한글자막|MBC 뉴스|ご視聴)/i
+
+interface WhisperTry {
+  text: string
+  /** Средняя уверенность Whisper по кускам (ближе к 0 лучше). */
+  score: number
+}
+
+/** Одно распознавание с заданным языком: куски тишины и неуверенные куски отбрасываются. */
+async function whisper(audio: Buffer, mime: string, language: 'ko' | 'ru'): Promise<WhisperTry | null> {
   const ext = /ogg/.test(mime) ? 'ogg' : /mp4|m4a|aac/.test(mime) ? 'm4a' : /wav/.test(mime) ? 'wav' : 'webm'
   const form = new FormData()
   form.append('file', new Blob([new Uint8Array(audio)], { type: mime || 'audio/webm' }), `speech.${ext}`)
   form.append('model', GROQ_STT_MODEL)
-  form.append('response_format', 'json')
+  form.append('response_format', 'verbose_json')
+  form.append('language', language)
   form.append('temperature', '0')
   let res: Response
   try {
-    res = await fetch(`${GROQ_BASE}/audio/transcriptions`, { method: 'POST', headers: { Authorization: `Bearer ${GROQ_KEY}` }, body: form, signal: AbortSignal.timeout(40_000) })
+    res = await fetch(`${GROQ_BASE}/audio/transcriptions`, { method: 'POST', headers: { Authorization: `Bearer ${GROQ_KEY}` }, body: form, signal: AbortSignal.timeout(20_000) })
   } catch {
     throw new AiError('Groq недоступен', 502)
   }
   if (!res.ok) throw new AiError(`Groq Whisper ответил ${res.status}`, res.status)
-  const data = (await res.json().catch(() => null)) as { text?: unknown } | null
-  return typeof data?.text === 'string' ? data.text.replace(/\s+/g, ' ').trim() : ''
+  const data = (await res.json().catch(() => null)) as { text?: unknown; segments?: { text?: string; avg_logprob?: number; no_speech_prob?: number; compression_ratio?: number }[] } | null
+  const segs = Array.isArray(data?.segments) ? data.segments : null
+  if (!segs) {
+    const t = typeof data?.text === 'string' ? data.text.replace(/\s+/g, ' ').trim() : ''
+    return t ? { text: t, score: 0 } : null
+  }
+  const kept = segs.filter(x => (x.no_speech_prob ?? 0) < 0.6 && (x.avg_logprob ?? 0) > -1.2 && (x.compression_ratio ?? 1) < 2.4 && (x.text ?? '').trim())
+  if (!kept.length) return null
+  const text = kept.map(x => (x.text ?? '').trim()).join(' ').replace(/\s+/g, ' ').trim()
+  return text ? { text, score: kept.reduce((n, x) => n + (x.avg_logprob ?? 0), 0) / kept.length } : null
 }
 
-/** Проверка ответа репетитора другой (или той же) моделью: короткая пометка. */
-export const CHECK_PROMPT = `Ты проверяешь ответ репетитора корейского для начинающего ученика. Даны вопрос ученика и ответ репетитора.
-Напиши по-русски одной-двумя короткими фразами: «Проверка: верно» или «Проверка: ошибка» и что именно не так (корейская фраза, частица, перевод) и как правильно.
-Не придирайся к стилю. Ничего не выдумывай: сомневаешься, напиши «Проверка: не уверен». Чтение корейского латиницей или кириллицей не пиши. Не предлагай непройденное.`
+/**
+ * Распознавание речи через Groq Whisper (бесплатно). Язык один на запись, а ученик говорит и по-корейски, и по-русски, поэтому записываем дважды (языки ko и ru, параллельно)
+ * и берём результат, в котором Whisper увереннее. Куски тишины, неуверенные куски и типичные выдумки на шуме («字幕…», «Продолжение следует…») отбрасываются: если хоть одна попытка выдала такую выдумку, запись считается шумом и текст пустой.
+ */
+export async function transcribe(audio: Buffer, mime: string): Promise<string> {
+  if (!GROQ_KEY) throw new AiError('нет ключа Groq', 503)
+  const tries = await Promise.allSettled([whisper(audio, mime, 'ko'), whisper(audio, mime, 'ru')])
+  const heard = tries.flatMap(t => (t.status === 'fulfilled' && t.value ? [t.value] : []))
+  // на тишине и шуме одна из двух попыток выдаёт типичную выдумку («Продолжение следует…»), другая тогда тоже выдумка («감사합니다»): запись считается пустой
+  if (heard.some(t => WHISPER_JUNK.test(t.text))) return ''
+  const ok = heard
+  if (!ok.length) {
+    const failed = tries.find((t): t is PromiseRejectedResult => t.status === 'rejected')
+    if (failed && tries.every(t => t.status === 'rejected')) throw failed.reason instanceof AiError ? failed.reason : new AiError('Groq недоступен', 502)
+    return ''
+  }
+  return ok.reduce((best, t) => (t.score > best.score ? t : best)).text
+}
+
+/** Проверка ответа репетитора другой (или той же) моделью: короткая пометка только по фактам. */
+export const CHECK_PROMPT = `Ты проверяешь ответ репетитора корейского для начинающего ученика. Даны реплика ученика и ответ репетитора.
+Проверяй ТОЛЬКО факты: правильность корейских фраз (слова, частицы, формы), правильность русского перевода и верность объяснения. Методику, стиль, порядок шагов и то, что репетитор подсказал ответ, не оценивай: если ученик просил подсказку или спросил «что отвечать», подсказка это норма.
+Если реплика ученика похожа на шум, случайные слова или чужой язык, ответь только «Проверка: пропущено».
+Напиши по-русски одной-двумя короткими фразами: «Проверка: верно», «Проверка: ошибка» (что именно не так и как правильно) или «Проверка: не уверен». Ничего не выдумывай. Чтение корейского латиницей или кириллицей не пиши. Не предлагай непройденное.`
 
 /** Голоса озвучки, которые можно выбрать в окне (названия голосов Gemini TTS). Неизвестное имя заменяется голосом по умолчанию. */
 export const TTS_VOICES = ['Kore', 'Puck', 'Zephyr', 'Aoede', 'Leda', 'Charon', 'Fenrir', 'Orus'] as const

@@ -9,6 +9,7 @@ after(cleanup)
 function fake() {
   const seen = []
   let groqLimit = false
+  let whisperMode = 'plain'
   const srv = http.createServer((req, res) => {
     const chunks = []
     req.on('data', c => chunks.push(c))
@@ -19,14 +20,26 @@ function fake() {
       seen.push({ url: req.url, who, body: isJson ? JSON.parse(raw.toString() || '{}') : null, size: raw.length })
       const json = (code, o) => res.writeHead(code, { 'Content-Type': 'application/json' }).end(JSON.stringify(o))
       if (req.url.includes(':generateContent')) return json(200, { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;codec=pcm;rate=24000', data: Buffer.alloc(480, 1).toString('base64') } }] } }] })
-      if (req.url.endsWith('/audio/transcriptions')) return json(200, { text: ' 안녕하세요  ' })
+      if (req.url.endsWith('/audio/transcriptions')) {
+        const form = raw.toString('latin1')
+        const lang = /name="language"\r\n\r\n(\w+)/.exec(form)?.[1]
+        seen.at(-1).lang = lang
+        seen.at(-1).verbose = /verbose_json/.test(form)
+        const seg = (text, lp, ns = 0.01) => ({ segments: [{ text, avg_logprob: lp, no_speech_prob: ns, compression_ratio: 1.2 }], text })
+        if (whisperMode === 'ko-better') return json(200, lang === 'ko' ? seg(' 저는 학생이에요', -0.2) : seg(' Чингий твие', -0.9))
+        if (whisperMode === 'ru-better') return json(200, lang === 'ru' ? seg(' Как сказать кофе', -0.15) : seg(' 코피 어', -0.8))
+        if (whisperMode === 'junk') return json(200, seg(' 中文字幕志愿者 李宗盛', -0.3))
+        if (whisperMode === 'mixed-junk') return json(200, lang === 'ru' ? seg(' Продолжение следует...', -0.2) : seg(' 감사합니다.', -0.3))
+        if (whisperMode === 'silence') return json(200, seg(' ...', -0.3, 0.95))
+        return json(200, { text: ' 안녕하세요  ' })
+      }
       if (who === 'groq' && groqLimit) return json(429, {})
       const sys = seen.at(-1).body?.messages?.[0]?.content ?? ''
       const text = /проверяешь ответ репетитора/.test(sys) ? `Проверка: верно (${who})` : `Ответ ${who}`
       json(200, { choices: [{ message: { content: text } }] })
     })
   })
-  return new Promise(resolve => srv.listen(0, '127.0.0.1', () => resolve({ seen, setGroqLimit: v => (groqLimit = v), base: `http://127.0.0.1:${srv.address().port}/v1`, close: () => srv.close() })))
+  return new Promise(resolve => srv.listen(0, '127.0.0.1', () => resolve({ seen, setGroqLimit: v => (groqLimit = v), setWhisper: v => (whisperMode = v), base: `http://127.0.0.1:${srv.address().port}/v1`, close: () => srv.close() })))
 }
 
 describe('сервер: бесплатные модели голосового окна', () => {
@@ -110,6 +123,24 @@ describe('сервер: бесплатные модели голосового �
     assert.equal((await s.call('POST', '/api/voice/speak', OWNER, { text: '  ' })).status, 400)
     assert.equal((await s.call('POST', '/api/voice/speak', null, { text: 'a' })).status, 401)
     assert.equal((await none.call('POST', '/api/voice/speak', OWNER, { text: 'a' })).status, 503)
+  })
+
+  test('Whisper: пробуем корейский и русский, берём тот, где он увереннее; выдумки на шуме отбрасываются', async () => {
+    const say = async () => (await (await s.call('POST', '/api/voice/transcribe', OWNER, { audio: Buffer.from('x').toString('base64'), mime: 'audio/webm' })).json()).text
+    g.setWhisper('ko-better')
+    assert.equal(await say(), '저는 학생이에요')
+    const langs = g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).slice(-2).map(x => x.lang).sort()
+    assert.deepEqual(langs, ['ko', 'ru'])
+    assert.ok(g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).slice(-2).every(x => x.verbose))
+    g.setWhisper('ru-better')
+    assert.equal(await say(), 'Как сказать кофе')
+    g.setWhisper('junk')
+    assert.equal(await say(), '', 'титры китайских субтитров это не речь')
+    g.setWhisper('mixed-junk')
+    assert.equal(await say(), '', 'если русский вариант выдумал титры, корейский «спасибо» тоже выдумка')
+    g.setWhisper('silence')
+    assert.equal(await say(), '', 'тишина даёт пустой текст')
+    g.setWhisper('plain')
   })
 
   test('бесплатный разговор не тратит минуты OpenAI, реплики сохраняются', async () => {
