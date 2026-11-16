@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { askConfirm } from '@/composables/useConfirm'
+import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { errText } from '@/lib/http'
+import { koreanOnly, splitKorean } from '@/lib/voiceText'
 import { mmss, useVoiceAvailable, useVoiceStore } from '@/stores/voice'
 import { useToastStore } from '@/stores/toast'
 
@@ -33,7 +35,9 @@ watch(
 
 const moodText = computed(() => {
   if (store.phase === 'connecting') return 'Соединяюсь…'
-  if (store.phase === 'idle') return 'Нажми на микрофон и говори'
+  if (store.phase === 'idle') return store.ptt ? 'Выбери тему и нажми на микрофон' : 'Нажми на микрофон и говори'
+  if (store.ptt && store.phase === 'live' && store.talking) return 'Говори, я слушаю'
+  if (store.ptt && store.phase === 'live' && store.mood === 'listening') return 'Удерживай микрофон и говори'
   return { listening: 'Слушаю', thinking: 'Думаю', speaking: 'Говорю' }[store.mood]
 })
 const leftMin = computed(() => Math.ceil((store.status?.leftSec ?? 0) / 60))
@@ -42,6 +46,38 @@ const limitMin = computed(() => Math.round((store.status?.limitSec ?? 0) / 60))
 const money = (sec: number) => '≈ $' + (((sec / 60) * (store.status?.costPerMin ?? 0)).toFixed(2))
 const usedPct = computed(() => (store.status?.limitSec ? Math.min(100, ((store.status.limitSec - store.left) / store.status.limitSec) * 100) : 0))
 const canStart = computed(() => !!store.status?.configured && (store.status?.leftSec ?? 0) > 0)
+
+/** Какие корейские фразы раскрыты разбором (ключ «номер реплики:номер куска»). */
+const openBd = ref<Set<string>>(new Set())
+function toggleBd(key: string) {
+  const next = new Set(openBd.value)
+  if (!next.delete(key)) next.add(key)
+  openBd.value = next
+}
+const draft = ref('')
+/** Последняя реплика ученика: под ней спрашиваем «верно услышал?». */
+const lastUser = computed(() => {
+  for (let i = store.lines.length - 1; i >= 0; i--) if (store.lines[i]!.role === 'user') return i
+  return -1
+})
+function fix(i: number) {
+  store.fixing = i
+  draft.value = store.lines[i]?.text ?? ''
+}
+function submit() {
+  const t = draft.value.trim()
+  if (!t) return
+  if (store.fixing >= 0) store.fixLine(store.fixing, t)
+  else store.sendText(t)
+  draft.value = ''
+}
+const holdKey = (e: KeyboardEvent, down: boolean) => {
+  if (e.key !== ' ' && e.key !== 'Enter') return
+  e.preventDefault()
+  if (down) {
+    if (!e.repeat) store.holdStart()
+  } else store.holdEnd()
+}
 
 const dateText = (ms: number) => new Date(ms).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 
@@ -67,7 +103,7 @@ const onKey = (e: KeyboardEvent) => {
       <div v-if="store.live && !store.open" class="vp-mini" role="group" aria-label="Голосовой разговор идёт">
         <i class="vp-dot" aria-hidden="true"></i>
         <div class="vp-mini-text"><b>{{ moodText }}</b><small>{{ mmss(store.elapsed) }} · осталось {{ mmss(store.left) }}</small></div>
-        <button type="button" class="vp-ic" :class="{ off: store.muted }" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
+        <button v-if="!store.ptt" type="button" class="vp-ic" :class="{ off: store.muted }" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /><path v-if="store.muted" d="M4 4l16 16" /></svg>
         </button>
         <button type="button" class="vp-ic" aria-label="Развернуть окно разговора" title="Развернуть" @click="store.open = true">
@@ -99,14 +135,56 @@ const onKey = (e: KeyboardEvent) => {
               <p v-if="!store.lines.length" class="vp-hint">
                 {{ store.status && !store.status.configured ? 'Голос не подключён: на сервере нет ключа OpenAI (docs/voice.md).' : 'Здесь появится текст разговора. Он сохраняется, его можно открыть во вкладке «История».' }}
               </p>
-              <div v-for="(l, i) in store.lines" :key="i" class="vp-line" :class="l.role">{{ l.text }}</div>
+              <div v-for="(l, i) in store.lines" :key="i" class="vp-msg" :class="l.role">
+                <div class="vp-line" :class="[l.role, { wrong: l.wrong }]">
+                  <template v-if="l.role === 'assistant'">
+                    <template v-for="(p, j) in splitKorean(l.text)" :key="j">
+                      <button v-if="p.ko" type="button" class="vp-ko" :class="{ on: openBd.has(`${i}:${j}`) }" title="Разобрать по частям" @click="toggleBd(`${i}:${j}`)">{{ p.text }}</button>
+                      <span v-else>{{ p.text }}</span>
+                    </template>
+                  </template>
+                  <template v-else>{{ l.text }}</template>
+                </div>
+                <template v-if="l.role === 'assistant'">
+                  <template v-for="(p, j) in splitKorean(l.text)" :key="j">
+                    <div v-if="p.ko && openBd.has(`${i}:${j}`)" class="vp-bd"><SentenceBreakdown :sentence="koreanOnly(p.text)" /></div>
+                  </template>
+                </template>
+                <div v-if="i === lastUser && store.live && !l.ok && !l.wrong && store.fixing !== i" class="vp-chk">
+                  <span>Верно услышал?</span>
+                  <button type="button" @click="l.ok = true">Да</button>
+                  <button type="button" @click="fix(i)">Нет</button>
+                </div>
+              </div>
             </div>
 
+            <div v-if="!store.live" class="vp-scenes">
+              <p class="vp-sub">Тема разговора</p>
+              <div class="vp-chips">
+                <button v-for="sc in store.status?.scenes ?? []" :key="sc.id" type="button" class="vp-chip" :class="{ on: store.scene === sc.id }" :aria-pressed="store.scene === sc.id" @click="store.scene = sc.id">
+                  <b>{{ sc.title }}</b><small>{{ sc.hint }}</small>
+                </button>
+              </div>
+              <label class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
+            </div>
+
+            <form v-if="store.live" class="vp-type" @submit.prevent="submit">
+              <input v-model="draft" type="text" maxlength="300" :placeholder="store.fixing >= 0 ? 'Напиши, как должно быть' : 'Или напиши ответ текстом'" autocomplete="off" />
+              <button v-if="store.fixing >= 0" type="button" class="vp-ic" aria-label="Отменить исправление" @click="((store.fixing = -1), (draft = ''))">×</button>
+              <button type="submit" class="vp-ic" :disabled="!draft.trim()" aria-label="Отправить">→</button>
+            </form>
+
             <div class="vp-ctl">
-              <button type="button" class="vp-ic" :class="{ off: store.muted }" :disabled="store.phase !== 'live'" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
+              <button v-if="store.ptt && store.live" type="button" class="vp-ic vp-stop" :disabled="store.phase === 'connecting'" aria-label="Закончить разговор" title="Закончить" @click="store.stop()">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+              </button>
+              <button v-else-if="!store.ptt" type="button" class="vp-ic" :class="{ off: store.muted }" :disabled="store.phase !== 'live'" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /><path v-if="store.muted" d="M4 4l16 16" /></svg>
               </button>
               <button v-if="!store.live" type="button" class="vp-rec" :disabled="!canStart" aria-label="Начать разговор" @click="store.start()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+              </button>
+              <button v-else-if="store.ptt" type="button" class="vp-rec hold" :class="{ talk: store.talking }" :disabled="store.phase !== 'live'" aria-label="Удерживай и говори" @pointerdown.prevent="store.holdStart()" @pointerup="store.holdEnd()" @pointercancel="store.holdEnd()" @pointerleave="store.holdEnd()" @keydown="holdKey($event, true)" @keyup="holdKey($event, false)" @contextmenu.prevent>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
               </button>
               <button v-else type="button" class="vp-rec live" :disabled="store.phase === 'connecting'" aria-label="Закончить разговор" @click="store.stop()">
@@ -180,6 +258,29 @@ const onKey = (e: KeyboardEvent) => {
 .vp-line.user { align-self: flex-end; color: #fff; background: linear-gradient(100deg, var(--vp-pink), var(--vp-pink-d)); border-bottom-right-radius: 6px; }
 .vp-line.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--vp-line); border-bottom-left-radius: 6px; }
 
+.vp-msg { display: flex; flex-direction: column; gap: 4px; max-width: 92%; }
+.vp-msg.user { align-self: flex-end; align-items: flex-end; }
+.vp-msg.assistant { align-self: flex-start; }
+.vp-msg .vp-line { max-width: 100%; }
+.vp-line.wrong { opacity: .5; text-decoration: line-through; }
+.vp-ko { display: inline; padding: 0 4px; margin: 0 1px; font: inherit; font-size: 19px; font-weight: 700; color: var(--vp-pink-d); cursor: pointer; background: rgba(232, 107, 192, .1); border: 0; border-radius: 8px; }
+.vp-ko:hover, .vp-ko.on { background: rgba(232, 107, 192, .22); }
+.vp-bd { max-width: 100%; padding: 8px; background: #fff; border: 1px solid var(--vp-line); border-radius: 14px; overflow-x: auto; }
+.vp-chk { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--vp-muted); }
+.vp-chk button { padding: 3px 12px; font: inherit; font-size: 12px; font-weight: 700; color: var(--vp-pink-d); cursor: pointer; background: rgba(255, 255, 255, .8); border: 1px solid var(--vp-line); border-radius: 99px; }
+.vp-scenes { flex: none; display: flex; flex-direction: column; gap: 8px; max-height: 38%; overflow-y: auto; }
+.vp-sub { margin: 0; font-size: 12px; font-weight: 700; color: var(--vp-muted); }
+.vp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.vp-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 12px; font: inherit; text-align: left; color: inherit; cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 14px; }
+.vp-chip b { font-size: 13px; }
+.vp-chip small { font-size: 11px; color: var(--vp-muted); }
+.vp-chip.on { border-color: var(--vp-pink); background: #fff; box-shadow: 0 0 0 2px rgba(232, 107, 192, .25); }
+.vp-ptt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--vp-muted); }
+.vp-type { flex: none; display: flex; gap: 6px; align-items: center; }
+.vp-type input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; font: inherit; font-size: 14px; color: inherit; background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 99px; }
+.vp-type .vp-ic { width: 38px; height: 38px; font-size: 18px; padding: 0; }
+.vp-rec.hold { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.vp-rec.hold.talk { background: linear-gradient(140deg, #ef7a8c, #d6455d); animation: vp-pulse 1.2s ease-in-out infinite; }
 .vp-ctl { display: flex; align-items: center; justify-content: center; gap: 18px; flex: none; padding: 6px 0; }
 .vp-rec { width: 76px; height: 76px; display: grid; place-items: center; padding: 20px; color: #fff; cursor: pointer; background: linear-gradient(140deg, var(--vp-pink), var(--vp-pink-d)); border: 0; border-radius: 50%; box-shadow: 0 10px 24px rgba(214, 77, 169, .4); transition: transform .15s, box-shadow .15s; }
 .vp-rec svg { width: 100%; height: 100%; }

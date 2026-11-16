@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { errText, fetchT } from '@/lib/http'
+import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
@@ -14,11 +15,17 @@ export interface VoiceStatus {
   leftSec: number
   costPerMin: number
   costToday: number
+  scenes?: { id: string; title: string; hint: string }[]
 }
 
 export interface VoiceLine {
   role: 'user' | 'assistant'
   text: string
+  /** Номер реплики в OpenAI (нужен, чтобы убрать неверно услышанную). */
+  itemId?: string
+  /** Ученик отметил: услышано неверно / верно. */
+  wrong?: boolean
+  ok?: boolean
 }
 
 /** Разговор в истории (список без текста). */
@@ -46,10 +53,11 @@ const IDLE_MS = 60_000
 
 /** Что и откуда читаем в событиях Realtime: готовая расшифровка речи ученика и ответа. */
 export function lineFromEvent(ev: unknown): VoiceLine | null {
-  const e = (ev ?? {}) as { type?: unknown; transcript?: unknown }
+  const e = (ev ?? {}) as { type?: unknown; transcript?: unknown; item_id?: unknown }
   const text = typeof e.transcript === 'string' ? e.transcript.replace(/\s+/g, ' ').trim() : ''
   if (!text) return null
-  if (e.type === 'conversation.item.input_audio_transcription.completed') return { role: 'user', text }
+  const itemId = typeof e.item_id === 'string' ? e.item_id : undefined
+  if (e.type === 'conversation.item.input_audio_transcription.completed') return itemId ? { role: 'user', text, itemId } : { role: 'user', text }
   if (e.type === 'response.output_audio_transcript.done') return { role: 'assistant', text }
   return null
 }
@@ -72,6 +80,13 @@ export const useVoiceStore = defineStore('voice', () => {
   const loadError = ref('')
   const phase = ref<VoicePhase>('idle')
   const mood = ref<VoiceMood>('listening')
+  /** Сценка разговора (`GET /api/voice` → `scenes`) и режим «удерживай и говори». */
+  const scene = usePersisted('voice_scene', 'free')
+  const ptt = usePersisted('voice_ptt', true)
+  /** Идёт ли сейчас удержание кнопки (говорит ученик). */
+  const talking = ref(false)
+  /** Номер реплики ученика, которую он исправляет (-1: никакую). */
+  const fixing = ref(-1)
   const muted = ref(false)
   const elapsed = ref(0)
   const lines = ref<VoiceLine[]>([])
@@ -143,6 +158,8 @@ export const useVoiceStore = defineStore('voice', () => {
   function cleanup() {
     if (timer) clearInterval(timer)
     timer = null
+    talking.value = false
+    fixing.value = -1
     channel?.close()
     pc?.close()
     stream?.getTracks().forEach(t => t.stop())
@@ -154,7 +171,7 @@ export const useVoiceStore = defineStore('voice', () => {
   function keep(line: VoiceLine) {
     lines.value.push(line)
     if (!sessionId) return
-    void fetchT(`/api/voice/sessions/${sessionId}/messages`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify(line) }).catch(() => {})
+    void fetchT(`/api/voice/sessions/${sessionId}/messages`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ role: line.role, text: line.text }) }).catch(() => {})
   }
 
   function onEvent(raw: string) {
@@ -181,10 +198,10 @@ export const useVoiceStore = defineStore('voice', () => {
     muted.value = false
     elapsed.value = 0
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).catch(() => {
         throw new Error('нет доступа к микрофону: разреши его в настройках браузера для этого сайта')
       })
-      const s = await api<{ id: string; secret: string; callsUrl: string; maxSec: number } & VoiceStatus>('/sessions', { method: 'POST' })
+      const s = await api<{ id: string; secret: string; callsUrl: string; maxSec: number } & VoiceStatus>('/sessions', { method: 'POST', body: JSON.stringify({ scene: scene.value, ptt: ptt.value }) })
       sessionId = s.id
       maxSec.value = s.maxSec
       status.value = s
@@ -200,6 +217,8 @@ export const useVoiceStore = defineStore('voice', () => {
           void stop()
         }
       }
+      // «удерживай и говори»: микрофон закрыт, пока кнопка не нажата
+      if (ptt.value) stream.getAudioTracks().forEach(t => (t.enabled = false))
       for (const t of stream.getTracks()) pc.addTrack(t, stream)
       channel = pc.createDataChannel('oai-events')
       channel.onmessage = e => onEvent(String(e.data))
@@ -252,10 +271,60 @@ export const useVoiceStore = defineStore('voice', () => {
     if (tab.value === 'history') void loadHistory()
   }
 
+  const send = (o: object) => channel?.send(JSON.stringify(o))
+  let holdAt = 0
+
+  /** Кнопка нажата: собеседник замолкает, микрофон открыт, запись начинается с чистого листа. */
+  function holdStart() {
+    if (phase.value !== 'live' || !ptt.value || talking.value) return
+    talking.value = true
+    holdAt = Date.now()
+    send({ type: 'response.cancel' })
+    send({ type: 'output_audio_buffer.clear' })
+    send({ type: 'input_audio_buffer.clear' })
+    stream?.getAudioTracks().forEach(t => (t.enabled = true))
+    mood.value = 'listening'
+    lastActivity = Date.now()
+  }
+
+  /** Кнопка отпущена: микрофон закрыт, запись отправлена, собеседник отвечает. Слишком короткое нажатие отбрасывается. */
+  function holdEnd() {
+    if (!talking.value) return
+    talking.value = false
+    stream?.getAudioTracks().forEach(t => (t.enabled = false))
+    if (Date.now() - holdAt < 400) return void send({ type: 'input_audio_buffer.clear' })
+    send({ type: 'input_audio_buffer.commit' })
+    send({ type: 'response.create' })
+    mood.value = 'thinking'
+  }
+
+  /** Ответ текстом вместо голоса (если распознавание подводит). */
+  function sendText(text: string) {
+    const t = text.replace(/\s+/g, ' ').trim()
+    if (!t || phase.value !== 'live') return
+    send({ type: 'response.cancel' })
+    send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: t }] } })
+    send({ type: 'response.create' })
+    keep({ role: 'user', text: t })
+    mood.value = 'thinking'
+    lastActivity = Date.now()
+  }
+
+  /** «Услышал неверно»: старая реплика убирается из памяти собеседника и заменяется набранным текстом. */
+  function fixLine(i: number, text: string) {
+    const l = lines.value[i]
+    if (!l || l.role !== 'user') return
+    l.wrong = true
+    if (l.itemId) send({ type: 'conversation.item.delete', item_id: l.itemId })
+    fixing.value = -1
+    sendText(text)
+  }
+
   function toggleMute() {
+    if (ptt.value) return
     muted.value = !muted.value
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, live, left, load, loadHistory, openItem, removeItem, start, stop, toggleMute }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, live, left, scene, ptt, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine }
 })

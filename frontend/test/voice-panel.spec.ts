@@ -129,6 +129,7 @@ describe('голосовой собеседник', () => {
 
   it('разговор: временный ключ идёт в OpenAI, реплики сохраняются на сервере, конец обновляет остаток', async () => {
     const store = useVoiceStore()
+    store.ptt = false
     await store.load()
     await store.start()
     expect(store.phase).toBe('live')
@@ -151,6 +152,36 @@ describe('голосовой собеседник', () => {
     expect(store.phase).toBe('idle')
     expect(calls.some(c => /\/end$/.test(c.url))).toBe(true)
     expect(store.status?.leftSec).toBe(420)
+  })
+
+  it('удерживай и говори: запись уходит по отпусканию, короткое нажатие и текстовый ответ работают, исправление убирает услышанное', async () => {
+    const store = useVoiceStore()
+    store.ptt = true
+    store.scene = 'intro'
+    await store.load()
+    await store.start()
+    const start = calls.find(c => c.url === '/api/voice/sessions' && c.method === 'POST')!
+    expect(JSON.parse(start.body!)).toEqual({ scene: 'intro', ptt: true })
+    const sent = () => calls.filter(c => c.url === 'channel').map(c => JSON.parse(c.body!).type as string)
+    calls.length = 0
+    store.holdStart()
+    expect(store.talking).toBe(true)
+    store.holdEnd() // короче 0,4 с: отбрасывается
+    expect(sent()).not.toContain('input_audio_buffer.commit')
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.now())
+    store.holdStart()
+    vi.advanceTimersByTime(1000)
+    store.holdEnd()
+    vi.useRealTimers()
+    expect(sent()).toEqual(expect.arrayContaining(['input_audio_buffer.commit', 'response.create']))
+    calls.length = 0
+    channel.onmessage?.({ data: JSON.stringify({ type: 'conversation.item.input_audio_transcription.completed', transcript: '컨퓨해요', item_id: 'item_1' }) })
+    store.fixLine(0, '공부해요')
+    expect(store.lines[0]!.wrong).toBe(true)
+    expect(sent()).toEqual(expect.arrayContaining(['conversation.item.delete', 'conversation.item.create', 'response.create']))
+    expect(store.lines.at(-1)).toMatchObject({ role: 'user', text: '공부해요' })
+    await store.stop()
   })
 
   it('мини-плашка видна, пока разговор идёт, а окно закрыто', async () => {
