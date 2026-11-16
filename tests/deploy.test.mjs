@@ -40,6 +40,7 @@ async function deploy(args = [], env = {}) {
         BACKUP_CMD: `${tmp}/call.sh backup`,
         BUILD_CMD: `${tmp}/call.sh build`,
         UP_CMD: `${tmp}/up.sh`,
+        PRUNE_CMD: 'true', // не трогать настоящий Docker
         ...env,
       },
     })
@@ -158,6 +159,18 @@ describe('скрипт обновления на сервере (scripts/deploy.
     const ok = await deploy([], { SMOKE_URLS: '' })
     assert.equal(ok.code, 0, ok.out)
     assert.deepEqual(calls(), ['backup', 'build', 'up'])
+  })
+
+  test('после удачного обновления чистится старый кэш сборки; сбой чистки деплой не ломает', async () => {
+    await release({ 'src/a.txt': 'prune' })
+    resetCalls()
+    const ok = await deploy([], { PRUNE_CMD: `${tmp}/call.sh prune` })
+    assert.equal(ok.code, 0, ok.out)
+    assert.deepEqual(calls(), ['backup', 'build', 'up', 'prune'])
+    await release({ 'src/a.txt': 'prune2' })
+    const bad = await deploy([], { PRUNE_CMD: 'false' })
+    assert.equal(bad.code, 0, bad.out)
+    assert.match(bad.out, /чистка кэша не удалась/)
   })
 
   test('сборка не удалась: откат, ошибка', async () => {
