@@ -3,7 +3,7 @@
  * поэтому один код. Распознавание речи (Whisper) только у Groq. Поставщик без ключа в список не попадает.
  */
 import { createHash } from 'node:crypto'
-import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, GEMINI_BASE, GEMINI_KEY, GEMINI_MODEL, GEMINI_NATIVE_BASE, GEMINI_TTS_MODEL, GEMINI_TTS_VOICE, GROQ_BASE, GROQ_KEY, GROQ_MODEL, GROQ_STT_MODEL } from '../config.js'
+import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, GEMINI_BASE, GEMINI_KEY, GEMINI_MODEL, GEMINI_NATIVE_BASE, GEMINI_TTS_FALLBACK, GEMINI_TTS_MODEL, GEMINI_TTS_VOICE, GROQ_BASE, GROQ_KEY, GROQ_MODEL, GROQ_STT_MODEL } from '../config.js'
 
 export type ProviderId = 'openrouter' | 'groq' | 'gemini'
 export interface Provider {
@@ -182,21 +182,32 @@ export async function speak(text: string, voice: string): Promise<{ mime: string
   const key = createHash('sha1').update(`${GEMINI_TTS_MODEL}|${voice}|${text}`).digest('hex')
   const hit = ttsCache.get(key)
   if (hit) return { ...hit, cached: true }
-  let res: Response
-  try {
-    res = await fetch(`${GEMINI_NATIVE_BASE}/models/${GEMINI_TTS_MODEL}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
-      body: JSON.stringify({ contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } }),
-      signal: AbortSignal.timeout(25_000),
-    })
-  } catch {
-    throw new AiError('озвучка Gemini не ответила за 25 секунд', 502)
+  // у каждой модели озвучки свой бесплатный лимит: при отказе пробуем запасные
+  let part: { mimeType?: string; data?: string } | undefined
+  let lastErr = new AiError('озвучка Gemini вернула пустой ответ', 502)
+  for (const model of [GEMINI_TTS_MODEL, ...GEMINI_TTS_FALLBACK.filter(m => m !== GEMINI_TTS_MODEL)]) {
+    let res: Response
+    try {
+      res = await fetch(`${GEMINI_NATIVE_BASE}/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
+        body: JSON.stringify({ contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } }),
+        signal: AbortSignal.timeout(25_000),
+      })
+    } catch {
+      lastErr = new AiError('озвучка Gemini не ответила за 25 секунд', 502)
+      continue
+    }
+    if (!res.ok) {
+      lastErr = new AiError(res.status === 429 ? 'лимит озвучки Gemini исчерпан (на минуту или на сегодня): подожди или выбери озвучку «браузер»' : res.status === 404 ? `озвучка: модель «${model}» не найдена (поменяй GEMINI_TTS_MODEL в backend/.env)` : `озвучка Gemini ответила ${res.status}`, res.status)
+      continue
+    }
+    const data = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[] } | null
+    part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data)?.inlineData
+    if (part?.data) break
+    lastErr = new AiError('озвучка Gemini вернула пустой ответ', 502)
   }
-  if (!res.ok) throw new AiError(res.status === 404 ? `озвучка: модель «${GEMINI_TTS_MODEL}» не найдена (поменяй GEMINI_TTS_MODEL в backend/.env)` : `озвучка Gemini ответила ${res.status}`, res.status)
-  const data = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[] } | null
-  const part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data)?.inlineData
-  if (!part?.data) throw new AiError('озвучка Gemini вернула пустой ответ', 502)
+  if (!part?.data) throw lastErr
   const raw = Buffer.from(part.data, 'base64')
   const isWav = raw.subarray(0, 4).toString() === 'RIFF'
   const rate = Number(/rate=(\d+)/.exec(part.mimeType ?? '')?.[1] ?? 24000)

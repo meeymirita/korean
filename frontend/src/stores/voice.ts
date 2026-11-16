@@ -139,7 +139,7 @@ export const useVoiceStore = defineStore('voice', () => {
     const res = await fetchT(`/api/voice${path}`, { ...init, headers: init.body ? jsonHeaders() : headers() })
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
-      if ((path === '/ask' || path === '/transcribe' || path.endsWith('/review')) && typeof body.message === 'string') throw new Error(body.message)
+      if ((path === '/ask' || path === '/transcribe' || path === '/speak' || path.endsWith('/review')) && typeof body.message === 'string') throw new Error(body.message)
       if (res.status === 503) throw new Error('голос не подключён: на сервере нет ключа OpenAI')
       if (res.status === 429) throw new Error(body.error === 'daily limit' ? 'минуты на сегодня закончились' : 'OpenAI просит подождать, попробуй позже')
       if (res.status === 502) throw new Error('OpenAI не ответил или не принял ключ')

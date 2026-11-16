@@ -10,6 +10,7 @@ function fake() {
   const seen = []
   let groqLimit = false
   let whisperMode = 'plain'
+  let ttsLimit = false
   const srv = http.createServer((req, res) => {
     const chunks = []
     req.on('data', c => chunks.push(c))
@@ -19,6 +20,7 @@ function fake() {
       const isJson = (req.headers['content-type'] || '').includes('json')
       seen.push({ url: req.url, who, body: isJson ? JSON.parse(raw.toString() || '{}') : null, size: raw.length })
       const json = (code, o) => res.writeHead(code, { 'Content-Type': 'application/json' }).end(JSON.stringify(o))
+      if (req.url.includes(':generateContent') && ttsLimit && req.url.includes('tts-test')) return json(429, { error: { message: 'quota' } })
       if (req.url.includes(':generateContent')) return json(200, { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;codec=pcm;rate=24000', data: Buffer.alloc(480, 1).toString('base64') } }] } }] })
       if (req.url.endsWith('/audio/transcriptions')) {
         const form = raw.toString('latin1')
@@ -41,7 +43,7 @@ function fake() {
       json(200, { choices: [{ message: { content: text } }] })
     })
   })
-  return new Promise(resolve => srv.listen(0, '127.0.0.1', () => resolve({ seen, setGroqLimit: v => (groqLimit = v), setWhisper: v => (whisperMode = v), base: `http://127.0.0.1:${srv.address().port}/v1`, close: () => srv.close() })))
+  return new Promise(resolve => srv.listen(0, '127.0.0.1', () => resolve({ seen, setGroqLimit: v => (groqLimit = v), setWhisper: v => (whisperMode = v), setTtsLimit: v => (ttsLimit = v), base: `http://127.0.0.1:${srv.address().port}/v1`, close: () => srv.close() })))
 }
 
 describe('сервер: бесплатные модели голосового окна', () => {
@@ -50,7 +52,7 @@ describe('сервер: бесплатные модели голосового �
   const msgs = [{ role: 'user', text: 'Как сказать я студент?' }]
   before(async () => {
     g = await fake()
-    s = await start({ env: { GROQ_API_KEY: 'gk', GROQ_BASE: g.base, GEMINI_API_KEY: 'mk', GEMINI_BASE: g.base, GEMINI_NATIVE_BASE: g.base, GEMINI_TTS_MODEL: 'tts-test', GEMINI_MODEL: 'g-test', OPENAI_API_KEY: '', OPENROUTER_API_KEY: '' } })
+    s = await start({ env: { GROQ_API_KEY: 'gk', GROQ_BASE: g.base, GEMINI_API_KEY: 'mk', GEMINI_BASE: g.base, GEMINI_NATIVE_BASE: g.base, GEMINI_TTS_MODEL: 'tts-test', GEMINI_TTS_FALLBACK: 'tts-fallback', GEMINI_MODEL: 'g-test', OPENAI_API_KEY: '', OPENROUTER_API_KEY: '' } })
     none = await start({ env: { GROQ_API_KEY: '', GEMINI_API_KEY: '', OPENROUTER_API_KEY: '', OPENAI_API_KEY: '' } })
   })
   after(() => g.close())
@@ -122,6 +124,11 @@ describe('сервер: бесплатные модели голосового �
     assert.equal(n(), before, 'повтор не идёт в Gemini')
     await s.call('POST', '/api/voice/speak', OWNER, { text: 'Привет', voice: 'нет такого' })
     assert.equal(g.seen.filter(x => x.url.includes(':generateContent')).at(-1).body.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName, 'Kore')
+    g.setTtsLimit(true)
+    const lim = await (await s.call('POST', '/api/voice/speak', OWNER, { text: 'Новая фраза про лимит' })).json()
+    assert.equal(lim.mime, 'audio/wav', 'лимит основной модели: озвучила запасная')
+    assert.match(g.seen.filter(x => x.url.includes(':generateContent')).at(-1).url, /models\/tts-fallback:/)
+    g.setTtsLimit(false)
     assert.equal((await s.call('POST', '/api/voice/speak', OWNER, { text: '  ' })).status, 400)
     assert.equal((await s.call('POST', '/api/voice/speak', null, { text: 'a' })).status, 401)
     assert.equal((await none.call('POST', '/api/voice/speak', OWNER, { text: 'a' })).status, 503)
