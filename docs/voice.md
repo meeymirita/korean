@@ -46,7 +46,7 @@ API: `GET /api/voice` (настроено ли, лимит, остаток, це
 | Переменная | По умолчанию | Что |
 |---|---|---|
 | `OPENAI_API_KEY` | пусто | ключ с platform.openai.com; без него окно пишет «не подключён» (503) |
-| `VOICE_MODEL` | `gpt-realtime-mini` | модель; в аккаунте владельца доступны `gpt-realtime-mini` и `gpt-realtime-2.1-mini` |
+| `VOICE_MODEL` | `gpt-realtime-2.1-mini` | модель (выбор владельца, 2026-11-16: только эта) |
 | `VOICE_VOICE` | `marin` | голос |
 | `VOICE_DAILY_MINUTES` | 10 | минут в сутки (по `VOICE_TZ`, по умолчанию `Asia/Novosibirsk`) |
 | `VOICE_MAX_SESSION_MIN` | 10 | предел одного разговора |

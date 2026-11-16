@@ -1,6 +1,6 @@
 /** Голосовой собеседник: чистые функции (без базы и сети). */
 import { VOICE_MAX_TEXT } from '../config.js'
-import { SYSTEM_PROMPT } from './prompt.js'
+import { buildPrompt } from './prompt.js'
 
 export type VoiceRole = 'user' | 'assistant'
 
@@ -30,16 +30,23 @@ export function countedSeconds(started: number, ended: number, maxSec: number): 
 /** Примерная цена в долларах, два знака после запятой не меньше цента. */
 export const costOf = (seconds: number, perMin: number) => Math.round((seconds / 60) * perMin * 100) / 100
 
-/** Тело запроса на временный ключ: модель, голос, инструкция и расшифровка речи ученика (язык определяется сам: ученик говорит и по-русски, и по-корейски). */
-export function secretBody(o: { model: string; voice: string; ttl: number }) {
+/**
+ * Тело запроса на временный ключ: модель, голос, инструкция сценки и расшифровка речи ученика (язык определяется сам: ученик говорит и по-русски, и по-корейски).
+ * `ptt` (нажал и говори): автоопределение конца фразы выключено, ответ собеседник даёт только после того, как сайт отправит запись (`stores/voice.ts`).
+ */
+export function secretBody(o: { model: string; voice: string; ttl: number; scene?: unknown; ptt?: boolean }) {
   return {
     expires_after: { anchor: 'created_at', seconds: o.ttl },
     session: {
       type: 'realtime',
       model: o.model,
-      instructions: SYSTEM_PROMPT,
+      instructions: buildPrompt(o.scene),
       audio: {
-        input: { transcription: { model: 'gpt-4o-mini-transcribe' } },
+        input: {
+          transcription: { model: 'gpt-4o-transcribe' },
+          noise_reduction: { type: 'near_field' },
+          turn_detection: o.ptt ? null : { type: 'semantic_vad', eagerness: 'low', interrupt_response: true },
+        },
         output: { voice: o.voice },
       },
     },

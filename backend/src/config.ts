@@ -101,8 +101,8 @@ export const CHAT_MAX_HISTORY = 12
 
 /** Голосовой собеседник (OpenAI Realtime): ключ только в .env сервера, в браузер уходит временный ключ. Без ключа окно пишет «не подключён». */
 export const VOICE_KEY = process.env.OPENAI_API_KEY || ''
-/** Модель: алиас gpt-realtime-mini указывает на свежую версию mini; точное имя и цену проверять на странице OpenAI (docs/voice.md). */
-export const VOICE_MODEL = process.env.VOICE_MODEL || 'gpt-realtime-mini'
+/** Модель: модель gpt-realtime-2.1-mini (выбор владельца, 2026-11-16); цену проверять на странице OpenAI (docs/voice.md). */
+export const VOICE_MODEL = process.env.VOICE_MODEL || 'gpt-realtime-2.1-mini'
 export const VOICE_VOICE = process.env.VOICE_VOICE || 'marin'
 export const VOICE_BASE = (process.env.VOICE_BASE || 'https://api.openai.com/v1').replace(/\/+$/, '')
 /** Минут разговора в сутки (решение владельца 2026-11-16: 10) и предел одного разговора. */

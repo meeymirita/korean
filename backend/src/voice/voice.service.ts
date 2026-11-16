@@ -4,6 +4,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
+import { SCENES, sceneOf } from './scenes.js'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from './voice.util.js'
 
 const MAX_SEC = VOICE_MAX_SESSION_MIN * 60
@@ -39,11 +40,14 @@ export class VoiceService {
       leftSec: Math.max(0, DAY_SEC - used),
       costPerMin: VOICE_COST_PER_MIN,
       costToday: costOf(used, VOICE_COST_PER_MIN),
+      scenes: SCENES.map(x => ({ id: x.id, title: x.title, hint: x.hint })),
     }
   }
 
   /** Начать разговор: проверить остаток минут, получить у OpenAI временный ключ и завести запись разговора. */
-  async start() {
+  async start(body: Record<string, unknown> = {}) {
+    const scene = sceneOf(body?.scene)
+    const ptt = body?.ptt === true
     if (!VOICE_KEY) throw new ServiceUnavailableException({ error: 'voice not configured' })
     const now = Date.now()
     const used = await this.usedToday(now)
@@ -54,7 +58,7 @@ export class VoiceService {
       res = await fetch(`${VOICE_BASE}/realtime/client_secrets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VOICE_KEY}`, 'OpenAI-Safety-Identifier': SAFETY_ID },
-        body: JSON.stringify(secretBody({ model: VOICE_MODEL, voice: VOICE_VOICE, ttl: SECRET_TTL })),
+        body: JSON.stringify(secretBody({ model: VOICE_MODEL, voice: VOICE_VOICE, ttl: SECRET_TTL, scene: scene.id, ptt })),
         signal: AbortSignal.timeout(15_000),
       })
     } catch (e) {
@@ -72,7 +76,7 @@ export class VoiceService {
     if (!secret) throw new BadGatewayException({ error: 'empty secret' })
     const id = randomBytes(8).toString('hex')
     await (await this.db.orm()).voiceSession.create({ data: { id, day: dayKey(now, VOICE_TZ), started: BigInt(now), model: VOICE_MODEL } })
-    return { id, secret, callsUrl: `${VOICE_BASE}/realtime/calls`, maxSec: Math.min(MAX_SEC, left), ...this.statusOf(used) }
+    return { id, scene: scene.id, secret, callsUrl: `${VOICE_BASE}/realtime/calls`, maxSec: Math.min(MAX_SEC, left), ...this.statusOf(used) }
   }
 
   private async open(id: string) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { KNOWN_WORDS } from '../src/chat/curriculum'
-import { SYSTEM_PROMPT } from '../src/voice/prompt'
+import { KNOWN_GRAMMAR, KNOWN_WORDS } from '../src/chat/curriculum'
+import { buildPrompt, SYSTEM_PROMPT } from '../src/voice/prompt'
+import { SCENES, sceneOf } from '../src/voice/scenes'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from '../src/voice/voice.util'
 
 // Голосовой собеседник: чистые функции (без базы и сети).
@@ -37,19 +38,42 @@ describe('голос: ввод и расчёты', () => {
 })
 
 describe('голос: запрос временного ключа и инструкция', () => {
-  const body = secretBody({ model: 'gpt-realtime-mini', voice: 'marin', ttl: 120 })
+  const body = secretBody({ model: 'gpt-realtime-2.1-mini', voice: 'marin', ttl: 120 })
   it('модель, голос и короткий срок ключа заданы сервером', () => {
     expect(body.expires_after.seconds).toBe(120)
-    expect(body.session.model).toBe('gpt-realtime-mini')
+    expect(body.session.model).toBe('gpt-realtime-2.1-mini')
     expect(body.session.audio.output.voice).toBe('marin')
     expect(body.session.audio.input.transcription.model).toBeTruthy()
     expect(body.session.instructions).toBe(SYSTEM_PROMPT)
   })
   it('в инструкции пройденное и правила про пол и границы', () => {
-    expect(SYSTEM_PROMPT).toContain(KNOWN_WORDS.slice(0, 20))
+    expect(SYSTEM_PROMPT).toContain(KNOWN_GRAMMAR.slice(0, 40))
     expect(SYSTEM_PROMPT).toMatch(/Пол ученика неизвестен/)
     expect(SYSTEM_PROMPT).toMatch(/НЕ пройдено/)
-    expect(SYSTEM_PROMPT).toMatch(/Только корейский язык/)
+    expect(SYSTEM_PROMPT).toMatch(/Только корейский и учёба/)
     expect(SYSTEM_PROMPT).not.toMatch(/[぀-ヿ一-鿿]/)
+  })
+  it('инструкция короткая: весь список слов в неё не вставляется', () => {
+    expect(SYSTEM_PROMPT.length).toBeLessThan(5500)
+    expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
+  })
+  it('нажми-и-говори выключает автоопределение конца фразы, обычный режим включает', () => {
+    expect(secretBody({ model: 'm', voice: 'v', ttl: 1, ptt: true }).session.audio.input.turn_detection).toBeNull()
+    expect(body.session.audio.input.turn_detection?.type).toBe('semantic_vad')
+  })
+})
+
+describe('голос: сценки', () => {
+  const known = new Set(KNOWN_WORDS.split(/\s+/))
+  it('у каждой сценки есть шаги и слова, а неизвестная сценка даёт свободный разговор', () => {
+    expect(sceneOf('нет такой').id).toBe('free')
+    for (const s of SCENES.filter(x => x.id !== 'free')) {
+      expect(s.steps.length).toBeGreaterThan(2)
+      expect(buildPrompt(s.id)).toContain(s.steps[0]!.ko)
+    }
+  })
+  it('слова сценок только из пройденного (словарь chat/curriculum.ts)', () => {
+    const unknown = SCENES.flatMap(s => s.words.split(/\s+/).filter(w => w && !known.has(w) && !/^(뭐예요\?|얼마예요\?|안녕하세요\?)$/.test(w)))
+    expect(unknown).toEqual([])
   })
 })

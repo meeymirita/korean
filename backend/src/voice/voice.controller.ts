@@ -22,8 +22,8 @@ export class VoiceController {
   /** Начать разговор: временный ключ и номер разговора. */
   @Post('sessions')
   @HttpCode(200)
-  start() {
-    return this.voice.start()
+  start(@Body() body: Record<string, unknown>) {
+    return this.voice.start(body)
   }
 
   @Get('sessions/:id')
