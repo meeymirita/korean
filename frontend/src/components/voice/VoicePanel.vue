@@ -293,7 +293,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-tabs button { display: inline-flex; align-items: center; gap: 8px; }
 .vp-tabs button img { width: 20px; height: 20px; object-fit: contain; }
 .vp-tabs button.on img { filter: brightness(0) invert(1); }
-.vp-hero { flex: none; }
+.vp-hero { flex: none; margin-top: auto; }
 .vp-hero > img { display: block; width: 100%; height: auto; }
 .vp-cloud { position: relative; margin: -16px 6% 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 18px 12px; text-align: center; background: rgba(255, 255, 255, .88); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 10px 26px rgba(150, 110, 200, .22); backdrop-filter: blur(4px); }
 .vp-cloud img { width: 34px; height: 22px; object-fit: contain; }
@@ -351,7 +351,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-state small { color: var(--vp-muted); font-size: 12px; }
 @keyframes vp-pulse { 50% { box-shadow: 0 0 0 10px rgba(214, 69, 93, .18), 0 10px 24px rgba(214, 69, 93, .4); } }
 
-.vp-foot { flex: none; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--vp-line); }
+.vp-foot { flex: none; padding-top: 10px; border-top: 1px solid var(--vp-line); }
 .vp-foot p { margin: 6px 0 0; font-size: 12px; color: var(--vp-muted); }
 .vp-bar { height: 5px; border-radius: 5px; background: var(--vp-line); overflow: hidden; }
 .vp-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--vp-pink), var(--vp-pink-d)); transition: width .4s; }
