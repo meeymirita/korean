@@ -249,7 +249,7 @@ const onKey = (e: KeyboardEvent) => {
 <style>
 /* Голосовой собеседник: окно в стиле музыкального плеера (светлая панель справа, розовые кнопки); классы с префиксом vp- */
 .vp-root, .vp-panel { --vp-pink: #e86bc0; --vp-pink-d: #d64da9; --vp-ink: #2b2a5c; --vp-muted: #8a86b8; --vp-line: #eadff7; }
-.vp-panel { position: fixed; z-index: 48; top: 12px; right: 12px; bottom: 12px; width: min(clamp(380px, 34vw, 600px), calc(100vw - 24px)); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 14px; overflow: hidden;
+.vp-panel { position: fixed; z-index: 48; top: 12px; right: 12px; bottom: 12px; width: min(clamp(380px, 55vw, 900px), calc(100vw - 24px)); display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 14px; overflow: hidden;
   color: var(--vp-ink); background: linear-gradient(165deg, #fff7fd 0%, #f1efff 100%); border: 1px solid #fff; border-radius: 28px; box-shadow: 0 24px 60px rgba(70, 55, 140, .35); }
 .vp-panel-enter-active, .vp-panel-leave-active { transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .25s; }
 .vp-panel-enter-from, .vp-panel-leave-to { transform: translateX(32px); opacity: 0; }
