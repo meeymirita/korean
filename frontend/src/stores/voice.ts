@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { askChat } from '@/lib/chat'
 import { errText, fetchT } from '@/lib/http'
+import { splitKorean } from '@/lib/voiceText'
 import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
@@ -17,6 +17,9 @@ export interface VoiceStatus {
   costPerMin: number
   costToday: number
   scenes?: { id: string; title: string; hint: string }[]
+  /** Подключённые бесплатные модели и есть ли Whisper (Groq): без них бесплатный режим недоступен. */
+  providers?: { id: string; title: string; model: string }[]
+  whisper?: boolean
 }
 
 export interface VoiceLine {
@@ -29,8 +32,11 @@ export interface VoiceLine {
   ok?: boolean
   /** Ответ другой (текстовой) модели на вопрос ученика: показывается отдельной карточкой, на сервер не сохраняется. */
   other?: boolean
-  /** Вопрос, на который отвечала другая модель. */
+  /** Вопрос, на который отвечала другая модель, и какая именно. */
   asked?: string
+  by?: string
+  /** Проверка ответа другой (или той же) моделью. */
+  check?: { provider: string; text: string }
 }
 
 /** Разговор в истории (список без текста). */
@@ -88,6 +94,15 @@ export const useVoiceStore = defineStore('voice', () => {
   /** Сценка разговора (`GET /api/voice` → `scenes`) и режим «удерживай и говори». */
   const scene = usePersisted('voice_scene', 'free')
   const ptt = usePersisted('voice_ptt', true)
+  /** Чем разговариваем: `openai` (голос OpenAI, платно) или `free` (Groq Whisper слышит, бесплатная модель отвечает, озвучивает браузер). */
+  const engine = usePersisted<'openai' | 'free'>('voice_engine', 'openai', v => v === 'openai' || v === 'free')
+  /** Какая бесплатная модель отвечает ('' = первая из подключённых) и кто проверяет ответ. */
+  const provider = usePersisted('voice_provider', '')
+  const check = usePersisted<'none' | 'cross' | 'self'>('voice_check', 'none', v => v === 'none' || v === 'cross' || v === 'self')
+  function setEngine(v: 'openai' | 'free') {
+    engine.value = v
+    if (v === 'free') ptt.value = true
+  }
   /** Идёт ли сейчас удержание кнопки (говорит ученик). */
   const talking = ref(false)
   /** Номер реплики ученика, которую он исправляет (-1: никакую). */
@@ -113,7 +128,8 @@ export const useVoiceStore = defineStore('voice', () => {
   async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetchT(`/api/voice${path}`, { ...init, headers: init.body ? jsonHeaders() : headers() })
     if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+      if ((path === '/ask' || path === '/transcribe' || path.endsWith('/review')) && typeof body.message === 'string') throw new Error(body.message)
       if (res.status === 503) throw new Error('голос не подключён: на сервере нет ключа OpenAI')
       if (res.status === 429) throw new Error(body.error === 'daily limit' ? 'минуты на сегодня закончились' : 'OpenAI просит подождать, попробуй позже')
       if (res.status === 502) throw new Error('OpenAI не ответил или не принял ключ')
@@ -162,6 +178,8 @@ export const useVoiceStore = defineStore('voice', () => {
   let audio: HTMLAudioElement | null = null
   let sessionId = ''
   let timer: ReturnType<typeof setInterval> | null = null
+  let recorder: MediaRecorder | null = null
+  let chunks: Blob[] = []
   let startedAt = 0
   let lastActivity = 0
 
@@ -170,6 +188,12 @@ export const useVoiceStore = defineStore('voice', () => {
     timer = null
     talking.value = false
     fixing.value = -1
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.onstop = null
+      recorder.stop()
+    }
+    recorder = null
+    if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
     channel?.close()
     pc?.close()
     stream?.getTracks().forEach(t => t.stop())
@@ -200,8 +224,24 @@ export const useVoiceStore = defineStore('voice', () => {
     else if (ev.type === 'response.done' || ev.type === 'output_audio_buffer.stopped') mood.value = 'listening'
   }
 
+  /** Секундомер разговора: конец по времени и после минуты полной тишины. */
+  function startTimer() {
+    startedAt = lastActivity = Date.now()
+    timer = setInterval(() => {
+      elapsed.value = Math.floor((Date.now() - startedAt) / 1000)
+      if (elapsed.value >= maxSec.value) {
+        toast.ok('Время разговора вышло')
+        void stop()
+      } else if (Date.now() - lastActivity > IDLE_MS) {
+        toast.ok('Долго тишина, разговор закончен')
+        void stop()
+      }
+    }, 1000)
+  }
+
   async function start() {
     if (live.value) return
+    if (engine.value === 'free') return startFree()
     if (!navigator.mediaDevices?.getUserMedia) return void toast.error('Браузер не даёт доступ к микрофону (нужен https)')
     phase.value = 'connecting'
     lines.value = []
@@ -243,17 +283,7 @@ export const useVoiceStore = defineStore('voice', () => {
       await pc.setRemoteDescription({ type: 'answer', sdp: await answer.text() })
       phase.value = 'live'
       mood.value = 'thinking'
-      startedAt = lastActivity = Date.now()
-      timer = setInterval(() => {
-        elapsed.value = Math.floor((Date.now() - startedAt) / 1000)
-        if (elapsed.value >= maxSec.value) {
-          toast.ok('Время разговора вышло')
-          void stop()
-        } else if (Date.now() - lastActivity > IDLE_MS) {
-          toast.ok('Долго тишина, разговор закончен')
-          void stop()
-        }
-      }, 1000)
+      startTimer()
     } catch (e) {
       const id = sessionId
       cleanup()
@@ -299,8 +329,11 @@ export const useVoiceStore = defineStore('voice', () => {
     const ctx = lines.value.slice(0, li + 1).filter(l => !l.other && !l.wrong).slice(-8)
     asking.value = true
     try {
-      const { reply } = await askChat(progress.bearer, ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) })))
-      lines.value.push({ role: 'assistant', text: reply, other: true, asked })
+      const r = await api<{ text: string; provider: string; check: { provider: string; text: string } | null }>('/ask', {
+        method: 'POST',
+        body: JSON.stringify({ messages: ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) })), provider: provider.value, check: check.value, scene: scene.value }),
+      })
+      lines.value.push({ role: 'assistant', text: r.text, other: true, asked, by: r.provider, ...(r.check ? { check: r.check } : {}) })
     } catch (e) {
       toast.error(errText(e))
     } finally {
@@ -313,7 +346,7 @@ export const useVoiceStore = defineStore('voice', () => {
     if (reviewing.value) return
     reviewing.value = id
     try {
-      const res = await fetchT(`/api/voice/sessions/${id}/review`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ force }) }, 90_000)
+      const res = await fetchT(`/api/voice/sessions/${id}/review`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ force, provider: provider.value || undefined }) }, 90_000)
       if (!res.ok) {
         const why: Record<number, string> = { 400: 'в разговоре нет твоих реплик, разбирать нечего', 429: 'модель просит подождать, попробуй чуть позже', 502: 'модель разбора сейчас не отвечает, попробуй позже', 503: 'разбор не подключён: на сервере нет ключа помощника (OPENROUTER_API_KEY)' }
         throw new Error(why[res.status] ?? `ошибка сервера ${res.status}`)
@@ -334,6 +367,22 @@ export const useVoiceStore = defineStore('voice', () => {
     if (phase.value !== 'live' || !ptt.value || talking.value) return
     talking.value = true
     holdAt = Date.now()
+    if (engine.value === 'free') {
+      if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
+      try {
+        chunks = []
+        recorder = new MediaRecorder(stream!)
+        recorder.ondataavailable = e => e.data.size && chunks.push(e.data)
+        recorder.start()
+      } catch {
+        talking.value = false
+        recorder = null
+        return void toast.error('Не получилось начать запись')
+      }
+      mood.value = 'listening'
+      lastActivity = Date.now()
+      return
+    }
     send({ type: 'response.cancel' })
     send({ type: 'output_audio_buffer.clear' })
     send({ type: 'input_audio_buffer.clear' })
@@ -346,6 +395,17 @@ export const useVoiceStore = defineStore('voice', () => {
   function holdEnd() {
     if (!talking.value) return
     talking.value = false
+    if (engine.value === 'free') {
+      const rec = recorder
+      recorder = null
+      if (!rec) return
+      const tooShort = Date.now() - holdAt < 400
+      rec.onstop = () => {
+        if (!tooShort) void freeHeard(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }))
+      }
+      if (rec.state !== 'inactive') rec.stop()
+      return
+    }
     stream?.getAudioTracks().forEach(t => (t.enabled = false))
     if (Date.now() - holdAt < 400) return void send({ type: 'input_audio_buffer.clear' })
     send({ type: 'input_audio_buffer.commit' })
@@ -353,10 +413,119 @@ export const useVoiceStore = defineStore('voice', () => {
     mood.value = 'thinking'
   }
 
+  /* ---------- бесплатный разговор: Whisper (Groq) слышит, выбранная модель отвечает, озвучивает браузер ---------- */
+  /** Первая «реплика ученика» для модели: ученик ещё ничего не сказал, а собеседник начинает сам. */
+  const OPENER = '(Ученик открыл разговор. Поздоровайся и начни по инструкции.)'
+
+  async function startFree() {
+    if (!navigator.mediaDevices?.getUserMedia) return void toast.error('Браузер не даёт доступ к микрофону (нужен https)')
+    if (typeof MediaRecorder === 'undefined') return void toast.error('Этот браузер не умеет записывать звук')
+    phase.value = 'connecting'
+    lines.value = []
+    muted.value = false
+    elapsed.value = 0
+    ptt.value = true
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).catch(() => {
+        throw new Error('нет доступа к микрофону: разреши его в настройках браузера для этого сайта')
+      })
+      const s = await api<{ id: string; maxSec: number } & VoiceStatus>('/sessions', { method: 'POST', body: JSON.stringify({ free: true, scene: scene.value }) })
+      sessionId = s.id
+      maxSec.value = s.maxSec
+      status.value = s
+      phase.value = 'live'
+      mood.value = 'thinking'
+      startTimer()
+      void freeReply()
+    } catch (e) {
+      const id = sessionId
+      cleanup()
+      phase.value = 'idle'
+      sessionId = ''
+      toast.error(errText(e))
+      if (id) void fetchT(`/api/voice/sessions/${id}/end`, { method: 'POST', headers: headers() }).catch(() => {})
+      void load()
+    }
+  }
+
+  /** Ответ модели на разговор до сих пор; он добавляется в чат, сохраняется и озвучивается. */
+  async function freeReply() {
+    mood.value = 'thinking'
+    lastActivity = Date.now()
+    const ctx = lines.value.filter(l => !l.other && !l.wrong).slice(-12)
+    try {
+      const r = await api<{ text: string; check: { provider: string; text: string } | null }>('/ask', {
+        method: 'POST',
+        body: JSON.stringify({ messages: [{ role: 'user', text: OPENER }, ...ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) }))], provider: provider.value, check: check.value, scene: scene.value }),
+      })
+      if (phase.value !== 'live') return
+      keep({ role: 'assistant', text: r.text, ...(r.check ? { check: r.check } : {}) })
+      speak(r.text)
+    } catch (e) {
+      mood.value = 'listening'
+      toast.error(errText(e))
+    }
+  }
+
+  /** Озвучка браузером: корейские куски голосом ko-KR (медленнее), русские ru-RU. Пока говорит, показывается «Говорю». */
+  function speak(text: string) {
+    if (typeof speechSynthesis === 'undefined') return void (mood.value = 'listening')
+    speechSynthesis.cancel()
+    const voices = speechSynthesis.getVoices()
+    const parts = splitKorean(text.replace(/[*_#`]+/g, '')).filter(p => p.text.trim())
+    let left = parts.length
+    if (!left) return void (mood.value = 'listening')
+    mood.value = 'speaking'
+    for (const p of parts) {
+      const u = new SpeechSynthesisUtterance(p.text.trim())
+      u.lang = p.ko ? 'ko-KR' : 'ru-RU'
+      u.voice = voices.find(v => v.lang.replace('_', '-').toLowerCase().startsWith(u.lang.slice(0, 2).toLowerCase())) ?? null
+      u.rate = p.ko ? 0.85 : 1
+      const done = () => {
+        if (--left <= 0 && phase.value === 'live') mood.value = 'listening'
+      }
+      u.onend = done
+      u.onerror = done
+      speechSynthesis.speak(u)
+    }
+  }
+
+  /** Запись из браузера в base64 (так её принимает сервер). */
+  async function blobToBase64(b: Blob): Promise<string> {
+    const bytes = new Uint8Array(await b.arrayBuffer())
+    let bin = ''
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+    return btoa(bin)
+  }
+
+  /** Запись ученика: Whisper превращает её в текст, текст уходит в чат как его реплика, потом отвечает модель. */
+  async function freeHeard(blob: Blob) {
+    mood.value = 'thinking'
+    lastActivity = Date.now()
+    try {
+      const r = await api<{ text: string }>('/transcribe', { method: 'POST', body: JSON.stringify({ audio: await blobToBase64(blob), mime: blob.type || 'audio/webm' }) })
+      if (phase.value !== 'live') return
+      if (!r.text) {
+        mood.value = 'listening'
+        return void toast.error('Не расслышал, скажи ещё раз')
+      }
+      keep({ role: 'user', text: r.text })
+      await freeReply()
+    } catch (e) {
+      mood.value = 'listening'
+      toast.error(errText(e))
+    }
+  }
+
   /** Ответ текстом вместо голоса (если распознавание подводит). */
   function sendText(text: string) {
     const t = text.replace(/\s+/g, ' ').trim()
     if (!t || phase.value !== 'live') return
+    if (engine.value === 'free') {
+      keep({ role: 'user', text: t })
+      void freeReply()
+      return
+    }
     send({ type: 'response.cancel' })
     send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: t }] } })
     send({ type: 'response.create' })
@@ -381,5 +550,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, setEngine, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
 })

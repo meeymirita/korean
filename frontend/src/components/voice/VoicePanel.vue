@@ -125,7 +125,9 @@ const limitMin = computed(() => Math.round((store.status?.limitSec ?? 0) / 60))
 /** Примерная стоимость того, что потрачено сегодня, и оставшегося. */
 const money = (sec: number) => '≈ $' + (((sec / 60) * (store.status?.costPerMin ?? 0)).toFixed(2))
 const usedPct = computed(() => (store.status?.limitSec ? Math.min(100, ((store.status.limitSec - store.left) / store.status.limitSec) * 100) : 0))
-const canStart = computed(() => !!store.status?.configured && (store.status?.leftSec ?? 0) > 0)
+/** Бесплатный режим доступен, когда есть Whisper (Groq) и хотя бы одна модель. */
+const freeReady = computed(() => !!store.status?.whisper && !!store.status?.providers?.length)
+const canStart = computed(() => (store.engine === 'free' ? freeReady.value : !!store.status?.configured && (store.status?.leftSec ?? 0) > 0))
 
 /** Какие корейские фразы раскрыты разбором (ключ «номер реплики:номер куска»). */
 const openBd = ref<Set<string>>(new Set())
@@ -229,8 +231,9 @@ const onKey = (e: KeyboardEvent) => {
             <div v-if="store.live || store.lines.length" ref="log" class="vp-log vp-log-scene" :style="{ '--vp-scene': `url(${IMG.scene})` }" aria-live="polite">
               <div v-for="(l, i) in store.lines" :key="i" class="vp-msg" :class="[l.role, { other: l.other }]">
                 <div v-if="l.other" class="vp-other">
-                  <small>Другая модель (бесплатная) · на «{{ l.asked }}»</small>
+                  <small>Другая модель{{ l.by ? ` · ${l.by}` : '' }} · на «{{ l.asked }}»</small>
                   <p v-for="(ln, k) in parseReply(l.text)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p>
+                  <p v-if="l.check" class="vp-ck"><b>{{ l.check.provider }}:</b> {{ l.check.text }}</p>
                 </div>
                 <div v-else class="vp-line" :class="[l.role, { wrong: l.wrong }]">
                   <template v-if="l.role === 'assistant'">
@@ -241,6 +244,7 @@ const onKey = (e: KeyboardEvent) => {
                   </template>
                   <template v-else>{{ l.text }}</template>
                 </div>
+                <p v-if="l.check && !l.other" class="vp-ck"><b>{{ l.check.provider }}:</b> {{ l.check.text }}</p>
                 <template v-if="l.role === 'assistant' && !l.other">
                   <template v-for="(p, j) in splitKorean(l.text)" :key="j">
                     <div v-if="p.ko && openBd.has(`${i}:${j}`)" class="vp-bd"><SentenceBreakdown :sentence="koreanOnly(p.text)" /></div>
@@ -263,6 +267,27 @@ const onKey = (e: KeyboardEvent) => {
                   <img v-if="store.scene === sc.id" :src="IMG.check" alt="" class="vp-tick" />
                 </button>
               </div>
+              <p class="vp-sub"><img :src="IMG.settings" alt="" />Как отвечать</p>
+              <div class="vp-seg" role="group" aria-label="Чем разговариваем">
+                <button type="button" :class="{ on: store.engine === 'openai' }" :aria-pressed="store.engine === 'openai'" @click="store.setEngine('openai')"><b>Голос OpenAI</b><small>живой голос, платно</small></button>
+                <button type="button" :class="{ on: store.engine === 'free' }" :aria-pressed="store.engine === 'free'" :disabled="!freeReady" @click="store.setEngine('free')"><b>Бесплатно</b><small>{{ freeReady ? 'Whisper, модель и озвучка браузера' : 'нужны ключи Groq и модели в .env' }}</small></button>
+              </div>
+            </div>
+
+            <div v-if="store.status?.providers?.length" class="vp-sel">
+              <label>Модель
+                <select v-model="store.provider">
+                  <option value="">первая подходящая</option>
+                  <option v-for="p in store.status.providers" :key="p.id" :value="p.id">{{ p.title }}</option>
+                </select>
+              </label>
+              <label>Проверка
+                <select v-model="store.check">
+                  <option value="none">нет</option>
+                  <option value="cross">другая модель</option>
+                  <option value="self">та же модель</option>
+                </select>
+              </label>
             </div>
 
             <div v-if="!store.live && store.lastId && store.lines.length" class="vp-rv">
@@ -281,7 +306,7 @@ const onKey = (e: KeyboardEvent) => {
             </form>
 
             <div class="vp-prow">
-              <label v-if="!store.live" class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
+              <label v-if="!store.live && store.engine === 'openai'" class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
               <button
                 type="button"
                 class="vp-go"
@@ -303,7 +328,7 @@ const onKey = (e: KeyboardEvent) => {
             <footer class="vp-foot">
               <div class="vp-bar"><i :style="{ width: usedPct + '%' }"></i></div>
               <p v-if="store.status" class="vp-fl">
-                <img :src="IMG.clock" alt="" />Осталось {{ store.live ? mmss(store.left) : `${leftMin} мин` }} из {{ limitMin }} мин · потрачено сегодня {{ money(store.status.usedSec + (store.live ? store.elapsed : 0)) }}
+                <img :src="IMG.clock" alt="" /><template v-if="store.engine === 'free'">Бесплатный режим: минуты OpenAI не тратятся · </template>Осталось {{ store.live ? mmss(store.left) : `${leftMin} мин` }} из {{ limitMin }} мин · потрачено сегодня {{ money(store.status.usedSec + (store.live ? store.elapsed : 0)) }}
               </p>
               <p v-if="store.loadError" class="vp-err">Не получилось узнать остаток: {{ store.loadError }}</p>
             </footer>
@@ -383,6 +408,17 @@ const onKey = (e: KeyboardEvent) => {
 .vp-other p.b::before { content: '• '; }
 .vp-alt { flex: none; padding: 8px 14px; font: inherit; font-size: 12px; font-weight: 700; color: #a97a1f; cursor: pointer; background: rgba(255, 247, 232, .9); border: 1px dashed #e0b76a; border-radius: 99px; }
 .vp-alt:disabled { opacity: .6; cursor: default; }
+.vp-seg { display: flex; gap: 8px; }
+.vp-seg button { flex: 1 1 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 12px; font: inherit; text-align: left; color: inherit; cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 14px; }
+.vp-seg button b { font-size: 13px; }
+.vp-seg button small { font-size: 11px; color: var(--vp-muted); }
+.vp-seg button.on { border-color: var(--vp-pink); background: #fff; box-shadow: 0 0 0 2px rgba(232, 107, 192, .25); }
+.vp-seg button:disabled { opacity: .55; cursor: default; }
+.vp-sel { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12px; color: var(--vp-muted); }
+.vp-sel label { display: flex; align-items: center; gap: 6px; }
+.vp-sel select { padding: 4px 8px; font: inherit; font-size: 12px; color: var(--vp-ink); background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 10px; }
+.vp-ck { margin: 4px 0 0; padding: 4px 10px; font-size: 12px; color: #5c4a8a; background: rgba(255, 255, 255, .75); border: 1px solid var(--vp-line); border-radius: 12px; }
+.vp-other .vp-ck { background: rgba(255, 255, 255, .6); }
 .vp-hico { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .vp-ht { flex: 1; min-width: 0; }
 .vp-ht h2 { flex: none; line-height: 1.1; }

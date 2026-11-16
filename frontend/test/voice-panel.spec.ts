@@ -67,7 +67,8 @@ beforeEach(() => {
     if (url === '/api/voice/sessions' && method === 'GET') return new Response(JSON.stringify({ sessions: HISTORY }))
     if (url === 'https://api.openai.com/v1/realtime/calls') return new Response('v=0 answer')
     if (/\/messages$/.test(url)) return new Response('{"ok":true}')
-    if (url === '/api/chat' && method === 'POST') return new Response(JSON.stringify({ reply: '**Верно.** 저는 학생이에요', left: 39 }))
+    if (url === '/api/voice/ask' && method === 'POST') return new Response(JSON.stringify({ text: '**Верно.** 저는 학생이에요', provider: 'Groq', check: { provider: 'Gemini', text: 'Проверка: верно' } }))
+    if (url === '/api/voice/transcribe' && method === 'POST') return new Response(JSON.stringify({ text: '저는 학생이에요' }))
     if (/\/review$/.test(url)) return url.includes('/bad') ? new Response('{}', { status: 503 }) : new Response(JSON.stringify({ review: '**Что получилось** — верно' }))
     if (/\/end$/.test(url)) return new Response(JSON.stringify({ ...STATUS, usedSec: 180, leftSec: 420 }))
     if (/^\/api\/voice\/sessions\/a+$/.test(url) && method === 'GET') return new Response(JSON.stringify({ id: 'aaaaaaaaaaaaaaaa', started: 1, seconds: 95, messages: [{ role: 'user', text: '안녕하세요' }, { role: 'assistant', text: '반가워요' }] }))
@@ -201,13 +202,48 @@ describe('голосовой собеседник', () => {
     const store = useVoiceStore()
     store.lines = [{ role: 'assistant', text: '이름이 뭐예요?' }, { role: 'user', text: 'Как сказать я студент?' }, { role: 'assistant', text: 'Скажи 저는 학생이에요' }]
     await store.askOther()
-    const call = calls.find(c => c.url === '/api/chat')!
+    const call = calls.find(c => c.url === '/api/voice/ask')!
     const sent = JSON.parse(call.body!).messages as { role: string; text: string }[]
     expect(sent.at(-1)).toEqual({ role: 'user', text: 'Как сказать я студент?' })
     expect(sent).toHaveLength(2)
-    expect(store.lines.at(-1)).toMatchObject({ role: 'assistant', other: true, asked: 'Как сказать я студент?' })
+    expect(store.lines.at(-1)).toMatchObject({ role: 'assistant', other: true, asked: 'Как сказать я студент?', by: 'Groq', check: { provider: 'Gemini' } })
     expect(calls.some(c => /\/messages$/.test(c.url))).toBe(false)
     expect(store.asking).toBe(false)
+  })
+
+  it('бесплатный разговор: приветствие от модели, запись уходит в Whisper, ответ озвучивается браузером', async () => {
+    const spoken: string[] = []
+    vi.stubGlobal('SpeechSynthesisUtterance', class { text: string; lang = ''; rate = 1; voice: unknown = null; onend?: () => void; onerror?: () => void; constructor(t: string) { this.text = t } })
+    vi.stubGlobal('speechSynthesis', { cancel() {}, getVoices: () => [], speak(u: { text: string; lang: string; onend?: () => void }) { spoken.push(`${u.lang}:${u.text}`); u.onend?.() } })
+    vi.stubGlobal('MediaRecorder', class { state = 'inactive'; mimeType = 'audio/webm'; ondataavailable?: (e: { data: Blob }) => void; onstop?: () => void; start() { this.state = 'recording'; this.ondataavailable?.({ data: new Blob(['x']) }) } stop() { this.state = 'inactive'; this.onstop?.() } })
+    const store = useVoiceStore()
+    store.setEngine('free')
+    store.scene = 'cafe'
+    await store.load()
+    await store.start()
+    await flushPromises()
+    const start = calls.find(c => c.url === '/api/voice/sessions' && c.method === 'POST')!
+    expect(JSON.parse(start.body!)).toEqual({ free: true, scene: 'cafe' })
+    expect(store.phase).toBe('live')
+    expect(store.lines.at(-1)).toMatchObject({ role: 'assistant', check: { provider: 'Gemini' } })
+    expect(spoken.some(x => x.startsWith('ko-KR:'))).toBe(true)
+    expect(calls.some(c => c.url === 'https://api.openai.com/v1/realtime/calls')).toBe(false)
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.now())
+    store.holdStart()
+    vi.advanceTimersByTime(1000)
+    store.holdEnd()
+    vi.useRealTimers()
+    await flushPromises()
+    await flushPromises()
+    expect(calls.some(c => c.url === '/api/voice/transcribe')).toBe(true)
+    expect(store.lines.filter(l => l.role === 'user').at(-1)?.text).toBe('저는 학생이에요')
+    expect(calls.filter(c => c.url === '/api/voice/ask').length).toBeGreaterThanOrEqual(2)
+    store.sendText('Как сказать кофе?')
+    await flushPromises()
+    expect(store.lines.filter(l => l.role === 'user').at(-1)?.text).toBe('Как сказать кофе?')
+    await store.stop()
+    store.setEngine('openai')
   })
 
   it('мини-плашка видна, пока разговор идёт, а окно закрыто', async () => {
