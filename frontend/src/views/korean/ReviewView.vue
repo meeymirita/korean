@@ -62,7 +62,8 @@ const done = computed(() => total.value - left.value)
 const isSet = (c: string) => SETS.some(s => s.id === c) || PAIR_SETS.some(s => s.id === c)
 const DICT = new Set(D.map(d => d.k))
 /** звёздочка «отметить слово» только у слов словаря (у предложений и форм её нет, даже если фраза есть и в словаре) */
-const canMark = computed(() => !!card.value && !PAIR_SETS.some(s => s.id === cat.value) && DICT.has(card.value.word.k))
+/** Звёздочка «важное» у слов, но не у предложений: ни у наборов «Предложения», ни у «Вопросительных предложений» (оно может совпасть со словом словаря, как `직업이 뭐예요?`). */
+const canMark = computed(() => !!card.value && !PAIR_SETS.some(s => s.id === cat.value) && cat.value !== 'qsent' && DICT.has(card.value.word.k))
 /** лицо карточки: у вопросительных предложений предложение с пропуском */
 const front = computed(() => (card.value ? ((card.value.word as { blank?: string }).blank ?? card.value.word.k) : ''))
 /** длинное (предложение) пишется мельче, чтобы помещалось на карточке */
