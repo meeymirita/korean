@@ -283,6 +283,17 @@ const onKey = (e: KeyboardEvent) => {
                   <option v-for="p in store.status.providers" :key="p.id" :value="p.id">{{ p.title }}</option>
                 </select>
               </label>
+              <label v-if="store.engine === 'free'">Озвучка
+                <select v-model="store.voiceOut">
+                  <option v-if="store.status?.tts" value="gemini">Gemini (приятный голос)</option>
+                  <option value="browser">браузер</option>
+                </select>
+              </label>
+              <label v-if="store.engine === 'free' && store.voiceOut === 'gemini' && store.status?.tts">Голос
+                <select v-model="store.ttsVoice">
+                  <option v-for="v in store.status.ttsVoices ?? ['Kore']" :key="v" :value="v">{{ v }}</option>
+                </select>
+              </label>
               <label>Проверка
                 <select v-model="store.check">
                   <option value="none">нет</option>

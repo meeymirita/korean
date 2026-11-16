@@ -20,6 +20,9 @@ export interface VoiceStatus {
   /** Подключённые бесплатные модели и есть ли Whisper (Groq): без них бесплатный режим недоступен. */
   providers?: { id: string; title: string; model: string }[]
   whisper?: boolean
+  /** Есть ли озвучка Gemini и какие голоса можно выбрать. */
+  tts?: boolean
+  ttsVoices?: string[]
 }
 
 export interface VoiceLine {
@@ -101,6 +104,9 @@ export const useVoiceStore = defineStore('voice', () => {
   /** Какая бесплатная модель отвечает ('' = первая из подключённых) и кто проверяет ответ. */
   const provider = usePersisted('voice_provider', '')
   const check = usePersisted<'none' | 'cross' | 'self'>('voice_check', 'none', v => v === 'none' || v === 'cross' || v === 'self')
+  /** Чем озвучивать ответы в бесплатном режиме: голосом Gemini (приятнее) или голосом браузера, и какой голос Gemini. */
+  const voiceOut = usePersisted<'gemini' | 'browser'>('voice_out', 'gemini', v => v === 'gemini' || v === 'browser')
+  const ttsVoice = usePersisted('voice_tts', 'Kore')
   function setEngine(v: 'openai' | 'free') {
     engine.value = v
     if (v === 'free') ptt.value = true
@@ -195,7 +201,7 @@ export const useVoiceStore = defineStore('voice', () => {
       recorder.stop()
     }
     recorder = null
-    if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
+    stopSpeaking()
     channel?.close()
     pc?.close()
     stream?.getTracks().forEach(t => t.stop())
@@ -370,7 +376,7 @@ export const useVoiceStore = defineStore('voice', () => {
     talking.value = true
     holdAt = Date.now()
     if (engine.value === 'free') {
-      if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
+      stopSpeaking()
       try {
         chunks = []
         recorder = new MediaRecorder(stream!)
@@ -462,17 +468,59 @@ export const useVoiceStore = defineStore('voice', () => {
       })
       if (phase.value !== 'live') return
       keep({ role: 'assistant', text: r.text, ...(r.check ? { check: r.check } : {}), ...(r.failed?.length ? { note: r.failed.join('; ') } : {}) })
-      speak(r.text)
+      void speak(r.text)
     } catch (e) {
       mood.value = 'listening'
       toast.error(errText(e))
     }
   }
 
-  /** Озвучка браузером: корейские куски голосом ko-KR (медленнее), русские ru-RU. Пока говорит, показывается «Говорю». */
-  function speak(text: string) {
+  /** Озвучка ответа: голосом Gemini через сервер (WAV с кэшем) или, если выбрано, голосом браузера. Пока говорит, показывается «Говорю». */
+  let player: HTMLAudioElement | null = null
+  let speakToken = 0
+  function stopSpeaking() {
+    speakToken++
+    if (player) {
+      player.pause()
+      player = null
+    }
+    if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
+  }
+
+  async function speak(text: string) {
+    stopSpeaking()
+    const token = speakToken
+    if (voiceOut.value === 'gemini' && status.value?.tts) {
+      mood.value = 'speaking'
+      try {
+        const r = await api<{ audio: string; mime: string }>('/speak', { method: 'POST', body: JSON.stringify({ text, voice: ttsVoice.value }) })
+        if (token !== speakToken || phase.value !== 'live') return
+        const bin = atob(r.audio)
+        const bytes = new Uint8Array(bin.length)
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+        const url = URL.createObjectURL(new Blob([bytes], { type: r.mime }))
+        const a = new Audio(url)
+        player = a
+        const done = () => {
+          URL.revokeObjectURL(url)
+          if (player === a) player = null
+          if (token === speakToken && phase.value === 'live') mood.value = 'listening'
+        }
+        a.onended = done
+        a.onerror = done
+        await a.play().catch(done)
+      } catch (e) {
+        if (token === speakToken && phase.value === 'live') mood.value = 'listening'
+        toast.error(`Озвучка не получилась: ${errText(e)}`)
+      }
+      return
+    }
+    speakBrowser(text)
+  }
+
+  /** Озвучка браузером: корейские куски голосом ko-KR (медленнее), русские ru-RU. */
+  function speakBrowser(text: string) {
     if (typeof speechSynthesis === 'undefined') return void (mood.value = 'listening')
-    speechSynthesis.cancel()
     const voices = speechSynthesis.getVoices()
     const parts = splitKorean(text.replace(/[*_#`]+/g, '')).filter(p => p.text.trim())
     let left = parts.length
@@ -552,5 +600,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, setEngine, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, setEngine, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
 })

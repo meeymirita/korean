@@ -7,6 +7,8 @@ import { lineFromEvent, mmss, useVoiceStore } from '@/stores/voice'
 
 // Голосовой собеседник: кнопка только у владельца, остаток минут, начало и конец разговора, сохранение реплик, история.
 const who = vi.hoisted(() => ({ unlocked: true, owner: true }))
+/** Ответ сервера на начало разговора может нести данные об озвучке Gemini. */
+const extra = vi.hoisted(() => ({ tts: false }))
 vi.mock('@/stores/progress', async original => {
   const real = await original<typeof import('@/stores/progress')>()
   const over: Record<string, () => unknown> = { unlocked: () => who.unlocked, isGuest: () => !who.owner, bearer: () => 'токен сеанс' }
@@ -63,10 +65,11 @@ beforeEach(() => {
     const method = init?.method ?? 'GET'
     calls.push({ url, method, body: init?.body as string | undefined })
     if (url === '/api/voice' && method === 'GET') return new Response(JSON.stringify(STATUS))
-    if (url === '/api/voice/sessions' && method === 'POST') return new Response(JSON.stringify({ ...STATUS, id: 'bbbbbbbbbbbbbbbb', secret: 'ek_x', callsUrl: 'https://api.openai.com/v1/realtime/calls', maxSec: 480 }))
+    if (url === '/api/voice/sessions' && method === 'POST') return new Response(JSON.stringify({ ...STATUS, ...(extra.tts ? { tts: true, ttsVoices: ['Kore', 'Puck'], whisper: true } : {}), id: 'bbbbbbbbbbbbbbbb', secret: 'ek_x', callsUrl: 'https://api.openai.com/v1/realtime/calls', maxSec: 480 }))
     if (url === '/api/voice/sessions' && method === 'GET') return new Response(JSON.stringify({ sessions: HISTORY }))
     if (url === 'https://api.openai.com/v1/realtime/calls') return new Response('v=0 answer')
     if (/\/messages$/.test(url)) return new Response('{"ok":true}')
+    if (url === '/api/voice/speak' && method === 'POST') return new Response(JSON.stringify({ audio: 'UklGRg==', mime: 'audio/wav', cached: false }))
     if (url === '/api/voice/ask' && method === 'POST') return new Response(JSON.stringify({ text: '**Верно.** 저는 학생이에요', provider: 'Groq', check: { provider: 'Gemini', text: 'Проверка: верно' } }))
     if (url === '/api/voice/transcribe' && method === 'POST') return new Response(JSON.stringify({ text: '저는 학생이에요' }))
     if (/\/review$/.test(url)) return url.includes('/bad') ? new Response('{}', { status: 503 }) : new Response(JSON.stringify({ review: '**Что получилось** — верно' }))
@@ -243,6 +246,41 @@ describe('голосовой собеседник', () => {
     await flushPromises()
     expect(store.lines.filter(l => l.role === 'user').at(-1)?.text).toBe('Как сказать кофе?')
     await store.stop()
+    store.setEngine('openai')
+  })
+
+  it('озвучка Gemini: ответ уходит на сервер, звук играет, браузерный голос молчит; без озвучки играет браузерный', async () => {
+    const played: string[] = []
+    const browser: string[] = []
+    vi.stubGlobal('Audio', class { src: string; onended?: () => void; onerror?: () => void; srcObject: unknown = null; autoplay = false; constructor(src = '') { this.src = src } play() { played.push(this.src); return Promise.resolve() } pause() {} })
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: () => 'blob:test', revokeObjectURL: () => {} }))
+    vi.stubGlobal('SpeechSynthesisUtterance', class { text: string; lang = ''; rate = 1; voice: unknown = null; onend?: () => void; onerror?: () => void; constructor(t: string) { this.text = t } })
+    vi.stubGlobal('speechSynthesis', { cancel() {}, getVoices: () => [], speak(u: { text: string; onend?: () => void }) { browser.push(u.text); u.onend?.() } })
+    vi.stubGlobal('MediaRecorder', class { state = 'inactive'; mimeType = 'audio/webm'; start() {} stop() {} })
+    const store = useVoiceStore()
+    store.setEngine('free')
+    store.voiceOut = 'gemini'
+    store.ttsVoice = 'Puck'
+    await store.load()
+    extra.tts = true
+    await store.start()
+    await flushPromises()
+    await flushPromises()
+    const speakCall = calls.find(c => c.url === '/api/voice/speak')!
+    expect(JSON.parse(speakCall.body!)).toMatchObject({ voice: 'Puck' })
+    expect(played).toEqual(['blob:test'])
+    expect(browser).toEqual([])
+    await store.stop()
+    calls.length = 0
+    store.voiceOut = 'browser'
+    await store.start()
+    await flushPromises()
+    await flushPromises()
+    expect(calls.some(c => c.url === '/api/voice/speak')).toBe(false)
+    expect(browser.length).toBeGreaterThan(0)
+    await store.stop()
+    store.voiceOut = 'gemini'
+    extra.tts = false
     store.setEngine('openai')
   })
 
