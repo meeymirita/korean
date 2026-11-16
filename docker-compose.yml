@@ -46,6 +46,8 @@ services:
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      GEMINI_TTS_MODEL: ${GEMINI_TTS_MODEL:-gemini-3.8-flash-tts}
+      GEMINI_TTS_VOICE: ${GEMINI_TTS_VOICE:-Kore}
       VOICE_MODEL: ${VOICE_MODEL:-gpt-realtime-2.1-mini}
       VOICE_DAILY_MINUTES: ${VOICE_DAILY_MINUTES:-20}
       VOICE_MAX_SESSION_MIN: ${VOICE_MAX_SESSION_MIN:-10}

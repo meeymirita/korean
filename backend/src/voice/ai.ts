@@ -2,7 +2,8 @@
  * Бесплатные ИИ-помощники голосового окна: OpenRouter (ключ помощника-чата), Groq и Gemini. Все три отвечают по схеме OpenAI `POST {base}/chat/completions`,
  * поэтому один код. Распознавание речи (Whisper) только у Groq. Поставщик без ключа в список не попадает.
  */
-import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, GEMINI_BASE, GEMINI_KEY, GEMINI_MODEL, GROQ_BASE, GROQ_KEY, GROQ_MODEL, GROQ_STT_MODEL } from '../config.js'
+import { createHash } from 'node:crypto'
+import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, GEMINI_BASE, GEMINI_KEY, GEMINI_MODEL, GEMINI_NATIVE_BASE, GEMINI_TTS_MODEL, GEMINI_TTS_VOICE, GROQ_BASE, GROQ_KEY, GROQ_MODEL, GROQ_STT_MODEL } from '../config.js'
 
 export type ProviderId = 'openrouter' | 'groq' | 'gemini'
 export interface Provider {
@@ -103,3 +104,59 @@ export async function transcribe(audio: Buffer, mime: string): Promise<string> {
 export const CHECK_PROMPT = `Ты проверяешь ответ репетитора корейского для начинающего ученика. Даны вопрос ученика и ответ репетитора.
 Напиши по-русски одной-двумя короткими фразами: «Проверка: верно» или «Проверка: ошибка» и что именно не так (корейская фраза, частица, перевод) и как правильно.
 Не придирайся к стилю. Ничего не выдумывай: сомневаешься, напиши «Проверка: не уверен». Чтение корейского латиницей или кириллицей не пиши. Не предлагай непройденное.`
+
+/** Голоса озвучки, которые можно выбрать в окне (названия голосов Gemini TTS). Неизвестное имя заменяется голосом по умолчанию. */
+export const TTS_VOICES = ['Kore', 'Puck', 'Zephyr', 'Aoede', 'Leda', 'Charon', 'Fenrir', 'Orus'] as const
+export const ttsVoice = (v: unknown): string => (typeof v === 'string' && (TTS_VOICES as readonly string[]).includes(v) ? v : GEMINI_TTS_VOICE)
+
+/** Готовые озвучки по тексту и голосу: повторные фразы (шаги сценки, «Верно!») не тратят лимит. */
+const ttsCache = new Map<string, { mime: string; audio: Buffer }>()
+const TTS_CACHE_MAX = 150
+
+/** WAV-заголовок для сырого звука PCM 16 бит (старые модели Gemini TTS отдают его без заголовка, новые уже WAV). */
+function wavOf(pcm: Buffer, rate: number): Buffer {
+  const h = Buffer.alloc(44)
+  h.write('RIFF', 0)
+  h.writeUInt32LE(36 + pcm.length, 4)
+  h.write('WAVEfmt ', 8)
+  h.writeUInt32LE(16, 16)
+  h.writeUInt16LE(1, 20)
+  h.writeUInt16LE(1, 22)
+  h.writeUInt32LE(rate, 24)
+  h.writeUInt32LE(rate * 2, 28)
+  h.writeUInt16LE(2, 32)
+  h.writeUInt16LE(16, 34)
+  h.write('data', 36)
+  h.writeUInt32LE(pcm.length, 40)
+  return Buffer.concat([h, pcm])
+}
+
+/** Озвучка текста голосом Gemini (русский и корейский в одной фразе модель читает сама). Возвращает WAV. */
+export async function speak(text: string, voice: string): Promise<{ mime: string; audio: Buffer; cached: boolean }> {
+  if (!GEMINI_KEY) throw new AiError('нет ключа Gemini', 503)
+  const key = createHash('sha1').update(`${GEMINI_TTS_MODEL}|${voice}|${text}`).digest('hex')
+  const hit = ttsCache.get(key)
+  if (hit) return { ...hit, cached: true }
+  let res: Response
+  try {
+    res = await fetch(`${GEMINI_NATIVE_BASE}/models/${GEMINI_TTS_MODEL}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
+      body: JSON.stringify({ contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } }),
+      signal: AbortSignal.timeout(25_000),
+    })
+  } catch {
+    throw new AiError('озвучка Gemini не ответила за 25 секунд', 502)
+  }
+  if (!res.ok) throw new AiError(res.status === 404 ? `озвучка: модель «${GEMINI_TTS_MODEL}» не найдена (поменяй GEMINI_TTS_MODEL в backend/.env)` : `озвучка Gemini ответила ${res.status}`, res.status)
+  const data = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[] } | null
+  const part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data)?.inlineData
+  if (!part?.data) throw new AiError('озвучка Gemini вернула пустой ответ', 502)
+  const raw = Buffer.from(part.data, 'base64')
+  const isWav = raw.subarray(0, 4).toString() === 'RIFF'
+  const rate = Number(/rate=(\d+)/.exec(part.mimeType ?? '')?.[1] ?? 24000)
+  const out = { mime: 'audio/wav', audio: isWav ? raw : wavOf(raw, rate) }
+  if (ttsCache.size >= TTS_CACHE_MAX) ttsCache.delete(ttsCache.keys().next().value!)
+  ttsCache.set(key, out)
+  return { ...out, cached: false }
+}

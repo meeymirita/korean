@@ -28,6 +28,13 @@ export class VoiceController {
     return this.voice.transcribeAudio(body)
   }
 
+  /** Озвучка ответа голосом Gemini (бесплатный режим), готовые фразы кэшируются. */
+  @Post('speak')
+  @HttpCode(200)
+  speak(@Body() body: Record<string, unknown>) {
+    return this.voice.speakText(body)
+  }
+
   @Get('sessions')
   list() {
     return this.voice.list()

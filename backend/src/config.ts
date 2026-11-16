@@ -107,6 +107,10 @@ export const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 export const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'
 export const GEMINI_KEY = process.env.GEMINI_API_KEY || ''
 export const GEMINI_BASE = (process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.com/v1beta/openai').replace(/\/+$/, '')
+/** Озвучка ответов (Gemini TTS, тот же ключ): родной адрес Gemini (не OpenAI-совместимый), модель и голос по умолчанию. Названия моделей Google меняет: список в GET {GEMINI_NATIVE_BASE}/models с ключом. */
+export const GEMINI_NATIVE_BASE = (process.env.GEMINI_NATIVE_BASE || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '')
+export const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts'
+export const GEMINI_TTS_VOICE = process.env.GEMINI_TTS_VOICE || 'Kore'
 /** `gemini-flash-lite-latest` постоянное имя без номера версии (имена вроде `gemini-2.5-flash` Google снимает). Обычная `gemini-flash-latest` 2026-11-16 висела от перегрузки, лёгкая отвечала за 2 секунды. Список: GET {GEMINI_BASE}/models с ключом. */
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest'
 

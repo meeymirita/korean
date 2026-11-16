@@ -18,6 +18,7 @@ function fake() {
       const isJson = (req.headers['content-type'] || '').includes('json')
       seen.push({ url: req.url, who, body: isJson ? JSON.parse(raw.toString() || '{}') : null, size: raw.length })
       const json = (code, o) => res.writeHead(code, { 'Content-Type': 'application/json' }).end(JSON.stringify(o))
+      if (req.url.includes(':generateContent')) return json(200, { candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;codec=pcm;rate=24000', data: Buffer.alloc(480, 1).toString('base64') } }] } }] })
       if (req.url.endsWith('/audio/transcriptions')) return json(200, { text: ' 안녕하세요  ' })
       if (who === 'groq' && groqLimit) return json(429, {})
       const sys = seen.at(-1).body?.messages?.[0]?.content ?? ''
@@ -34,7 +35,7 @@ describe('сервер: бесплатные модели голосового �
   const msgs = [{ role: 'user', text: 'Как сказать я студент?' }]
   before(async () => {
     g = await fake()
-    s = await start({ env: { GROQ_API_KEY: 'gk', GROQ_BASE: g.base, GEMINI_API_KEY: 'mk', GEMINI_BASE: g.base, GEMINI_MODEL: 'g-test', OPENAI_API_KEY: '', OPENROUTER_API_KEY: '' } })
+    s = await start({ env: { GROQ_API_KEY: 'gk', GROQ_BASE: g.base, GEMINI_API_KEY: 'mk', GEMINI_BASE: g.base, GEMINI_NATIVE_BASE: g.base, GEMINI_TTS_MODEL: 'tts-test', GEMINI_MODEL: 'g-test', OPENAI_API_KEY: '', OPENROUTER_API_KEY: '' } })
     none = await start({ env: { GROQ_API_KEY: '', GEMINI_API_KEY: '', OPENROUTER_API_KEY: '', OPENAI_API_KEY: '' } })
   })
   after(() => g.close())
@@ -85,6 +86,30 @@ describe('сервер: бесплатные модели голосового �
     assert.equal(r.text, '안녕하세요')
     assert.ok(g.seen.some(x => x.url.endsWith('/audio/transcriptions') && x.size > 0))
     assert.equal((await s.call('POST', '/api/voice/transcribe', OWNER, {})).status, 400)
+  })
+
+  test('озвучка: звук приходит готовым WAV, голос из списка, повтор берётся из кэша', async () => {
+    const st = await (await s.call('GET', '/api/voice', OWNER)).json()
+    assert.equal(st.tts, true)
+    assert.ok(st.ttsVoices.includes('Kore'))
+    const n = () => g.seen.filter(x => x.url.includes(':generateContent')).length
+    const r = await (await s.call('POST', '/api/voice/speak', OWNER, { text: '**책이** 책상 위에 있어요. Книга на столе.', voice: 'Puck' })).json()
+    assert.equal(r.mime, 'audio/wav')
+    assert.equal(Buffer.from(r.audio, 'base64').subarray(0, 4).toString(), 'RIFF')
+    assert.equal(r.cached, false)
+    const sent = g.seen.find(x => x.url.includes(':generateContent'))
+    assert.match(sent.url, /models\/tts-test:generateContent/)
+    assert.equal(sent.body.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName, 'Puck')
+    assert.ok(!sent.body.contents[0].parts[0].text.includes('*'), 'разметка убрана')
+    const before = n()
+    const again = await (await s.call('POST', '/api/voice/speak', OWNER, { text: '**책이** 책상 위에 있어요. Книга на столе.', voice: 'Puck' })).json()
+    assert.equal(again.cached, true)
+    assert.equal(n(), before, 'повтор не идёт в Gemini')
+    await s.call('POST', '/api/voice/speak', OWNER, { text: 'Привет', voice: 'нет такого' })
+    assert.equal(g.seen.filter(x => x.url.includes(':generateContent')).at(-1).body.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName, 'Kore')
+    assert.equal((await s.call('POST', '/api/voice/speak', OWNER, { text: '  ' })).status, 400)
+    assert.equal((await s.call('POST', '/api/voice/speak', null, { text: 'a' })).status, 401)
+    assert.equal((await none.call('POST', '/api/voice/speak', OWNER, { text: 'a' })).status, 503)
   })
 
   test('бесплатный разговор не тратит минуты OpenAI, реплики сохраняются', async () => {

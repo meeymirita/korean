@@ -1,11 +1,11 @@
 /** Голосовой собеседник: выдаёт браузеру временный ключ OpenAI Realtime, считает минуты за сутки и хранит расшифровки разговоров (звук не хранится). */
 import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { createHash, randomBytes } from 'node:crypto'
-import { GROQ_KEY, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
+import { GEMINI_KEY, GROQ_KEY, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { cleanMessages } from '../chat/chat.service.js'
-import { AiError, askInOrder, CHECK_PROMPT, orderFor, providers, transcribe } from './ai.js'
+import { AiError, askInOrder, CHECK_PROMPT, orderFor, providers, speak, transcribe, TTS_VOICES, ttsVoice } from './ai.js'
 import { buildPrompt } from './prompt.js'
 import { REVIEW_PROMPT, reviewInput } from './review.js'
 import { SCENES, sceneOf } from './scenes.js'
@@ -49,6 +49,8 @@ export class VoiceService {
       scenes: SCENES.map(x => ({ id: x.id, title: x.title, hint: x.hint })),
       providers: providers().map(p => ({ id: p.id, title: p.title, model: p.model })),
       whisper: !!GROQ_KEY,
+      tts: !!GEMINI_KEY,
+      ttsVoices: [...TTS_VOICES],
     }
   }
 
@@ -136,6 +138,19 @@ export class VoiceService {
     if (!buf.length || buf.length > 3_000_000) throw bad('audio too large')
     try {
       return { text: await transcribe(buf, mime) }
+    } catch (e) {
+      throw this.aiHttp(e)
+    }
+  }
+
+  /** Озвучка ответа голосом Gemini: текст без разметки (до 700 знаков) в звук WAV (base64). */
+  async speakText(body: Record<string, unknown>) {
+    const raw = typeof body?.text === 'string' ? body.text : ''
+    const text = raw.replace(/[*_#`]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 700)
+    if (!text) throw bad('empty text')
+    try {
+      const r = await speak(text, ttsVoice(body?.voice))
+      return { audio: r.audio.toString('base64'), mime: r.mime, cached: r.cached }
     } catch (e) {
       throw this.aiHttp(e)
     }
