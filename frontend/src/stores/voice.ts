@@ -115,6 +115,8 @@ export const useVoiceStore = defineStore('voice', () => {
   }
   /** Идёт ли сейчас удержание кнопки (говорит ученик). */
   const talking = ref(false)
+  /** Какая из двух кнопок («ko» или «ru») сейчас зажата. */
+  const holdLang = ref<'ko' | 'ru' | null>(null)
   /** Номер реплики ученика, которую он исправляет (-1: никакую). */
   const fixing = ref(-1)
   const muted = ref(false)
@@ -135,8 +137,9 @@ export const useVoiceStore = defineStore('voice', () => {
   const headers = () => ({ Authorization: `Bearer ${progress.bearer}` })
   const jsonHeaders = () => ({ ...headers(), 'Content-Type': 'application/json' })
 
-  async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const res = await fetchT(`/api/voice${path}`, { ...init, headers: init.body ? jsonHeaders() : headers() })
+  /** `ms`: сколько ждать ответ (по умолчанию 15 с; озвучка и ответы моделей идут дольше). */
+  async function api<T>(path: string, init: RequestInit = {}, ms?: number): Promise<T> {
+    const res = await fetchT(`/api/voice${path}`, { ...init, headers: init.body ? jsonHeaders() : headers() }, ms)
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
       if ((path === '/ask' || path === '/transcribe' || path === '/speak' || path.endsWith('/review')) && typeof body.message === 'string') throw new Error(body.message)
@@ -342,10 +345,11 @@ export const useVoiceStore = defineStore('voice', () => {
     const ctx = lines.value.slice(0, li + 1).filter(l => !l.other && !l.wrong).slice(-8)
     asking.value = true
     try {
-      const r = await api<{ text: string; provider: string; check: { provider: string; text: string } | null; failed?: string[] }>('/ask', {
-        method: 'POST',
-        body: JSON.stringify({ messages: ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) })), provider: provider.value, check: check.value, scene: scene.value }),
-      })
+      const r = await api<{ text: string; provider: string; check: { provider: string; text: string } | null; failed?: string[] }>(
+        '/ask',
+        { method: 'POST', body: JSON.stringify({ messages: ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) })), provider: provider.value, check: check.value, scene: scene.value }) },
+        60_000,
+      )
       lines.value.push({ role: 'assistant', text: r.text, other: true, asked, by: r.provider, ...(r.check ? { check: r.check } : {}), ...(r.failed?.length ? { note: r.failed.join('; ') } : {}) })
     } catch (e) {
       toast.error(errText(e))
@@ -376,10 +380,12 @@ export const useVoiceStore = defineStore('voice', () => {
   let holdAt = 0
 
   /** Кнопка нажата: собеседник замолкает, микрофон открыт, запись начинается с чистого листа. */
-  function holdStart() {
+  /** `lang`: на каком языке ученик говорит именно сейчас (две кнопки «по-корейски» и «по-русски»); без него берётся выбор «Я говорю». */
+  function holdStart(lang?: 'ko' | 'ru') {
     if (phase.value !== 'live' || !ptt.value || talking.value) return
     talking.value = true
     holdAt = Date.now()
+    holdLang.value = lang ?? null
     if (engine.value === 'free') {
       stopSpeaking()
       try {
@@ -420,7 +426,7 @@ export const useVoiceStore = defineStore('voice', () => {
       const quiet = loud < MIN_LOUD_FRAMES
       rec.onstop = () => {
         if (quiet && !tooShort) toast.error('Не слышно речи: говори ближе к микрофону')
-        else if (!tooShort) void freeHeard(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }))
+        else if (!tooShort) void freeHeard(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }), holdLang.value ?? undefined)
       }
       if (rec.state !== 'inactive') rec.stop()
       return
@@ -473,10 +479,11 @@ export const useVoiceStore = defineStore('voice', () => {
     lastActivity = Date.now()
     const ctx = lines.value.filter(l => !l.other && !l.wrong).slice(-12)
     try {
-      const r = await api<{ text: string; check: { provider: string; text: string } | null; failed?: string[] }>('/ask', {
-        method: 'POST',
-        body: JSON.stringify({ messages: [{ role: 'user', text: OPENER }, ...ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) }))], provider: provider.value, check: check.value, scene: scene.value }),
-      })
+      const r = await api<{ text: string; check: { provider: string; text: string } | null; failed?: string[] }>(
+        '/ask',
+        { method: 'POST', body: JSON.stringify({ messages: [{ role: 'user', text: OPENER }, ...ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) }))], provider: provider.value, check: check.value, scene: scene.value }) },
+        60_000,
+      )
       if (phase.value !== 'live') return
       keep({ role: 'assistant', text: r.text, ...(r.check ? { check: r.check } : {}), ...(r.failed?.length ? { note: r.failed.join('; ') } : {}) })
       void speak(r.text)
@@ -489,6 +496,8 @@ export const useVoiceStore = defineStore('voice', () => {
   /** Озвучка ответа: голосом Gemini через сервер (WAV с кэшем) или, если выбрано, голосом браузера. Пока говорит, показывается «Говорю». */
   let player: HTMLAudioElement | null = null
   let speakToken = 0
+  /** Плашка об ошибке озвучки не чаще раза в 30 секунд (иначе каждая реплика сыплет плашками). */
+  let lastSpeakError = 0
   function stopSpeaking() {
     speakToken++
     if (player) {
@@ -504,7 +513,7 @@ export const useVoiceStore = defineStore('voice', () => {
     if (voiceOut.value === 'gemini' && status.value?.tts) {
       mood.value = 'speaking'
       try {
-        const r = await api<{ audio: string; mime: string }>('/speak', { method: 'POST', body: JSON.stringify({ text, voice: ttsVoice.value }) })
+        const r = await api<{ audio: string; mime: string }>('/speak', { method: 'POST', body: JSON.stringify({ text, voice: ttsVoice.value }) }, 60_000)
         if (token !== speakToken || phase.value !== 'live') return
         const bin = atob(r.audio)
         const bytes = new Uint8Array(bin.length)
@@ -526,7 +535,8 @@ export const useVoiceStore = defineStore('voice', () => {
         }
       } catch (e) {
         if (token === speakToken && phase.value === 'live') mood.value = 'listening'
-        toast.error(`Озвучка не получилась: ${errText(e)}`)
+        if (Date.now() - lastSpeakError > 30_000) toast.error(`Озвучка не получилась: ${errText(e)}`)
+        lastSpeakError = Date.now()
       }
       return
     }
@@ -596,11 +606,11 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   /** Запись ученика: Whisper превращает её в текст, текст уходит в чат как его реплика, потом отвечает модель. */
-  async function freeHeard(blob: Blob) {
+  async function freeHeard(blob: Blob, lang?: 'ko' | 'ru') {
     mood.value = 'thinking'
     lastActivity = Date.now()
     try {
-      const r = await api<{ text: string }>('/transcribe', { method: 'POST', body: JSON.stringify({ audio: await blobToBase64(blob), mime: blob.type || 'audio/webm', lang: speechLang.value }) })
+      const r = await api<{ text: string }>('/transcribe', { method: 'POST', body: JSON.stringify({ audio: await blobToBase64(blob), mime: blob.type || 'audio/webm', lang: lang ?? speechLang.value }) }, 30_000)
       if (phase.value !== 'live') return
       if (!r.text) {
         mood.value = 'listening'
@@ -647,5 +657,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, speechLang, setEngine, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, speechLang, setEngine, talking, holdLang, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
 })

@@ -192,10 +192,10 @@ export async function speak(text: string, voice: string): Promise<{ mime: string
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
         body: JSON.stringify({ contents: [{ parts: [{ text }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } }),
-        signal: AbortSignal.timeout(25_000),
+        signal: AbortSignal.timeout(18_000),
       })
     } catch {
-      lastErr = new AiError('озвучка Gemini не ответила за 25 секунд', 502)
+      lastErr = new AiError('озвучка Gemini не ответила за 18 секунд', 502)
       continue
     }
     if (!res.ok) {

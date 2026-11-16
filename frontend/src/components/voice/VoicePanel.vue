@@ -107,6 +107,14 @@ const goLabel = computed(() => {
   if (store.muted) return `Пауза: микрофон выключен · нажми, чтобы включить · ${t}`
   return `${store.mood === 'speaking' ? 'Говорю' : store.mood === 'thinking' ? 'Думаю…' : 'Слушаю, говори'} · нажми для паузы · ${t}`
 })
+/** Пробел или Enter на кнопке языка: то же, что удержание мышью. */
+const holdKeyL = (e: KeyboardEvent, down: boolean, lang: 'ko' | 'ru') => {
+  if (e.key !== ' ' && e.key !== 'Enter') return
+  e.preventDefault()
+  if (down) {
+    if (!e.repeat) store.holdStart(lang)
+  } else store.holdEnd()
+}
 const goDown = (e: PointerEvent) => {
   if (store.live && store.ptt) {
     e.preventDefault()
@@ -327,7 +335,27 @@ const onKey = (e: KeyboardEvent) => {
 
             <div class="vp-prow">
               <label v-if="!store.live && store.engine === 'openai'" class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
+              <template v-if="store.live && store.engine === 'free'">
+                <p class="vp-stat">{{ goLabel }}</p>
+                <button
+                  v-for="l in ([['ko', 'Держи и говори по-корейски'], ['ru', 'Держи и говори по-русски']] as const)"
+                  :key="l[0]"
+                  type="button"
+                  class="vp-go hold"
+                  :class="{ rec: store.talking && store.holdLang === l[0] }"
+                  :disabled="store.phase !== 'live'"
+                  :aria-label="l[1]"
+                  @pointerdown.prevent="store.holdStart(l[0])"
+                  @pointerup="store.holdEnd()"
+                  @pointercancel="store.holdEnd()"
+                  @pointerleave="store.holdEnd()"
+                  @keydown="holdKeyL($event, true, l[0])"
+                  @keyup="holdKeyL($event, false, l[0])"
+                  @contextmenu.prevent
+                >{{ store.talking && store.holdLang === l[0] ? 'Запись · отпусти' : l[1] }}</button>
+              </template>
               <button
+                v-else
                 type="button"
                 class="vp-go"
                 :class="{ rec: store.ptt && store.talking, off: store.live && !store.ptt && store.muted, hold: store.live && store.ptt }"
@@ -440,6 +468,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-ck { margin: 4px 0 0; padding: 4px 10px; font-size: 12px; color: #5c4a8a; background: rgba(255, 255, 255, .75); border: 1px solid var(--vp-line); border-radius: 12px; }
 .vp-warn { color: #a6492b; background: #fff1ec; border-color: #f0c2b3; }
 .vp-other .vp-ck { background: rgba(255, 255, 255, .6); }
+.vp-stat { flex: 1 0 100%; margin: 0; font-size: 12px; text-align: center; color: var(--vp-muted); }
 .vp-hico { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .vp-ht { flex: 1; min-width: 0; }
 .vp-ht h2 { flex: none; line-height: 1.1; }
