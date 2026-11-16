@@ -269,7 +269,7 @@ describe('голосовой собеседник', () => {
     await flushPromises()
     await flushPromises()
     const speakCall = calls.find(c => c.url === '/api/voice/speak')!
-    expect(JSON.parse(speakCall.body!)).toMatchObject({ voice: 'Puck' })
+    expect(JSON.parse(speakCall.body!)).toMatchObject({ voice: 'Puck', engine: 'gemini', edgeVoice: 'female' })
     expect(played).toEqual(['blob:test'])
     expect(browser).toEqual([])
     await store.stop()

@@ -112,6 +112,8 @@ export const GEMINI_NATIVE_BASE = (process.env.GEMINI_NATIVE_BASE || 'https://ge
 export const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts'
 /** Запасные модели озвучки через запятую: у каждой свой бесплатный лимит, при отказе (429, 404, ошибка) пробуется следующая. */
 export const GEMINI_TTS_FALLBACK = (process.env.GEMINI_TTS_FALLBACK ?? 'gemini-3.8-flash-lite-tts,gemini-3.1-flash-tts-preview').split(',').map(x => x.trim()).filter(Boolean)
+/** Озвучка Edge TTS (Microsoft, без ключа, неофициальный доступ): `EDGE_TTS=0` выключает (в тестах, чтобы не ходить в сеть). */
+export const EDGE_ENABLED = process.env.EDGE_TTS !== '0'
 export const GEMINI_TTS_VOICE = process.env.GEMINI_TTS_VOICE || 'Kore'
 /** `gemini-flash-lite-latest` постоянное имя без номера версии (имена вроде `gemini-2.5-flash` Google снимает). Обычная `gemini-flash-latest` 2026-11-16 висела от перегрузки, лёгкая отвечала за 2 секунды. Список: GET {GEMINI_BASE}/models с ключом. */
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest'

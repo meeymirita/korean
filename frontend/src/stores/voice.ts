@@ -23,6 +23,8 @@ export interface VoiceStatus {
   /** Есть ли озвучка Gemini и какие голоса можно выбрать. */
   tts?: boolean
   ttsVoices?: string[]
+  /** Включена ли озвучка Edge (голоса Microsoft, без ключа). */
+  edge?: boolean
 }
 
 export interface VoiceLine {
@@ -105,8 +107,10 @@ export const useVoiceStore = defineStore('voice', () => {
   const provider = usePersisted('voice_provider', '')
   const check = usePersisted<'none' | 'cross' | 'self'>('voice_check', 'none', v => v === 'none' || v === 'cross' || v === 'self')
   /** Чем озвучивать ответы в бесплатном режиме: голосом Gemini (приятнее) или голосом браузера, и какой голос Gemini. */
-  const voiceOut = usePersisted<'gemini' | 'browser'>('voice_out', 'gemini', v => v === 'gemini' || v === 'browser')
+  const voiceOut = usePersisted<'auto' | 'gemini' | 'edge' | 'browser'>('voice_out', 'auto', v => v === 'auto' || v === 'gemini' || v === 'edge' || v === 'browser')
   const ttsVoice = usePersisted('voice_tts', 'Kore')
+  /** Голос Edge: женский (SunHi и Светлана) или мужской (InJoon и Дмитрий). */
+  const edgeVoice = usePersisted<'female' | 'male'>('voice_edge', 'female', v => v === 'female' || v === 'male')
   /** На каком языке ученик говорит (для распознавания): `ko` и `ru` подсказывают Whisper язык, `auto` пробует оба. Корейская речь с русским акцентом в `auto` иногда записывается русскими буквами. */
   const speechLang = usePersisted<'auto' | 'ko' | 'ru'>('voice_lang', 'auto', v => v === 'auto' || v === 'ko' || v === 'ru')
   function setEngine(v: 'openai' | 'free') {
@@ -493,7 +497,7 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
-  /** Озвучка ответа: голосом Gemini через сервер (WAV с кэшем) или, если выбрано, голосом браузера. Пока говорит, показывается «Говорю». */
+  /** Озвучка ответа через сервер (голос Gemini, а когда его лимит кончился, Edge; кэш) или, если выбрано, голосом браузера. Пока говорит, показывается «Говорю». */
   let player: HTMLAudioElement | null = null
   let speakToken = 0
   /** Плашка об ошибке озвучки не чаще раза в 30 секунд (иначе каждая реплика сыплет плашками). */
@@ -510,10 +514,10 @@ export const useVoiceStore = defineStore('voice', () => {
   async function speak(text: string) {
     stopSpeaking()
     const token = speakToken
-    if (voiceOut.value === 'gemini' && status.value?.tts) {
+    if (voiceOut.value !== 'browser' && (status.value?.tts || status.value?.edge)) {
       mood.value = 'speaking'
       try {
-        const r = await api<{ audio: string; mime: string }>('/speak', { method: 'POST', body: JSON.stringify({ text, voice: ttsVoice.value }) }, 60_000)
+        const r = await api<{ audio: string; mime: string }>('/speak', { method: 'POST', body: JSON.stringify({ text, voice: ttsVoice.value, engine: voiceOut.value, edgeVoice: edgeVoice.value }) }, 60_000)
         if (token !== speakToken || phase.value !== 'live') return
         const bin = atob(r.audio)
         const bytes = new Uint8Array(bin.length)
@@ -657,5 +661,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, speechLang, setEngine, talking, holdLang, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, edgeVoice, speechLang, setEngine, talking, holdLang, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
 })

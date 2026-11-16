@@ -1,11 +1,11 @@
 /** Голосовой собеседник: выдаёт браузеру временный ключ OpenAI Realtime, считает минуты за сутки и хранит расшифровки разговоров (звук не хранится). */
 import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { createHash, randomBytes } from 'node:crypto'
-import { GEMINI_KEY, GROQ_KEY, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
+import { EDGE_ENABLED, GEMINI_KEY, GROQ_KEY, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { cleanMessages } from '../chat/chat.service.js'
-import { AiError, askInOrder, CHECK_PROMPT, orderFor, providers, speak, transcribe, TTS_VOICES, ttsVoice } from './ai.js'
+import { AiError, askInOrder, CHECK_PROMPT, edgeVoice, orderFor, providers, speak, speakEdge, transcribe, TTS_VOICES, ttsVoice } from './ai.js'
 import { buildPrompt } from './prompt.js'
 import { REVIEW_PROMPT, reviewInput } from './review.js'
 import { SCENES, sceneOf } from './scenes.js'
@@ -50,6 +50,7 @@ export class VoiceService {
       providers: providers().map(p => ({ id: p.id, title: p.title, model: p.model })),
       whisper: !!GROQ_KEY,
       tts: !!GEMINI_KEY,
+      edge: EDGE_ENABLED,
       ttsVoices: [...TTS_VOICES],
     }
   }
@@ -148,12 +149,26 @@ export class VoiceService {
     const raw = typeof body?.text === 'string' ? body.text : ''
     const text = raw.replace(/[*_#`]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 700)
     if (!text) throw bad('empty text')
+    // engine: gemini | edge | auto (Gemini, а когда его лимит кончился, Edge)
+    const engine = body?.engine === 'gemini' || body?.engine === 'edge' ? body.engine : 'auto'
     try {
-      const r = await speak(text, ttsVoice(body?.voice))
-      return { audio: r.audio.toString('base64'), mime: r.mime, cached: r.cached }
+      if (engine === 'edge' && !EDGE_ENABLED) throw new AiError('озвучка Edge выключена (EDGE_TTS=0)', 503)
+      if (engine === 'edge') return this.packSpeech(await speakEdge(text, edgeVoice(body?.edgeVoice)), 'edge')
+      if (engine === 'gemini') return this.packSpeech(await speak(text, ttsVoice(body?.voice)), 'gemini')
+      try {
+        if (!GEMINI_KEY) throw new AiError('нет ключа Gemini', 503)
+        return this.packSpeech(await speak(text, ttsVoice(body?.voice)), 'gemini')
+      } catch (e) {
+        if ((e instanceof AiError && e.status === 400) || !EDGE_ENABLED) throw e
+        return this.packSpeech(await speakEdge(text, edgeVoice(body?.edgeVoice)), 'edge')
+      }
     } catch (e) {
       throw this.aiHttp(e)
     }
+  }
+
+  private packSpeech(r: { audio: Buffer; mime: string; cached: boolean }, engine: string) {
+    return { audio: r.audio.toString('base64'), mime: r.mime, cached: r.cached, engine }
   }
 
   /** Ошибка модели в понятный ответ сайту: 429 лимит, 503 не настроено, иначе 502 с названием причины. */

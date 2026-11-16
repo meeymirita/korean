@@ -3,6 +3,10 @@
  * поэтому один код. Распознавание речи (Whisper) только у Groq. Поставщик без ключа в список не попадает.
  */
 import { createHash } from 'node:crypto'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { EdgeTTS } from 'node-edge-tts'
 import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, GEMINI_BASE, GEMINI_KEY, GEMINI_MODEL, GEMINI_NATIVE_BASE, GEMINI_TTS_FALLBACK, GEMINI_TTS_MODEL, GEMINI_TTS_VOICE, GROQ_BASE, GROQ_KEY, GROQ_MODEL, GROQ_STT_MODEL } from '../config.js'
 
 export type ProviderId = 'openrouter' | 'groq' | 'gemini'
@@ -174,6 +178,72 @@ function wavOf(pcm: Buffer, rate: number): Buffer {
   h.write('data', 36)
   h.writeUInt32LE(pcm.length, 40)
   return Buffer.concat([h, pcm])
+}
+
+/** Голоса Edge TTS (Microsoft, бесплатно, без ключа): женский и мужской набор для корейского и русского. */
+export const EDGE_VOICES = {
+  female: { ko: 'ko-KR-SunHiNeural', ru: 'ru-RU-SvetlanaNeural' },
+  male: { ko: 'ko-KR-InJoonNeural', ru: 'ru-RU-DmitryNeural' },
+} as const
+export type EdgeVoice = keyof typeof EDGE_VOICES
+export const edgeVoice = (v: unknown): EdgeVoice => (v === 'male' ? 'male' : 'female')
+
+/** Текст на куски по языку: корейские фразы читает корейский голос, всё остальное русский. Куски без букв прилипают к соседнему. */
+export function speechPieces(text: string): { text: string; ko: boolean }[] {
+  const out: { text: string; ko: boolean }[] = []
+  for (const [i, part] of text.split(/([가-힣]+(?:[ ,]+[가-힣]+)*[.?!~]?)/).entries()) {
+    const ko = i % 2 === 1
+    const last = out[out.length - 1]
+    if (!part.trim()) {
+      if (last) last.text += part
+      continue
+    }
+    if (last && (last.ko === ko || !/[\p{L}\p{N}]/u.test(part))) last.text += part
+    else out.push({ text: part, ko })
+  }
+  return out
+}
+
+/** Один кусок через Edge TTS (временный файл, mp3). Сервис иногда отвечает 429: один повтор, потом запасной голос того же языка. */
+async function edgeOne(text: string, voices: string[], lang: string): Promise<Buffer> {
+  const dir = await mkdtemp(join(tmpdir(), 'edge-'))
+  try {
+    let last = 'неизвестная ошибка'
+    for (const [i, voice] of voices.entries()) {
+      for (let attempt = 0; attempt < (i === 0 ? 2 : 1); attempt++) {
+        try {
+          const file = join(dir, `${i}-${attempt}.mp3`)
+          await new EdgeTTS({ voice, lang, outputFormat: 'audio-24khz-48kbitrate-mono-mp3', timeout: 12_000 }).ttsPromise(text, file)
+          const buf = await readFile(file)
+          if (buf.length) return buf
+        } catch (e) {
+          last = e instanceof Error ? e.message : String(e)
+          await new Promise(r => setTimeout(r, 600))
+        }
+      }
+    }
+    throw new AiError(`озвучка Edge не получилась (${last.slice(0, 80)})`, last.includes('429') ? 429 : 502)
+  } finally {
+    void rm(dir, { recursive: true, force: true })
+  }
+}
+
+/** Озвучка голосами Edge: куски по языку подряд, mp3 склеивается. Результат кэшируется. */
+export async function speakEdge(text: string, voice: EdgeVoice): Promise<{ mime: string; audio: Buffer; cached: boolean }> {
+  const key = createHash('sha1').update(`edge|${voice}|${text}`).digest('hex')
+  const hit = ttsCache.get(key)
+  if (hit) return { ...hit, cached: true }
+  const other: EdgeVoice = voice === 'female' ? 'male' : 'female'
+  const bufs: Buffer[] = []
+  for (const p of speechPieces(text)) {
+    const k = p.ko ? 'ko' : 'ru'
+    bufs.push(await edgeOne(p.text, [EDGE_VOICES[voice][k], EDGE_VOICES[other][k]], p.ko ? 'ko-KR' : 'ru-RU'))
+  }
+  if (!bufs.length) throw new AiError('нечего озвучивать', 400)
+  const out = { mime: 'audio/mpeg', audio: Buffer.concat(bufs) }
+  if (ttsCache.size >= TTS_CACHE_MAX) ttsCache.delete(ttsCache.keys().next().value!)
+  ttsCache.set(key, out)
+  return { ...out, cached: false }
 }
 
 /** Озвучка текста голосом Gemini (русский и корейский в одной фразе модель читает сама). Возвращает WAV. */

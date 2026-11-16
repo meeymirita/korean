@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { KNOWN_GRAMMAR, KNOWN_WORDS } from '../src/chat/curriculum'
 import { buildPrompt, SYSTEM_PROMPT } from '../src/voice/prompt'
+import { speechPieces } from '../src/voice/ai'
 import { SCENES, sceneOf } from '../src/voice/scenes'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from '../src/voice/voice.util'
 
@@ -75,5 +76,18 @@ describe('голос: сценки', () => {
   it('слова сценок только из пройденного (словарь chat/curriculum.ts)', () => {
     const unknown = SCENES.flatMap(s => s.words.split(/\s+/).filter(w => w && !known.has(w) && !/^(뭐예요\?|얼마예요\?|안녕하세요\?)$/.test(w)))
     expect(unknown).toEqual([])
+  })
+})
+
+describe('голос: куски озвучки по языкам (Edge TTS)', () => {
+  it('корейские фразы отдельно от русских, знаки без букв прилипают к соседу', () => {
+    expect(speechPieces('Верно! 책이 어디에 있어요? (Где книга?)')).toEqual([
+      { text: 'Верно! ', ko: false },
+      { text: '책이 어디에 있어요?', ko: true },
+      { text: ' (Где книга?)', ko: false },
+    ])
+    expect(speechPieces('Привет, это тест.')).toEqual([{ text: 'Привет, это тест.', ko: false }])
+    expect(speechPieces('저는 학생이에요. 감사합니다.')).toEqual([{ text: '저는 학생이에요. 감사합니다.', ko: true }])
+    expect(speechPieces('   ')).toEqual([])
   })
 })

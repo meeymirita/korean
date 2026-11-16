@@ -52,8 +52,8 @@ describe('сервер: бесплатные модели голосового �
   const msgs = [{ role: 'user', text: 'Как сказать я студент?' }]
   before(async () => {
     g = await fake()
-    s = await start({ env: { GROQ_API_KEY: 'gk', GROQ_BASE: g.base, GEMINI_API_KEY: 'mk', GEMINI_BASE: g.base, GEMINI_NATIVE_BASE: g.base, GEMINI_TTS_MODEL: 'tts-test', GEMINI_TTS_FALLBACK: 'tts-fallback', GEMINI_MODEL: 'g-test', OPENAI_API_KEY: '', OPENROUTER_API_KEY: '' } })
-    none = await start({ env: { GROQ_API_KEY: '', GEMINI_API_KEY: '', OPENROUTER_API_KEY: '', OPENAI_API_KEY: '' } })
+    s = await start({ env: { GROQ_API_KEY: 'gk', GROQ_BASE: g.base, GEMINI_API_KEY: 'mk', GEMINI_BASE: g.base, GEMINI_NATIVE_BASE: g.base, GEMINI_TTS_MODEL: 'tts-test', GEMINI_TTS_FALLBACK: 'tts-fallback', GEMINI_MODEL: 'g-test', OPENAI_API_KEY: '', OPENROUTER_API_KEY: '', EDGE_TTS: '0' } })
+    none = await start({ env: { GROQ_API_KEY: '', GEMINI_API_KEY: '', OPENROUTER_API_KEY: '', OPENAI_API_KEY: '', EDGE_TTS: '0' } })
   })
   after(() => g.close())
 
@@ -132,6 +132,8 @@ describe('сервер: бесплатные модели голосового �
     assert.equal((await s.call('POST', '/api/voice/speak', OWNER, { text: '  ' })).status, 400)
     assert.equal((await s.call('POST', '/api/voice/speak', null, { text: 'a' })).status, 401)
     assert.equal((await none.call('POST', '/api/voice/speak', OWNER, { text: 'a' })).status, 503)
+    assert.equal((await s.call('POST', '/api/voice/speak', OWNER, { text: 'a', engine: 'edge' })).status, 503, 'Edge выключен в тестах: в сеть Microsoft не ходим')
+    assert.equal((await (await s.call('GET', '/api/voice', OWNER)).json()).edge, false)
   })
 
   test('Whisper: пробуем корейский и русский, берём тот, где он увереннее; выдумки на шуме отбрасываются', async () => {

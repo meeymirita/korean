@@ -293,13 +293,21 @@ const onKey = (e: KeyboardEvent) => {
               </label>
               <label v-if="store.engine === 'free'">Озвучка
                 <select v-model="store.voiceOut">
-                  <option v-if="store.status?.tts" value="gemini">Gemini (приятный голос)</option>
+                  <option v-if="store.status?.tts && store.status?.edge" value="auto">авто: Gemini, потом Edge</option>
+                  <option v-if="store.status?.tts" value="gemini">Gemini</option>
+                  <option v-if="store.status?.edge" value="edge">Edge (Microsoft)</option>
                   <option value="browser">браузер</option>
                 </select>
               </label>
-              <label v-if="store.engine === 'free' && store.voiceOut === 'gemini' && store.status?.tts">Голос
+              <label v-if="store.engine === 'free' && store.voiceOut !== 'browser' && store.voiceOut !== 'edge' && store.status?.tts">Голос Gemini
                 <select v-model="store.ttsVoice">
                   <option v-for="v in store.status.ttsVoices ?? ['Kore']" :key="v" :value="v">{{ v }}</option>
+                </select>
+              </label>
+              <label v-if="store.engine === 'free' && (store.voiceOut === 'auto' || store.voiceOut === 'edge') && store.status?.edge">Голос Edge
+                <select v-model="store.edgeVoice">
+                  <option value="female">женский</option>
+                  <option value="male">мужской</option>
                 </select>
               </label>
               <label v-if="store.engine === 'free'" title="Если Whisper записывает корейскую речь русскими буквами, поставь «корейский»">Я говорю
