@@ -112,7 +112,7 @@ describe('голосовой собеседник', () => {
     const text = document.body.textContent ?? ''
     expect(text).toContain('Осталось 8 мин из 10 мин')
     expect(text).toContain('≈ $0.10')
-    expect(document.body.querySelector('.vp-rec')).not.toBeNull()
+    expect(document.body.querySelector('.vp-go')).not.toBeNull()
   })
 
   it('без ключа на сервере начать нельзя и окно объясняет почему', async () => {
@@ -124,7 +124,7 @@ describe('голосовой собеседник', () => {
     vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ ...STATUS, configured: false })))
     await store.load()
     await flushPromises()
-    expect(document.body.querySelector('.vp-rec')?.hasAttribute('disabled')).toBe(true)
+    expect(document.body.querySelector('.vp-go')?.hasAttribute('disabled')).toBe(true)
     expect(document.body.textContent).toContain('не подключён')
   })
 

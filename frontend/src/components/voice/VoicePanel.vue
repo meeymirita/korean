@@ -37,11 +37,38 @@ watch(
 
 const moodText = computed(() => {
   if (store.phase === 'connecting') return 'Соединяюсь…'
-  if (store.phase === 'idle') return store.ptt ? 'Выбери тему и нажми на микрофон' : 'Нажми на микрофон и говори'
+  if (store.phase === 'idle') return 'Выбери тему и нажми на микрофон'
   if (store.ptt && store.phase === 'live' && store.talking) return 'Говори, я слушаю'
   if (store.ptt && store.phase === 'live' && store.mood === 'listening') return 'Удерживай микрофон и говори'
   return { listening: 'Слушаю', thinking: 'Думаю', speaking: 'Говорю' }[store.mood]
 })
+/** Надпись на главной кнопке: до разговора приглашение, во время разговора статус (запись, пауза, думает, говорит). */
+const goLabel = computed(() => {
+  if (store.phase === 'connecting') return 'Соединяюсь…'
+  if (store.phase === 'idle') return 'Выбери тему и нажми на микрофон'
+  const t = mmss(store.elapsed)
+  if (store.ptt) {
+    if (store.talking) return `Запись · отпусти, чтобы отправить · ${t}`
+    if (store.mood === 'speaking') return `Говорю · нажми и говори, чтобы перебить · ${t}`
+    if (store.mood === 'thinking') return `Думаю… · ${t}`
+    return `Удерживай и говори · ${t}`
+  }
+  if (store.muted) return `Пауза: микрофон выключен · нажми, чтобы включить · ${t}`
+  return `${store.mood === 'speaking' ? 'Говорю' : store.mood === 'thinking' ? 'Думаю…' : 'Слушаю, говори'} · нажми для паузы · ${t}`
+})
+const goDown = (e: PointerEvent) => {
+  if (store.live && store.ptt) {
+    e.preventDefault()
+    store.holdStart()
+  }
+}
+const goClick = () => {
+  if (!store.live) void store.start()
+  else if (!store.ptt) store.toggleMute()
+}
+const goKey = (e: KeyboardEvent, down: boolean) => {
+  if (store.live && store.ptt) holdKey(e, down)
+}
 const leftMin = computed(() => Math.ceil((store.status?.leftSec ?? 0) / 60))
 const limitMin = computed(() => Math.round((store.status?.limitSec ?? 0) / 60))
 /** Примерная стоимость того, что потрачено сегодня, и оставшегося. */
@@ -178,10 +205,6 @@ const onKey = (e: KeyboardEvent) => {
                   <img v-if="store.scene === sc.id" :src="IMG.check" alt="" class="vp-tick" />
                 </button>
               </div>
-              <div class="vp-prow">
-                <label class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
-                <button type="button" class="vp-go" :disabled="!canStart" @click="store.start()">{{ moodText }}</button>
-              </div>
             </div>
 
             <div v-if="!store.live && store.lastId && store.lines.length" class="vp-rv">
@@ -195,25 +218,24 @@ const onKey = (e: KeyboardEvent) => {
               <button type="submit" class="vp-ic" :disabled="!draft.trim()" aria-label="Отправить">→</button>
             </form>
 
-            <div class="vp-ctl">
-              <button v-if="store.ptt && store.live" type="button" class="vp-ic vp-stop" :disabled="store.phase === 'connecting'" aria-label="Закончить разговор" title="Закончить" @click="store.stop()">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-              </button>
-              <button v-else-if="!store.ptt" type="button" class="vp-ic" :class="{ off: store.muted }" :disabled="store.phase !== 'live'" :aria-pressed="store.muted" :aria-label="store.muted ? 'Включить микрофон' : 'Выключить микрофон'" @click="store.toggleMute()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /><path v-if="store.muted" d="M4 4l16 16" /></svg>
-              </button>
-              <img v-if="!store.live" :src="IMG.wave" alt="" class="vp-wv" />
-              <button v-if="!store.live" type="button" class="vp-rec" :disabled="!canStart" aria-label="Начать разговор" @click="store.start()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
-              </button>
-              <button v-else-if="store.ptt" type="button" class="vp-rec hold" :class="{ talk: store.talking }" :disabled="store.phase !== 'live'" aria-label="Удерживай и говори" @pointerdown.prevent="store.holdStart()" @pointerup="store.holdEnd()" @pointercancel="store.holdEnd()" @pointerleave="store.holdEnd()" @keydown="holdKey($event, true)" @keyup="holdKey($event, false)" @contextmenu.prevent>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
-              </button>
-              <button v-else type="button" class="vp-rec live" :disabled="store.phase === 'connecting'" aria-label="Закончить разговор" @click="store.stop()">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" /></svg>
-              </button>
-              <img v-if="!store.live" :src="IMG.wave" alt="" class="vp-wv" />
-              <div v-if="store.live" class="vp-state"><b>{{ moodText }}</b><small>{{ mmss(store.elapsed) }}</small></div>
+            <div class="vp-prow">
+              <label v-if="!store.live" class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
+              <button
+                type="button"
+                class="vp-go"
+                :class="{ rec: store.ptt && store.talking, off: store.live && !store.ptt && store.muted, hold: store.live && store.ptt }"
+                :disabled="store.phase === 'connecting' || (!store.live && !canStart) || (store.live && store.phase !== 'live')"
+                :aria-label="store.live ? goLabel : 'Начать разговор'"
+                @pointerdown="goDown"
+                @pointerup="store.holdEnd()"
+                @pointercancel="store.holdEnd()"
+                @pointerleave="store.holdEnd()"
+                @keydown="goKey($event, true)"
+                @keyup="goKey($event, false)"
+                @contextmenu.prevent
+                @click="goClick"
+              >{{ goLabel }}</button>
+              <button v-if="store.live" type="button" class="vp-go vp-end" :disabled="store.phase === 'connecting'" @click="store.stop()">Закончить</button>
             </div>
 
             <footer class="vp-foot">
@@ -309,9 +331,13 @@ const onKey = (e: KeyboardEvent) => {
 .vp-scenes .vp-chip > img:first-child { width: 38px; height: 38px; flex: none; object-fit: contain; }
 .vp-scenes .vp-chip span { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
 .vp-tick { position: absolute; top: -8px; right: -6px; width: 24px; height: 24px; object-fit: contain; }
-.vp-wv { width: 54px; height: 54px; object-fit: contain; opacity: .85; flex: none; }
 .vp-prow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
-.vp-go { padding: 6px 14px; font: inherit; font-size: 12px; font-weight: 700; color: var(--vp-pink-d); cursor: pointer; white-space: nowrap; background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 99px; transition: background .15s, transform .15s; }
+.vp-go.hold { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; padding: 12px 18px; font-size: 13px; }
+.vp-go.rec { color: #fff; background: linear-gradient(140deg, #ef7a8c, #d6455d); border-color: #d6455d; animation: vp-pulse 1.2s ease-in-out infinite; }
+.vp-go.off { color: #c0392b; }
+.vp-go.vp-end { color: #fff; background: #d6455d; border-color: #d6455d; }
+.vp-prow .vp-go:not(.vp-end) { flex: 1 1 auto; }
+.vp-go { padding: 8px 16px; font: inherit; font-size: 12px; font-weight: 700; color: var(--vp-pink-d); cursor: pointer; white-space: nowrap; background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 99px; transition: background .15s, transform .15s; }
 .vp-go:hover:not(:disabled) { background: #fff; transform: translateY(-1px); }
 .vp-go:disabled { opacity: .5; cursor: default; }
 .vp-fl { display: flex; align-items: center; gap: 8px; }
@@ -337,8 +363,6 @@ const onKey = (e: KeyboardEvent) => {
 .vp-type { flex: none; display: flex; gap: 6px; align-items: center; }
 .vp-type input { flex: 1 1 auto; min-width: 0; padding: 10px 14px; font: inherit; font-size: 14px; color: inherit; background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 99px; }
 .vp-type .vp-ic { width: 38px; height: 38px; font-size: 18px; padding: 0; }
-.vp-rec.hold { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.vp-rec.hold.talk { background: linear-gradient(140deg, #ef7a8c, #d6455d); animation: vp-pulse 1.2s ease-in-out infinite; }
 .vp-rv { flex: none; max-height: 40%; overflow-y: auto; }
 .vp-rvbtn { width: 100%; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer; background: linear-gradient(100deg, var(--vp-pink), var(--vp-pink-d)); border: 0; border-radius: 99px; }
 .vp-rvbtn:disabled { opacity: .55; cursor: default; }
@@ -346,14 +370,6 @@ const onKey = (e: KeyboardEvent) => {
 .vp-rvtext p { margin: 0 0 6px; }
 .vp-rvtext p.b { padding-left: 12px; text-indent: -10px; }
 .vp-rvtext p.b::before { content: '• '; }
-.vp-ctl { display: flex; align-items: center; justify-content: center; gap: 18px; flex: none; padding: 6px 0; }
-.vp-rec { width: 76px; height: 76px; display: grid; place-items: center; padding: 20px; color: #fff; cursor: pointer; background: linear-gradient(140deg, var(--vp-pink), var(--vp-pink-d)); border: 0; border-radius: 50%; box-shadow: 0 10px 24px rgba(214, 77, 169, .4); transition: transform .15s, box-shadow .15s; }
-.vp-rec svg { width: 100%; height: 100%; }
-.vp-rec:hover:not(:disabled) { transform: scale(1.05); }
-.vp-rec:disabled { opacity: .5; cursor: default; box-shadow: none; }
-.vp-rec.live { background: linear-gradient(140deg, #ef7a8c, #d6455d); animation: vp-pulse 1.6s ease-in-out infinite; }
-.vp-state { display: flex; flex-direction: column; min-width: 96px; font-size: 14px; }
-.vp-state small { color: var(--vp-muted); font-size: 12px; }
 @keyframes vp-pulse { 50% { box-shadow: 0 0 0 10px rgba(214, 69, 93, .18), 0 10px 24px rgba(214, 69, 93, .4); } }
 
 .vp-foot { flex: none; padding-top: 10px; border-top: 1px solid var(--vp-line); }
@@ -386,7 +402,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-mini-enter-active, .vp-mini-leave-active { transition: opacity .2s, transform .2s; }
 .vp-mini-enter-from, .vp-mini-leave-to { opacity: 0; transform: translateY(-14px); }
 @keyframes vp-blink { 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .vp-panel-enter-active, .vp-panel-leave-active, .vp-mini-enter-active, .vp-mini-leave-active { transition: none; } .vp-rec.live, .vp-dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .vp-panel-enter-active, .vp-panel-leave-active, .vp-mini-enter-active, .vp-mini-leave-active { transition: none; } .vp-go.rec, .vp-dot { animation: none; } }
 
 html[data-theme='dark'] .vp-root, html[data-theme='dark'] .vp-panel { --vp-ink: #ece9ff; --vp-muted: #a49fd6; --vp-line: #3b3866; }
 html[data-theme='dark'] .vp-panel { background: linear-gradient(165deg, #2b2450 0%, #1f1e42 100%); border-color: #3b3866; }
