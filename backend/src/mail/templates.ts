@@ -371,6 +371,12 @@ export function topicTestMail(topic: TgTopic, text: string): Mail {
   return { subject: `우리말: проба, тема «${TG_TOPIC_NAMES[topic]}»`, text, html: esc(text), tg, topic }
 }
 
+/** Сообщение о событии защиты (неверный код или токен, блокировка адреса, вход): тема «Тревоги» или «Вход», без письма. */
+export function securityMail(topic: 'alert' | 'login', title: string, lead: string): Mail {
+  const tg = tgCard({ topic, title, lead, foot: 'Если это были не вы, смените токен (Кабинет → Настройки).' })
+  return { subject: `우리말: ${title}`, text: `${title}. ${lead}`, html: esc(`${title}. ${lead}`), tg, topic }
+}
+
 /** Настоящее сообщение темы с выдуманными данными: по кнопке «Пример сообщения» в кабинете видно, как оно придёт на самом деле. */
 export function sampleMail(topic: TgTopic): Mail {
   switch (topic) {

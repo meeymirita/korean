@@ -12,7 +12,9 @@ describe('режим «Эксперт»', () => {
     for (const [label, n] of [['5 пропусков', 5], ['10 пропусков', 10], ['15 пропусков', 15]] as const) {
       chip(label).click()
       expect(gaps(), label).toBe(n)
-      expect(document.querySelectorAll(".story-tr.off").length, "перевод скрыт хотя бы у части").toBeGreaterThan(0)
+      // перевод виден только у неоднозначных ответов (이/가, 도, 만), поэтому в случайном наборе из 5 предложений все могут оказаться такими: пробуем заново
+      for (let i = 0; i < 40 && !document.querySelectorAll('.story-tr.off').length; i++) chip(label).click()
+      expect(document.querySelectorAll('.story-tr.off').length, 'перевод скрыт хотя бы у части').toBeGreaterThan(0)
       expect(document.querySelectorAll('#bank .tile').length).toBeGreaterThan(4)
     }
   })

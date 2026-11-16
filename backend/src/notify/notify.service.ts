@@ -9,7 +9,7 @@ import { Injectable, Optional } from '@nestjs/common'
 import { Db } from '../db/db.service.js'
 import { appendFileSync } from 'node:fs'
 import { MailService } from '../mail/mail.service.js'
-import { tgButtonFor, TG_HEART, TG_TOPICS, TG_TOPIC_ABOUT, TG_TOPIC_NAMES, sampleMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
+import { tgButtonFor, TG_HEART, TG_TOPICS, TG_TOPIC_ABOUT, TG_TOPIC_NAMES, sampleMail, securityMail, topicTestMail, type Mail, type TgTopic } from '../mail/templates.js'
 import { logError } from '../log.js'
 
 /** Версия баннеров в адресе: Telegram запоминает картинку по адресу, поэтому при замене файлов в frontend/public/tg число надо увеличить. */
@@ -191,6 +191,15 @@ export class NotifyService {
   /** Пробное сообщение строго в тему группы (без запасного пути в личный чат и на почту). Ошибка с пояснением, если тема не настроена или Telegram не принял. */
   async sendToTopic(topic: TgTopic, text: string) {
     await this.deliverToTopic(topicTestMail(topic, text))
+  }
+
+  /** Оповещение о событии защиты строго в тему группы; без настроенной темы тихо ничего не делает (вызывающий не должен падать из-за Telegram). */
+  async sendSecurity(topic: 'alert' | 'login', title: string, lead: string) {
+    try {
+      await this.deliverToTopic(securityMail(topic, title, lead))
+    } catch {
+      /* тема не настроена или Telegram недоступен: событие всё равно записано в журнал */
+    }
   }
 
   /** Настоящее сообщение темы с выдуманными данными, как оно придёт на самом деле. */

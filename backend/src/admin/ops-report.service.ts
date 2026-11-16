@@ -103,8 +103,8 @@ export class OpsReportService implements OnModuleInit, OnModuleDestroy {
     await metric('Самый заполненный диск', 'max(100 * (1 - node_filesystem_avail_bytes{fstype=~"ext4|xfs|btrfs|zfs|apfs"} / node_filesystem_size_bytes{fstype=~"ext4|xfs|btrfs|zfs|apfs"}))', v => `${v.toFixed(0)}%`)
     await metric('Нагрузка (load average, 5 мин)', 'node_load5', v => v.toFixed(2))
     await metric('Обращений к сайту в минуту', 'sum(rate(http_requests_total[5m])) * 60', v => v.toFixed(1))
-    await metric('Ответов с ошибкой запроса (4xx) за час', 'sum(increase(http_requests_total{status=~"4.."}[1h]))', v => v.toFixed(0))
-    await metric('Сбоев сервера (5xx) за час', 'sum(increase(http_requests_total{status=~"5.."}[1h]))', v => v.toFixed(0))
+    await metric('Ответов с ошибкой запроса (4xx) за час', 'sum(increase(http_requests_total{status=~"4.."}[1h])) or vector(0)', v => v.toFixed(0))
+    await metric('Сбоев сервера (5xx) за час', 'sum(increase(http_requests_total{status=~"5.."}[1h])) or vector(0)', v => v.toFixed(0))
     await metric('Медленные ответы (p95)', 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))', v => `${(v * 1000).toFixed(0)} мс`)
     for (const s of services.filter(x => x.state === 'running' && x.name !== 'caddy-host')) {
       const cpu = await this.query(`service_cpu_percent{service="${s.name}"}`)

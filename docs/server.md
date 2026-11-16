@@ -32,7 +32,7 @@
 | `exams/`, `study/` | итоговый экзамен (`/api/exams`, черновик, напоминание `draft-remind.ts`); недельный отчёт: цель недели, названия режимов, PDF (`weekly-pdf.ts`, `study-weekly.service.ts`) |
 | `newwords/`, `wordsexport/` | записанные слова и временный токен чтения; CSV «моих слов» |
 | `env-check.ts` | реестр переменных окружения (`ENV_VARS`) и проверка формата при старте: время `ЧЧ:ММ`, день 0–6, порты, адреса, Telegram наполовину, опечатки в именах; только предупреждения в журнал. Новая переменная в коде: допиши в реестр (тест `tests/env-registry.test.mjs`) |
-| `csp-report.controller.ts`, `metrics.*`, `health.controller.ts`, `container-metrics.service.ts` | приём отчётов CSP, метрики Prometheus (`/api/metrics`), проверка здоровья |
+| `events/events.service.ts` (оповещения о защите: неверный токен и код, блокировка, вход уходят в Telegram, `SECURITY_ALERTS`), `csp-report.controller.ts`, `metrics.*`, `health.controller.ts`, `container-metrics.service.ts` | приём отчётов CSP, метрики Prometheus (`/api/metrics`), проверка здоровья |
 
 ## Таблицы базы
 `meta` (очки, профиль, настройки, метки), `answers` (каждый ответ, `detail` JSON `{q, a, y, g, n, r}`: вопрос, верный ответ, что выбрал, правило, «как отвечал» до 600 знаков, номер раунда до 40 знаков), `words` (статистика слова), `days`, `study_time`, `guests` (хэши токенов),
