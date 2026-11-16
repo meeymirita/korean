@@ -16,6 +16,7 @@ function fakeOpenAI() {
       seen.push({ url: req.url, auth: req.headers['authorization'], safety: req.headers['openai-safety-identifier'], body: JSON.parse(raw || '{}') })
       if (mode === '401') return res.writeHead(401).end('{}')
       if (mode === '500') return res.writeHead(500).end('{}')
+      if (mode === 'quota') return res.writeHead(429, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { code: 'insufficient_quota', message: 'quota' } }))
       if (mode === 'empty') return res.writeHead(200, { 'Content-Type': 'application/json' }).end('{}')
       res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ value: 'ek_test_secret', expires_at: 1 }))
     })
@@ -63,6 +64,15 @@ describe('сервер: голосовой собеседник', () => {
     }
     g.setMode('ok')
     assert.equal((await (await s.call('GET', '/api/voice/sessions', OWNER)).json()).sessions.length, 0)
+  })
+
+  test('кончились деньги на балансе OpenAI: 402 «no credit», а не «подожди»', async () => {
+    g.setMode('quota')
+    const r = await begin()
+    assert.equal(r.status, 402)
+    assert.equal((await r.json()).error, 'no credit')
+    g.setMode('ok')
+    assert.equal((await s.call('GET', '/api/voice/sessions', OWNER).then(x => x.json())).sessions.length, 0, 'запись разговора не создана')
   })
 
   test('разговор: временный ключ, реплики, конец, расшифровка и удаление', async () => {

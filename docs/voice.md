@@ -60,7 +60,7 @@
 | Защита | `Permissions-Policy: microphone=(self)` (`backend/src/security.ts`, `frontend/nuxt.config.ts`, `docker/caddy/Caddyfile`, `docs/hosting.md`), CSP `connect-src` с `https://api.openai.com` (`frontend/src/nitro/plugins/csp.ts`) |
 | Тесты | `backend/test/voice-util.spec.ts`, `frontend/test/voice-panel.spec.ts`, `frontend/test/voice-text.spec.ts`, `tests/voice-server.test.mjs` (нужна база) |
 
-API: `GET /api/voice` (настроено ли, лимит, остаток, цена), `GET /api/voice/sessions` (история), `POST /api/voice/sessions` (начать), `GET /api/voice/sessions/:id` (текст), `POST .../messages`, `POST .../end`, `DELETE .../:id`. Ошибки: 401, 403 гостю, 429 минуты кончились, 502 OpenAI не ответил или не принял ключ, 503 нет ключа.
+API: `GET /api/voice` (настроено ли, лимит, остаток, цена), `GET /api/voice/sessions` (история), `POST /api/voice/sessions` (начать), `GET /api/voice/sessions/:id` (текст), `POST .../messages`, `POST .../end`, `DELETE .../:id`. Ошибки: 401, 403 гостю, 429 минуты кончились, 402 кончились деньги на балансе OpenAI (`insufficient_quota`: у владельца предоплата 4,54 $ без автопополнения, при нуле запросы останавливаются, это и есть настоящий потолок расходов), 502 OpenAI не ответил или не принял ключ, 503 нет ключа.
 
 Удаление разговора стирает текст, но **минуты за сегодня остаются** (иначе лимит можно обойти).
 

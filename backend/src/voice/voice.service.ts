@@ -68,6 +68,9 @@ export class VoiceService {
     if (!res.ok) {
       logError('voice: OpenAI ответил', res.status)
       if (res.status === 401 || res.status === 403) throw new BadGatewayException({ error: 'voice key rejected' })
+      // кончились деньги на балансе (предоплата без автопополнения): отдельная ошибка, а не «подожди»
+      const err = (await res.json().catch(() => null)) as { error?: { code?: unknown; type?: unknown } } | null
+      if (err?.error?.code === 'insufficient_quota' || err?.error?.type === 'insufficient_quota') throw new HttpException({ error: 'no credit' }, 402)
       if (res.status === 429) throw new HttpException({ error: 'rate limit' }, 429)
       throw new BadGatewayException({ error: `voice service ${res.status}` })
     }

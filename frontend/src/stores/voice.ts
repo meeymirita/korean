@@ -106,6 +106,7 @@ export const useVoiceStore = defineStore('voice', () => {
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string }
       if (res.status === 503) throw new Error('голос не подключён: на сервере нет ключа OpenAI')
+      if (res.status === 402) throw new Error('на балансе OpenAI кончились деньги: пополни его в Billing (platform.openai.com)')
       if (res.status === 429) throw new Error(body.error === 'daily limit' ? 'минуты на сегодня закончились' : 'OpenAI просит подождать, попробуй позже')
       if (res.status === 502) throw new Error('OpenAI не ответил или не принял ключ')
       throw new Error(`ошибка сервера ${res.status}`)
