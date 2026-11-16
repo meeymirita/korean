@@ -58,8 +58,15 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/НЕ пройдено \(будущее на -겠어요/)
     expect(SYSTEM_PROMPT).toContain('(으)ㄹ 거예요 — планы, будущее')
   })
+  it('правила: факты о будущем времени, «Верно!» только на фразы, нет родовых форм, просьба о примерах выполняется', () => {
+    expect(SYSTEM_PROMPT).toMatch(/основа с 받침: \+을/i)
+    expect(SYSTEM_PROMPT).toMatch(/먹을 거예요/)
+    expect(SYSTEM_PROMPT).toMatch(/НЕ говори «построил»/)
+    expect(SYSTEM_PROMPT).toMatch(/Просят N примеров/)
+    expect(SYSTEM_PROMPT).toMatch(/«Верно!» говори только о корейской фразе/)
+  })
   it('инструкция короткая: весь список слов в неё не вставляется', () => {
-    expect(SYSTEM_PROMPT.length).toBeLessThan(5500)
+    expect(SYSTEM_PROMPT.length).toBeLessThan(6600)
     expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
   })
   it('нажми-и-говори выключает автоопределение конца фразы, обычный режим включает', () => {
