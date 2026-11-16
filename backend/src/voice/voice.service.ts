@@ -1,7 +1,7 @@
 /** Голосовой собеседник: выдаёт браузеру временный ключ OpenAI Realtime, считает минуты за сутки и хранит расшифровки разговоров (звук не хранится). */
 import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { createHash, randomBytes } from 'node:crypto'
-import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
+import { VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { SCENES, sceneOf } from './scenes.js'
