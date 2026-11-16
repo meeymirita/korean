@@ -117,29 +117,37 @@ async function whisper(audio: Buffer, mime: string, language: 'ko' | 'ru'): Prom
   return text ? { text, score: kept.reduce((n, x) => n + (x.avg_logprob ?? 0), 0) / kept.length } : null
 }
 
+/** Насколько русский вариант должен быть увереннее корейского, чтобы его взять: на русский акцент Whisper «записывает» корейские слова русскими буквами с высокой уверенностью, а настоящая русская речь побеждает с большим отрывом (около 1). */
+const RU_MARGIN = 0.6
+
 /**
- * Распознавание речи через Groq Whisper (бесплатно). Язык один на запись, а ученик говорит и по-корейски, и по-русски, поэтому записываем дважды (языки ko и ru, параллельно)
- * и берём результат, в котором Whisper увереннее. Куски тишины, неуверенные куски и типичные выдумки на шуме («字幕…», «Продолжение следует…») отбрасываются: если хоть одна попытка выдала такую выдумку, запись считается шумом и текст пустой.
+ * Распознавание речи через Groq Whisper (бесплатно). Язык один на запись, а ученик говорит и по-корейски, и по-русски.
+ * `auto`: две попытки параллельно (`ko` и `ru`), корейская берётся, если русская не увереннее неё хотя бы на `RU_MARGIN`. Подсказку (`prompt`) Whisper не получает: с ожидаемыми фразами он подменял услышанное на ожидаемое и скрывал настоящие ошибки, со словами зацикливался (проверено 2026-11-16).
+ * `ko` или `ru`: только эта попытка. Куски тишины, неуверенные куски и типичные выдумки на шуме («字幕…», «Продолжение следует…») отбрасываются:
+ * если хоть одна попытка выдала такую выдумку, запись считается шумом и текст пустой.
  */
-export async function transcribe(audio: Buffer, mime: string): Promise<string> {
+export async function transcribe(audio: Buffer, mime: string, opts: { lang?: unknown } = {}): Promise<string> {
   if (!GROQ_KEY) throw new AiError('нет ключа Groq', 503)
-  const tries = await Promise.allSettled([whisper(audio, mime, 'ko'), whisper(audio, mime, 'ru')])
-  const heard = tries.flatMap(t => (t.status === 'fulfilled' && t.value ? [t.value] : []))
-  // на тишине и шуме одна из двух попыток выдаёт типичную выдумку («Продолжение следует…»), другая тогда тоже выдумка («감사합니다»): запись считается пустой
-  if (heard.some(t => WHISPER_JUNK.test(t.text))) return ''
-  const ok = heard
-  if (!ok.length) {
-    const failed = tries.find((t): t is PromiseRejectedResult => t.status === 'rejected')
-    if (failed && tries.every(t => t.status === 'rejected')) throw failed.reason instanceof AiError ? failed.reason : new AiError('Groq недоступен', 502)
-    return ''
+  const lang = opts.lang === 'ko' || opts.lang === 'ru' ? opts.lang : 'auto'
+  const tries = await Promise.allSettled([lang === 'ru' ? Promise.resolve(null) : whisper(audio, mime, 'ko'), lang === 'ko' ? Promise.resolve(null) : whisper(audio, mime, 'ru')])
+  const val = (i: 0 | 1) => (tries[i]!.status === 'fulfilled' ? (tries[i] as PromiseFulfilledResult<WhisperTry | null>).value : null)
+  const ko = val(0)
+  const ru = val(1)
+  if (!ko && !ru && tries.some(t => t.status === 'rejected')) {
+    const failed = tries.find((t): t is PromiseRejectedResult => t.status === 'rejected')!
+    throw failed.reason instanceof AiError ? failed.reason : new AiError('Groq недоступен', 502)
   }
-  return ok.reduce((best, t) => (t.score > best.score ? t : best)).text
+  const heard = [ko, ru].filter((t): t is WhisperTry => !!t)
+  if (heard.some(t => WHISPER_JUNK.test(t.text))) return ''
+  if (ko && (!ru || ru.score - ko.score <= RU_MARGIN)) return ko.text
+  return ru?.text ?? ko?.text ?? ''
 }
 
 /** Проверка ответа репетитора другой (или той же) моделью: короткая пометка только по фактам. */
 export const CHECK_PROMPT = `Ты проверяешь ответ репетитора корейского для начинающего ученика. Даны реплика ученика и ответ репетитора.
 Проверяй ТОЛЬКО факты: правильность корейских фраз (слова, частицы, формы), правильность русского перевода и верность объяснения. Методику, стиль, порядок шагов и то, что репетитор подсказал ответ, не оценивай: если ученик просил подсказку или спросил «что отвечать», подсказка это норма.
 Если реплика ученика похожа на шум, случайные слова или чужой язык, ответь только «Проверка: пропущено».
+Если реплика ученика записана «как слышится» (неправильные слоги или русские буквы вместо корейских), а репетитор предположил, что ученик хотел сказать, и переспросил, это верно, ошибкой не считай.
 Напиши по-русски одной-двумя короткими фразами: «Проверка: верно», «Проверка: ошибка» (что именно не так и как правильно) или «Проверка: не уверен». Ничего не выдумывай. Чтение корейского латиницей или кириллицей не пиши. Не предлагай непройденное.`
 
 /** Голоса озвучки, которые можно выбрать в окне (названия голосов Gemini TTS). Неизвестное имя заменяется голосом по умолчанию. */

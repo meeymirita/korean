@@ -24,9 +24,11 @@ function fake() {
         const form = raw.toString('latin1')
         const lang = /name="language"\r\n\r\n(\w+)/.exec(form)?.[1]
         seen.at(-1).lang = lang
+        seen.at(-1).prompt = /name="prompt"\r\n\r\n([^\r]*)/.exec(Buffer.from(raw).toString('utf8'))?.[1]
         seen.at(-1).verbose = /verbose_json/.test(form)
         const seg = (text, lp, ns = 0.01) => ({ segments: [{ text, avg_logprob: lp, no_speech_prob: ns, compression_ratio: 1.2 }], text })
         if (whisperMode === 'ko-better') return json(200, lang === 'ko' ? seg(' 저는 학생이에요', -0.2) : seg(' Чингий твие', -0.9))
+        if (whisperMode === 'accent') return json(200, lang === 'ko' ? seg(' 휴대폰이 책상 위에 있어요', -0.8) : seg(' Хьюде понын чек сан', -0.5))
         if (whisperMode === 'ru-better') return json(200, lang === 'ru' ? seg(' Как сказать кофе', -0.15) : seg(' 코피 어', -0.8))
         if (whisperMode === 'junk') return json(200, seg(' 中文字幕志愿者 李宗盛', -0.3))
         if (whisperMode === 'mixed-junk') return json(200, lang === 'ru' ? seg(' Продолжение следует...', -0.2) : seg(' 감사합니다.', -0.3))
@@ -132,8 +134,18 @@ describe('сервер: бесплатные модели голосового �
     const langs = g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).slice(-2).map(x => x.lang).sort()
     assert.deepEqual(langs, ['ko', 'ru'])
     assert.ok(g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).slice(-2).every(x => x.verbose))
+    g.setWhisper('accent')
+    assert.equal(await say(), '휴대폰이 책상 위에 있어요', 'русский акцент: русская «запись» корейских слов не обгоняет корейскую, если не намного увереннее')
+    const ko = g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).slice(-2).find(x => x.lang === 'ko')
+    assert.equal(ko.prompt, undefined, 'подсказки Whisper нет: она подменяла услышанное ожидаемым')
     g.setWhisper('ru-better')
     assert.equal(await say(), 'Как сказать кофе')
+    const n = () => g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).length
+    const k0 = n()
+    const forced = await (await s.call('POST', '/api/voice/transcribe', OWNER, { audio: Buffer.from('x').toString('base64'), mime: 'audio/webm', lang: 'ru', scene: 'place' })).json()
+    assert.equal(forced.text, 'Как сказать кофе')
+    assert.equal(n() - k0, 1, 'язык задан: одна попытка')
+    assert.equal(g.seen.filter(x => x.url.endsWith('/audio/transcriptions')).at(-1).lang, 'ru')
     g.setWhisper('junk')
     assert.equal(await say(), '', 'титры китайских субтитров это не речь')
     g.setWhisper('mixed-junk')

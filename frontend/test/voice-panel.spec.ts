@@ -239,7 +239,8 @@ describe('голосовой собеседник', () => {
     vi.useRealTimers()
     await flushPromises()
     await flushPromises()
-    expect(calls.some(c => c.url === '/api/voice/transcribe')).toBe(true)
+    const heardCall = calls.find(c => c.url === '/api/voice/transcribe')!
+    expect(JSON.parse(heardCall.body!)).toMatchObject({ lang: 'auto' })
     expect(store.lines.filter(l => l.role === 'user').at(-1)?.text).toBe('저는 학생이에요')
     expect(calls.filter(c => c.url === '/api/voice/ask').length).toBeGreaterThanOrEqual(2)
     store.sendText('Как сказать кофе?')

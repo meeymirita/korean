@@ -137,7 +137,7 @@ export class VoiceService {
     const buf = Buffer.from(audio, 'base64')
     if (!buf.length || buf.length > 3_000_000) throw bad('audio too large')
     try {
-      return { text: await transcribe(buf, mime) }
+      return { text: await transcribe(buf, mime, { lang: body?.lang }) }
     } catch (e) {
       throw this.aiHttp(e)
     }

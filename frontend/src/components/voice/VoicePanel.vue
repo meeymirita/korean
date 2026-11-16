@@ -294,6 +294,13 @@ const onKey = (e: KeyboardEvent) => {
                   <option v-for="v in store.status.ttsVoices ?? ['Kore']" :key="v" :value="v">{{ v }}</option>
                 </select>
               </label>
+              <label v-if="store.engine === 'free'" title="Если Whisper записывает корейскую речь русскими буквами, поставь «корейский»">Я говорю
+                <select v-model="store.speechLang">
+                  <option value="auto">авто</option>
+                  <option value="ko">по-корейски</option>
+                  <option value="ru">по-русски</option>
+                </select>
+              </label>
               <label>Проверка
                 <select v-model="store.check">
                   <option value="none">нет</option>

@@ -107,6 +107,8 @@ export const useVoiceStore = defineStore('voice', () => {
   /** Чем озвучивать ответы в бесплатном режиме: голосом Gemini (приятнее) или голосом браузера, и какой голос Gemini. */
   const voiceOut = usePersisted<'gemini' | 'browser'>('voice_out', 'gemini', v => v === 'gemini' || v === 'browser')
   const ttsVoice = usePersisted('voice_tts', 'Kore')
+  /** На каком языке ученик говорит (для распознавания): `ko` и `ru` подсказывают Whisper язык, `auto` пробует оба. Корейская речь с русским акцентом в `auto` иногда записывается русскими буквами. */
+  const speechLang = usePersisted<'auto' | 'ko' | 'ru'>('voice_lang', 'auto', v => v === 'auto' || v === 'ko' || v === 'ru')
   function setEngine(v: 'openai' | 'free') {
     engine.value = v
     if (v === 'free') ptt.value = true
@@ -598,7 +600,7 @@ export const useVoiceStore = defineStore('voice', () => {
     mood.value = 'thinking'
     lastActivity = Date.now()
     try {
-      const r = await api<{ text: string }>('/transcribe', { method: 'POST', body: JSON.stringify({ audio: await blobToBase64(blob), mime: blob.type || 'audio/webm' }) })
+      const r = await api<{ text: string }>('/transcribe', { method: 'POST', body: JSON.stringify({ audio: await blobToBase64(blob), mime: blob.type || 'audio/webm', lang: speechLang.value }) })
       if (phase.value !== 'live') return
       if (!r.text) {
         mood.value = 'listening'
@@ -645,5 +647,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, setEngine, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, engine, provider, check, voiceOut, ttsVoice, speechLang, setEngine, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
 })
