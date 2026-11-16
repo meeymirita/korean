@@ -53,6 +53,11 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/Только корейский и учёба/)
     expect(SYSTEM_PROMPT).not.toMatch(/[぀-ヿ一-鿿]/)
   })
+  it('будущее время -(으)ㄹ 거예요, 만 и 도 названы пройденными (модель считала будущее непройденным)', () => {
+    expect(SYSTEM_PROMPT).toMatch(/ПРОЙДЕНО ВСЁ ИЗ СПИСКА[^.]*будущее время -\(으\)ㄹ 거예요/)
+    expect(SYSTEM_PROMPT).toMatch(/НЕ пройдено \(будущее на -겠어요/)
+    expect(SYSTEM_PROMPT).toContain('(으)ㄹ 거예요 — планы, будущее')
+  })
   it('инструкция короткая: весь список слов в неё не вставляется', () => {
     expect(SYSTEM_PROMPT.length).toBeLessThan(5500)
     expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
