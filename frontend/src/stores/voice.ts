@@ -508,7 +508,11 @@ export const useVoiceStore = defineStore('voice', () => {
         }
         a.onended = done
         a.onerror = done
-        await a.play().catch(done)
+        try {
+          await a.play()
+        } catch {
+          done()
+        }
       } catch (e) {
         if (token === speakToken && phase.value === 'live') mood.value = 'listening'
         toast.error(`Озвучка не получилась: ${errText(e)}`)
