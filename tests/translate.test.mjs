@@ -2,7 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { translateTasks, TRANSLATE_DIRS, TRANSLATE_LEVELS, TEXT_LEVEL } = await load('/src/data/korean/translate.ts')
+const { translateTasks, pairIndex, sentenceTask, TRANSLATE_DIRS, TRANSLATE_LEVELS, TEXT_LEVEL } = await load('/src/data/korean/translate.ts')
 const { STORIES } = await load('/src/game/stories.ts')
 const { TRANSLATIONS } = await load('/src/data/korean/translations.ts')
 after(close)
@@ -21,6 +21,17 @@ describe('перевод предложений', () => {
         assert.equal(new Set(t.options).size, 4)
         assert.ok(t.options.includes(t.answer))
       }
+    }
+  })
+
+  test('русский → корейский: среди неверных нет предложения с тем же русским переводом (синонима ответа)', () => {
+    // «Кимчи вкусное»: 김치가 / 김치는 맛있어요 оба верны; несколько сотен попыток на каждую такую пару
+    const idx = pairIndex('김치가 맛있어요.')
+    assert.ok(idx >= 0)
+    for (let i = 0; i < 600; i++) {
+      const t = sentenceTask(idx, false, 0)
+      assert.ok(t)
+      for (const o of t.options) if (o !== t.answer) assert.notEqual(ruOf.get(o), t.prompt, `${o} верно для «${t.prompt}»`)
     }
   })
 
