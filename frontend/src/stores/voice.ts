@@ -37,6 +37,8 @@ export interface VoiceLine {
   by?: string
   /** Проверка ответа другой (или той же) моделью. */
   check?: { provider: string; text: string }
+  /** Кто из выбранных моделей отказал и почему (ответила запасная). */
+  note?: string
 }
 
 /** Разговор в истории (список без текста). */
@@ -329,11 +331,11 @@ export const useVoiceStore = defineStore('voice', () => {
     const ctx = lines.value.slice(0, li + 1).filter(l => !l.other && !l.wrong).slice(-8)
     asking.value = true
     try {
-      const r = await api<{ text: string; provider: string; check: { provider: string; text: string } | null }>('/ask', {
+      const r = await api<{ text: string; provider: string; check: { provider: string; text: string } | null; failed?: string[] }>('/ask', {
         method: 'POST',
         body: JSON.stringify({ messages: ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) })), provider: provider.value, check: check.value, scene: scene.value }),
       })
-      lines.value.push({ role: 'assistant', text: r.text, other: true, asked, by: r.provider, ...(r.check ? { check: r.check } : {}) })
+      lines.value.push({ role: 'assistant', text: r.text, other: true, asked, by: r.provider, ...(r.check ? { check: r.check } : {}), ...(r.failed?.length ? { note: r.failed.join('; ') } : {}) })
     } catch (e) {
       toast.error(errText(e))
     } finally {
@@ -454,12 +456,12 @@ export const useVoiceStore = defineStore('voice', () => {
     lastActivity = Date.now()
     const ctx = lines.value.filter(l => !l.other && !l.wrong).slice(-12)
     try {
-      const r = await api<{ text: string; check: { provider: string; text: string } | null }>('/ask', {
+      const r = await api<{ text: string; check: { provider: string; text: string } | null; failed?: string[] }>('/ask', {
         method: 'POST',
         body: JSON.stringify({ messages: [{ role: 'user', text: OPENER }, ...ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) }))], provider: provider.value, check: check.value, scene: scene.value }),
       })
       if (phase.value !== 'live') return
-      keep({ role: 'assistant', text: r.text, ...(r.check ? { check: r.check } : {}) })
+      keep({ role: 'assistant', text: r.text, ...(r.check ? { check: r.check } : {}), ...(r.failed?.length ? { note: r.failed.join('; ') } : {}) })
       speak(r.text)
     } catch (e) {
       mood.value = 'listening'

@@ -121,7 +121,7 @@ export class VoiceService {
           check = null
         }
       }
-      return { text: answer.text, provider: answer.provider.title, check }
+      return { text: answer.text, provider: answer.provider.title, check, failed: answer.failed }
     } catch (e) {
       throw this.aiHttp(e)
     }

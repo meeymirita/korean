@@ -234,6 +234,7 @@ const onKey = (e: KeyboardEvent) => {
                   <small>Другая модель{{ l.by ? ` · ${l.by}` : '' }} · на «{{ l.asked }}»</small>
                   <p v-for="(ln, k) in parseReply(l.text)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p>
                   <p v-if="l.check" class="vp-ck"><b>{{ l.check.provider }}:</b> {{ l.check.text }}</p>
+                  <p v-if="l.note" class="vp-ck vp-warn">Не ответили: {{ l.note }}</p>
                 </div>
                 <div v-else class="vp-line" :class="[l.role, { wrong: l.wrong }]">
                   <template v-if="l.role === 'assistant'">
@@ -245,6 +246,7 @@ const onKey = (e: KeyboardEvent) => {
                   <template v-else>{{ l.text }}</template>
                 </div>
                 <p v-if="l.check && !l.other" class="vp-ck"><b>{{ l.check.provider }}:</b> {{ l.check.text }}</p>
+                <p v-if="l.note && !l.other" class="vp-ck vp-warn">Не ответили: {{ l.note }}</p>
                 <template v-if="l.role === 'assistant' && !l.other">
                   <template v-for="(p, j) in splitKorean(l.text)" :key="j">
                     <div v-if="p.ko && openBd.has(`${i}:${j}`)" class="vp-bd"><SentenceBreakdown :sentence="koreanOnly(p.text)" /></div>
@@ -418,6 +420,7 @@ const onKey = (e: KeyboardEvent) => {
 .vp-sel label { display: flex; align-items: center; gap: 6px; }
 .vp-sel select { padding: 4px 8px; font: inherit; font-size: 12px; color: var(--vp-ink); background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 10px; }
 .vp-ck { margin: 4px 0 0; padding: 4px 10px; font-size: 12px; color: #5c4a8a; background: rgba(255, 255, 255, .75); border: 1px solid var(--vp-line); border-radius: 12px; }
+.vp-warn { color: #a6492b; background: #fff1ec; border-color: #f0c2b3; }
 .vp-other .vp-ck { background: rgba(255, 255, 255, .6); }
 .vp-hico { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .vp-ht { flex: 1; min-width: 0; }

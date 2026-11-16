@@ -102,13 +102,13 @@ export const CHAT_MAX_HISTORY = 12
 /** Бесплатные ИИ-помощники голосового окна: Groq (быстрые модели и Whisper) и Gemini. Ключи только в backend/.env; без ключа поставщик в списке не появляется. */
 export const GROQ_KEY = process.env.GROQ_API_KEY || ''
 export const GROQ_BASE = (process.env.GROQ_BASE || 'https://api.groq.com/openai/v1').replace(/\/+$/, '')
-/** Модели Groq: чат `llama-3.3-70b-versatile` и распознавание речи `whisper-large-v3-turbo` (названия по docs Groq, 2026-11-16). */
-export const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+/** Модели Groq: чат `openai/gpt-oss-120b` и распознавание речи `whisper-large-v3-turbo` (список из GET /models с ключом владельца, 2026-11-16: `llama-3.3-70b-versatile` уже снята). */
+export const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 export const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'
 export const GEMINI_KEY = process.env.GEMINI_API_KEY || ''
 export const GEMINI_BASE = (process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.com/v1beta/openai').replace(/\/+$/, '')
-/** Название модели Gemini меняется чаще других: при ошибке 404 поменять в .env (список моделей в Google AI Studio). */
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+/** `gemini-flash-lite-latest` постоянное имя без номера версии (имена вроде `gemini-2.5-flash` Google снимает). Обычная `gemini-flash-latest` 2026-11-16 висела от перегрузки, лёгкая отвечала за 2 секунды. Список: GET {GEMINI_BASE}/models с ключом. */
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest'
 
 /** Голосовой собеседник (OpenAI Realtime): ключ только в .env сервера, в браузер уходит временный ключ. Без ключа окно пишет «не подключён». */
 export const VOICE_KEY = process.env.OPENAI_API_KEY || ''

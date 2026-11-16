@@ -51,10 +51,10 @@ export async function complete(p: Provider, messages: AiMsg[], opts: { maxTokens
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${p.key}`, 'HTTP-Referer': 'https://korean.meeymirita.ru', 'X-Title': 'Urimal' },
       body: JSON.stringify({ model: p.model, messages, temperature: opts.temperature ?? 0.4, max_tokens: opts.maxTokens ?? 900 }),
-      signal: AbortSignal.timeout(40_000),
+      signal: AbortSignal.timeout(20_000),
     })
   } catch {
-    throw new AiError(`${p.title} недоступен`, 502)
+    throw new AiError(`${p.title} не ответил за 20 секунд`, 502)
   }
   if (!res.ok) throw new AiError(res.status === 404 ? `${p.title}: модель «${p.model}» не найдена (поменяй её в backend/.env)` : `${p.title} ответил ${res.status}`, res.status)
   const data = (await res.json().catch(() => null)) as { choices?: { message?: { content?: unknown } }[] } | null
@@ -64,14 +64,16 @@ export async function complete(p: Provider, messages: AiMsg[], opts: { maxTokens
   return text
 }
 
-/** Пробует поставщиков по порядку, пока кто-то не ответит. Последняя ошибка уходит наружу, если не ответил никто. */
-export async function askInOrder(order: Provider[], messages: AiMsg[], opts?: { maxTokens?: number; temperature?: number }): Promise<{ text: string; provider: Provider }> {
+/** Пробует поставщиков по порядку, пока кто-то не ответит. `failed` это отказавшие до него (сайт показывает, кто и почему не ответил). Последняя ошибка уходит наружу, если не ответил никто. */
+export async function askInOrder(order: Provider[], messages: AiMsg[], opts?: { maxTokens?: number; temperature?: number }): Promise<{ text: string; provider: Provider; failed: string[] }> {
   let last: AiError = new AiError('нет подключённых моделей', 503)
+  const failed: string[] = []
   for (const p of order) {
     try {
-      return { text: await complete(p, messages, opts), provider: p }
+      return { text: await complete(p, messages, opts), provider: p, failed }
     } catch (e) {
       last = e instanceof AiError ? e : new AiError('ошибка модели', 502)
+      failed.push(last.message)
     }
   }
   throw last
