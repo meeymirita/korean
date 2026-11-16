@@ -51,7 +51,7 @@
 
 | Что | Файл |
 |---|---|
-| Кнопка 38 px (в шапке раздела, в шапке игр, справа вверху на остальных страницах, левее ноты) | `frontend/src/components/voice/VoiceButton.vue`, подключена в `app.vue`, `KoreanLayout.vue`, `GameTools.vue` |
+| Кнопка 38 px (в шапке раздела, в шапке игр, справа вверху на остальных страницах, кроме самой главной `/` (2026-11-17), левее ноты) | `frontend/src/components/voice/VoiceButton.vue`, подключена в `app.vue`, `KoreanLayout.vue`, `GameTools.vue` |
 | Окно, мини-плашка, вкладки «Разговор» и «История» | `frontend/src/components/voice/VoicePanel.vue` |
 | Соединение, таймер, реплики, история | `frontend/src/stores/voice.ts` |
 | API | `backend/src/voice/` (`voice.controller.ts`, `voice.service.ts`, `voice.util.ts`, `prompt.ts`) |
