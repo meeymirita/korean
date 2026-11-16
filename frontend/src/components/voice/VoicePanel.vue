@@ -107,14 +107,6 @@ const goLabel = computed(() => {
   if (store.muted) return `Пауза: микрофон выключен · нажми, чтобы включить · ${t}`
   return `${store.mood === 'speaking' ? 'Говорю' : store.mood === 'thinking' ? 'Думаю…' : 'Слушаю, говори'} · нажми для паузы · ${t}`
 })
-/** Пробел или Enter на кнопке языка: то же, что удержание мышью. */
-const holdKeyL = (e: KeyboardEvent, down: boolean, lang: 'ko' | 'ru') => {
-  if (e.key !== ' ' && e.key !== 'Enter') return
-  e.preventDefault()
-  if (down) {
-    if (!e.repeat) store.holdStart(lang)
-  } else store.holdEnd()
-}
 const goDown = (e: PointerEvent) => {
   if (store.live && store.ptt) {
     e.preventDefault()
@@ -133,9 +125,7 @@ const limitMin = computed(() => Math.round((store.status?.limitSec ?? 0) / 60))
 /** Примерная стоимость того, что потрачено сегодня, и оставшегося. */
 const money = (sec: number) => '≈ $' + (((sec / 60) * (store.status?.costPerMin ?? 0)).toFixed(2))
 const usedPct = computed(() => (store.status?.limitSec ? Math.min(100, ((store.status.limitSec - store.left) / store.status.limitSec) * 100) : 0))
-/** Бесплатный режим доступен, когда есть Whisper (Groq) и хотя бы одна модель. */
-const freeReady = computed(() => !!store.status?.whisper && !!store.status?.providers?.length)
-const canStart = computed(() => (store.engine === 'free' ? freeReady.value : !!store.status?.configured && (store.status?.leftSec ?? 0) > 0))
+const canStart = computed(() => !!store.status?.configured && (store.status?.leftSec ?? 0) > 0)
 
 /** Какие корейские фразы раскрыты разбором (ключ «номер реплики:номер куска»). */
 const openBd = ref<Set<string>>(new Set())
@@ -145,8 +135,6 @@ function toggleBd(key: string) {
   openBd.value = next
 }
 const draft = ref('')
-/** Есть ли вопрос ученика, который можно задать другой модели. */
-const hasQuestion = computed(() => store.lines.some(l => l.role === 'user' && !l.wrong))
 /** Последняя реплика ученика: под ней спрашиваем «верно услышал?». */
 const lastUser = computed(() => {
   for (let i = store.lines.length - 1; i >= 0; i--) if (store.lines[i]!.role === 'user') return i
@@ -237,14 +225,8 @@ const onKey = (e: KeyboardEvent) => {
               </div>
             </div>
             <div v-if="store.live || store.lines.length" ref="log" class="vp-log vp-log-scene" :style="{ '--vp-scene': `url(${IMG.scene})` }" aria-live="polite">
-              <div v-for="(l, i) in store.lines" :key="i" class="vp-msg" :class="[l.role, { other: l.other }]">
-                <div v-if="l.other" class="vp-other">
-                  <small>Другая модель{{ l.by ? ` · ${l.by}` : '' }} · на «{{ l.asked }}»</small>
-                  <p v-for="(ln, k) in parseReply(l.text)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p>
-                  <p v-if="l.check" class="vp-ck"><b>{{ l.check.provider }}:</b> {{ l.check.text }}</p>
-                  <p v-if="l.note" class="vp-ck vp-warn">Не ответили: {{ l.note }}</p>
-                </div>
-                <div v-else class="vp-line" :class="[l.role, { wrong: l.wrong }]">
+              <div v-for="(l, i) in store.lines" :key="i" class="vp-msg" :class="l.role">
+                <div class="vp-line" :class="[l.role, { wrong: l.wrong }]">
                   <template v-if="l.role === 'assistant'">
                     <template v-for="(p, j) in splitKorean(l.text)" :key="j">
                       <button v-if="p.ko" type="button" class="vp-ko" :class="{ on: openBd.has(`${i}:${j}`) }" title="Разобрать по частям" @click="toggleBd(`${i}:${j}`)">{{ p.text }}</button>
@@ -253,9 +235,7 @@ const onKey = (e: KeyboardEvent) => {
                   </template>
                   <template v-else>{{ l.text }}</template>
                 </div>
-                <p v-if="l.check && !l.other" class="vp-ck"><b>{{ l.check.provider }}:</b> {{ l.check.text }}</p>
-                <p v-if="l.note && !l.other" class="vp-ck vp-warn">Не ответили: {{ l.note }}</p>
-                <template v-if="l.role === 'assistant' && !l.other">
+                <template v-if="l.role === 'assistant'">
                   <template v-for="(p, j) in splitKorean(l.text)" :key="j">
                     <div v-if="p.ko && openBd.has(`${i}:${j}`)" class="vp-bd"><SentenceBreakdown :sentence="koreanOnly(p.text)" /></div>
                   </template>
@@ -277,63 +257,12 @@ const onKey = (e: KeyboardEvent) => {
                   <img v-if="store.scene === sc.id" :src="IMG.check" alt="" class="vp-tick" />
                 </button>
               </div>
-              <p class="vp-sub"><img :src="IMG.settings" alt="" />Как отвечать</p>
-              <div class="vp-seg" role="group" aria-label="Чем разговариваем">
-                <button type="button" :class="{ on: store.engine === 'openai' }" :aria-pressed="store.engine === 'openai'" @click="store.setEngine('openai')"><b>Голос OpenAI</b><small>живой голос, платно</small></button>
-                <button type="button" :class="{ on: store.engine === 'free' }" :aria-pressed="store.engine === 'free'" :disabled="!freeReady" @click="store.setEngine('free')"><b>Бесплатно</b><small>{{ freeReady ? 'Whisper, модель и озвучка браузера' : 'нужны ключи Groq и модели в .env' }}</small></button>
-              </div>
-            </div>
-
-            <div v-if="store.status?.providers?.length" class="vp-sel">
-              <label>Модель
-                <select v-model="store.provider">
-                  <option value="">первая подходящая</option>
-                  <option v-for="p in store.status.providers" :key="p.id" :value="p.id">{{ p.title }}</option>
-                </select>
-              </label>
-              <label v-if="store.engine === 'free'">Озвучка
-                <select v-model="store.voiceOut">
-                  <option v-if="store.status?.tts && store.status?.edge" value="auto">авто: Gemini, потом Edge</option>
-                  <option v-if="store.status?.tts" value="gemini">Gemini</option>
-                  <option v-if="store.status?.edge" value="edge">Edge (Microsoft)</option>
-                  <option value="browser">браузер</option>
-                </select>
-              </label>
-              <label v-if="store.engine === 'free' && store.voiceOut !== 'browser' && store.voiceOut !== 'edge' && store.status?.tts">Голос Gemini
-                <select v-model="store.ttsVoice">
-                  <option v-for="v in store.status.ttsVoices ?? ['Kore']" :key="v" :value="v">{{ v }}</option>
-                </select>
-              </label>
-              <label v-if="store.engine === 'free' && (store.voiceOut === 'auto' || store.voiceOut === 'edge') && store.status?.edge">Голос Edge
-                <select v-model="store.edgeVoice">
-                  <option value="female">женский</option>
-                  <option value="male">мужской</option>
-                </select>
-              </label>
-              <label v-if="store.engine === 'free'" title="Если Whisper записывает корейскую речь русскими буквами, поставь «корейский»">Я говорю
-                <select v-model="store.speechLang">
-                  <option value="auto">авто</option>
-                  <option value="ko">по-корейски</option>
-                  <option value="ru">по-русски</option>
-                </select>
-              </label>
-              <label>Проверка
-                <select v-model="store.check">
-                  <option value="none">нет</option>
-                  <option value="cross">другая модель</option>
-                  <option value="self">та же модель</option>
-                </select>
-              </label>
             </div>
 
             <div v-if="!store.live && store.lastId && store.lines.length" class="vp-rv">
               <button v-if="!store.reviews[store.lastId]" type="button" class="vp-rvbtn" :disabled="!!store.reviewing" @click="store.runReview(store.lastId)">{{ store.reviewing === store.lastId ? 'Разбираю…' : 'Разобрать этот разговор' }}</button>
               <div v-else class="vp-rvtext"><p v-for="(ln, k) in parseReply(store.reviews[store.lastId]!)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p></div>
             </div>
-
-            <button v-if="hasQuestion" type="button" class="vp-alt" :disabled="store.asking" @click="store.askOther()">
-              {{ store.asking ? 'Другая модель думает…' : 'Спросить другую модель (бесплатную) про последний вопрос' }}
-            </button>
 
             <form v-if="store.live" class="vp-type" @submit.prevent="submit">
               <input v-model="draft" type="text" maxlength="300" :placeholder="store.fixing >= 0 ? 'Напиши, как должно быть' : 'Или напиши ответ текстом'" autocomplete="off" />
@@ -342,28 +271,8 @@ const onKey = (e: KeyboardEvent) => {
             </form>
 
             <div class="vp-prow">
-              <label v-if="!store.live && store.engine === 'openai'" class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
-              <template v-if="store.live && store.engine === 'free'">
-                <p class="vp-stat">{{ goLabel }}</p>
-                <button
-                  v-for="l in ([['ko', 'Держи и говори по-корейски'], ['ru', 'Держи и говори по-русски']] as const)"
-                  :key="l[0]"
-                  type="button"
-                  class="vp-go hold"
-                  :class="{ rec: store.talking && store.holdLang === l[0] }"
-                  :disabled="store.phase !== 'live'"
-                  :aria-label="l[1]"
-                  @pointerdown.prevent="store.holdStart(l[0])"
-                  @pointerup="store.holdEnd()"
-                  @pointercancel="store.holdEnd()"
-                  @pointerleave="store.holdEnd()"
-                  @keydown="holdKeyL($event, true, l[0])"
-                  @keyup="holdKeyL($event, false, l[0])"
-                  @contextmenu.prevent
-                >{{ store.talking && store.holdLang === l[0] ? 'Запись · отпусти' : l[1] }}</button>
-              </template>
+              <label v-if="!store.live" class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
               <button
-                v-else
                 type="button"
                 class="vp-go"
                 :class="{ rec: store.ptt && store.talking, off: store.live && !store.ptt && store.muted, hold: store.live && store.ptt }"
@@ -384,7 +293,7 @@ const onKey = (e: KeyboardEvent) => {
             <footer class="vp-foot">
               <div class="vp-bar"><i :style="{ width: usedPct + '%' }"></i></div>
               <p v-if="store.status" class="vp-fl">
-                <img :src="IMG.clock" alt="" /><template v-if="store.engine === 'free'">Бесплатный режим: минуты OpenAI не тратятся · </template>Осталось {{ store.live ? mmss(store.left) : `${leftMin} мин` }} из {{ limitMin }} мин · потрачено сегодня {{ money(store.status.usedSec + (store.live ? store.elapsed : 0)) }}
+                <img :src="IMG.clock" alt="" />Осталось {{ store.live ? mmss(store.left) : `${leftMin} мин` }} из {{ limitMin }} мин · потрачено сегодня {{ money(store.status.usedSec + (store.live ? store.elapsed : 0)) }}
               </p>
               <p v-if="store.loadError" class="vp-err">Не получилось узнать остаток: {{ store.loadError }}</p>
             </footer>
@@ -457,26 +366,6 @@ const onKey = (e: KeyboardEvent) => {
 .vp-grip { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 16px; display: flex; align-items: center; justify-content: center; cursor: ew-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
 .vp-grip i { width: 4px; height: 56px; border-radius: 4px; background: var(--vp-pink); opacity: .35; transition: opacity .15s, height .15s; }
 .vp-grip:hover i { opacity: .9; height: 84px; }
-.vp-other { padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--vp-ink); background: linear-gradient(135deg, #fff7e8, #fff); border: 1px dashed #e0b76a; border-radius: 18px; border-bottom-left-radius: 6px; }
-.vp-other small { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: #a97a1f; }
-.vp-other p { margin: 0 0 6px; }
-.vp-other p.b { padding-left: 12px; text-indent: -10px; }
-.vp-other p.b::before { content: '• '; }
-.vp-alt { flex: none; padding: 8px 14px; font: inherit; font-size: 12px; font-weight: 700; color: #a97a1f; cursor: pointer; background: rgba(255, 247, 232, .9); border: 1px dashed #e0b76a; border-radius: 99px; }
-.vp-alt:disabled { opacity: .6; cursor: default; }
-.vp-seg { display: flex; gap: 8px; }
-.vp-seg button { flex: 1 1 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 12px; font: inherit; text-align: left; color: inherit; cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 14px; }
-.vp-seg button b { font-size: 13px; }
-.vp-seg button small { font-size: 11px; color: var(--vp-muted); }
-.vp-seg button.on { border-color: var(--vp-pink); background: #fff; box-shadow: 0 0 0 2px rgba(232, 107, 192, .25); }
-.vp-seg button:disabled { opacity: .55; cursor: default; }
-.vp-sel { flex: none; display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12px; color: var(--vp-muted); }
-.vp-sel label { display: flex; align-items: center; gap: 6px; }
-.vp-sel select { padding: 4px 8px; font: inherit; font-size: 12px; color: var(--vp-ink); background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 10px; }
-.vp-ck { margin: 4px 0 0; padding: 4px 10px; font-size: 12px; color: #5c4a8a; background: rgba(255, 255, 255, .75); border: 1px solid var(--vp-line); border-radius: 12px; }
-.vp-warn { color: #a6492b; background: #fff1ec; border-color: #f0c2b3; }
-.vp-other .vp-ck { background: rgba(255, 255, 255, .6); }
-.vp-stat { flex: 1 0 100%; margin: 0; font-size: 12px; text-align: center; color: var(--vp-muted); }
 .vp-hico { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .vp-ht { flex: 1; min-width: 0; }
 .vp-ht h2 { flex: none; line-height: 1.1; }
@@ -580,6 +469,5 @@ html[data-theme='dark'] .vp-tabs button:not(.on) { background: rgba(255, 255, 25
 html[data-theme='dark'] .vp-rvtext, html[data-theme='dark'] .vp-bd { background: #2b2450; border-color: #3b3866; }
 html[data-theme='dark'] .vp-cloud, html[data-theme='dark'] .vp-chip { background: rgba(43, 36, 80, .85); border-color: #3b3866; }
 html[data-theme='dark'] .vp-log-scene { background: linear-gradient(rgba(31, 30, 66, .82), rgba(31, 30, 66, .88)), var(--vp-scene) center / cover; border-color: #3b3866; }
-html[data-theme='dark'] .vp-other { background: #3a3150; border-color: #8a6d2f; color: var(--vp-ink); }
 html[data-theme='dark'] .vp-line.assistant { background: #2b2450; border-color: #3b3866; }
 </style>

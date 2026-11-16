@@ -1,18 +1,13 @@
 /** Голосовой собеседник: выдаёт браузеру временный ключ OpenAI Realtime, считает минуты за сутки и хранит расшифровки разговоров (звук не хранится). */
 import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { createHash, randomBytes } from 'node:crypto'
-import { EDGE_ENABLED, GEMINI_KEY, GROQ_KEY, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
+import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
-import { cleanMessages } from '../chat/chat.service.js'
-import { AiError, askInOrder, CHECK_PROMPT, edgeVoice, orderFor, providers, speak, speakEdge, transcribe, TTS_VOICES, ttsVoice } from './ai.js'
-import { buildPrompt } from './prompt.js'
 import { REVIEW_PROMPT, reviewInput } from './review.js'
 import { SCENES, sceneOf } from './scenes.js'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from './voice.util.js'
 
-/** Разговоры в бесплатном режиме (Groq и браузер, без OpenAI) записываются с этой «моделью» и минуты OpenAI не тратят. */
-const FREE_MODEL = 'free'
 const MAX_SEC = VOICE_MAX_SESSION_MIN * 60
 const DAY_SEC = VOICE_DAILY_MINUTES * 60
 /** Временный ключ нужен только чтобы начать соединение: две минуты. */
@@ -27,7 +22,7 @@ export class VoiceService {
 
   /** Секунды разговоров за сегодня: у неоконченного считаются часы от старта, но не больше предела (вкладку могли закрыть, не закончив). */
   private async usedToday(now = Date.now()): Promise<number> {
-    const rows = await (await this.db.orm()).voiceSession.findMany({ where: { day: dayKey(now, VOICE_TZ), model: { not: FREE_MODEL } }, select: { started: true, ended: true, seconds: true } })
+    const rows = await (await this.db.orm()).voiceSession.findMany({ where: { day: dayKey(now, VOICE_TZ) }, select: { started: true, ended: true, seconds: true } })
     return rows.reduce((sum, r) => sum + (r.ended === null ? countedSeconds(Number(r.started), now, MAX_SEC) : r.seconds), 0)
   }
 
@@ -47,11 +42,6 @@ export class VoiceService {
       costPerMin: VOICE_COST_PER_MIN,
       costToday: costOf(used, VOICE_COST_PER_MIN),
       scenes: SCENES.map(x => ({ id: x.id, title: x.title, hint: x.hint })),
-      providers: providers().map(p => ({ id: p.id, title: p.title, model: p.model })),
-      whisper: !!GROQ_KEY,
-      tts: !!GEMINI_KEY,
-      edge: EDGE_ENABLED,
-      ttsVoices: [...TTS_VOICES],
     }
   }
 
@@ -59,7 +49,6 @@ export class VoiceService {
   async start(body: Record<string, unknown> = {}) {
     const scene = sceneOf(body?.scene)
     const ptt = body?.ptt === true
-    if (body?.free === true) return this.startFree(scene.id)
     if (!VOICE_KEY) throw new ServiceUnavailableException({ error: 'voice not configured' })
     const now = Date.now()
     const used = await this.usedToday(now)
@@ -89,95 +78,6 @@ export class VoiceService {
     const id = randomBytes(8).toString('hex')
     await (await this.db.orm()).voiceSession.create({ data: { id, day: dayKey(now, VOICE_TZ), started: BigInt(now), model: VOICE_MODEL } })
     return { id, scene: scene.id, secret, callsUrl: `${VOICE_BASE}/realtime/calls`, maxSec: Math.min(MAX_SEC, left), ...this.statusOf(used) }
-  }
-
-  /** Бесплатный разговор: Whisper (Groq) слышит, выбранная модель отвечает, озвучивает браузер. OpenAI не нужен, минуты OpenAI не тратятся. */
-  private async startFree(scene: string) {
-    if (!GROQ_KEY || !providers().length) throw new ServiceUnavailableException({ error: 'free voice not configured' })
-    const now = Date.now()
-    const id = randomBytes(8).toString('hex')
-    await (await this.db.orm()).voiceSession.create({ data: { id, day: dayKey(now, VOICE_TZ), started: BigInt(now), model: FREE_MODEL } })
-    return { id, scene, free: true, maxSec: MAX_SEC, ...this.statusOf(await this.usedToday(now)) }
-  }
-
-  /**
-   * Ответ текстовой модели на реплики разговора. Выбранная модель отвечает первой, при отказе (лимит, ошибка) пробуем остальных.
-   * Проверка: `cross` другая модель читает ответ, `self` та же; в ответе пометка «Проверка: …».
-   */
-  async ask(body: Record<string, unknown>) {
-    const messages = cleanMessages(body?.messages)
-    const list = providers()
-    if (!list.length) throw new ServiceUnavailableException({ error: 'no models configured' })
-    const order = orderFor(body?.provider, list)
-    const mode = body?.check === 'cross' || body?.check === 'self' ? body.check : 'none'
-    try {
-      const answer = await askInOrder(order, [{ role: 'system', content: buildPrompt(body?.scene) }, ...messages.map(m => ({ role: m.role, content: m.text }))])
-      let check: { provider: string; text: string } | null = null
-      if (mode !== 'none') {
-        const other = order.filter(p => p.id !== answer.provider.id)
-        const checkers = mode === 'cross' && other.length ? other : [answer.provider]
-        const asked = messages[messages.length - 1]!.text
-        try {
-          const c = await askInOrder(checkers, [{ role: 'system', content: CHECK_PROMPT }, { role: 'user', content: `Вопрос ученика: ${asked}\n\nОтвет репетитора: ${answer.text}` }], { maxTokens: 300, temperature: 0.1 })
-          check = { provider: c.provider.title, text: c.text }
-        } catch {
-          check = null
-        }
-      }
-      return { text: answer.text, provider: answer.provider.title, check, failed: answer.failed }
-    } catch (e) {
-      throw this.aiHttp(e)
-    }
-  }
-
-  /** Распознавание речи ученика (запись из браузера в base64, не длиннее нескольких минут). */
-  async transcribeAudio(body: Record<string, unknown>) {
-    const audio = typeof body?.audio === 'string' ? body.audio : ''
-    const mime = typeof body?.mime === 'string' ? body.mime.slice(0, 60) : 'audio/webm'
-    if (!audio) throw bad('no audio')
-    const buf = Buffer.from(audio, 'base64')
-    if (!buf.length || buf.length > 3_000_000) throw bad('audio too large')
-    try {
-      return { text: await transcribe(buf, mime, { lang: body?.lang }) }
-    } catch (e) {
-      throw this.aiHttp(e)
-    }
-  }
-
-  /** Озвучка ответа голосом Gemini: текст без разметки (до 700 знаков) в звук WAV (base64). */
-  async speakText(body: Record<string, unknown>) {
-    const raw = typeof body?.text === 'string' ? body.text : ''
-    const text = raw.replace(/[*_#`]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 700)
-    if (!text) throw bad('empty text')
-    // engine: gemini | edge | auto (Gemini, а когда его лимит кончился, Edge)
-    const engine = body?.engine === 'gemini' || body?.engine === 'edge' ? body.engine : 'auto'
-    try {
-      if (engine === 'edge' && !EDGE_ENABLED) throw new AiError('озвучка Edge выключена (EDGE_TTS=0)', 503)
-      if (engine === 'edge') return this.packSpeech(await speakEdge(text, edgeVoice(body?.edgeVoice)), 'edge')
-      if (engine === 'gemini') return this.packSpeech(await speak(text, ttsVoice(body?.voice)), 'gemini')
-      try {
-        if (!GEMINI_KEY) throw new AiError('нет ключа Gemini', 503)
-        return this.packSpeech(await speak(text, ttsVoice(body?.voice)), 'gemini')
-      } catch (e) {
-        if ((e instanceof AiError && e.status === 400) || !EDGE_ENABLED) throw e
-        return this.packSpeech(await speakEdge(text, edgeVoice(body?.edgeVoice)), 'edge')
-      }
-    } catch (e) {
-      throw this.aiHttp(e)
-    }
-  }
-
-  private packSpeech(r: { audio: Buffer; mime: string; cached: boolean }, engine: string) {
-    return { audio: r.audio.toString('base64'), mime: r.mime, cached: r.cached, engine }
-  }
-
-  /** Ошибка модели в понятный ответ сайту: 429 лимит, 503 не настроено, иначе 502 с названием причины. */
-  private aiHttp(e: unknown) {
-    const err = e instanceof AiError ? e : new AiError('ошибка модели', 502)
-    logError('voice: модель', err.message)
-    if (err.status === 429) return new HttpException({ error: 'rate limit', message: err.message }, 429)
-    if (err.status === 503) return new ServiceUnavailableException({ error: 'not configured', message: err.message })
-    return new BadGatewayException({ error: 'model failed', message: err.message })
   }
 
   private async open(id: string) {
@@ -230,20 +130,33 @@ export class VoiceService {
   }
 
   /** Разбор разговора: сильная текстовая модель (та же, что у помощника-чата) читает расшифровку и пишет отчёт. Готовый отчёт хранится, повторный вызов отдаёт его без запроса к модели. */
-  async review(id: string, force = false, provider?: unknown) {
+  async review(id: string, force = false) {
     const row = await this.open(id)
     if (row.review && !force) return { review: row.review }
-    const list = providers()
-    if (!list.length) throw new ServiceUnavailableException({ error: 'chat not configured' })
+    if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
     const rows = await (await this.db.orm()).voiceMessage.findMany({ where: { session: id }, orderBy: { id: 'asc' }, select: { role: true, text: true } })
     const input = reviewInput(rows.map(r => ({ role: r.role === 'assistant' ? 'assistant' : 'user', text: r.text })))
     if (!input) throw bad('nothing to review')
-    let review = ''
+    let res: Response
     try {
-      review = (await askInOrder(orderFor(provider, list), [{ role: 'system', content: REVIEW_PROMPT }, { role: 'user', content: input }], { maxTokens: 1000, temperature: 0.2 })).text
+      res = await fetch(`${CHAT_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CHAT_KEY}`, 'HTTP-Referer': 'https://korean.meeymirita.ru', 'X-Title': 'Urimal' },
+        body: JSON.stringify({ model: CHAT_MODEL, messages: [{ role: 'system', content: REVIEW_PROMPT }, { role: 'user', content: input }], temperature: 0.2, max_tokens: 1000 }),
+        signal: AbortSignal.timeout(60_000),
+      })
     } catch (e) {
-      throw this.aiHttp(e)
+      logError('voice: разбор, модель недоступна', e)
+      throw new BadGatewayException({ error: 'review service unreachable' })
     }
+    if (!res.ok) {
+      if (res.status === 429) throw new HttpException({ error: 'rate limit' }, 429)
+      throw new BadGatewayException({ error: `review service ${res.status}` })
+    }
+    const data = (await res.json().catch(() => null)) as { choices?: { message?: { content?: unknown } }[] } | null
+    const c = data?.choices?.[0]?.message?.content
+    const review = typeof c === 'string' ? c.trim() : ''
+    if (!review) throw new BadGatewayException({ error: 'empty review' })
     await (await this.db.orm()).voiceSession.update({ where: { id }, data: { review } })
     return { review }
   }

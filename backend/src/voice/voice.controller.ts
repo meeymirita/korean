@@ -14,27 +14,6 @@ export class VoiceController {
     return this.voice.status()
   }
 
-  /** Ответ выбранной бесплатной модели (Groq, Gemini или OpenRouter) с запасными и необязательной проверкой. */
-  @Post('ask')
-  @HttpCode(200)
-  ask(@Body() body: Record<string, unknown>) {
-    return this.voice.ask(body)
-  }
-
-  /** Распознавание речи ученика через Groq Whisper (бесплатный режим). */
-  @Post('transcribe')
-  @HttpCode(200)
-  transcribe(@Body() body: Record<string, unknown>) {
-    return this.voice.transcribeAudio(body)
-  }
-
-  /** Озвучка ответа голосом Gemini (бесплатный режим), готовые фразы кэшируются. */
-  @Post('speak')
-  @HttpCode(200)
-  speak(@Body() body: Record<string, unknown>) {
-    return this.voice.speakText(body)
-  }
-
   @Get('sessions')
   list() {
     return this.voice.list()
@@ -68,7 +47,7 @@ export class VoiceController {
   @Post('sessions/:id/review')
   @HttpCode(200)
   review(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.voice.review(id, body?.force === true, body?.provider)
+    return this.voice.review(id, body?.force === true)
   }
 
   @Delete('sessions/:id')
