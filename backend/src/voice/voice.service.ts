@@ -4,7 +4,6 @@ import { createHash, randomBytes } from 'node:crypto'
 import { CHAT_BASE, CHAT_KEY, CHAT_MODEL, VOICE_BASE, VOICE_COST_PER_MIN, VOICE_DAILY_MINUTES, VOICE_KEY, VOICE_MAX_MESSAGES, VOICE_MAX_SESSION_MIN, VOICE_MODEL, VOICE_TZ, VOICE_VOICE } from '../config.js'
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
-import { REVIEW_PROMPT, reviewInput } from './review.js'
 import { SCENES, sceneOf } from './scenes.js'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from './voice.util.js'
 
@@ -126,39 +125,7 @@ export class VoiceService {
   async get(id: string) {
     const s = await this.open(id)
     const rows = await (await this.db.orm()).voiceMessage.findMany({ where: { session: id }, orderBy: { id: 'asc' } })
-    return { id: s.id, review: s.review ?? '', started: Number(s.started), seconds: s.ended === null ? countedSeconds(Number(s.started), Date.now(), MAX_SEC) : s.seconds, messages: rows.map(m => ({ id: Number(m.id), t: Number(m.t), role: m.role, text: m.text })) }
-  }
-
-  /** Разбор разговора: сильная текстовая модель (та же, что у помощника-чата) читает расшифровку и пишет отчёт. Готовый отчёт хранится, повторный вызов отдаёт его без запроса к модели. */
-  async review(id: string, force = false) {
-    const row = await this.open(id)
-    if (row.review && !force) return { review: row.review }
-    if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
-    const rows = await (await this.db.orm()).voiceMessage.findMany({ where: { session: id }, orderBy: { id: 'asc' }, select: { role: true, text: true } })
-    const input = reviewInput(rows.map(r => ({ role: r.role === 'assistant' ? 'assistant' : 'user', text: r.text })))
-    if (!input) throw bad('nothing to review')
-    let res: Response
-    try {
-      res = await fetch(`${CHAT_BASE}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CHAT_KEY}`, 'HTTP-Referer': 'https://korean.meeymirita.ru', 'X-Title': 'Urimal' },
-        body: JSON.stringify({ model: CHAT_MODEL, messages: [{ role: 'system', content: REVIEW_PROMPT }, { role: 'user', content: input }], temperature: 0.2, max_tokens: 1000 }),
-        signal: AbortSignal.timeout(60_000),
-      })
-    } catch (e) {
-      logError('voice: разбор, модель недоступна', e)
-      throw new BadGatewayException({ error: 'review service unreachable' })
-    }
-    if (!res.ok) {
-      if (res.status === 429) throw new HttpException({ error: 'rate limit' }, 429)
-      throw new BadGatewayException({ error: `review service ${res.status}` })
-    }
-    const data = (await res.json().catch(() => null)) as { choices?: { message?: { content?: unknown } }[] } | null
-    const c = data?.choices?.[0]?.message?.content
-    const review = typeof c === 'string' ? c.trim() : ''
-    if (!review) throw new BadGatewayException({ error: 'empty review' })
-    await (await this.db.orm()).voiceSession.update({ where: { id }, data: { review } })
-    return { review }
+    return { id: s.id, started: Number(s.started), seconds: s.ended === null ? countedSeconds(Number(s.started), Date.now(), MAX_SEC) : s.seconds, messages: rows.map(m => ({ id: Number(m.id), t: Number(m.t), role: m.role, text: m.text })) }
   }
 
   /** Удалить разговор и его расшифровку. Минуты за сегодня при этом не возвращаются: удаляется текст, а не факт разговора. */

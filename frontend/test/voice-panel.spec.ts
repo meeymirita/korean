@@ -67,7 +67,6 @@ beforeEach(() => {
     if (url === '/api/voice/sessions' && method === 'GET') return new Response(JSON.stringify({ sessions: HISTORY }))
     if (url === 'https://api.openai.com/v1/realtime/calls') return new Response('v=0 answer')
     if (/\/messages$/.test(url)) return new Response('{"ok":true}')
-    if (/\/review$/.test(url)) return url.includes('/bad') ? new Response('{}', { status: 503 }) : new Response(JSON.stringify({ review: '**Что получилось** — верно' }))
     if (/\/end$/.test(url)) return new Response(JSON.stringify({ ...STATUS, usedSec: 180, leftSec: 420 }))
     if (/^\/api\/voice\/sessions\/a+$/.test(url) && method === 'GET') return new Response(JSON.stringify({ id: 'aaaaaaaaaaaaaaaa', started: 1, seconds: 95, messages: [{ role: 'user', text: '안녕하세요' }, { role: 'assistant', text: '반가워요' }] }))
     if (/^\/api\/voice\/sessions\/a+$/.test(url) && method === 'DELETE') return new Response('{"ok":true}')
@@ -183,17 +182,6 @@ describe('голосовой собеседник', () => {
     expect(sent()).toEqual(expect.arrayContaining(['conversation.item.delete', 'conversation.item.create', 'response.create']))
     expect(store.lines.at(-1)).toMatchObject({ role: 'user', text: '공부해요' })
     await store.stop()
-  })
-
-  it('разбор разговора: отчёт приходит с сервера и сохраняется в окне', async () => {
-    const store = useVoiceStore()
-    await store.runReview('aaaaaaaaaaaaaaaa')
-    expect(store.reviews['aaaaaaaaaaaaaaaa']).toContain('Что получилось')
-    const call = calls.find(c => /\/review$/.test(c.url))!
-    expect(JSON.parse(call.body!)).toEqual({ force: false })
-    await store.runReview('bad')
-    expect(store.reviews['bad']).toBeUndefined()
-    expect(store.reviewing).toBe('')
   })
 
   it('мини-плашка видна, пока разговор идёт, а окно закрыто', async () => {
