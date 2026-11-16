@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { askConfirm } from '@/composables/useConfirm'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { errText } from '@/lib/http'
+import { parseReply } from '@/lib/chat'
 import { koreanOnly, splitKorean } from '@/lib/voiceText'
 import { mmss, useVoiceAvailable, useVoiceStore } from '@/stores/voice'
 import { useToastStore } from '@/stores/toast'
@@ -168,6 +169,11 @@ const onKey = (e: KeyboardEvent) => {
               <label class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
             </div>
 
+            <div v-if="!store.live && store.lastId && store.lines.length" class="vp-rv">
+              <button v-if="!store.reviews[store.lastId]" type="button" class="vp-rvbtn" :disabled="!!store.reviewing" @click="store.runReview(store.lastId)">{{ store.reviewing === store.lastId ? 'Разбираю…' : 'Разобрать этот разговор' }}</button>
+              <div v-else class="vp-rvtext"><p v-for="(ln, k) in parseReply(store.reviews[store.lastId]!)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p></div>
+            </div>
+
             <form v-if="store.live" class="vp-type" @submit.prevent="submit">
               <input v-model="draft" type="text" maxlength="300" :placeholder="store.fixing >= 0 ? 'Напиши, как должно быть' : 'Или напиши ответ текстом'" autocomplete="off" />
               <button v-if="store.fixing >= 0" type="button" class="vp-ic" aria-label="Отменить исправление" @click="((store.fixing = -1), (draft = ''))">×</button>
@@ -221,6 +227,13 @@ const onKey = (e: KeyboardEvent) => {
             <template v-else>
               <button type="button" class="vp-back" @click="store.opened = null">← К списку</button>
               <p class="vp-when">{{ dateText(store.opened.started) }} · {{ mmss(store.opened.seconds) }}</p>
+              <div class="vp-rv">
+                <button v-if="!store.reviews[store.opened.id]" type="button" class="vp-rvbtn" :disabled="!!store.reviewing || !store.opened.lines.length" @click="store.runReview(store.opened.id)">{{ store.reviewing === store.opened.id ? 'Разбираю…' : 'Разобрать разговор' }}</button>
+                <template v-else>
+                  <div class="vp-rvtext"><p v-for="(ln, k) in parseReply(store.reviews[store.opened.id]!)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p></div>
+                  <button type="button" class="vp-back" :disabled="!!store.reviewing" @click="store.runReview(store.opened.id, true)">Разобрать заново</button>
+                </template>
+              </div>
               <div class="vp-log vp-log-old">
                 <p v-if="!store.opened.lines.length" class="vp-hint">Текст стёрт или не успел сохраниться.</p>
                 <div v-for="(l, i) in store.opened.lines" :key="i" class="vp-line" :class="l.role">{{ l.text }}</div>
@@ -281,6 +294,13 @@ const onKey = (e: KeyboardEvent) => {
 .vp-type .vp-ic { width: 38px; height: 38px; font-size: 18px; padding: 0; }
 .vp-rec.hold { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .vp-rec.hold.talk { background: linear-gradient(140deg, #ef7a8c, #d6455d); animation: vp-pulse 1.2s ease-in-out infinite; }
+.vp-rv { flex: none; max-height: 40%; overflow-y: auto; }
+.vp-rvbtn { width: 100%; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer; background: linear-gradient(100deg, var(--vp-pink), var(--vp-pink-d)); border: 0; border-radius: 99px; }
+.vp-rvbtn:disabled { opacity: .55; cursor: default; }
+.vp-rvtext { padding: 10px 14px; font-size: 14px; line-height: 1.5; background: #fff; border: 1px solid var(--vp-line); border-radius: 16px; }
+.vp-rvtext p { margin: 0 0 6px; }
+.vp-rvtext p.b { padding-left: 12px; text-indent: -10px; }
+.vp-rvtext p.b::before { content: '• '; }
 .vp-ctl { display: flex; align-items: center; justify-content: center; gap: 18px; flex: none; padding: 6px 0; }
 .vp-rec { width: 76px; height: 76px; display: grid; place-items: center; padding: 20px; color: #fff; cursor: pointer; background: linear-gradient(140deg, var(--vp-pink), var(--vp-pink-d)); border: 0; border-radius: 50%; box-shadow: 0 10px 24px rgba(214, 77, 169, .4); transition: transform .15s, box-shadow .15s; }
 .vp-rec svg { width: 100%; height: 100%; }
@@ -329,5 +349,6 @@ html[data-theme='dark'] .vp-mini { background: rgba(43, 36, 80, .95); border-col
 html[data-theme='dark'] .vp-ic, html[data-theme='dark'] .vp-item { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
 html[data-theme='dark'] .vp-stop { background: #d6455d; border-color: #d6455d; }
 html[data-theme='dark'] .vp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
+html[data-theme='dark'] .vp-rvtext, html[data-theme='dark'] .vp-bd { background: #2b2450; border-color: #3b3866; }
 html[data-theme='dark'] .vp-line.assistant { background: #2b2450; border-color: #3b3866; }
 </style>

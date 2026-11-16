@@ -91,6 +91,10 @@ export const useVoiceStore = defineStore('voice', () => {
   const elapsed = ref(0)
   const lines = ref<VoiceLine[]>([])
   const history = ref<VoiceItem[]>([])
+  /** Разборы разговоров по номеру разговора, номер того, что идёт сейчас, и последнего оконченного. */
+  const reviews = ref<Record<string, string>>({})
+  const reviewing = ref('')
+  const lastId = ref('')
   const opened = ref<{ id: string; started: number; seconds: number; lines: VoiceLine[] } | null>(null)
 
   const live = computed(() => phase.value === 'live' || phase.value === 'connecting')
@@ -132,7 +136,8 @@ export const useVoiceStore = defineStore('voice', () => {
 
   async function openItem(id: string) {
     try {
-      const d = await api<{ id: string; started: number; seconds: number; messages: { role: 'user' | 'assistant'; text: string }[] }>(`/sessions/${id}`)
+      const d = await api<{ id: string; review?: string; started: number; seconds: number; messages: { role: 'user' | 'assistant'; text: string }[] }>(`/sessions/${id}`)
+      if (d.review) reviews.value = { ...reviews.value, [id]: d.review }
       opened.value = { id: d.id, started: d.started, seconds: d.seconds, lines: d.messages.map(m => ({ role: m.role, text: m.text })) }
     } catch (e) {
       toast.error(errText(e))
@@ -261,6 +266,7 @@ export const useVoiceStore = defineStore('voice', () => {
     cleanup()
     phase.value = 'idle'
     sessionId = ''
+    if (id) lastId.value = id
     if (id) {
       try {
         status.value = await api<VoiceStatus>(`/sessions/${id}/end`, { method: 'POST' })
@@ -269,6 +275,24 @@ export const useVoiceStore = defineStore('voice', () => {
       }
     }
     if (tab.value === 'history') void loadHistory()
+  }
+
+  /** Разбор разговора текстовой моделью (по сохранённой расшифровке). */
+  async function runReview(id: string, force = false) {
+    if (reviewing.value) return
+    reviewing.value = id
+    try {
+      const res = await fetchT(`/api/voice/sessions/${id}/review`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ force }) }, 90_000)
+      if (!res.ok) {
+        const why: Record<number, string> = { 400: 'в разговоре нет твоих реплик, разбирать нечего', 429: 'модель просит подождать, попробуй чуть позже', 502: 'модель разбора сейчас не отвечает, попробуй позже', 503: 'разбор не подключён: на сервере нет ключа помощника (OPENROUTER_API_KEY)' }
+        throw new Error(why[res.status] ?? `ошибка сервера ${res.status}`)
+      }
+      reviews.value = { ...reviews.value, [id]: ((await res.json()) as { review: string }).review }
+    } catch (e) {
+      toast.error(errText(e))
+    } finally {
+      reviewing.value = ''
+    }
   }
 
   const send = (o: object) => channel?.send(JSON.stringify(o))
@@ -326,5 +350,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, live, left, scene, ptt, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, live, left, scene, ptt, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview }
 })
