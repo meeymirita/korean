@@ -140,6 +140,7 @@ export const DEPS: Record<string, string[]> = {
   mot: ['an'],
   reo: ['gada'],
   do: ['eun', 'iga', 'eul'],
+  je_ga: ['eun', 'iga'],
   aseo: ['ayo'],
   future: ['ayo'],
   nun: ['ayo', 'adj'],
