@@ -178,7 +178,10 @@ const onKey = (e: KeyboardEvent) => {
                   <img v-if="store.scene === sc.id" :src="IMG.check" alt="" class="vp-tick" />
                 </button>
               </div>
-              <label class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
+              <div class="vp-prow">
+                <label class="vp-ptt"><input v-model="store.ptt" type="checkbox" /> Говорить, удерживая кнопку (без перебиваний и эха)</label>
+                <button type="button" class="vp-go" :disabled="!canStart" @click="store.start()">{{ moodText }}</button>
+              </div>
             </div>
 
             <div v-if="!store.live && store.lastId && store.lines.length" class="vp-rv">
@@ -212,7 +215,6 @@ const onKey = (e: KeyboardEvent) => {
               <img v-if="!store.live" :src="IMG.wave" alt="" class="vp-wv" />
               <div v-if="store.live" class="vp-state"><b>{{ moodText }}</b><small>{{ mmss(store.elapsed) }}</small></div>
             </div>
-            <p v-if="!store.live" class="vp-cap">{{ moodText }}</p>
 
             <footer class="vp-foot">
               <div class="vp-bar"><i :style="{ width: usedPct + '%' }"></i></div>
@@ -308,7 +310,10 @@ const onKey = (e: KeyboardEvent) => {
 .vp-scenes .vp-chip span { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
 .vp-tick { position: absolute; top: -8px; right: -6px; width: 24px; height: 24px; object-fit: contain; }
 .vp-wv { width: 54px; height: 54px; object-fit: contain; opacity: .85; flex: none; }
-.vp-cap { margin: -4px 0 0; flex: none; text-align: center; font-size: 15px; font-weight: 700; }
+.vp-prow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.vp-go { padding: 6px 14px; font: inherit; font-size: 12px; font-weight: 700; color: var(--vp-pink-d); cursor: pointer; white-space: nowrap; background: rgba(255, 255, 255, .85); border: 1px solid var(--vp-line); border-radius: 99px; transition: background .15s, transform .15s; }
+.vp-go:hover:not(:disabled) { background: #fff; transform: translateY(-1px); }
+.vp-go:disabled { opacity: .5; cursor: default; }
 .vp-fl { display: flex; align-items: center; gap: 8px; }
 .vp-fl img { width: 20px; height: 20px; object-fit: contain; }
 .vp-msg { display: flex; flex-direction: column; gap: 4px; max-width: 92%; }
