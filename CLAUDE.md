@@ -62,7 +62,7 @@
 
 ## Решения владельца, которые нельзя ломать
 
-- Звука нет и не нужно. Никаких японских и китайских знаков, декоративные надписи только хангылем. Название везде **우리말**.
+- Звука нет и не нужно. **Исключения по слову владельца:** музыкальный плеер (2026-11-14) и голосовой собеседник с микрофоном (2026-11-16, `docs/voice.md`). Никаких японских и китайских знаков, декоративные надписи только хангылем. Название везде **우리말**.
 - Дизайн пастельный розово-голубой по макетам владельца (шрифты Archivo / Noto Sans KR, вес 600–700; на странице игры мельче на 1–3 px и вес 500).
   Никаких смайликов в строке тренажёров и хлеба 🍞 в меню. Значок вкладки розовая ✳ (`public/favicon.svg`).
 - Видео-обзор платформы на главной **само не открывается** (решение 2026-11-09). С 2026-11-14 кнопка «посмотреть видео-демонстрацию» скрыта по просьбе владельца (`SHOW_DEMO` в `HomeView.vue`), вместо неё ссылка «о платформе →» на `/about`.
@@ -144,7 +144,7 @@
 
 `pages/` (файловый роутинг, тонкие обёртки над `views/`) · `views/` (экраны) · `components/` (`cabinet/`, `korean/`, `charts/`, `garden/`, `home/`, `game/`, `dict/`, `music/`) · `composables/` · `stores/` (`progress`, `notes`, `images`, `shop`, `timer`, `toast`…) ·
 `lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (движок игры: `engine.ts` рисует карточку вопроса на чистом DOM, `build.ts`, `view.ts`; оболочка игры на Vue в `components/game/`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
-Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `trash` (корзина 30 дней), `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов, русско-корейские страницы), `exams`, `study` (недельные цели и отчёты), `lesson` (созвон), `music` (плеер), `yadisk` (Диск), `video`, `newwords`, `notify` (Telegram и почта), `search`, `wordsexport`, `jobs`; рядом `log.ts`, `env-check.ts`, `security.ts`.
+Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `trash` (корзина 30 дней), `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов, русско-корейские страницы), `exams`, `study` (недельные цели и отчёты), `lesson` (созвон), `music` (плеер), `voice` (голосовой собеседник), `yadisk` (Диск), `video`, `newwords`, `notify` (Telegram и почта), `search`, `wordsexport`, `jobs`; рядом `log.ts`, `env-check.ts`, `security.ts`.
 
 ## Документация (читай нужный файл перед работой)
 
@@ -161,6 +161,7 @@
 | `docs/shop.md` | монетки Юны и магазин |
 | `docs/music.md` | **музыкальный плеер**: кнопка на всех страницах, песни на Диске, загрузка файлом и по ссылке (yt-dlp), подписанные ссылки, лимиты Caddy |
 | `docs/chat.md` | помощник-чат (OpenRouter) |
+| `docs/voice.md` | **голосовой собеседник** (OpenAI Realtime): кнопка и окно как у музыки, лимит минут, расшифровки, что сделано и что осталось |
 | `docs/server.md` | сервер: таблицы, API, защита, двухфакторный вход |
 | `docs/docker.md` | **Docker-стек**: сервисы, первый запуск, обновление, копии, мониторинг, поиск |
 | `docs/hosting.md` | боевой сервер: Caddy, защита, диагностика |
