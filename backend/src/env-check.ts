@@ -21,6 +21,8 @@ export const ENV_VARS: Record<string, EnvKind> = {
   IMAGES_QUOTA_MB: 'num', DOCS_QUOTA_MB: 'num',
   // помощник-чат
   OPENROUTER_API_KEY: 'secret', CHAT_MODEL: 'string', CHAT_BASE: 'url', CHAT_DAILY_LIMIT: 'int',
+  // бесплатные ИИ-помощники голосового окна
+  GROQ_API_KEY: 'secret', GROQ_BASE: 'url', GROQ_MODEL: 'string', GROQ_STT_MODEL: 'string', GEMINI_API_KEY: 'secret', GEMINI_BASE: 'url', GEMINI_MODEL: 'string',
   // голосовой собеседник
   OPENAI_API_KEY: 'secret', VOICE_MODEL: 'string', VOICE_VOICE: 'string', VOICE_BASE: 'url', VOICE_DAILY_MINUTES: 'int', VOICE_MAX_SESSION_MIN: 'int', VOICE_COST_PER_MIN: 'num', VOICE_TZ: 'string',
   // почта
