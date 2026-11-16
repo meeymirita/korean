@@ -135,6 +135,8 @@ function toggleBd(key: string) {
   openBd.value = next
 }
 const draft = ref('')
+/** Есть ли вопрос ученика, который можно задать другой модели. */
+const hasQuestion = computed(() => store.lines.some(l => l.role === 'user' && !l.wrong))
 /** Последняя реплика ученика: под ней спрашиваем «верно услышал?». */
 const lastUser = computed(() => {
   for (let i = store.lines.length - 1; i >= 0; i--) if (store.lines[i]!.role === 'user') return i
@@ -225,8 +227,12 @@ const onKey = (e: KeyboardEvent) => {
               </div>
             </div>
             <div v-if="store.live || store.lines.length" ref="log" class="vp-log vp-log-scene" :style="{ '--vp-scene': `url(${IMG.scene})` }" aria-live="polite">
-              <div v-for="(l, i) in store.lines" :key="i" class="vp-msg" :class="l.role">
-                <div class="vp-line" :class="[l.role, { wrong: l.wrong }]">
+              <div v-for="(l, i) in store.lines" :key="i" class="vp-msg" :class="[l.role, { other: l.other }]">
+                <div v-if="l.other" class="vp-other">
+                  <small>Другая модель (бесплатная) · на «{{ l.asked }}»</small>
+                  <p v-for="(ln, k) in parseReply(l.text)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p>
+                </div>
+                <div v-else class="vp-line" :class="[l.role, { wrong: l.wrong }]">
                   <template v-if="l.role === 'assistant'">
                     <template v-for="(p, j) in splitKorean(l.text)" :key="j">
                       <button v-if="p.ko" type="button" class="vp-ko" :class="{ on: openBd.has(`${i}:${j}`) }" title="Разобрать по частям" @click="toggleBd(`${i}:${j}`)">{{ p.text }}</button>
@@ -235,7 +241,7 @@ const onKey = (e: KeyboardEvent) => {
                   </template>
                   <template v-else>{{ l.text }}</template>
                 </div>
-                <template v-if="l.role === 'assistant'">
+                <template v-if="l.role === 'assistant' && !l.other">
                   <template v-for="(p, j) in splitKorean(l.text)" :key="j">
                     <div v-if="p.ko && openBd.has(`${i}:${j}`)" class="vp-bd"><SentenceBreakdown :sentence="koreanOnly(p.text)" /></div>
                   </template>
@@ -263,6 +269,10 @@ const onKey = (e: KeyboardEvent) => {
               <button v-if="!store.reviews[store.lastId]" type="button" class="vp-rvbtn" :disabled="!!store.reviewing" @click="store.runReview(store.lastId)">{{ store.reviewing === store.lastId ? 'Разбираю…' : 'Разобрать этот разговор' }}</button>
               <div v-else class="vp-rvtext"><p v-for="(ln, k) in parseReply(store.reviews[store.lastId]!)" :key="k" :class="{ b: ln.bullet }"><template v-for="(pc, m) in ln.pieces" :key="m"><b v-if="pc.bold">{{ pc.text }}</b><template v-else>{{ pc.text }}</template></template></p></div>
             </div>
+
+            <button v-if="hasQuestion" type="button" class="vp-alt" :disabled="store.asking" @click="store.askOther()">
+              {{ store.asking ? 'Другая модель думает…' : 'Спросить другую модель (бесплатную) про последний вопрос' }}
+            </button>
 
             <form v-if="store.live" class="vp-type" @submit.prevent="submit">
               <input v-model="draft" type="text" maxlength="300" :placeholder="store.fixing >= 0 ? 'Напиши, как должно быть' : 'Или напиши ответ текстом'" autocomplete="off" />
@@ -366,6 +376,13 @@ const onKey = (e: KeyboardEvent) => {
 .vp-grip { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 16px; display: flex; align-items: center; justify-content: center; cursor: ew-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
 .vp-grip i { width: 4px; height: 56px; border-radius: 4px; background: var(--vp-pink); opacity: .35; transition: opacity .15s, height .15s; }
 .vp-grip:hover i { opacity: .9; height: 84px; }
+.vp-other { padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--vp-ink); background: linear-gradient(135deg, #fff7e8, #fff); border: 1px dashed #e0b76a; border-radius: 18px; border-bottom-left-radius: 6px; }
+.vp-other small { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: #a97a1f; }
+.vp-other p { margin: 0 0 6px; }
+.vp-other p.b { padding-left: 12px; text-indent: -10px; }
+.vp-other p.b::before { content: '• '; }
+.vp-alt { flex: none; padding: 8px 14px; font: inherit; font-size: 12px; font-weight: 700; color: #a97a1f; cursor: pointer; background: rgba(255, 247, 232, .9); border: 1px dashed #e0b76a; border-radius: 99px; }
+.vp-alt:disabled { opacity: .6; cursor: default; }
 .vp-hico { width: 46px; height: 46px; flex: none; object-fit: contain; }
 .vp-ht { flex: 1; min-width: 0; }
 .vp-ht h2 { flex: none; line-height: 1.1; }
@@ -469,5 +486,6 @@ html[data-theme='dark'] .vp-tabs button:not(.on) { background: rgba(255, 255, 25
 html[data-theme='dark'] .vp-rvtext, html[data-theme='dark'] .vp-bd { background: #2b2450; border-color: #3b3866; }
 html[data-theme='dark'] .vp-cloud, html[data-theme='dark'] .vp-chip { background: rgba(43, 36, 80, .85); border-color: #3b3866; }
 html[data-theme='dark'] .vp-log-scene { background: linear-gradient(rgba(31, 30, 66, .82), rgba(31, 30, 66, .88)), var(--vp-scene) center / cover; border-color: #3b3866; }
+html[data-theme='dark'] .vp-other { background: #3a3150; border-color: #8a6d2f; color: var(--vp-ink); }
 html[data-theme='dark'] .vp-line.assistant { background: #2b2450; border-color: #3b3866; }
 </style>

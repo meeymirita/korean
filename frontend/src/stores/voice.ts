@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { askChat } from '@/lib/chat'
 import { errText, fetchT } from '@/lib/http'
 import { usePersisted } from '@/composables/usePersisted'
 import { useProgressStore } from '@/stores/progress'
@@ -26,6 +27,10 @@ export interface VoiceLine {
   /** Ученик отметил: услышано неверно / верно. */
   wrong?: boolean
   ok?: boolean
+  /** Ответ другой (текстовой) модели на вопрос ученика: показывается отдельной карточкой, на сервер не сохраняется. */
+  other?: boolean
+  /** Вопрос, на который отвечала другая модель. */
+  asked?: string
 }
 
 /** Разговор в истории (список без текста). */
@@ -277,6 +282,32 @@ export const useVoiceStore = defineStore('voice', () => {
     if (tab.value === 'history') void loadHistory()
   }
 
+  /** «Спросить другую модель»: последний вопрос ученика с несколькими репликами до него уходит в бесплатную модель помощника-чата (OpenRouter), ответ добавляется карточкой. */
+  const asking = ref(false)
+  async function askOther() {
+    if (asking.value) return
+    let li = -1
+    for (let i = lines.value.length - 1; i >= 0; i--) {
+      const l = lines.value[i]!
+      if (l.role === 'user' && !l.wrong) {
+        li = i
+        break
+      }
+    }
+    if (li < 0) return
+    const asked = lines.value[li]!.text
+    const ctx = lines.value.slice(0, li + 1).filter(l => !l.other && !l.wrong).slice(-8)
+    asking.value = true
+    try {
+      const { reply } = await askChat(progress.bearer, ctx.map(l => ({ role: l.role, text: l.text.slice(0, 1500) })))
+      lines.value.push({ role: 'assistant', text: reply, other: true, asked })
+    } catch (e) {
+      toast.error(errText(e))
+    } finally {
+      asking.value = false
+    }
+  }
+
   /** Разбор разговора текстовой моделью (по сохранённой расшифровке). */
   async function runReview(id: string, force = false) {
     if (reviewing.value) return
@@ -350,5 +381,5 @@ export const useVoiceStore = defineStore('voice', () => {
     stream?.getAudioTracks().forEach(t => (t.enabled = !muted.value))
   }
 
-  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, live, left, scene, ptt, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview }
+  return { open, tab, status, loadError, phase, mood, muted, elapsed, lines, history, opened, reviews, reviewing, lastId, asking, live, left, scene, ptt, talking, fixing, load, loadHistory, openItem, removeItem, start, stop, toggleMute, holdStart, holdEnd, sendText, fixLine, runReview, askOther }
 })

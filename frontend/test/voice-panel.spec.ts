@@ -67,6 +67,7 @@ beforeEach(() => {
     if (url === '/api/voice/sessions' && method === 'GET') return new Response(JSON.stringify({ sessions: HISTORY }))
     if (url === 'https://api.openai.com/v1/realtime/calls') return new Response('v=0 answer')
     if (/\/messages$/.test(url)) return new Response('{"ok":true}')
+    if (url === '/api/chat' && method === 'POST') return new Response(JSON.stringify({ reply: '**Верно.** 저는 학생이에요', left: 39 }))
     if (/\/review$/.test(url)) return url.includes('/bad') ? new Response('{}', { status: 503 }) : new Response(JSON.stringify({ review: '**Что получилось** — верно' }))
     if (/\/end$/.test(url)) return new Response(JSON.stringify({ ...STATUS, usedSec: 180, leftSec: 420 }))
     if (/^\/api\/voice\/sessions\/a+$/.test(url) && method === 'GET') return new Response(JSON.stringify({ id: 'aaaaaaaaaaaaaaaa', started: 1, seconds: 95, messages: [{ role: 'user', text: '안녕하세요' }, { role: 'assistant', text: '반가워요' }] }))
@@ -194,6 +195,19 @@ describe('голосовой собеседник', () => {
     await store.runReview('bad')
     expect(store.reviews['bad']).toBeUndefined()
     expect(store.reviewing).toBe('')
+  })
+
+  it('другая модель: последний вопрос ученика с контекстом уходит в чат, ответ приходит отдельной карточкой', async () => {
+    const store = useVoiceStore()
+    store.lines = [{ role: 'assistant', text: '이름이 뭐예요?' }, { role: 'user', text: 'Как сказать я студент?' }, { role: 'assistant', text: 'Скажи 저는 학생이에요' }]
+    await store.askOther()
+    const call = calls.find(c => c.url === '/api/chat')!
+    const sent = JSON.parse(call.body!).messages as { role: string; text: string }[]
+    expect(sent.at(-1)).toEqual({ role: 'user', text: 'Как сказать я студент?' })
+    expect(sent).toHaveLength(2)
+    expect(store.lines.at(-1)).toMatchObject({ role: 'assistant', other: true, asked: 'Как сказать я студент?' })
+    expect(calls.some(c => /\/messages$/.test(c.url))).toBe(false)
+    expect(store.asking).toBe(false)
   })
 
   it('мини-плашка видна, пока разговор идёт, а окно закрыто', async () => {
