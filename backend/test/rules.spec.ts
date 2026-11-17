@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkSentence, RULES, rulesDocument } from '../src/public/rules.js'
+import { checkSentence, RULES, rulesDocument, TOPICS, WORKFLOW } from '../src/public/rules.js'
 import { STUDY_SENTENCES } from '../src/public/study.data.js'
 
 describe('правила проверки (/api/public/rules)', () => {
@@ -30,6 +30,17 @@ describe('правила проверки (/api/public/rules)', () => {
     const all = (JSON.parse(STUDY_SENTENCES) as { sentences: { ko: string; ru: string }[] }).sentences
     const hits = all.flatMap(s => checkSentence(s.ko, s.ru).filter(f => f.severity === 'forbid').map(f => `${f.rule}: ${s.ko} | ${s.ru}`))
     expect(hits).toEqual([])
+  })
+
+  it('правила работы: сценарии, подтверждение только для придуманного, единые темы', () => {
+    expect(WORKFLOW.scenarios.map(s => s.id)).toEqual(['notebook-check', 'textbook-words', 'page-content', 'self-made'])
+    expect(WORKFLOW.scenarios.filter(s => s.confirm).map(s => s.id)).toEqual(['self-made'])
+    expect(new Set(TOPICS).size).toBe(TOPICS.length)
+    expect(TOPICS).toEqual(expect.arrayContaining(['만', 'прошедшее время', 'счётные слова']))
+    expect(WORKFLOW.tokens).toContain('60 минут')
+    const d = rulesDocument()
+    expect(d.workflow.always.length).toBeGreaterThan(2)
+    expect(d.topics).toBe(TOPICS)
   })
 
   it('документ содержит пройденное, непройденное и правила, без секретов', () => {

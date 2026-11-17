@@ -111,6 +111,14 @@ describe('временный токен входящих (кнопка «Соз�
     expect(t.expires - Date.now()).toBeLessThanOrEqual(10 * 60 * 1000)
   })
 
+  it('токен с записью живёт 60 минут, токен на чтение 10', async () => {
+    const write = (await request(app.getHttpServer()).post('/api/new-words/token').set(owner).send({ write: true }).expect(200)).body as { expires: number }
+    expect(write.expires - Date.now()).toBeGreaterThan(59 * 60 * 1000)
+    expect(write.expires - Date.now()).toBeLessThanOrEqual(60 * 60 * 1000)
+    const read = await create()
+    expect(read.expires - Date.now()).toBeLessThanOrEqual(10 * 60 * 1000)
+  })
+
   it('читает список новых слов', async () => {
     const { token } = await create()
     await request(app.getHttpServer()).get('/api/new-words').set(bearer(token)).expect(200)

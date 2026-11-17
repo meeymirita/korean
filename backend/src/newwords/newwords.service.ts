@@ -5,8 +5,9 @@ import { INBOX_META } from '../auth/auth.service.js'
 import { Db } from '../db/db.service.js'
 
 export const MAX_NEW_WORDS = 500
-/** Сколько живёт токен, который владелец создаёт кнопкой для Claude */
+/** Сколько живёт токен, который владелец создаёт кнопкой для Claude: чтение 10 минут, запись 60 (проверка тетради и разбор страницы идут дольше 10 минут) */
 export const INBOX_TOKEN_MS = 10 * 60 * 1000
+export const INBOX_WRITE_TOKEN_MS = 60 * 60 * 1000
 const LIMITS = { ko: 60, reading: 80, ru: 120, example: 200, note: 3000 } as const
 type Field = keyof typeof LIMITS
 
@@ -56,12 +57,12 @@ export class NewWordsService {
   }
 
   /**
-   * Создаёт временный токен: по умолчанию только чтение входящих, с `write` ещё добавление слов и материалов (правка и удаление недоступны).
+   * Создаёт временный токен: по умолчанию только чтение входящих на 10 минут, с `write` ещё добавление слов и материалов на 60 минут (правка и удаление недоступны).
    * Хэш, срок и право лежат в meta, прежний токен перестаёт работать. Сам токен показывается один раз.
    */
   async createToken(write = false) {
     const token = randomBytes(24).toString('hex')
-    const expires = Date.now() + INBOX_TOKEN_MS
+    const expires = Date.now() + (write ? INBOX_WRITE_TOKEN_MS : INBOX_TOKEN_MS)
     await this.db.setMeta(INBOX_META, JSON.stringify({ h: createHash('sha256').update(token).digest('hex'), exp: expires, ...(write ? { w: true } : {}) }))
     return { token, expires, write }
   }
