@@ -90,8 +90,27 @@ async function main() {
   const key = process.env.OPENAI_API_KEY
   const model = process.env.MODEL
   const base = (process.env.BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, '')
+  if (key && !/^[\x21-\x7e]+$/.test(key)) {
+    console.error('OPENAI_API_KEY содержит не латинские символы или пробелы: вставлена заглушка вместо настоящего ключа?')
+    process.exit(2)
+  }
+  // LIST=1: показать названия моделей аккаунта (только имена, ключ не печатается)
+  if (key && process.env.LIST) {
+    const r = await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(30_000) })
+    if (!r.ok) {
+      console.error(`HTTP ${r.status}`)
+      process.exit(2)
+    }
+    const ids = ((await r.json()).data ?? []).map(m => m.id).filter(id => /gpt|^o\d/.test(id) && !/realtime|audio|tts|transcribe|image|embedding|moderation|search|codex/.test(id))
+    console.log(`Текстовые модели аккаунта (без голосовых):\n${ids.sort().join('\n')}`)
+    process.exit(0)
+  }
   if (!key || !model) {
-    console.error('Нужны OPENAI_API_KEY и MODEL (текстовая модель, например та, что дешевле). Ключ не печатается.')
+    console.error('Нужны OPENAI_API_KEY и MODEL (текстовая модель, не realtime; список: LIST=1). Ключ не печатается.')
+    process.exit(2)
+  }
+  if (/realtime|audio/.test(model)) {
+    console.error('Это голосовая модель: она не отвечает на текстовые запросы. Возьми текстовую (LIST=1 покажет доступные).')
     process.exit(2)
   }
   let buildPrompt
