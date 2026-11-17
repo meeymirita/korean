@@ -26,8 +26,9 @@ describe('страница «Слова»: три времени у глагол
     const row = w.findAll('.tb .row:not(.h)').find(r => r.find('.k').text() === k)!
     await row.find('.se-btn').trigger('click')
     const chips = w.findAll('.tn-pick .chip')
-    expect(chips.map(c => c.text())).toEqual(['Из списка', 'Настоящее', 'Прошедшее', 'Будущее'])
-    await chips[3]!.trigger('click')
+    expect(chips.map(c => c.text())).toEqual(['Настоящее', 'Прошедшее', 'Будущее'])
+    expect(w.find('.bd-ko').text()).toBe(TENSES[k]!.s[0][0])
+    await chips[2]!.trigger('click')
     const [ko, ru] = TENSES[k]!.s[2]
     expect(w.find('.bd-ko').text()).toBe(ko)
     expect(w.find('.bd-tr').text()).toContain(ru)

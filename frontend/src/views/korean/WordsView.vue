@@ -41,14 +41,14 @@ const openForm = () => ((editing.value = null), (formOpen.value = true))
 watch(() => progress.unlocked, u => u && newWords.load().catch(() => {}))
 onMounted(() => progress.unlocked && newWords.load().catch(() => {}))
 const openN = ref<number | null>(null)
-const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null), (tenseN.value = -1))
-/** Какое время слова показано в разборе: -1 — обычное предложение слова, 0–2 — настоящее, прошедшее, будущее */
-const tenseN = ref(-1)
+const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null), (tenseN.value = 0))
+/** Какое время слова показано в разборе: 0–2 — настоящее, прошедшее, будущее (у слов без `tenses.ts` — предложение из списка) */
+const tenseN = ref(0)
 /** Колонки «Настоящее / Прошедшее / Будущее» появляются, когда в `tenses.ts` есть слова */
 const HAS_TENSES = Object.keys(TENSES).length > 0
 /** Предложение и перевод для разбора раскрытого слова (с учётом выбранного времени) */
 const shown = (d: Word) => {
-  const s = tenseN.value >= 0 ? TENSES[d.k]?.s[tenseN.value] : undefined
+  const s = TENSES[d.k]?.s[tenseN.value]
   return s ? { sentence: s[0], translation: s[1] } : { sentence: d.s, translation: undefined }
 }
 /** Для какого слова показаны «похожие» */
@@ -224,7 +224,6 @@ const shareWord = (d: Word) =>
         </div>
         <div v-if="openN === d.n" v-show="i < limit" class="row-detail">
           <div v-if="TENSES[d.k]" class="tn-pick" role="group" aria-label="Предложение в разном времени">
-            <button type="button" class="chip" :class="{ on: tenseN === -1 }" :aria-pressed="tenseN === -1" @click="tenseN = -1">Из списка</button>
             <button v-for="(name, i) in TENSE_ORDER" :key="name" type="button" class="chip" :class="{ on: tenseN === i }" :aria-pressed="tenseN === i" @click="tenseN = i">{{ TENSE_NAMES[name] }}</button>
           </div>
           <SentenceBreakdown :sentence="shown(d).sentence" :translation="shown(d).translation" :extra="[`Слово из списка: ${d.k} (${d.r}) — ${d.t}`]" />
