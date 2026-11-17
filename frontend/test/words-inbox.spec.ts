@@ -137,7 +137,7 @@ describe('«Слова»: «Входящие»', () => {
     await flushPromises()
     await w.findAll('.ib-tabs .chip')[4]!.trigger('click')
     const titles = w.findAll('.ib-card header b').map(b => b.text())
-    expect(titles).toEqual(['Слова', 'Предложения', 'Задания и тексты', 'Проверка тетради и ошибки', 'Что изучено'])
+    expect(titles).toEqual(['Слова', 'Предложения', 'Страница из учебника', 'Проверка тетради и ошибки', 'Что изучено'])
     expect(w.text()).toContain('Скажи Claude:')
     expect(w.text()).toContain('Что будет:')
     expect(w.find('.ib-hint a[href="/api/materials/format"]').exists()).toBe(true)
