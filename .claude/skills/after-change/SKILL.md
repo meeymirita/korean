@@ -14,7 +14,8 @@ description: Чеклист после любой правки на платфо
 - **Страница**: `seo.ts`, `crumbs.ts`, `guide.ts`, `sections.ts`, слайд в `about.ts`, `docs/home-and-theme.md`.
 - **Сервер, база, настройки**: миграция Prisma, `docker-compose.yml`, `.env.example`, `backend/src/config.ts`, `docs/server.md` и документ по теме (`docs/voice.md`, `docs/chat.md`), перезапуск сервера после выкладки.
 - **Инструкция голоса или чата** (`voice/prompt.ts`, `chat/prompt.ts`): правило, добавленное в одну, проверь и в другой (у них общие `KNOWN_*`, но проза своя); обе описаны в `docs/voice.md` и `docs/chat.md`; тесты `voice-util.spec.ts` (предел длины) и `chat-prompt.test.mjs`; правку инструкции голоса прогоняй через `scripts/voice-text-check.mjs` (20 сценариев, нужен ключ, см. `docs/voice.md`), новую живую ошибку добавляй туда сценарием.
-- **Любое заметное изменение**: запись в начало `HISTORY`.
+- **Любое заметное изменение**: запись в начало `HISTORY`; после заметной порции работы обнови график роста: `node scripts/build-commit-graph.mjs` (пишет `data/growth.ts`, не входит в `npm run sync`).
+- **Входящие и API** (`materials`, `learning`, `rules.ts`, токены): `docs/data.md` («Входящие»), `docs/server.md`, `docs/desktop-skill.md`, вкладка «Инструкция» в `InboxPanel.vue` (`HELP`), `scripts/inbox.mjs`; новый урок проверки: правило в `rules.ts` и строка в `docs/data.md`.
 
 
 Ноутбук слабый: одна тяжёлая команда за раз, ничего параллельно.
