@@ -16,7 +16,7 @@ const words = useNewWordsStore()
 const mats = useMaterialsStore()
 const toast = useToastStore()
 
-const tab = usePersisted('inbox_tab', 'words', v => v === 'words' || v === 'materials' || v === 'learning' || v === 'send')
+const tab = usePersisted('inbox_tab', 'words', v => v === 'words' || v === 'materials' || v === 'learning' || v === 'help' || v === 'send')
 const open = ref<string | null>(null)
 const BASE = computed(() => (import.meta.client ? location.origin : 'https://korean.meeymirita.ru'))
 
@@ -74,6 +74,7 @@ interface Learning {
   grammar: { passedCount: number; passed: string[]; notYet: string[] }
   words: { learned: number; inProgress: number; learnedThisWeek: string[]; weak: { word: string; ok: number; bad: number }[] }
   activity: { streakDays: number; lastAnswer: string | null; last7Days: { ok: number; bad: number; activeDays: number; minutes: number }; last30Days: { ok: number; bad: number; activeDays: number; minutes: number }; weakModes: { source: string; mode: string; answers: number; accuracy: number }[] }
+  homework?: { mistakes: { total: number; byTopic: { topic: string; count: number }[]; recent: { mine: string; right: string; why: string; topic: string }[] } }
   inbox: { newWords: number; materialsToReview: number }
 }
 const progress = useProgressStore()
@@ -139,12 +140,24 @@ const curlPost = (path: string, body: unknown) => `curl -s -X POST ${BASE.value}
 const examples = computed(() => [
   { title: 'Узнать формат (без токена)', note: 'Открытый адрес: Claude читает его первым, чтобы знать типы и лимиты.', code: `curl -s ${BASE.value}/api/materials/format` },
   { title: 'Правила проверки (без токена)', note: 'Открытый адрес: что пройдено, что писать нельзя (с примерами плохо / хорошо), условия платформы. Claude читает его до отправки и проверяет свои предложения.', code: `curl -s ${BASE.value}/api/public/rules` },
+  { title: 'Проверка тетради: задание и ошибки', note: 'POST /api/materials · токен с записью. task: само задание; mistake: одна ошибка (no, mine, right, why, topic). Ошибки по темам идут в /api/learning.', code: curlPost('/api/materials', { source: 'Тетрадь, 만 «только»', kind: 'notebook', items: [{ type: 'task', title: '15 предложений на 만', body: '1. Я люблю только кимчи…', topic: '만' }, { type: 'mistake', no: 3, mine: '일요일에 저는 약속이 있어요.', right: '일요일에만 약속이 있어요.', why: 'Пропущено 만.', topic: '만' }] }) },
   { title: 'Добавить слово', note: 'POST /api/new-words · токен с записью. Слово попадает в «Новые слова».', code: curlPost('/api/new-words', { ko: '기다리다', reading: 'кидарида', ru: 'ждать', example: '친구를 기다려요.' }) },
   { title: 'Отправить материалы', note: 'POST /api/materials · токен с записью. Пачка: источник, вид и список элементов (слово, предложение, диалог, текст, грамматика, задание, заметка).', code: curlPost('/api/materials', mats.format?.example ?? { source: '…', kind: 'workbook', items: [] }) },
   { title: 'Прочитать записанные слова', note: 'GET /api/new-words · любой токен.', code: curlGet('/api/new-words') },
   { title: 'Прочитать присланные пачки', note: 'GET /api/materials · любой токен.', code: curlGet('/api/materials') },
   { title: 'Что изучено и пройдено (кратко)', note: 'GET /api/learning · любой токен. Пройденная грамматика, что ещё впереди, слова, серия дней и слабые места: Claude читает это первым, чтобы не выходить за пройденное.', code: curlGet('/api/learning') },
 ])
+/** Готовая просьба: токен, что прочитать сначала, затем конкретная задача. */
+const askFor = (say: string) =>
+  `Вот токен для платформы 우리말: ${tok.value?.token ?? TOKEN_HINT} (действует 10 минут).\nСначала прочитай: ${BASE.value}/api/learning (с этим токеном, что уже пройдено), ${BASE.value}/api/public/rules (правила проверки) и ${BASE.value}/api/materials/format (формат).\nПроверь свои предложения по правилам, потом отправляй одним запросом POST ${BASE.value}/api/materials. В словарь и грамматику ничего не вноси.\n${say}`
+/** Инструкция владельцу: что для чего просить (поле `say` — что сказать Claude после общей просьбы). */
+const HELP = [
+  { title: 'Слова', what: 'Новые слова из тетради, учебника или урока Леры: ты даёшь фото или список, Claude отправляет их во входящие.', say: 'Вот слова из тетради (фото). Отправь каждое словом (type word: ko, reading, ru, example).', result: 'Слова видны во «Входящих» → «Слова» и пачкой в «Материалах». Дальше говоришь мне «добавляй»: я сверю по словарю и внесу.' },
+  { title: 'Предложения', what: 'Примеры и фразы с переводом, которые нужны сайту (для заданий, словаря).', say: 'Вот предложения. Проверь их по правилам и отправь как sentence (ko, ru, topic).', result: 'Видны в «Материалах». Потом проверка нейросетями и внесение: через меня.' },
+  { title: 'Задания и тексты', what: 'Тексты для чтения с вопросами, диалоги, упражнения, конспекты Леры.', say: 'Вот страница из учебника. Отправь тексты (type text, с вопросами и номером верного ответа с нуля), диалоги (dialog), упражнения (exercise), правила (grammar).', result: 'Всё в «Материалах»: раскрой пачку и смотри. Пройти как серию можно будет, когда появится режим «От Claude».' },
+  { title: 'Проверка тетради и ошибки', what: 'Ты выполнил задание на бумаге: Claude проверяет фото и отправляет само задание и каждую ошибку (как у тебя, как правильно, почему, тема).', say: 'Вот задание и фото моей тетради. Проверь. Отправь task (само задание, topic: тема) и каждую ошибку как mistake (no, mine, right, why, topic).', result: 'В «Материалах» ошибки красным и зелёным. В «Что изучено» слабые темы по числу ошибок: по ним потом составляются задания.' },
+  { title: 'Что изучено', what: 'Чтобы Claude знал, что ты проходил, и не выходил за пройденное, когда составляет задания.', say: 'Прочитай /api/learning и составь задание только на пройденное.', result: 'Читает пройденную грамматику, что впереди, слабые слова, режимы и ошибки.' },
+]
 const claudeAsk = computed(
   () => `Вот токен для платформы 우리말: ${tok.value?.token ?? TOKEN_HINT} (действует 10 минут).\nСначала прочитай, что уже пройдено: GET ${BASE.value}/api/learning (с этим токеном), правила проверки: ${BASE.value}/api/public/rules и описание формата: ${BASE.value}/api/materials/format\nПроверь свои предложения по правилам, потом отправляй.\nПотом отправь материал из этого файла одним запросом POST ${BASE.value}/api/materials (слова и предложения тоже сюда, слова попадут и в «Новые слова»). В словарь ничего не вноси.`,
 )
@@ -179,6 +192,7 @@ const claudeAsk = computed(
       <button type="button" class="chip" :class="{ on: tab === 'words' }" role="tab" :aria-selected="tab === 'words'" @click="tab = 'words'">Слова · {{ words.items.length }}</button>
       <button type="button" class="chip" :class="{ on: tab === 'materials' }" role="tab" :aria-selected="tab === 'materials'" @click="tab = 'materials'">Материалы · {{ mats.batches.length }}</button>
       <button type="button" class="chip" :class="{ on: tab === 'learning' }" role="tab" :aria-selected="tab === 'learning'" @click="openLearning">Что изучено</button>
+      <button type="button" class="chip" :class="{ on: tab === 'help' }" role="tab" :aria-selected="tab === 'help'" @click="tab = 'help'">Инструкция</button>
       <button type="button" class="chip" :class="{ on: tab === 'send' }" role="tab" :aria-selected="tab === 'send'" @click="tab = 'send'">Как отправить</button>
     </div>
 
@@ -237,6 +251,14 @@ const claudeAsk = computed(
                 <b>{{ it.title }}</b> {{ it.note }}
                 <div v-for="(l, j) in it.examples" :key="j"><span class="ko">{{ l.ko }}</span> — {{ l.ru }}</div>
               </template>
+              <template v-else-if="it.type === 'task'">
+                <b>{{ it.title }}</b><span v-if="it.topic" class="ib-muted"> ({{ it.topic }})</span>
+                <div v-if="it.body" class="ib-pre">{{ it.body }}</div>
+              </template>
+              <template v-else-if="it.type === 'mistake'">
+                <span v-if="it.no" class="ib-muted">{{ it.no }}) </span><s class="ib-bad ko">{{ it.mine }}</s> → <b class="ib-good ko">{{ it.right }}</b>
+                <span v-if="it.why" class="ib-muted"> · {{ it.why }}</span><span v-if="it.topic" class="ib-badge"> {{ it.topic }}</span>
+              </template>
               <template v-else-if="it.type === 'exercise'">
                 {{ it.prompt }}<span v-if="it.body" class="ib-pre"> {{ it.body }}</span><span v-if="it.answer" class="ib-muted"> · ответ: {{ it.answer }}</span>
               </template>
@@ -271,11 +293,33 @@ const claudeAsk = computed(
           <p class="ib-muted">7 дней: верно {{ learning.activity.last7Days.ok }}, ошибок {{ learning.activity.last7Days.bad }}, дней занятий {{ learning.activity.last7Days.activeDays }}, {{ learning.activity.last7Days.minutes }} мин · 30 дней: верно {{ learning.activity.last30Days.ok }}, ошибок {{ learning.activity.last30Days.bad }}, дней {{ learning.activity.last30Days.activeDays }}, {{ learning.activity.last30Days.minutes }} мин</p>
           <p v-if="learning.activity.weakModes.length" class="ib-muted">Слабые режимы: {{ learning.activity.weakModes.map(m => `${m.mode} ${m.accuracy}%`).join(' · ') }}</p>
         </article>
+        <article v-if="learning.homework?.mistakes.total" class="ib-card">
+          <header><b>Ошибки из проверок тетради</b><span class="ib-badge">всего {{ learning.homework.mistakes.total }}</span></header>
+          <p class="ib-muted">По темам: {{ learning.homework.mistakes.byTopic.map(t => `${t.topic} ${t.count}`).join(' · ') }}</p>
+          <div v-for="(m, i) in learning.homework.mistakes.recent" :key="i" class="ib-item"><s class="ib-bad ko">{{ m.mine }}</s> → <b class="ib-good ko">{{ m.right }}</b><span v-if="m.why" class="ib-muted"> · {{ m.why }}</span></div>
+        </article>
         <article class="ib-card">
           <header><b>Весь ответ (JSON)</b><button type="button" class="ib-btn ghost small" @click="copy(learningRaw, 'JSON скопирован')">Копировать</button><button type="button" class="ib-btn ghost small" @click="loadLearning">Обновить</button></header>
           <pre class="ib-code">{{ learningRaw }}</pre>
         </article>
       </template>
+    </div>
+
+    <!-- инструкция для владельца: что просить у Claude -->
+    <div v-else-if="tab === 'help'" class="ib-list">
+      <p class="ib-hint">
+        Коротко: вверху нажми «Токен для Claude: запись», потом возьми нужную фразу ниже, нажми «Скопировать фразу» и вставь в десктопное приложение Claude вместе с фото или файлом. Токен подставится сам, он живёт 10 минут.
+        Подробности для Claude: <a href="/api/materials/format" target="_blank" rel="noopener">формат ↗</a>, <a href="/api/public/rules" target="_blank" rel="noopener">правила проверки ↗</a>; готовые запросы по каждому маршруту: <button type="button" class="ib-link" @click="tab = 'send'">«Как отправить»</button>.
+      </p>
+      <article v-for="h in HELP" :key="h.title" class="ib-card">
+        <header>
+          <b>{{ h.title }}</b>
+          <button type="button" class="ib-btn ghost small" @click="copy(askFor(h.say), 'Фраза для Claude скопирована')">Скопировать фразу</button>
+        </header>
+        <p>{{ h.what }}</p>
+        <p class="ib-muted"><b>Скажи Claude:</b> {{ h.say }}</p>
+        <p class="ib-muted"><b>Что будет:</b> {{ h.result }}</p>
+      </article>
     </div>
 
     <!-- как отправить -->
@@ -302,6 +346,10 @@ const claudeAsk = computed(
 </template>
 
 <style scoped>
+.ib-link { padding: 0; border: 0; background: transparent; color: #d64da9; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.ib-hint a { color: #d64da9; font-weight: 700; }
+.ib-bad { color: #c0392b; text-decoration-thickness: 1.5px; }
+.ib-good { color: var(--ok); }
 .inbox { margin-top: 18px; display: flex; flex-direction: column; gap: 16px; }
 .ib-head h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
 .ib-sub, .ib-hint { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }

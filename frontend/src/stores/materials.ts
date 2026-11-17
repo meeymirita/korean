@@ -14,6 +14,8 @@ export type MaterialItem =
   | { type: 'text'; title: string; sentences: Pair[]; questions: { q: string; options: string[]; answer: number }[] }
   | { type: 'grammar'; title: string; note: string; examples: Pair[] }
   | { type: 'exercise'; prompt: string; body: string; answer: string }
+  | { type: 'task'; title: string; body: string; topic: string }
+  | { type: 'mistake'; no: string; mine: string; right: string; why: string; topic: string }
   | { type: 'note'; text: string }
 
 export interface MaterialBatch {
@@ -35,7 +37,7 @@ export interface MaterialsFormat {
 
 /** Названия видов и типов для экрана «Входящие». */
 export const KIND_NAME: Record<string, string> = { workbook: 'рабочая тетрадь', textbook: 'учебник', notebook: 'моя тетрадь', lera: 'от Леры', other: 'другое' }
-export const TYPE_NAME: Record<MaterialItem['type'], string> = { word: 'слова', sentence: 'предложения', dialog: 'диалоги', text: 'тексты', grammar: 'грамматика', exercise: 'задания', note: 'заметки' }
+export const TYPE_NAME: Record<MaterialItem['type'], string> = { word: 'слова', sentence: 'предложения', dialog: 'диалоги', text: 'тексты', grammar: 'грамматика', exercise: 'упражнения', task: 'задания', mistake: 'ошибки', note: 'заметки' }
 
 /** Присланные материалы: пачки из тетрадей и заданий (только владелец; гостю ничего не грузится). */
 export const useMaterialsStore = defineStore('materials', () => {

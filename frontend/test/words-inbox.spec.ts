@@ -119,17 +119,35 @@ describe('«Слова»: «Входящие»', () => {
     expect(w.find('.ib-code').text()).toContain('"passedCount": 2')
   })
 
-  it('«Как отправить»: готовые запросы на каждый маршрут', async () => {
+  it('вкладка «Инструкция»: что для чего, фраза для Claude с токеном копируется', async () => {
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     await w.find('.inbox-btn').trigger('click')
     await flushPromises()
     await w.findAll('.ib-tabs .chip')[3]!.trigger('click')
+    const titles = w.findAll('.ib-card header b').map(b => b.text())
+    expect(titles).toEqual(['Слова', 'Предложения', 'Задания и тексты', 'Проверка тетради и ошибки', 'Что изучено'])
+    expect(w.text()).toContain('Скажи Claude:')
+    expect(w.text()).toContain('Что будет:')
+    expect(w.find('.ib-hint a[href="/api/materials/format"]').exists()).toBe(true)
+    expect(w.find('.ib-hint a[href="/api/public/rules"]').exists()).toBe(true)
+    const writes: string[] = []
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t: string) => void writes.push(t) }, configurable: true })
+    await w.findAll('.ib-card header .ib-btn')[3]!.trigger('click')
+    expect(writes[0]).toContain('/api/public/rules')
+    expect(writes[0]).toContain('mistake')
+  })
+
+  it('«Как отправить»: готовые запросы на каждый маршрут', async () => {
+    const w = await mountSuspended(WordsView, { route: '/korean/words' })
+    await w.find('.inbox-btn').trigger('click')
+    await flushPromises()
+    await w.findAll('.ib-tabs .chip')[4]!.trigger('click')
     const codes = w.findAll('.ib-code').map(c => c.text())
-    expect(codes.length).toBe(7)
+    expect(codes.length).toBe(8)
     expect(codes.some(c => c.includes('/api/materials/format'))).toBe(true)
     expect(codes.some(c => c.includes('-X POST') && c.includes('/api/new-words') && c.includes('"ko"'))).toBe(true)
     expect(codes.some(c => c.includes('-X POST') && c.includes('/api/materials') && c.includes('"source": "Тетрадь"'))).toBe(true)
-    expect(codes.filter(c => c.includes('Authorization: Bearer ТОКЕН')).length).toBe(5)
+    expect(codes.filter(c => c.includes('Authorization: Bearer ТОКЕН')).length).toBe(6)
     expect(codes.some(c => c.includes('/api/learning'))).toBe(true)
     expect(codes.some(c => c.includes('/api/public/rules') && !c.includes('Authorization'))).toBe(true)
     expect(w.text()).toContain('POST /api/materials')
