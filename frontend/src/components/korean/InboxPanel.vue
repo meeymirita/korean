@@ -138,6 +138,7 @@ const curlGet = (path: string) => `curl -s ${BASE.value}${path} \\\n  -H "Author
 const curlPost = (path: string, body: unknown) => `curl -s -X POST ${BASE.value}${path} \\\n  -H "Authorization: Bearer ${TOKEN_HINT}" \\\n  -H "Content-Type: application/json" \\\n  -d '${shell(pretty(body))}'`
 const examples = computed(() => [
   { title: 'Узнать формат (без токена)', note: 'Открытый адрес: Claude читает его первым, чтобы знать типы и лимиты.', code: `curl -s ${BASE.value}/api/materials/format` },
+  { title: 'Правила проверки (без токена)', note: 'Открытый адрес: что пройдено, что писать нельзя (с примерами плохо / хорошо), условия платформы. Claude читает его до отправки и проверяет свои предложения.', code: `curl -s ${BASE.value}/api/public/rules` },
   { title: 'Добавить слово', note: 'POST /api/new-words · токен с записью. Слово попадает в «Новые слова».', code: curlPost('/api/new-words', { ko: '기다리다', reading: 'кидарида', ru: 'ждать', example: '친구를 기다려요.' }) },
   { title: 'Отправить материалы', note: 'POST /api/materials · токен с записью. Пачка: источник, вид и список элементов (слово, предложение, диалог, текст, грамматика, задание, заметка).', code: curlPost('/api/materials', mats.format?.example ?? { source: '…', kind: 'workbook', items: [] }) },
   { title: 'Прочитать записанные слова', note: 'GET /api/new-words · любой токен.', code: curlGet('/api/new-words') },
@@ -145,7 +146,7 @@ const examples = computed(() => [
   { title: 'Что изучено и пройдено (кратко)', note: 'GET /api/learning · любой токен. Пройденная грамматика, что ещё впереди, слова, серия дней и слабые места: Claude читает это первым, чтобы не выходить за пройденное.', code: curlGet('/api/learning') },
 ])
 const claudeAsk = computed(
-  () => `Вот токен для платформы 우리말: ${tok.value?.token ?? TOKEN_HINT} (действует 10 минут).\nСначала прочитай, что уже пройдено: GET ${BASE.value}/api/learning (с этим токеном), и описание формата: ${BASE.value}/api/materials/format\nПотом отправь материал из этого файла одним запросом POST ${BASE.value}/api/materials (слова и предложения тоже сюда, слова попадут и в «Новые слова»). В словарь ничего не вноси.`,
+  () => `Вот токен для платформы 우리말: ${tok.value?.token ?? TOKEN_HINT} (действует 10 минут).\nСначала прочитай, что уже пройдено: GET ${BASE.value}/api/learning (с этим токеном), правила проверки: ${BASE.value}/api/public/rules и описание формата: ${BASE.value}/api/materials/format\nПроверь свои предложения по правилам, потом отправляй.\nПотом отправь материал из этого файла одним запросом POST ${BASE.value}/api/materials (слова и предложения тоже сюда, слова попадут и в «Новые слова»). В словарь ничего не вноси.`,
 )
 </script>
 

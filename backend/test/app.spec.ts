@@ -237,3 +237,13 @@ describe('сводка об обучении (/api/learning)', () => {
     }
   })
 })
+
+describe('открытые правила проверки (/api/public/rules)', () => {
+  it('отдаются без токена: пройдено, впереди, запреты с примерами, условия', async () => {
+    const res = await request(app.getHttpServer()).get('/api/public/rules').expect(200)
+    expect(res.body.passed.length).toBeGreaterThan(20)
+    expect(res.body.notYet.length).toBeGreaterThan(3)
+    expect(res.body.forbid.some((r: { id: string; bad: string[] }) => r.id === 'no-egae' && r.bad.length > 0)).toBe(true)
+    expect(res.body.conventions.length).toBeGreaterThan(3)
+  })
+})

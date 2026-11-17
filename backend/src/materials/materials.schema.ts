@@ -109,6 +109,7 @@ export const MATERIALS_FORMAT = {
   limits: { itemsPerRequest: MAX_ITEMS, batches: MAX_BATCHES, newWords: 500 },
   routes: [
     { method: 'GET', path: '/api/materials/format', auth: 'не нужен', desc: 'это описание' },
+    { method: 'GET', path: '/api/public/rules', auth: 'не нужен', desc: 'правила проверки: что пройдено, что нельзя писать (с примерами), условия платформы; прочитай до отправки и проверь себя' },
     { method: 'POST', path: '/api/new-words', auth: 'токен с записью', desc: 'добавить одно слово во входящие: {ko, ru, reading?, example?, note?}' },
     { method: 'POST', path: '/api/materials', auth: 'токен с записью', desc: 'отправить пачку {source, kind?, items: [...]}' },
     { method: 'GET', path: '/api/new-words', auth: 'токен (чтение или запись)', desc: 'записанные слова' },
