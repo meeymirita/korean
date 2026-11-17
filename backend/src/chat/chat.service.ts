@@ -1,6 +1,8 @@
-/** Помощник-чат: пересылает вопросы в OpenRouter и возвращает ответ. Историю переписки хранит браузер, сервер её не сохраняет. */
-import { BadGatewayException, BadRequestException, HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common'
-import { CHAT_DAILY_LIMIT, CHAT_MAX_HISTORY, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
+/** Помощник-чат: пересылает вопросы в OpenRouter и возвращает ответ. Чаты и их сообщения хранятся в базе (таблицы chat_convs и chat_msgs). */
+import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
+import { randomBytes } from 'node:crypto'
+import { CHAT_DAILY_LIMIT, CHAT_MAX_HISTORY, CHAT_MAX_SAVED, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
+import { Db } from '../db/db.service.js'
 import { SYSTEM_PROMPT } from './prompt.js'
 
 export interface ChatMsg {
@@ -29,8 +31,17 @@ export function cleanMessages(v: unknown): ChatMsg[] {
   return tail
 }
 
+/** Куда сохранять: ничего (старый вызов без чата), 'new' (завести чат) или номер чата. */
+export function cleanConv(v: unknown): string | undefined {
+  if (v === undefined || v === null) return undefined
+  if (v === 'new' || (typeof v === 'string' && /^[0-9a-f]{16}$/.test(v))) return v
+  throw bad('invalid conv')
+}
+
 @Injectable()
 export class ChatService {
+  constructor(private readonly db: Db) {}
+
   private day = ''
   private used = 0
 
@@ -57,7 +68,10 @@ export class ChatService {
 
   async ask(body: Record<string, unknown>) {
     const messages = cleanMessages(body?.messages)
+    const conv = cleanConv(body?.conv)
     if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
+    // чат проверяем до обращения к модели: вопрос не тратится, если чата нет или он переполнен
+    if (conv && conv !== 'new') await this.checkRoom(conv)
     const left = this.take()
     // бесплатный маршрутизатор иногда отдаёт пустой ответ: пробуем ещё раз (вопрос в счётчике один раз)
     let reply = ''
@@ -66,7 +80,59 @@ export class ChatService {
       this.used--
       throw new BadGatewayException({ error: 'empty answer' })
     }
-    return { reply, left }
+    const saved = conv ? await this.save(conv, messages[messages.length - 1]!.text, reply) : undefined
+    return { reply, left, ...(saved ? { conv: saved } : {}) }
+  }
+
+  private async checkRoom(id: string) {
+    const db = await this.db.orm()
+    if (!(await db.chatConv.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundException({ error: 'not found' })
+    if ((await db.chatMsg.count({ where: { conv: id } })) >= CHAT_MAX_SAVED) throw bad('chat too long')
+  }
+
+  /** Записывает вопрос и ответ в чат (для 'new' заводит его); возвращает номер чата. */
+  private async save(conv: string, question: string, reply: string): Promise<string> {
+    const now = Date.now()
+    let id = conv
+    await this.db.tx(async () => {
+      const db = await this.db.orm()
+      if (conv === 'new') {
+        id = randomBytes(8).toString('hex')
+        await db.chatConv.create({ data: { id, started: BigInt(now), updated: BigInt(now), title: question.replace(/\s+/g, ' ').slice(0, 80) } })
+      } else {
+        await db.chatConv.update({ where: { id }, data: { updated: BigInt(now) } })
+      }
+      await db.chatMsg.createMany({ data: [{ conv: id, t: BigInt(now), role: 'user', text: question }, { conv: id, t: BigInt(now + 1), role: 'assistant', text: reply }] })
+    })
+    return id
+  }
+
+  /** Список чатов, новые сверху: заголовок (начало первого вопроса), время и число сообщений. */
+  async list() {
+    const db = await this.db.orm()
+    const convs = await db.chatConv.findMany({ orderBy: { updated: 'desc' }, take: 200 })
+    const counts = await db.chatMsg.groupBy({ by: ['conv'], where: { conv: { in: convs.map(c => c.id) } }, _count: { _all: true } })
+    const n = new Map(counts.map(c => [c.conv, c._count._all]))
+    return { conversations: convs.map(c => ({ id: c.id, title: c.title, started: Number(c.started), updated: Number(c.updated), messages: n.get(c.id) ?? 0 })) }
+  }
+
+  async get(id: string) {
+    const db = await this.db.orm()
+    const c = await db.chatConv.findUnique({ where: { id } })
+    if (!c) throw new NotFoundException({ error: 'not found' })
+    const rows = await db.chatMsg.findMany({ where: { conv: id }, orderBy: { id: 'asc' } })
+    return { id: c.id, title: c.title, started: Number(c.started), updated: Number(c.updated), messages: rows.map(m => ({ role: m.role, text: m.text, t: Number(m.t) })) }
+  }
+
+  async remove(id: string) {
+    const db = await this.db.orm()
+    if (!(await db.chatConv.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundException({ error: 'not found' })
+    await this.db.tx(async () => {
+      const tx = await this.db.orm()
+      await tx.chatMsg.deleteMany({ where: { conv: id } })
+      await tx.chatConv.delete({ where: { id } })
+    })
+    return { ok: true }
   }
 
   /** Один запрос к модели; пустая строка, если модель ничего не написала. */

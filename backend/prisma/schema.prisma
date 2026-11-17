@@ -260,3 +260,26 @@ model VoiceMessage {
   @@index([session], map: "voice_messages_session")
   @@map("voice_messages")
 }
+
+/// Помощник-чат: один чат (переписка с помощником). title это начало первого вопроса, updated время последнего ответа
+model ChatConv {
+  id      String @id
+  started BigInt
+  updated BigInt
+  title   String @default("")
+
+  @@index([updated], map: "chat_convs_updated")
+  @@map("chat_convs")
+}
+
+/// Помощник-чат: сообщение чата (role: user или assistant)
+model ChatMsg {
+  id   BigInt @id @default(autoincrement())
+  conv String
+  t    BigInt
+  role String
+  text String
+
+  @@index([conv], map: "chat_msgs_conv")
+  @@map("chat_msgs")
+}

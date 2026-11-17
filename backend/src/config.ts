@@ -98,6 +98,8 @@ export const CHAT_BASE = (process.env.CHAT_BASE || 'https://openrouter.ai/api/v1
 export const CHAT_DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT || 40)
 export const CHAT_MAX_TEXT = 2000
 export const CHAT_MAX_HISTORY = 12
+/** Сколько сообщений хранится в одном чате (дальше предлагается начать новый). */
+export const CHAT_MAX_SAVED = 300
 
 /** Голосовой собеседник (OpenAI Realtime): ключ только в .env сервера, в браузер уходит временный ключ. Без ключа окно пишет «не подключён». */
 export const VOICE_KEY = process.env.OPENAI_API_KEY || ''
