@@ -20,7 +20,7 @@ export class StudyController {
   /** Правила проверки новых предложений и переводов: читает десктопное приложение Claude перед отправкой материала. */
   @Public()
   @Get('rules')
-  @Header('Cache-Control', 'public, max-age=900')
+  @Header('Cache-Control', 'public, max-age=60')
   rules() {
     return rulesDocument()
   }
