@@ -429,8 +429,12 @@ export function analyze(sentence: string): Segment[] {
       }
     }
     const segs = analyzeToken(tok)
+    // частица сама по себе (нажали на «에» в тексте собеседника): показываем как частицу, а не «нет в словаре»
+    const lone = segs ? undefined : PARTICLES.find(p => p.form === tok)
     if (segs) out.push(...segs)
-    else out.push({ text: tok, type: 'unknown', gloss: 'нет в словаре' })
+    else if (lone) {
+      out.push({ ...particleSeg(lone, ''), explain: lone.pair ? `${lone.pair[0]} ставится после слова с 받침, ${lone.pair[1]} после слова без 받침` : lone.gloss })
+    } else out.push({ text: tok, type: 'unknown', gloss: 'нет в словаре' })
   }
   return refineE(out)
 }

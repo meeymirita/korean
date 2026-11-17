@@ -156,3 +156,16 @@ describe('analyze: прошедшее от связки (past_i)', () => {
   })
 })
 
+
+describe('analyze: частица сама по себе', () => {
+  test('нажатие на «에» или «에서» в тексте собеседника даёт частицу, а не «нет в словаре»', () => {
+    for (const p of ['에', '에서', '은', '를']) {
+      const segs = analyze(p)
+      assert.equal(segs.length, 1, p)
+      assert.equal(segs[0].type, 'particle', p)
+      assert.equal(segs[0].text, p)
+    }
+    assert.equal(analyze('에')[0].g, 'iss')
+    assert.equal(analyze('쀍')[0].type, 'unknown')
+  })
+})
