@@ -9,7 +9,9 @@ import {
   blitzBlocks, examParts, examPassed, examNeed, examState, examTotal, examWeakCards, partPoints, ruleLabel, summarize,
   type ExamAttempt, type ExamBlock, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
 } from '@/data/korean/exam'
+import { withSeed } from '@/lib/seeded'
 import { useExamStore } from '@/stores/exam'
+import { dayKey } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
 /**
@@ -34,6 +36,7 @@ const attempts = ref<ExamAttempt[]>([])
 let clock: ReturnType<typeof setInterval> | undefined
 onMounted(async () => {
   now.value = Date.now()
+  blitzLog.value = readBlitzLog()
   clock = setInterval(() => (now.value = Date.now()), 60_000)
   await Promise.all([exams.load(), exams.loadDraft().then(d => (draft.value = d))])
   if (view.value === 'log') await loadLog()
@@ -100,7 +103,7 @@ let blitzTimer: ReturnType<typeof setInterval> | undefined
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 function startBlitz() {
   clearInterval(blitzTimer)
-  blitz.value = { blocks: blitzBlocks(examParts(EXAM_PARTS)), endsAt: Date.now() + BLITZ_SECONDS * 1000 }
+  blitz.value = { blocks: withSeed(`blitz:${dayKey()}`, () => blitzBlocks(examParts(EXAM_PARTS))), endsAt: Date.now() + BLITZ_SECONDS * 1000 }
   blitzDone.value = null
   finished.value = null
   left.value = BLITZ_SECONDS
@@ -114,9 +117,36 @@ function startBlitz() {
   }, 1000)
   void router.push({ query: { blitz: '1' } })
 }
+/** Блиц дня один на сутки (как «Сегодня»); итоги по дням лежат на этом устройстве (лучший за день), последние 30 дней. */
+const BLITZ_LOG = 'exam_blitz_log'
+interface BlitzDay { day: string; right: number; total: number }
+const blitzLog = ref<BlitzDay[]>([])
+function readBlitzLog(): BlitzDay[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(BLITZ_LOG) ?? '[]') as BlitzDay[]
+    return Array.isArray(v) ? v.filter(x => x && typeof x.day === 'string' && x.total > 0) : []
+  } catch {
+    return []
+  }
+}
+function writeBlitzLog(right: number, total: number) {
+  const day = dayKey()
+  const list = readBlitzLog()
+  const cur = list.find(x => x.day === day)
+  if (!cur) list.unshift({ day, right, total })
+  else if (right / total > cur.right / cur.total) Object.assign(cur, { right, total })
+  list.sort((a, b) => (a.day < b.day ? 1 : -1))
+  const out = list.slice(0, 30)
+  try {
+    localStorage.setItem(BLITZ_LOG, JSON.stringify(out))
+  } catch {}
+  blitzLog.value = out
+}
+const blitzToday = computed(() => blitzLog.value.find(x => x.day === dayKey()))
 function blitzSaved(points: PointResult[]) {
   clearInterval(blitzTimer)
   const sum = summarize([points])
+  writeBlitzLog(sum.right, sum.total)
   blitzDone.value = { at: Date.now(), right: sum.right, total: sum.total, passed: examPassed(sum.right, sum.total, sum.rules), rules: sum.rules, mistakes: sum.mistakes }
   blitz.value = null
   home()
@@ -201,10 +231,10 @@ const summaryText = (a: ExamAttempt) =>
 
     <!-- ПРОБНЫЙ БЛИЦ -->
     <template v-if="view === 'blitz' && blitz">
-      <p class="intro">Пробный блиц: около {{ BLITZ_POINTS }} пунктов из пройденного, {{ BLITZ_SECONDS / 60 }} минут. Результат нигде не записывается и на допуск к экзамену не влияет.</p>
+      <p class="intro">Блиц дня: около {{ BLITZ_POINTS }} пунктов из пройденного, {{ BLITZ_SECONDS / 60 }} минут. Набор один на день и меняется в полночь. Итог попадает в «Блицы по дням» на этом устройстве и на допуск к экзамену не влияет.</p>
       <p class="ex-timer" :class="{ low: left <= 30 }" role="timer" aria-live="off">{{ mmss(left) }}</p>
       <ExamRun ref="run" :key="'b' + blitz.endsAt" :blocks="blitz.blocks" :part="1" :parts="1" blitz @saved="blitzSaved" />
-      <p class="ex-exit"><button class="ex-link" type="button" @click="exitBlitz">Выйти из блица (результат не сохранится)</button></p>
+      <p class="ex-exit"><button class="ex-link" type="button" @click="exitBlitz">Выйти из блица (итог не запишется)</button></p>
     </template>
 
     <!-- ЧАСТЬ ЭКЗАМЕНА -->
@@ -259,7 +289,7 @@ const summaryText = (a: ExamAttempt) =>
       <!-- итог пробного блица (нигде не записан) -->
       <section v-if="blitzDone" class="ex-card" :class="blitzDone.right / blitzDone.total >= EXAM_PASS ? 'okc' : 'badc'">
         <h2>Блиц: {{ blitzDone.right }} из {{ blitzDone.total }} ({{ Math.round((blitzDone.right / blitzDone.total) * 100) }}%)</h2>
-        <p class="ex-sub">Это пробный блиц: в историю экзамена не записывается. Для экзамена нужно не меньше {{ Math.round(EXAM_PASS * 100) }}%.</p>
+        <p class="ex-sub">Итог записан в «Блицы по дням» (в историю экзамена не идёт). Для экзамена нужно не меньше {{ Math.round(EXAM_PASS * 100) }}%.</p>
         <div class="ex-rules">
           <div v-for="r in ruleRows(blitzDone.rules)" :key="r.id" class="ex-rule" :class="tone(r.share)">
             <span>{{ r.label }}</span><b>{{ r.ok }} из {{ r.total }} · {{ pct(r) }}%</b>
@@ -322,12 +352,16 @@ const summaryText = (a: ExamAttempt) =>
       <div v-if="dev && draft" class="ex-btns">
         <button v-for="p in draft.parts.length" :key="p" class="rs-start ex-btn soft" type="button" @click="void router.push({ query: { part: String(p) } })">Часть {{ p }}{{ draft.results[p - 1] ? ' ✓' : '' }} (локально)</button>
       </div>
+      <section v-if="blitzLog.length" class="ex-card">
+        <h2>Блицы по дням</h2>
+        <p v-for="b in blitzLog.slice(0, 10)" :key="b.day" class="ex-sub">{{ b.day }}: {{ b.right }} из {{ b.total }} ({{ Math.round((b.right / b.total) * 100) }}%)</p>
+      </section>
       <div class="ex-btns">
         <button v-if="draft" class="rs-start ex-btn" :disabled="busy" @click="continueExam">Продолжить с части {{ nextPart }}</button>
         <button class="rs-start ex-btn" :class="{ soft: !!draft }" :disabled="busy || waitMs > 0 || !ready" @click="startNew">
           {{ waitMs > 0 ? waitText : draft ? 'Начать заново' : row ? 'Пересдать' : 'Начать экзамен' }}
         </button>
-        <button class="rs-start ex-btn soft" type="button" :disabled="!ready" title="Около 20 пунктов за 5 минут, результат нигде не записывается" @click="startBlitz">Блиц на {{ BLITZ_SECONDS / 60 }} минут</button>
+        <button class="rs-start ex-btn soft" type="button" :disabled="!ready" title="Около 20 пунктов за 5 минут, набор меняется каждый день" @click="startBlitz">Блиц дня на {{ BLITZ_SECONDS / 60 }} минут{{ blitzToday ? ` · сегодня ${blitzToday.right}/${blitzToday.total}` : '' }}</button>
         <button v-if="row" type="button" class="ex-link" @click="openLog">Разбор попыток и ошибок</button>
       </div>
     </template>

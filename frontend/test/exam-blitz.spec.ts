@@ -48,7 +48,7 @@ describe('страница экзамена: блиц', () => {
     await flushPromises()
     // часы подменяются после монтирования: само монтирование идёт на настоящих таймерах
     vi.useFakeTimers({ toFake: ['setInterval', 'Date'] })
-    const btn = w.findAll('button').find(b => b.text().includes('Блиц на 5 минут'))!
+    const btn = w.findAll('button').find(b => b.text().includes('Блиц дня на 5 минут'))!
     expect(btn).toBeTruthy()
     await btn.trigger('click')
     await flushPromises()
@@ -61,7 +61,7 @@ describe('страница экзамена: блиц', () => {
     await flushPromises()
     expect(w.find('.ex-timer').exists()).toBe(false)
     expect(w.text()).toContain('Блиц:')
-    expect(w.text()).toContain('в историю экзамена не записывается')
+    expect(w.text()).toContain('в историю экзамена не идёт')
     expect(calls.filter(c => c.method !== 'GET')).toHaveLength(0)
   })
 })
