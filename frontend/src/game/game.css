@@ -233,3 +233,5 @@ html[data-theme='dark'] .game .gap-in{background:rgba(30,32,64,.85)}
 .game .acts .story-all{margin-left:auto}
 .game .story-win-n{margin:16px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .game .story-win-n:first-of-type{margin-top:0}
+/* перетаскивание (GSAP Draggable, zIndexBoost) оставляет плиткам z-index от 1000: без своей группы слоёв у карточки плитки вылезали поверх окна «Разбор» */
+.game #card{isolation:isolate}
