@@ -66,6 +66,8 @@ if (mres.ok) {
         for (const q of it.questions) console.log(`    вопрос: ${q.q} → ${q.options.map((o, i) => `${i === q.answer ? '*' : ''}${o}`).join(' | ')}`)
       } else if (it.type === 'grammar') console.log(`  грамматика «${it.title}»: ${it.note}${it.examples.length ? ` · ${it.examples.map(pair).join(' / ')}` : ''}`)
       else if (it.type === 'exercise') console.log(`  задание: ${it.prompt}${it.body ? ` ${it.body}` : ''}${it.answer ? ` → ${it.answer}` : ''}`)
+      else if (it.type === 'task') console.log(`  задание${it.topic ? ` (${it.topic})` : ''}: ${it.title}\n${it.body}`)
+      else if (it.type === 'mistake') console.log(`  ошибка${it.no ? ` ${it.no}` : ''}${it.topic ? ` [${it.topic}]` : ''}: ${it.mine} → ${it.right}${it.why ? ` · ${it.why}` : ''}`)
       else console.log(`  заметка: ${it.text}`)
     }
   }
