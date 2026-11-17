@@ -99,6 +99,8 @@ const q = computed(() => query.value.trim().toLowerCase())
 const shown = computed(() => (q.value ? store.tracks.filter(t => t.title.toLowerCase().includes(q.value)) : store.visible))
 const tabOf = (t: Track) => CATEGORIES.find(c => c.id === t.category)?.name ?? ''
 const count = (c: Category) => store.tracks.filter(t => t.category === c).length
+/** Сколько загрузок закончилось ошибкой и может быть повторено. */
+const failedCount = computed(() => store.uploads.filter(u => u.error && u.file).length)
 const otherTab = (t: Track) => CATEGORIES.find(c => c.id !== t.category)!
 
 async function moveTrack(t: Track) {
@@ -231,9 +233,13 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
               <ul v-if="store.uploads.length || store.shownJobs.length" class="mp-jobs" aria-live="polite">
                 <li v-for="u in store.uploads" :key="u.key" :class="{ bad: u.error }">
                   <span class="mp-job-name">{{ u.name }}</span>
-                  <span class="mp-job-state">{{ u.error ?? (u.percent < 100 ? `Передаю на сервер ${u.percent}%` : 'Передано') }}</span>
+                  <span class="mp-job-state">{{ u.error ?? (u.wait ? `Лимит запросов, жду ${u.wait} с и повторю сам` : u.percent < 100 ? `Передаю на сервер ${u.percent}%` : 'Передано') }}</span>
                   <i class="mp-job-bar"><i :style="{ width: (u.error ? 100 : u.percent) + '%' }"></i></i>
+                  <button v-if="u.error && u.file" type="button" class="mp-retry" :disabled="store.busy" @click="store.retryUpload(u.key)">Повторить</button>
                   <button v-if="u.error" type="button" class="mp-x" aria-label="Убрать" @click="store.dismissUpload(u.key)">×</button>
+                </li>
+                <li v-if="failedCount > 1" class="mp-retry-all">
+                  <button type="button" class="mp-btn" :disabled="store.busy" @click="store.retryFailed()">Повторить все ({{ failedCount }})</button>
                 </li>
                 <li v-for="j in store.shownJobs" :key="j.id" :class="{ bad: j.stage === 'error', done: j.stage === 'done' }">
                   <span class="mp-job-name">{{ j.title }}</span>
@@ -361,6 +367,9 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-job-bar i.wait { animation: mp-wait 1.2s ease-in-out infinite alternate; }
 .mp-jobs .bad .mp-job-bar i { background: #e7a39b; }
 @keyframes mp-wait { from { opacity: .35; } to { opacity: 1; } }
+.mp-retry { grid-column: 1 / -1; justify-self: start; order: 4; padding: 4px 14px; font: inherit; font-size: 13px; font-weight: 700; color: var(--mp-pink-d); cursor: pointer; background: transparent; border: 1px solid var(--mp-pink); border-radius: 99px; }
+.mp-retry:disabled { opacity: .5; cursor: default; }
+.mp-jobs .mp-retry-all { display: block; padding: 0; background: none; }
 .mp-x { position: absolute; right: 6px; top: 4px; width: 22px; height: 22px; padding: 0; font-size: 18px; line-height: 1; color: var(--mp-muted); background: none; border: 0; cursor: pointer; }
 
 html[data-theme='dark'] .mp-root, html[data-theme='dark'] .mp-panel { --mp-ink: #ece9ff; --mp-muted: #a49fd6; --mp-line: #3b3866; }

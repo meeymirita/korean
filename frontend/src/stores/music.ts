@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { errText, fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
@@ -43,6 +43,11 @@ export interface UploadItem {
   name: string
   percent: number
   error?: string
+  /** сам файл и вкладка: нужны, чтобы повторить загрузку одной кнопкой после ошибки */
+  file?: File
+  category?: Category
+  /** секунд до новой попытки, пока сервер просит подождать (лимит запросов 429) */
+  wait?: number
 }
 
 export type RepeatMode = 'off' | 'all' | 'one'
@@ -57,6 +62,10 @@ const KEY = 'music_v1'
 /** Лимит одной песни, МБ: то же число в backend/src/config.ts (`MAX_TRACK_MB`) и в Caddy (docker/caddy/Caddyfile). */
 export const MAX_TRACK_MB = 350
 const POLL_MS = 1000
+/** Сервер пускает не больше 40 загрузок в минуту с одного адреса (429): между файлами пауза, при 429 ждём и повторяем сами. */
+const UPLOAD_GAP_MS = 1600
+const UPLOAD_TRIES = 4
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 const REPEAT: RepeatMode[] = ['off', 'all', 'one']
 
 interface Saved {
@@ -379,8 +388,9 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   /* ---------- добавить ---------- */
+  /** Передаёт один файл; 429 не считается ошибкой здесь (его обрабатывает runUpload: ждёт и повторяет). */
   function sendFile(file: File, item: UploadItem, category: Category) {
-    return new Promise<void>(resolve => {
+    return new Promise<{ status: number; retryAfter: number }>(resolve => {
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/music/upload')
       xhr.setRequestHeader('Authorization', `Bearer ${progress.bearer}`)
@@ -389,12 +399,12 @@ export const useMusicStore = defineStore('music', () => {
       }
       xhr.onload = () => {
         if (xhr.status === 202) item.percent = 100
-        else item.error = xhr.status === 400 ? 'Не подходит: нужен звуковой файл (mp3, m4a, ogg, flac, wav)' : xhr.status === 413 ? `Файл больше ${MAX_TRACK_MB} МБ` : `Ошибка сервера ${xhr.status}`
-        resolve()
+        else if (xhr.status !== 429) item.error = xhr.status === 400 ? 'Не подходит: нужен звуковой файл (mp3, m4a, ogg, flac, wav)' : xhr.status === 413 ? `Файл больше ${MAX_TRACK_MB} МБ` : `Ошибка сервера ${xhr.status}`
+        resolve({ status: xhr.status, retryAfter: Number(xhr.getResponseHeader('Retry-After')) || 60 })
       }
       xhr.onerror = () => {
         item.error = 'Сервер недоступен'
-        resolve()
+        resolve({ status: 0, retryAfter: 0 })
       }
       xhr.ontimeout = xhr.onerror
       const form = new FormData()
@@ -404,18 +414,57 @@ export const useMusicStore = defineStore('music', () => {
     })
   }
 
-  /** Файлы с компьютера (выбрать или перетащить): по одному, чтобы не забивать канал. */
+  /** Одна загрузка с повторами: при 429 ждёт, сколько просит сервер, и пробует снова (до UPLOAD_TRIES раз); ошибка остаётся в строке с кнопкой «Повторить». */
+  async function runUpload(item: UploadItem) {
+    const file = item.file!
+    item.error = undefined
+    item.percent = 0
+    if (file.size > MAX_TRACK_MB * 1024 * 1024) item.error = `Файл ${Math.round(file.size / 1048576)} МБ: больше лимита ${MAX_TRACK_MB} МБ`
+    else {
+      for (let attempt = 1; attempt <= UPLOAD_TRIES; attempt++) {
+        const r = await sendFile(file, item, item.category ?? tab.value)
+        if (r.status !== 429) break
+        if (attempt === UPLOAD_TRIES) {
+          item.error = 'Слишком много загрузок подряд (лимит сервера 40 в минуту): нажми «Повторить»'
+          break
+        }
+        for (let s = Math.min(r.retryAfter, 90); s > 0; s--) {
+          item.wait = s
+          await sleep(1000)
+        }
+        item.wait = 0
+        item.percent = 0
+      }
+    }
+    item.wait = 0
+    if (item.error) toast.error(`${item.name}: ${item.error}`)
+    await load()
+    // строка передачи уходит, как только задание сервера видно в списке
+    uploads.value = uploads.value.filter(u => u.key !== item.key || !!u.error)
+  }
+
+  /** Файлы с компьютера (выбрать или перетащить): по одному, между файлами короткая пауза, чтобы не упереться в лимит запросов. */
   async function uploadFiles(files: File[]) {
     const cat = tab.value // вкладка, открытая в момент выбора файлов
-    for (const file of files) {
-      uploads.value.push({ key: Date.now() + Math.random(), name: file.name, percent: 0 })
-      const item = uploads.value[uploads.value.length - 1]! // реактивная запись: сюда пишет процент передачи
-      if (file.size > MAX_TRACK_MB * 1024 * 1024) item.error = `Файл ${Math.round(file.size / 1048576)} МБ: больше лимита ${MAX_TRACK_MB} МБ`
-      else await sendFile(file, item, cat)
-      if (item.error) toast.error(`${file.name}: ${item.error}`)
-      await load()
-      // строка передачи уходит, как только задание сервера видно в списке
-      uploads.value = uploads.value.filter(u => u.key !== item.key || !!u.error)
+    for (const [i, file] of files.entries()) {
+      if (i > 0) await sleep(UPLOAD_GAP_MS)
+      uploads.value.push({ key: Date.now() + Math.random(), name: file.name, percent: 0, file: markRaw(file), category: cat })
+      await runUpload(uploads.value[uploads.value.length - 1]!) // реактивная запись: сюда пишет процент передачи
+    }
+  }
+
+  /** Повторить загрузку, которая закончилась ошибкой (файл ещё в памяти страницы). */
+  async function retryUpload(key: number) {
+    const item = uploads.value.find(u => u.key === key)
+    if (item?.file && item.error) await runUpload(item)
+  }
+
+  /** Повторить все упавшие загрузки по очереди. */
+  async function retryFailed() {
+    const keys = uploads.value.filter(u => u.error && u.file).map(u => u.key)
+    for (const [i, key] of keys.entries()) {
+      if (i > 0) await sleep(UPLOAD_GAP_MS)
+      await retryUpload(key)
     }
   }
 
@@ -431,6 +480,7 @@ export const useMusicStore = defineStore('music', () => {
     const res = await fetchT('/api/music/url', { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ url, category: tab.value }) })
     if (res.status === 409) throw new Error('Уже идёт скачивание по ссылке: дождись конца')
     if (res.status === 400) throw new Error('Нужна ссылка вида https://…')
+    if (res.status === 429) throw new Error('Слишком много запросов подряд: подожди минуту и нажми «Скачать» снова')
     if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
     await load()
   }
@@ -467,6 +517,6 @@ export const useMusicStore = defineStore('music', () => {
 
   return {
     tracks, visible, queue, tab, jobs, shownJobs, uploads, loaded, loadError, open, current, currentId, index, playing, time, length, volume, muted, repeat, shuffle, busy,
-    load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, stop, setTab, setCategory, uploadFiles, dismissUpload, dismissJob, addUrl, rename, remove,
+    load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, stop, setTab, setCategory, uploadFiles, retryUpload, retryFailed, dismissUpload, dismissJob, addUrl, rename, remove,
   }
 })

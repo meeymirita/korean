@@ -318,3 +318,76 @@ describe('музыкальный плеер', () => {
     w.unmount()
   })
 })
+
+/** Подставной XMLHttpRequest: статусы ответов по очереди (429 с просьбой подождать секунду, потом 202). */
+class FakeXHR {
+  static plan: number[] = []
+  static sent = 0
+  upload: { onprogress?: unknown } = {}
+  status = 0
+  onload?: () => void
+  onerror?: () => void
+  ontimeout?: () => void
+  open() {}
+  setRequestHeader() {}
+  getResponseHeader(name: string) {
+    return name === 'Retry-After' ? '1' : null
+  }
+  send() {
+    this.status = FakeXHR.plan.shift() ?? 202
+    FakeXHR.sent++
+    queueMicrotask(() => this.onload?.())
+  }
+}
+
+describe('загрузка файлов: лимит запросов (429)', () => {
+  const file = () => new File(['x'], 'песня.mp3', { type: 'audio/mpeg' })
+  beforeEach(() => {
+    FakeXHR.plan = []
+    FakeXHR.sent = 0
+    useMusicStore().uploads = []
+    vi.stubGlobal('XMLHttpRequest', FakeXHR)
+    vi.useFakeTimers({ toFake: ['setTimeout'] })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('на 429 ждёт, сколько просит сервер, и повторяет сам', async () => {
+    FakeXHR.plan = [429, 202]
+    const store = useMusicStore()
+    const done = store.uploadFiles([file()])
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.uploads[0]!.wait, 'видно, сколько секунд ждать').toBe(1)
+    await vi.advanceTimersByTimeAsync(1500)
+    await done
+    expect(FakeXHR.sent).toBe(2)
+    expect(store.uploads, 'после успеха строка уходит').toHaveLength(0)
+  })
+
+  it('после четырёх 429 остаётся ошибка, «Повторить» отправляет файл ещё раз', async () => {
+    FakeXHR.plan = [429, 429, 429, 429, 202]
+    const store = useMusicStore()
+    const done = store.uploadFiles([file()])
+    await vi.advanceTimersByTimeAsync(5000)
+    await done
+    expect(FakeXHR.sent).toBe(4)
+    expect(store.uploads).toHaveLength(1)
+    expect(store.uploads[0]!.error).toContain('Повторить')
+    await store.retryUpload(store.uploads[0]!.key)
+    expect(FakeXHR.sent).toBe(5)
+    expect(store.uploads).toHaveLength(0)
+  })
+
+  it('«Повторить все» берёт каждую упавшую загрузку по очереди', async () => {
+    FakeXHR.plan = [500, 500, 202, 202]
+    const store = useMusicStore()
+    const done = store.uploadFiles([file(), file()])
+    await vi.advanceTimersByTimeAsync(3000)
+    await done
+    expect(store.uploads.filter(u => u.error)).toHaveLength(2)
+    const again = store.retryFailed()
+    await vi.advanceTimersByTimeAsync(3000)
+    await again
+    expect(FakeXHR.sent).toBe(4)
+    expect(store.uploads).toHaveLength(0)
+  })
+})
