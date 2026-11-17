@@ -16,13 +16,13 @@ import MusicButton from '@/components/music/MusicButton.vue'
 import VoiceButton from '@/components/voice/VoiceButton.vue'
 import { MENU_ICONS, sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
-import { G } from '@/data/korean/grammar'
+import { RULES_COUNT } from '@/data/korean/grammar'
 import { themeDark, toggleTheme } from '@/lib/theme'
 import { comboFromEvent } from '@/lib/shortcuts'
 import { useProgressStore } from '@/stores/progress'
 import { useShortcutsStore } from '@/stores/shortcuts'
 
-const counts: Record<string, number> = { words: D.length, grammar: G.length }
+const counts: Record<string, number> = { words: D.length, grammar: RULES_COUNT }
 const progress = useProgressStore()
 const route = useRoute()
 const router = useRouter()

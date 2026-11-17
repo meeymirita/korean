@@ -33,12 +33,10 @@ function rulesOf(G) {
 
 /** Текст файла curriculum.ts по текущим данным сайта. */
 export async function build() {
-  /** @type {{ G: { ko: string; ru: string; st: string; b: any[][] }[] }} */
+  /** @type {{ G: { ko: string; ru: string; st: string; l?: string; b: any[][] }[] }} */
   const { G } = await load('/src/data/korean/grammar.ts')
   /** @type {{ RAW: RawWord[] }} */
   const { RAW } = await load('/src/data/korean/dictionary.ts')
-  /** @type {{ NOT_YET: { label: string }[] }} */
-  const { NOT_YET } = await load('/src/data/korean/notyet.ts')
   const grammar = G.filter(g => g.st === 'ok').map(g => `- ${g.ko} — ${g.ru}`)
   const words = [...new Set(RAW.map(r => r.k))]
   // чтение кириллицей глаголов и прилагательных (ученик называет их так вслух): «мокта=먹다»
@@ -47,8 +45,8 @@ export async function build() {
 /** Пройденные темы грамматики (карточки со статусом «пройдено»). */
 export const KNOWN_GRAMMAR = ${JSON.stringify(grammar.join('\n'))}
 
-/** Темы, которые ещё не пройдены и не имеют своей карточки (frontend/src/data/korean/notyet.ts): инструкции модели не используют их без прямого вопроса. */
-export const KNOWN_NOT_YET = ${JSON.stringify(NOT_YET.map(n => n.label).join('; '))}
+/** Свои карточки («Мои карточки», без номера урока), которые ещё не пройдены: темы впереди (карточки-заглушки с полем ahead в grammar.ts) и непройденные карточки; инструкции модели не используют их без прямого вопроса. */
+export const KNOWN_NOT_YET = ${JSON.stringify(G.filter(g => !g.l && g.st !== 'ok').map(g => `${g.ko} (${g.ru})`).join('; '))}
 
 /** Краткие правила пройденных карточек (для голосового собеседника). */
 export const KNOWN_RULES = ${JSON.stringify(rulesOf(G).join('\n'))}

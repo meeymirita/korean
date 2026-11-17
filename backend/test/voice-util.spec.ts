@@ -83,7 +83,7 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/разбери КАЖДОЕ по шагам/)
   })
   it('инструкция короткая: весь список слов в неё не вставляется', () => {
-    expect(SYSTEM_PROMPT.length).toBeLessThan(13000)
+    expect(SYSTEM_PROMPT.length).toBeLessThan(13500)
     expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
   })
   it('нажми-и-говори выключает автоопределение конца фразы, обычный режим включает', () => {
