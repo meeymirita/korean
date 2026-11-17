@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import AskAi from '@/components/korean/AskAi.vue'
 import ExamRun from '@/components/korean/ExamRun.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
@@ -212,6 +213,9 @@ async function saved(points: PointResult[]) {
 }
 
 /** Ошибки попытки по правилам: у ошибки правила нет, поэтому группируем по блоку. */
+/** «Спросить ИИ» у ошибки экзамена: вид задания, вопрос, ответ ученика и верный ответ. */
+const EXAM_QUICK = ['Почему мой ответ неверный?', 'Объясни правило', 'Дай похожее задание', 'Как это запомнить?']
+const mistakeContext = (block: string, m: ExamMistake) => `Ошибка в экзамене. Вид задания: ${block}\nВопрос: ${m.q}\nОтвет ученика: ${m.y}\nВерный ответ: ${m.a}`
 const byBlock = (list: ExamMistake[]) => {
   const m = new Map<string, ExamMistake[]>()
   for (const x of list) m.set(x.b, [...(m.get(x.b) ?? []), x])
@@ -271,6 +275,7 @@ const summaryText = (a: ExamAttempt) =>
             <li v-for="(m, k) in list" :key="k">
               <div class="ko ex-q">{{ m.q }}</div>
               <div class="ex-ans"><span class="bad">Твой ответ: <b class="ko">{{ m.y }}</b></span><span class="ok">Верно: <b class="ko">{{ m.a }}</b></span></div>
+              <AskAi :context="mistakeContext(title, m)" :quick="EXAM_QUICK" placeholder="Спроси про эту ошибку…" />
             </li>
           </ul>
         </section>
@@ -302,6 +307,7 @@ const summaryText = (a: ExamAttempt) =>
             <li v-for="(m, k) in list" :key="k">
               <div class="ko ex-q">{{ m.q }}</div>
               <div class="ex-ans"><span class="bad">Твой ответ: <b class="ko">{{ m.y }}</b></span><span class="ok">Верно: <b class="ko">{{ m.a }}</b></span></div>
+              <AskAi :context="mistakeContext(title, m)" :quick="EXAM_QUICK" placeholder="Спроси про эту ошибку…" />
             </li>
           </ul>
         </section>
@@ -325,6 +331,7 @@ const summaryText = (a: ExamAttempt) =>
             <li v-for="(m, k) in list" :key="k">
               <div class="ko ex-q">{{ m.q }}</div>
               <div class="ex-ans"><span class="bad">Твой ответ: <b class="ko">{{ m.y }}</b></span><span class="ok">Верно: <b class="ko">{{ m.a }}</b></span></div>
+              <AskAi :context="mistakeContext(title, m)" :quick="EXAM_QUICK" placeholder="Спроси про эту ошибку…" />
             </li>
           </ul>
         </section>

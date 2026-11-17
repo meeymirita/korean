@@ -212,7 +212,7 @@ const shareWord = (d: Word) =>
           </span>
         </div>
         <div v-if="openN === d.n" v-show="i < limit" class="row-detail">
-          <SentenceBreakdown :sentence="d.s" />
+          <SentenceBreakdown :sentence="d.s" :extra="[`Слово из списка: ${d.k} (${d.r}) — ${d.t}`]" />
           <button class="share-btn" :disabled="sharing" @click="shareWord(d)"><Icon name="picture" /> Поделиться словом</button>
           <button class="share-btn" :aria-pressed="simN === d.n" @click="simN = simN === d.n ? null : d.n">≈ Похожие слова</button>
           <div v-if="simN === d.n" class="sim">

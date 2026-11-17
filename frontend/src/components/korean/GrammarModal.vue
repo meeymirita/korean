@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
+import AskAi from '@/components/korean/AskAi.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { trainableRule } from '@/data/korean/rule-tasks'
@@ -114,6 +115,22 @@ async function dropPhoto() {
 
 /** Метки цвета ({o|…}) и теги — в простой текст для карточки. */
 const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<[^>]+>/g, '')
+/** Карточка словами для «Спросить ИИ»: название, перевод, раздел и текст блоков без разметки (до 1400 знаков). */
+const ASK_QUICK = ['Объясни проще', 'Дай ещё примеры', 'Чем отличается от похожего правила?', 'Как не ошибаться?']
+function askContext(): string {
+  const g = current.value
+  if (!g) return ''
+  const body = g.b
+    .map(blk)
+    .join('\n')
+    .replace(/<\/(p|li|tr|div|h\d)>/g, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\{[a-z]\|([^}]*)\}/g, '$1')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim()
+  return `Правило из карточки: ${plain(g.ko)} (${plain(g.ru)})\nРаздел: ${g.s}\n${body}`.slice(0, 1400)
+}
 function shareRule() {
   const g = current.value
   if (!g) return
@@ -233,6 +250,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           <p v-if="video && titleOfVideo(video)" class="vt">{{ titleOfVideo(video) }}</p>
           <p v-if="video" class="src">Видео в формате AV1: в Яндекс Браузере, Chrome и Firefox играет, в Safari и на части iPad может не открываться.</p>
           <p v-if="current.l && !mine" class="src">Автор видеоурока: <a :href="CHANNEL" target="_blank" rel="noopener">Учитель Ян · 양쌤의 한국어 교실</a></p>
+          <AskAi :key="current.id" :context="askContext" :quick="ASK_QUICK" placeholder="Спроси про это правило…" />
         </aside>
       </div>
     </div>

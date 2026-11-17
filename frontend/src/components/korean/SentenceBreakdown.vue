@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import '@/assets/breakdown.css'
 import { analyze, SEG_LABEL } from '@/data/korean/parse'
-import { breakdownContext, buildAskAi, canAskAi } from '@/lib/askAi'
+import AskAi from '@/components/korean/AskAi.vue'
+import { breakdownContext } from '@/lib/askAi'
 import { TRANSLATIONS } from '@/data/korean/translations'
 
 /** word: слово задания, если предложение взято как его пример (тогда оно подписано и выделено в карточках) */
@@ -19,12 +20,6 @@ const isHit = (s: { type: string; text: string }) => {
   const stem = w.endsWith('다') ? w.slice(0, -1) : w
   return s.text === w || (stem.length > 0 && s.text.startsWith(stem))
 }
-const ask = ref<HTMLElement | null>(null)
-onMounted(() => {
-  if (!ask.value || !canAskAi()) return
-  const host = ask.value
-  host.append(buildAskAi(() => breakdownContext(props.sentence, props.extra), p => host.append(p)))
-})
 const hasUnknown = computed(() => segments.value.some(s => s.type === 'unknown'))
 </script>
 
@@ -45,7 +40,7 @@ const hasUnknown = computed(() => segments.value.some(s => s.type === 'unknown')
         <button v-if="s.g" class="bd-rule" @click="open(s.g)">Правило →</button>
       </div>
     </div>
-    <div ref="ask" class="ask-host" />
+    <AskAi :context="() => breakdownContext(sentence, extra)" />
     <p v-if="hasUnknown" class="bd-note">«?» — этого слова нет в словаре сайта. Когда его добавят в словарь, оно появится в разборе.</p>
   </div>
 </template>

@@ -52,7 +52,13 @@ function drawReply(into: Node, text: string) {
  * Строит кнопку «Спросить ИИ» и панель. `contextOf` вызывается при каждом вопросе (на экране мог смениться разбор).
  * `onToggle(открыта)` нужен окну игры, чтобы сдвинуть разбор. Панель кладёт `mount(panel)` туда, где ей место; возвращает кнопку.
  */
-export function buildAskAi(contextOf: () => string, mount: (panel: Node) => void, onToggle?: (open: boolean) => void): Node {
+export interface AskOpts {
+  /** быстрые вопросы кнопками (по умолчанию про разбор предложения) */
+  quick?: string[]
+  placeholder?: string
+}
+
+export function buildAskAi(contextOf: () => string, mount: (panel: Node) => void, onToggle?: (open: boolean) => void, opts: AskOpts = {}): Node {
   const btn = h('button', 'ask-btn', 'Спросить ИИ') as HTMLButtonElement
   btn.type = 'button'
   const panel = h('div', 'ask-panel')
@@ -63,7 +69,7 @@ export function buildAskAi(contextOf: () => string, mount: (panel: Node) => void
   const input = h('input', 'ask-in') as HTMLInputElement
   input.type = 'text'
   input.maxLength = 400
-  input.placeholder = 'Спроси про это предложение…'
+  input.placeholder = opts.placeholder ?? 'Спроси про это предложение…'
   const send = h('button', 'ask-send', 'Спросить') as HTMLButtonElement
   send.type = 'submit'
   form.append(input, send)
@@ -107,7 +113,7 @@ export function buildAskAi(contextOf: () => string, mount: (panel: Node) => void
       input.focus({ preventScroll: true })
     }
   }
-  for (const t of QUICK) {
+  for (const t of opts.quick ?? QUICK) {
     const b = h('button', 'ask-chip', t) as HTMLButtonElement
     b.type = 'button'
     b.addEventListener('click', () => void ask(t))
