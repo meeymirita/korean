@@ -10,7 +10,10 @@ const s = computed(() => sectionById(props.id))
   <header class="page-head">
     <div>
       <div class="kicker">{{ s.num }} — {{ s.kicker }}</div>
-      <h1>{{ s.title }}</h1>
+      <div class="title-row">
+        <h1>{{ s.title }}</h1>
+        <slot name="title-extra" />
+      </div>
       <div class="sub">{{ sub ?? s.sub }}<slot name="sub-extra" /></div>
     </div>
     <div v-if="big !== undefined" class="big">{{ big }}</div>

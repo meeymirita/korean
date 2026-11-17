@@ -25,7 +25,8 @@
 /* ---- общие элементы ---- */
 .study .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
   padding-bottom: 22px; border-bottom: 1px solid var(--line); }
-.study .page-head h1 { margin: 8px 0 0; font-size: clamp(40px, 6vw, 64px); line-height: 1; }
+.study .page-head .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 8px; }
+.study .page-head h1 { margin: 0; font-size: clamp(40px, 6vw, 64px); line-height: 1; }
 .study .page-head .sub { margin-top: 10px; font-size: 14px; color: var(--muted); }
 .study .page-head .big { font-family: var(--serif); font-weight: 600; font-size: clamp(40px, 6vw, 64px);
   line-height: 1; color: var(--gold); }

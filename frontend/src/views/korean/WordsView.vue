@@ -14,11 +14,9 @@ import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { EXTRA } from '@/data/korean/study'
 import { TENSES, TENSE_NAMES, TENSE_ORDER } from '@/data/korean/tenses'
-import NewWordDrawer from '@/components/korean/NewWordDrawer.vue'
+import InboxPanel from '@/components/korean/InboxPanel.vue'
 import TaskSession from '@/components/korean/TaskSession.vue'
 import { DRILL_SIZE, topicProgress, topicTasks } from '@/data/korean/topics'
-import { useNewWordsStore, type NewWord } from '@/stores/newWords'
-import yunaBook from '@/assets/home/yuna-book.webp'
 
 const progress = useProgressStore()
 /** Слова со звёздочкой: фильтр «★ Важное» показывает только их прямо в списке. */
@@ -33,13 +31,10 @@ const q = usePersisted('words_q', '', v => typeof v === 'string')
 if (useRoute().query.q) q.value = String(useRoute().query.q) // ссылка с ?q= важнее запомненного поиска
 const cat = usePersisted('words_cat', '', v => typeof v === 'string')
 const picked = ref<Word | null>(null)
-/** Вкладка «Не добавленные»: слова из формы, ещё не внесённые в словарь (только владельцу) */
-const newWords = useNewWordsStore()
-const formOpen = ref(false)
-const editing = ref<NewWord | null>(null)
-const openForm = () => ((editing.value = null), (formOpen.value = true))
-watch(() => progress.unlocked, u => u && newWords.load().catch(() => {}))
-onMounted(() => progress.unlocked && newWords.load().catch(() => {}))
+/** Название кнопки и страницы с JSON-адресами и «Входящими» (пока рабочее) */
+const API_NAME = 'API'
+/** Страница «API» вместо таблицы слов: JSON-адреса для всех и «Входящие» (слова и материалы, присланные Claude по токену) только владельцу; слова вручную не добавляются */
+const apiOn = usePersisted('words_inbox', false, v => typeof v === 'boolean')
 const openN = ref<number | null>(null)
 const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null), (tenseN.value = 0))
 /** Какое время слова показано в разборе: 0–2 — настоящее, прошедшее, будущее (у слов без `tenses.ts` — предложение из списка) */
@@ -132,19 +127,20 @@ const shareWord = (d: Word) =>
 
 <template>
   <div class="wrap words-page">
-    <!-- Юна зафиксирована справа: страница прокручивается, она остаётся на месте (в body, чтобы не зависеть от родителей) -->
-    <Teleport to="body">
-      <img class="words-yuna" :src="yunaBook" alt="" aria-hidden="true" draggable="false" />
-    </Teleport>
     <SectionHead id="words" :sub="progress.unlocked ? '' : `словарь корейского · ${D.length} слов`" :big="D.length">
-      <template #sub-extra>
-        <template v-if="!progress.unlocked"> · </template>
-        <button v-if="progress.unlocked" type="button" class="nw-add" @click="openForm()">+ Добавить слово</button>
+      <template #title-extra>
+        <button type="button" class="nw-add inbox-btn" :aria-pressed="apiOn" title="JSON-адреса и входящие слова и материалы" @click="apiOn = !apiOn">{{ apiOn ? '← К словарю' : API_NAME }}</button>
+      </template>
+    </SectionHead>
+    <section v-if="apiOn" class="api-page" :aria-label="API_NAME">
+      <div class="api-actions">
         <a class="words-json" href="/words.json" target="_blank" rel="noopener" title="Весь словарь одним файлом, только чтение">словарь в JSON ↗</a>
         <a class="words-json" href="/api/public/grammar" target="_blank" rel="noopener" title="Пройденная грамматика одним файлом, только чтение">грамматика в JSON ↗</a>
         <a class="words-json" href="/api/public/sentences" target="_blank" rel="noopener" title="Все предложения с переводами одним файлом, только чтение">предложения в JSON ↗</a>
-      </template>
-    </SectionHead>
+      </div>
+      <InboxPanel v-if="progress.unlocked" />
+    </section>
+    <template v-else>
     <div class="searchbar">
       <div class="sb">
         <input
@@ -179,7 +175,6 @@ const shareWord = (d: Word) =>
       </div>
     </div>
 
-    <NewWordDrawer :open="formOpen" :edit="editing" @close="formOpen = false" />
     <section v-if="drill" class="wd-drill" aria-label="Добить тему">
       <div class="wd-drill-head">
         <h2>Добить тему: {{ drillName }}</h2>
@@ -246,6 +241,7 @@ const shareWord = (d: Word) =>
       <template v-if="fav && !q">Звёздочек пока нет: нажми ☆ рядом со словом, и оно появится здесь.</template>
       <template v-else>Ничего не нашлось по «<span v-html="esc(q)"></span>».<br />Попробуй другое слово или русскую форму («ем» → «есть»).</template>
     </div>
+    </template>
   </div>
 </template>
 
@@ -257,10 +253,13 @@ const shareWord = (d: Word) =>
 .study .row .tr .w-extra { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 99px; background: rgba(150, 130, 230, .14); color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; vertical-align: middle; }
 /* кнопка и три ссылки в одну строку с ровными отступами, на узком экране переносятся */
 .study .words-page .page-head .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
-.study .page-head .sub .words-json { display: inline-block; padding: 4px 14px; border-radius: 99px; background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9 !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: filter .2s; }
-.study .page-head .sub .nw-add { padding: 4px 14px; opacity: 1; font-size: 14px; color: #fff !important; border: 0; border-radius: 99px; background: linear-gradient(100deg, #e86bc0, #d64da9); color: #fff !important; font: inherit; font-weight: 700; cursor: pointer; transition: filter .2s; }
-.study .page-head .sub .nw-add:hover { filter: brightness(1.06); }
-.study .page-head .sub .words-json:hover { filter: brightness(.97); }
+.study.sky .words-page .page-head { padding-right: 0; } /* число слов у самого края: справа резерв под кнопки сверху здесь не нужен */
+.study .api-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 18px; }
+.study .page-head .sub .words-json, .study .api-actions .words-json { display: inline-block; padding: 4px 14px; border-radius: 99px; background: linear-gradient(100deg, #ffe0f5, #ece5ff); color: #d64da9 !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: filter .2s; }
+.study .page-head .title-row .nw-add, .study .page-head .sub .nw-add, .study .api-actions .nw-add { padding: 4px 14px; opacity: 1; font-size: 14px; color: #fff !important; border: 0; border-radius: 99px; background: linear-gradient(100deg, #e86bc0, #d64da9); color: #fff !important; font: inherit; font-weight: 700; cursor: pointer; transition: filter .2s; }
+.study .page-head .title-row .nw-add:hover, .study .page-head .sub .nw-add:hover, .study .api-actions .nw-add:hover { filter: brightness(1.06); }
+.study .page-head .title-row .inbox-btn, .study .page-head .sub .inbox-btn { background: linear-gradient(100deg, #8f7cf0, #6c5bd6); }
+.study .page-head .sub .words-json:hover, .study .api-actions .words-json:hover { filter: brightness(.97); }
 /* Кнопка «Показать ещё» под списком слов */
 .words-more { display: block; margin: 18px auto 6px; padding: 12px 28px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--pink); font: inherit; font-weight: 700; cursor: pointer; transition: border-color .2s, background .2s; }
 .words-more small { color: var(--muted); font-weight: 500; }
@@ -285,15 +284,4 @@ const shareWord = (d: Word) =>
 .study .wd-topic-go { align-self: flex-start; margin-top: 10px; padding: 8px 16px; font: inherit; font-size: 14px; font-weight: 700; color: #37378f; background: linear-gradient(100deg, #f8b9e9, #9de4ff); border: 0; border-radius: 99px; cursor: pointer; transition: filter .2s; }
 .study .wd-topic-go:hover { filter: brightness(1.05); }
 .study .wd-topic-done { margin-top: 10px; padding: 8px 0; font-size: 14px; font-weight: 700; color: var(--ok); }
-/* Юна на «Словах»: двигай здесь */
-.words-yuna {
-  --h: min(80vh, 840px);   /* высота картинки */
-  --right: 12px;           /* отступ от правого края */
-  --bottom: 0px;           /* отступ от низа */
-  position: fixed; right: var(--right); bottom: var(--bottom); height: var(--h); width: auto;
-  z-index: 3; pointer-events: none; user-select: none; opacity: .95;
-}
-/* место справа под Юну: таблица не заходит под неё */
-.study-shell.sky .study-main .wrap.words-page { padding-right: 240px; }
-@media (max-width: 1100px) { .words-yuna { display: none; } .study-shell.sky .study-main .wrap.words-page { padding-right: 14px; } }
 </style>
