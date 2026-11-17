@@ -95,6 +95,7 @@ const moodText = computed(() => {
 /** Надпись на главной кнопке: до разговора приглашение, во время разговора статус (запись, пауза, думает, говорит). */
 const goLabel = computed(() => {
   if (store.phase === 'connecting') return 'Соединяюсь…'
+  if (store.phase === 'idle' && store.status && !canStart.value) return store.status.configured ? 'Минуты на сегодня закончились' : 'Голос не настроен на сервере'
   if (store.phase === 'idle') return 'Выбери тему и нажми на микрофон'
   const t = mmss(store.elapsed)
   if (store.ptt) {

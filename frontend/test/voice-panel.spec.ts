@@ -114,6 +114,19 @@ describe('голосовой собеседник', () => {
     expect(document.body.querySelector('.vp-go')).not.toBeNull()
   })
 
+  it('когда минуты на сегодня кончились, кнопка недоступна и так и написано', async () => {
+    const store = useVoiceStore()
+    await mountSuspended(VoicePanel)
+    store.open = true
+    await flushPromises()
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ ...STATUS, limitSec: 300, usedSec: 400, leftSec: 0 })))
+    await store.load()
+    await flushPromises()
+    const go = document.body.querySelector('.vp-go')
+    expect(go?.hasAttribute('disabled')).toBe(true)
+    expect(go?.textContent).toContain('Минуты на сегодня закончились')
+  })
+
   it('без ключа на сервере начать нельзя и окно объясняет почему', async () => {
     const store = useVoiceStore()
     await mountSuspended(VoicePanel)
