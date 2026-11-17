@@ -3,12 +3,9 @@ import { computed } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { firstBlock, G, type Gram } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
-import { useProgressStore } from '@/stores/progress'
 
-const progress = useProgressStore()
-
-/** Пройденные темы: по данным (`st: 'ok'`), если владелец не снял отметку (метка u). */
-const known = computed(() => G.filter(g => g.st === 'ok' && !progress.isMarked('u', g.id)))
+/** Пройденные темы: по данным (`st: 'ok'`), личных отметок поверх нет. */
+const known = computed(() => G.filter(g => g.st === 'ok'))
 
 const num = (g: Gram) => Number(/\d+/.exec(g.l ?? '')?.[0] ?? 999)
 const ordered = computed(() => [...known.value].sort((a, b) => num(a) - num(b)))

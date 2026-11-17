@@ -17,7 +17,7 @@ const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const progress = useProgressStore()
 const passed = (id: string) => progress.isMarked('d', id)
 /** «пройдено» по данным, если владелец не снял отметку (метка u) */
-const isOk = (g: { id: string; st: string }) => g.st === 'ok' && !progress.isMarked('u', g.id)
+const isOk = (g: { id: string; st: string }) => g.st === 'ok'
 /** Вкладка 0: свои карточки (без номера урока: с Лерой и сам); 1 и 2: карточки уроков видеокурса */
 const PARTS = [
   { id: 0, label: 'Мои карточки', sub: 'С Лерой и свои' },

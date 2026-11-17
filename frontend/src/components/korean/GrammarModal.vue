@@ -50,9 +50,8 @@ const progress = useProgressStore()
 /** Отметка «урок пройден» ведёт сам владелец (у гостя записи не сохраняются). */
 const owner = computed(() => progress.unlocked && !progress.isGuest)
 const passed = computed(() => !!current.value && progress.isMarked('d', current.value.id))
-/** отметка «пройдено» из данных снята владельцем (метка u) */
-const unmarked = computed(() => !!current.value && progress.isMarked('u', current.value.id))
-const isOk = computed(() => current.value?.st === 'ok' && !unmarked.value)
+/** «Пройдено» одно для всего сайта: `st: 'ok'` в данных (`grammar.ts`), личной отметки поверх нет. */
+const isOk = computed(() => current.value?.st === 'ok')
 /** Видео урока; если файла на сервере нет (или локально), показываем заглушку. */
 const broken = ref('')
 const video = computed(() => {
@@ -203,9 +202,6 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
                 <button type="button" class="pass del" :disabled="photoBusy" @click="dropPhoto">Удалить</button>
               </span>
             </span>
-            <button v-if="owner && current.st === 'ok'" type="button" class="pass" :class="{ on: unmarked }" :aria-pressed="unmarked" :title="unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»: карточка не пройдена'" @click="progress.toggleMark('u', current.id)">
-              {{ unmarked ? 'Вернуть отметку «пройдено»' : 'Снять отметку «пройдено»' }}
-            </button>
             <button v-if="owner && current && current.st !== 'ok'" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
               {{ passed ? `✓ ${current.l || 'Тема'} пройдено` : `Отметить пройденным${current.l ? ': ' + current.l.toLowerCase() : ''}` }}
             </button>
