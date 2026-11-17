@@ -47,9 +47,8 @@ function train() {
 }
 const { share, busy } = useShareCard()
 const progress = useProgressStore()
-/** Отметка «урок пройден» ведёт сам владелец (у гостя записи не сохраняются). */
+/** Владелец: фото к карточке и тренировки (у гостя записи не сохраняются). */
 const owner = computed(() => progress.unlocked && !progress.isGuest)
-const passed = computed(() => !!current.value && progress.isMarked('d', current.value.id))
 /** «Пройдено» одно для всего сайта: `st: 'ok'` в данных (`grammar.ts`), личной отметки поверх нет. */
 const isOk = computed(() => current.value?.st === 'ok')
 /** Видео урока; если файла на сервере нет (или локально), показываем заглушку. */
@@ -202,9 +201,6 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
                 <button type="button" class="pass del" :disabled="photoBusy" @click="dropPhoto">Удалить</button>
               </span>
             </span>
-            <button v-if="owner && current && current.st !== 'ok'" type="button" class="pass" :class="{ on: passed }" :aria-pressed="passed" @click="progress.toggleMark('d', current.id)">
-              {{ passed ? `✓ ${current.l || 'Тема'} пройдено` : `Отметить пройденным${current.l ? ': ' + current.l.toLowerCase() : ''}` }}
-            </button>
           </div>
         </div>
         <MarkStar kind="g" :id="current.id" />

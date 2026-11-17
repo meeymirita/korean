@@ -2,7 +2,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 
-// «Пройдено» одно для всего сайта: `st` в grammar.ts. Личной отметки «пройдено снято» (метка u) больше нет, и этот тест не даёт ей вернуться.
+// «Пройдено» одно для всего сайта: `st` в grammar.ts. Личных отметок «пройдено» (метки u и d) больше нет, и этот тест не даёт ей вернуться.
 const root = new URL('../frontend/src/', import.meta.url)
 function files(dir) {
   return readdirSync(dir).flatMap(f => {
@@ -12,14 +12,14 @@ function files(dir) {
 }
 
 describe('единый статус «пройдено»', () => {
-  test('сайт не читает и не ставит личную метку «пройдено снято» (u)', () => {
+  test('сайт не читает и не ставит личные метки «пройдено» (u и d), кнопок отметки нет', () => {
     const bad = []
     for (const p of files(root)) {
       if (p.pathname.endsWith('/data/history.ts')) continue
       const src = readFileSync(p, 'utf8')
-      if (/(isMarked|toggleMark)\(\s*'u'/.test(src) || /Снять отметку «пройдено»/.test(src)) bad.push(p.pathname.split('/frontend/')[1])
+      if (/(isMarked|toggleMark)\(\s*'[ud]'/.test(src) || /Снять отметку «пройдено»|Отметить пройденным/.test(src)) bad.push(p.pathname.split('/frontend/')[1])
     }
-    assert.deepEqual(bad, [], 'личная отметка u вернулась: пройдено определяется только st в grammar.ts')
+    assert.deepEqual(bad, [], 'личная отметка u или d вернулась: пройдено определяется только st в grammar.ts')
   })
 
   test('страницы грамматики и «Что я уже знаю» берут пройденное только из данных', () => {

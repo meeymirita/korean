@@ -15,8 +15,7 @@ import { usePersisted } from '@/composables/usePersisted'
 
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const progress = useProgressStore()
-const passed = (id: string) => progress.isMarked('d', id)
-/** «пройдено» по данным, если владелец не снял отметку (метка u) */
+/** «пройдено» одно для всего сайта: `st: 'ok'` в данных (`grammar.ts`) */
 const isOk = (g: { id: string; st: string }) => g.st === 'ok'
 /** Вкладка 0: свои карточки (без номера урока: с Лерой и сам); 1 и 2: карточки уроков видеокурса */
 const PARTS = [
@@ -47,7 +46,7 @@ const list = computed(() => {
   return G.filter(g =>
     (progress.unlocked || tabOf(g) !== 0) &&
     (!sec.value || g.s === sec.value) &&
-    (!onlyDone.value || isOk(g) || passed(g.id)) &&
+    (!onlyDone.value || isOk(g)) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
 })
 /** Карточки выбранной вкладки. В разметку попадают все вкладки (скрытые через v-show): поисковики видят все карточки, а не одну вкладку. */
@@ -109,7 +108,6 @@ onMounted(() => {
           <!-- во «Мои карточки» подпись урока не пишется: вкладка владельца не про видеокурс -->
           <span v-if="g.l && cur !== 0" class="pill l">{{ g.l }}</span>
           <span class="pill" :class="isOk(g) ? 's' : 'n'">{{ isOk(g) ? 'пройдено' : 'ещё рано' }}</span>
-          <span v-if="passed(g.id)" class="pill s">✓ {{ (cur !== 0 && g.l) || 'отмечено' }}</span>
           <span v-if="photoOf(g)" class="pill ph" role="button" tabindex="0" title="Показать фото Юны к этому правилу" @click.stop="photo = photoOf(g)!" @keydown.enter.stop.prevent="photo = photoOf(g)!">Фото</span>
         </div>
       </button>
