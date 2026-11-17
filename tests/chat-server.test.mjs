@@ -29,7 +29,7 @@ describe('сервер: помощник-чат', () => {
   const q = text => [{ role: 'user', text }]
   before(async () => {
     g = await fakeмодель()
-    s = await start({ env: { OPENROUTER_API_KEY: 'test-key', CHAT_BASE: g.base, CHAT_MODEL: 'test-model', CHAT_DAILY_LIMIT: '4' } })
+    s = await start({ env: { OPENROUTER_API_KEY: 'test-key', CHAT_BASE: g.base, CHAT_MODEL: 'test-model', CHAT_DAILY_LIMIT: '4', CHAT_EXPLAIN_LIMIT: '2' } })
     // пустой ключ в окружении главнее backend/.env: тест не должен подхватить настоящий ключ владельца
     off = await start({ env: { OPENROUTER_API_KEY: '' } })
   })
@@ -44,8 +44,20 @@ describe('сервер: помощник-чат', () => {
 
   test('статус показывает, что ключ задан, но сам ключ не отдаёт', async () => {
     const st = await (await s.call('GET', '/api/chat', OWNER)).json()
-    assert.deepEqual(st, { configured: true, model: 'test-model', limit: 4, left: 4 })
+    assert.deepEqual(st, { configured: true, model: 'test-model', limit: 4, left: 4, explainLimit: 2, explainLeft: 2 })
     assert.equal((await (await off.call('GET', '/api/chat', OWNER)).json()).configured, false)
+  })
+
+  test('«Спросить ИИ» (с разбором с экрана) считается отдельным лимитом и передаёт разбор модели', async () => {
+    const before = await (await s.call('GET', '/api/chat', OWNER)).json()
+    const r = await s.call('POST', '/api/chat', OWNER, { messages: q('Объясни проще'), context: 'Предложение: 저는 학생이에요' })
+    assert.equal(r.status, 200)
+    const st = await (await s.call('GET', '/api/chat', OWNER)).json()
+    assert.equal(st.left, before.left)
+    assert.equal(st.explainLeft, before.explainLeft - 1)
+    assert.equal((await s.call('POST', '/api/chat', OWNER, { messages: q('x'), context: 5 })).status, 400)
+    assert.match(JSON.stringify(g.seen[0]), /на_экране/)
+    g.seen.length = 0 // остальные тесты считают обращения к модели с нуля
   })
 
   test('без ключа: 503 «не настроен»', async () => {
