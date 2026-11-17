@@ -18,6 +18,7 @@ import { burst, cascade, pop } from '@/lib/fx'
 import { motionCalm } from '@/lib/motion'
 import { createGenerators } from './generators'
 import { $, el, shuffle } from './util'
+import { breakdownContext, buildAskAi, canAskAi } from '@/lib/askAi'
 
 /** Запускает игру на уже отрисованной оболочке (`components/game/GameShell.vue`); возвращает функцию очистки. */
 /** hooks: общий прогресс сайта (record, importXp, state); view: то, что движок показывает оболочке (`./view.ts`). */
@@ -503,6 +504,16 @@ function openStoryWin(q: StoryQ,si: number){
     box.appendChild(drawBreakdown(s.ko,s.ru));
   });
   back.appendChild(box);
+  // «Спросить ИИ»: чат появляется справа от разбора, окно сдвигается (на узком экране чат ниже)
+  if(canAskAi()){
+    const ctx=()=>list.map(function(s,n){
+      const gaps=s.gapIdx.map(function(k){const g=q.gaps[k]!;return (g.ok?'верно: ':'ученик поставил '+g.picked+', нужно ')+g.right+(g.why?' ('+g.why+')':'');}).join('; ');
+      return (si<0?'Предложение '+(n+1)+':\n':'')+breakdownContext(s.ko,gaps?['Пропуски: '+gaps]:[]);
+    }).join('\n\n');
+    const bar=el('div','story-win-ask');
+    bar.appendChild(buildAskAi(ctx,function(p){back.appendChild(p);},function(open){back.classList.toggle('ask-on',open);}));
+    box.appendChild(bar);
+  }
   back.addEventListener('click',function(e){if(e.target===back)closeStoryWin();});
   const root=$('#card').closest('.game')||document.body;
   root.appendChild(back);

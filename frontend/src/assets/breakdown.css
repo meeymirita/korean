@@ -42,3 +42,45 @@ html[data-theme='dark'] .study .bd-card.verb { --bd-ink: #8fa8ff; }
 /* пример слова в игре: одна строка «Как собрано / пример предложения» и перевод, без повтора предложения */
 .study .bd-title-ex { margin-top: 0; }
 .study .bd-title-tr { margin-left: 10px; font-family: inherit; font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+
+/* «Спросить ИИ» (lib/askAi.ts): кнопка под разбором и панель чата; в окне игры панель стоит справа и сдвигает разбор */
+.ask-host,.story-win-ask{margin-top:12px}
+.ask-btn{padding:8px 16px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.7);color:inherit;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.ask-btn.on{background:var(--accent,#ff8fc7);color:#fff;border-color:transparent}
+.ask-panel{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.75);font-size:14px;max-height:70vh}
+.ask-panel[hidden]{display:none}
+.ask-head{font-weight:700}
+.ask-log{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0}
+.ask-msg{padding:8px 12px;border-radius:12px;line-height:1.45;overflow-wrap:anywhere}
+.ask-msg.me{align-self:flex-end;background:rgba(255,143,199,.25)}
+.ask-msg.bot{background:rgba(255,255,255,.9);border:1px solid var(--line)}
+.ask-msg.wait{color:var(--muted);font-style:italic}
+.ask-msg.err{background:var(--bad-bg,#fde4e4);color:var(--bad,#b3261e)}
+.ask-line{margin:2px 0}
+.ask-line.head{font-weight:700;margin-top:6px}
+.ask-line.tip{padding:6px 10px;border-radius:10px;background:rgba(140,170,255,.18)}
+.ask-n{margin-right:6px}
+.ask-ko{font-family:var(--ko,'Noto Sans KR',sans-serif);font-weight:600}
+.ask-phrase{display:flex;flex-direction:column;margin:4px 0;padding:6px 10px;border-radius:10px;background:rgba(140,170,255,.14)}
+.ask-phrase .ask-ko{font-size:16px}
+.ask-ru{font-size:13px;color:var(--muted)}
+.ask-quick{display:flex;flex-wrap:wrap;gap:6px}
+.ask-quick[hidden]{display:none}
+.ask-chip{padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.ask-form{display:flex;gap:6px}
+.ask-in{flex:1;min-width:0;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:inherit;font:inherit;font-size:14px}
+.ask-send{padding:8px 14px;border:0;border-radius:12px;background:var(--accent,#ff8fc7);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.ask-send:disabled{opacity:.5}
+.ask-note{margin:0;font-size:12px;color:var(--muted)}
+html[data-theme='dark'] .ask-panel,html[data-theme='dark'] .ask-btn{background:rgba(255,255,255,.06)}
+html[data-theme='dark'] .ask-msg.bot{background:rgba(255,255,255,.08)}
+/* окно «Разбор» в игре: чат справа, разбор сдвигается влево; на узком экране чат ниже */
+.game .story-win.ask-on{gap:16px;align-items:center}
+.game .story-win.ask-on .story-win-box{width:min(560px,100%);flex:0 1 560px}
+.game .story-win.ask-on .ask-panel{margin:0;width:min(380px,100%);flex:0 0 380px;max-height:90vh;background:linear-gradient(160deg,#fbeefc,#eaedff 60%,#fff3f8);box-shadow:0 30px 60px -20px rgba(40,38,90,.5)}
+html[data-theme='dark'] .game .story-win.ask-on .ask-panel{background:#25274e}
+@media (max-width:900px){
+  .game .story-win.ask-on{flex-direction:column;justify-content:flex-start;overflow:auto}
+  .game .story-win.ask-on .story-win-box{flex:0 0 auto;max-height:none;overflow:visible}
+  .game .story-win.ask-on .ask-panel{flex:0 0 auto;width:min(560px,100%)}
+}

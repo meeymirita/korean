@@ -1,8 +1,9 @@
 /** Помощник-чат: пересылает вопросы в OpenRouter и возвращает ответ. Чаты и их сообщения хранятся в базе (таблицы chat_convs и chat_msgs). */
 import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { randomBytes } from 'node:crypto'
-import { CHAT_DAILY_LIMIT, CHAT_MAX_HISTORY, CHAT_MAX_SAVED, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
+import { CHAT_DAILY_LIMIT, CHAT_EXPLAIN_LIMIT, CHAT_MAX_CONTEXT, CHAT_MAX_HISTORY, CHAT_MAX_SAVED, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
 import { Db } from '../db/db.service.js'
+import { explainNote } from './explain.js'
 import { SYSTEM_PROMPT } from './prompt.js'
 
 export interface ChatMsg {
@@ -38,46 +39,59 @@ export function cleanConv(v: unknown): string | undefined {
   throw bad('invalid conv')
 }
 
+/** Разбор с экрана, к которому относится вопрос («Спросить ИИ»): пусто или текст не длиннее лимита. */
+export function cleanContext(v: unknown): string {
+  if (v === undefined || v === null || v === '') return ''
+  if (typeof v !== 'string') throw bad('invalid context')
+  return v.trim().slice(0, CHAT_MAX_CONTEXT)
+}
+
+type Kind = 'chat' | 'explain'
+
 @Injectable()
 export class ChatService {
   constructor(private readonly db: Db) {}
 
   private day = ''
-  private used = 0
+  private usedBy: Record<Kind, number> = { chat: 0, explain: 0 }
 
   /** Счётчик вопросов за сутки: хранится в памяти, после перезапуска службы начинается заново. */
   private roll() {
     const today = new Date().toISOString().slice(0, 10)
     if (today !== this.day) {
       this.day = today
-      this.used = 0
+      this.usedBy = { chat: 0, explain: 0 }
     }
   }
 
-  private take(): number {
+  private limitOf = (k: Kind) => (k === 'chat' ? CHAT_DAILY_LIMIT : CHAT_EXPLAIN_LIMIT)
+
+  private take(kind: Kind): number {
     this.roll()
-    if (this.used >= CHAT_DAILY_LIMIT) throw new HttpException({ error: 'daily limit', limit: CHAT_DAILY_LIMIT }, 429)
-    this.used++
-    return CHAT_DAILY_LIMIT - this.used
+    if (this.usedBy[kind] >= this.limitOf(kind)) throw new HttpException({ error: 'daily limit', limit: this.limitOf(kind) }, 429)
+    this.usedBy[kind]++
+    return this.limitOf(kind) - this.usedBy[kind]
   }
 
   status() {
     this.roll()
-    return { configured: !!CHAT_KEY, model: CHAT_MODEL, limit: CHAT_DAILY_LIMIT, left: CHAT_DAILY_LIMIT - this.used }
+    return { configured: !!CHAT_KEY, model: CHAT_MODEL, limit: CHAT_DAILY_LIMIT, left: CHAT_DAILY_LIMIT - this.usedBy.chat, explainLimit: CHAT_EXPLAIN_LIMIT, explainLeft: CHAT_EXPLAIN_LIMIT - this.usedBy.explain }
   }
 
   async ask(body: Record<string, unknown>) {
     const messages = cleanMessages(body?.messages)
     const conv = cleanConv(body?.conv)
+    const context = cleanContext(body?.context)
+    const kind: Kind = context ? 'explain' : 'chat'
     if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
     // чат проверяем до обращения к модели: вопрос не тратится, если чата нет или он переполнен
     if (conv && conv !== 'new') await this.checkRoom(conv)
-    const left = this.take()
+    const left = this.take(kind)
     // бесплатный маршрутизатор иногда отдаёт пустой ответ: пробуем ещё раз (вопрос в счётчике один раз)
     let reply = ''
-    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages)
+    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages, context, kind)
     if (!reply) {
-      this.used--
+      this.usedBy[kind]--
       throw new BadGatewayException({ error: 'empty answer' })
     }
     const saved = conv ? await this.save(conv, messages[messages.length - 1]!.text, reply) : undefined
@@ -136,7 +150,7 @@ export class ChatService {
   }
 
   /** Один запрос к модели; пустая строка, если модель ничего не написала. */
-  private async once(messages: ChatMsg[]): Promise<string> {
+  private async once(messages: ChatMsg[], context: string, kind: Kind): Promise<string> {
     let res: Response
     try {
       res = await fetch(`${CHAT_BASE}/chat/completions`, {
@@ -144,18 +158,18 @@ export class ChatService {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CHAT_KEY}`, 'HTTP-Referer': 'https://korean.meeymirita.ru', 'X-Title': 'Urimal' },
         body: JSON.stringify({
           model: CHAT_MODEL,
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages.map(m => ({ role: m.role, content: m.text }))],
+          messages: [{ role: 'system', content: context ? `${SYSTEM_PROMPT}\n\n${explainNote(context)}` : SYSTEM_PROMPT }, ...messages.map(m => ({ role: m.role, content: m.text }))],
           temperature: 0.4,
           max_tokens: 1200,
         }),
         signal: AbortSignal.timeout(40_000),
       })
     } catch {
-      this.used--
+      this.usedBy[kind]--
       throw new BadGatewayException({ error: 'chat service unreachable' })
     }
     if (!res.ok) {
-      this.used--
+      this.usedBy[kind]--
       if (res.status === 429) throw new HttpException({ error: 'rate limit' }, 429)
       throw new BadGatewayException({ error: `chat service ${res.status}` })
     }

@@ -97,6 +97,10 @@ export const CHAT_BASE = (process.env.CHAT_BASE || 'https://openrouter.ai/api/v1
 /** Сколько вопросов в сутки (по UTC) пускать наружу: у бесплатного тарифа 50 запросов в день и 20 в минуту, лишнее не тратим. */
 export const CHAT_DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT || 40)
 export const CHAT_MAX_TEXT = 2000
+/** Вопросы «Спросить ИИ» из окон разбора считаются отдельно от чата, чтобы не съедать его лимит. */
+export const CHAT_EXPLAIN_LIMIT = Number(process.env.CHAT_EXPLAIN_LIMIT || 40)
+/** Сколько знаков разбора с экрана можно приложить к вопросу. */
+export const CHAT_MAX_CONTEXT = 1500
 export const CHAT_MAX_HISTORY = 12
 /** Сколько сообщений хранится в одном чате (дальше предлагается начать новый). */
 export const CHAT_MAX_SAVED = 300

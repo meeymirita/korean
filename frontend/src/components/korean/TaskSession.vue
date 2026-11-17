@@ -310,7 +310,7 @@ onBeforeUnmount(() => {
           </li>
         </ul>
         <p v-if="current.pairOf || current.prompt.includes('＿')" class="rs-sub">Как устроено верное предложение:</p>
-        <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" />
+        <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" :extra="[`Задание: ${current.prompt}`, `Верный ответ: ${current.answer}`, `Ответ ученика: ${picked}`]" />
       </div>
       <p v-if="picked !== null && pending === null && current.note && picked === current.answer" class="rs-sub rs-note">{{ current.note }}</p>
       <div v-if="picked !== null && pending === null && ruleCards.length" class="rs-rules">

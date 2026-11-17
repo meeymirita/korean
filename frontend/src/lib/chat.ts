@@ -19,11 +19,11 @@ export function chatErrorText(status: number, error?: string): string {
   return `ошибка сервера ${status}`
 }
 
-/** Задаёт вопрос: переписка целиком, последнее сообщение от пользователя. conv: 'new' завести чат, номер чата дописать в него (ответ вернёт номер). Бросает Error с понятным текстом. */
-export async function askChat(bearer: string, messages: ChatMsg[], conv?: string): Promise<{ reply: string; left: number; conv?: string }> {
+/** Задаёт вопрос: переписка целиком (context: разбор с экрана для «Спросить ИИ», считается отдельным лимитом), последнее сообщение от пользователя. conv: 'new' завести чат, номер чата дописать в него (ответ вернёт номер). Бросает Error с понятным текстом. */
+export async function askChat(bearer: string, messages: ChatMsg[], conv?: string, context?: string): Promise<{ reply: string; left: number; conv?: string }> {
   let res: Response
   try {
-    res = await fetchT('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` }, body: JSON.stringify(conv ? { messages, conv } : { messages }) }, 60_000)
+    res = await fetchT('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` }, body: JSON.stringify({ messages, ...(conv ? { conv } : {}), ...(context ? { context } : {}) }) }, 60_000)
   } catch (e) {
     throw new Error(errText(e))
   }
