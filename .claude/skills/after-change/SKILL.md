@@ -5,6 +5,18 @@ description: Чеклист после любой правки на платфо
 
 # После правки: по порядку, ничего не пропускай
 
+**Правило владельца (2026-11-17): изменил или добавил что-то в одном месте, обнови ВСЕ места из карты ниже, в том же коммите и в том же ответе.** Нашёл по пути расхождение (устаревшее «не пройдено», старое число слов, другое название): чини сразу и назови в ответе, не оставляй «потом». Сомневаешься, где ещё это упомянуто: `grep -rn "<слово или id>" frontend/src backend/src tests scripts docs CLAUDE.md README.md .claude/skills`.
+
+## Карта: что менялось → где ещё это живёт
+- **Слово или перевод** (`dictionary.ts`, `translations.ts`): `digest-pool`, `words-export-vocab`, `build-words-json`, `chat-curriculum`, `build-study-data` (слова попадают в инструкции чата и голоса через `KNOWN_WORDS` и `KNOWN_READINGS`); число слов в `README.md` («N слов») и `docs/data.md`; сценки голоса (`voice/scenes.ts`, слова только из словаря); тесты `words-json`, `parse`, `exam-data`, `readme`.
+- **Статус карточки грамматики** (`st: 'ok'` или `soon`, правило карточки): `chat-curriculum` (`KNOWN_GRAMMAR` и `KNOWN_RULES` попадают в обе инструкции), `digest-pool`, `build-study-data`; **вручную набранные списки «пройдено / не пройдено»** в `backend/src/chat/prompt.ts` и `backend/src/voice/prompt.ts` (раньше они расходились: в чате будущее время годами значилось непройденным), раздел «Не забегать вперёд» в `CLAUDE.md`, `docs/data.md`, зависимость в `lab.ts` (`DEPS`). Отметка «пройдено», которую владелец ставит или снимает кнопкой в окне карточки (`progress.isMarked('u', id)`), это **второй, личный** источник: её видит сайт, но не видят скрипты, инструкции и задания (они читают только `st` из кода). Не путай их и скажи владельцу, если они расходятся.
+- **Режим или тренажёр**: `MODES`, `MODE_HELP`, `build-mode-names`, `docs/trainers/<режим>.md`, `docs/games-catalog.md`, `docs/game.md`.
+- **Страница**: `seo.ts`, `crumbs.ts`, `guide.ts`, `sections.ts`, слайд в `about.ts`, `docs/home-and-theme.md`.
+- **Сервер, база, настройки**: миграция Prisma, `docker-compose.yml`, `.env.example`, `backend/src/config.ts`, `docs/server.md` и документ по теме (`docs/voice.md`, `docs/chat.md`), перезапуск сервера после выкладки.
+- **Инструкция голоса или чата** (`voice/prompt.ts`, `chat/prompt.ts`): правило, добавленное в одну, проверь и в другой (у них общие `KNOWN_*`, но проза своя); обе описаны в `docs/voice.md` и `docs/chat.md`; тесты `voice-util.spec.ts` (предел длины) и `chat-prompt.test.mjs`.
+- **Любое заметное изменение**: запись в начало `HISTORY`.
+
+
 Ноутбук слабый: одна тяжёлая команда за раз, ничего параллельно.
 
 1. **Что менялось → что перегенерировать** (нужное запусти из корня):
