@@ -31,7 +31,7 @@ const rows = computed(() => {
         <button class="chip" :class="{ on: kind === 'adj' }" @click="kind = 'adj'">Прилагательные</button>
       </div>
       <p class="sub-note">
-        Настоящее — основа + 아요/어요 (<button class="fm-link" @click="open('ayo')">правило</button>), прошедшее — 았어요/었어요, будущее (только глаголы) — основа + ㄹ / 을 + 거예요 (<button class="fm-link" @click="open('future_my')">правило</button>), отрицание — «안» перед формой
+        Настоящее — основа + 아요/어요 (<button class="fm-link" @click="open('ayo')">правило</button>), прошедшее — 았어요/었어요, будущее — основа + ㄹ / 을 + 거예요 (<button class="fm-link" @click="open('future_my')">правило</button>), отрицание — «안» перед формой
         (<button class="fm-link" @click="open('an')">правило</button>). Прилагательные меняются так же (<button class="fm-link" @click="open('adj')">правило</button>).
       </p>
     </div>

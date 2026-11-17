@@ -1,7 +1,8 @@
 import { ADJECTIVES, VERBS, type TWord } from './forms'
+import { TENSES } from './tenses'
 
 export interface Conjugation {
-  /** будущее с -(으)ㄹ 거예요: только у глаголов, где форма правильная (`futureForm`) */
+  /** будущее с -(으)ㄹ 거예요: из `tenses.ts` (там и прилагательные, и ㄷ / ㅂ-слова), иначе по правилу `futureForm` (только глаголы) */
   future?: string
   k: string
   r: string
@@ -43,7 +44,7 @@ export function futureForm(k: string): string | null {
 
 const conj = (w: TWord, kind: Conjugation['kind']): Conjugation | null =>
   w.form && w.past
-    ? { k: w.k, r: w.r, t: w.t, kind, present: w.form, past: w.past, neg: negate(w.k, w.form), ...(kind === 'verb' ? { future: futureForm(w.k) ?? undefined } : {}) }
+    ? { k: w.k, r: w.r, t: w.t, kind, present: w.form, past: w.past, neg: negate(w.k, w.form), future: TENSES[w.k]?.f[2] ?? (kind === 'verb' ? futureForm(w.k) ?? undefined : undefined) }
     : null
 
 /** Все глаголы и прилагательные с тремя формами. */
