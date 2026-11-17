@@ -28,6 +28,14 @@ describe('сервер: история чатов помощника', () => {
   })
   after(() => g.close())
 
+  test('«Спросить ИИ»: в историю идёт предложение с экрана и вопрос, чат находится по предложению', async () => {
+    const r = await (await s.call('POST', '/api/chat', OWNER, { messages: [u('Объясни проще')], conv: 'new', context: 'Предложение: 모자가 예뻐요.\nПеревод: Шапка красивая.' })).json()
+    const c = await (await s.call('GET', `/api/chat/conversations/${r.conv}`, OWNER)).json()
+    assert.equal(c.messages[0].text, 'Предложение: 모자가 예뻐요.\nОбъясни проще')
+    assert.match(c.title, /모자가 예뻐요/)
+    await s.call('DELETE', `/api/chat/conversations/${r.conv}`, OWNER)
+  })
+
   test('без токена 401, гостю 403', async () => {
     assert.equal((await s.call('GET', '/api/chat/conversations')).status, 401)
     const t = await (await s.call('POST', '/api/guests', OWNER, { hours: 1 })).json()

@@ -94,7 +94,9 @@ export class ChatService {
       this.usedBy[kind]--
       throw new BadGatewayException({ error: 'empty answer' })
     }
-    const saved = conv ? await this.save(conv, messages[messages.length - 1]!.text, reply) : undefined
+    // у «Спросить ИИ» в историю идёт и предложение с экрана (первая строка разбора): иначе чат назывался бы «Объясни проще» и не находился поиском
+    const asked = messages[messages.length - 1]!.text
+    const saved = conv ? await this.save(conv, context ? `${context.split('\n')[0]!.slice(0, 200)}\n${asked}` : asked, reply) : undefined
     return { reply, left, ...(saved ? { conv: saved } : {}) }
   }
 
