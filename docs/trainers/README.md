@@ -24,6 +24,7 @@
 | [`translate.md`](translate.md) | Переведи предложение | `?game=translate` | `TranslateView.vue` |
 | [`explain.md`](explain.md) | Переведи и объясни | `?game=explain` | `ExplainTranslateView.vue` |
 | [`speech.md`](speech.md) | Определи часть речи | `?game=speech` | `PartOfSpeechView.vue` |
+| [`read.md`](read.md) | Чтение и диалоги | `?game=read` | `ReadView.vue` |
 | [`rule.md`](rule.md) | Потренировать правило | `?game=rule&g=<id карточки>` | `RuleView.vue` |
 | [`syllables.md`](syllables.md) | Собери по слогам | `?game=syllables` | `SyllablesView.vue` |
 | [`keyboard.md`](keyboard.md) | Печать на корейском | `?game=keyboard` | `KeyboardView.vue` |
