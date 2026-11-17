@@ -9,7 +9,7 @@ import { DATA_DIR, MAX_TRACK, MAX_TRACK_MB, MUSIC_DIR, MUSIC_TMP, TOKEN } from '
 import { Db } from '../db/db.service.js'
 import { logError } from '../log.js'
 import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
-import { PLAYABLE_EXT, cleanCategory, cleanTitle, cleanUrl, downloadArgs, extOf, fixUploadName, infoArgs, parseProgress, signPath, titleFromName, ytdlpError } from './music.util.js'
+import { MAX_PLAYLISTS, PLAYABLE_EXT, cleanCategory, cleanPlaylistName, cleanPlaylistTracks, cleanTitle, cleanUrl, downloadArgs, extOf, fixUploadName, infoArgs, parsePlaylistTracks, parseProgress, signPath, titleFromName, ytdlpError } from './music.util.js'
 
 export type JobStage = 'info' | 'download' | 'convert' | 'save' | 'done' | 'error'
 
@@ -111,7 +111,59 @@ export class MusicService {
   async list() {
     this.pruneJobs()
     const rows = await (await this.db.orm()).track.findMany({ orderBy: { created: 'asc' } })
-    return { tracks: rows.map(r => this.out(r)), jobs: [...this.jobs.values()].map(j => ({ ...j, text: stageText(j.stage) })) }
+    return { tracks: rows.map(r => this.out(r)), jobs: [...this.jobs.values()].map(j => ({ ...j, text: stageText(j.stage) })), playlists: await this.playlists() }
+  }
+
+  /* ---------- плейлисты ---------- */
+  private playlistOut(r: { id: string; name: string; tracks: string; created: bigint }) {
+    return { id: r.id, name: r.name, tracks: parsePlaylistTracks(r.tracks), created: Number(r.created) }
+  }
+
+  async playlists() {
+    const rows = await (await this.db.orm()).musicPlaylist.findMany({ orderBy: { created: 'asc' } })
+    return rows.map(r => this.playlistOut(r))
+  }
+
+  async createPlaylist(body: { name?: unknown; tracks?: unknown }) {
+    const name = cleanPlaylistName(body?.name)
+    if (!name) throw new BadRequestException({ error: 'invalid name' })
+    const tracks = body?.tracks === undefined ? [] : cleanPlaylistTracks(body.tracks)
+    if (!tracks) throw new BadRequestException({ error: 'invalid tracks' })
+    const db = await this.db.orm()
+    if ((await db.musicPlaylist.count()) >= MAX_PLAYLISTS) throw new BadRequestException({ error: 'too many playlists' })
+    const now = BigInt(Date.now())
+    const r = await db.musicPlaylist.create({ data: { id: newId(), name, tracks: JSON.stringify(tracks), created: now, updated: now } })
+    return this.playlistOut(r)
+  }
+
+  /** Меняет название и/или список песен плейлиста; чего нет в запросе, остаётся как было. */
+  async updatePlaylist(id: string, body: { name?: unknown; tracks?: unknown }) {
+    const data: { name?: string; tracks?: string; updated: bigint } = { updated: BigInt(Date.now()) }
+    if (body.name !== undefined) {
+      const n = cleanPlaylistName(body.name)
+      if (!n) throw new BadRequestException({ error: 'invalid name' })
+      data.name = n
+    }
+    if (body.tracks !== undefined) {
+      const t = cleanPlaylistTracks(body.tracks)
+      if (!t) throw new BadRequestException({ error: 'invalid tracks' })
+      data.tracks = JSON.stringify(t)
+    }
+    if (data.name === undefined && data.tracks === undefined) throw new BadRequestException({ error: 'nothing to change' })
+    try {
+      return this.playlistOut(await (await this.db.orm()).musicPlaylist.update({ where: { id }, data }))
+    } catch {
+      throw new NotFoundException({ error: 'not found' })
+    }
+  }
+
+  async removePlaylist(id: string) {
+    try {
+      await (await this.db.orm()).musicPlaylist.delete({ where: { id } })
+    } catch {
+      throw new NotFoundException({ error: 'not found' })
+    }
+    return { ok: true }
   }
 
   /** Подписанная ссылка на файл песни для `<audio>`. */
@@ -157,6 +209,11 @@ export class MusicService {
     const row = await db.track.findUnique({ where: { id } })
     if (!row) throw new NotFoundException({ error: 'not found' })
     await db.track.delete({ where: { id } })
+    // удалённой песни не должно остаться в плейлистах
+    for (const p of await db.musicPlaylist.findMany()) {
+      const list = parsePlaylistTracks(p.tracks)
+      if (list.includes(id)) await db.musicPlaylist.update({ where: { id: p.id }, data: { tracks: JSON.stringify(list.filter(x => x !== id)), updated: BigInt(Date.now()) } })
+    }
     await this.drop(row.file)
     await this.drop(row.cover)
     return { ok: true }

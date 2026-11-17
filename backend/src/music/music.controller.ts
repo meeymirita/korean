@@ -30,6 +30,23 @@ export class MusicController {
     return this.music.list()
   }
 
+  /** Плейлисты: создать (`name`, необязательно `tracks`), изменить (`name`, `tracks`), удалить. Сам список приходит в `GET /api/music`. */
+  @Post('playlists')
+  @HttpCode(200)
+  createPlaylist(@Body() body: { name?: unknown; tracks?: unknown }) {
+    return this.music.createPlaylist(body ?? {})
+  }
+
+  @Patch('playlists/:id')
+  updatePlaylist(@Param('id') id: string, @Body() body: { name?: unknown; tracks?: unknown }) {
+    return this.music.updatePlaylist(id, body ?? {})
+  }
+
+  @Delete('playlists/:id')
+  removePlaylist(@Param('id') id: string) {
+    return this.music.removePlaylist(id)
+  }
+
   @Get(':id/url')
   url(@Param('id') id: string) {
     return this.music.streamUrl(id)

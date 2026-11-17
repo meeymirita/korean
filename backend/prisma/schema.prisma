@@ -283,3 +283,14 @@ model ChatMsg {
   @@index([conv], map: "chat_msgs_conv")
   @@map("chat_msgs")
 }
+
+/// Плейлист музыкального плеера: tracks это JSON-массив id песен по порядку (песни живут в Track)
+model MusicPlaylist {
+  id      String @id
+  name    String
+  tracks  String @default("[]")
+  created BigInt
+  updated BigInt
+
+  @@map("music_playlists")
+}

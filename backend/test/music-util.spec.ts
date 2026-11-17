@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanCategory, cleanTitle, cleanUrl, downloadArgs, fixUploadName, infoArgs, parseProgress, signPath, titleFromName, verifySigned, ytdlpError } from '../src/music/music.util'
+import { cleanCategory, cleanPlaylistName, cleanPlaylistTracks, cleanTitle, cleanUrl, downloadArgs, fixUploadName, infoArgs, parsePlaylistTracks, parseProgress, signPath, titleFromName, verifySigned, ytdlpError } from '../src/music/music.util'
 
 // Музыкальный плеер: чистые функции (без базы и сети).
 describe('музыка: подпись ссылок', () => {
@@ -69,5 +69,30 @@ describe('музыка: проверка ввода', () => {
     expect(fixUploadName(garbled)).toBe('Моя песня.mp3')
     expect(fixUploadName('Моя песня.mp3')).toBe('Моя песня.mp3')
     expect(fixUploadName('plain.mp3')).toBe('plain.mp3')
+  })
+})
+
+describe('музыка: плейлисты', () => {
+  const A = '0123456789abcdef'
+  const B = 'fedcba9876543210'
+  it('название: пробелы схлопываются, пустое и длиннее 60 знаков отклоняются', () => {
+    expect(cleanPlaylistName('  Для   учёбы ')).toBe('Для учёбы')
+    expect(cleanPlaylistName('   ')).toBeNull()
+    expect(cleanPlaylistName('а'.repeat(61))).toBeNull()
+    expect(cleanPlaylistName('а'.repeat(60))).toHaveLength(60)
+    expect(cleanPlaylistName(5)).toBeNull()
+  })
+  it('песни: только id из 16 знаков, повторы убираются, порядок сохраняется; чужое отклоняется', () => {
+    expect(cleanPlaylistTracks([B, A, B])).toEqual([B, A])
+    expect(cleanPlaylistTracks([])).toEqual([])
+    expect(cleanPlaylistTracks('x')).toBeNull()
+    expect(cleanPlaylistTracks([A, 'не id'])).toBeNull()
+    expect(cleanPlaylistTracks([A.toUpperCase()])).toBeNull()
+    expect(cleanPlaylistTracks(Array.from({ length: 501 }, (_, i) => i.toString(16).padStart(16, '0')))).toBeNull()
+  })
+  it('запись из базы: битый JSON даёт пустой плейлист', () => {
+    expect(parsePlaylistTracks(JSON.stringify([A, B]))).toEqual([A, B])
+    expect(parsePlaylistTracks('не json')).toEqual([])
+    expect(parsePlaylistTracks('{"a":1}')).toEqual([])
   })
 })

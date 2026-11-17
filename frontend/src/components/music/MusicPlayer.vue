@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { askConfirm } from '@/composables/useConfirm'
 import { errText } from '@/lib/http'
 import { CATEGORIES, useMusicAvailable, useMusicStore, type Category, type Track } from '@/stores/music'
@@ -31,9 +31,25 @@ const urlBusy = ref(false)
 const urlError = ref('')
 const dragOver = ref(false)
 
+/** Файлы, которые уже есть в плеере (тот же размер или название) или выбраны дважды: предупреждение и выбор «только новые». */
+async function startUpload(files: File[]) {
+  const { fresh, dups } = store.splitDuplicates(files)
+  if (dups.length) {
+    const names = dups.slice(0, 5).map(d => `«${d.file.name}» (${d.of})`).join(', ') + (dups.length > 5 ? ` и ещё ${dups.length - 5}` : '')
+    const ok = await askConfirm({
+      title: 'Такие песни уже есть',
+      text: `Повторов: ${dups.length} из ${files.length}: ${names}. ${fresh.length ? `Загрузить только новые (${fresh.length})?` : 'Новых файлов нет.'}`,
+      ok: fresh.length ? 'Только новые' : 'Понятно',
+      cancel: 'Отмена',
+    })
+    if (!ok) return
+  }
+  if (fresh.length) void store.uploadFiles(fresh)
+}
+
 function pickFiles(list: FileList | null) {
   const files = [...(list ?? [])]
-  if (files.length) void store.uploadFiles(files)
+  if (files.length) void startUpload(files)
   if (fileInput.value) fileInput.value.value = ''
 }
 
@@ -114,6 +130,116 @@ async function moveTrack(t: Track) {
   }
 }
 
+/* ---------- очередь, плейлисты, таймер сна ---------- */
+/** Показан список плейлистов вместо песен вкладки. */
+const lists = ref(false)
+const pickTab = (c: Category) => {
+  lists.value = false
+  store.setTab(c)
+}
+const titleOf = (id: string) => store.tracks.find(t => t.id === id)?.title ?? 'песня удалена'
+const shownLists = computed(() => (q.value ? store.playlists.filter(p => p.name.toLowerCase().includes(q.value)) : store.playlists))
+
+function queueNext(t: Track) {
+  menuFor.value = ''
+  store.playNext(t.id)
+  toast.ok(`«${t.title}» сыграет следом`)
+}
+function queueLast(t: Track) {
+  menuFor.value = ''
+  store.enqueue(t.id)
+  toast.ok(`«${t.title}» в очереди`)
+}
+
+/** Выбор плейлиста для песни из меню «⋮»: id песни, новое название. */
+const pickFor = ref('')
+const newName = ref('')
+async function addTo(plId: string, t: Track) {
+  try {
+    const added = await store.addToPlaylist(plId, t.id)
+    const name = store.playlists.find(p => p.id === plId)?.name ?? ''
+    if (added) toast.ok(`«${t.title}» добавлена в «${name}»`)
+    else toast.ok(`«${t.title}» уже в «${name}»`)
+  } catch (e) {
+    toast.error(errText(e))
+  }
+  pickFor.value = ''
+  menuFor.value = ''
+}
+async function createWith(t: Track) {
+  const name = newName.value.trim()
+  if (!name) return
+  try {
+    await store.createPlaylist(name, [t.id])
+    toast.ok(`Плейлист «${name}» создан, «${t.title}» в нём`)
+    newName.value = ''
+    pickFor.value = ''
+    menuFor.value = ''
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+async function makeList() {
+  const name = newName.value.trim()
+  if (!name) return
+  try {
+    await store.createPlaylist(name)
+    newName.value = ''
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+const renamingList = ref('')
+const listName = ref('')
+function startRenameList(id: string, name: string) {
+  renamingList.value = id
+  listName.value = name
+}
+async function saveRenameList() {
+  const id = renamingList.value
+  if (!id) return
+  renamingList.value = ''
+  try {
+    await store.renamePlaylist(id, listName.value)
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+async function dropList(id: string, name: string) {
+  if (!(await askConfirm({ title: 'Удалить плейлист?', text: `«${name}» исчезнет, песни из плеера не удалятся.`, ok: 'Удалить', danger: true }))) return
+  try {
+    await store.deletePlaylist(id)
+    toast.ok('Плейлист удалён')
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+async function dropFromList(plId: string, trackId: string) {
+  try {
+    await store.removeFromPlaylist(plId, trackId)
+  } catch (e) {
+    toast.error(errText(e))
+  }
+}
+
+const sleepOpen = ref(false)
+const sleeping = computed(() => store.sleepEnd > 0 || store.sleepTrack)
+const sleepLabel = computed(() => (store.sleepEnd > 0 ? `Сон · ${formatTime(store.sleepLeft)}` : store.sleepTrack ? 'Сон · после песни' : 'Таймер сна'))
+function setSleep(m: number | 'track') {
+  store.setSleep(m)
+  sleepOpen.value = false
+  if (m === 'track') toast.ok('Музыка остановится после этой песни')
+  else if (m > 0) toast.ok(`Музыка остановится через ${m} мин`)
+  else toast.ok('Таймер сна выключен')
+}
+
+/** Меню песни открылось у нижнего края списка: прокручиваем, чтобы оно было видно целиком. */
+watch([menuFor, pickFor], async ([m]) => {
+  if (!m) return
+  await nextTick()
+  document.querySelector('.mp-menu')?.scrollIntoView?.({ block: 'nearest' })
+})
+
 const rowPlay = (t: Track) => (store.currentId === t.id && store.playing ? store.pause() : void store.play(t.id))
 const seekTo = (e: Event) => store.seek((Number((e.target as HTMLInputElement).value) / 100) * (store.length || 0))
 const onKey = (e: KeyboardEvent) => {
@@ -178,20 +304,63 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
             </div>
           </div>
 
+          <div class="mp-sleep">
+            <button type="button" class="mp-chip" :class="{ on: sleeping }" :aria-expanded="sleepOpen" @click="sleepOpen = !sleepOpen">{{ sleepLabel }}</button>
+            <div v-if="sleepOpen" class="mp-pop" role="menu" aria-label="Таймер сна">
+              <button v-for="m in [15, 30, 60, 90]" :key="m" type="button" @click="setSleep(m)">Через {{ m }} мин</button>
+              <button type="button" @click="setSleep('track')">После этой песни</button>
+              <button v-if="sleeping" type="button" class="mp-del" @click="setSleep(0)">Выключить таймер</button>
+            </div>
+          </div>
+
           <div class="mp-bar">
             <div class="mp-tabs" role="tablist" aria-label="Вкладки плеера">
-              <button v-for="c in CATEGORIES" :key="c.id" type="button" role="tab" :aria-selected="store.tab === c.id" :class="{ on: store.tab === c.id }" @click="store.setTab(c.id)">
+              <button v-for="c in CATEGORIES" :key="c.id" type="button" role="tab" :aria-selected="!lists && store.tab === c.id" :class="{ on: !lists && store.tab === c.id }" @click="pickTab(c.id)">
                 {{ c.name }} <small>{{ count(c.id) }}</small>
               </button>
+              <button type="button" role="tab" :aria-selected="lists" :class="{ on: lists }" @click="lists = true">Плейлисты <small>{{ store.playlists.length }}</small></button>
             </div>
             <div class="mp-search">
-              <input v-model="query" type="text" placeholder="Поиск по названию" aria-label="Поиск песни по названию" autocomplete="off" @keydown.esc.stop="query = ''" />
+              <input v-model="query" type="text" :placeholder="lists ? 'Поиск плейлиста' : 'Поиск по названию'" aria-label="Поиск по названию" autocomplete="off" @keydown.esc.stop="query = ''" />
               <button v-if="query" type="button" class="mp-search-x" aria-label="Очистить поиск" @click="query = ''">✕</button>
             </div>
           </div>
 
           <div class="mp-scroll">
-            <ul v-if="shown.length" class="mp-list">
+            <details v-if="store.upNext.length" class="mp-queue" open>
+              <summary>Дальше по очереди · {{ store.upNext.length }}</summary>
+              <ol>
+                <li v-for="(id, i) in store.upNext" :key="i + id"><span>{{ titleOf(id) }}</span><button type="button" aria-label="Убрать из очереди" @click="store.unqueue(i)">×</button></li>
+              </ol>
+              <button type="button" class="mp-link" @click="store.clearQueue()">Очистить очередь</button>
+            </details>
+
+            <div v-if="lists" class="mp-lists">
+              <form class="mp-newlist" @submit.prevent="makeList">
+                <input v-model="newName" type="text" maxlength="60" placeholder="Новый плейлист" aria-label="Название нового плейлиста" />
+                <button type="submit" class="mp-btn" :disabled="!newName.trim()">Создать</button>
+              </form>
+              <p v-if="!store.playlists.length" class="mp-hint">Плейлистов пока нет. Создай первый здесь или добавь песню через «⋮ → В плейлист».</p>
+              <p v-else-if="!shownLists.length" class="mp-hint">Ничего не нашлось по «{{ query.trim() }}».</p>
+              <details v-for="p in shownLists" :key="p.id" class="mp-pl" :class="{ cur: p.id === store.ctx }">
+                <summary><b>{{ p.name }}</b> <small>{{ p.tracks.length }}</small></summary>
+                <div class="mp-pl-act">
+                  <button type="button" class="mp-btn" :disabled="!p.tracks.length" @click="store.playFromPlaylist(p.id)">Играть</button>
+                  <input v-if="renamingList === p.id" v-model="listName" type="text" maxlength="60" class="mp-rename" aria-label="Название плейлиста" autofocus @keydown.enter="saveRenameList" @keydown.esc.stop="renamingList = ''" @blur="saveRenameList" />
+                  <button v-else type="button" class="mp-link" @click="startRenameList(p.id, p.name)">Переименовать</button>
+                  <button type="button" class="mp-link mp-del" @click="dropList(p.id, p.name)">Удалить</button>
+                </div>
+                <p v-if="!p.tracks.length" class="mp-hint">Пусто: добавляй песни через «⋮ → В плейлист».</p>
+                <ol v-else class="mp-pl-songs">
+                  <li v-for="id in p.tracks" :key="id" :class="{ cur: id === store.currentId && p.id === store.ctx }">
+                    <button type="button" class="mp-pl-title" @click="store.playFromPlaylist(p.id, id)">{{ titleOf(id) }}</button>
+                    <button type="button" aria-label="Убрать из плейлиста" @click="dropFromList(p.id, id)">×</button>
+                  </li>
+                </ol>
+              </details>
+            </div>
+
+            <ul v-else-if="shown.length" class="mp-list">
               <li v-for="t in shown" :key="t.id" :class="{ cur: t.id === store.currentId }">
                 <button type="button" class="mp-play" :aria-label="t.id === store.currentId && store.playing ? 'Пауза' : 'Играть'" @click="rowPlay(t)">
                   <img :src="t.cover ?? coverFor(t.id)" alt="" draggable="false" />
@@ -201,7 +370,18 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
                 <button v-else type="button" class="mp-title" @click="rowPlay(t)"><b>{{ t.title }}</b><small>{{ t.duration ? formatTime(t.duration) : '' }}<template v-if="q && t.category !== store.tab"> · {{ tabOf(t) }}</template></small></button>
                 <div class="mp-more">
                   <button type="button" class="mp-ic" aria-label="Действия" :aria-expanded="menuFor === t.id" @click="menuFor = menuFor === t.id ? '' : t.id"><img :src="IMG.more" alt="" /></button>
-                  <div v-if="menuFor === t.id" class="mp-menu">
+                  <div v-if="menuFor === t.id && pickFor === t.id" class="mp-menu">
+                    <button v-for="p in store.playlists" :key="p.id" type="button" @click="addTo(p.id, t)">{{ p.tracks.includes(t.id) ? '✓ ' : '' }}{{ p.name }}</button>
+                    <form class="mp-menu-new" @submit.prevent="createWith(t)">
+                      <input v-model="newName" type="text" maxlength="60" placeholder="Новый плейлист" aria-label="Название нового плейлиста" />
+                      <button type="submit" :disabled="!newName.trim()">＋</button>
+                    </form>
+                    <button type="button" @click="pickFor = ''">← Назад</button>
+                  </div>
+                  <div v-else-if="menuFor === t.id" class="mp-menu">
+                    <button type="button" @click="queueNext(t)">Играть следом</button>
+                    <button type="button" @click="queueLast(t)">В очередь</button>
+                    <button type="button" @click="pickFor = t.id">В плейлист…</button>
                     <button type="button" @click="startRename(t)">Переименовать</button>
                     <button type="button" @click="moveTrack(t)">В «{{ otherTab(t).name }}»</button>
                     <button type="button" class="mp-del" @click="removeTrack(t)">Удалить</button>
@@ -209,7 +389,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
                 </div>
               </li>
             </ul>
-            <div v-else-if="store.loaded" class="mp-empty">
+            <div v-else-if="store.loaded && !lists" class="mp-empty">
               <img :src="IMG.sleepCat" alt="" draggable="false" />
               <p v-if="q">Ничего не нашлось по «{{ query.trim() }}».</p>
               <p v-else>Во вкладке «{{ tabName }}» пока пусто. Добавь файл или ссылку ниже.</p>
@@ -313,7 +493,38 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-vol { display: flex; align-items: center; gap: 2px; flex: 1 1 110px; min-width: 110px; }
 
 .mp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: none; }
-.mp-tabs { display: flex; gap: 8px; flex: none; }
+.mp-tabs { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 1 auto; max-width: 100%; }
+@media (max-width: 480px) { .mp-tabs button { padding: 8px 13px; font-size: 13px; } }
+.mp-sleep { position: relative; display: flex; justify-content: flex-end; flex: none; margin: -4px 0 0; }
+.mp-chip { padding: 5px 14px; font: inherit; font-size: 12px; font-weight: 700; color: var(--mp-muted); cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid var(--mp-line); border-radius: 99px; }
+.mp-chip.on { color: #fff; background: linear-gradient(100deg, var(--mp-pink), var(--mp-pink-d)); border-color: transparent; }
+.mp-pop { position: absolute; z-index: 5; right: 0; top: 100%; display: flex; flex-direction: column; min-width: 190px; margin-top: 4px; padding: 6px; background: #fff; border: 1px solid var(--mp-line); border-radius: 14px; box-shadow: 0 10px 24px rgba(80, 40, 120, .18); }
+.mp-pop button { padding: 8px 12px; font: inherit; font-size: 14px; text-align: left; color: var(--mp-ink); cursor: pointer; background: none; border: 0; border-radius: 10px; }
+.mp-pop button:hover { background: rgba(214, 77, 169, .1); }
+.mp-queue { padding: 8px 12px; font-size: 13px; background: rgba(255, 255, 255, .7); border: 1px solid var(--mp-line); border-radius: 14px; }
+.mp-queue summary { cursor: pointer; font-weight: 700; color: var(--mp-pink-d); }
+.mp-queue ol { margin: 6px 0; padding-left: 20px; }
+.mp-queue li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mp-queue li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-queue li button, .mp-pl-songs li button:last-child { flex: none; padding: 0 6px; font: inherit; font-size: 16px; color: var(--mp-muted); cursor: pointer; background: none; border: 0; }
+.mp-link { padding: 0; font: inherit; font-size: 13px; color: var(--mp-pink-d); cursor: pointer; background: none; border: 0; }
+.mp-link:hover { text-decoration: underline; }
+.mp-link.mp-del { color: #c0392b; }
+.mp-hint { margin: 6px 0; font-size: 13px; color: var(--mp-muted); }
+.mp-lists { display: flex; flex-direction: column; gap: 8px; }
+.mp-newlist { display: flex; gap: 8px; }
+.mp-newlist input { flex: 1 1 auto; min-width: 0; padding: 9px 14px; font: inherit; font-size: 14px; color: var(--mp-ink); background: #fff; border: 1px solid var(--mp-line); border-radius: 99px; }
+.mp-pl { padding: 8px 12px; background: rgba(255, 255, 255, .7); border: 1px solid var(--mp-line); border-radius: 14px; }
+.mp-pl.cur { border-color: var(--mp-pink); }
+.mp-pl summary { cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+.mp-pl summary small { color: var(--mp-muted); }
+.mp-pl-act { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 8px 0; }
+.mp-pl-songs { margin: 4px 0 0; padding-left: 20px; }
+.mp-pl-songs li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mp-pl-songs li.cur .mp-pl-title { color: var(--mp-pink-d); font-weight: 700; }
+.mp-pl-title { flex: 1 1 auto; min-width: 0; padding: 4px 0; font: inherit; font-size: 14px; text-align: left; color: inherit; cursor: pointer; background: none; border: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-menu-new { display: flex; gap: 6px; padding: 4px 8px; }
+.mp-menu-new input { flex: 1 1 auto; min-width: 0; padding: 6px 10px; font: inherit; font-size: 13px; border: 1px solid var(--mp-line); border-radius: 99px; background: #fff; color: var(--mp-ink); }
 .mp-search { position: relative; flex: 1 1 130px; min-width: 0; }
 .mp-search input { width: 100%; box-sizing: border-box; padding: 9px 34px 9px 14px; font: inherit; font-size: 14px; color: var(--mp-ink); background: #fff; border: 1px solid var(--mp-line); border-radius: 99px; }
 .mp-search input:focus { outline: none; border-color: var(--mp-pink); }
@@ -379,6 +590,8 @@ html[data-theme='dark'] .mp-mini { background: rgba(43, 36, 80, .95); border-col
 html[data-theme='dark'] .mp-list li:hover { background: rgba(255, 255, 255, .06); }
 html[data-theme='dark'] .mp-list li.cur { background: linear-gradient(90deg, rgba(232, 107, 192, .3), rgba(125, 107, 240, .25)); }
 html[data-theme='dark'] .mp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
+html[data-theme='dark'] .mp-pop, html[data-theme='dark'] .mp-newlist input, html[data-theme='dark'] .mp-menu-new input { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
+html[data-theme='dark'] .mp-chip:not(.on), html[data-theme='dark'] .mp-queue, html[data-theme='dark'] .mp-pl { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
 html[data-theme='dark'] .mp-menu, html[data-theme='dark'] .mp-url input, html[data-theme='dark'] .mp-rename, html[data-theme='dark'] .mp-search input { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
 html[data-theme='dark'] .mp-menu button { color: var(--mp-ink); }
 html[data-theme='dark'] .mp-menu button:hover { background: rgba(255, 255, 255, .08); }

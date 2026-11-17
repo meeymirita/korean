@@ -24,6 +24,14 @@ export interface Track {
   cover: string | null
 }
 
+/** Плейлист (на сервере таблица `music_playlists`): песни по порядку. */
+export interface Playlist {
+  id: string
+  name: string
+  tracks: string[]
+  created: number
+}
+
 export type JobStage = 'info' | 'download' | 'convert' | 'save' | 'done' | 'error'
 /** Задание на сервере: скачивание по ссылке или сохранение загруженного файла. */
 export interface Job {
@@ -67,6 +75,8 @@ const UPLOAD_GAP_MS = 1600
 const UPLOAD_TRIES = 4
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 const REPEAT: RepeatMode[] = ['off', 'all', 'one']
+/** Сколько песен можно поставить в очередь «играть следом». */
+const MAX_UP_NEXT = 100
 
 interface Saved {
   tab: Category
@@ -75,10 +85,14 @@ interface Saved {
   volume: number
   repeat: RepeatMode
   shuffle: boolean
+  /** id играющего плейлиста или пусто (играет вкладка) */
+  ctx: string
+  /** очередь «играть следом» */
+  upNext: string[]
 }
 
 function readSaved(): Saved {
-  const d: Saved = { tab: 'quiet', id: '', time: 0, volume: 0.8, repeat: 'all', shuffle: false }
+  const d: Saved = { tab: 'quiet', id: '', time: 0, volume: 0.8, repeat: 'all', shuffle: false, ctx: '', upNext: [] }
   try {
     const r = JSON.parse(localStorage.getItem(KEY) || 'null') as Partial<Saved> | null
     if (!r || typeof r !== 'object') return d
@@ -89,6 +103,8 @@ function readSaved(): Saved {
       volume: typeof r.volume === 'number' && r.volume >= 0 && r.volume <= 1 ? r.volume : d.volume,
       repeat: REPEAT.includes(r.repeat as RepeatMode) ? (r.repeat as RepeatMode) : d.repeat,
       shuffle: r.shuffle === true,
+      ctx: typeof r.ctx === 'string' ? r.ctx : '',
+      upNext: Array.isArray(r.upNext) ? r.upNext.filter((x): x is string => typeof x === 'string').slice(0, MAX_UP_NEXT) : [],
     }
   } catch {
     return d
@@ -110,7 +126,7 @@ export const useMusicStore = defineStore('music', () => {
   const loadError = ref('')
   const open = ref(false)
 
-  const saved = import.meta.client ? readSaved() : { tab: 'quiet' as Category, id: '', time: 0, volume: 0.8, repeat: 'all' as RepeatMode, shuffle: false }
+  const saved = import.meta.client ? readSaved() : { tab: 'quiet' as Category, id: '', time: 0, volume: 0.8, repeat: 'all' as RepeatMode, shuffle: false, ctx: '', upNext: [] as string[] }
   const currentId = ref(saved.id)
   const playing = ref(false)
   const time = ref(saved.time)
@@ -119,6 +135,16 @@ export const useMusicStore = defineStore('music', () => {
   const muted = ref(false)
   const repeat = ref<RepeatMode>(saved.repeat)
   const shuffle = ref(saved.shuffle)
+  const playlists = ref<Playlist[]>([])
+  /** Что играет сейчас: id плейлиста (дальше и назад идут по нему) или пусто (по вкладке). */
+  const ctx = ref(saved.ctx)
+  /** Очередь «играть следом»: эти песни сыграют раньше обычного порядка, по одной. */
+  const upNext = ref<string[]>(saved.upNext)
+  /** Таймер сна: конец (мс) или 0; «после этой песни»; текущее время для обратного отсчёта. */
+  const sleepEnd = ref(0)
+  const sleepTrack = ref(false)
+  const nowMs = ref(Date.now())
+  const sleepLeft = computed(() => (sleepEnd.value ? Math.max(0, Math.ceil((sleepEnd.value - nowMs.value) / 1000)) : 0))
 
   /** Открытая вкладка списка. */
   const tab = ref<Category>(saved.tab)
@@ -127,6 +153,8 @@ export const useMusicStore = defineStore('music', () => {
   const current = computed(() => tracks.value.find(t => t.id === currentId.value) ?? null)
   /** Очередь: песни той вкладки, в которой играет текущая (переключение вкладки музыку не сбивает). */
   const queue = computed(() => {
+    const pl = ctx.value ? playlists.value.find(p => p.id === ctx.value) : undefined
+    if (pl) return pl.tracks.map(id => tracks.value.find(t => t.id === id)).filter((t): t is Track => !!t)
     const cat = current.value?.category ?? tab.value
     return tracks.value.filter(t => t.category === cat)
   })
@@ -147,7 +175,7 @@ export const useMusicStore = defineStore('music', () => {
     if (!force && Date.now() - lastSave < 5000) return
     lastSave = Date.now()
     try {
-      localStorage.setItem(KEY, JSON.stringify({ tab: tab.value, id: currentId.value, time: time.value, volume: volume.value, repeat: repeat.value, shuffle: shuffle.value } satisfies Saved))
+      localStorage.setItem(KEY, JSON.stringify({ tab: tab.value, id: currentId.value, time: time.value, volume: volume.value, repeat: repeat.value, shuffle: shuffle.value, ctx: ctx.value, upNext: upNext.value } satisfies Saved))
     } catch {
       /* без запоминания */
     }
@@ -179,7 +207,15 @@ export const useMusicStore = defineStore('music', () => {
       playing.value = false
       save(true)
     })
-    audio.addEventListener('ended', () => void advance(false))
+    audio.addEventListener('ended', () => {
+      // таймер сна «после этой песни»: песня доиграла, дальше не идём
+      if (sleepTrack.value) {
+        sleepTrack.value = false
+        toast.ok('Таймер сна: музыка остановлена')
+        return
+      }
+      void advance(false)
+    })
     audio.addEventListener('error', () => void recover())
     return audio
   }
@@ -217,7 +253,14 @@ export const useMusicStore = defineStore('music', () => {
     }
   }
 
+  /** Нажали на песню в списке вкладки (или «играть»): играет песня, плейлист больше порядок не ведёт. */
   async function play(id?: string) {
+    if (id && id !== currentId.value) ctx.value = ''
+    await startTrack(id)
+  }
+
+  /** Запускает песню, не меняя, что ведёт порядок (вкладка или плейлист): так идут «дальше» и «назад». */
+  async function startTrack(id?: string) {
     const target = id ?? (currentId.value || visible.value[0]?.id)
     if (!target) return
     try {
@@ -258,6 +301,13 @@ export const useMusicStore = defineStore('music', () => {
       await el().play().catch(() => undefined)
       return
     }
+    // очередь «играть следом» идёт раньше обычного порядка
+    while (upNext.value.length) {
+      const id = upNext.value[0]!
+      upNext.value = upNext.value.slice(1)
+      save(true)
+      if (tracks.value.some(t => t.id === id)) return void (await startTrack(id))
+    }
     let nextId: string
     if (shuffle.value) nextId = randomOther()
     else {
@@ -274,14 +324,14 @@ export const useMusicStore = defineStore('music', () => {
       await audio.play().catch(() => undefined)
       return
     }
-    await play(nextId)
+    await startTrack(nextId)
   }
 
   async function prev() {
     if (!queue.value.length) return
     if (time.value > 3) return seek(0)
     const i = index.value <= 0 ? queue.value.length - 1 : index.value - 1
-    await play(shuffle.value ? randomOther() : queue.value[i]!.id)
+    await startTrack(shuffle.value ? randomOther() : queue.value[i]!.id)
   }
 
   function seek(sec: number) {
@@ -315,6 +365,7 @@ export const useMusicStore = defineStore('music', () => {
 
   /** Останавливает звук и убирает мини-плеер: песня снимается (после «закрыть» играть нужно выбрать заново). */
   function stop() {
+    setSleep(0)
     pause()
     currentId.value = ''
     pendingSeek = 0
@@ -333,6 +384,118 @@ export const useMusicStore = defineStore('music', () => {
   function toggleShuffle() {
     shuffle.value = !shuffle.value
     save(true)
+  }
+
+  /* ---------- очередь «играть следом» ---------- */
+  /** Песня встаёт первой в очереди: сыграет сразу после текущей. */
+  function playNext(id: string) {
+    upNext.value = [id, ...upNext.value].slice(0, MAX_UP_NEXT)
+    save(true)
+  }
+  /** Песня в конец очереди. */
+  function enqueue(id: string) {
+    if (upNext.value.length < MAX_UP_NEXT) upNext.value = [...upNext.value, id]
+    save(true)
+  }
+  function unqueue(at: number) {
+    upNext.value = upNext.value.filter((_, i) => i !== at)
+    save(true)
+  }
+  function clearQueue() {
+    upNext.value = []
+    save(true)
+  }
+
+  /* ---------- таймер сна ---------- */
+  let sleepTimer: ReturnType<typeof setInterval> | undefined
+  /** Плавно приглушает звук (4 секунды), останавливает и возвращает прежнюю громкость. */
+  async function fadeOut() {
+    const a = audio
+    if (!a || a.paused) return
+    for (let step = 1; step <= 8; step++) {
+      a.volume = volume.value * (1 - step / 8)
+      await sleep(500)
+    }
+    a.pause()
+    a.volume = volume.value
+  }
+  /** Таймер сна: через `m` минут музыка стихает и останавливается; `'track'`: после этой песни; `0`: выключить. */
+  function setSleep(m: number | 'track') {
+    clearInterval(sleepTimer)
+    sleepTimer = undefined
+    sleepEnd.value = 0
+    sleepTrack.value = false
+    if (m === 'track') {
+      sleepTrack.value = true
+      return
+    }
+    if (!(m > 0) || !import.meta.client) return
+    nowMs.value = Date.now()
+    sleepEnd.value = nowMs.value + m * 60_000
+    sleepTimer = setInterval(() => {
+      nowMs.value = Date.now()
+      if (nowMs.value < sleepEnd.value) return
+      clearInterval(sleepTimer)
+      sleepTimer = undefined
+      sleepEnd.value = 0
+      void fadeOut().then(() => toast.ok('Таймер сна: музыка остановлена'))
+    }, 1000)
+  }
+
+  /* ---------- плейлисты (хранятся на сервере) ---------- */
+  const plUrl = (id = '') => `/api/music/playlists${id ? `/${id}` : ''}`
+  const plError = (status: number) => (status === 400 ? 'Название пустое, слишком длинное или плейлистов уже 50' : `ошибка сервера ${status}`)
+  const putPlaylist = (p: Playlist) => (playlists.value = playlists.value.map(x => (x.id === p.id ? p : x)))
+
+  async function createPlaylist(name: string, trackIds: string[] = []): Promise<Playlist> {
+    const res = await fetchT(plUrl(), { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ name, tracks: trackIds }) })
+    if (!res.ok) throw new Error(plError(res.status))
+    const p = (await res.json()) as Playlist
+    playlists.value = [...playlists.value, p]
+    return p
+  }
+
+  async function patchPlaylist(id: string, body: { name?: string; tracks?: string[] }) {
+    const res = await fetchT(plUrl(id), { method: 'PATCH', headers: jsonHeaders(), body: JSON.stringify(body) })
+    if (!res.ok) throw new Error(plError(res.status))
+    putPlaylist((await res.json()) as Playlist)
+  }
+
+  const renamePlaylist = (id: string, name: string) => patchPlaylist(id, { name })
+  const setPlaylistTracks = (id: string, ids: string[]) => patchPlaylist(id, { tracks: ids })
+
+  /** Песня в плейлист (в конец); `false`, если она там уже есть. */
+  async function addToPlaylist(plId: string, trackId: string): Promise<boolean> {
+    const pl = playlists.value.find(p => p.id === plId)
+    if (!pl || pl.tracks.includes(trackId)) return false
+    await patchPlaylist(plId, { tracks: [...pl.tracks, trackId] })
+    return true
+  }
+
+  async function removeFromPlaylist(plId: string, trackId: string) {
+    const pl = playlists.value.find(p => p.id === plId)
+    if (pl) await patchPlaylist(plId, { tracks: pl.tracks.filter(id => id !== trackId) })
+  }
+
+  async function deletePlaylist(id: string) {
+    const res = await fetchT(plUrl(id), { method: 'DELETE', headers: headers() })
+    if (!res.ok && res.status !== 404) throw new Error(`ошибка сервера ${res.status}`)
+    playlists.value = playlists.value.filter(p => p.id !== id)
+    if (ctx.value === id) {
+      ctx.value = ''
+      save(true)
+    }
+  }
+
+  /** Играть плейлист (с песни `trackId` или с первой, при «вперемешку» со случайной): «дальше» и «назад» идут по нему. */
+  async function playFromPlaylist(plId: string, trackId?: string) {
+    const pl = playlists.value.find(p => p.id === plId)
+    const list = pl?.tracks.filter(id => tracks.value.some(t => t.id === id)) ?? []
+    if (!pl || !list.length) return void toast.error('В плейлисте нет песен')
+    ctx.value = plId
+    save(true)
+    const first = trackId && list.includes(trackId) ? trackId : shuffle.value ? list[Math.floor(Math.random() * list.length)]! : list[0]!
+    await startTrack(first)
   }
 
   /** Кнопки на экране блокировки и в наушниках. */
@@ -356,9 +519,13 @@ export const useMusicStore = defineStore('music', () => {
     try {
       const res = await fetchT('/api/music', { headers: headers() })
       if (!res.ok) throw new Error(`ошибка сервера ${res.status}`)
-      const d = (await res.json()) as { tracks: Track[]; jobs: Job[] }
+      const d = (await res.json()) as { tracks: Track[]; jobs: Job[]; playlists?: Playlist[] }
       tracks.value = d.tracks
       jobs.value = d.jobs
+      playlists.value = d.playlists ?? []
+      // плейлиста уже нет (удалили с другого устройства): порядок снова по вкладке; песен, которых нет в списке, в очереди не остаётся
+      if (ctx.value && !playlists.value.some(p => p.id === ctx.value)) ctx.value = ''
+      upNext.value = upNext.value.filter(id => d.tracks.some(t => t.id === id))
       loadError.value = ''
       // итог каждого задания показываем один раз плашкой
       for (const j of d.jobs) {
@@ -443,6 +610,24 @@ export const useMusicStore = defineStore('music', () => {
     uploads.value = uploads.value.filter(u => u.key !== item.key || !!u.error)
   }
 
+  /**
+   * Файлы, которые уже есть в плеере (тот же размер в байтах или то же название без расширения, регистр и «_» не важны) или выбраны дважды.
+   * Возвращает новые файлы и повторы с пометкой, на что они похожи.
+   */
+  function splitDuplicates(files: File[]): { fresh: File[]; dups: { file: File; of: string }[] } {
+    const stem = (n: string) => n.replace(/\.[^.]+$/, '').replace(/[_\s]+/g, ' ').trim().toLowerCase()
+    const fresh: File[] = []
+    const dups: { file: File; of: string }[] = []
+    for (const f of files) {
+      const hit = tracks.value.find(t => (t.size > 0 && t.size === f.size) || stem(t.title) === stem(f.name))
+      const twin = fresh.find(x => x.size === f.size && stem(x.name) === stem(f.name))
+      if (hit) dups.push({ file: f, of: hit.title })
+      else if (twin) dups.push({ file: f, of: 'выбрана дважды' })
+      else fresh.push(f)
+    }
+    return { fresh, dups }
+  }
+
   /** Файлы с компьютера (выбрать или перетащить): по одному, между файлами короткая пауза, чтобы не упереться в лимит запросов. */
   async function uploadFiles(files: File[]) {
     const cat = tab.value // вкладка, открытая в момент выбора файлов
@@ -513,10 +698,13 @@ export const useMusicStore = defineStore('music', () => {
       length.value = 0
     }
     tracks.value = tracks.value.filter(t => t.id !== id)
+    upNext.value = upNext.value.filter(x => x !== id)
+    playlists.value = playlists.value.map(p => ({ ...p, tracks: p.tracks.filter(x => x !== id) }))
   }
 
   return {
     tracks, visible, queue, tab, jobs, shownJobs, uploads, loaded, loadError, open, current, currentId, index, playing, time, length, volume, muted, repeat, shuffle, busy,
+    playlists, ctx, upNext, sleepEnd, sleepTrack, sleepLeft, setSleep, playNext, enqueue, unqueue, clearQueue, createPlaylist, renamePlaylist, setPlaylistTracks, addToPlaylist, removeFromPlaylist, deletePlaylist, playFromPlaylist, splitDuplicates,
     load, play, pause, toggle, advance, prev, seek, setVolume, toggleMute, cycleRepeat, toggleShuffle, stop, setTab, setCategory, uploadFiles, retryUpload, retryFailed, dismissUpload, dismissJob, addUrl, rename, remove,
   }
 })

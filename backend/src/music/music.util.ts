@@ -121,3 +121,34 @@ export function ytdlpError(stderr: string): string {
   if (/unsupported url/i.test(text)) return 'Эта ссылка не поддерживается'
   return text
 }
+
+/** Сколько плейлистов и песен в плейлисте можно завести. */
+export const MAX_PLAYLISTS = 50
+export const MAX_PLAYLIST_TRACKS = 500
+
+/** Название плейлиста: непустая строка до 60 знаков, пробелы схлопываются. */
+export function cleanPlaylistName(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const t = v.replace(/\s+/g, ' ').trim()
+  return t && t.length <= 60 ? t : null
+}
+
+/** Песни плейлиста: массив id (16 знаков 0-9a-f), без повторов, порядок сохраняется; не массив, чужая запись или слишком длинный: null. */
+export function cleanPlaylistTracks(v: unknown): string[] | null {
+  if (!Array.isArray(v) || v.length > MAX_PLAYLIST_TRACKS) return null
+  const out: string[] = []
+  for (const id of v) {
+    if (typeof id !== 'string' || !/^[0-9a-f]{16}$/.test(id)) return null
+    if (!out.includes(id)) out.push(id)
+  }
+  return out
+}
+
+/** JSON из базы в массив id (битая запись: пустой плейлист). */
+export function parsePlaylistTracks(raw: string): string[] {
+  try {
+    return cleanPlaylistTracks(JSON.parse(raw)) ?? []
+  } catch {
+    return []
+  }
+}

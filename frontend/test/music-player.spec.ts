@@ -183,7 +183,7 @@ describe('музыкальный плеер', () => {
     useMusicStore().open = true
     await flushPromises()
     const tabs = [...document.querySelectorAll('.mp-tabs button')]
-    expect(tabs.map(t => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['Тихая музыка 2', 'Nightcore 1'])
+    expect(tabs.map(t => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['Тихая музыка 2', 'Nightcore 1', 'Плейлисты 0'])
     expect(document.querySelectorAll('.mp-list li')).toHaveLength(2)
 
     ;(tabs[1] as HTMLButtonElement).click()
