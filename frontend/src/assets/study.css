@@ -65,7 +65,7 @@
 .study .row .n { display: flex; align-items: center; gap: 2px; white-space: nowrap; font-family: var(--mono); font-size: 12px; color: var(--gold); opacity: .8; }
 .study .row .k { font-family: var(--ko); font-size: 22px; font-weight: 700; }
 .study .row .rd, .study .row .se { color: var(--muted); }
-.study .row .tn { font-family: var(--ko); font-size: 14px; font-weight: 600; }
+.study .row .tn { font-family: var(--ko); font-size: 16px; font-weight: 600; }
 /* таблица слов: после «Корейский» три колонки времён */
 .study .words-page .tn-on .row { grid-template-columns: 64px minmax(0, 1fr) repeat(3, minmax(0, .9fr)) minmax(0, .8fr) minmax(0, 1.1fr) minmax(0, 1.7fr); }
 .study .row .se { font-family: var(--ko); }
