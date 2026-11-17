@@ -233,7 +233,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
               <ul v-if="store.uploads.length || store.shownJobs.length" class="mp-jobs" aria-live="polite">
                 <li v-for="u in store.uploads" :key="u.key" :class="{ bad: u.error }">
                   <span class="mp-job-name">{{ u.name }}</span>
-                  <span class="mp-job-state">{{ u.error ?? (u.wait ? `Лимит запросов, жду ${u.wait} с и повторю сам` : u.percent < 100 ? `Передаю на сервер ${u.percent}%` : 'Передано') }}</span>
+                  <span class="mp-job-state" :class="{ wait: u.wait }">{{ u.error ?? (u.wait ? `Лимит запросов, жду ${u.wait} с и повторю сам` : u.percent < 100 ? `Передаю на сервер ${u.percent}%` : 'Передано') }}</span>
                   <i class="mp-job-bar"><i :style="{ width: (u.error ? 100 : u.percent) + '%' }"></i></i>
                   <button v-if="u.error && u.file" type="button" class="mp-retry" :disabled="store.busy" @click="store.retryUpload(u.key)">Повторить</button>
                   <button v-if="u.error" type="button" class="mp-x" aria-label="Убрать" @click="store.dismissUpload(u.key)">×</button>
@@ -361,6 +361,7 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-jobs li { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 12px; font-size: 13px; background: rgba(255, 255, 255, .7); border-radius: 14px; }
 .mp-job-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .mp-job-state { color: var(--mp-muted); text-align: right; }
+.mp-jobs .mp-job-state.wait { grid-column: 1 / -1; text-align: left; order: 3; }
 .mp-jobs .bad .mp-job-state { color: #c0392b; text-align: left; grid-column: 1 / -1; order: 3; }
 .mp-job-bar { grid-column: 1 / -1; display: block; height: 5px; border-radius: 5px; background: var(--mp-line); overflow: hidden; }
 .mp-job-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--mp-pink), var(--mp-pink-d)); transition: width .4s; }
