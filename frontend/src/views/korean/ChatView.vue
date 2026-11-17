@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
@@ -9,6 +10,7 @@ import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
 const progress = useProgressStore()
+const route = useRoute()
 const toast = useToastStore()
 const msgs = ref<ChatMsg[]>([])
 /** номер открытого чата (на сервере хранится вся история); пусто, пока чат не начат */
@@ -44,7 +46,9 @@ onMounted(async () => {
     left.value = st.left
     limit.value = st.limit
   }
-  // после обновления страницы открывается тот же чат
+  // чат из общей истории («Разговоры»): ?c=<номер>; иначе после обновления страницы открывается тот же чат
+  const wanted = typeof route.query.c === 'string' && /^[0-9a-f]{16}$/.test(route.query.c) ? route.query.c : ''
+  if (wanted) conv.value = wanted
   if (conv.value) {
     const m = await loadChat(progress.bearer, conv.value)
     if (m) msgs.value = m
@@ -134,6 +138,7 @@ function onKey(e: KeyboardEvent) {
     <div class="chat-bar">
       <button type="button" class="chat-new" :disabled="busy || (!msgs.length && !conv)" @click="newChat">＋ Новый чат</button>
       <button type="button" class="chat-clear" :aria-expanded="showHistory" @click="showHistory = !showHistory">История чатов · {{ chats.length }}</button>
+      <NuxtLink to="/korean/talks" class="chat-all">Все разговоры и поиск →</NuxtLink>
     </div>
     <ul v-if="showHistory" class="chat-hist">
       <li v-if="!chats.length" class="chat-hist-empty">Сохранённых чатов пока нет: первый появится после первого вопроса.</li>
@@ -191,6 +196,8 @@ function onKey(e: KeyboardEvent) {
 <style scoped>
 .chat-note { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
 .chat-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chat-all { align-self: center; color: var(--accent); font-size: 14px; text-decoration: none; }
+.chat-all:hover { text-decoration: underline; }
 .chat-new { border: 1px solid var(--accent); border-radius: 999px; background: transparent; color: var(--accent); padding: 7px 18px; font: inherit; font-size: 14px; cursor: pointer; }
 .chat-new:hover:not(:disabled) { background: var(--gold-soft); }
 .chat-hist { list-style: none; margin: 0 0 12px; padding: 6px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; max-height: 280px; overflow-y: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
