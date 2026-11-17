@@ -9,11 +9,12 @@ import { TRANSLATIONS } from '@/data/korean/translations'
 
 /** word: слово задания, если предложение взято как его пример (тогда оно подписано и выделено в карточках) */
 /** extra: что ещё видно на экране (задание, ответ ученика): уходит модели вместе с разбором в «Спросить ИИ» */
-const props = defineProps<{ sentence: string; word?: string; extra?: string[] }>()
+/** translation: перевод, если предложения нет в `TRANSLATIONS` (например, предложение из «трёх времён» слова) */
+const props = defineProps<{ sentence: string; word?: string; extra?: string[]; translation?: string }>()
 const { open } = useGrammarModal()
 
 const segments = computed(() => analyze(props.sentence))
-const translation = computed(() => TRANSLATIONS[props.sentence])
+const translation = computed(() => props.translation ?? TRANSLATIONS[props.sentence])
 const isHit = (s: { type: string; text: string }) => {
   const w = props.word
   if (!w || s.type === 'particle' || s.type === 'unknown') return false

@@ -13,6 +13,7 @@ import { useProgressStore } from '@/stores/progress'
 import { useShareCard } from '@/composables/useShareCard'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { EXTRA } from '@/data/korean/study'
+import { TENSES, TENSE_NAMES, TENSE_ORDER } from '@/data/korean/tenses'
 import NewWordDrawer from '@/components/korean/NewWordDrawer.vue'
 import TaskSession from '@/components/korean/TaskSession.vue'
 import { DRILL_SIZE, topicProgress, topicTasks } from '@/data/korean/topics'
@@ -40,7 +41,16 @@ const openForm = () => ((editing.value = null), (formOpen.value = true))
 watch(() => progress.unlocked, u => u && newWords.load().catch(() => {}))
 onMounted(() => progress.unlocked && newWords.load().catch(() => {}))
 const openN = ref<number | null>(null)
-const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null))
+const toggle = (n: number) => ((openN.value = openN.value === n ? null : n), (simN.value = null), (tenseN.value = -1))
+/** Какое время слова показано в разборе: -1 — обычное предложение слова, 0–2 — настоящее, прошедшее, будущее */
+const tenseN = ref(-1)
+/** Колонки «Настоящее / Прошедшее / Будущее» появляются, когда в `tenses.ts` есть слова */
+const HAS_TENSES = Object.keys(TENSES).length > 0
+/** Предложение и перевод для разбора раскрытого слова (с учётом выбранного времени) */
+const shown = (d: Word) => {
+  const s = tenseN.value >= 0 ? TENSES[d.k]?.s[tenseN.value] : undefined
+  return s ? { sentence: s[0], translation: s[1] } : { sentence: d.s, translation: undefined }
+}
 /** Для какого слова показаны «похожие» */
 const simN = ref<number | null>(null)
 const similar = computed(() => { const w = D.find(d => d.n === simN.value); return w ? similarWords(w) : [] })
@@ -199,12 +209,13 @@ const shareWord = (d: Word) =>
       </div>
       </div>
     </section>
-    <div v-if="rows.length && !drill" class="tb">
-      <div class="row h"><span>№</span><span>Корейский</span><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
+    <div v-if="rows.length && !drill" class="tb" :class="{ 'tn-on': HAS_TENSES }">
+      <div class="row h"><span>№</span><span>Корейский</span><template v-if="HAS_TENSES"><span>Настоящее</span><span>Прошедшее</span><span>Будущее</span></template><span>Чтение</span><span>Перевод</span><span>Предложение</span></div>
       <template v-for="(d, i) in rows" :key="d.n">
         <div v-show="i < limit" class="row">
           <span class="n"><MarkStar kind="w" :id="d.k" />{{ d.n }}</span>
           <span class="k" v-html="h(d.k)"></span>
+          <template v-if="HAS_TENSES"><span v-for="(name, i) in TENSE_ORDER" :key="name" class="tn" :data-t="TENSE_NAMES[name]">{{ TENSES[d.k]?.f[i] }}</span></template>
           <span class="rd" v-html="h(d.r)"></span>
           <span class="tr"><span v-html="h(d.t)"></span><small v-if="EXTRA.has(d.k)" class="w-extra" title="Слово выше начального уровня: в игры, «Сегодня» и экзамен пока не попадает">дополнительно</small></span>
           <span class="se">
@@ -212,7 +223,11 @@ const shareWord = (d: Word) =>
           </span>
         </div>
         <div v-if="openN === d.n" v-show="i < limit" class="row-detail">
-          <SentenceBreakdown :sentence="d.s" :extra="[`Слово из списка: ${d.k} (${d.r}) — ${d.t}`]" />
+          <div v-if="TENSES[d.k]" class="tn-pick" role="group" aria-label="Предложение в разном времени">
+            <button type="button" class="chip" :class="{ on: tenseN === -1 }" :aria-pressed="tenseN === -1" @click="tenseN = -1">Из списка</button>
+            <button v-for="(name, i) in TENSE_ORDER" :key="name" type="button" class="chip" :class="{ on: tenseN === i }" :aria-pressed="tenseN === i" @click="tenseN = i">{{ TENSE_NAMES[name] }}</button>
+          </div>
+          <SentenceBreakdown :sentence="shown(d).sentence" :translation="shown(d).translation" :extra="[`Слово из списка: ${d.k} (${d.r}) — ${d.t}`]" />
           <button class="share-btn" :disabled="sharing" @click="shareWord(d)"><Icon name="picture" /> Поделиться словом</button>
           <button class="share-btn" :aria-pressed="simN === d.n" @click="simN = simN === d.n ? null : d.n">≈ Похожие слова</button>
           <div v-if="simN === d.n" class="sim">
@@ -236,6 +251,9 @@ const shareWord = (d: Word) =>
 </template>
 
 <style>
+/* выбор времени в разборе слова (формы глагола и предложения во всех временах: `data/korean/tenses.ts`) */
+.study .tn-pick { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 10px; }
+.study .tn-pick .chip { cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); }
 /* пометка «дополнительно» у слов выше начального уровня (data/korean/study.ts) */
 .study .row .tr .w-extra { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 99px; background: rgba(150, 130, 230, .14); color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; vertical-align: middle; }
 /* кнопка и три ссылки в одну строку с ровными отступами, на узком экране переносятся */
