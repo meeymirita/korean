@@ -41,6 +41,11 @@ describe('три времени слов (tenses.ts)', () => {
     }
   })
 
+  test('настоящее предложение совпадает с примером словаря (у слов, где пример не в настоящем времени, написано своё)', () => {
+    const OWN = new Set(['구경하다'])
+    for (const [k, t] of entries) if (!OWN.has(k)) assert.equal(t.s[0][0], dictionary.get(k).s, k)
+  })
+
   test('у обычных глаголов будущее совпадает с futureForm (исключения: ㄷ / ㅂ и слова, которых там нет)', () => {
     for (const [k, t] of entries) {
       const auto = futureForm(k)
