@@ -91,6 +91,13 @@ async function removeTrack(t: Track) {
 }
 
 const tabName = computed(() => CATEGORIES.find(c => c.id === store.tab)?.name ?? '')
+
+/* ---------- поиск по названию ---------- */
+const query = ref('')
+const q = computed(() => query.value.trim().toLowerCase())
+/** Пока в поиске что-то набрано, ищем по обеим вкладкам сразу (песня может лежать в другой); иначе песни открытой вкладки. */
+const shown = computed(() => (q.value ? store.tracks.filter(t => t.title.toLowerCase().includes(q.value)) : store.visible))
+const tabOf = (t: Track) => CATEGORIES.find(c => c.id === t.category)?.name ?? ''
 const count = (c: Category) => store.tracks.filter(t => t.category === c).length
 const otherTab = (t: Track) => CATEGORIES.find(c => c.id !== t.category)!
 
@@ -169,21 +176,27 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
             </div>
           </div>
 
-          <div class="mp-tabs" role="tablist" aria-label="Вкладки плеера">
-            <button v-for="c in CATEGORIES" :key="c.id" type="button" role="tab" :aria-selected="store.tab === c.id" :class="{ on: store.tab === c.id }" @click="store.setTab(c.id)">
-              {{ c.name }} <small>{{ count(c.id) }}</small>
-            </button>
+          <div class="mp-bar">
+            <div class="mp-tabs" role="tablist" aria-label="Вкладки плеера">
+              <button v-for="c in CATEGORIES" :key="c.id" type="button" role="tab" :aria-selected="store.tab === c.id" :class="{ on: store.tab === c.id }" @click="store.setTab(c.id)">
+                {{ c.name }} <small>{{ count(c.id) }}</small>
+              </button>
+            </div>
+            <div class="mp-search">
+              <input v-model="query" type="text" placeholder="Поиск по названию" aria-label="Поиск песни по названию" autocomplete="off" @keydown.esc.stop="query = ''" />
+              <button v-if="query" type="button" class="mp-search-x" aria-label="Очистить поиск" @click="query = ''">✕</button>
+            </div>
           </div>
 
           <div class="mp-scroll">
-            <ul v-if="store.visible.length" class="mp-list">
-              <li v-for="t in store.visible" :key="t.id" :class="{ cur: t.id === store.currentId }">
+            <ul v-if="shown.length" class="mp-list">
+              <li v-for="t in shown" :key="t.id" :class="{ cur: t.id === store.currentId }">
                 <button type="button" class="mp-play" :aria-label="t.id === store.currentId && store.playing ? 'Пауза' : 'Играть'" @click="rowPlay(t)">
                   <img :src="t.cover ?? coverFor(t.id)" alt="" draggable="false" />
                   <span class="mp-play-ic"><img :src="t.id === store.currentId && store.playing ? IMG.pause : IMG.play" alt="" /></span>
                 </button>
                 <input v-if="editing === t.id" v-model="editTitle" class="mp-rename" type="text" maxlength="150" aria-label="Название песни" autofocus @keydown.enter="saveRename" @keydown.esc.stop="editing = ''" @blur="saveRename" />
-                <button v-else type="button" class="mp-title" @click="rowPlay(t)"><b>{{ t.title }}</b><small>{{ t.duration ? formatTime(t.duration) : '' }}</small></button>
+                <button v-else type="button" class="mp-title" @click="rowPlay(t)"><b>{{ t.title }}</b><small>{{ t.duration ? formatTime(t.duration) : '' }}<template v-if="q && t.category !== store.tab"> · {{ tabOf(t) }}</template></small></button>
                 <div class="mp-more">
                   <button type="button" class="mp-ic" aria-label="Действия" :aria-expanded="menuFor === t.id" @click="menuFor = menuFor === t.id ? '' : t.id"><img :src="IMG.more" alt="" /></button>
                   <div v-if="menuFor === t.id" class="mp-menu">
@@ -196,7 +209,8 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
             </ul>
             <div v-else-if="store.loaded" class="mp-empty">
               <img :src="IMG.sleepCat" alt="" draggable="false" />
-              <p>Во вкладке «{{ tabName }}» пока пусто. Добавь файл или ссылку ниже.</p>
+              <p v-if="q">Ничего не нашлось по «{{ query.trim() }}».</p>
+              <p v-else>Во вкладке «{{ tabName }}» пока пусто. Добавь файл или ссылку ниже.</p>
             </div>
             <p v-if="store.loadError" class="mp-err">Не получилось загрузить список: {{ store.loadError }}</p>
 
@@ -292,7 +306,12 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-ctl { display: flex; align-items: center; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
 .mp-vol { display: flex; align-items: center; gap: 2px; flex: 1 1 110px; min-width: 110px; }
 
+.mp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: none; }
 .mp-tabs { display: flex; gap: 8px; flex: none; }
+.mp-search { position: relative; flex: 1 1 130px; min-width: 0; }
+.mp-search input { width: 100%; box-sizing: border-box; padding: 9px 34px 9px 14px; font: inherit; font-size: 14px; color: var(--mp-ink); background: #fff; border: 1px solid var(--mp-line); border-radius: 99px; }
+.mp-search input:focus { outline: none; border-color: var(--mp-pink); }
+.mp-search-x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; padding: 0; font: inherit; font-size: 12px; color: var(--mp-muted); cursor: pointer; background: none; border: 0; }
 .mp-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; font: inherit; font-size: 14px; font-weight: 700; color: var(--mp-muted); cursor: pointer; background: rgba(255, 255, 255, .7); border: 1px solid #fff; border-radius: 99px; transition: color .15s, background .15s; }
 .mp-tabs button small { font-size: 12px; font-weight: 600; opacity: .8; }
 .mp-tabs button:hover { color: var(--mp-pink-d); }
@@ -350,7 +369,7 @@ html[data-theme='dark'] .mp-mini { background: rgba(43, 36, 80, .95); border-col
 html[data-theme='dark'] .mp-list li:hover { background: rgba(255, 255, 255, .06); }
 html[data-theme='dark'] .mp-list li.cur { background: linear-gradient(90deg, rgba(232, 107, 192, .3), rgba(125, 107, 240, .25)); }
 html[data-theme='dark'] .mp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
-html[data-theme='dark'] .mp-menu, html[data-theme='dark'] .mp-url input, html[data-theme='dark'] .mp-rename { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
+html[data-theme='dark'] .mp-menu, html[data-theme='dark'] .mp-url input, html[data-theme='dark'] .mp-rename, html[data-theme='dark'] .mp-search input { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
 html[data-theme='dark'] .mp-menu button { color: var(--mp-ink); }
 html[data-theme='dark'] .mp-menu button:hover { background: rgba(255, 255, 255, .08); }
 html[data-theme='dark'] .mp-jobs li { background: rgba(255, 255, 255, .06); }

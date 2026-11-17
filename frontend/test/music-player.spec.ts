@@ -200,6 +200,36 @@ describe('музыкальный плеер', () => {
     w.unmount()
   })
 
+  it('поиск рядом с вкладками ищет по названию во всех вкладках сразу и очищается крестиком', async () => {
+    const w = await mountSuspended(MusicPlayer)
+    await flushPromises()
+    const store = useMusicStore()
+    store.open = true
+    await flushPromises()
+    const input = () => document.querySelector('.mp-search input') as HTMLInputElement
+    const titles = () => [...document.querySelectorAll('.mp-list li b')].map(b => b.textContent)
+    expect(titles()).toEqual(['Первая песня', 'Вторая песня'])
+    input().value = 'ночн'
+    input().dispatchEvent(new Event('input'))
+    await flushPromises()
+    // открыта «Тихая музыка», а найденная песня лежит в Nightcore: она всё равно находится, с подписью вкладки
+    expect(titles()).toEqual(['Ночная песня'])
+    expect(document.querySelector('.mp-list li small')!.textContent).toContain('Nightcore')
+    input().value = 'ВТОРАЯ'
+    input().dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(titles()).toEqual(['Вторая песня'])
+    input().value = 'нет такой'
+    input().dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(document.querySelector('.mp-empty')!.textContent).toContain('Ничего не нашлось')
+    ;(document.querySelector('.mp-search-x') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(titles()).toEqual(['Первая песня', 'Вторая песня'])
+    expect(store.tab, 'поиск вкладку не переключает').toBe('quiet')
+    w.unmount()
+  })
+
   it('песню можно перенести в другую вкладку из меню «⋮»', async () => {
     const w = await mountSuspended(MusicPlayer)
     await flushPromises()
