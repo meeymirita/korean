@@ -5,9 +5,9 @@ import ExamRun from '@/components/korean/ExamRun.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
 import {
-  EXAM_ID, EXAM_PARTS, EXAM_PASS, EXAM_POINTS_APPROX, MIN_RULE, OWN_RULE, RECHECK_DAYS,
-  examParts, examPassed, examNeed, examState, examTotal, examWeakCards, partPoints, ruleLabel, summarize,
-  type ExamAttempt, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
+  BLITZ_POINTS, BLITZ_SECONDS, EXAM_ID, EXAM_PARTS, EXAM_PASS, EXAM_POINTS_APPROX, MIN_RULE, OWN_RULE, RECHECK_DAYS,
+  blitzBlocks, examParts, examPassed, examNeed, examState, examTotal, examWeakCards, partPoints, ruleLabel, summarize,
+  type ExamAttempt, type ExamBlock, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
 } from '@/data/korean/exam'
 import { useExamStore } from '@/stores/exam'
 import { useToastStore } from '@/stores/toast'
@@ -39,9 +39,12 @@ onMounted(async () => {
   if (view.value === 'log') await loadLog()
   ready.value = true
 })
-onBeforeUnmount(() => clearInterval(clock))
+onBeforeUnmount(() => {
+  clearInterval(clock)
+  clearInterval(blitzTimer)
+})
 
-const view = computed(() => (route.query.view === 'log' ? 'log' : route.query.part ? 'run' : 'home'))
+const view = computed(() => (route.query.view === 'log' ? 'log' : route.query.blitz && blitz.value ? 'blitz' : route.query.part ? 'run' : 'home'))
 const partNo = computed(() => Math.min(Math.max(Number(route.query.part) || 1, 1), EXAM_PARTS))
 const row = computed(() => exams.results[EXAM_ID])
 const state = computed(() => examState(row.value, now.value))
@@ -89,6 +92,41 @@ function continueExam() {
 function home() {
   void router.push({ query: {} })
 }
+/* ---------- пробный блиц: около 20 пунктов, 5 минут, результат нигде не записывается ---------- */
+const blitz = ref<{ blocks: ExamBlock[]; endsAt: number } | null>(null)
+const blitzDone = ref<ExamAttempt | null>(null)
+const left = ref(0)
+let blitzTimer: ReturnType<typeof setInterval> | undefined
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+function startBlitz() {
+  clearInterval(blitzTimer)
+  blitz.value = { blocks: blitzBlocks(examParts(EXAM_PARTS)), endsAt: Date.now() + BLITZ_SECONDS * 1000 }
+  blitzDone.value = null
+  finished.value = null
+  left.value = BLITZ_SECONDS
+  blitzTimer = setInterval(() => {
+    left.value = Math.max(0, Math.round(((blitz.value?.endsAt ?? 0) - Date.now()) / 1000))
+    // время вышло: что не отвечено, считается неверным
+    if (left.value === 0) {
+      clearInterval(blitzTimer)
+      run.value?.check()
+    }
+  }, 1000)
+  void router.push({ query: { blitz: '1' } })
+}
+function blitzSaved(points: PointResult[]) {
+  clearInterval(blitzTimer)
+  const sum = summarize([points])
+  blitzDone.value = { at: Date.now(), right: sum.right, total: sum.total, passed: examPassed(sum.right, sum.total, sum.rules), rules: sum.rules, mistakes: sum.mistakes }
+  blitz.value = null
+  home()
+}
+function exitBlitz() {
+  clearInterval(blitzTimer)
+  blitz.value = null
+  home()
+}
+
 function openLog() {
   void router.push({ query: { view: 'log' } })
 }
@@ -161,8 +199,16 @@ const summaryText = (a: ExamAttempt) =>
   <div class="wrap ex">
     <SectionHead id="exam" :big="state === 'passed' ? 'сдано' : state === 'due' ? 'повтор' : undefined" />
 
+    <!-- ПРОБНЫЙ БЛИЦ -->
+    <template v-if="view === 'blitz' && blitz">
+      <p class="intro">Пробный блиц: около {{ BLITZ_POINTS }} пунктов из пройденного, {{ BLITZ_SECONDS / 60 }} минут. Результат нигде не записывается и на допуск к экзамену не влияет.</p>
+      <p class="ex-timer" :class="{ low: left <= 30 }" role="timer" aria-live="off">{{ mmss(left) }}</p>
+      <ExamRun ref="run" :key="'b' + blitz.endsAt" :blocks="blitz.blocks" :part="1" :parts="1" blitz @saved="blitzSaved" />
+      <p class="ex-exit"><button class="ex-link" type="button" @click="exitBlitz">Выйти из блица (результат не сохранится)</button></p>
+    </template>
+
     <!-- ЧАСТЬ ЭКЗАМЕНА -->
-    <template v-if="view === 'run' && ready">
+    <template v-else-if="view === 'run' && ready">
       <template v-if="draft && blocks.length">
         <p class="intro">Итоговая оценка, часть {{ partNo }} из {{ EXAM_PARTS }}. Без подсказок и предметов Юны.</p>
         <ExamRun ref="run" :key="'p' + partNo + ':' + draft.startedAt" :blocks="blocks" :part="partNo" :parts="draft.parts.length" :initial="draft.partial?.part === partNo ? draft.partial.answers : undefined" @saved="saved" @pause="pause" />
@@ -209,6 +255,27 @@ const summaryText = (a: ExamAttempt) =>
         Без подсказок. После каждой части можно остановиться: ответы сохраняются. Сдан, если верных не меньше {{ Math.round(EXAM_PASS * 100) }}% и по каждому правилу не меньше {{ Math.round(MIN_RULE * 100) }}%.
         Не сдал: пересдача через сутки. Сдал: через {{ RECHECK_DAYS }} дней придёт напоминание подтвердить.
       </p>
+
+      <!-- итог пробного блица (нигде не записан) -->
+      <section v-if="blitzDone" class="ex-card" :class="blitzDone.right / blitzDone.total >= EXAM_PASS ? 'okc' : 'badc'">
+        <h2>Блиц: {{ blitzDone.right }} из {{ blitzDone.total }} ({{ Math.round((blitzDone.right / blitzDone.total) * 100) }}%)</h2>
+        <p class="ex-sub">Это пробный блиц: в историю экзамена не записывается. Для экзамена нужно не меньше {{ Math.round(EXAM_PASS * 100) }}%.</p>
+        <div class="ex-rules">
+          <div v-for="r in ruleRows(blitzDone.rules)" :key="r.id" class="ex-rule" :class="tone(r.share)">
+            <span>{{ r.label }}</span><b>{{ r.ok }} из {{ r.total }} · {{ pct(r) }}%</b>
+            <i :style="{ width: pct(r) + '%' }"></i>
+          </div>
+        </div>
+        <section v-for="[title, list] in byBlock(blitzDone.mistakes)" :key="title" class="ex-bl">
+          <h3>{{ title }} <small>{{ list.length }}</small></h3>
+          <ul>
+            <li v-for="(m, k) in list" :key="k">
+              <div class="ko ex-q">{{ m.q }}</div>
+              <div class="ex-ans"><span class="bad">Твой ответ: <b class="ko">{{ m.y }}</b></span><span class="ok">Верно: <b class="ko">{{ m.a }}</b></span></div>
+            </li>
+          </ul>
+        </section>
+      </section>
 
       <!-- только что законченная попытка -->
       <section v-if="finished" class="ex-card" :class="finished.attempt.passed ? 'okc' : 'badc'">
@@ -260,6 +327,7 @@ const summaryText = (a: ExamAttempt) =>
         <button class="rs-start ex-btn" :class="{ soft: !!draft }" :disabled="busy || waitMs > 0 || !ready" @click="startNew">
           {{ waitMs > 0 ? waitText : draft ? 'Начать заново' : row ? 'Пересдать' : 'Начать экзамен' }}
         </button>
+        <button class="rs-start ex-btn soft" type="button" :disabled="!ready" title="Около 20 пунктов за 5 минут, результат нигде не записывается" @click="startBlitz">Блиц на {{ BLITZ_SECONDS / 60 }} минут</button>
         <button v-if="row" type="button" class="ex-link" @click="openLog">Разбор попыток и ошибок</button>
       </div>
     </template>
@@ -287,6 +355,8 @@ const summaryText = (a: ExamAttempt) =>
 .ex-rule.weak { border-color: #d64d6a; background: #ffeef1; }
 .ex-rule.weak i { background: #d64d6a; }
 .ex-exit { margin: 8px 0 24px; }
+.ex-timer { position: sticky; top: 8px; z-index: 2; width: max-content; margin: 0 0 12px; padding: 6px 18px; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.ex-timer.low { color: var(--bad); border-color: var(--bad); }
 .ex-btns { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 0; }
 .ex-btn { box-sizing: border-box; height: 48px; margin: 0; padding: 0 26px; white-space: nowrap; }
 .ex-link { padding: 0; border: 0; background: none; color: var(--link, #1f82ae); font-size: 14px; cursor: pointer; }

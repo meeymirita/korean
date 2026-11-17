@@ -10,7 +10,7 @@ import { blockPoints, partPoints, type ExamBlock, type ExamPiece, type PartAnswe
  * Ничего не проверяется и не показывается по ходу: кнопка внизу считает результат по каждому пункту (с правилом и разбором ошибки)
  * и отдаёт событием saved(points); результаты и разбор показывает страница экзамена после последней части.
  */
-const props = defineProps<{ blocks: ExamBlock[]; part: number; parts: number; /** ответы, сохранённые кнопкой «Сохранить и выйти» */ initial?: PartAnswers }>()
+const props = defineProps<{ blocks: ExamBlock[]; part: number; parts: number; /** ответы, сохранённые кнопкой «Сохранить и выйти» */ initial?: PartAnswers; /** пробный блиц: можно закончить, не ответив на всё, без «Сохранить и выйти» */ blitz?: boolean }>()
 const emit = defineEmits<{ saved: [points: PointResult[]]; pause: [answers: PartAnswers] }>()
 
 const total = computed(() => partPoints(props.blocks))
@@ -72,7 +72,7 @@ async function leave() {
 }
 onBeforeRouteLeave(leave)
 onBeforeRouteUpdate(leave)
-defineExpose({ release })
+defineExpose({ release, check })
 
 const isGap = (p: ExamPiece): p is { answer: string; accept?: string[]; rule: string } => typeof p !== 'string'
 /** Сравнение вписанных форм: пробелы не важны (안 가요 = 안가요). */
@@ -189,7 +189,8 @@ const answered = computed(() => {
 
 <template>
   <div ref="root" class="er">
-    <p class="er-top">Часть <b>{{ part }}</b> из {{ parts }}: <b>{{ total }}</b> пунктов. Результаты и разбор будут после последней части.</p>
+    <p v-if="blitz" class="er-top">Всего пунктов: <b>{{ total }}</b>. Результат и разбор покажутся сразу после блица.</p>
+    <p v-else class="er-top">Часть <b>{{ part }}</b> из {{ parts }}: <b>{{ total }}</b> пунктов. Результаты и разбор будут после последней части.</p>
 
     <section v-for="(b, bi) in blocks" :key="b.id" class="er-block">
       <h2>{{ bi + 1 }}. {{ b.title }} <small>{{ blockPoints(b) }} п.</small></h2>
@@ -267,9 +268,10 @@ const answered = computed(() => {
     </section>
 
     <div class="er-foot">
-      <button class="rs-start" type="button" :disabled="answered < total || checked" @click="check">{{ part < parts ? 'Сохранить часть' : 'Закончить экзамен' }}</button>
-      <button class="ex-pause" type="button" :disabled="checked" @click="pause">Сохранить и выйти</button>
-      <small v-if="answered < total">Осталось ответить: {{ total - answered }} из {{ total }}.</small>
+      <button class="rs-start" type="button" :disabled="(answered < total && !blitz) || checked" @click="check">{{ blitz ? 'Показать итог' : part < parts ? 'Сохранить часть' : 'Закончить экзамен' }}</button>
+      <button v-if="!blitz" class="ex-pause" type="button" :disabled="checked" @click="pause">Сохранить и выйти</button>
+      <small v-if="blitz">Можно закончить раньше: неотвеченные пункты считаются неверными. Осталось ответить: {{ total - answered }} из {{ total }}.</small>
+      <small v-else-if="answered < total">Осталось ответить: {{ total - answered }} из {{ total }}.</small>
       <small v-else-if="part < parts">Ответы сохранятся, потом можно остановиться и вернуться к части {{ part + 1 }}.</small>
     </div>
   </div>

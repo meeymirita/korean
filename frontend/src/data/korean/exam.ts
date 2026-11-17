@@ -143,6 +143,24 @@ export function summarize(results: PointResult[][]) {
   return { right, total, rules, mistakes }
 }
 
+/** Пробный блиц: сколько пунктов и секунд (результат нигде не записывается). */
+export const BLITZ_POINTS = 20
+export const BLITZ_SECONDS = 300
+
+/** Блоки блица: случайные блоки из частей экзамена, пока не наберётся около BLITZ_POINTS пунктов (не больше +4), разных видов вперемешку. */
+export function blitzBlocks(parts: ExamBlock[][], points = BLITZ_POINTS): ExamBlock[] {
+  const out: ExamBlock[] = []
+  let sum = 0
+  for (const b of shuffle(parts.flat())) {
+    const p = blockPoints(b)
+    if (p === 0 || sum + p > points + 4) continue
+    out.push(b)
+    sum += p
+    if (sum >= points) break
+  }
+  return out
+}
+
 /** Сдан ли экзамен по итогам (то же правило, что на сервере). */
 export const examPassed = (right: number, total: number, rules: RuleScores) =>
   total > 0 && right / total >= EXAM_PASS && Object.values(rules).every(r => r.ok / r.total >= MIN_RULE)
