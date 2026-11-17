@@ -27,6 +27,7 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
     <header class="top">
       <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span><span class="sub">о платформе</span></RouterLink>
       <RouterLink to="/history" class="hl">История изменений</RouterLink>
+      <RouterLink to="/growth" class="hl">Рост платформы</RouterLink>
       <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
     </header>
 
@@ -79,6 +80,7 @@ const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behav
     <footer class="foot">
       <RouterLink to="/korean/home" class="open">{{ progress.unlocked ? 'Перейти на платформу →' : 'Войти по токену →' }}</RouterLink>
       <RouterLink to="/history" class="hl">История изменений</RouterLink>
+      <RouterLink to="/growth" class="hl">Рост платформы</RouterLink>
     </footer>
   </main>
 </template>

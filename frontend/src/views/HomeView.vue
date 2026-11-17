@@ -81,6 +81,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
         <nav class="nav">
           <RouterLink to="/about">О платформе</RouterLink>
           <RouterLink to="/history" class="hide-sm">История изменений</RouterLink>
+          <RouterLink to="/growth" class="hide-sm">Рост платформы</RouterLink>
           <RouterLink v-for="l in homeLinks" :key="l.to" :to="l.to" class="hide-sm">{{ l.title }}</RouterLink>
           <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
         </nav>
@@ -125,6 +126,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 
         <div class="more">
           <RouterLink to="/history" class="link show-sm">История изменений</RouterLink>
+          <RouterLink to="/growth" class="link show-sm">Рост платформы</RouterLink>
           <RouterLink v-for="l in homeLinks" :key="l.to" :to="l.to" class="link show-sm">{{ l.title }}</RouterLink>
           <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to" class="link">
             {{ m.title }}<span v-if="!progress.unlocked" class="lock"><Icon name="lock" /></span>
