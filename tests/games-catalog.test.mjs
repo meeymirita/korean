@@ -50,7 +50,7 @@ test('группы по разделам грамматики: каждая иг
   assert.deepEqual(byId.place, ['place'])
   assert.deepEqual(byId.verbs, ['form', 'tenses', 'type'])
   assert.deepEqual(byId.questions, ['qw', 'dem'])
-  assert.deepEqual(byId.talk, ['dlg', 'polite', 'oddone'])
+  assert.deepEqual(byId.talk, ['dlg', 'read', 'polite', 'oddone'])
   const all = GAME_GROUPS.flatMap(g => g.games.map(x => x.id))
   assert.equal(new Set(all).size, all.length)
 })
