@@ -74,13 +74,15 @@ html[data-theme='dark'] .study .bd-card.verb { --bd-ink: #8fa8ff; }
 .ask-note{margin:0;font-size:12px;color:var(--muted)}
 html[data-theme='dark'] .ask-panel,html[data-theme='dark'] .ask-btn{background:rgba(255,255,255,.06)}
 html[data-theme='dark'] .ask-msg.bot{background:rgba(255,255,255,.08)}
-/* окно «Разбор» в игре: чат справа, разбор сдвигается влево; на узком экране чат ниже */
-.game .story-win.ask-on{gap:16px;align-items:center}
-.game .story-win.ask-on .story-win-box{width:min(560px,100%);flex:0 1 560px}
-.game .story-win.ask-on .ask-panel{margin:0;width:min(380px,100%);flex:0 0 380px;max-height:90vh;background:linear-gradient(160deg,#fbeefc,#eaedff 60%,#fff3f8);box-shadow:0 30px 60px -20px rgba(40,38,90,.5)}
-html[data-theme='dark'] .game .story-win.ask-on .ask-panel{background:#25274e}
+/* окно «Разбор» в игре: пол страницы разбор, пол страницы чат (оба на всю высоту); на узком экране чат ниже */
+.game .story-win.ask-on{gap:16px;align-items:stretch;padding:20px}
+.game .story-win.ask-on .story-win-box{flex:1 1 50%;width:auto;min-width:0;max-height:none;height:100%}
+.game .story-win.ask-on .ask-panel{margin:0;flex:1 1 50%;width:auto;min-width:0;height:100%;max-height:none;padding:18px 20px;font-size:15px;border:1px solid #fff;border-radius:20px;background:linear-gradient(160deg,#fbeefc,#eaedff 60%,#fff3f8);box-shadow:0 30px 60px -20px rgba(40,38,90,.5)}
+.game .story-win.ask-on .ask-head{font-size:18px}
+.game .story-win.ask-on .ask-log{flex:1 1 auto}
+html[data-theme='dark'] .game .story-win.ask-on .ask-panel{background:#25274e;border-color:var(--line)}
 @media (max-width:900px){
   .game .story-win.ask-on{flex-direction:column;justify-content:flex-start;overflow:auto}
-  .game .story-win.ask-on .story-win-box{flex:0 0 auto;max-height:none;overflow:visible}
-  .game .story-win.ask-on .ask-panel{flex:0 0 auto;width:min(560px,100%)}
+  .game .story-win.ask-on .story-win-box{flex:0 0 auto;height:auto;overflow:visible}
+  .game .story-win.ask-on .ask-panel{flex:0 0 auto;height:auto;min-height:60vh}
 }
