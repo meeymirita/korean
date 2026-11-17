@@ -6,7 +6,8 @@
 //   OPENAI_API_KEY=… MODEL=<текстовая модель OpenAI> node scripts/voice-text-check.mjs [сценка]
 //
 // Ключ берётся только из окружения и нигде не печатается и не пишется. BASE_URL (по умолчанию https://api.openai.com/v1)
-// подходит и для другого OpenAI-совместимого адреса. Сценки: topic, position, noise, future (без аргумента все).
+// подходит и для другого OpenAI-совместимого адреса, например OpenRouter (ключ тогда OPENROUTER_API_KEY, а
+// MODEL=nvidia/nemotron-3-ultra-550b-a55b:free, как у чата-помощника в docs/chat.md). Сценки: topic, position, noise, future (без аргумента все).
 // Расход: около 10 запросов по ~5 тысяч токенов инструкции, то есть несколько центов.
 import { fileURLToPath } from 'node:url'
 
@@ -87,7 +88,7 @@ async function ask(base, key, model, messages) {
 }
 
 async function main() {
-  const key = process.env.OPENAI_API_KEY
+  const key = process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY ?? process.env.API_KEY
   const model = process.env.MODEL
   const base = (process.env.BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, '')
   if (key && !/^[\x21-\x7e]+$/.test(key)) {
@@ -106,7 +107,7 @@ async function main() {
     process.exit(0)
   }
   if (!key || !model) {
-    console.error('Нужны OPENAI_API_KEY и MODEL (текстовая модель, не realtime; список: LIST=1). Ключ не печатается.')
+    console.error('Нужны ключ (OPENAI_API_KEY или OPENROUTER_API_KEY) и MODEL (текстовая модель, не realtime; список: LIST=1). Ключ не печатается.')
     process.exit(2)
   }
   if (/realtime|audio/.test(model)) {
