@@ -1,6 +1,7 @@
 // Сайт на Nuxt: собирается (nuxt build), запускается настоящий сервер Nuxt вместе с сервером API, и проверяется то,
 // что видят поисковик и браузер: готовый HTML открытых страниц, SEO, robots.txt, sitemap.xml, 404, перенаправления, заголовки.
 import { after, before, describe, test } from 'node:test'
+import { PRIVATE_PATHS } from './_private-paths.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync, spawn } from 'node:child_process'
 import net from 'node:net'
@@ -87,7 +88,7 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
 
 describe('Nuxt: закрытые страницы, ошибки, перенаправления', () => {
   test('закрытые токеном страницы не рисуются на сервере (только оболочка приложения) и закрыты от индексации', async () => {
-    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/clip', '/korean/culture', '/korean/exam', '/korean/forms', '/korean/garden', '/korean/grammar', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/ref/alphabet', '/korean/ref/cheat', '/korean/ref/hangul', '/korean/ref/numbers', '/korean/ref/reading', '/korean/ref/sentences', '/korean/ref/talk', '/korean/report', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/today', '/korean/words', '/upload'])
+    assert.deepEqual(privatePaths().sort(), [...PRIVATE_PATHS].sort())
     for (const p of privatePaths()) {
       const res = await get(p)
       assert.equal(res.status, 200, p)

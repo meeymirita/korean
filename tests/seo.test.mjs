@@ -1,4 +1,5 @@
 import { after, describe, test } from 'node:test'
+import { PRIVATE_PATHS } from './_private-paths.mjs'
 import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { close, load } from './_load.mjs'
@@ -23,7 +24,7 @@ describe('SEO', () => {
   })
 
   test('закрытые токеном страницы помечены noindex', () => {
-    assert.deepEqual(privatePaths().sort(), ['/game/home', '/korean/cabinet', '/korean/chat', '/korean/clip', '/korean/culture', '/korean/exam', '/korean/forms', '/korean/garden', '/korean/grammar', '/korean/know', '/korean/lab', '/korean/marks', '/korean/mistakes', '/korean/ref/alphabet', '/korean/ref/cheat', '/korean/ref/hangul', '/korean/ref/numbers', '/korean/ref/reading', '/korean/ref/sentences', '/korean/ref/talk', '/korean/report', '/korean/review', '/korean/services', '/korean/shop', '/korean/sites', '/korean/talks', '/korean/today', '/korean/words', '/upload'])
+    assert.deepEqual(privatePaths().sort(), [...PRIVATE_PATHS].sort())
     for (const p of privatePaths()) assert.equal(seoFor(p).noindex, true)
   })
 
