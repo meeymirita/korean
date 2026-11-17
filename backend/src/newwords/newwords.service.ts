@@ -55,12 +55,15 @@ export class NewWordsService {
     return { ok: true }
   }
 
-  /** Создаёт временный токен только для чтения списка (его хэш и срок лежат в meta, прежний токен перестаёт работать). Сам токен показывается один раз. */
-  async createToken() {
+  /**
+   * Создаёт временный токен: по умолчанию только чтение входящих, с `write` ещё добавление слов и материалов (правка и удаление недоступны).
+   * Хэш, срок и право лежат в meta, прежний токен перестаёт работать. Сам токен показывается один раз.
+   */
+  async createToken(write = false) {
     const token = randomBytes(24).toString('hex')
     const expires = Date.now() + INBOX_TOKEN_MS
-    await this.db.setMeta(INBOX_META, JSON.stringify({ h: createHash('sha256').update(token).digest('hex'), exp: expires }))
-    return { token, expires }
+    await this.db.setMeta(INBOX_META, JSON.stringify({ h: createHash('sha256').update(token).digest('hex'), exp: expires, ...(write ? { w: true } : {}) }))
+    return { token, expires, write }
   }
 
   async revokeToken() {

@@ -25,18 +25,26 @@ export class AuthService {
     return given.length > 0 && given.length <= 200 && same(Buffer.from(given), Buffer.from(TOKEN))
   }
 
-  /** Временный токен входящих (создаётся кнопкой в шторке «Новые слова», живёт 10 минут, хранится хэшем в `meta`). */
-  async isInboxToken(header?: string): Promise<boolean> {
+  /**
+   * Временный токен входящих (создаётся кнопкой на странице «Слова», живёт 10 минут, хранится хэшем в `meta`).
+   * 'read': только чтение помеченных маршрутов; 'write': ещё и добавление (слова, материалы), но не правка и не удаление; null: токен не подошёл.
+   */
+  async inboxScope(header?: string): Promise<'read' | 'write' | null> {
     const given = (header || '').replace(/^Bearer\s+/i, '')
-    if (!given || given.length > 200) return false
+    if (!given || given.length > 200) return null
     const raw = await this.db.getMeta(INBOX_META)
-    if (!raw) return false
+    if (!raw) return null
     try {
-      const { h, exp } = JSON.parse(raw) as { h: string; exp: number }
-      return typeof exp === 'number' && exp > Date.now() && same(sha(given), Buffer.from(h, 'hex'))
+      const { h, exp, w } = JSON.parse(raw) as { h: string; exp: number; w?: boolean }
+      if (typeof exp !== 'number' || exp <= Date.now() || !same(sha(given), Buffer.from(h, 'hex'))) return null
+      return w === true ? 'write' : 'read'
     } catch {
-      return false
+      return null
     }
+  }
+
+  async isInboxToken(header?: string): Promise<boolean> {
+    return (await this.inboxScope(header)) !== null
   }
 
   /** По заголовку Authorization: Bearer … определяет, кто пришёл. 'expired' — гостевой токен просрочен, null — токен не подошёл. */

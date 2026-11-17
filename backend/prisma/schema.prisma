@@ -91,6 +91,17 @@ model NewWord {
   @@map("new_words")
 }
 
+/// Присланные материалы (тетради, учебник, задания Леры): пачка элементов `items` (JSON) во «Входящих» страницы «Слова»
+model Material {
+  id      String @id
+  source  String
+  kind    String @default("other")
+  items   String @default("[]")
+  status  String @default("new")
+  created BigInt
+  @@map("materials")
+}
+
 model Image {
   id          String @id
   name        String

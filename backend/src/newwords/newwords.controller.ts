@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common'
-import { InboxRead, Owner } from '../auth/auth.js'
+import { InboxRead, InboxWrite, Owner } from '../auth/auth.js'
 import { NewWordsService } from './newwords.service.js'
 
 /** /api/new-words: только владелец (гостю 403, ничего не сохраняется). */
@@ -14,11 +14,11 @@ export class NewWordsController {
     return this.words.list()
   }
 
-  /** Временный токен (10 минут) на чтение списка: владелец отдаёт его Claude. Создать и отозвать может только владелец. */
+  /** Временный токен (10 минут): владелец отдаёт его Claude. Тело `{ "write": true }` добавляет право записи во входящие. Создать и отозвать может только владелец. */
   @Post('token')
   @HttpCode(200)
-  createToken() {
-    return this.words.createToken()
+  createToken(@Body() body: { write?: unknown } | undefined) {
+    return this.words.createToken(body?.write === true)
   }
 
   @Delete('token')
@@ -27,6 +27,7 @@ export class NewWordsController {
   }
 
   @Post()
+  @InboxWrite()
   add(@Body() body: unknown) {
     return this.words.add(body)
   }

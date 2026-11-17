@@ -153,3 +153,87 @@ describe('временный токен входящих (кнопка «Соз�
     await request(app.getHttpServer()).get('/api/new-words').set(bearer(token)).expect(401)
   })
 })
+
+describe('токен входящих с записью и материалы (страница «Слова» → «Входящие»)', () => {
+  const owner = { Authorization: `Bearer ${OWNER}` }
+  const bearer = (t: string) => ({ Authorization: `Bearer ${t}` })
+  const make = async (write: boolean) => (await request(app.getHttpServer()).post('/api/new-words/token').set(owner).send({ write }).expect(200)).body as { token: string; write: boolean }
+  const batch = { source: 'Workbook 1A, Повторение 3', kind: 'workbook', items: [{ type: 'word', ko: '갈비탕', ru: 'суп с рёбрами' }, { type: 'sentence', ko: '사과가 싸요.', ru: 'Яблоки дешёвые.' }] }
+
+  it('формат открыт без токена и описывает маршруты', async () => {
+    const res = await request(app.getHttpServer()).get('/api/materials/format').expect(200)
+    expect(res.body.routes.length).toBeGreaterThan(3)
+    expect(res.body.example.items.length).toBeGreaterThan(3)
+  })
+
+  it('токен с записью добавляет слова и материалы, токен на чтение нет', async () => {
+    const http = app.getHttpServer()
+    const read = await make(false)
+    expect(read.write).toBe(false)
+    await request(http).post('/api/materials').set(bearer(read.token)).send(batch).expect(403)
+    const w = await make(true)
+    expect(w.write).toBe(true)
+    const added = await request(http).post('/api/materials').set(bearer(w.token)).send(batch).expect(201)
+    expect(added.body).toMatchObject({ items: 2, counts: { word: 1, sentence: 1 } })
+    const word = await request(http).post('/api/new-words').set(bearer(w.token)).send({ ko: '기다리다', ru: 'ждать' }).expect(201)
+    // читает присланное
+    const list = await request(http).get('/api/materials').set(bearer(w.token)).expect(200)
+    expect(list.body.batches.some((b: { id: string }) => b.id === added.body.id)).toBe(true)
+    await request(http).get('/api/new-words').set(bearer(w.token)).expect(200)
+    await request(http).delete(`/api/new-words/${word.body.id}`).set(owner).expect(200)
+    await request(http).delete(`/api/materials/${added.body.id}`).set(owner).expect(200)
+  })
+
+  it('по токену с записью нельзя править, удалять, создавать токены и открывать остальное', async () => {
+    const http = app.getHttpServer()
+    const { token } = await make(true)
+    await request(http).put('/api/new-words/x').set(bearer(token)).send({ ko: 'a', ru: 'b' }).expect(403)
+    await request(http).delete('/api/new-words/x').set(bearer(token)).expect(403)
+    await request(http).patch('/api/materials/x').set(bearer(token)).send({ status: 'done' }).expect(403)
+    await request(http).delete('/api/materials/x').set(bearer(token)).expect(403)
+    await request(http).post('/api/new-words/token').set(bearer(token)).send({ write: true }).expect(403)
+    for (const url of ['/api/progress', '/api/notes', '/api/shop']) await request(http).get(url).set(bearer(token)).expect(403)
+  })
+
+  it('слово из пачки попадает в «Новые слова» один раз; повтор не дублируется', async () => {
+    const http = app.getHttpServer()
+    const { token } = await make(true)
+    const one = await request(http).post('/api/materials').set(bearer(token)).send({ source: 'тест', items: [{ type: 'word', ko: '쉬다', ru: 'отдыхать' }] }).expect(201)
+    const two = await request(http).post('/api/materials').set(bearer(token)).send({ source: 'тест', items: [{ type: 'word', ko: '쉬다', ru: 'отдыхать' }] }).expect(201)
+    expect(one.body.wordsAdded).toBe(1)
+    expect(two.body.wordsAdded).toBe(0)
+    const words = (await request(http).get('/api/new-words').set(owner).expect(200)).body.words as { id: string; ko: string }[]
+    for (const w of words.filter(x => x.ko === '쉬다')) await request(http).delete(`/api/new-words/${w.id}`).set(owner).expect(200)
+    for (const id of [one.body.id, two.body.id]) await request(http).delete(`/api/materials/${id}`).set(owner).expect(200)
+  })
+
+  it('владелец отмечает пачку разобранной; неверный формат отклоняется', async () => {
+    const http = app.getHttpServer()
+    await request(http).post('/api/materials').set(owner).send({ source: '', items: [] }).expect(400)
+    await request(http).post('/api/materials').set(owner).send({ source: 'x', items: [{ type: 'ghost' }] }).expect(400)
+    const b = await request(http).post('/api/materials').set(owner).send({ source: 'тест', items: [{ type: 'note', text: 'заметка' }] }).expect(201)
+    const done = await request(http).patch(`/api/materials/${b.body.id}`).set(owner).send({ status: 'done' }).expect(200)
+    expect(done.body.status).toBe('done')
+    await request(http).patch(`/api/materials/${b.body.id}`).set(owner).send({ status: 'weird' }).expect(400)
+    await request(http).delete(`/api/materials/${b.body.id}`).set(owner).expect(200)
+  })
+})
+
+describe('сводка об обучении (/api/learning)', () => {
+  const owner = { Authorization: `Bearer ${OWNER}` }
+  const bearer = (t: string) => ({ Authorization: `Bearer ${t}` })
+
+  it('без токена закрыто, у владельца и по токену Claude (чтение и запись) отдаёт сводку', async () => {
+    const http = app.getHttpServer()
+    await request(http).get('/api/learning').expect(401)
+    const res = await request(http).get('/api/learning').set(owner).expect(200)
+    expect(res.body.grammar.passedCount).toBeGreaterThan(20)
+    expect(res.body.grammar.notYet.length).toBeGreaterThan(3)
+    expect(res.body).toHaveProperty('words.learned')
+    expect(res.body).toHaveProperty('activity.streakDays')
+    for (const write of [false, true]) {
+      const { token } = (await request(http).post('/api/new-words/token').set(owner).send({ write }).expect(200)).body as { token: string }
+      await request(http).get('/api/learning').set(bearer(token)).expect(200)
+    }
+  })
+})
