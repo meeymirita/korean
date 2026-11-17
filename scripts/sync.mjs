@@ -42,7 +42,8 @@ export async function targets() {
   out.push({ name: 'build-night', path: here('../frontend/src/assets/night.css'), content: buildNight(readFileSync(here('../frontend/src/assets/dark.css'), 'utf8')) })
   const { D } = await load('/src/data/korean/words.ts')
   const { G } = await load('/src/data/korean/grammar.ts')
-  const n = { words: D.length, rules: G.length }
+  // правил грамматики: карточки-заглушки «впереди» (`ahead`) не считаются, объяснения у них ещё нет
+  const n = { words: D.length, rules: G.filter(g => !g.ahead).length }
   for (const file of new Set(COUNTERS.map(c => c.file))) {
     const path = here('../' + file)
     out.push({ name: `числа в ${file}`, path, content: applyCounters(readFileSync(path, 'utf8'), file, n) })
@@ -57,10 +58,10 @@ export async function stale() {
 
 async function list() {
   const { G } = await load('/src/data/korean/grammar.ts')
-  const { NOT_YET } = await load('/src/data/korean/notyet.ts')
   const ok = G.filter(g => g.st === 'ok')
-  console.log(`Пройдено (карточки st: 'ok', ${ok.length} из ${G.length}):\n${ok.map(g => `  ${g.ko} — ${g.ru}`).join('\n')}`)
-  console.log(`\nЕщё не пройдено без своей карточки (frontend/src/data/korean/notyet.ts, ${NOT_YET.length}):\n${NOT_YET.map(n => `  ${n.label}`).join('\n')}`)
+  const ahead = G.filter(g => !g.l && g.st !== 'ok')
+  console.log(`Пройдено (карточки st: 'ok', ${ok.length} из ${G.filter(g => !g.ahead).length}):\n${ok.map(g => `  ${g.ko} — ${g.ru}`).join('\n')}`)
+  console.log(`\nЕщё не пройдено, свои карточки «ещё рано» (карточки с ahead в grammar.ts и непройденные свои, ${ahead.length}):\n${ahead.map(g => `  ${g.ko} (${g.ru})`).join('\n')}`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
