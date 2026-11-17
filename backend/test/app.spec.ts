@@ -207,6 +207,20 @@ describe('токен входящих с записью и материалы (�
     for (const id of [one.body.id, two.body.id]) await request(http).delete(`/api/materials/${id}`).set(owner).expect(200)
   })
 
+  it('проверка тетради: задание и ошибки попадают в пачку, а ошибки по темам в /api/learning', async () => {
+    const http = app.getHttpServer()
+    const { token } = await make(true)
+    const body = { source: 'Тетрадь, 만', kind: 'notebook', items: [{ type: 'task', title: '15 предложений на 만', topic: '만' }, { type: 'mistake', no: 3, mine: '일요일에 저는 약속이 있어요.', right: '일요일에만 약속이 있어요.', why: 'Пропущено 만', topic: '만' }, { type: 'mistake', mine: '드라마를 봐요.', right: '드라마만 봐요.', topic: '만' }] }
+    const added = await request(http).post('/api/materials').set(bearer(token)).send(body).expect(201)
+    expect(added.body.counts).toEqual({ task: 1, mistake: 2 })
+    const learning = await request(http).get('/api/learning').set(bearer(token)).expect(200)
+    const m = learning.body.homework.mistakes
+    expect(m.total).toBeGreaterThanOrEqual(2)
+    expect(m.byTopic.find((t: { topic: string }) => t.topic === '만').count).toBeGreaterThanOrEqual(2)
+    await request(http).post('/api/materials').set(bearer(token)).send({ source: 'x', items: [{ type: 'mistake', mine: 'a' }] }).expect(400)
+    await request(http).delete(`/api/materials/${added.body.id}`).set(owner).expect(200)
+  })
+
   it('владелец отмечает пачку разобранной; неверный формат отклоняется', async () => {
     const http = app.getHttpServer()
     await request(http).post('/api/materials').set(owner).send({ source: '', items: [] }).expect(400)

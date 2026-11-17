@@ -13,12 +13,18 @@ describe('проверка пачки материалов', () => {
   it('пример из описания формата проходит проверку целиком', () => {
     const r = cleanMaterial(MATERIALS_FORMAT.example)
     expect(r.items).toHaveLength(MATERIALS_FORMAT.example.items.length)
-    expect(new Set(r.items.map(i => i.type))).toEqual(new Set(['word', 'sentence', 'dialog', 'text', 'grammar', 'exercise', 'note']))
+    expect(new Set(r.items.map(i => i.type))).toEqual(new Set(['word', 'sentence', 'dialog', 'text', 'grammar', 'exercise', 'task', 'mistake', 'note']))
   })
 
   it('каждому типу нужны свои обязательные поля', () => {
-    for (const bad of [{ type: 'word', ko: '가' }, { type: 'sentence' }, { type: 'dialog', lines: [{ ko: 'a', ru: 'b' }] }, { type: 'text', sentences: [] }, { type: 'grammar' }, { type: 'exercise' }, { type: 'note' }, { type: 'ghost' }])
+    for (const bad of [{ type: 'word', ko: '가' }, { type: 'sentence' }, { type: 'dialog', lines: [{ ko: 'a', ru: 'b' }] }, { type: 'text', sentences: [] }, { type: 'grammar' }, { type: 'exercise' }, { type: 'task' }, { type: 'mistake', mine: 'a' }, { type: 'mistake', right: 'b' }, { type: 'note' }, { type: 'ghost' }])
       expect(() => ok([bad]), JSON.stringify(bad)).toThrow(BadRequestException)
+  })
+
+  it('ошибка из проверки тетради: номер числом или строкой, обязательны «у тебя» и «как правильно»', () => {
+    const m = ok([{ type: 'mistake', no: 3, mine: '일요일에 약속이 있어요.', right: '일요일에만 약속이 있어요.', why: 'Пропущено 만', topic: '만' }, { type: 'mistake', mine: 'a', right: 'b' }])
+    expect(m.items[0]).toMatchObject({ type: 'mistake', no: '3', topic: '만' })
+    expect(m.items[1]).toMatchObject({ no: '', why: '', topic: '' })
   })
 
   it('вопрос к тексту: 2–6 вариантов и номер верного с нуля', () => {

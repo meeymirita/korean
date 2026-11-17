@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common'
 import { KNOWN_GRAMMAR, KNOWN_NOT_YET } from '../chat/curriculum.js'
 import { Db } from '../db/db.service.js'
 import { ProgressService } from '../progress/progress.service.js'
-import { dayKey, grammarList, notYetList, streakOf, weakModes, wordsSummary } from './learning.summary.js'
+import { dayKey, grammarList, mistakesSummary, notYetList, streakOf, weakModes, wordsSummary } from './learning.summary.js'
 
 @Injectable()
 export class LearningService {
@@ -21,6 +21,7 @@ export class LearningService {
     const words = (await orm.word.findMany()).map(w => ({ word: w.word, ok: w.ok, bad: w.bad, streak: w.streak, last: Number(w.last), kd: w.kd ? Number(w.kd) : null }))
     const lastAnswer = words.reduce((m, w) => Math.max(m, w.last), 0)
     const passed = grammarList(KNOWN_GRAMMAR)
+    const batches = (await orm.material.findMany({ select: { created: true, items: true } })).map(b => ({ created: Number(b.created), items: JSON.parse(b.items) as unknown[] }))
     return {
       generated: new Date(now).toISOString(),
       about: 'Краткая сводка об обучении (платформа 우리말): что пройдено и как идёт учёба. Задания и объяснения строй только на пройденном; темы из notYet ещё не проходили.',
@@ -39,6 +40,7 @@ export class LearningService {
         last30Days: { ok: month.totals.ok, bad: month.totals.bad, activeDays: month.totals.activeDays, minutes: Math.round(month.totals.seconds / 60) },
         weakModes: weakModes(month.rows),
       },
+      homework: { mistakes: mistakesSummary(batches), hint: 'ошибки из проверок тетради (элементы mistake в присланных материалах): повторяй эти темы и составляй задания на них' },
       inbox: {
         newWords: await orm.newWord.count(),
         materialsToReview: await orm.material.count({ where: { status: 'new' } }),

@@ -7,7 +7,7 @@ import { BadRequestException } from '@nestjs/common'
 export const MAX_ITEMS = 200
 export const MAX_BATCHES = 300
 export const KINDS = ['workbook', 'textbook', 'notebook', 'lera', 'other'] as const
-export const ITEM_TYPES = ['word', 'sentence', 'dialog', 'text', 'grammar', 'exercise', 'note'] as const
+export const ITEM_TYPES = ['word', 'sentence', 'dialog', 'text', 'grammar', 'exercise', 'task', 'mistake', 'note'] as const
 export type Kind = (typeof KINDS)[number]
 export type ItemType = (typeof ITEM_TYPES)[number]
 
@@ -22,6 +22,8 @@ export type Item =
   | { type: 'text'; title: string; sentences: Pair[]; questions: { q: string; options: string[]; answer: number }[] }
   | { type: 'grammar'; title: string; note: string; examples: Pair[] }
   | { type: 'exercise'; prompt: string; body: string; answer: string }
+  | { type: 'task'; title: string; body: string; topic: string }
+  | { type: 'mistake'; no: string; mine: string; right: string; why: string; topic: string }
   | { type: 'note'; text: string }
 
 const bad = (error: string): never => {
@@ -75,6 +77,10 @@ function cleanItem(raw: unknown, i: number): Item {
       return { type: 'grammar', title: str(o.title, `${at}.title`, 120, true), note: str(o.note, `${at}.note`, 3000), examples: o.examples === undefined ? [] : pairs(o.examples, `${at}.examples`, 0) }
     case 'exercise':
       return { type: 'exercise', prompt: str(o.prompt, `${at}.prompt`, 1000, true), body: str(o.body, `${at}.body`, 3000), answer: str(o.answer, `${at}.answer`, 1000) }
+    case 'task':
+      return { type: 'task', title: str(o.title, `${at}.title`, 200, true), body: str(o.body, `${at}.body`, 3000), topic: str(o.topic, `${at}.topic`, 120) }
+    case 'mistake':
+      return { type: 'mistake', no: typeof o.no === 'number' ? String(o.no) : str(o.no, `${at}.no`, 20), mine: str(o.mine, `${at}.mine`, 400, true), right: str(o.right, `${at}.right`, 400, true), why: str(o.why, `${at}.why`, 600), topic: str(o.topic, `${at}.topic`, 120) }
     case 'note':
       return { type: 'note', text: str(o.text, `${at}.text`, 3000, true) }
     default:
@@ -104,6 +110,8 @@ export const MATERIALS_FORMAT = {
     text: { required: ['sentences'], optional: ['title', 'questions'], questions: 'список {q, options: [2–6 вариантов], answer: номер варианта с нуля}' },
     grammar: { required: ['title'], optional: ['note', 'examples'], examples: 'список {ko, ru}' },
     exercise: { required: ['prompt'], optional: ['body', 'answer'] },
+    task: { required: ['title'], optional: ['body', 'topic'], extra: 'задание целиком (например, 15 русских фраз на частицу 만); topic — тема, по ней ошибки собираются в сводку' },
+    mistake: { required: ['mine', 'right'], optional: ['no', 'why', 'topic'], extra: 'одна ошибка из проверки тетради: mine — как написано у ученика, right — как правильно, why — почему, no — номер задания, topic — тема (만, 과거, 안…)' },
     note: { required: ['text'] },
   },
   limits: { itemsPerRequest: MAX_ITEMS, batches: MAX_BATCHES, newWords: 500 },
@@ -126,6 +134,8 @@ export const MATERIALS_FORMAT = {
       { type: 'text', title: '나라식당', sentences: [{ ko: '저는 나라식당에 자주 가요.', ru: 'Я часто хожу в «Нара-сиктан».' }], questions: [{ q: 'Где находится ресторан?', options: ['рядом с домом', 'в школе'], answer: 0 }] },
       { type: 'grammar', title: '만', note: 'только', examples: [{ ko: '에릭 씨는 저 가수만 좋아해요.', ru: 'Эрик любит только того певца.' }] },
       { type: 'exercise', prompt: 'Вставь частицу: 방( ) 깨끗해요.', answer: '이' },
+      { type: 'task', title: '만 «только»: 15 предложений', body: '1. Я люблю только кимчи, а мой друг любит только мясо.', topic: '만' },
+      { type: 'mistake', no: 3, mine: '일요일에 저는 약속이 있어요.', right: '일요일에만 약속이 있어요.', why: 'Пропущено 만 («только в воскресенье»).', topic: '만' },
       { type: 'note', text: 'Лера просила повторить цены к субботе.' },
     ],
   },

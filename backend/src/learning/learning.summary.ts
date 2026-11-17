@@ -58,6 +58,20 @@ export function wordsSummary(rows: WordRow[], now = Date.now()) {
   }
 }
 
+/** Ошибки из проверок тетради (элементы `mistake` присланных пачек): сколько всего, по темам и последние. */
+export function mistakesSummary(batches: { created: number; items: unknown[] }[]) {
+  const all = batches
+    .flatMap(b => b.items.filter((i): i is { type: 'mistake'; mine: string; right: string; why: string; topic: string } => (i as { type?: string })?.type === 'mistake').map(i => ({ ...i, created: b.created })))
+    .sort((a, b) => b.created - a.created)
+  const byTopic = new Map<string, number>()
+  for (const m of all) byTopic.set(m.topic || 'без темы', (byTopic.get(m.topic || 'без темы') ?? 0) + 1)
+  return {
+    total: all.length,
+    byTopic: [...byTopic].map(([topic, count]) => ({ topic, count })).sort((a, b) => b.count - a.count).slice(0, 12),
+    recent: all.slice(0, 8).map(m => ({ mine: m.mine, right: m.right, why: m.why, topic: m.topic })),
+  }
+}
+
 /** Режимы с точностью ниже 90% при хотя бы 20 ответах: что стоит повторить. */
 export const weakModes = (rows: { source: string; mode: string; ok: number; bad: number }[]) =>
   rows

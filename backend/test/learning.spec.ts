@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayKey, grammarList, notYetList, streakOf, weakModes, wordsSummary } from '../src/learning/learning.summary.js'
+import { dayKey, grammarList, mistakesSummary, notYetList, streakOf, weakModes, wordsSummary } from '../src/learning/learning.summary.js'
 
 const DAY = 86_400_000
 const NOW = new Date('2026-11-17T12:00:00').getTime()
@@ -26,6 +26,19 @@ describe('сводка об обучении', () => {
     expect(s.inProgress).toBe(2)
     expect(s.learnedThisWeek).toEqual(['가다'])
     expect(s.weak).toEqual([{ word: '듣다', ok: 1, bad: 4 }])
+  })
+
+  it('ошибки из проверок: всего, по темам (сначала частые) и последние', () => {
+    const m = (topic: string, mine = 'a') => ({ type: 'mistake', mine, right: 'b', why: 'c', topic })
+    const s = mistakesSummary([
+      { created: 1, items: [m('만'), m('만'), { type: 'note', text: 'x' }, m('과거')] },
+      { created: 2, items: [m('만', 'новая'), m('')] },
+    ])
+    expect(s.total).toBe(5)
+    // при равенстве раньше та тема, что свежее
+    expect(s.byTopic).toEqual([{ topic: '만', count: 3 }, { topic: 'без темы', count: 1 }, { topic: '과거', count: 1 }])
+    expect(s.recent[0]).toMatchObject({ mine: 'новая', topic: '만' })
+    expect(mistakesSummary([])).toEqual({ total: 0, byTopic: [], recent: [] })
   })
 
   it('слабые режимы: меньше 90% и не меньше 20 ответов, сначала самые слабые', () => {
