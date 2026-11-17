@@ -80,7 +80,7 @@ describe('«Слова»: «Входящие»', () => {
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     await w.find('.inbox-btn').trigger('click')
     await flushPromises()
-    await w.findAll('.ib-tabs .chip')[1]!.trigger('click')
+    await w.findAll('.ib-tabs .chip')[2]!.trigger('click')
     expect(w.find('.ib-card').text()).toContain('Workbook 1A')
     expect(w.find('.ib-card').text()).toContain('слова 1')
     await w.find('.ib-title').trigger('click')
@@ -105,11 +105,23 @@ describe('«Слова»: «Входящие»', () => {
     expect(w.find('.ib-tokbox').text()).toContain('Токен с записью')
   })
 
+  it('вкладка «Предложения» собирает все предложения из пачек одним списком', async () => {
+    const w = await mountSuspended(WordsView, { route: '/korean/words' })
+    await w.find('.inbox-btn').trigger('click')
+    await flushPromises()
+    const chip = w.findAll('.ib-tabs .chip')[1]!
+    expect(chip.text()).toBe('Предложения · 1')
+    await chip.trigger('click')
+    expect(w.find('.ib-sent').text()).toContain('사과가 싸요.')
+    expect(w.find('.ib-sent').text()).toContain('Яблоки дешёвые.')
+    expect(w.find('.ib-sent').text()).toContain('Workbook 1A')
+  })
+
   it('вкладка «Что изучено» читает /api/learning с токеном и показывает сводку и JSON', async () => {
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     await w.find('.inbox-btn').trigger('click')
     await flushPromises()
-    await w.findAll('.ib-tabs .chip')[2]!.trigger('click')
+    await w.findAll('.ib-tabs .chip')[3]!.trigger('click')
     await flushPromises()
     const call = calls.find(c => c.url.endsWith('/api/learning'))!
     const headers = (call.init?.headers ?? {}) as Record<string, string>
@@ -123,7 +135,7 @@ describe('«Слова»: «Входящие»', () => {
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     await w.find('.inbox-btn').trigger('click')
     await flushPromises()
-    await w.findAll('.ib-tabs .chip')[3]!.trigger('click')
+    await w.findAll('.ib-tabs .chip')[4]!.trigger('click')
     const titles = w.findAll('.ib-card header b').map(b => b.text())
     expect(titles).toEqual(['Слова', 'Предложения', 'Задания и тексты', 'Проверка тетради и ошибки', 'Что изучено'])
     expect(w.text()).toContain('Скажи Claude:')
@@ -135,13 +147,17 @@ describe('«Слова»: «Входящие»', () => {
     await w.findAll('.ib-card header .ib-btn')[3]!.trigger('click')
     expect(writes[0]).toContain('/api/public/rules')
     expect(writes[0]).toContain('mistake')
+    expect(writes[0]).not.toContain('жди моего подтверждения')
+    await w.findAll('.ib-card header .ib-btn')[0]!.trigger('click')
+    expect(writes[1]).toContain('жди моего подтверждения')
+    expect(writes[1]).toContain('только из этого чата')
   })
 
   it('«Как отправить»: готовые запросы на каждый маршрут', async () => {
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     await w.find('.inbox-btn').trigger('click')
     await flushPromises()
-    await w.findAll('.ib-tabs .chip')[4]!.trigger('click')
+    await w.findAll('.ib-tabs .chip')[5]!.trigger('click')
     const codes = w.findAll('.ib-code').map(c => c.text())
     expect(codes.length).toBe(8)
     expect(codes.some(c => c.includes('/api/materials/format'))).toBe(true)
