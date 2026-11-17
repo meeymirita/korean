@@ -8,8 +8,8 @@ description: Чеклист после любой правки на платфо
 **Правило владельца (2026-11-17): изменил или добавил что-то в одном месте, обнови ВСЕ места из карты ниже, в том же коммите и в том же ответе.** Нашёл по пути расхождение (устаревшее «не пройдено», старое число слов, другое название): чини сразу и назови в ответе, не оставляй «потом». Сомневаешься, где ещё это упомянуто: `grep -rn "<слово или id>" frontend/src backend/src tests scripts docs CLAUDE.md README.md .claude/skills`.
 
 ## Карта: что менялось → где ещё это живёт
-- **Слово или перевод** (`dictionary.ts`, `translations.ts`): `digest-pool`, `words-export-vocab`, `build-words-json`, `chat-curriculum`, `build-study-data` (слова попадают в инструкции чата и голоса через `KNOWN_WORDS` и `KNOWN_READINGS`); число слов в `README.md` («N слов») и `docs/data.md`; сценки голоса (`voice/scenes.ts`, слова только из словаря); тесты `words-json`, `parse`, `exam-data`, `readme`.
-- **Статус карточки грамматики** (`st: 'ok'` или `soon`, правило карточки): `chat-curriculum` (`KNOWN_GRAMMAR` и `KNOWN_RULES` попадают в обе инструкции), `digest-pool`, `build-study-data`; **вручную набранные списки «пройдено / не пройдено»** в `backend/src/chat/prompt.ts` и `backend/src/voice/prompt.ts` (раньше они расходились: в чате будущее время годами значилось непройденным), раздел «Не забегать вперёд» в `CLAUDE.md`, `docs/data.md`, зависимость в `lab.ts` (`DEPS`). Отметка «пройдено», которую владелец ставит или снимает кнопкой в окне карточки (`progress.isMarked('u', id)`), это **второй, личный** источник: её видит сайт, но не видят скрипты, инструкции и задания (они читают только `st` из кода). Не путай их и скажи владельцу, если они расходятся.
+- **Слово или перевод** (`dictionary.ts`, `translations.ts`): `npm run sync` обновит всё производное (слова попадают в инструкции чата и голоса через `KNOWN_WORDS` и `KNOWN_READINGS`, число слов в README и `docs/data.md` тоже); руками остаются сценки голоса (`voice/scenes.ts`, слова только из словаря); тесты `words-json`, `parse`, `exam-data`, `readme`.
+- **Статус карточки грамматики** (`st: 'ok'` или `soon`, правило карточки): `npm run sync` (в обе инструкции чата и голоса «пройдено» попадает из карточек, а «не пройдено» из `frontend/src/data/korean/notyet.ts`; **статусы в `prompt.ts` и `CLAUDE.md` руками не писать**, раньше они расходились). Тема без своей карточки: строка в `notyet.ts` (тест `tests/notyet.test.mjs` ловит противоречие «и пройдена, и не пройдена»); зависимость в `lab.ts` (`DEPS`). Отметка «пройдено», которую владелец ставит или снимает кнопкой в окне карточки (`progress.isMarked('u', id)`), это **второй, личный** источник: её видит сайт, но не видят скрипты, инструкции и задания (они читают только `st` из кода). Не путай их и скажи владельцу, если они расходятся.
 - **Режим или тренажёр**: `MODES`, `MODE_HELP`, `build-mode-names`, `docs/trainers/<режим>.md`, `docs/games-catalog.md`, `docs/game.md`.
 - **Страница**: `seo.ts`, `crumbs.ts`, `guide.ts`, `sections.ts`, слайд в `about.ts`, `docs/home-and-theme.md`.
 - **Сервер, база, настройки**: миграция Prisma, `docker-compose.yml`, `.env.example`, `backend/src/config.ts`, `docs/server.md` и документ по теме (`docs/voice.md`, `docs/chat.md`), перезапуск сервера после выкладки.
@@ -19,13 +19,7 @@ description: Чеклист после любой правки на платфо
 
 Ноутбук слабый: одна тяжёлая команда за раз, ничего параллельно.
 
-1. **Что менялось → что перегенерировать** (нужное запусти из корня):
-   - словарь или `translations.ts`: `node scripts/digest-pool.mjs`, `node scripts/build-words-json.mjs`;
-   - словарь или пройденные темы: `node scripts/chat-curriculum.mjs`;
-   - грамматика, статус карточки, переводы, рассказы, диалоги: `node scripts/build-study-data.mjs`;
-   - режим игры (новый или переименованный): `node scripts/build-mode-names.mjs`;
-   - `dark.css`: `node scripts/build-night.mjs`;
-   - страница: слайд и скриншот в «О платформе» (`src/data/about.ts`, `scripts/about-shots.mjs`).
+1. **Производные файлы: одна команда `npm run sync`** (словарь, переводы, грамматика, статус карточки, режим, `notyet.ts`, `dark.css`). Она обновляет пул писем, `words.json`, инструкции чата и голоса (пройденное и «не пройдено»), открытые данные для чтения, названия режимов, `night.css` и числа слов и правил в README и `docs/data.md`. `npm run sync:check` только проверяет; тест `tests/sync.test.mjs` падает, если забыли. Вручную остаётся: страница (слайд и скриншот в «О платформе»: `src/data/about.ts`, `scripts/about-shots.mjs`).
 2. **Описание**: поправь `docs/` по теме (для тренажёра `docs/trainers/<режим>.md`, для каталога `docs/games-catalog.md`). Расходится с кодом: верь коду.
 3. **История**: запись в начало `HISTORY` (`frontend/src/data/history.ts`), тест следит за форматом.
 4. **План**: локальный `plan-and-fixes/plan-new.md` (не в git): статус вверху ✅ / ⏳ / ❌, сделанное из разделов удали, новое допиши.

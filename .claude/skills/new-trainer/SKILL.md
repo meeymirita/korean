@@ -17,7 +17,7 @@ description: Добавить или изменить тренажёр или р
 **Новый режим:**
 1. Прочитай `docs/games-catalog.md` и `docs/trainers/README.md`: что уже есть, что переиспользовать.
 2. Серия «вопрос → варианты»: строй на `TaskSession.vue` и `Task` (`data/korean/tasks.ts`), не пиши цикл заново. Магазин, клавиши 1–4 и Enter, перетаскивание, итог он даёт сам.
-3. Режим игры: запись в `MODES` и `MODE_HELP` (`src/game/modes.ts`), потом `node scripts/build-mode-names.mjs`. `engine.ts` проверяется компилятором: без `@ts-nocheck` и `any`, новое поле сначала в `Question` (`src/game/types.ts`). После правки гоняй игровые тесты.
+3. Режим игры: запись в `MODES` и `MODE_HELP` (`src/game/modes.ts`), потом `npm run sync`. `engine.ts` проверяется компилятором: без `@ts-nocheck` и `any`, новое поле сначала в `Question` (`src/game/types.ts`). После правки гоняй игровые тесты.
 4. Слова брать из `STUDY`, предложения из `STUDY_TRANSLATIONS`.
 5. Перетаскивание только через `src/lib/dragdrop.ts` (GSAP Draggable), `touch-action: none`; свои pointer-обработчики и `confirm`/`alert` писать нельзя. Запросы только через `fetchT`.
 6. Новый тренажёр: свой файл в `docs/trainers/` по шаблону из `README.md`, строка в таблице там и в `docs/games-catalog.md`.

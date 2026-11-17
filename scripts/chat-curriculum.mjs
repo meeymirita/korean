@@ -37,6 +37,8 @@ export async function build() {
   const { G } = await load('/src/data/korean/grammar.ts')
   /** @type {{ RAW: RawWord[] }} */
   const { RAW } = await load('/src/data/korean/dictionary.ts')
+  /** @type {{ NOT_YET: { label: string }[] }} */
+  const { NOT_YET } = await load('/src/data/korean/notyet.ts')
   const grammar = G.filter(g => g.st === 'ok').map(g => `- ${g.ko} — ${g.ru}`)
   const words = [...new Set(RAW.map(r => r.k))]
   // чтение кириллицей глаголов и прилагательных (ученик называет их так вслух): «мокта=먹다»
@@ -44,6 +46,9 @@ export async function build() {
   return `// Файл создаёт scripts/chat-curriculum.mjs из данных сайта, руками не править.
 /** Пройденные темы грамматики (карточки со статусом «пройдено»). */
 export const KNOWN_GRAMMAR = ${JSON.stringify(grammar.join('\n'))}
+
+/** Темы, которые ещё не пройдены и не имеют своей карточки (frontend/src/data/korean/notyet.ts): инструкции модели не используют их без прямого вопроса. */
+export const KNOWN_NOT_YET = ${JSON.stringify(NOT_YET.map(n => n.label).join('; '))}
 
 /** Краткие правила пройденных карточек (для голосового собеседника). */
 export const KNOWN_RULES = ${JSON.stringify(rulesOf(G).join('\n'))}

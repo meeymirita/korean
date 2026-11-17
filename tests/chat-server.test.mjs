@@ -74,7 +74,8 @@ describe('сервер: помощник-чат', () => {
     assert.equal(got.url, '/api/v1/chat/completions')
     assert.equal(got.body.model, 'test-model')
     assert.equal(got.body.messages[0].role, 'system')
-    assert.match(got.body.messages[0].content, /Пройдены уроки 1–11/)
+    assert.match(got.body.messages[0].content, /Пройденные темы/)
+    assert.match(got.body.messages[0].content, /Пока НЕ пройдено: /)
     assert.deepEqual(got.body.messages.slice(1), [{ role: 'user', content: 'Как сказать «хлеб»?' }])
   })
 

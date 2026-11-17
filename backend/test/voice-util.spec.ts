@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KNOWN_GRAMMAR, KNOWN_READINGS, KNOWN_RULES, KNOWN_WORDS } from '../src/chat/curriculum'
+import { KNOWN_GRAMMAR, KNOWN_NOT_YET, KNOWN_READINGS, KNOWN_RULES, KNOWN_WORDS } from '../src/chat/curriculum'
 import { buildPrompt, SYSTEM_PROMPT } from '../src/voice/prompt'
 import { SCENES, sceneOf } from '../src/voice/scenes'
 import { cleanRole, cleanText, costOf, countedSeconds, dayKey, secretBody } from '../src/voice/voice.util'
@@ -53,10 +53,11 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/Только корейский и учёба/)
     expect(SYSTEM_PROMPT).not.toMatch(/[぀-ヿ一-鿿]/)
   })
-  it('будущее время -(으)ㄹ 거예요, 만 и 도 названы пройденными (модель считала будущее непройденным)', () => {
-    expect(SYSTEM_PROMPT).toMatch(/ПРОЙДЕНО ВСЁ ИЗ СПИСКА[^.]*будущее время -\(으\)ㄹ 거예요/)
-    expect(SYSTEM_PROMPT).toMatch(/НЕ пройдено \(будущее на -겠어요/)
-    expect(SYSTEM_PROMPT).toContain('(으)ㄹ 거예요 — планы, будущее')
+  it('«пройдено» и «не пройдено» берутся из данных сайта, руками в инструкции не набраны (будущее время пройдено, а не наоборот)', () => {
+    expect(SYSTEM_PROMPT).toMatch(/ПРОЙДЕНО ВСЁ ИЗ СПИСКА ВЫШЕ/)
+    expect(SYSTEM_PROMPT).toContain(`Пока НЕ пройдено: ${KNOWN_NOT_YET}.`)
+    expect(KNOWN_GRAMMAR).toContain('(으)ㄹ 거예요 — планы, будущее')
+    expect(KNOWN_NOT_YET).not.toContain('거예요')
   })
   it('правила: факты о будущем времени, «Верно!» только на фразы, нет родовых форм, просьба о примерах выполняется', () => {
     expect(SYSTEM_PROMPT).toMatch(/основа с 받침: \+을/i)
