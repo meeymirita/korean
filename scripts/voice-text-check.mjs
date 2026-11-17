@@ -5,16 +5,15 @@
 //   npm run server:build                      # свежая инструкция (читается из backend/dist)
 //   OPENAI_API_KEY=… MODEL=<текстовая модель OpenAI> node scripts/voice-text-check.mjs [сценка]
 //
+//   node scripts/voice-text-check.mjs --list      список сценариев; можно запустить несколько: … topic noise checkok
 // Ключ берётся только из окружения и нигде не печатается и не пишется. BASE_URL (по умолчанию https://api.openai.com/v1)
 // подходит и для другого OpenAI-совместимого адреса, например OpenRouter (ключ тогда OPENROUTER_API_KEY, а
-// MODEL=nvidia/nemotron-3-ultra-550b-a55b:free, как у чата-помощника в docs/chat.md). Сценки: topic, position, noise, future (без аргумента все).
+// MODEL=nvidia/nemotron-3-ultra-550b-a55b:free, как у чата-помощника в docs/chat.md). Сценариев 20 (`--list` покажет названия), без аргумента идут все.
 // Расход: около 10 запросов по ~5 тысяч токенов инструкции, то есть несколько центов.
 import { fileURLToPath } from 'node:url'
+import { BACK, EXTRA, LISTEN, REFUSE } from './voice-scenarios.mjs'
 
 const GENDER = /(?<![а-яё])(рад|рада|выпил|выпила|понял|поняла|уверен|уверена|хотел|хотела|ошибся|ошиблась|сказал|сказала|писал|писала|говорил|говорила|объяснил|объяснила)(?![а-яё])/i
-const REFUSE = /уточни у (учителя|Леры)|у учителя на (субботнем )?уроке|не из твоих карточек/i
-const LISTEN = /не расслыш|скажи ещё раз|скажи еще раз|повтори(?!ть)|не понял|не поняла/i
-const BACK = /вернёмся к пройден|на пройденн|пройденн\S* тем|к пройденному/i
 
 /** Корейские слова с 와/과 на конце, которые на самом деле не частицы. */
 const WA_OK = new Set(['사과', '학과', '교과', '과', '와'])
@@ -29,10 +28,11 @@ const common = [
     const bad = koTokens(noQuotes(r)).filter(t => t.length > 1 && /(와|과)$/.test(t) && !WA_OK.has(t))
     return bad.length ? `непройденное 와/과: ${bad.join(', ')}` : ''
   },
-  r => (/(에게|한테)/.test(noQuotes(r)) ? 'непройденное 에게/한테' : ''),
-  r => (/있고|먹고|가고|싶어요/.test(noQuotes(r)) ? 'непройденное -고 / 싶다' : ''),
+  // у сценариев `novel` ученик сам спрашивает про непройденное: объяснять его можно
+  (r, i, sc) => (!sc.novel && /(에게|한테)/.test(noQuotes(r)) ? 'непройденное 에게/한테' : ''),
+  (r, i, sc) => (!sc.novel && /있고|먹고|가고|싶어요/.test(noQuotes(r)) ? 'непройденное -고 / 싶다' : ''),
   r => (/먹[^.\n]{0,40}(поеду|ехать|поедет|поедем)/i.test(r) ? '먹다 переведено как «ехать»' : ''),
-  (r, i) => (i === 0 && /^\s*Верно/i.test(r) ? '«Верно!» в ответ на вопрос, а не на фразу ученика' : ''),
+  (r, i, sc) => (!sc.phrase && i === 0 && /^\s*Верно/i.test(r) ? '«Верно!» в ответ на вопрос, а не на фразу ученика' : ''),
   // ответ читают вслух: таблицы, заголовки, длинные списки и простыни не годятся
   r => (/^\s*\|.*\|/m.test(r) || /^#{1,6}\s/m.test(r) ? 'таблица или заголовок (ответ читают вслух)' : ''),
   r => ((r.match(/^\s*[-*•]\s/gm) ?? []).length >= 4 ? 'длинный список (ответ читают вслух)' : ''),
@@ -76,9 +76,12 @@ export const SCENARIOS = {
   },
 }
 
+// ещё шестнадцать сценариев из живых разговоров лежат в voice-scenarios.mjs
+Object.assign(SCENARIOS, EXTRA)
+
 /** Замечания к одному ответу: общие проверки и проверки сценки. */
 export function checkReply(reply, index, scenario) {
-  return [...common, ...scenario.checks].map(f => f(reply, index)).filter(Boolean)
+  return [...common, ...scenario.checks].map(f => f(reply, index, scenario)).filter(Boolean)
 }
 
 async function ask(base, key, model, messages) {
@@ -97,6 +100,10 @@ async function main() {
   const key = process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY ?? process.env.API_KEY
   const model = process.env.MODEL
   const base = (process.env.BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, '')
+  if (process.argv.includes('--list')) {
+    for (const [name, sc] of Object.entries(SCENARIOS)) console.log(`${name.padEnd(11)} ${sc.title}`)
+    process.exit(0)
+  }
   if (key && !/^[\x21-\x7e]+$/.test(key)) {
     console.error('OPENAI_API_KEY содержит не латинские символы или пробелы: вставлена заглушка вместо настоящего ключа?')
     process.exit(2)
@@ -127,10 +134,11 @@ async function main() {
     console.error('Нет backend/dist: сначала npm run server:build')
     process.exit(2)
   }
-  const only = process.argv[2]
-  const names = only ? [only] : Object.keys(SCENARIOS)
+  const args = process.argv.slice(2).filter(a => !a.startsWith('--'))
+  const names = args.length ? args : Object.keys(SCENARIOS)
   const system = buildPrompt('free')
   let bad = 0
+  const summary = []
   console.log(`Модель: ${model}. Инструкция: ${system.length} знаков.\n`)
   for (const name of names) {
     const sc = SCENARIOS[name]
@@ -139,6 +147,7 @@ async function main() {
       process.exit(2)
     }
     console.log(`=== ${name}: ${sc.title}`)
+    let scBad = 0
     const messages = [{ role: 'system', content: system }]
     for (const [i, say] of sc.say.entries()) {
       messages.push({ role: 'user', content: say })
@@ -149,11 +158,14 @@ async function main() {
       messages.push({ role: 'assistant', content: reply })
       const flags = checkReply(reply, i, sc)
       bad += flags.length
+      scBad += flags.length
       console.log(`\n> ${say}\n${reply}`)
       console.log(flags.length ? flags.map(f => `  ✗ ${f}`).join('\n') : '  ✓ без замечаний')
     }
     console.log('')
+    summary.push(`${scBad ? '✗' : '✓'} ${name}${scBad ? ` (замечаний: ${scBad})` : ''}`)
   }
+  console.log(`Итог по сценариям:\n${summary.join('\n')}\n`)
   console.log(bad ? `Замечаний: ${bad} (проверь глазами: проверки грубые, возможны ложные)` : 'Все проверки пройдены')
   process.exit(bad ? 1 : 0)
 }

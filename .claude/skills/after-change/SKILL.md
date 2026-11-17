@@ -13,7 +13,7 @@ description: Чеклист после любой правки на платфо
 - **Режим или тренажёр**: `MODES`, `MODE_HELP`, `build-mode-names`, `docs/trainers/<режим>.md`, `docs/games-catalog.md`, `docs/game.md`.
 - **Страница**: `seo.ts`, `crumbs.ts`, `guide.ts`, `sections.ts`, слайд в `about.ts`, `docs/home-and-theme.md`.
 - **Сервер, база, настройки**: миграция Prisma, `docker-compose.yml`, `.env.example`, `backend/src/config.ts`, `docs/server.md` и документ по теме (`docs/voice.md`, `docs/chat.md`), перезапуск сервера после выкладки.
-- **Инструкция голоса или чата** (`voice/prompt.ts`, `chat/prompt.ts`): правило, добавленное в одну, проверь и в другой (у них общие `KNOWN_*`, но проза своя); обе описаны в `docs/voice.md` и `docs/chat.md`; тесты `voice-util.spec.ts` (предел длины) и `chat-prompt.test.mjs`.
+- **Инструкция голоса или чата** (`voice/prompt.ts`, `chat/prompt.ts`): правило, добавленное в одну, проверь и в другой (у них общие `KNOWN_*`, но проза своя); обе описаны в `docs/voice.md` и `docs/chat.md`; тесты `voice-util.spec.ts` (предел длины) и `chat-prompt.test.mjs`; правку инструкции голоса прогоняй через `scripts/voice-text-check.mjs` (20 сценариев, нужен ключ, см. `docs/voice.md`), новую живую ошибку добавляй туда сценарием.
 - **Любое заметное изменение**: запись в начало `HISTORY`.
 
 
