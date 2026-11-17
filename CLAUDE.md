@@ -19,7 +19,7 @@
 
 **Как править**
 5. Маленькими точными заменами. Для текста на русском пиши скрипт Python в файл во временной папке (не в репозитории) с проверкой `assert s.count(старое) == 1` перед каждой заменой и запускай его: так замена не попадёт не туда и не сработает наполовину. Большие файлы целиком не переписывай.
-6. `frontend/src/game/engine.ts` с 2026-11-11 проверяется компилятором (типы вопроса, состояния и хуков в `src/game/types.ts`): `@ts-nocheck` и `any` в него не возвращай, новое поле вопроса сначала допиши в `Question`. После любой правки в нём всё равно гоняй игровые тесты (пункт 9): файл большой, с общим состоянием.
+6. `frontend/src/game/engine.ts` (отрисовка и события) и `generators.ts` (генераторы заданий `gen…`) с 2026-11-11 проверяются компилятором (типы вопроса, состояния и хуков в `src/game/types.ts`): `@ts-nocheck` и `any` в них не возвращай, новое поле вопроса сначала допиши в `Question`. После любой правки в них всё равно гоняй игровые тесты (пункт 9): файлы большие, с общим состоянием.
 7. Одно действие, один коммит. Не складывай разные задачи в один коммит и не трогай лишнего «заодно», кроме явной ошибки рядом (её чини и назови в ответе).
 8. **Изменил или добавил что-то в одном месте: обнови все места, где это же написано** (карта в скилле `after-change`, решение владельца 2026-11-17: полдня ушло на разнобой в том, что где отмечено). После правки обнови: описание в `docs/` (или `docs/trainers/<режим>.md`), запись в начало `HISTORY`, сгенерированные файлы (скрипты перечислены в «Правилах кода»), локальный `plan-and-fixes/plan-new.md`: в таблице «Статус» вверху поставь ✅ / ⏳ / ❌ (владелец смотрит её, решение 2026-11-14), в разделах ниже сделанное удали, новое допиши.
 
@@ -139,7 +139,7 @@
 ## Структура `frontend/src`
 
 `pages/` (файловый роутинг, тонкие обёртки над `views/`) · `views/` (экраны) · `components/` (`cabinet/`, `korean/`, `charts/`, `garden/`, `home/`, `game/`, `dict/`, `music/`) · `composables/` · `stores/` (`progress`, `notes`, `images`, `shop`, `timer`, `toast`…) ·
-`lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (движок игры: `engine.ts` рисует карточку вопроса на чистом DOM, `build.ts`, `view.ts`; оболочка игры на Vue в `components/game/`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
+`lib/` (`http`, `seeded`, `fx`, `shortcuts`, `guestStorage`…) · `data/` (`seo`, `history`, `about`, `guide`, `levels`…; `data/korean/`: словарь, грамматика, справочники, задания, `parse.ts`, `translations.ts`) · `game/` (движок игры: `engine.ts` рисует карточку вопроса на чистом DOM, `generators.ts` придумывает задания всех режимов (фабрика `createGenerators(S, hooks)`), `util.ts` помощники, `build.ts`, `view.ts`; оболочка игры на Vue в `components/game/`) · `assets/` · `plugins/app.client.ts` · `router.options.ts`.
 Сервер `backend/src`: `auth`, `db`, `progress` (+ магазин), `guests`, `notes`, `trash` (корзина 30 дней), `images`, `plans`, `sets`, `public`, `siteimg`, `chat`, `digest`, `reminders`, `mail`, `admin`, `events`, `dict` (большой словарь: индекс, подборки, учёт заходов, русско-корейские страницы), `exams`, `study` (недельные цели и отчёты), `lesson` (созвон), `music` (плеер), `voice` (голосовой собеседник), `yadisk` (Диск), `video`, `newwords`, `notify` (Telegram и почта), `search`, `wordsexport`, `jobs`; рядом `log.ts`, `env-check.ts`, `security.ts`.
 
 ## Документация (читай нужный файл перед работой)
