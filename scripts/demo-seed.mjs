@@ -18,7 +18,13 @@ if (!TOKEN) {
   process.exit(2)
 }
 const root = fileURLToPath(new URL('..', import.meta.url))
-const auth = { Authorization: `Bearer ${TOKEN}` }
+let auth = { Authorization: `Bearer ${TOKEN}` }
+// сервер с OWNER_SESSION_HOURS просит сеанс вместе с токеном: берём его при входе, как это делает сайт
+{
+  const r = await fetch(API + '/api/session', { method: 'POST', headers: auth })
+  const j = r.ok ? await r.json() : {}
+  if (j.session) auth = { Authorization: `Bearer ${TOKEN} ${j.session}` }
+}
 
 async function call(method, url, body) {
   const res = await fetch(API + url, { method, headers: { ...auth, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined })
