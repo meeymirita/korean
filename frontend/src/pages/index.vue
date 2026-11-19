@@ -3,7 +3,7 @@ import HomeView from '@/views/HomeView.vue'
 import HomeLightView from '@/views/HomeLightView.vue'
 import { themeLight } from '@/lib/theme'
 
-/** Светлая тема показывает прежнюю главную, тёмные (розовая, ночная, тёмная) новую. Пока страница не ожила, themeLight = false: сервер и первая отрисовка одинаковы. */
+/** Светлая тема показывает прежнюю главную, тёмные (розовая, ночная, тёмная) новую. Пока страница не ожила, themeLight = true: сервер и первая отрисовка одинаковы (светлая по умолчанию). */
 </script>
 
 <template>

@@ -161,11 +161,24 @@ dd a:hover, .flip:hover { color: var(--pk-pink-2); }
 .more-w { margin-left: 10px; color: var(--pk-label); font-size: 12px; }
 .foot-note { max-width: 1220px; width: 100%; margin: 18px auto 0; font: 400 12px/1.5 var(--pk-mono); color: rgba(255, 179, 209, .7); }
 @media (max-width: 640px) { .daily { text-align: left; } .actions { flex-direction: column; } .pk-btn, .pk-ghost { width: 100%; justify-content: center; } }
+/* компьютер: вся страница в один экран, размеры идут от высоты окна (прокрутка остаётся на узких экранах и телефоне, см. глобальный блок ниже) */
+@media (min-width: 900px) {
+  .home { gap: clamp(8px, 2.2vh, 26px); padding: clamp(8px, 3vh, 72px) 0 clamp(6px, 1.5vh, 24px); }
+  .title { max-width: 18ch; font-size: clamp(32px, min(7.6vw, 9.5vh), 118px); }
+  .desc { font-size: clamp(11.5px, 1.9vh, 14px); line-height: 1.6; }
+  .actions { margin-top: clamp(4px, 2vh, 48px); }
+  .actions .pk-btn, .actions .pk-ghost { height: clamp(38px, 6vh, 56px); }
+  .facts, .daily { row-gap: clamp(3px, 1vh, 14px); font-size: clamp(12px, 1.7vh, 14px); }
+  .foot-note { margin-top: clamp(4px, 1.4vh, 18px); font-size: clamp(10px, 1.5vh, 12px); }
+}
 </style>
 
 <style>
-/* в светлой теме вместо этой страницы показывается старая (HomeLightView): пока идёт замена, новую не видно */
-html[data-theme='light'] .home-pink { visibility: hidden; }
+/* компьютер: главная без прокрутки (решение владельца 2026-11-19) */
+@media (min-width: 900px) and (min-height: 560px) {
+  .home-pink { overflow: hidden; padding: clamp(6px, 1.8vh, 36px); }
+  .home-pink .pk-card { min-height: calc(100vh - 2 * clamp(6px, 1.8vh, 36px)); padding-top: clamp(8px, 2vh, 64px); padding-bottom: clamp(8px, 2vh, 40px); }
+}
 /* окно с видео вынесено в body, поэтому стили без scoped */
 .demo-back { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 20px; background: rgba(11, 5, 8, .75); backdrop-filter: blur(8px); }
 .demo-box { position: relative; width: min(1100px, 100%); padding: 14px; background: #2a0a18; border: 1px solid rgba(255, 190, 220, .18); border-radius: 24px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }

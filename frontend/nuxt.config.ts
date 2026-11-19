@@ -61,8 +61,8 @@ export default defineNuxtConfig({
         { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
       script: [
-        // тёмная тема до отрисовки, чтобы страница не мигала светлой (src/lib/theme.ts)
-        { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m!=="light"&&m!=="dark"&&m!=="night"&&m!=="auto")m="wine";if(m==="dark"||m==="night"||m==="wine"||(m==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";if(m==="night"||m==="wine")document.documentElement.dataset.palette=m}catch(e){}', tagPosition: 'head' },
+        // тёмная тема до отрисовки, чтобы страница не мигала светлой; без сохранённого выбора светлая (src/lib/theme.ts)
+        { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m!=="light"&&m!=="dark"&&m!=="night"&&m!=="auto"&&m!=="wine")m="light";if(m==="dark"||m==="night"||m==="wine"||(m==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";if(m==="night"||m==="wine")document.documentElement.dataset.palette=m}catch(e){}', tagPosition: 'head' },
       ],
     },
   },

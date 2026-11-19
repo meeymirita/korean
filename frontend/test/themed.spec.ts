@@ -6,8 +6,10 @@ import { themed } from '@/lib/themed'
 
 describe('картинки под тему', () => {
   afterEach(() => { themeLight.value = false })
+  // по умолчанию флаг true (сервер рисует светлую версию): в тестах тёмной темы ставим false сами
 
   it('тёмные темы берут новый набор, светлая старый (`-light`)', () => {
+    themeLight.value = false
     const dark = ICONS.coin
     themeLight.value = true
     const light = ICONS.coin
@@ -20,6 +22,7 @@ describe('картинки под тему', () => {
   })
 
   it('иконки игр и общий словарь тоже переключаются', () => {
+    themeLight.value = false
     const dark = ICON.dice
     themeLight.value = true
     expect(ICON.dice).not.toBe(dark)

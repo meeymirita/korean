@@ -1,8 +1,9 @@
 /**
  * Оформление: светлое, тёмное или «как в системе». Выбор помнится в localStorage, на <html> ставится data-theme="light|dark".
  * Тёмные цвета лежат в assets/dark.css, они включаются только по этому атрибуту.
+ * По умолчанию при первом заходе светлая тема (решение владельца 2026-11-19).
  * «Ночная» — отдельная приглушённая палитра (assets/night.css): та же тёмная тема плюс data-palette="night".
- * «Розовая» (по умолчанию) — винно-розовая палитра главной страницы (assets/wine.css, data-palette="wine").
+ * «Розовая» — винно-розовая палитра главной страницы (assets/wine.css, data-palette="wine").
  */
 import { ref } from 'vue'
 
@@ -24,9 +25,9 @@ export const resolveTheme = (mode: ThemeMode, systemDark: boolean): 'light' | 'd
 function readMode(): ThemeMode {
   try {
     const v = localStorage.getItem(THEME_KEY)
-    return isMode(v) ? v : 'wine'
+    return isMode(v) ? v : 'light'
   } catch {
-    return 'wine'
+    return 'light'
   }
 }
 
@@ -34,11 +35,14 @@ const systemDark = () => typeof matchMedia === 'function' && matchMedia('(prefer
 
 /** Текущий выбор (общий для всех страниц). */
 export const themeMode = ref<ThemeMode>(readMode())
-/** Сейчас включена тёмная тема (для значка кнопки). */
+/** Сейчас включена тёмная тема (для значка кнопки). Как и `themeLight`, до оживления страницы false. */
 export const themeDark = ref(false)
-/** Сейчас включена светлая тема: картинки берутся из старого набора `*-light.webp` (`lib/themed.ts`). Пока страница не ожила, false. */
-export const themeLight = ref(false)
-/** Страница ожила: до этого `themeLight` не трогаем, иначе первая отрисовка в браузере не совпадёт с серверной (Hydration mismatch). */
+/**
+ * Сейчас включена светлая тема: картинки берутся из старого набора `*-light.webp` (`lib/themed.ts`), на `/` показывается прежняя главная.
+ * Пока страница не ожила, true: сервер не знает выбора и рисует светлую версию (она по умолчанию), и первая отрисовка в браузере с ней совпадает.
+ */
+export const themeLight = ref(true)
+/** Страница ожила: до этого `themeLight` и `themeDark` не трогаем, иначе первая отрисовка в браузере не совпадёт с серверной (Hydration mismatch). */
 let hydrated = typeof document === 'undefined'
 
 export function applyTheme() {
@@ -47,8 +51,10 @@ export function applyTheme() {
   document.documentElement.dataset.theme = t
   if (t === 'dark' && (themeMode.value === 'night' || themeMode.value === 'wine')) document.documentElement.dataset.palette = themeMode.value
   else delete document.documentElement.dataset.palette
-  themeDark.value = t === 'dark'
-  if (hydrated) themeLight.value = t === 'light'
+  if (hydrated) {
+    themeDark.value = t === 'dark'
+    themeLight.value = t === 'light'
+  }
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', t)
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'dark' ? (themeMode.value === 'night' ? '#1a1519' : themeMode.value === 'wine' ? '#0b0508' : '#14152b') : '#fbf8ff')
 }

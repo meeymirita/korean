@@ -69,7 +69,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 </script>
 
 <template>
-  <main class="home">
+  <main class="home home-light">
     <div class="frame"></div>
 
     <div class="stage">
@@ -326,4 +326,9 @@ a.note:hover .val { color: var(--accent); }
   .stage { padding: 24px; }
   .notes { grid-template-columns: 1fr; }
 }
+</style>
+
+<style>
+/* для тех, кто выбрал тёмную тему: пока страница оживает и заменяется на новую главную, светлую не видно */
+html[data-theme='dark'] .home-light { visibility: hidden; }
 </style>
