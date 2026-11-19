@@ -38,6 +38,38 @@ and blurred cherry blossoms, calm and quiet, large empty area in the center for 
 Subject:
 ```
 
+### Что писать после `Subject:` (если генератор спрашивает «какой предмет?»)
+
+Шапка сама ничего не рисует: после слова `Subject:` нужно дописать **один предмет** из колонки «Что нарисовать» (по-английски, как в таблицах ниже). Одно сообщение: одна картинка. Шапку вставляй каждый раз целиком, потом предмет в конце той же строки.
+
+Как это выглядит целиком (скопируй и вставь, меняется только последняя строка):
+
+```
+Glossy kawaii sticker icon, soft rounded 3D shapes with a subtle inner glow, cute and minimal,
+palette: deep wine #2a0a18, hot pink #ff6fae, pale pink #ffd1e3, raspberry #c2186b, small white highlights,
+soft pink outer glow, no hard black outline, centered, transparent background, no text, no watermark.
+Subject: gold coin with a star
+```
+
+Ещё примеры последней строки:
+
+- иконка из раздела 1: `Subject: round loaf of bread, cute mascot`
+- иконка из раздела 2: `Subject: magic wand with sparkles`
+- звание из раздела 4: `Subject: round medal badge, tiny spark, the lowest rank, dim soft glow`
+- котик (шапка **B**, не A): `Subject: a small white kitten with pink cheeks and a pink bow, happy, eyes as arcs`
+- фон (шапка **C**): `Subject: a quiet temple with pagoda roofs among clouds and cherry blossoms at dusk`
+
+Если генератор всё равно переспрашивает, значит после `Subject:` пусто: допиши предмет в ту же строку и отправь снова. Начинай с `icons/` по порядку из раздела 1: так сразу видно, что стиль один.
+
+## 0.1 Что уже подставлено (2026-11-19, из листов `~/Desktop/img`)
+
+Нарезано и положено на место по этим именам: все иконки интерфейса (44) и игр (28), «Быстрый доступ» (6), котики (9), звания (21), плеер (27: кнопки, иконки, украшения, три котика, пять обложек), `og-image.png`, `icon-512/192`, `apple-touch-icon`, `favicon-32`, `game/bg-wine.webp`, `upload/bg.webp`.
+Не из листов, остаётся нарисовать: Юна (раздел 5, кроме значка `shop-yuna`), `home/dash/bg-yuna.webp`. Баннеры Telegram по решению владельца остались старыми (новые ленты 1280×264 не подошли).
+
+### Две темы, два набора картинок (решение владельца, 2026-11-19)
+
+Светлая тема показывает старые картинки, тёмные (розовая, ночная, тёмная) новые. Старая версия каждой картинки лежит рядом под именем `<имя>-light.webp` (иконки, игровые иконки, «Быстрый доступ», котики, звания, плеер). Подмену делает `themed(url)` в `frontend/src/lib/themed.ts` по флагу `themeLight` из `lib/theme.ts`; словари `ICONS`, `ICON` и `PLAYER_IMG` отдают адрес уже под тему, в остальных местах `themed(...)` вызывается в шаблоне. **Новая картинка:** положи `имя.webp` (для тёмных тем) и, если для светлой нужна другая, `имя-light.webp`; нет `-light` значит файл общий для всех тем. До оживления страницы показывается новый набор (так сервер и первая отрисовка совпадают), у светлой темы замена происходит сразу после загрузки. Тест `frontend/test/themed.spec.ts`.
+
 ## 1. Иконки интерфейса `frontend/src/assets/icons/` (44 файла)
 
 Где: `<Icon name="…" />`, меню, быстрый доступ, ярлыки, магазин. Размер: **256×256**, стиль A. Имя файла: `<имя>.webp`.
@@ -174,7 +206,7 @@ Subject:
 
 Промпт: `<шапка A> round medal badge, <что нарисовать>, the higher the rank the richer and brighter the glow`.
 
-## 5. Юна (героиня) `frontend/src/assets/home/yuna*.webp`
+## 5. Юна (героиня) `frontend/src/assets/home/yuna*.webp` пока оставил
 
 Где: страницы раздела (сейчас убраны из дизайна, вернуть по списку в разделе 9). Один и тот же персонаж: девушка Юна, тёмные волосы с розовыми прядями, белая худи; стиль B.
 
@@ -200,8 +232,8 @@ Subject:
 
 | Файл | Размер | Что |
 |---|---|---|
-| `game/bg.webp` | 1254×1254 (лучше 2400×1350) | вечерний храм среди облаков и сакуры, сумерки, розовое свечение (сейчас светлый день) |
-| `upload/bg.webp` | 1672×941 | спокойный фон страницы загрузки картинок |
+| `game/bg.webp` | 1254×1254 | светлая тема: оставлен прежний дневной (новая картинка 16:9 ломает расчёт `redesign.css`, он ждёт квадрат). Для розовой темы добавлен `game/bg-wine.webp` (вечерняя пагода, 1672×941, подключён в `shell-pink.css`) |
+| `upload/bg.webp` | 1672×460 | размытая сакура (светлая тема); в розовой теме страница загрузки берёт `game/bg-wine.webp` |
 | `dict/bg.webp`, `dict/bg-sm.webp` | | **больше не нужны**: словарь переехал на общий фон, файлы удалить |
 
 Промпт: `<шапка C> a quiet temple with pagoda roofs among clouds and cherry blossoms at dusk` (для `game/bg`), `<шапка C> blurred cherry blossom branches` (для `upload/bg`).
@@ -249,15 +281,10 @@ Subject:
 | «Сегодня», вкладка «Список» | Юна над списком (`<img class="td-yuna">`) | `home/yuna-checklist.webp` |
 | «Слова» (`views/korean/WordsView.vue`) | Юна с книгой в шапке (`<img class="words-yuna">`) | `home/yuna-book.webp` |
 | «Повторение» (`views/korean/ReviewView.vue`) | Юна рядом с заголовком (`<img class="rv-yuna">`) | `home/yuna-review.webp` |
-| Игра на слова (`views/GameHomeView.vue`) | котик в меню (`<img class="gx-cat gx-cat-nav">`) | `game/cat-wow.webp` |
 | Игра на слова | Юна сидит под списком игр (`<img class="gh-sit">`) | `game/yuna-sit.webp` |
-| Игра на слова | фон страницы: сейчас винные пятна света из `shell-pink.css`; когда будет `game/bg.webp`, вернуть `import bg` и `:style="{ '--gx-bg': `url(${bg})` }"` | `game/bg.webp` |
-| Главная раздела (`components/korean/DashboardHome.vue`) | картинка-подложка блоков «hero» и «quote» (`fallback`), котик у «Фразы дня» (`<img class="phrase-cat">`) | `home/dash/bg-yuna.webp`, `home/dash/cat-wave.webp` |
-| Страница 404 (`views/NotFoundView.vue`) | котик над числом 404 (`<Cat name="think" />`, `cats/cat-think.webp`) | `cats/cat-think.webp` |
-| Страница загрузки `/upload` (`views/ImagesUploadView.vue`) | фон-картинка `.up-bg` в теме «Розовая» скрыт (`shell-pink.css`) | `upload/bg.webp` |
+| Главная раздела (`components/korean/DashboardHome.vue`) | картинка-подложка блоков «hero» и «quote» (`fallback`) | `home/dash/bg-yuna.webp` |
 | «Магазин» (`views/korean/ShopView.vue`) | большая Юна слева от предметов (левая колонка убрана, предметы на всю ширину) | `icons/shop-yuna.webp` |
 | «Сад» (`views/korean/GardenView.vue`) | баннер Юны с котом над вкладками (`<img class="gd-banner">`) | `home/yuna-garden.webp` |
 | «Грамматика» (`views/korean/GrammarView.vue`) | баннер Юны со светильником в шапке (`<img class="gr-banner">`) | `home/yuna-grammar.webp` |
-| Вся тема «Розовая» (`assets/shell-pink.css`) | фон `html` без картинки; в светлой теме по-прежнему `game/bg.webp` | `game/bg.webp` |
 
 Иконки (`assets/icons`, `assets/game/icons`, `assets/home/dash/q-*`, плеер) в вёрстке оставлены: они маленькие и несут смысл (меню, кнопки). Положи новые файлы под теми же именами, старые заменятся.
