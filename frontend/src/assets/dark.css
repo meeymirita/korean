@@ -59,14 +59,8 @@ html[data-theme='dark'] .study .pc-empty { color: var(--muted); }
 html[data-theme='dark'] .study .share-btn { color: #cbbfff; }
 
 /* общие стили отдельных страниц: главная, «О платформе», история, визитка, 404 */
-html[data-theme='dark'] :is(.home, .hist, .about, .nf, .me) { --ink: #e8e9ff; --soft: #a2a6d6; --line: rgba(165, 160, 255, .22); --accent: #f07fc6; --accent2: #a898ff; --cream: #14152b; }
-html[data-theme='dark'] .home::before {
-  background:
-    radial-gradient(circle at 92% 4%, rgba(70, 90, 190, .35) 0, transparent 30%),
-    radial-gradient(circle at 4% 96%, rgba(150, 60, 130, .28) 0, transparent 28%),
-    radial-gradient(circle at 50% 50%, rgba(90, 70, 190, .2) 0, transparent 60%);
-}
-html[data-theme='dark'] :is(.btn-main, .open, .nav .enter:hover, .btn:hover) { color: #14152b !important; }
+html[data-theme='dark'] :is(.nf) { --ink: #e8e9ff; --soft: #a2a6d6; --line: rgba(165, 160, 255, .22); --accent: #f07fc6; --accent2: #a898ff; --cream: #14152b; }
+html[data-theme='dark'] .nf .btn:hover { color: #14152b !important; }
 
 /* окна, плашки, шторка */
 html[data-theme='dark'] :is(.cf-box, .sw-box, .nm-box) { background: #1d1f42; border-color: var(--line); color: #e8e9ff; }
@@ -84,13 +78,8 @@ html[data-theme='dark'] :is(.pc-x, .pc-btn) { background: rgba(37, 39, 78, .9); 
 html[data-theme='dark'] .pc-f :is(input, textarea) { background: #14152b; color: #e8e9ff; border-color: var(--line); }
 
 /* страницы «О платформе», история, визитка, 404, шторка на главной */
-html[data-theme='dark'] :is(.about, .hist) { background: #14152b; }
-html[data-theme='dark'] .shot { background: #1d1f42; border-color: var(--line); }
 html[data-theme='dark'] .arrow { background: rgba(37, 39, 78, .92); color: #e8e9ff; }
 html[data-theme='dark'] .dots button { background: #3a3c72; }
-html[data-theme='dark'] .dot { background: #14152b; }
-html[data-theme='dark'] :is(.hist .card, .me .card) { background: rgba(37, 39, 78, .82); border-color: var(--line); }
-html[data-theme='dark'] .me .stats div { background: rgba(143, 124, 240, .18); }
 html[data-theme='dark'] .nf .btn { background: transparent; }
 
 /* пастельные плитки и кружки календаря на главной раздела: текст остаётся тёмным, а сами плитки приглушены */

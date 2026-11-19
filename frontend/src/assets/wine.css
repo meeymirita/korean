@@ -60,14 +60,8 @@ html[data-theme='dark'][data-palette='wine'] .study .pc-empty { color: var(--mut
 html[data-theme='dark'][data-palette='wine'] .study .share-btn { color: #ffc4dc; }
 
 /* общие стили отдельных страниц: главная, «О платформе», история, визитка, 404 */
-html[data-theme='dark'][data-palette='wine'] :is(.home, .hist, .about, .nf, .me) { --ink: #ffffff; --soft: #ffb3d1; --line: rgba(255, 190, 220, .22); --accent: #ff6fae; --accent2: #ff9cc6; --cream: #0b0508; }
-html[data-theme='dark'][data-palette='wine'] .home::before {
-  background:
-    radial-gradient(circle at 92% 4%, rgba(194, 24, 107, .35) 0, transparent 30%),
-    radial-gradient(circle at 4% 96%, rgba(194, 24, 107, .28) 0, transparent 28%),
-    radial-gradient(circle at 50% 50%, rgba(232, 62, 140, .2) 0, transparent 60%);
-}
-html[data-theme='dark'][data-palette='wine'] :is(.btn-main, .open, .nav .enter:hover, .btn:hover) { color: #0b0508 !important; }
+html[data-theme='dark'][data-palette='wine'] :is(.nf) { --ink: #ffffff; --soft: #ffb3d1; --line: rgba(255, 190, 220, .22); --accent: #ff6fae; --accent2: #ff9cc6; --cream: #0b0508; }
+html[data-theme='dark'][data-palette='wine'] .nf .btn:hover { color: #0b0508 !important; }
 
 /* окна, плашки, шторка */
 html[data-theme='dark'][data-palette='wine'] :is(.cf-box, .sw-box, .nm-box) { background: #2a0a18; border-color: var(--line); color: #ffffff; }
@@ -85,13 +79,8 @@ html[data-theme='dark'][data-palette='wine'] :is(.pc-x, .pc-btn) { background: r
 html[data-theme='dark'][data-palette='wine'] .pc-f :is(input, textarea) { background: #0b0508; color: #ffffff; border-color: var(--line); }
 
 /* страницы «О платформе», история, визитка, 404, шторка на главной */
-html[data-theme='dark'][data-palette='wine'] :is(.about, .hist) { background: #0b0508; }
-html[data-theme='dark'][data-palette='wine'] .shot { background: #2a0a18; border-color: var(--line); }
 html[data-theme='dark'][data-palette='wine'] .arrow { background: rgba(42, 10, 24, .92); color: #ffffff; }
 html[data-theme='dark'][data-palette='wine'] .dots button { background: #4a1a2f; }
-html[data-theme='dark'][data-palette='wine'] .dot { background: #0b0508; }
-html[data-theme='dark'][data-palette='wine'] :is(.hist .card, .me .card) { background: rgba(42, 10, 24, .82); border-color: var(--line); }
-html[data-theme='dark'][data-palette='wine'] .me .stats div { background: rgba(255, 111, 174, .18); }
 html[data-theme='dark'][data-palette='wine'] .nf .btn { background: transparent; }
 
 /* пастельные плитки и кружки календаря на главной раздела: текст остаётся тёмным, а сами плитки приглушены */
