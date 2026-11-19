@@ -13,4 +13,4 @@ WORKDIR /app
 COPY --from=build /app/.output ./.output
 USER node
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+CMD ["node", "--no-experimental-webstorage", ".output/server/index.mjs"]
