@@ -38,11 +38,12 @@
     radial-gradient(70% 55% at 0% 0%, #ff4f9a 0%, rgba(255, 79, 154, 0) 60%),
     radial-gradient(60% 50% at 100% 30%, #c2186b 0%, rgba(194, 24, 107, 0) 70%),
     radial-gradient(55% 45% at 50% 100%, #e83e8c 0%, rgba(232, 62, 140, 0) 70%),
-    radial-gradient(40% 30% at 50% 25%, #12070c 0%, rgba(18, 7, 12, 0) 100%), #2a0a18;
+    #2a0a18;
 }
-.pk-glow, .pk-shade { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+/* слои свечения размером с окно и «прилипают» к нему: на длинных страницах пятно не растягивается на всю высоту */
+.pk-glow, .pk-shade { position: sticky; top: 0; flex: none; align-self: stretch; height: 100vh; margin-bottom: -100vh; pointer-events: none; z-index: 0; }
 .pk-glow { background: radial-gradient(130% 120% at var(--mx, 50%) var(--my, 50%), rgba(255, 111, 174, .7) 0%, rgba(255, 111, 174, .25) 45%, rgba(255, 111, 174, 0) 85%); mix-blend-mode: screen; }
-.pk-shade { background: radial-gradient(120% 110% at var(--dx, 50%) var(--dy, 50%), rgba(12, 3, 8, .8) 0%, rgba(12, 3, 8, .3) 50%, rgba(12, 3, 8, 0) 85%); }
+.pk-shade { background: radial-gradient(120% 110% at var(--dx, 50%) var(--dy, 50%), rgba(12, 3, 8, .32) 0%, rgba(12, 3, 8, .1) 50%, rgba(12, 3, 8, 0) 85%); }
 .pk-card > :not(.pk-glow):not(.pk-shade) { position: relative; z-index: 1; }
 
 /* кнопки и подписи, общие для страниц */
