@@ -30,6 +30,7 @@ export const TRAINER: Record<string, { source: string; mode?: string }> = {
   match: { source: 'trainer', mode: 'match' },
   typewords: { source: 'trainer', mode: 'typing' },
   pairs: { source: 'trainer', mode: 'pairs' },
+  read: { source: 'trainer', mode: 'read' },
   syllables: { source: 'trainer', mode: 'syllables' },
   particles: { source: 'trainer', mode: 'particles' },
   rule: { source: 'trainer', mode: 'rule' },

@@ -58,7 +58,7 @@ describe('сервер: музыкальный плеер', () => {
   })
 
   test('сначала пусто; чужой формат и плохая ссылка отклоняются', async () => {
-    assert.deepEqual(await get('/api/music'), { tracks: [], jobs: [] })
+    assert.deepEqual(await get('/api/music'), { tracks: [], jobs: [], playlists: [] })
     assert.equal((await uploadFile('virus.exe', Buffer.alloc(100))).status, 400)
     for (const url of ['file:///etc/passwd', 'javascript:alert(1)', 'не ссылка', 'https://a.b/c d', '']) {
       assert.equal((await s.call('POST', '/api/music/url', OWNER, { url })).status, 400, url)
@@ -143,6 +143,30 @@ describe('сервер: музыкальный плеер', () => {
     assert.equal((await s.call('PATCH', `/api/music/${t.id}`, OWNER, { category: 'jazz' })).status, 400)
     assert.equal((await s.call('PATCH', `/api/music/${t.id}`, OWNER, {})).status, 400, 'пустое изменение')
     assert.equal((await (await s.call('PATCH', `/api/music/${t.id}`, OWNER, { title: 'Новое' })).json()).category, 'nightcore', 'вкладка не слетает при смене названия')
+  })
+
+  test('плейлисты: создать, переименовать, поменять песни, удалить; удалённая песня уходит из плейлиста; гостю закрыто', async () => {
+    const { tracks } = await get('/api/music')
+    const [a, b] = tracks
+    const guest = await (await s.call('POST', '/api/guests', OWNER, { hours: 1 })).json()
+    assert.equal((await s.call('POST', '/api/music/playlists', guest.token, { name: 'x' })).status, 403)
+    const made = await s.call('POST', '/api/music/playlists', OWNER, { name: '  Для   учёбы ', tracks: [a.id, b.id, a.id] })
+    assert.equal(made.status, 200)
+    const p = await made.json()
+    assert.equal(p.name, 'Для учёбы')
+    assert.deepEqual(p.tracks, [a.id, b.id], 'повтор убран')
+    assert.deepEqual((await get('/api/music')).playlists.map(x => x.id), [p.id])
+    const re = await (await s.call('PATCH', `/api/music/playlists/${p.id}`, OWNER, { name: 'Вечер', tracks: [b.id, a.id] })).json()
+    assert.equal(re.name, 'Вечер')
+    assert.deepEqual(re.tracks, [b.id, a.id], 'порядок сохраняется')
+    for (const body of [{ name: '   ' }, { tracks: 'x' }, { tracks: ['не id'] }, {}]) assert.equal((await s.call('PATCH', `/api/music/playlists/${p.id}`, OWNER, body)).status, 400, JSON.stringify(body))
+    assert.equal((await s.call('POST', '/api/music/playlists', OWNER, { name: '' })).status, 400)
+    assert.equal((await s.call('PATCH', '/api/music/playlists/aaaaaaaaaaaaaaaa', OWNER, { name: 'Нет' })).status, 404)
+    assert.equal((await s.call('DELETE', `/api/music/${b.id}`, OWNER)).status, 200)
+    assert.deepEqual((await get('/api/music')).playlists[0].tracks, [a.id], 'удалённая песня ушла из плейлиста')
+    assert.equal((await s.call('DELETE', `/api/music/playlists/${p.id}`, OWNER)).status, 200)
+    assert.equal((await s.call('DELETE', `/api/music/playlists/${p.id}`, OWNER)).status, 404)
+    assert.deepEqual((await get('/api/music')).playlists, [])
   })
 
   test('переименовать и удалить; после удаления файл не открывается', async () => {

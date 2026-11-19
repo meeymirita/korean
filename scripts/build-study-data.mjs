@@ -39,7 +39,9 @@ export async function data() {
     about: plain(g.d),
     blocks: g.b.map(block),
   }))
+  const { TENSES } = await load('/src/data/korean/tenses.ts')
   const all = new Map(Object.entries(TRANSLATIONS))
+  for (const t of Object.values(TENSES)) for (const [ko, ru] of t.s) all.set(ko, ru) // предложения «трёх времён» слов
   for (const st of STORIES) for (const x of st.sents) all.set(x.ko, x.ru)
   for (const e of EXCHANGES) all.set(e[0], e[1]).set(e[2], e[3])
   for (const x of RULE_SENTENCES) all.set(x.ko, x.ru)

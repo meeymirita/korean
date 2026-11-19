@@ -53,9 +53,9 @@ export const useNewWordsStore = defineStore('newWords', () => {
     items.value = items.value.filter(i => i.id !== id)
   }
 
-  /** Временный токен (10 минут) только на чтение списка: владелец отдаёт его Claude. Показывается один раз. */
-  async function createToken() {
-    return (await call('/token', { method: 'POST' })) as { token: string; expires: number }
+  /** Временный токен (10 минут): по умолчанию только чтение входящих, с `write` ещё добавление слов и материалов. Владелец отдаёт его Claude, токен показывается один раз. */
+  async function createToken(write = false) {
+    return (await call('/token', { method: 'POST', body: JSON.stringify({ write }) })) as { token: string; expires: number; write: boolean }
   }
   async function revokeToken() {
     await call('/token', { method: 'DELETE' })

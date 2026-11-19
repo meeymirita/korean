@@ -1,5 +1,6 @@
 import { ADJECTIVES, VERBS } from './forms'
 import { short } from './tasks'
+import { TENSES } from './tenses'
 import { D } from './words'
 
 export type SegType = 'word' | 'verb' | 'particle' | 'ending' | 'num' | 'unknown'
@@ -68,6 +69,14 @@ for (const [list, g] of [[VERBS, 'ayo'], [ADJECTIVES, 'adj']] as const) {
     if (e.form) add(e.form, { k: e.form, r: '', gloss: `${base} (настоящее время, от ${e.k})`, type: 'verb', explain: e.s || undefined, g, lemma: e.k })
     if (e.past) add(e.past, { k: e.past, r: '', gloss: `${base} (прошедшее время, от ${e.k})`, type: 'verb', explain: e.s || undefined, lemma: e.k })
   }
+}
+// Формы из «Трёх времён» (`tenses.ts`): настоящее, прошедшее и основа перед 거예요 у слов, которых нет в тренажёрах (прилагательные, ㄷ / ㅂ-глаголы, -하다)
+for (const [lemma, t] of Object.entries(TENSES)) {
+  const base = short(D.find(w => w.k === lemma)?.t ?? lemma)
+  add(t.f[0], { k: t.f[0], r: '', gloss: `${base} (настоящее время, от ${lemma})`, type: 'verb', lemma })
+  add(t.f[1], { k: t.f[1], r: '', gloss: `${base} (прошедшее время, от ${lemma})`, type: 'verb', lemma })
+  const stem = t.f[2].replace(/ 거예요$/, '')
+  add(stem, { k: stem, r: '', gloss: `${base} (форма перед 거예요, от ${lemma})`, type: 'verb', lemma, explain: `${lemma.slice(0, -1)} + ${stem.endsWith('을') ? '을' : 'ㄹ'} → ${stem}: основа с ㄹ / 을 перед 거예요`, g: 'future_my' })
 }
 /**
  * Имена героев учебника и примеров: слово, чтение, русская форма. Они не в словаре, чтобы не попадать в вопросы «что значит слово?»,
@@ -429,8 +438,12 @@ export function analyze(sentence: string): Segment[] {
       }
     }
     const segs = analyzeToken(tok)
+    // частица сама по себе (нажали на «에» в тексте собеседника): показываем как частицу, а не «нет в словаре»
+    const lone = segs ? undefined : PARTICLES.find(p => p.form === tok)
     if (segs) out.push(...segs)
-    else out.push({ text: tok, type: 'unknown', gloss: 'нет в словаре' })
+    else if (lone) {
+      out.push({ ...particleSeg(lone, ''), explain: lone.pair ? `${lone.pair[0]} ставится после слова с 받침, ${lone.pair[1]} после слова без 받침` : lone.gloss })
+    } else out.push({ text: tok, type: 'unknown', gloss: 'нет в словаре' })
   }
   return refineE(out)
 }

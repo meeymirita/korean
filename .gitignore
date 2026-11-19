@@ -13,7 +13,8 @@ design/
 
 # Claude Code skills (npx skills add), локально для инструмента, не для проекта
 .agents/
-.claude/
+.claude/*
+!.claude/skills/
 skills-lock.json
 
 .env.*

@@ -4,5 +4,5 @@ import { ProgressService } from './progress.service.js'
 import { ShopController } from './shop.controller.js'
 import { ShopService } from './shop.service.js'
 
-@Module({ controllers: [ProgressController, ShopController], providers: [ProgressService, ShopService] })
+@Module({ controllers: [ProgressController, ShopController], providers: [ProgressService, ShopService], exports: [ProgressService] })
 export class ProgressModule {}

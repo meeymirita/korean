@@ -13,6 +13,7 @@
 #   COMPOSE_CMD         команда Compose (по умолчанию: docker compose)
 #   BUILD_CMD / UP_CMD  свои команды сборки и запуска вместо Compose
 #   BACKUP_CMD          команда копии перед обновлением (по умолчанию: bash scripts/backup-docker.sh)
+#   PRUNE_CMD           чистка кэша сборки после удачного обновления (по умолчанию: docker builder prune -f --filter until=168h, кэш старше недели)
 #   HEALTH_URL          проверка API (по умолчанию: http://127.0.0.1:3001/api/health)
 #   SITE_HEALTH_URL     проверка сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
 #   HEALTH_TRIES        сколько секунд ждать ответа (по умолчанию 60: после миграций backend стартует не сразу)
@@ -29,6 +30,7 @@ COMPOSE=${COMPOSE_CMD:-docker compose}
 BUILD_CMD=${BUILD_CMD:-$COMPOSE build}
 UP_CMD=${UP_CMD:-$COMPOSE up -d --remove-orphans}
 BACKUP_CMD=${BACKUP_CMD:-bash scripts/backup-docker.sh}
+PRUNE_CMD=${PRUNE_CMD:-docker builder prune -f --filter until=168h}
 HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:3001/api/health}
 SITE_HEALTH_URL=${SITE_HEALTH_URL:-http://127.0.0.1:3000/robots.txt}
 HEALTH_TRIES=${HEALTH_TRIES:-60}
@@ -132,6 +134,13 @@ if [ "$RESTART" = 1 ]; then
     rollback
     fail "страница $BROKEN не открылась после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри: docker compose logs --tail 50 frontend backend"
   fi
+fi
+
+# кэш сборки копится по гигабайтам за деплой (на сервере было 20 ГБ); свежий кэш (до недели) оставляем, чтобы сборки были быстрыми
+# данные, образы и тома не трогаются; сбой чистки деплой не ломает
+if [ "$RESTART" = 1 ]; then
+  say "Чистка старого кэша сборки"
+  $PRUNE_CMD >/dev/null 2>&1 || echo "(чистка кэша не удалась, это не страшно)"
 fi
 
 say "Готово: $(git rev-parse --short HEAD) ($BRANCH). Сайт, сервер и проверочные страницы отвечают."

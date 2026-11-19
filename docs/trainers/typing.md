@@ -21,7 +21,7 @@
 
 **Прогресс и награды.** `progress.record({ word: statKey(w), ok, source: 'trainer', mode: 'typing', detail: { q, a, y } })`: подробности ответа видны в истории кабинета. Монеток за серию и предметов магазина нет (не `TaskSession`).
 
-**Тесты.** Отдельного теста нет; логика проверки ответа в `trainer.ts` (стоит добавить `tests/trainer.test.mjs`, если будешь её менять).
+**Тесты.** Отдельного теста нет; логика проверки ответа в `trainer.ts` (если будешь её менять, добавь тест на `isCorrect` и `acceptable`).
 
 **Как расширять.** Новое направление: ключ в `Direction`, подписи в `DIR_LABEL`, `labelOf`, `promptOf`, `answerText`, `isCorrect` и условие в `dirsFor` (все пять мест сразу).
 

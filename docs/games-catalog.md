@@ -6,12 +6,12 @@
 
 Источники правды, на которые этот файл ссылается (если расходятся — верь им, а не этому файлу):
 - `src/data/games.ts` — список всех игр/тренажёров каталога `/game/home` (группы, иконки, описания, `TOOL_IDS`)
-- `src/game/engine.ts` — движок «Хлебушек»: вся логика режимов; `src/game/modes.ts` — данные движка с типами: категории, слова по категориям, `MODES`, `MODE_HELP`
+- `src/game/engine.ts` — движок «Хлебушек»: отрисовка, ответы, статистика, блиц и выживание; `src/game/generators.ts` — генераторы заданий всех режимов (`createGenerators`, `GEN`, `genQuestion`); `src/game/util.ts` — помощники; `src/game/modes.ts` — данные движка с типами: категории, слова по категориям, `MODES`, `MODE_HELP`
 - `src/data/guide.ts` — те же описания, но для пользователя (шторка «Что здесь есть»)
 
 ## Встроенная игра «Хлебушек» — `/game/home?game=<id>`
 
-Один движок на все 32 режима (в 24 из них есть уровни-тексты «Рассказ» и «Длинный», у четырёх ещё «Эксперт 8–12», см. `docs/trainers/bread-game.md`): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
+Один движок на все 32 режима (в 25 из них есть уровни-тексты «Рассказ» и «Длинный», у четырёх ещё «Эксперт 8–12», см. `docs/trainers/bread-game.md`): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
 и переключение режимов — `GameHomeView.vue`. Слова движка свои (`src/game/words.ts`), это не тот же массив,
 что общий словарь `data/korean/words.ts`.
 
@@ -75,6 +75,7 @@
 | pairs | `korean/PairsView.vue` | «Похожие, но разные»: [`pairs.md`](trainers/pairs.md) |
 | translate | `korean/TranslateView.vue` | «Переведи предложение»: [`translate.md`](trainers/translate.md) |
 | explain | `korean/ExplainTranslateView.vue` | «Переведи и объясни» (выбор перевода, разбор и правила после ответа): [`explain.md`](trainers/explain.md) |
+| read | `korean/ReadView.vue` | «Чтение и диалоги» (рассказ из `STORIES` с вопросом по смыслу и сценки из `EXCHANGES`; `data/korean/read.ts`): [`read.md`](trainers/read.md) |
 | speech | `korean/PartOfSpeechView.vue` | «Определи часть речи» (глагол, прилагательное, вопросительное слово; `data/korean/part-of-speech.ts`): [`speech.md`](trainers/speech.md) |
 | rule | `korean/RuleView.vue` | «Потренировать правило» (`&g=<id карточки>`): [`rule.md`](trainers/rule.md) |
 | syllables | `korean/SyllablesView.vue` | «Собери по слогам»: [`syllables.md`](trainers/syllables.md) |

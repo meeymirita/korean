@@ -183,7 +183,7 @@ describe('музыкальный плеер', () => {
     useMusicStore().open = true
     await flushPromises()
     const tabs = [...document.querySelectorAll('.mp-tabs button')]
-    expect(tabs.map(t => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['Тихая музыка 2', 'Nightcore 1'])
+    expect(tabs.map(t => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['Тихая музыка 2', 'Nightcore 1', 'Плейлисты 0'])
     expect(document.querySelectorAll('.mp-list li')).toHaveLength(2)
 
     ;(tabs[1] as HTMLButtonElement).click()
@@ -197,6 +197,36 @@ describe('музыкальный плеер', () => {
     await store.advance(true)
     expect(store.currentId).toBe('bbbbbbbbbbbbbbbb')
     expect(store.tab).toBe('nightcore')
+    w.unmount()
+  })
+
+  it('поиск рядом с вкладками ищет по названию во всех вкладках сразу и очищается крестиком', async () => {
+    const w = await mountSuspended(MusicPlayer)
+    await flushPromises()
+    const store = useMusicStore()
+    store.open = true
+    await flushPromises()
+    const input = () => document.querySelector('.mp-search input') as HTMLInputElement
+    const titles = () => [...document.querySelectorAll('.mp-list li b')].map(b => b.textContent)
+    expect(titles()).toEqual(['Первая песня', 'Вторая песня'])
+    input().value = 'ночн'
+    input().dispatchEvent(new Event('input'))
+    await flushPromises()
+    // открыта «Тихая музыка», а найденная песня лежит в Nightcore: она всё равно находится, с подписью вкладки
+    expect(titles()).toEqual(['Ночная песня'])
+    expect(document.querySelector('.mp-list li small')!.textContent).toContain('Nightcore')
+    input().value = 'ВТОРАЯ'
+    input().dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(titles()).toEqual(['Вторая песня'])
+    input().value = 'нет такой'
+    input().dispatchEvent(new Event('input'))
+    await flushPromises()
+    expect(document.querySelector('.mp-empty')!.textContent).toContain('Ничего не нашлось')
+    ;(document.querySelector('.mp-search-x') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(titles()).toEqual(['Первая песня', 'Вторая песня'])
+    expect(store.tab, 'поиск вкладку не переключает').toBe('quiet')
     w.unmount()
   })
 
@@ -286,5 +316,78 @@ describe('музыкальный плеер', () => {
     await flushPromises()
     expect(document.querySelector('.mp-err')?.textContent).toContain('Уже идёт скачивание')
     w.unmount()
+  })
+})
+
+/** Подставной XMLHttpRequest: статусы ответов по очереди (429 с просьбой подождать секунду, потом 202). */
+class FakeXHR {
+  static plan: number[] = []
+  static sent = 0
+  upload: { onprogress?: unknown } = {}
+  status = 0
+  onload?: () => void
+  onerror?: () => void
+  ontimeout?: () => void
+  open() {}
+  setRequestHeader() {}
+  getResponseHeader(name: string) {
+    return name === 'Retry-After' ? '1' : null
+  }
+  send() {
+    this.status = FakeXHR.plan.shift() ?? 202
+    FakeXHR.sent++
+    queueMicrotask(() => this.onload?.())
+  }
+}
+
+describe('загрузка файлов: лимит запросов (429)', () => {
+  const file = () => new File(['x'], 'песня.mp3', { type: 'audio/mpeg' })
+  beforeEach(() => {
+    FakeXHR.plan = []
+    FakeXHR.sent = 0
+    useMusicStore().uploads = []
+    vi.stubGlobal('XMLHttpRequest', FakeXHR)
+    vi.useFakeTimers({ toFake: ['setTimeout'] })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('на 429 ждёт, сколько просит сервер, и повторяет сам', async () => {
+    FakeXHR.plan = [429, 202]
+    const store = useMusicStore()
+    const done = store.uploadFiles([file()])
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.uploads[0]!.wait, 'видно, сколько секунд ждать').toBe(1)
+    await vi.advanceTimersByTimeAsync(1500)
+    await done
+    expect(FakeXHR.sent).toBe(2)
+    expect(store.uploads, 'после успеха строка уходит').toHaveLength(0)
+  })
+
+  it('после четырёх 429 остаётся ошибка, «Повторить» отправляет файл ещё раз', async () => {
+    FakeXHR.plan = [429, 429, 429, 429, 202]
+    const store = useMusicStore()
+    const done = store.uploadFiles([file()])
+    await vi.advanceTimersByTimeAsync(5000)
+    await done
+    expect(FakeXHR.sent).toBe(4)
+    expect(store.uploads).toHaveLength(1)
+    expect(store.uploads[0]!.error).toContain('Повторить')
+    await store.retryUpload(store.uploads[0]!.key)
+    expect(FakeXHR.sent).toBe(5)
+    expect(store.uploads).toHaveLength(0)
+  })
+
+  it('«Повторить все» берёт каждую упавшую загрузку по очереди', async () => {
+    FakeXHR.plan = [500, 500, 202, 202]
+    const store = useMusicStore()
+    const done = store.uploadFiles([file(), file()])
+    await vi.advanceTimersByTimeAsync(3000)
+    await done
+    expect(store.uploads.filter(u => u.error)).toHaveLength(2)
+    const again = store.retryFailed()
+    await vi.advanceTimersByTimeAsync(3000)
+    await again
+    expect(FakeXHR.sent).toBe(4)
+    expect(store.uploads).toHaveLength(0)
   })
 })

@@ -1,5 +1,6 @@
 import { Controller, Get, Header } from '@nestjs/common'
 import { Public } from '../auth/auth.js'
+import { rulesDocument } from './rules.js'
 import { STUDY_GRAMMAR, STUDY_SENTENCES } from './study.data.js'
 
 /**
@@ -14,6 +15,14 @@ export class StudyController {
   @Header('Cache-Control', 'public, max-age=900')
   grammar() {
     return STUDY_GRAMMAR
+  }
+
+  /** Правила проверки новых предложений и переводов: читает десктопное приложение Claude перед отправкой материала. */
+  @Public()
+  @Get('rules')
+  @Header('Cache-Control', 'public, max-age=60')
+  rules() {
+    return rulesDocument()
   }
 
   @Public()

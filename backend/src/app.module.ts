@@ -12,6 +12,8 @@ import { HealthController } from './health.controller.js'
 import { ImagesModule } from './images/images.module.js'
 import { NotesModule } from './notes/notes.module.js'
 import { TrashModule } from './trash/trash.module.js'
+import { LearningModule } from './learning/learning.module.js'
+import { MaterialsModule } from './materials/materials.module.js'
 import { NewWordsModule } from './newwords/newwords.module.js'
 import { PlansModule } from './plans/plans.module.js'
 import { SiteImgModule } from './siteimg/siteimg.module.js'
@@ -33,11 +35,13 @@ import { NotifyModule } from './notify/notify.module.js'
 import { PicModule } from './pic/pic.module.js'
 import { VideoModule } from './video/video.module.js'
 import { MusicModule } from './music/music.module.js'
+import { VoiceModule } from './voice/voice.module.js'
+import { TalksModule } from './talks/talks.module.js'
 import { YaDiskModule } from './yadisk/yadisk.module.js'
 import { WordsExportModule } from './wordsexport/wordsexport.module.js'
 
 @Module({
-  imports: [PicModule, VideoModule, MusicModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, RuleModule, WordsExportModule, AdminModule, SearchModule, DictModule],
+  imports: [PicModule, VideoModule, MusicModule, VoiceModule, TalksModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, MaterialsModule, LearningModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, RuleModule, WordsExportModule, AdminModule, SearchModule, DictModule],
   controllers: [HealthController, MetricsController, CspReportController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })

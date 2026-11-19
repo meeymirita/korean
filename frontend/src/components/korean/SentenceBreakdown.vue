@@ -3,14 +3,18 @@ import { computed } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import '@/assets/breakdown.css'
 import { analyze, SEG_LABEL } from '@/data/korean/parse'
+import AskAi from '@/components/korean/AskAi.vue'
+import { breakdownContext } from '@/lib/askAi'
 import { TRANSLATIONS } from '@/data/korean/translations'
 
 /** word: слово задания, если предложение взято как его пример (тогда оно подписано и выделено в карточках) */
-const props = defineProps<{ sentence: string; word?: string }>()
+/** extra: что ещё видно на экране (задание, ответ ученика): уходит модели вместе с разбором в «Спросить ИИ» */
+/** translation: перевод, если предложения нет в `TRANSLATIONS` (например, предложение из «трёх времён» слова) */
+const props = defineProps<{ sentence: string; word?: string; extra?: string[]; translation?: string }>()
 const { open } = useGrammarModal()
 
 const segments = computed(() => analyze(props.sentence))
-const translation = computed(() => TRANSLATIONS[props.sentence])
+const translation = computed(() => props.translation ?? TRANSLATIONS[props.sentence])
 const isHit = (s: { type: string; text: string }) => {
   const w = props.word
   if (!w || s.type === 'particle' || s.type === 'unknown') return false
@@ -37,6 +41,7 @@ const hasUnknown = computed(() => segments.value.some(s => s.type === 'unknown')
         <button v-if="s.g" class="bd-rule" @click="open(s.g)">Правило →</button>
       </div>
     </div>
+    <AskAi :context="() => breakdownContext(sentence, extra)" />
     <p v-if="hasUnknown" class="bd-note">«?» — этого слова нет в словаре сайта. Когда его добавят в словарь, оно появится в разборе.</p>
   </div>
 </template>

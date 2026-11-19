@@ -1,6 +1,9 @@
-/** Помощник-чат: пересылает вопросы в OpenRouter и возвращает ответ. Историю переписки хранит браузер, сервер её не сохраняет. */
-import { BadGatewayException, BadRequestException, HttpException, Injectable, ServiceUnavailableException } from '@nestjs/common'
-import { CHAT_DAILY_LIMIT, CHAT_MAX_HISTORY, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
+/** Помощник-чат: пересылает вопросы в OpenRouter и возвращает ответ. Чаты и их сообщения хранятся в базе (таблицы chat_convs и chat_msgs). */
+import { BadGatewayException, BadRequestException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
+import { randomBytes } from 'node:crypto'
+import { CHAT_DAILY_LIMIT, CHAT_EXPLAIN_LIMIT, CHAT_MAX_CONTEXT, CHAT_MAX_HISTORY, CHAT_MAX_SAVED, CHAT_MAX_TEXT, CHAT_BASE, CHAT_KEY, CHAT_MODEL } from '../config.js'
+import { Db } from '../db/db.service.js'
+import { explainNote } from './explain.js'
 import { SYSTEM_PROMPT } from './prompt.js'
 
 export interface ChatMsg {
@@ -29,48 +32,127 @@ export function cleanMessages(v: unknown): ChatMsg[] {
   return tail
 }
 
+/** Куда сохранять: ничего (старый вызов без чата), 'new' (завести чат) или номер чата. */
+export function cleanConv(v: unknown): string | undefined {
+  if (v === undefined || v === null) return undefined
+  if (v === 'new' || (typeof v === 'string' && /^[0-9a-f]{16}$/.test(v))) return v
+  throw bad('invalid conv')
+}
+
+/** Разбор с экрана, к которому относится вопрос («Спросить ИИ»): пусто или текст не длиннее лимита. */
+export function cleanContext(v: unknown): string {
+  if (v === undefined || v === null || v === '') return ''
+  if (typeof v !== 'string') throw bad('invalid context')
+  return v.trim().slice(0, CHAT_MAX_CONTEXT)
+}
+
+type Kind = 'chat' | 'explain'
+
 @Injectable()
 export class ChatService {
+  constructor(private readonly db: Db) {}
+
   private day = ''
-  private used = 0
+  private usedBy: Record<Kind, number> = { chat: 0, explain: 0 }
 
   /** Счётчик вопросов за сутки: хранится в памяти, после перезапуска службы начинается заново. */
   private roll() {
     const today = new Date().toISOString().slice(0, 10)
     if (today !== this.day) {
       this.day = today
-      this.used = 0
+      this.usedBy = { chat: 0, explain: 0 }
     }
   }
 
-  private take(): number {
+  private limitOf = (k: Kind) => (k === 'chat' ? CHAT_DAILY_LIMIT : CHAT_EXPLAIN_LIMIT)
+
+  private take(kind: Kind): number {
     this.roll()
-    if (this.used >= CHAT_DAILY_LIMIT) throw new HttpException({ error: 'daily limit', limit: CHAT_DAILY_LIMIT }, 429)
-    this.used++
-    return CHAT_DAILY_LIMIT - this.used
+    if (this.usedBy[kind] >= this.limitOf(kind)) throw new HttpException({ error: 'daily limit', limit: this.limitOf(kind) }, 429)
+    this.usedBy[kind]++
+    return this.limitOf(kind) - this.usedBy[kind]
   }
 
   status() {
     this.roll()
-    return { configured: !!CHAT_KEY, model: CHAT_MODEL, limit: CHAT_DAILY_LIMIT, left: CHAT_DAILY_LIMIT - this.used }
+    return { configured: !!CHAT_KEY, model: CHAT_MODEL, limit: CHAT_DAILY_LIMIT, left: CHAT_DAILY_LIMIT - this.usedBy.chat, explainLimit: CHAT_EXPLAIN_LIMIT, explainLeft: CHAT_EXPLAIN_LIMIT - this.usedBy.explain }
   }
 
   async ask(body: Record<string, unknown>) {
     const messages = cleanMessages(body?.messages)
+    const conv = cleanConv(body?.conv)
+    const context = cleanContext(body?.context)
+    const kind: Kind = context ? 'explain' : 'chat'
     if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
-    const left = this.take()
+    // чат проверяем до обращения к модели: вопрос не тратится, если чата нет или он переполнен
+    if (conv && conv !== 'new') await this.checkRoom(conv)
+    const left = this.take(kind)
     // бесплатный маршрутизатор иногда отдаёт пустой ответ: пробуем ещё раз (вопрос в счётчике один раз)
     let reply = ''
-    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages)
+    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages, context, kind)
     if (!reply) {
-      this.used--
+      this.usedBy[kind]--
       throw new BadGatewayException({ error: 'empty answer' })
     }
-    return { reply, left }
+    // у «Спросить ИИ» в историю идёт и предложение с экрана (первая строка разбора): иначе чат назывался бы «Объясни проще» и не находился поиском
+    const asked = messages[messages.length - 1]!.text
+    const saved = conv ? await this.save(conv, context ? `${context.split('\n')[0]!.slice(0, 200)}\n${asked}` : asked, reply) : undefined
+    return { reply, left, ...(saved ? { conv: saved } : {}) }
+  }
+
+  private async checkRoom(id: string) {
+    const db = await this.db.orm()
+    if (!(await db.chatConv.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundException({ error: 'not found' })
+    if ((await db.chatMsg.count({ where: { conv: id } })) >= CHAT_MAX_SAVED) throw bad('chat too long')
+  }
+
+  /** Записывает вопрос и ответ в чат (для 'new' заводит его); возвращает номер чата. */
+  private async save(conv: string, question: string, reply: string): Promise<string> {
+    const now = Date.now()
+    let id = conv
+    await this.db.tx(async () => {
+      const db = await this.db.orm()
+      if (conv === 'new') {
+        id = randomBytes(8).toString('hex')
+        await db.chatConv.create({ data: { id, started: BigInt(now), updated: BigInt(now), title: question.replace(/\s+/g, ' ').slice(0, 80) } })
+      } else {
+        await db.chatConv.update({ where: { id }, data: { updated: BigInt(now) } })
+      }
+      await db.chatMsg.createMany({ data: [{ conv: id, t: BigInt(now), role: 'user', text: question }, { conv: id, t: BigInt(now + 1), role: 'assistant', text: reply }] })
+    })
+    return id
+  }
+
+  /** Список чатов, новые сверху: заголовок (начало первого вопроса), время и число сообщений. */
+  async list() {
+    const db = await this.db.orm()
+    const convs = await db.chatConv.findMany({ orderBy: { updated: 'desc' }, take: 200 })
+    const counts = await db.chatMsg.groupBy({ by: ['conv'], where: { conv: { in: convs.map(c => c.id) } }, _count: { _all: true } })
+    const n = new Map(counts.map(c => [c.conv, c._count._all]))
+    return { conversations: convs.map(c => ({ id: c.id, title: c.title, started: Number(c.started), updated: Number(c.updated), messages: n.get(c.id) ?? 0 })) }
+  }
+
+  async get(id: string) {
+    const db = await this.db.orm()
+    const c = await db.chatConv.findUnique({ where: { id } })
+    if (!c) throw new NotFoundException({ error: 'not found' })
+    const rows = await db.chatMsg.findMany({ where: { conv: id }, orderBy: { id: 'asc' } })
+    return { id: c.id, title: c.title, started: Number(c.started), updated: Number(c.updated), messages: rows.map(m => ({ role: m.role, text: m.text, t: Number(m.t) })) }
+  }
+
+  async remove(id: string) {
+    const db = await this.db.orm()
+    if (!(await db.chatConv.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundException({ error: 'not found' })
+    await this.db.tx(async () => {
+      const tx = await this.db.orm()
+      await tx.chatMsg.deleteMany({ where: { conv: id } })
+      await tx.chatConv.delete({ where: { id } })
+    })
+    return { ok: true }
   }
 
   /** Один запрос к модели; пустая строка, если модель ничего не написала. */
-  private async once(messages: ChatMsg[]): Promise<string> {
+  private async once(messages: ChatMsg[], context: string, kind: Kind): Promise<string> {
     let res: Response
     try {
       res = await fetch(`${CHAT_BASE}/chat/completions`, {
@@ -78,18 +160,18 @@ export class ChatService {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CHAT_KEY}`, 'HTTP-Referer': 'https://korean.meeymirita.ru', 'X-Title': 'Urimal' },
         body: JSON.stringify({
           model: CHAT_MODEL,
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages.map(m => ({ role: m.role, content: m.text }))],
+          messages: [{ role: 'system', content: context ? `${SYSTEM_PROMPT}\n\n${explainNote(context)}` : SYSTEM_PROMPT }, ...messages.map(m => ({ role: m.role, content: m.text }))],
           temperature: 0.4,
           max_tokens: 1200,
         }),
         signal: AbortSignal.timeout(40_000),
       })
     } catch {
-      this.used--
+      this.usedBy[kind]--
       throw new BadGatewayException({ error: 'chat service unreachable' })
     }
     if (!res.ok) {
-      this.used--
+      this.usedBy[kind]--
       if (res.status === 429) throw new HttpException({ error: 'rate limit' }, 429)
       throw new BadGatewayException({ error: `chat service ${res.status}` })
     }

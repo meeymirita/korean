@@ -216,7 +216,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   res.setHeader('Content-Security-Policy', docs
     ? "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
     : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()')
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-store')
   next()

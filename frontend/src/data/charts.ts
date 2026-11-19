@@ -60,3 +60,19 @@ export function weakRules(log: ProgressData['log'], days = 30, now = Date.now())
     .filter(row => row.ok + row.bad >= 3 && row.bad > 0 && row.accuracy < WEAK_BELOW)
     .sort((a, b) => a.accuracy - b.accuracy || b.bad - a.bad)
 }
+
+/** Слабое место дня: самое проваленное правило за 7 дней, а если за неделю слабых нет, то за 30; слабых нет вовсе: `null`. */
+export function weakSpot(log: ProgressData['log'], now = Date.now()): { rule: WeakRule; days: 7 | 30 } | null {
+  for (const days of [7, 30] as const) {
+    const rule = weakRules(log, days, now)[0]
+    if (rule) return { rule, days }
+  }
+  return null
+}
+
+/** Куда ведёт «Потренировать»: правило из карточки (`RuleView`), тексты семейства частиц или игра режима. */
+export function weakLink(r: Pick<WeakRule, 'id' | 'family' | 'game'>): { path: string; query: Record<string, string> } {
+  if (r.id.startsWith('rule:')) return { path: '/game/home', query: { game: 'rule', g: r.id.slice(5) } }
+  if (r.family) return { path: '/game/home', query: { game: 'ptext', fam: r.family } }
+  return { path: '/game/home', query: { game: r.game ?? 'rule' } }
+}

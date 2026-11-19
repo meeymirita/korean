@@ -15,6 +15,6 @@ describe('README', () => {
     assert.ok(top.includes('https://korean.meeymirita.ru'))
     assert.ok(top.includes('우리말'))
     assert.ok(readme.includes(`**${D.length} слов**`), 'число слов устарело')
-    assert.ok(readme.includes(`**${G.length} правил грамматики**`), 'число правил устарело')
+    assert.ok(readme.includes(`**${G.filter(g => !g.ahead).length} правил грамматики**`), 'число правил устарело')
   })
 })

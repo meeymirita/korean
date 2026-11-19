@@ -269,8 +269,8 @@ onBeforeUnmount(() => {
       <div v-if="owner && progress.data.combo >= 2" class="rs-combo">
         Серия {{ progress.data.combo }}<template v-if="nextCombo(progress.data.combo)">: ещё {{ nextCombo(progress.data.combo)!.left }} до +{{ nextCombo(progress.data.combo)!.coins }} монеток</template>
       </div>
-      <div class="rs-sub">{{ current.title }}</div>
-      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back' }" title="Перетащи сюда вариант ответа"><template v-if="blank"><template v-if="picked !== null && pending === null">{{ blank[0] }}<b class="rs-fill">{{ current.answer }}</b>{{ blank[1] }}</template><template v-else>{{ current.prompt }}</template></template><template v-else>{{ current.prompt }}</template></div>
+      <div class="rs-sub" :class="{ 'rs-pre': current.title.includes('\n') }">{{ current.title }}</div>
+      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back', small: current.small }" title="Перетащи сюда вариант ответа"><template v-if="blank"><template v-if="picked !== null && pending === null">{{ blank[0] }}<b class="rs-fill">{{ current.answer }}</b>{{ blank[1] }}</template><template v-else>{{ current.prompt }}</template></template><template v-else>{{ current.prompt }}</template></div>
       <div v-if="current.hint" class="rs-sub">{{ current.hint }}</div>
       <div v-if="btns.length && picked === null" class="rs-items" aria-label="Предметы Юны">
         <button v-for="b in btns" :key="b.id" type="button" class="rs-item" :disabled="!canUse(b.id)" :title="itemName(b.id)" @click="useItem(b.id)">
@@ -310,7 +310,7 @@ onBeforeUnmount(() => {
           </li>
         </ul>
         <p v-if="current.pairOf || current.prompt.includes('＿')" class="rs-sub">Как устроено верное предложение:</p>
-        <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" />
+        <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" :extra="[`Задание: ${current.prompt}`, `Верный ответ: ${current.answer}`, `Ответ ученика: ${picked}`]" />
       </div>
       <p v-if="picked !== null && pending === null && current.note && picked === current.answer" class="rs-sub rs-note">{{ current.note }}</p>
       <div v-if="picked !== null && pending === null && ruleCards.length" class="rs-rules">

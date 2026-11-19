@@ -20,14 +20,16 @@ export const ENV_VARS: Record<string, EnvKind> = {
   // лимиты места
   IMAGES_QUOTA_MB: 'num', DOCS_QUOTA_MB: 'num',
   // помощник-чат
-  OPENROUTER_API_KEY: 'secret', CHAT_MODEL: 'string', CHAT_BASE: 'url', CHAT_DAILY_LIMIT: 'int',
+  OPENROUTER_API_KEY: 'secret', CHAT_MODEL: 'string', CHAT_BASE: 'url', CHAT_DAILY_LIMIT: 'int', CHAT_EXPLAIN_LIMIT: 'int',
+  // голосовой собеседник
+  OPENAI_API_KEY: 'secret', VOICE_MODEL: 'string', VOICE_VOICE: 'string', VOICE_BASE: 'url', VOICE_DAILY_MINUTES: 'int', VOICE_MAX_SESSION_MIN: 'int', VOICE_COST_PER_MIN: 'num', VOICE_TZ: 'string',
   // почта
   SMTP_HOST: 'string', SMTP_PORT: 'port', SMTP_USER: 'string', SMTP_PASS: 'secret', SMTP_FROM: 'string', MAIL_DUMP_FILE: 'path',
   // Telegram
   TELEGRAM_BOT_TOKEN: 'secret', TELEGRAM_CHAT_ID: 'string', TELEGRAM_GROUP_ID: 'string', TELEGRAM_BANNER_BASE: 'url',
   TELEGRAM_CUSTOM_EMOJI: 'string', TELEGRAM_DUMP_FILE: 'path',
   // напоминания, письма, отчёты
-  REMINDER_MAIL_TO: 'string', CODE_LOGIN: 'flag', SITEMAP_ALL: 'flag', REMINDER_TICK_MS: 'int', LESSON_TICK_MS: 'int',
+  REMINDER_MAIL_TO: 'string', CODE_LOGIN: 'flag', SECURITY_ALERTS: 'flag', SITEMAP_ALL: 'flag', REMINDER_TICK_MS: 'int', LESSON_TICK_MS: 'int',
   REPORT_WEEKLY: 'flag', REPORT_WEEKDAY: 'weekday', REPORT_TIME: 'time', REPORT_WATCH_MS: 'int',
   STUDY_WEEKLY: 'flag', STUDY_WEEKDAY: 'weekday', STUDY_TIME: 'time',
   // копии

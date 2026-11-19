@@ -91,6 +91,7 @@ onBeforeUnmount(() => {
           <slot name="nav">
             <RouterLink to="/about">О платформе</RouterLink>
             <RouterLink to="/history">История изменений</RouterLink>
+            <RouterLink to="/growth">Рост платформы</RouterLink>
             <RouterLink to="/dict">Большой словарь</RouterLink>
           </slot>
         </nav>

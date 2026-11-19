@@ -31,7 +31,8 @@ const PAIRS = Object.entries(STUDY_TRANSLATIONS).filter(([ko, ru]) => ko && ru)
 /** Неверные варианты: предложения похожей длины (чтобы ответ не угадывался по размеру), без повторов и без самого ответа. */
 function distractors(idx: number, side: 0 | 1, count = 3): string[] {
   const answer = PAIRS[idx]![side]
-  const sample = shuffle(PAIRS.map((_, i) => i).filter(i => i !== idx)).slice(0, 40)
+  // другое корейское предложение с тем же русским переводом верно: оно не может быть «неверным» вариантом
+  const sample = shuffle(PAIRS.map((_, i) => i).filter(i => i !== idx && PAIRS[i]![1 - side] !== PAIRS[idx]![1 - side])).slice(0, 40)
   const seen = new Set([answer])
   return sample
     .map(i => PAIRS[i]![side])

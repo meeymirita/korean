@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import AskAi from '@/components/korean/AskAi.vue'
 import DictShell from '@/components/dict/DictShell.vue'
 import DictSense from '@/components/dict/DictSense.vue'
 import DictStar from '@/components/dict/DictStar.vue'
@@ -66,10 +67,19 @@ const tab = computed(() => {
 })
 const setTab = (id: string) => void router.replace({ query: id === TABS.value[0]?.id ? {} : { tab: id } })
 
+/** «Спросить ИИ» (кнопку видит только владелец): слово, часть речи, чтение и первые значения из большого словаря. */
+const ASK_QUICK = ['Объясни проще', 'Дай примеры', 'Чем отличается от похожих слов?', 'Как запомнить?']
+function askContext(): string {
+  const m = main.value
+  if (!m) return ''
+  const senses = m.senses.slice(0, 4).map((s, i) => `${i + 1}) ${s.ru.map(r => r.t).filter(Boolean).join('; ')}`)
+  return [`Слово из большого словаря: ${m.word}${m.pron ? ` [${m.pron}]` : ''}`, `Часть речи: ${m.pos}`, `Перевод: ${m.ru}`, ...senses].join('\n').slice(0, 1400)
+}
+
 /** Клик по пустому месту (по бокам, где нет блоков слова, шапки и подписи) закрывает слово: возвращает к поиску. */
 function closeOnOutside(e: MouseEvent) {
   const t = e.target as HTMLElement | null
-  if (!t || t.closest('.top, .crumbs, .head, .word-nav, .meanings, .tabs, .panel, .none, .src, a, button, input')) return
+  if (!t || t.closest('.top, .crumbs, .head, .word-nav, .meanings, .tabs, .panel, .none, .src, .ask-host, a, button, input')) return
   if (window.getSelection()?.toString()) return
   void router.push('/dict')
 }
@@ -139,6 +149,7 @@ const ruLinks = computed(() => [...new Set((main.value?.tr ?? []).filter(t => /^
       </section>
 
       <p class="lead" lang="ru">{{ lead }}</p>
+      <AskAi :context="askContext" :quick="ASK_QUICK" placeholder="Спроси про это слово…" />
       <p v-if="ruLinks.length" class="rulinks">По-русски: <RouterLink v-for="t in ruLinks" :key="t" :to="`/ru/${encodeURIComponent(t)}`">{{ t }} по-корейски</RouterLink></p>
 
       <nav v-if="data?.navigation" class="word-nav" aria-label="Алфавитная навигация">

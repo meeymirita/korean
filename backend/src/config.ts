@@ -97,4 +97,26 @@ export const CHAT_BASE = (process.env.CHAT_BASE || 'https://openrouter.ai/api/v1
 /** Сколько вопросов в сутки (по UTC) пускать наружу: у бесплатного тарифа 50 запросов в день и 20 в минуту, лишнее не тратим. */
 export const CHAT_DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT || 40)
 export const CHAT_MAX_TEXT = 2000
+/** Вопросы «Спросить ИИ» из окон разбора считаются отдельно от чата, чтобы не съедать его лимит. */
+export const CHAT_EXPLAIN_LIMIT = Number(process.env.CHAT_EXPLAIN_LIMIT || 40)
+/** Сколько знаков разбора с экрана можно приложить к вопросу. */
+export const CHAT_MAX_CONTEXT = 1500
 export const CHAT_MAX_HISTORY = 12
+/** Сколько сообщений хранится в одном чате (дальше предлагается начать новый). */
+export const CHAT_MAX_SAVED = 300
+
+/** Голосовой собеседник (OpenAI Realtime): ключ только в .env сервера, в браузер уходит временный ключ. Без ключа окно пишет «не подключён». */
+export const VOICE_KEY = process.env.OPENAI_API_KEY || ''
+/** Модель: модель gpt-realtime-2.1-mini (выбор владельца, 2026-11-16); цену проверять на странице OpenAI (docs/voice.md). */
+export const VOICE_MODEL = process.env.VOICE_MODEL || 'gpt-realtime-2.1-mini'
+export const VOICE_VOICE = process.env.VOICE_VOICE || 'marin'
+export const VOICE_BASE = (process.env.VOICE_BASE || 'https://api.openai.com/v1').replace(/\/+$/, '')
+/** Минут разговора в сутки (решение владельца 2026-11-16: 10) и предел одного разговора. */
+export const VOICE_DAILY_MINUTES = Number(process.env.VOICE_DAILY_MINUTES || 20)
+export const VOICE_MAX_SESSION_MIN = Number(process.env.VOICE_MAX_SESSION_MIN || 10)
+/** Примерная цена минуты, $: только для подсказки на экране, настоящий расход смотреть в кабинете OpenAI. */
+export const VOICE_COST_PER_MIN = Number(process.env.VOICE_COST_PER_MIN || 0.05)
+/** Часовой пояс, по которому считается «сутки» лимита. */
+export const VOICE_TZ = process.env.VOICE_TZ || 'Asia/Novosibirsk'
+export const VOICE_MAX_TEXT = 4000
+export const VOICE_MAX_MESSAGES = 600

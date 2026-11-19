@@ -1,5 +1,5 @@
 // @ts-check
-// Читает «Записанные слова» и заметки (GET /api/new-words) временным токеном: владелец создаёт его кнопкой «Создать токен» в шторке «Новые слова» (10 минут, только чтение).
+// Читает «Записанные слова», заметки (GET /api/new-words) и присланные материалы (GET /api/materials) временным токеном: владелец создаёт его кнопкой «Создать токен» в шторке «Новые слова» (10 минут, только чтение).
 // INBOX_TOKEN=<токен из шторки> BASE=https://korean.meeymirita.ru node scripts/inbox.mjs   (BASE по умолчанию локальный сервер)
 // Каждое слово сверяется с большим словарём сайта (GET /api/dict/word/<слово>: 한국어기초사전, открытый адрес того же сервера): рядом перевод владельца и словарный.
 // Наружу запросов нет. Без сверки: NO_DICT=1.
@@ -46,4 +46,29 @@ for (const w of words) {
     for (const line of await dictLines(w.ko ?? '')) console.log(line)
   }
   if (w.note) console.log(`Заметка: ${w.note}`)
+}
+
+// Присланные материалы (тетради, учебник, задания Леры): тот же токен, GET /api/materials
+const mres = await fetch(`${BASE}/api/materials`, { headers: { Authorization: `Bearer ${token}` } })
+if (mres.ok) {
+  /** @type {{ batches: { id: string; source: string; kind: string; status: string; created: number; items: Record<string, any>[] }[] }} */
+  const { batches } = await mres.json()
+  const pair = (/** @type {{ ko: string; ru?: string }} */ p) => `${p.ko}${p.ru ? ` — ${p.ru}` : ''}`
+  console.log(`\n=== Материалы: ${batches.length} пачек ===`)
+  for (const b of batches) {
+    console.log(`\n[${b.id}] ${b.source} · ${b.kind} · ${b.status === 'done' ? 'разобрано' : 'новое'} · ${new Date(b.created).toLocaleString('ru-RU')} · элементов ${b.items.length}`)
+    for (const it of b.items) {
+      if (it.type === 'word') console.log(`  слово: ${it.ko} | ${it.reading} | ${it.ru} | ${it.example}${it.note ? ` | ${it.note}` : ''}`)
+      else if (it.type === 'sentence') console.log(`  предложение: ${pair(it)}${it.topic ? ` (${it.topic})` : ''}`)
+      else if (it.type === 'dialog') console.log(`  диалог${it.title ? ` «${it.title}»` : ''}: ${it.lines.map(pair).join(' / ')}`)
+      else if (it.type === 'text') {
+        console.log(`  текст${it.title ? ` «${it.title}»` : ''}: ${it.sentences.map(pair).join(' ')}`)
+        for (const q of it.questions) console.log(`    вопрос: ${q.q} → ${q.options.map((o, i) => `${i === q.answer ? '*' : ''}${o}`).join(' | ')}`)
+      } else if (it.type === 'grammar') console.log(`  грамматика «${it.title}»: ${it.note}${it.examples.length ? ` · ${it.examples.map(pair).join(' / ')}` : ''}`)
+      else if (it.type === 'exercise') console.log(`  задание: ${it.prompt}${it.body ? ` ${it.body}` : ''}${it.answer ? ` → ${it.answer}` : ''}`)
+      else if (it.type === 'task') console.log(`  задание${it.topic ? ` (${it.topic})` : ''}: ${it.title}\n${it.body}`)
+      else if (it.type === 'mistake') console.log(`  ошибка${it.no ? ` ${it.no}` : ''}${it.topic ? ` [${it.topic}]` : ''}: ${it.mine} → ${it.right}${it.why ? ` · ${it.why}` : ''}`)
+      else console.log(`  заметка: ${it.text}`)
+    }
+  }
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
 const { sections } = await load('/src/data/korean/sections.ts')
-const { chatErrorText, koreanParts, parseReply } = await load('/src/lib/chat.ts')
+const { chatErrorText, koreanParts, parseReply, richReply } = await load('/src/lib/chat.ts')
 after(close)
 
 describe('помощник-чат: тексты ошибок', () => {
@@ -41,5 +41,43 @@ describe('помощник-чат: тексты ошибок', () => {
     const s = sections.find(x => x.id === 'chat')
     assert.equal(s.private, true)
     assert.equal(s.owner, true)
+  })
+})
+
+describe('помощник-чат: красивый показ ответа', () => {
+  const sample = [
+    '저는 빵을 먹어요. — Я ем хлеб.',
+    '',
+    'Правило:',
+    '1. нет 받침 → ㄹ 거예요 (갈 거예요)',
+    '- есть 받침 → 을 거예요',
+    'Попробуй: скажи по-корейски «Я завтра пойду в магазин».',
+    'Глагол 먹다 → 먹어요, обычная строка.',
+  ].join('\n')
+  const r = richReply(sample)
+
+  test('корейская фраза с переводом становится карточкой', () => {
+    assert.equal(r[0].kind, 'phrase')
+    assert.equal(r[0].ko, '저는 빵을 먹어요.')
+    assert.equal(r[0].ru, 'Я ем хлеб.')
+  })
+  test('подзаголовок, нумерация, пункт и задание узнаются', () => {
+    assert.equal(r[1].kind, 'head')
+    assert.equal(r[1].parts[0].text, 'Правило')
+    assert.equal(r[2].num, '1')
+    assert.ok(!r[2].parts.map(p => p.text).join('').startsWith('1.'))
+    assert.equal(r[3].bullet, true)
+    assert.equal(r[4].kind, 'tip')
+  })
+  test('хангыль внутри обычного текста выделяется отдельным куском, ничего не теряется', () => {
+    const line = r[5]
+    assert.equal(line.kind, 'text')
+    assert.ok(line.parts.some(p => p.ko && p.text === '먹다'))
+    assert.equal(line.parts.map(p => p.text).join(''), 'Глагол 먹다 → 먹어요, обычная строка.')
+  })
+  test('разметка и HTML не просачиваются', () => {
+    const j = JSON.stringify(richReply('**жирное** и <b>тег</b> и *звёздочка*'))
+    assert.ok(!j.includes('*'))
+    assert.equal(richReply('').length, 0)
   })
 })

@@ -6,7 +6,7 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { useGrammarPhotos } from '@/composables/useGrammarPhotos'
 import { useGrammarModal } from '@/composables/useGrammarModal'
-import { G, SECS, tabOf } from '@/data/korean/grammar'
+import { G, RULES_COUNT, SECS, tabOf } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
 import { COURSE } from '@/data/korean/course'
 import { useProgressStore } from '@/stores/progress'
@@ -14,9 +14,8 @@ import { usePersisted } from '@/composables/usePersisted'
 
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const progress = useProgressStore()
-const passed = (id: string) => progress.isMarked('d', id)
-/** «пройдено» по данным, если владелец не снял отметку (метка u) */
-const isOk = (g: { id: string; st: string }) => g.st === 'ok' && !progress.isMarked('u', g.id)
+/** «пройдено» одно для всего сайта: `st: 'ok'` в данных (`grammar.ts`) */
+const isOk = (g: { id: string; st: string }) => g.st === 'ok'
 /** Вкладка 0: свои карточки (без номера урока: с Лерой и сам); 1 и 2: карточки уроков видеокурса */
 const PARTS = [
   { id: 0, label: 'Мои карточки', sub: 'С Лерой и свои' },
@@ -41,12 +40,15 @@ const inTab = (g: (typeof G)[number], n: number) => tabOf(g) === n || (n === 0 &
 const partCount = (n: number) => G.filter(g => inTab(g, n)).length
 const q = ref('')
 const onlyDone = usePersisted('grammar_done', false, v => typeof v === 'boolean')
+/** Только то, что впереди: карточки-заглушки (`ahead`) тем, которые ещё не проходили. */
+const onlyAhead = usePersisted('grammar_ahead', false, v => typeof v === 'boolean')
 const list = computed(() => {
   const w = q.value.trim().toLowerCase()
   return G.filter(g =>
     (progress.unlocked || tabOf(g) !== 0) &&
     (!sec.value || g.s === sec.value) &&
-    (!onlyDone.value || isOk(g) || passed(g.id)) &&
+    (!onlyDone.value || isOk(g)) &&
+    (!onlyAhead.value || !!g.ahead) &&
     (!w || [g.ko, g.ru, g.d, g.s, g.l ?? ''].some(x => x.toLowerCase().includes(w))))
 })
 /** Карточки выбранной вкладки. В разметку попадают все вкладки (скрытые через v-show): поисковики видят все карточки, а не одну вкладку. */
@@ -69,7 +71,7 @@ onMounted(() => {
 
 <template>
   <div class="wrap grammar-page">
-    <SectionHead id="grammar" :big="G.length" />
+    <SectionHead id="grammar" :big="RULES_COUNT" />
     <div class="chips">
       <button class="chip" :class="{ on: !sec }" @click="sec = ''"><Icon name="grammar" /> Все</button>
       <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s"><Icon :name="SEC_ICON[s] ?? 'star'" /> {{ s }}</button>
@@ -87,6 +89,7 @@ onMounted(() => {
         <button v-if="q" title="Очистить" aria-label="Очистить" @click="q = ''">✕</button>
       </div>
       <label class="gdone"><input v-model="onlyDone" type="checkbox" /> показывать только пройденное</label>
+      <label v-if="progress.unlocked" class="gdone"><input v-model="onlyAhead" type="checkbox" /> что впереди</label>
     </div>
     <p v-if="cur === 0" class="gcourse">
       Здесь правила, которые разбирали с Лерой по учебнику 서울대 한국어+, и свои карточки. Сюда же попадают пройденные карточки видеокурса (часть 1): здесь у них только фото, без видео; само видео осталось в «Части 1».
@@ -106,8 +109,7 @@ onMounted(() => {
           <span class="pill">{{ g.s }}</span>
           <!-- во «Мои карточки» подпись урока не пишется: вкладка владельца не про видеокурс -->
           <span v-if="g.l && cur !== 0" class="pill l">{{ g.l }}</span>
-          <span class="pill" :class="isOk(g) ? 's' : 'n'">{{ isOk(g) ? 'пройдено' : 'ещё рано' }}</span>
-          <span v-if="passed(g.id)" class="pill s">✓ {{ (cur !== 0 && g.l) || 'отмечено' }}</span>
+          <span class="pill" :class="isOk(g) ? 's' : 'n'">{{ isOk(g) ? 'пройдено' : g.ahead ? 'впереди' : 'ещё рано' }}</span>
           <span v-if="photoOf(g)" class="pill ph" role="button" tabindex="0" title="Показать фото Юны к этому правилу" @click.stop="photo = photoOf(g)!" @keydown.enter.stop.prevent="photo = photoOf(g)!">Фото</span>
         </div>
       </button>

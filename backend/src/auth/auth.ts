@@ -20,5 +20,9 @@ export const AllowPending = () => SetMetadata(ALLOW_PENDING, true)
 export const INBOX_READ = 'inbox_read'
 export const InboxRead = () => SetMetadata(INBOX_READ, true)
 
+/** Маршрут POST, куда токен входящих с записью (`write`) может добавлять (слова, материалы). Править и удалять по нему нельзя. */
+export const INBOX_WRITE = 'inbox_write'
+export const InboxWrite = () => SetMetadata(INBOX_WRITE, true)
+
 /** Кто делает запрос: параметр метода контроллера `@CurrentWho() who: Who`. */
 export const CurrentWho = createParamDecorator((_: unknown, ctx: ExecutionContext): Who => ctx.switchToHttp().getRequest().who)

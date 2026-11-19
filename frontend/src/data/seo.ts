@@ -32,6 +32,10 @@ const PAGES: Record<string, Seo> = {
     title: `История изменений платформы ${BRAND}: что и когда добавили`,
     description: 'Как росла платформа для изучения корейского: от первой версии на Vue до поиска, защиты, заметок, игры и автоматических проверок. Что и когда добавляли.',
   },
+  '/growth': {
+    title: `Рост платформы ${BRAND}: история репозитория одной картиной`,
+    description: 'Вся история разработки платформы для изучения корейского одной вертикальной картиной: время снизу вверх, каждый день работы и главные события, от первого коммита до сегодня.',
+  },
   '/me': {
     title: `Моя страница прогресса · ${BRAND}`,
     description: 'Визитка ученика корейского: сколько дней в пути, дни занятий, выученные слова и уровень. Владелец включает страницу сам и может закрыть в любой момент.',
@@ -98,6 +102,7 @@ const PAGES: Record<string, Seo> = {
   '/korean/today': { title: `Сегодня · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/cabinet': { title: `Мой кабинет · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/chat': { title: `Помощник · ${BRAND}`, description: DEFAULT.description, noindex: true },
+  '/korean/talks': { title: `Разговоры · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/forms': { title: `Слово в разных формах · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/marks': { title: `Важное · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/mistakes': { title: `Мои ошибки · ${BRAND}`, description: DEFAULT.description, noindex: true },

@@ -6,7 +6,7 @@ import '@/assets/home/fonts.css'
 import PinkShell from '@/components/site/PinkShell.vue'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
 import { D } from '@/data/korean/words'
-import { G } from '@/data/korean/grammar'
+import { RULES_COUNT } from '@/data/korean/grammar'
 import { installApp, isInstalled } from '@/lib/pwa'
 import { useToastStore } from '@/stores/toast'
 import { HOME_LINKS, HOME_MORE, useHome, useHomePicks } from '@/composables/useHome'
@@ -91,6 +91,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 
       <div class="more">
         <RouterLink to="/about" class="link">О платформе</RouterLink>
+        <RouterLink to="/growth" class="link">Рост платформы</RouterLink>
         <RouterLink v-for="l in homeLinks" :key="l.to" :to="l.to" class="link">{{ l.title }}</RouterLink>
         <RouterLink v-for="m in HOME_MORE" :key="m.to" :to="m.to" class="link">
           {{ m.title }}<span v-if="!progress.unlocked" class="lock"><Icon name="lock" /></span>
@@ -101,7 +102,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
     <div class="bottom">
       <dl class="facts">
         <dt>Слов</dt><dd><span v-count="D.length">{{ D.length }}</span></dd>
-        <dt>Правил</dt><dd><span v-count="G.length">{{ G.length }}</span></dd>
+        <dt>Правил</dt><dd><span v-count="RULES_COUNT">{{ RULES_COUNT }}</span></dd>
         <dt>В пути</dt><dd>{{ days }} {{ daysWord }}</dd>
         <dt>Вопросы</dt><dd><a href="https://t.me/meeymirita" target="_blank" rel="noopener">@meeymirita</a></dd>
       </dl>

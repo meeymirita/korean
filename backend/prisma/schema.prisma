@@ -91,6 +91,17 @@ model NewWord {
   @@map("new_words")
 }
 
+/// Присланные материалы (тетради, учебник, задания Леры): пачка элементов `items` (JSON) во «Входящих» страницы «Слова»
+model Material {
+  id      String @id
+  source  String
+  kind    String @default("other")
+  items   String @default("[]")
+  status  String @default("new")
+  created BigInt
+  @@map("materials")
+}
+
 model Image {
   id          String @id
   name        String
@@ -233,4 +244,64 @@ model Track {
   created  BigInt
 
   @@map("tracks")
+}
+
+/// Голосовой собеседник: один разговор. seconds считает сервер (от старта до конца, не больше предела), пока разговор идёт: ended пусто
+model VoiceSession {
+  id      String  @id
+  /// день по VOICE_TZ (ГГГГ-ММ-ДД): по нему считается суточный лимит минут
+  day     String
+  started BigInt
+  ended   BigInt?
+  seconds Int     @default(0)
+  model   String  @default("")
+
+  @@index([day], map: "voice_sessions_day")
+  @@map("voice_sessions")
+}
+
+/// Голосовой собеседник: реплика разговора (role: user или assistant), текст расшифровки; звук не хранится
+model VoiceMessage {
+  id      BigInt @id @default(autoincrement())
+  session String
+  t       BigInt
+  role    String
+  text    String
+
+  @@index([session], map: "voice_messages_session")
+  @@map("voice_messages")
+}
+
+/// Помощник-чат: один чат (переписка с помощником). title это начало первого вопроса, updated время последнего ответа
+model ChatConv {
+  id      String @id
+  started BigInt
+  updated BigInt
+  title   String @default("")
+
+  @@index([updated], map: "chat_convs_updated")
+  @@map("chat_convs")
+}
+
+/// Помощник-чат: сообщение чата (role: user или assistant)
+model ChatMsg {
+  id   BigInt @id @default(autoincrement())
+  conv String
+  t    BigInt
+  role String
+  text String
+
+  @@index([conv], map: "chat_msgs_conv")
+  @@map("chat_msgs")
+}
+
+/// Плейлист музыкального плеера: tracks это JSON-массив id песен по порядку (песни живут в Track)
+model MusicPlaylist {
+  id      String @id
+  name    String
+  tracks  String @default("[]")
+  created BigInt
+  updated BigInt
+
+  @@map("music_playlists")
 }
