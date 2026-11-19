@@ -290,17 +290,13 @@ function tasksOf(s: SavedSet) {
   return s.data as SetData
 }
 const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.answer ? 'ok' : 'bad')
-import yunaToday from '@/assets/home/yuna-today.webp'
-import yunaChecklist from '@/assets/home/yuna-checklist.webp'
 </script>
 
 <template>
   <div class="wrap today-page" :class="{ 'td-list': tab === 'list' }">
     <SectionHead id="today" />
-    <img v-if="tab === 'today'" class="td-banner" :src="yunaToday" alt="" aria-hidden="true" draggable="false" />
     <!-- Юна на «Чек-листе» зафиксирована справа (в body: у стеклянной панели есть размытие, внутри неё fixed «прилипает») -->
     <Teleport to="body">
-      <img v-if="tab === 'list'" class="td-yuna" :src="yunaChecklist" alt="" aria-hidden="true" draggable="false" />
     </Teleport>
     <div class="fcb td-bar">
       <button v-if="finished" @click="tab = 'today'; newAll()"><Icon name="dice" /> Новый набор на сегодня</button>

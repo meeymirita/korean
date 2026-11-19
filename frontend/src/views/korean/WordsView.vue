@@ -17,7 +17,6 @@ import NewWordDrawer from '@/components/korean/NewWordDrawer.vue'
 import TaskSession from '@/components/korean/TaskSession.vue'
 import { DRILL_SIZE, topicProgress, topicTasks } from '@/data/korean/topics'
 import { useNewWordsStore, type NewWord } from '@/stores/newWords'
-import yunaBook from '@/assets/home/yuna-book.webp'
 
 const progress = useProgressStore()
 /** Слова со звёздочкой: фильтр «★ Важное» показывает только их прямо в списке. */
@@ -124,7 +123,6 @@ const shareWord = (d: Word) =>
   <div class="wrap words-page">
     <!-- Юна зафиксирована справа: страница прокручивается, она остаётся на месте (в body, чтобы не зависеть от родителей) -->
     <Teleport to="body">
-      <img class="words-yuna" :src="yunaBook" alt="" aria-hidden="true" draggable="false" />
     </Teleport>
     <SectionHead id="words" :sub="progress.unlocked ? '' : `словарь корейского · ${D.length} слов`" :big="D.length">
       <template #sub-extra>

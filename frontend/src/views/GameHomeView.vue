@@ -28,9 +28,6 @@ import { ICON } from '@/game/icons'
 import { newRound, useProgressStore } from '@/stores/progress'
 import { useShopStore } from '@/stores/shop'
 import { themeDark, toggleTheme } from '@/lib/theme'
-import catWow from '@/assets/game/cat-wow.webp'
-import yunaSit from '@/assets/game/yuna-sit.webp'
-import bg from '@/assets/game/bg.webp'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import '@/game/game.css'
@@ -43,7 +40,6 @@ const { open: openGrammar } = useGrammarModal()
 /** Класс на body: глобальная кнопка поиска встаёт в одну линию с кнопками шапки (см. стили ниже). */
 onMounted(() => document.body.classList.add('on-game-home'))
 onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
-const bgStyle = { '--gx-bg': `url(${bg})` }
 /** Что движок «Хлебушек» показывает оболочке игры (счёт, списки, блиц, окна); пишет его `initGame`. */
 const gameView = createGameView()
 
@@ -173,7 +169,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 </script>
 
 <template>
-  <div class="study game sky gx gh" :class="{ folded }" :style="bgStyle">
+  <div class="study game sky gx gh" :class="{ folded }">
     <GrammarModal />
     <aside class="gx-nav">
       <RouterLink to="/korean/home" class="gx-brand" title="На платформу">
@@ -183,7 +179,6 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           <div class="gx-sub">Учим корейский вместе ♡</div>
         </div>
       </RouterLink>
-      <img class="gx-cat gx-cat-nav" :src="catWow" alt="" aria-hidden="true" />
       <label class="gx-find"><span aria-hidden="true">⌕</span><input v-model="q" type="search" autocomplete="off" placeholder="Поиск игр…" aria-label="Поиск игры по названию" /></label>
       <div class="gx-navbox">
         <!-- движок «Хлебушек» ждёт эти два элемента: прячем, меню слева у страницы одно (группы) -->
@@ -221,7 +216,6 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
       <header v-else class="game-top gx-top">
         <h1 class="gx-sr">Игры на слова</h1>
         <GameTools :menu="false" :folded="folded" :dark="themeDark" @menu="navOpen = !navOpen" @search="openSearch()" @theme="toggleTheme()" />
-        <img class="gh-sit" :src="yunaSit" alt="" aria-hidden="true" draggable="false" />
       </header>
 
       <AuthGate v-if="!progress.unlocked" />

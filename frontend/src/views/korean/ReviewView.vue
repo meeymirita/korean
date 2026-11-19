@@ -7,7 +7,6 @@ import { CATN, D } from '@/data/korean/words'
 import { STUDY } from '@/data/korean/study'
 import { PAIR_SETS, SETS, pool } from '@/data/korean/trainer'
 import { NEW_NOTE, newToday, pickSession, type SessionCard } from '@/data/review'
-import yunaImg from '@/assets/home/yuna-review.webp'
 import { burst, cascade, pop } from '@/lib/fx'
 import { newRound, useProgressStore } from '@/stores/progress'
 
@@ -206,7 +205,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         </template>
         <div v-else class="fc rv-end"><p class="rv-end-s">В этой группе пока нет карточек.</p></div>
       </div>
-      <img class="rv-yuna" :src="yunaImg" alt="" aria-hidden="true" draggable="false" />
     </div>
     <div class="fcb rv-act">
       <button v-if="finished || !card" type="button" @click="start">Ещё раунд →</button>

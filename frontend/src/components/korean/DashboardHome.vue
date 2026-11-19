@@ -14,8 +14,6 @@ import { useQueryParam } from '@/composables/useQueryParam'
 import { dueWords } from '@/data/review'
 import { plural } from '@/lib/plural'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
-import catWave from '@/assets/home/dash/cat-wave.webp'
-import bgYuna from '@/assets/home/dash/bg-yuna.webp'
 import qFire from '@/assets/home/dash/q-fire.webp'
 import qNotes from '@/assets/home/dash/q-notes.webp'
 import qBread from '@/assets/home/dash/q-bread.webp'
@@ -79,7 +77,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
   <div class="dash">
     <div class="dcol">
       <section class="hero">
-        <BlockBgLayer id="hero" :fallback="bgYuna" :place="PLACE.hero" veil />
+        <BlockBgLayer id="hero" :place="PLACE.hero" veil />
         <button v-if="siteImages.editMode" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editBlock('hero')">⚙︎</button>
         <div class="hero-in">
           <span class="eyebrow">СЕЙЧАС ИЗУЧАЕМ · УРОВЕНЬ 1A</span>
@@ -118,7 +116,6 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
 
     <div class="dcol">
       <section class="panel phrase">
-        <img class="phrase-cat" :src="catWave" alt="" aria-hidden="true" draggable="false" />
         <div class="label">✳︎ &nbsp; Фразы дня</div>
         <div v-for="p in HOME_PHRASES" :key="p.ko" class="ph">
           <div class="kr ko">{{ p.ko }}</div>
@@ -163,7 +160,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
       </section>
 
       <section class="panel quote">
-        <BlockBgLayer id="quote" :fallback="bgYuna" :place="PLACE.quote" veil />
+        <BlockBgLayer id="quote" :place="PLACE.quote" veil />
         <button v-if="siteImages.editMode" class="gear" title="Фон блока" aria-label="Настроить фон блока" @click="editBlock('quote')">⚙︎</button>
         <p>Корея — это не только язык, но и новые возможности, люди и мечты. ♡</p>
         <RouterLink to="/korean/today">Всё получится →</RouterLink>

@@ -245,3 +245,14 @@ Subject:
 | Страница / компонент | Место | Файл |
 |---|---|---|
 | главная `/` | фон за заголовком (по макету его нет, оставлено как есть) | `home/yuna.webp` (не показывается) |
+| «Сегодня» (`views/korean/TodayView.vue`), вкладка «Сегодня» | широкая лента вверху (`<img class="td-banner">`) | `home/yuna-today.webp` |
+| «Сегодня», вкладка «Список» | Юна над списком (`<img class="td-yuna">`) | `home/yuna-checklist.webp` |
+| «Слова» (`views/korean/WordsView.vue`) | Юна с книгой в шапке (`<img class="words-yuna">`) | `home/yuna-book.webp` |
+| «Повторение» (`views/korean/ReviewView.vue`) | Юна рядом с заголовком (`<img class="rv-yuna">`) | `home/yuna-review.webp` |
+| Игра на слова (`views/GameHomeView.vue`) | котик в меню (`<img class="gx-cat gx-cat-nav">`) | `game/cat-wow.webp` |
+| Игра на слова | Юна сидит под списком игр (`<img class="gh-sit">`) | `game/yuna-sit.webp` |
+| Игра на слова | фон страницы: сейчас винные пятна света из `shell-pink.css`; когда будет `game/bg.webp`, вернуть `import bg` и `:style="{ '--gx-bg': `url(${bg})` }"` | `game/bg.webp` |
+| Главная раздела (`components/korean/DashboardHome.vue`) | картинка-подложка блоков «hero» и «quote» (`fallback`), котик у «Фразы дня» (`<img class="phrase-cat">`) | `home/dash/bg-yuna.webp`, `home/dash/cat-wave.webp` |
+| Вся тема «Розовая» (`assets/shell-pink.css`) | фон `html` без картинки; в светлой теме по-прежнему `game/bg.webp` | `game/bg.webp` |
+
+Иконки (`assets/icons`, `assets/game/icons`, `assets/home/dash/q-*`, плеер) в вёрстке оставлены: они маленькие и несут смысл (меню, кнопки). Положи новые файлы под теми же именами, старые заменятся.

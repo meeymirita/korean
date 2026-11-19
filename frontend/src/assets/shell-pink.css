@@ -1,0 +1,67 @@
+/* Винно-розовый дизайн раздела /korean и страницы игры (по urimal-landing). Написан вручную поверх wine.css:
+   wine.css даёт палитру из dark.css, здесь форма: фон со свечением, стеклянные панели, белые кнопки-«таблетки», моно-подписи.
+   Включается только в теме «Розовая» (data-palette="wine"). Картинки в дизайне не используются (список мест в docs/redesign-assets.md). */
+
+html[data-theme='dark'][data-palette='wine'] {
+  --pk-line: rgba(255, 190, 220, .18);
+  --pk-glass: rgba(20, 6, 12, .72);
+  --pk-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+/* фон: винные пятна света, без картинки */
+html[data-theme='dark'][data-palette='wine'] .study.sky:not(.study-modal),
+html[data-theme='dark'][data-palette='wine']:has(.study-shell.sky),
+html[data-theme='dark'][data-palette='wine'] .game.gx {
+  background-color: #0b0508 !important;
+  background-image:
+    radial-gradient(70% 55% at 0% 0%, rgba(255, 79, 154, .55) 0%, rgba(255, 79, 154, 0) 60%),
+    radial-gradient(60% 50% at 100% 30%, rgba(194, 24, 107, .5) 0%, rgba(194, 24, 107, 0) 70%),
+    radial-gradient(55% 45% at 50% 100%, rgba(232, 62, 140, .4) 0%, rgba(232, 62, 140, 0) 70%),
+    linear-gradient(#2a0a18, #1a0610) !important;
+  background-position: 0 0 !important; background-size: 100% 100% !important; background-repeat: no-repeat !important; background-attachment: fixed !important;
+}
+html[data-theme='dark'][data-palette='wine'] .study.sky { --pk-pink: #ff6fae; --glass: rgba(20, 6, 12, .72); --panel: rgba(32, 8, 20, .85); --accent-soft: rgba(255, 111, 174, .18); --accent-ink: #2a0a18; }
+
+/* боковое меню */
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side { background: var(--pk-glass); border: 1px solid var(--pk-line); border-radius: 28px; box-shadow: none; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .brand-mark { color: #ff6fae; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side h1 { font-family: 'Noto Sans KR', 'Archivo', sans-serif; letter-spacing: 0; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side .course { font-family: var(--pk-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a { color: #ffd1e3; border-radius: 999px; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a:hover,
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a.router-link-active,
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a.active { color: #fff; background: rgba(255, 111, 174, .2); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links .ct.rdy { background: #ff6fae; color: #2a0a18; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-level { background: rgba(255, 255, 255, .06); border-color: var(--pk-line); border-radius: 20px; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-level .lv-bar i { background: linear-gradient(90deg, #ff9cc6, #ff4f9a); }
+html[data-theme='dark'][data-palette='wine'] .study.sky .theme-btn { border-radius: 999px; color: #ffd1e3; }
+
+/* содержимое страницы и крошки */
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-main .wrap { background: rgba(20, 6, 12, .6); border: 1px solid var(--pk-line); border-radius: 32px; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .page-head h1 { font-weight: 500; letter-spacing: -.03em; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .kicker, html[data-theme='dark'][data-palette='wine'] .study.sky .row.h { font-family: var(--pk-mono); font-weight: 400; letter-spacing: .16em; color: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .gc, html[data-theme='dark'][data-palette='wine'] .study.sky .tw-card, html[data-theme='dark'][data-palette='wine'] .study.sky .task,
+html[data-theme='dark'][data-palette='wine'] .study.sky .fc, html[data-theme='dark'][data-palette='wine'] .study.sky .pg-card, html[data-theme='dark'][data-palette='wine'] .study.sky .rich .card { border-color: var(--pk-line); border-radius: 24px; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .gc:hover, html[data-theme='dark'][data-palette='wine'] .study.sky .tw-card:hover, html[data-theme='dark'][data-palette='wine'] .study.sky a.ov-card:hover { border-color: #ff9cc6; }
+
+/* белые кнопки-«таблетки» как «Войти» в макете: крошки, «Меню», поиск, быстрые переключатели */
+html[data-theme='dark'][data-palette='wine'] .study-main .crumbs ol,
+html[data-theme='dark'][data-palette='wine'] .study.sky .sw-btn,
+html[data-theme='dark'][data-palette='wine'] .study.sky .side-show { background: rgba(20, 6, 12, .72); border: 1px solid var(--pk-line); color: #fff; box-shadow: none; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sw-btn:hover, html[data-theme='dark'][data-palette='wine'] .study.sky .side-show:hover { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sw-btn kbd { background: rgba(255, 255, 255, .12); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study-main .crumbs a { color: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .study-main .crumbs a:hover { color: #fff; background: rgba(255, 111, 174, .18); }
+html[data-theme='dark'][data-palette='wine'] .study-main .crumbs [aria-current] { color: #fff; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sb button:hover, html[data-theme='dark'][data-palette='wine'] .study.sky .chip.on, html[data-theme='dark'][data-palette='wine'] .study.sky .chip.router-link-active,
+html[data-theme='dark'][data-palette='wine'] .study.sky .fcb button, html[data-theme='dark'][data-palette='wine'] .study.sky .today-end button, html[data-theme='dark'][data-palette='wine'] .study.sky .bd-rule:hover { background: #fff; border-color: #fff; color: #2a0a18; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .chip { background: rgba(255, 255, 255, .06); border-color: var(--pk-line); color: #fff; border-radius: 999px; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sb { border-color: var(--pk-line); background: rgba(20, 6, 12, .72); }
+html[data-theme='dark'][data-palette='wine'] .study.sky mark { background: rgba(255, 111, 174, .3); color: inherit; }
+
+/* страница игры */
+html[data-theme='dark'][data-palette='wine'] .game.gx { --glass: rgba(20, 6, 12, .72); --panel: rgba(32, 8, 20, .85); --line: rgba(255, 190, 220, .18); }
+html[data-theme='dark'][data-palette='wine'] .gx-nav, html[data-theme='dark'][data-palette='wine'] .game .card, html[data-theme='dark'][data-palette='wine'] .game .gx-stats { border-color: var(--pk-line); }
+
+/* окна поверх страницы */
+html[data-theme='dark'][data-palette='wine'] .study-modal.sky { background: rgba(11, 5, 8, .75); }
+html[data-theme='dark'][data-palette='wine'] .study-modal.sky .gp { background: #2a0a18; border-color: var(--pk-line); }
