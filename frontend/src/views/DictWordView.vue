@@ -9,7 +9,7 @@ import { conjugate, withParticles } from '@/lib/conjugate'
 import { mainEntry, type DictWord } from '@/lib/dictApi'
 import { useDictRecent } from '@/composables/useDictRecent'
 import { canonicalOf } from '@/data/seo'
-import { wordDescription, wordJsonLd, wordLead, wordTitle } from '@/lib/dictSeo'
+import { isIndexable, wordDescription, wordJsonLd, wordLead, wordTitle } from '@/lib/dictSeo'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,7 +110,7 @@ useSeoMeta({
   ogDescription: () => (seoEntry.value ? wordDescription(seoEntry.value) : undefined),
   twitterTitle: () => (seoEntry.value ? wordTitle(seoEntry.value) : undefined),
   twitterDescription: () => (seoEntry.value ? wordDescription(seoEntry.value) : undefined),
-  robots: () => (seoEntry.value ? 'index, follow, max-image-preview:large, max-snippet:-1' : 'noindex, nofollow'),
+  robots: () => (seoEntry.value ? (isIndexable(seoEntry.value) ? 'index, follow, max-image-preview:large, max-snippet:-1' : 'noindex, follow') : 'noindex, nofollow'),
 })
 useHead({
   script: [{ key: 'dict-ld', type: 'application/ld+json', innerHTML: () => (seoEntry.value ? JSON.stringify(wordJsonLd(seoEntry.value, pageUrl.value)) : '') }],

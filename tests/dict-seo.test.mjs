@@ -2,7 +2,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
-const { mainTranslation, translations, wordTitle, wordDescription, wordLead, wordJsonLd, collectionJsonLd } = await load('/src/lib/dictSeo.ts')
+const { mainTranslation, translations, wordTitle, wordDescription, wordLead, wordJsonLd, collectionJsonLd, isIndexable } = await load('/src/lib/dictSeo.ts')
 after(close)
 
 const e = (over = {}) => ({
@@ -66,4 +66,20 @@ test('JSON-LD подборки: коллекция со списком слов 
   assert.equal(page.mainEntity.itemListElement.length, 50)
   assert.match(page.mainEntity.itemListElement[0].url, /\/dict\/%EB%8B%A8%EC%96%B40$/)
   assert.deepEqual(ld['@graph'][1].itemListElement.map(c => c.position), [1, 2, 3, 4])
+})
+
+describe('какие слова просятся в поиск', () => {
+  const thin = { level: 'нет', cat: '', senses: [{ ko: 'x', ru: [{ t: 'мука', d: '' }], sent: [] }] }
+  test('слова с уровнем и слова из категорий платформы просятся в индекс', () => {
+    assert.equal(isIndexable(e()), true)
+    assert.equal(isIndexable(e({ level: 'нет', cat: 'Еда' })), true)
+  })
+  test('редкое слово с одним переводом и без примеров не просится (noindex, follow)', () => {
+    assert.equal(isIndexable(e(thin)), false)
+  })
+  test('слово без уровня, но с содержанием (2 значения и 3 примера) просится', () => {
+    const rich = { level: 'нет', cat: '', senses: [{ ko: 'a', ru: [{ t: 'один', d: '' }], sent: ['а', 'б'] }, { ko: 'b', ru: [{ t: 'два', d: '' }], sent: ['в'] }] }
+    assert.equal(isIndexable(e(rich)), true)
+    assert.equal(isIndexable(e({ ...rich, senses: [rich.senses[0]] })), false)
+  })
 })

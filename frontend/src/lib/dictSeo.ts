@@ -10,6 +10,18 @@ export interface SeoEntry {
   senses: { ko: string; ru: { t: string; d: string }[]; sent: string[] }[]
 }
 
+/**
+ * Просить ли поиск проиндексировать страницу слова. Да: слово из списка по уровням (начальный, средний, высокий), слово из категории платформы
+ * или слово с содержанием (не меньше двух значений и трёх примеров). Редкие слова с одним переводом остаются открытыми по ссылкам и в поиске
+ * по сайту (`noindex, follow`): 46 тысяч однотипных страниц без внешних ссылок только тянут вниз оценку сайта (решение 2026-11-19, Search Console).
+ */
+export function isIndexable(e: SeoEntry): boolean {
+  if (e.level && e.level !== 'нет') return true
+  if (e.cat) return true
+  const examples = e.senses.reduce((n, s) => n + s.sent.length, 0)
+  return e.senses.length >= 2 && examples >= 3
+}
+
 const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1).replace(/[\s,;:.]+\S*$/, '') + '…')
 const first = (s: string) => s.split(';')[0]!.trim()
 
