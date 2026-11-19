@@ -68,7 +68,7 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 </script>
 
 <template>
-  <PinkShell>
+  <PinkShell theme-toggle class="home-pink">
     <main class="home">
       <div class="pk-kick">личное пространство · с 1 июня</div>
       <h1 class="title">Тихое пространство для <span class="it">корейского</span></h1>
@@ -164,6 +164,8 @@ dd a:hover, .flip:hover { color: var(--pk-pink-2); }
 </style>
 
 <style>
+/* в светлой теме вместо этой страницы показывается старая (HomeLightView): пока идёт замена, новую не видно */
+html[data-theme='light'] .home-pink { visibility: hidden; }
 /* окно с видео вынесено в body, поэтому стили без scoped */
 .demo-back { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 20px; background: rgba(11, 5, 8, .75); backdrop-filter: blur(8px); }
 .demo-box { position: relative; width: min(1100px, 100%); padding: 14px; background: #2a0a18; border: 1px solid rgba(255, 190, 220, .18); border-radius: 24px; box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
