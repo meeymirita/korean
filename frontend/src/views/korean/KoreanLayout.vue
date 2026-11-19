@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
       <RouterLink to="/" class="brand brand-row brand-home" title="На главную страницу">
         <span class="brand-mark">✳︎</span>
         <div>
-          <h1 class="ko">우리말</h1>
+          <p class="ko side-title">우리말</p>
           <div class="course">서울대 한국어+ 1A</div>
         </div>
       </RouterLink>

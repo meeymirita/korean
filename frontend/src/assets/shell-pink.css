@@ -26,7 +26,7 @@ html[data-theme='dark'][data-palette='wine'] .study.sky { --pk-pink: #ff6fae; --
 /* боковое меню */
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side { background: var(--pk-glass); border: 1px solid var(--pk-line); border-radius: 28px; box-shadow: none; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky .brand-mark { color: #ff6fae; }
-html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side h1 { font-family: 'Noto Sans KR', 'Archivo', sans-serif; letter-spacing: 0; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side .side-title { font-family: 'Noto Sans KR', 'Archivo', sans-serif; letter-spacing: 0; }
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side .course { font-family: var(--pk-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #ffb3d1; }
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a { color: #ffd1e3; border-radius: 999px; }
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a:hover,
