@@ -79,9 +79,9 @@ describe('Nuxt: готовый HTML открытых страниц', () => {
   test('главная рисуется на каждый запрос: фраза и слово дня меняются, а прошлая фраза помнится в cookie', async () => {
     const first = await get('/')
     assert.match(first.headers.get('set-cookie') ?? '', /ui_phrase_last=\d+/)
-    // фраза, слово и правило дня (блоки .val на главной): за 6 обновлений хотя бы раз другие
+    // фраза, слово и правило дня (корейский текст в блоке .daily внизу главной): за 6 обновлений хотя бы раз другие
     const picks = new Set()
-    for (let i = 0; i < 6; i++) picks.add([...(await page('/')).matchAll(/class="val ko"[^>]*>([^<]+)</g)].map(m => m[1]).join(' | '))
+    for (let i = 0; i < 6; i++) picks.add([...(await page('/')).matchAll(/class="ko"[^>]*>([^<]+)</g)].map(m => m[1]).join(' | '))
     assert.ok(picks.size > 1, 'фраза и слово дня не меняются от запроса к запросу')
   })
 })
