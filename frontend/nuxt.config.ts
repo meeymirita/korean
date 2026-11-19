@@ -5,6 +5,7 @@
  * Запуск: npm run dev (порт 3000, /api проксируется на API_PORT, по умолчанию 3001), npm run build, npm run preview.
  */
 import { BRAND, SITE, indexablePaths, privatePaths } from './src/data/seo'
+import { HISTORY } from './src/data/history'
 
 const API = process.env.API_BASE || `http://${process.env.API_HOST || '127.0.0.1'}:${process.env.API_PORT || 3001}`
 const pub = indexablePaths()
@@ -104,7 +105,8 @@ export default defineNuxtConfig({
   },
   sitemap: {
     // постоянные страницы из seo.ts (без noindex) + слова большого словаря из API (/api/dict/sitemap, около 45 тысяч адресов)
-    urls: pub,
+    // lastmod постоянных страниц: дата последней записи «Истории» (она меняется, только когда на сайте что-то заметно поменялось)
+    urls: pub.map(loc => ({ loc, lastmod: HISTORY[0]?.date })),
     sources: ['/api/dict/sitemap'],
     // в одном файле карты не больше 50 тысяч адресов, а нам надёжнее кусками: sitemap.xml превращается в sitemap_index.xml со списком кусков
     sitemaps: true,

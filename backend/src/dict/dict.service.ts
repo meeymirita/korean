@@ -180,11 +180,11 @@ export class DictService implements OnApplicationBootstrap {
   }
 
   private ruCache: string[] = []
-  private sitemapCache: { at: number; urls: { loc: string }[] } | null = null
-  private sitemapLoading: Promise<{ loc: string }[]> | null = null
+  private sitemapCache: { at: number; urls: { loc: string; lastmod?: string }[] } | null = null
+  private sitemapLoading: Promise<{ loc: string; lastmod?: string }[]> | null = null
 
   /** Карта сайта (sitemap.xml): подборки, указатели и слова для изучающих `/dict/<слово>` (`sitemapWordList`), по одному на слово (омонимы сливаются). Кэш на 6 часов. */
-  async sitemap(): Promise<{ loc: string }[]> {
+  async sitemap(): Promise<{ loc: string; lastmod?: string }[]> {
     this.notWhileIndexing()
     const TTL = 6 * 60 * 60_000
     if (this.sitemapCache && Date.now() - this.sitemapCache.at < TTL) return this.sitemapCache.urls
@@ -210,7 +210,9 @@ export class DictService implements OnApplicationBootstrap {
         if (letter) letterCounts.set(letter, (letterCounts.get(letter) ?? 0) + 1)
         if (syllable) syllableCounts.set(syllable, (syllableCounts.get(syllable) ?? 0) + 1)
       }
-      const urls = [
+      // дата изменения для поисковика: когда обновлён файл словаря (страницы меняются только вместе с ним)
+      const lastmod = await stat(dictFile()).then(i => i.mtime.toISOString().slice(0, 10), () => undefined)
+      const urls: { loc: string; lastmod?: string }[] = [
         { loc: '/dict/podborki' },
         ...COLLECTIONS.map(c => ({ loc: `/dict/podborki/${c.slug}` })),
         { loc: '/dict/a' },
@@ -223,6 +225,7 @@ export class DictService implements OnApplicationBootstrap {
       for (const [initial, count] of [...letterCounts, ...syllableCounts]) {
         for (let page = 2; page <= Math.ceil(count / ALPHABET_PAGE_SIZE); page++) urls.push({ loc: `/dict/a/${initial}/${page}` })
       }
+      if (lastmod) for (const u of urls) u.lastmod = lastmod
       if (urls.length && !this.indexing) {
         this.sitemapCache = { at: Date.now(), urls }
         this.ruCache = ru
