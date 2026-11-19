@@ -11,11 +11,36 @@ import '@/assets/home/fonts.css'
 withDefaults(defineProps<{ sub?: string; width?: string }>(), { sub: 'korean space', width: '1220px' })
 const progress = useProgressStore()
 const card = ref<HTMLElement>()
+const root = ref<HTMLElement>()
+/** Прогресс прокрутки 0..1 для линии справа; null — страница короткая, линию не показываем. */
+const progressLine = ref<number | null>(null)
+let ro: ResizeObserver | undefined
+function updateLine() {
+  const el = root.value
+  if (!el) return
+  const max = el.scrollHeight - el.clientHeight
+  progressLine.value = max > 4 ? Math.min(1, Math.max(0, el.scrollTop / max)) : null
+}
+/** Нажатие на линию прокручивает страницу к этому месту. */
+function jump(e: MouseEvent) {
+  const el = root.value
+  const bar = e.currentTarget as HTMLElement
+  if (!el) return
+  const r = bar.getBoundingClientRect()
+  el.scrollTo({ top: ((e.clientY - r.top) / r.height) * (el.scrollHeight - el.clientHeight), behavior: 'smooth' })
+}
 let raf = 0
 let onMove: ((e: MouseEvent) => void) | undefined
 
 /** Свечение плавно идёт за курсором (как в макете); у тех, кто просит меньше движения, стоит на месте. */
 onMounted(() => {
+  updateLine()
+  root.value?.addEventListener('scroll', updateLine, { passive: true })
+  if (root.value && typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(updateLine)
+    ro.observe(root.value)
+    if (card.value) ro.observe(card.value)
+  }
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
   const t = { x: 0.5, y: 0.5 }
   const c = { x: 0.5, y: 0.5 }
@@ -44,13 +69,15 @@ onMounted(() => {
   tick()
 })
 onBeforeUnmount(() => {
+  root.value?.removeEventListener('scroll', updateLine)
+  ro?.disconnect()
   if (onMove) window.removeEventListener('mousemove', onMove)
   cancelAnimationFrame(raf)
 })
 </script>
 
 <template>
-  <div class="pk">
+  <div ref="root" class="pk">
     <div ref="card" class="pk-card" :style="{ '--pk-w': width }">
       <div class="pk-glow"></div>
       <div class="pk-shade"></div>
@@ -73,6 +100,9 @@ onBeforeUnmount(() => {
         </RouterLink>
       </header>
       <slot />
+    </div>
+    <div v-if="progressLine !== null" class="pk-scroll" role="presentation" title="Прокрутка страницы" @click="jump">
+      <i :style="{ transform: `scaleY(${progressLine})` }"></i>
     </div>
   </div>
 </template>
