@@ -2,19 +2,21 @@
  * Оформление: светлое, тёмное или «как в системе». Выбор помнится в localStorage, на <html> ставится data-theme="light|dark".
  * Тёмные цвета лежат в assets/dark.css, они включаются только по этому атрибуту.
  * «Ночная» — отдельная приглушённая палитра (assets/night.css): та же тёмная тема плюс data-palette="night".
+ * «Розовая» (по умолчанию) — винно-розовая палитра главной страницы (assets/wine.css, data-palette="wine").
  */
 import { ref } from 'vue'
 
-export type ThemeMode = 'auto' | 'light' | 'dark' | 'night'
+export type ThemeMode = 'auto' | 'light' | 'dark' | 'night' | 'wine'
 export const THEME_KEY = 'theme_mode'
 export const MODES: { id: ThemeMode; label: string }[] = [
   { id: 'auto', label: 'Как в системе' },
   { id: 'light', label: 'Светлая' },
   { id: 'dark', label: 'Тёмная' },
   { id: 'night', label: 'Ночная' },
+  { id: 'wine', label: 'Розовая' },
 ]
 
-export const isMode = (v: unknown): v is ThemeMode => v === 'auto' || v === 'light' || v === 'dark' || v === 'night'
+export const isMode = (v: unknown): v is ThemeMode => v === 'auto' || v === 'light' || v === 'dark' || v === 'night' || v === 'wine'
 
 /** Какая тема на самом деле: «авто» зависит от системной настройки. */
 export const resolveTheme = (mode: ThemeMode, systemDark: boolean): 'light' | 'dark' => (mode === 'auto' ? (systemDark ? 'dark' : 'light') : mode === 'light' ? 'light' : 'dark')
@@ -22,9 +24,9 @@ export const resolveTheme = (mode: ThemeMode, systemDark: boolean): 'light' | 'd
 function readMode(): ThemeMode {
   try {
     const v = localStorage.getItem(THEME_KEY)
-    return isMode(v) ? v : 'auto'
+    return isMode(v) ? v : 'wine'
   } catch {
-    return 'auto'
+    return 'wine'
   }
 }
 
@@ -39,11 +41,11 @@ export function applyTheme() {
   if (typeof document === 'undefined') return
   const t = resolveTheme(themeMode.value, systemDark())
   document.documentElement.dataset.theme = t
-  if (t === 'dark' && themeMode.value === 'night') document.documentElement.dataset.palette = 'night'
+  if (t === 'dark' && (themeMode.value === 'night' || themeMode.value === 'wine')) document.documentElement.dataset.palette = themeMode.value
   else delete document.documentElement.dataset.palette
   themeDark.value = t === 'dark'
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', t)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'dark' ? (themeMode.value === 'night' ? '#1a1519' : '#14152b') : '#fbf8ff')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'dark' ? (themeMode.value === 'night' ? '#1a1519' : themeMode.value === 'wine' ? '#0b0508' : '#14152b') : '#fbf8ff')
 }
 
 export function setTheme(mode: ThemeMode) {
@@ -59,7 +61,7 @@ export function setTheme(mode: ThemeMode) {
 /** Быстрая кнопка: светлая → тёмная → светлая (ночная считается тёмной; из «авто» переключает на противоположную текущей). */
 export function toggleTheme() {
   const now = resolveTheme(themeMode.value, systemDark())
-  setTheme(now === 'dark' ? 'light' : 'dark')
+  setTheme(now === 'dark' ? 'light' : 'wine')
 }
 
 /** Вызывается один раз при запуске: ставит тему и следит за системной настройкой, пока выбрано «авто». */

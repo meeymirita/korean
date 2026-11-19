@@ -40,11 +40,11 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1.0',
       meta: [
-        { name: 'theme-color', content: '#fbf8ff' },
+        { name: 'theme-color', content: '#0b0508' },
         { name: 'yandex-verification', content: '7e91f055e8c3fe9f' },
         { name: 'google-site-verification', content: 'gmPNUAXLfo28woGDW-c9NAMEAXEOm15RIeGPajRfETA' },
         { name: 'msvalidate.01', content: '40B2022D5821E649AD18F1A4AA804AE7' },
-        { name: 'color-scheme', content: 'light' },
+        { name: 'color-scheme', content: 'dark' },
         { name: 'format-detection', content: 'telephone=no' },
         { property: 'og:type', content: 'website' },
         { property: 'og:site_name', content: BRAND },
@@ -62,7 +62,7 @@ export default defineNuxtConfig({
       ],
       script: [
         // тёмная тема до отрисовки, чтобы страница не мигала светлой (src/lib/theme.ts)
-        { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m==="dark"||m==="night"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";if(m==="night")document.documentElement.dataset.palette="night"}catch(e){}', tagPosition: 'head' },
+        { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m!=="light"&&m!=="dark"&&m!=="night"&&m!=="auto")m="wine";if(m==="dark"||m==="night"||m==="wine"||(m==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";if(m==="night"||m==="wine")document.documentElement.dataset.palette=m}catch(e){}', tagPosition: 'head' },
       ],
     },
   },
