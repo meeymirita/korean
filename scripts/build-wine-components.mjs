@@ -56,6 +56,8 @@ function mapBg(c) {
   if (l >= 0.78) return pinkish(h) && s > 0.2 ? rgba(255, 111, 174, 0.2) : rgba(255, 255, 255, 0.1)
   if (l >= 0.55) return s >= 0.25 ? rgba(255, 111, 174, c.a) : rgba(255, 255, 255, 0.14)
   if (l >= 0.3) return s >= 0.2 ? rgba(194, 24, 107, c.a) : null
+  // тёмно-синие подложки окон (затемнение фона): в винное затемнение
+  if (l < 0.3 && h >= 200 && h <= 280) return rgba(11, 5, 8, Math.max(c.a, 0.6))
   return l < 0.3 && c.a >= 0.5 ? rgba(42, 10, 24, c.a) : null
 }
 function mapText(c) {

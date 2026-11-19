@@ -117,3 +117,8 @@ html[data-theme='dark'][data-palette='wine'] .up-bg { background: radial-gradien
 html[data-theme='dark'][data-palette='wine'] .study.sky .fcb .td-tabs button { background: transparent; color: #fff; border-color: transparent; }
 html[data-theme='dark'][data-palette='wine'] .study.sky .fcb .td-tabs button.on { background: #ff6fae; color: #2a0a18; }
 html[data-theme='dark'][data-palette='wine'] .study .shx { --pur: #ff9cc6; }
+
+/* шторки и окна, которые должны быть сплошными, а не прозрачными */
+html[data-theme='dark'][data-palette='wine'] .nwd { background: #2a0a18; border-left-color: var(--pk-line); color: #fff; }
+html[data-theme='dark'][data-palette='wine'] .nwd .form { background: rgba(255, 255, 255, .05); border-color: var(--pk-line); }
+html[data-theme='dark'][data-palette='wine'] .nwd input, html[data-theme='dark'][data-palette='wine'] .nwd textarea { background: rgba(0, 0, 0, .3); border-color: var(--pk-line); color: #fff; }

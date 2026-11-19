@@ -3,6 +3,7 @@
 
 /* assets/sky.css */
 html[data-theme='dark'][data-palette='wine'] .study.sky:not(.study-modal):where(:not(.pk *)) { background-color: rgba(255, 255, 255, 0.1); background-image: linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)), linear-gradient(to bottom, transparent 68%, rgba(255, 255, 255, 0.1) 93%), url('./game/bg.webp'); }
+html[data-theme='dark'][data-palette='wine'] .study-modal.sky:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .study-modal.sky .gp:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.07); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study.sky .rich .tip:where(:not(.pk *)),
 html[data-theme='dark'][data-palette='wine'] .study.sky .rich pre:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); }
@@ -25,7 +26,7 @@ html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-main .wrap:
 @media (max-width: 860px) {
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
 }
-html[data-theme='dark'][data-palette='wine'] .game.sky .over:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); }
+html[data-theme='dark'][data-palette='wine'] .game.sky .over:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .study.sky .sw-btn:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 @media (min-width: 861px) {
 html[data-theme='dark'][data-palette='wine'] .study-shell.sky.focus.peek .study-side:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
@@ -43,7 +44,7 @@ html[data-theme='dark'][data-palette='wine'] .study mark:where(:not(.pk *)) { ba
 html[data-theme='dark'][data-palette='wine'] .study .gc:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study-modal:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); }
 html[data-theme='dark'][data-palette='wine'] .study-modal .gp:where(:not(.pk *)) { box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .study-modal .gvp:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gvp:where(:not(.pk *)) { background: rgba(11, 5, 8, 1); }
 html[data-theme='dark'][data-palette='wine'] .study .c-p:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .study .c-k:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .study .rich .card:where(:not(.pk *)) { box-shadow: none; }
@@ -68,17 +69,17 @@ html[data-theme='dark'][data-palette='wine'] .study .nt-warn:where(:not(.pk *)) 
 html[data-theme='dark'][data-palette='wine'] .study .nt-status.error:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
 html[data-theme='dark'][data-palette='wine'] .study .nt-card.nt-dragging:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study .im-err:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
-html[data-theme='dark'][data-palette='wine'] .study .im-view:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.78); }
+html[data-theme='dark'][data-palette='wine'] .study .im-view:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.78); }
 html[data-theme='dark'][data-palette='wine'] .study .im-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study .im-info .danger:hover:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
 html[data-theme='dark'][data-palette='wine'] .study .db-err:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
 html[data-theme='dark'][data-palette='wine'] .ni .ni-open:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); border: 1px solid rgba(255, 190, 220, 0.35); }
-html[data-theme='dark'][data-palette='wine'] .ni .ni-x:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); border: 2px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .ni .ni-x:where(:not(.pk *)) { background: rgba(11, 5, 8, 1); border: 2px solid rgba(255, 190, 220, 0.18); }
 html[data-theme='dark'][data-palette='wine'] .ni .ni-wait:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .ni-view:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.7); }
+html[data-theme='dark'][data-palette='wine'] .ni-view:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.7); }
 html[data-theme='dark'][data-palette='wine'] .ni-view img:where(:not(.pk *)) { box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .study .cb-cover:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; background: linear-gradient(115deg, rgba(42, 10, 24, 0.92), rgba(194, 24, 107, 0.7) 55%, rgba(255, 111, 174, 0.35)), radial-gradient(ellipse at 80% 80%, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1) 45%, rgba(194, 24, 107, 1) 80%); }
-html[data-theme='dark'][data-palette='wine'] .study .cb-cover.photo:where(:not(.pk *)) { background: linear-gradient(180deg, rgba(20, 24, 70, .25), rgba(42, 10, 24, 0.72)), var(--cover) center / cover no-repeat; }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; background: linear-gradient(115deg, rgba(11, 5, 8, 0.92), rgba(194, 24, 107, 0.7) 55%, rgba(255, 111, 174, 0.35)), radial-gradient(ellipse at 80% 80%, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1) 45%, rgba(194, 24, 107, 1) 80%); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover.photo:where(:not(.pk *)) { background: linear-gradient(180deg, rgba(11, 5, 8, 0.6), rgba(11, 5, 8, 0.72)), var(--cover) center / cover no-repeat; }
 html[data-theme='dark'][data-palette='wine'] .study .cb-cover .kicker:where(:not(.pk *))::before { background: rgba(255, 111, 174, 0.2); }
 html[data-theme='dark'][data-palette='wine'] .study .cb-lvl:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study .cb-coins:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
@@ -164,6 +165,7 @@ html[data-theme='dark'][data-palette='wine'] .game .story-tr:where(:not(.pk *)) 
 html[data-theme='dark'][data-palette='wine'] .game .story-tip:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .game .tile.sel:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .game .story-info:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .game .story-win:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .game .story-win-box:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(160deg,rgba(255, 255, 255, 0.07),rgba(255, 255, 255, 0.07) 60%,rgba(255, 255, 255, 0.07)); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .game .story-win-x:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
 html[data-theme='dark'][data-palette='wine'] .game .story-mark:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
@@ -252,10 +254,6 @@ html[data-theme='dark'][data-palette='wine'] .up-lbl:where(:not(.pk *)) { color:
 html[data-theme='dark'][data-palette='wine'] .up .up-x:hover:not(:disabled):where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); }
 html[data-theme='dark'][data-palette='wine'] .up-foot:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
 html[data-theme='dark'][data-palette='wine'] .up-status:where(:not(.pk *)) { color: #ffd1e3; }
-
-/* views/NotFoundView.vue */
-html[data-theme='dark'][data-palette='wine'] .nf:where(:not(.pk *)) { background: radial-gradient(circle at 92% 4%, rgba(255, 255, 255, 0.1) 0, transparent 30%), radial-gradient(circle at 4% 96%, rgba(255, 111, 174, 0.2) 0, transparent 28%), rgba(255, 255, 255, 0.07); }
-html[data-theme='dark'][data-palette='wine'] .links a:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.05); }
 
 /* views/korean/ChatView.vue */
 html[data-theme='dark'][data-palette='wine'] .chat-msg.assistant:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
@@ -381,7 +379,7 @@ html[data-theme='dark'][data-palette='wine'] .gm-ico:where(:not(.pk *)) { backgr
 html[data-theme='dark'][data-palette='wine'] .avatar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); border: 1px solid rgba(255, 190, 220, 0.35); }
 
 /* components/ConfirmDialog.vue */
-html[data-theme='dark'][data-palette='wine'] .cf:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .cf:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); color: #ffffff; }
 html[data-theme='dark'][data-palette='wine'] .cf-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .cf-box p:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .cf-token input:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
@@ -431,6 +429,7 @@ html[data-theme='dark'][data-palette='wine'] .lnk.danger:where(:not(.pk *)) { co
 html[data-theme='dark'][data-palette='wine'] .hint:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* components/StudyModal.vue */
+html[data-theme='dark'][data-palette='wine'] .sm:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .sm .sm-box.study:where(:not(.pk *)) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.07) 55%, rgba(255, 255, 255, 0.07) 100%); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .sm-x:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); }
 html[data-theme='dark'][data-palette='wine'] .sm-x:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
@@ -439,7 +438,7 @@ html[data-theme='dark'][data-palette='wine'] .sm-x:hover:where(:not(.pk *)) { ba
 html[data-theme='dark'][data-palette='wine'] .stm-btn:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .stm-btn.on:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
 html[data-theme='dark'][data-palette='wine'] .stm-btn small:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .stm-note:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.96); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .stm-note:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.96); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .stm-note .go:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
 
 /* components/ToastHost.vue */
@@ -488,7 +487,7 @@ html[data-theme='dark'][data-palette='wine'] .lv-rank li.done b:where(:not(.pk *
 html[data-theme='dark'][data-palette='wine'] .lv-rank li.now:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 190, 220, 0.35); }
 
 /* components/cabinet/NoteModal.vue */
-html[data-theme='dark'][data-palette='wine'] .nm-wrap:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .nm-wrap:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); color: #ffffff; }
 html[data-theme='dark'][data-palette='wine'] .nm-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .nm-box time:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .nm-tags li:where(:not(.pk *)) { color: #ff9cc6; background: rgba(255, 255, 255, 0.07); }
@@ -507,6 +506,7 @@ html[data-theme='dark'][data-palette='wine'] .pg-weak-rule-foot a:where(:not(.pk
 
 /* components/cabinet/PlansCalendar.vue */
 html[data-theme='dark'][data-palette='wine'] .study .pc-day.today:where(:not(.pk *)) { outline: 2px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study.sky.pc-dr:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .pc-box:where(:not(.pk *)) { color: #ffffff; border-left: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 60%, rgba(255, 255, 255, 0.07)); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .pc-x:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); color: #ffffff; }
 html[data-theme='dark'][data-palette='wine'] .pc-x:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
@@ -614,6 +614,9 @@ html[data-theme='dark'][data-palette='wine'] .study .tf-warn:where(:not(.pk *)) 
 /* components/charts/ChartTip.vue */
 html[data-theme='dark'][data-palette='wine'] .study .ch-tip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
 
+/* components/korean/BlockBgLayer.vue */
+html[data-theme='dark'][data-palette='wine'] .bgl.veil:where(:not(.pk *))::after { background: linear-gradient(180deg, rgba(11, 5, 8, 0.6), rgba(11, 5, 8, 0.6)); }
+
 /* components/korean/DashboardHome.vue */
 html[data-theme='dark'][data-palette='wine'] .panel:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .tbtn:where(:not(.pk *)) { color: #ff9cc6; }
@@ -697,6 +700,7 @@ html[data-theme='dark'][data-palette='wine'] .study .mg-card.mg-aim:where(:not(.
 html[data-theme='dark'][data-palette='wine'] .study .mg-lines .drag-dot:where(:not(.pk *)) { fill: #ff9cc6; }
 
 /* components/korean/NewWordDrawer.vue */
+html[data-theme='dark'][data-palette='wine'] .nwd-back:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .nwd:where(:not(.pk *)) { color: #ffffff; border-left: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 60%, rgba(255, 255, 255, 0.07)); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .nwd h2 small:where(:not(.pk *)) { color: #ff9cc6; }
 html[data-theme='dark'][data-palette='wine'] .nwd .x:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); color: #ffffff; }
@@ -742,7 +746,7 @@ html[data-theme='dark'][data-palette='wine'] .nb-x:where(:not(.pk *)) { backgrou
 html[data-theme='dark'][data-palette='wine'] .nb-x:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
 
 /* components/korean/PhotoViewer.vue */
-html[data-theme='dark'][data-palette='wine'] .pv-back:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.6); }
+html[data-theme='dark'][data-palette='wine'] .pv-back:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .pv-img:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .pv-x:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .pv-size:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); box-shadow: none; }
@@ -774,7 +778,7 @@ html[data-theme='dark'][data-palette='wine'] .mp-fab.on:hover:where(:not(.pk *))
 html[data-theme='dark'][data-palette='wine'] .mp-mini:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .mp-panel:where(:not(.pk *)) { background: linear-gradient(165deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.07) 100%); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .mp-now:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
-html[data-theme='dark'][data-palette='wine'] .mp-now-text:where(:not(.pk *)) { background: linear-gradient(to top, rgba(42, 10, 24, 0.75), transparent); }
+html[data-theme='dark'][data-palette='wine'] .mp-now-text:where(:not(.pk *)) { background: linear-gradient(to top, rgba(11, 5, 8, 0.75), transparent); }
 html[data-theme='dark'][data-palette='wine'] .mp-tabs button:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); }
 html[data-theme='dark'][data-palette='wine'] .mp-tabs button.on:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .mp-list li:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
