@@ -93,5 +93,6 @@ docs/       документация по темам
 | [`docs/ideas.md`](docs/ideas.md) | идеи улучшений и нового функционала |
 | [`docs/redesign-plan.md`](docs/redesign-plan.md) | план перехода сайта на тёмно-розовый дизайн |
 | [`docs/redesign-assets.md`](docs/redesign-assets.md) | список картинок и иконок для нового дизайна, промпты |
+| [`docs/redesign-report.md`](docs/redesign-report.md) | отчёт по тёмно-розовому редизайну для проверки |
 
 Правила для разработки и договорённости с владельцем: [`CLAUDE.md`](CLAUDE.md).
