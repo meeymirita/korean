@@ -132,3 +132,56 @@ html[data-theme='dark'][data-palette='wine'] .game .gx-actions .helpbtn:hover { 
 /* страница массовой загрузки /upload: заголовок, ссылка «Назад» и значок были тёмно-фиолетовыми на тёмном */
 html[data-theme='dark'][data-palette='wine'] .study.sky.up { --up-deep: #ffd1e3; --up-violet: #ff9cc6; --up-pink: #ff6fae; }
 html[data-theme='dark'][data-palette='wine'] .up-head h1 { color: #fff; }
+
+/* ===== Розовая тема: вместо зелёного и фиолетового (решение владельца 2026-11-19) =====
+   «Верно» золотое (#ffd27a), «ошибка» коралловая (#ff8f7e): генератор wine-components.css превращал оба в один нейтральный розовый. Светлая и прочие тёмные темы не меняются. */
+html[data-theme='dark'][data-palette='wine'], html[data-theme='dark'][data-palette='wine'] .study.sky, html[data-theme='dark'][data-palette='wine'] .study-modal.sky, html[data-theme='dark'][data-palette='wine'] .study.sky.game { --ok: #ffd27a; --ok-bg: rgba(255, 210, 122, .16); --bad: #ff8f7e; --bad-bg: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .game .gap-in.ok { border-color: rgba(255, 210, 122, .6); background: rgba(255, 210, 122, .14); }
+html[data-theme='dark'][data-palette='wine'] .game .gap-in.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .cf-token input.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .rc-list li.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .rc-list .ok .rc-mark { background: rgba(255, 210, 122, .18); color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .rc-list .bad .rc-mark { background: rgba(255, 143, 126, .18); color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .rc-ans.wrong i { color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.ok .rs-m { color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.bad .rs-m, html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.bad .rs-y { color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.bad { background: rgba(255, 143, 126, .08); }
+html[data-theme='dark'][data-palette='wine'] .ds-list li.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .ds-list li.ok .mk { background: rgba(255, 210, 122, .18); color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .ds-list li.bad .mk { background: rgba(255, 143, 126, .18); color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .er-gap.ok { border-color: rgba(255, 210, 122, .6); background: rgba(255, 210, 122, .14); }
+html[data-theme='dark'][data-palette='wine'] .er-gap.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .er-sel.ok { border-color: rgba(255, 210, 122, .6); background: rgba(255, 210, 122, .14); }
+html[data-theme='dark'][data-palette='wine'] .er-sel.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .er-built.ok { border-color: rgba(255, 210, 122, .6); background: rgba(255, 210, 122, .14); }
+html[data-theme='dark'][data-palette='wine'] .er-built.bad { border-color: rgba(255, 143, 126, .6); background: rgba(255, 143, 126, .14); }
+html[data-theme='dark'][data-palette='wine'] .er-mark.ok { color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .er-mark.bad { color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .ex-ans .ok { color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .ex-ans .bad { color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .an-ans.wrong i { color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .tst-item.error { background: rgba(255, 143, 126, .12); color: #ff9d8f; border-color: rgba(255, 143, 126, .45); }
+html[data-theme='dark'][data-palette='wine'] .tst-item.error .ic { background: #ff8f7e; }
+html[data-theme='dark'][data-palette='wine'] .tg-badge.ok { background: rgba(255, 210, 122, .2); color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .ib-badge.ok { background: rgba(255, 210, 122, .2); color: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .mp-jobs .bad .mp-job-state { color: #ff9d8f; }
+html[data-theme='dark'][data-palette='wine'] .mp-jobs .bad .mp-job-bar i { background: #ff8f7e; }
+html[data-theme='dark'][data-palette='wine'] .study .td-tasks li.bad { color: #ff9d8f; }
+/* разбор «Как собрано»: слово розово-белое, частица ярко-розовая, окончание золотое, глагол персиковый (раньше сиреневый, розовый, зелёный, синий) */
+html[data-theme='dark'][data-palette='wine'] .study { --bd-base: #2a0a18; }
+html[data-theme='dark'][data-palette='wine'] .study .bd-card { --bd-tint: rgba(255, 255, 255, .07); --bd-line: rgba(255, 190, 220, .5); --bd-ink: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .bd-card.particle { --bd-tint: rgba(255, 111, 174, .22); --bd-line: #ff6fae; --bd-ink: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study .bd-card.ending { --bd-tint: rgba(255, 210, 122, .16); --bd-line: #ffd27a; --bd-ink: #ffd27a; }
+html[data-theme='dark'][data-palette='wine'] .study .bd-card.verb { --bd-tint: rgba(255, 159, 128, .18); --bd-line: #ff9f80; --bd-ink: #ffb99f; }
+/* «Найди пару»: простая розовая линия без кружков */
+html[data-theme='dark'][data-palette='wine'] .study .mg-lines stop:first-child { stop-color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study .mg-lines stop:last-child { stop-color: #ff6fae; }
+html[data-theme='dark'][data-palette='wine'] .study .mg-lines path { stroke-width: 3; filter: drop-shadow(0 0 6px rgba(255, 111, 174, .5)); }
+html[data-theme='dark'][data-palette='wine'] .study .mg-lines circle { display: none; }
+/* цель на день в игре и план уроков */
+html[data-theme='dark'][data-palette='wine'] .game .gx-stats .goal .bar i { background: linear-gradient(90deg, #ff9cc6, #ffd27a); }
+html[data-theme='dark'][data-palette='wine'] .study .pc { --tutor: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study .pc-kind.tutor, html[data-theme='dark'][data-palette='wine'] .study .pc-card.tutor { background-color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study .pc-card.tutor { background-color: transparent; border-left-color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study .pc-check input { accent-color: #ff6fae; }
+html[data-theme='dark'][data-palette='wine'] .study .md-d.m1 { background: #ff9cc6; }
