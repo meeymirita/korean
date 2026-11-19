@@ -28,4 +28,15 @@ describe('«Рост платформы»', () => {
     expect(w.find('.theme-btn').exists()).toBe(true)
     expect(w.find('.gr-fin').text()).toContain('ключевых событий')
   })
+
+  it('в конце два блока: «обо мне» со ссылкой на Telegram и итог платформы, вокруг них две ветви лозы и цветки', async () => {
+    const w = await mountSuspended(GrowthView, { route: '/growth' })
+    await new Promise(r => setTimeout(r, 30))
+    expect(w.find('.gr-end .gr-me').exists()).toBe(true)
+    expect(w.find('.gr-end .gr-fin').exists()).toBe(true)
+    expect(w.find('.gr-me a[href="https://t.me/meeymirita"]').exists()).toBe(true)
+    expect(w.find('.gr-fin').text()).toContain('слов в словаре')
+    expect(w.findAll('path.br').length).toBe(2)
+    expect(w.findAll('.bfl').length).toBe(7)
+  })
 })

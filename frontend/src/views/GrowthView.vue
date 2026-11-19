@@ -3,7 +3,13 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 
 import { RouterLink } from 'vue-router'
 import '@/assets/home/fonts.css'
 import { GROWTH } from '@/data/growth'
+import { D } from '@/data/korean/words'
+import { RULES_COUNT } from '@/data/korean/grammar'
+import { ALL_GAMES } from '@/data/games'
 import { themeLight, toggleTheme } from '@/lib/theme'
+import { fetchT } from '@/lib/http'
+import RankPic from '@/components/RankPic.vue'
+import Icon from '@/components/Icon.vue'
 
 /**
  * «Рост платформы»: лента событий идёт вниз, справа и слева от волнистой лозы. Лоза рисуется по мере прокрутки, от неё к каждому блоку
@@ -17,7 +23,16 @@ const nf = new Intl.NumberFormat('ru-RU')
 const at = (d: string) => fmt.format(new Date(d + 'T12:00:00'))
 
 const blocks = GROWTH.marks.map((m, i) => ({ ...m, key: m.d + ':' + i, date: at(m.d), right: i % 2 === 0 }))
-const totals = { commits: GROWTH.commits, days: GROWTH.days.length, lines: GROWTH.lines, marks: GROWTH.marks.length }
+/** Полный итог платформы: что накоплено в коде (из git) и что внутри для учёбы (из данных платформы). */
+const totals = { commits: GROWTH.commits, days: GROWTH.days.length, lines: GROWTH.lines, marks: GROWTH.marks.length, words: D.length, rules: RULES_COUNT, games: ALL_GAMES.length }
+
+/** Публичная визитка владельца (`/api/public/me`): имя, уровень и звание для блока «обо мне»; если визитка закрыта, блок показывает только ссылки. */
+interface PublicCard {
+  name: string
+  level: number
+  title: string
+}
+const me = ref<PublicCard | null>(null)
 
 interface Geo {
   W: number
@@ -27,9 +42,12 @@ interface Geo {
   flowers: { x: number; y: number }[]
   /** Размер цветка: на телефоне меньше, чтобы не заходил на карточку. */
   fs: number
+  /** Две ветви лозы вокруг двух конечных блоков: расходятся в стороны, обходят блоки снаружи и сходятся под ними; цветки по ним. */
+  br: { l: string; r: string } | null
+  bfl: { x: number; y: number; s: number }[]
   leaves: { x: number; y: number; rot: number; at: number }[]
 }
-const geo = shallowRef<Geo>({ W: 1000, H: 0, d: '', twigs: [], flowers: [], fs: 1.15, leaves: [] })
+const geo = shallowRef<Geo>({ W: 1000, H: 0, d: '', twigs: [], flowers: [], fs: 1.15, br: null, bfl: [], leaves: [] })
 
 const rootEl = ref<HTMLElement>()
 const tlEl = ref<HTMLElement>()
@@ -48,6 +66,11 @@ let blkEls: HTMLElement[] = []
 let twigEls: SVGPathElement[] = []
 let flEls: SVGGElement[] = []
 let leafEls: SVGEllipseElement[] = []
+let brEls: SVGPathElement[] = []
+let bflEls: SVGGElement[] = []
+let meEl: HTMLElement | null = null
+/** Высоты, между которыми рисуются ветви: от развилки до точки, где они сходятся. */
+let brRange: [number, number] = [0, 1]
 let ys: number[] = []
 let lastIdx = -2
 let raf = 0
@@ -67,7 +90,31 @@ function measure() {
   const cx = W / 2
   const els = [...tl.querySelectorAll<HTMLElement>('.blk')]
   ys = els.map(el => el.offsetTop + el.offsetHeight / 2)
-  const n = Math.max(1, Math.floor((H - 40) / STEP))
+  // два блока в конце ленты («обо мне» слева, итог платформы справа): лоза доходит до развилки над ними, дальше две ветви обходят каждый блок снаружи и сходятся под ними
+  const mine = tl.querySelector<HTMLElement>('.gr-end')
+  let br: Geo['br'] = null
+  const bfl: Geo['bfl'] = []
+  let endY = H - 40
+  if (mine) {
+    const top = mine.offsetTop
+    const bot = top + mine.offsetHeight
+    const sy = top - 100
+    const xl = mobile ? 14 : mine.offsetLeft - 34
+    const xr = mobile ? W - 10 : mine.offsetLeft + mine.offsetWidth + 34
+    const yb = bot - 10
+    const yj = bot + 90
+    const sx = vineX(sy, mobile, cx)
+    const e = (x: number, y: number) => `${x.toFixed(1)} ${y.toFixed(1)}`
+    br = {
+      l: `M${e(sx, sy)} C${e(sx - (mobile ? 0 : 10), sy + 50)} ${e(xl, sy + 20)} ${e(xl, sy + 110)} L${e(xl, yb)} C${e(xl, yj - 10)} ${e(cx - 90, yj)} ${e(cx, yj)}`,
+      r: `M${e(sx, sy)} C${e(sx + 10, sy + 50)} ${e(xr, sy + 20)} ${e(xr, sy + 110)} L${e(xr, yb)} C${e(xr, yj - 10)} ${e(cx + 90, yj)} ${e(cx, yj)}`,
+    }
+    for (const x of [xl, xr]) for (const y of [top + 30, (top + bot) / 2, bot - 24]) bfl.push({ x, y, s: 0.9 })
+    bfl.push({ x: cx, y: yj, s: 1.5 })
+    brRange = [sy, yj]
+    endY = sy
+  }
+  const n = Math.max(1, Math.floor(endY / STEP))
   let d = `M${vineX(0, mobile, cx).toFixed(1)} 0`
   lens = [0]
   let px = vineX(0, mobile, cx)
@@ -95,7 +142,7 @@ function measure() {
     const side = (Math.floor(y / 95) % 2 ? 1 : -1) as 1 | -1
     leaves.push({ x: vineX(y, mobile, cx) + side * 16, y, rot: side * -35, at: y })
   }
-  geo.value = { W, H, d, twigs, flowers, fs: mobile ? 0.8 : 1.15, leaves }
+  geo.value = { W, H, d, twigs, flowers, fs: mobile ? 0.8 : 1.15, br, bfl, leaves }
 }
 
 function cache() {
@@ -105,6 +152,9 @@ function cache() {
   twigEls = [...tl.querySelectorAll<SVGPathElement>('.twig')]
   flEls = [...tl.querySelectorAll<SVGGElement>('.fl')]
   leafEls = [...tl.querySelectorAll<SVGEllipseElement>('.leaf')]
+  brEls = [...tl.querySelectorAll<SVGPathElement>('.br')]
+  bflEls = [...tl.querySelectorAll<SVGGElement>('.bfl')]
+  meEl = tl.querySelector<HTMLElement>('.gr-end')
 }
 
 function lenAtY(y: number) {
@@ -129,6 +179,10 @@ function frame() {
     flEls[i]?.classList.toggle('on', reach >= y + 10)
   })
   leafEls.forEach(l => l.classList.toggle('on', reach >= Number(l.dataset.at)))
+  const bp = Math.min(1, Math.max(0, (reach - brRange[0]) / Math.max(1, brRange[1] - brRange[0])))
+  brEls.forEach(b => (b.style.strokeDashoffset = String(1 - bp)))
+  bflEls.forEach(f => f.classList.toggle('on', reach >= Number(f.dataset.at)))
+  if (meEl) meEl.classList.toggle('in', reach > meEl.offsetTop - 60)
   if (progEl.value) progEl.value.style.transform = `scaleX(${Math.min(1, Math.max(0, reach / Math.max(1, tl.clientHeight)))})`
   if (idx !== lastIdx) {
     lastIdx = idx
@@ -149,6 +203,16 @@ function onScroll() {
   })
 }
 
+/** Визитка владельца: если она открыта, в блоке «обо мне» появятся имя, уровень и звание. */
+async function loadMe() {
+  try {
+    const res = await fetchT('/api/public/me')
+    if (res.ok) me.value = (await res.json()) as PublicCard
+  } catch {
+    /* визитка закрыта или сервер не ответил: блок остаётся со ссылками */
+  }
+}
+
 async function refresh() {
   measure()
   await nextTick()
@@ -157,6 +221,7 @@ async function refresh() {
 }
 
 onMounted(async () => {
+  void loadMe()
   reduced.value = matchMedia('(prefers-reduced-motion: reduce)').matches
   armed.value = !reduced.value
   await refresh()
@@ -208,6 +273,16 @@ const themeLabel = computed(() => (themeLight.value ? '☾︎ Тёмная' : '�
         <path ref="vineEl" class="vine" :d="geo.d" pathLength="1" />
         <path v-for="(t, i) in geo.twigs" :key="'t' + i" class="twig" :d="t" pathLength="1" />
         <g v-for="(l, i) in geo.leaves" :key="'l' + i" :transform="`translate(${l.x.toFixed(1)} ${l.y}) rotate(${l.rot})`"><ellipse class="leaf" rx="14" ry="6" :data-at="l.at" /></g>
+        <template v-if="geo.br">
+          <path class="vine br" :d="geo.br.l" pathLength="1" />
+          <path class="vine br" :d="geo.br.r" pathLength="1" />
+        </template>
+        <g v-for="(f, i) in geo.bfl" :key="'b' + i" :transform="`translate(${f.x.toFixed(1)} ${f.y.toFixed(1)})`">
+          <g class="bfl" :data-at="f.y">
+            <path v-for="k in 5" :key="k" class="gr-petal" :d="PETAL" :transform="`rotate(${(k - 1) * 72}) scale(${(geo.fs * f.s).toFixed(2)})`" />
+            <circle class="core" r="4" />
+          </g>
+        </g>
         <g v-for="(f, i) in geo.flowers" :key="'f' + i" :transform="`translate(${f.x.toFixed(1)} ${f.y})`">
           <g class="fl">
             <path v-for="k in 5" :key="k" class="gr-petal" :d="PETAL" :transform="`rotate(${(k - 1) * 72}) scale(${geo.fs})`" />
@@ -222,17 +297,35 @@ const themeLabel = computed(() => (themeLight.value ? '☾︎ Тёмная' : '�
         <p>{{ b.summary }}</p>
         <div class="n"><b>+{{ b.items }}</b> изменений</div>
       </article>
-    </div>
 
-    <section class="gr-fin">
-      <ul>
-        <li><b>{{ nf.format(totals.commits) }}</b> коммитов</li>
-        <li><b>{{ totals.days }}</b> дней работы</li>
-        <li><b>{{ nf.format(Math.round(totals.lines / 1000)) }} тыс.</b> строк кода</li>
-        <li><b>{{ totals.marks }}</b> ключевых событий</li>
-      </ul>
-      <RouterLink to="/history" class="jump solid">Читать всю историю →</RouterLink>
-    </section>
+      <div class="gr-end">
+        <aside class="gr-me" aria-label="Обо мне">
+          <div class="gr-me-pic"><RankPic v-if="me" :level="me.level" /><Icon v-else name="sakura" /></div>
+          <h2>{{ me?.name || 'Изучаю корейский' }}</h2>
+          <p v-if="me">уровень {{ me.level }} · {{ me.title }}</p>
+          <p v-else>личное пространство для корейского</p>
+          <div class="gr-me-title">Для связи</div>
+          <div class="gr-me-links">
+            <a class="jump solid" href="https://t.me/meeymirita" target="_blank" rel="noopener">Telegram · @meeymirita</a>
+            <RouterLink v-if="me" to="/me" class="jump">Моя визитка</RouterLink>
+          </div>
+        </aside>
+
+        <section class="gr-fin" aria-label="Итог платформы">
+          <h2>Итог платформы</h2>
+          <ul>
+            <li><b>{{ nf.format(totals.words) }}</b> слов в словаре</li>
+            <li><b>{{ totals.rules }}</b> правил грамматики</li>
+            <li><b>{{ totals.games }}</b> игр и тренажёров</li>
+            <li><b>{{ nf.format(totals.commits) }}</b> коммитов</li>
+            <li><b>{{ totals.days }}</b> дней работы</li>
+            <li><b>{{ nf.format(Math.round(totals.lines / 1000)) }} тыс.</b> строк кода</li>
+            <li><b>{{ totals.marks }}</b> ключевых событий</li>
+          </ul>
+          <RouterLink to="/history" class="jump solid">Читать всю историю →</RouterLink>
+        </section>
+      </div>
+    </div>
 
     <div class="hud" :class="{ on: hudOn }" aria-hidden="true"><b ref="cntEl">0</b> <span>коммитов</span><em ref="dateEl"></em></div>
   </main>
@@ -255,6 +348,9 @@ html[data-theme='dark'] .gr {
   background: radial-gradient(60% 40% at 0 0, rgba(255, 79, 154, .28), transparent 60%), radial-gradient(50% 40% at 100% 35%, rgba(194, 24, 107, .28), transparent 70%), linear-gradient(#2a0a18, #12040a) fixed;
 }
 .gr a { color: inherit; text-decoration: none; }
+/* полосы прокрутки справа нет: о прогрессе говорит полоса под шапкой (решение владельца 2026-11-19) */
+.gr { scrollbar-width: none; }
+.gr::-webkit-scrollbar { display: none; }
 .ko { font-family: 'Noto Sans KR', 'Archivo', sans-serif; }
 
 .gr-top { position: fixed; z-index: 20; inset: 0 0 auto 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px clamp(16px, 4vw, 48px); background: var(--hdr); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
@@ -280,16 +376,17 @@ html[data-theme='dark'] .gr {
 .gr-hint span { display: inline-block; font-size: 18px; color: var(--accent); margin-right: 6px; animation: nudge 1.2s ease-in-out infinite alternate; }
 @keyframes nudge { to { transform: translateY(8px); } }
 
-.tl { position: relative; max-width: 1040px; margin: 30px auto 0; padding: 60px 20px 120px; }
+.tl { position: relative; max-width: 1040px; margin: 30px auto 0; padding: 60px 20px max(170px, 52vh); }
 .ov { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 1; }
 .base { fill: none; stroke: var(--vine-base); stroke-width: 2; }
 .vine { fill: none; stroke: var(--vine); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--vine) 55%, transparent)); }
 .twig { fill: none; stroke: var(--vine); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .7s ease-out; }
 .twig.on { stroke-dashoffset: 0; }
+.vine.br { stroke-width: 3.5; }
 .leaf { fill: var(--leaf); opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0); transition: transform .5s cubic-bezier(.3, 1.6, .5, 1), opacity .5s; }
 .leaf.on { opacity: .85; transform: scale(1); }
-.fl { transform-box: fill-box; transform-origin: center; transform: scale(0) rotate(-60deg); transition: transform .8s cubic-bezier(.25, 1.9, .4, 1); }
-.fl.on { transform: scale(1) rotate(0); }
+.fl, .bfl { transform-box: fill-box; transform-origin: center; transform: scale(0) rotate(-60deg); transition: transform .8s cubic-bezier(.25, 1.9, .4, 1); }
+.fl.on, .bfl.on { transform: scale(1) rotate(0); }
 .gr-petal { fill: var(--petal); stroke: var(--petal-line); stroke-width: 1.5; }
 .core { fill: var(--core); }
 
@@ -304,9 +401,23 @@ html[data-theme='dark'] .gr {
 .blk .n { font: 400 12px/1.4 'JetBrains Mono', ui-monospace, Menlo, monospace; color: var(--soft); }
 .blk .n b { color: var(--ink); }
 
-.gr-fin { max-width: 640px; margin: 0 auto; padding: 24px 28px; text-align: left; background: var(--card); border: 1px solid var(--card-line); border-radius: 32px; box-shadow: var(--card-shadow); margin-bottom: 140px; }
-.gr-fin ul { list-style: none; display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 0 0 20px; padding: 0; color: var(--soft); font-size: 13px; }
-.gr-fin b { display: block; font-size: clamp(30px, 5vw, 48px); letter-spacing: -.03em; color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+.gr-end { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 32px; align-items: stretch; width: min(calc(100% - 100px), 900px); margin: 170px auto 0; }
+.gr-me, .gr-fin { padding: 24px 28px 26px; border-radius: 28px; background: var(--card); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: opacity .7s, transform .8s cubic-bezier(.2, .8, .2, 1); }
+.armed .gr-end > * { opacity: 0; transform: translateY(34px) scale(.97); }
+.armed .gr-end.in > * { opacity: 1; transform: none; }
+.armed .gr-end.in > :nth-child(2) { transition-delay: .15s; }
+.gr-me { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.gr-me-pic { display: grid; place-items: center; height: 104px; margin-bottom: 8px; font-size: 76px; }
+.gr-me-pic :deep(.rank-pic) { width: 104px; height: 104px; }
+.gr-me h2 { margin: 0; font-size: 26px; letter-spacing: -.02em; font-weight: 800; }
+.gr-me p { margin: 4px 0 14px; font: 500 13px/1.5 'JetBrains Mono', ui-monospace, Menlo, monospace; color: var(--soft); }
+.gr-me-title { margin: auto 0 8px; font: 500 11px/1 'JetBrains Mono', ui-monospace, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.gr-me-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.gr-fin { display: flex; flex-direction: column; text-align: left; }
+.gr-fin h2 { margin: 0 0 16px; font-size: 20px; letter-spacing: -.01em; font-weight: 800; }
+.gr-fin ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px 18px; margin: 0 0 20px; padding: 0; color: var(--soft); font-size: 12.5px; line-height: 1.35; }
+.gr-fin b { display: block; font-size: clamp(22px, 2.8vw, 34px); letter-spacing: -.03em; color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+.gr-fin .jump { align-self: flex-start; margin-top: auto; }
 
 .hud { position: fixed; z-index: 15; right: clamp(14px, 3vw, 40px); bottom: 22px; display: flex; align-items: baseline; gap: 8px; padding: 10px 18px; border-radius: 999px; background: var(--card); border: 1px solid var(--card-line); box-shadow: var(--card-shadow); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; font-size: 13px; color: var(--soft); }
 .hud.on { opacity: 1; transform: none; }
@@ -319,12 +430,13 @@ html[data-theme='dark'] .gr {
   .jump { padding: 7px 11px; }
   .gr-hero { padding-top: 120px; }
   .blk, .blk.r { width: calc(100% - 56px); margin-left: 56px; margin-right: 0; }
+  .gr-end { grid-template-columns: 1fr; width: calc(100% - 76px); margin: 150px 0 0 56px; }
   .armed .blk, .armed .blk.r { transform: translateX(30px); }
   .armed .blk.in { transform: none; }
   .hud em { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .gr-hint span { animation: none; }
-  .blk, .twig, .leaf, .fl, .hud { transition: none; }
+  .blk, .twig, .leaf, .fl, .bfl, .gr-me, .gr-fin, .hud { transition: none; }
 }
 </style>
