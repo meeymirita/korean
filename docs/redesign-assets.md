@@ -253,6 +253,8 @@ Subject:
 | Игра на слова | Юна сидит под списком игр (`<img class="gh-sit">`) | `game/yuna-sit.webp` |
 | Игра на слова | фон страницы: сейчас винные пятна света из `shell-pink.css`; когда будет `game/bg.webp`, вернуть `import bg` и `:style="{ '--gx-bg': `url(${bg})` }"` | `game/bg.webp` |
 | Главная раздела (`components/korean/DashboardHome.vue`) | картинка-подложка блоков «hero» и «quote» (`fallback`), котик у «Фразы дня» (`<img class="phrase-cat">`) | `home/dash/bg-yuna.webp`, `home/dash/cat-wave.webp` |
+| Страница 404 (`views/NotFoundView.vue`) | котик над числом 404 (`<Cat name="think" />`, `cats/cat-think.webp`) | `cats/cat-think.webp` |
+| Страница загрузки `/upload` (`views/ImagesUploadView.vue`) | фон-картинка `.up-bg` в теме «Розовая» скрыт (`shell-pink.css`) | `upload/bg.webp` |
 | Вся тема «Розовая» (`assets/shell-pink.css`) | фон `html` без картинки; в светлой теме по-прежнему `game/bg.webp` | `game/bg.webp` |
 
 Иконки (`assets/icons`, `assets/game/icons`, `assets/home/dash/q-*`, плеер) в вёрстке оставлены: они маленькие и несут смысл (меню, кнопки). Положи новые файлы под теми же именами, старые заменятся.
