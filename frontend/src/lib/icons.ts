@@ -3,13 +3,17 @@
  * и в `src/assets/game/icons/` (иконки игр: dice, star, sakura, heart…). Имя файла без `.webp` и есть имя иконки.
  * В шаблонах: `<Icon name="fire" />`; в данных вместо эмодзи пишем имя иконки.
  */
+import { themedMap } from '@/lib/themed'
+
 const files = {
-  ...import.meta.glob('../assets/game/icons/*.webp', { eager: true, query: '?url', import: 'default' }),
-  ...import.meta.glob('../assets/icons/*.webp', { eager: true, query: '?url', import: 'default' }),
+  ...import.meta.glob(['../assets/game/icons/*.webp', '!../assets/game/icons/*-light.webp'], { eager: true, query: '?url', import: 'default' }),
+  ...import.meta.glob(['../assets/icons/*.webp', '!../assets/icons/*-light.webp'], { eager: true, query: '?url', import: 'default' }),
 } as Record<string, string>
 
-export const ICONS: Record<string, string> = {}
-for (const [path, url] of Object.entries(files)) ICONS[path.split('/').pop()!.replace('.webp', '')] = url
+const BASE: Record<string, string> = {}
+for (const [path, url] of Object.entries(files)) BASE[path.split('/').pop()!.replace('.webp', '')] = url
+/** Адрес иконки подбирается под тему при чтении (`lib/themed.ts`). */
+export const ICONS: Record<string, string> = themedMap(BASE)
 
 /** Соответствие «эмодзи → иконка», по нему меняли эмодзи в данных (ярлыки, подсказки). */
 export const EMOJI_ICON: Record<string, string> = {

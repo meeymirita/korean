@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
+import { themed } from '@/lib/themed'
 import coinImg from '@/assets/icons/coin.webp'
 import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
@@ -126,7 +127,7 @@ const tabs = computed<[CabinetTab, string][]>(() => [
         </div>
         <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
-      <span v-if="!progress.isGuest" class="cb-coins" title="Монетки Юны"><img :src="coinImg" alt="" /><span v-count="progress.data.coins">{{ progress.data.coins }}</span></span>
+      <span v-if="!progress.isGuest" class="cb-coins" title="Монетки Юны"><img :src="themed(coinImg)" alt="" /><span v-count="progress.data.coins">{{ progress.data.coins }}</span></span>
       <button type="button" class="cb-lvl" title="Все уровни" @click="levelsOpen = true">{{ progress.info.level }}<small>уровень</small></button>
     </header>
 

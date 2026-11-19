@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
+import { themed } from '@/lib/themed'
+import catWave from '@/assets/home/dash/cat-wave.webp'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { D } from '@/data/korean/words'
@@ -92,7 +94,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
         <div class="sh"><h3>✧ Быстрый доступ</h3></div>
         <div class="quick">
           <RouterLink v-for="q in quick" :key="q.to + q.title" :to="q.to">
-            <img class="qi" :src="q.img" alt="" aria-hidden="true" draggable="false" />
+            <img class="qi" :src="themed(q.img)" alt="" aria-hidden="true" draggable="false" />
             <b>{{ q.title }}</b>
             <Icon v-if="!progress.unlocked" name="lock" class="qlock" title="Нужен токен" />
           </RouterLink>
@@ -116,6 +118,7 @@ const openDay = useQueryParam('day', '', week.value.map(c => c.key))
 
     <div class="dcol">
       <section class="panel phrase">
+        <img class="phrase-cat" :src="themed(catWave)" alt="" aria-hidden="true" draggable="false" />
         <div class="label">✳︎ &nbsp; Фразы дня</div>
         <div v-for="p in HOME_PHRASES" :key="p.ko" class="ph">
           <div class="kr ko">{{ p.ko }}</div>

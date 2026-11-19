@@ -1,3 +1,4 @@
+import { themed } from '@/lib/themed'
 import hint from '@/assets/icons/shop-hint.webp'
 import fifty from '@/assets/icons/shop-fifty.webp'
 import skip from '@/assets/icons/shop-skip.webp'
@@ -36,7 +37,7 @@ export const SURPRISES: ShopItem[] = [
 ]
 
 export const itemName = (id: string) => [...ITEMS, ...SURPRISES].find(i => i.id === id)?.name ?? id
-export const itemIcon = (id: string) => [...ITEMS, ...SURPRISES].find(i => i.id === id)?.icon ?? ''
+export const itemIcon = (id: string) => themed([...ITEMS, ...SURPRISES].find(i => i.id === id)?.icon)
 
 /** Типы записей истории монеток. */
 export const LOG_KINDS: [string, string][] = [

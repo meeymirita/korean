@@ -36,6 +36,10 @@ const systemDark = () => typeof matchMedia === 'function' && matchMedia('(prefer
 export const themeMode = ref<ThemeMode>(readMode())
 /** Сейчас включена тёмная тема (для значка кнопки). */
 export const themeDark = ref(false)
+/** Сейчас включена светлая тема: картинки берутся из старого набора `*-light.webp` (`lib/themed.ts`). Пока страница не ожила, false. */
+export const themeLight = ref(false)
+/** Страница ожила: до этого `themeLight` не трогаем, иначе первая отрисовка в браузере не совпадёт с серверной (Hydration mismatch). */
+let hydrated = typeof document === 'undefined'
 
 export function applyTheme() {
   if (typeof document === 'undefined') return
@@ -44,6 +48,7 @@ export function applyTheme() {
   if (t === 'dark' && (themeMode.value === 'night' || themeMode.value === 'wine')) document.documentElement.dataset.palette = themeMode.value
   else delete document.documentElement.dataset.palette
   themeDark.value = t === 'dark'
+  if (hydrated) themeLight.value = t === 'light'
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', t)
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'dark' ? (themeMode.value === 'night' ? '#1a1519' : themeMode.value === 'wine' ? '#0b0508' : '#14152b') : '#fbf8ff')
 }
@@ -62,6 +67,12 @@ export function setTheme(mode: ThemeMode) {
 export function toggleTheme() {
   const now = resolveTheme(themeMode.value, systemDark())
   setTheme(now === 'dark' ? 'light' : 'wine')
+}
+
+/** Вызывается, когда приложение смонтировано (`app:mounted`): с этого момента картинки и страницы подбираются под светлую тему. */
+export function themeHydrated() {
+  hydrated = true
+  applyTheme()
 }
 
 /** Вызывается один раз при запуске: ставит тему и следит за системной настройкой, пока выбрано «авто». */

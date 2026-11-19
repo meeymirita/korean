@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
+import { themed } from '@/lib/themed'
+import catWow from '@/assets/game/cat-wow.webp'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
@@ -180,6 +182,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           <div class="gx-sub">Учим корейский вместе ♡</div>
         </div>
       </RouterLink>
+      <img class="gx-cat gx-cat-nav" :src="themed(catWow)" alt="" aria-hidden="true" />
       <label class="gx-find"><span aria-hidden="true">⌕</span><input v-model="q" type="search" autocomplete="off" placeholder="Поиск игр…" aria-label="Поиск игры по названию" /></label>
       <div class="gx-navbox">
         <!-- движок «Хлебушек» ждёт эти два элемента: прячем, меню слева у страницы одно (группы) -->

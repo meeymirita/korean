@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { themed } from '@/lib/themed'
 import coinImg from '@/assets/icons/coin.webp'
 import { sectionById } from '@/data/korean/sections'
 import { useShopPage } from '@/composables/useShopPage'
@@ -27,7 +28,7 @@ const s = sectionById('shop')
               <span><i>Сюрпризы.</i> Открываются сразу после покупки: набор из 3–5 предметов, сундук с 60–110 монетками или пять подсказок.</span>
             </span>
           </span>
-          <span class="shx-hbal" title="Твой баланс"><img :src="coinImg" alt="" /><span v-count="coins">{{ coins }}</span></span>
+          <span class="shx-hbal" title="Твой баланс"><img :src="themed(coinImg)" alt="" /><span v-count="coins">{{ coins }}</span></span>
         </div>
       </div>
     </header>
@@ -37,13 +38,13 @@ const s = sectionById('shop')
           <h2>Предметы для игры</h2>
           <div class="shx-grid">
             <article v-for="it in ITEMS" :key="it.id" class="shx-card">
-              <img :src="it.icon" alt="" />
+              <img :src="themed(it.icon)" alt="" />
               <div>
                 <h3>{{ it.name }}</h3>
                 <p>{{ it.text }}</p>
               </div>
               <footer>
-                <span class="shx-price"><img :src="coinImg" alt="" />{{ it.price }}</span>
+                <span class="shx-price"><img :src="themed(coinImg)" alt="" />{{ it.price }}</span>
                 <small>у тебя: {{ shop.count(it.id) }}</small>
                 <button v-if="it.id === 'shield' || it.id === 'double'" type="button" class="shx-btn ghost" :disabled="shop.pending === it.id || !shop.count(it.id) || isActive(it.id)" @click="turnOn(it.id)">{{ isActive(it.id) ? 'Включено' : 'Включить' }}</button>
                 <button type="button" class="shx-btn" :disabled="shop.pending === it.id || coins < it.price" :aria-label="`Купить: ${it.name}`" @click="buy(it)">Купить</button>
@@ -57,13 +58,13 @@ const s = sectionById('shop')
           <h2>Сюрпризы Юны</h2>
           <div class="shx-grid three">
             <article v-for="it in SURPRISES" :key="it.id" class="shx-card">
-              <img :src="it.icon" alt="" />
+              <img :src="themed(it.icon)" alt="" />
               <div>
                 <h3>{{ it.name }}</h3>
                 <p>{{ it.text }}</p>
               </div>
               <footer>
-                <span class="shx-price"><img :src="coinImg" alt="" />{{ it.price }}</span>
+                <span class="shx-price"><img :src="themed(coinImg)" alt="" />{{ it.price }}</span>
                 <button type="button" class="shx-btn" :disabled="shop.pending === it.id || coins < it.price" @click="buy(it)">Открыть</button>
               </footer>
             </article>

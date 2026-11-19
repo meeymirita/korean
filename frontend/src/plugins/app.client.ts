@@ -5,7 +5,7 @@
 import type { Pinia } from 'pinia'
 import { initPwa } from '@/lib/pwa'
 import { initSiteImages } from '@/lib/siteImagesDom'
-import { initTheme } from '@/lib/theme'
+import { initTheme, themeHydrated } from '@/lib/theme'
 import { useProgressStore } from '@/stores/progress'
 import { useSiteImagesStore } from '@/stores/siteImages'
 
@@ -13,6 +13,7 @@ export default defineNuxtPlugin(nuxtApp => {
   const pinia = nuxtApp.$pinia as Pinia
   const router = useRouter()
   initTheme()
+  nuxtApp.hook('app:mounted', themeHydrated)
   initPwa()
 
   /** Ссылка вида /?guest=токен входит сразу как гость; сам токен после входа убирается из адреса. */

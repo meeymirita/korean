@@ -1,4 +1,5 @@
 /** Картинки плеера (набор владельца, `assets/player/`): кнопки, иконки, обложки по умолчанию и стикеры Юны с котиком. */
+import { themed, themedMap } from '@/lib/themed'
 import play from '@/assets/player/control_play.webp'
 import pause from '@/assets/player/control_pause.webp'
 import next from '@/assets/player/control_next_track.webp'
@@ -22,11 +23,11 @@ import palace from '@/assets/player/cover_seoul_palace.webp'
 import moon from '@/assets/player/cover_moon_sakura.webp'
 import sunset from '@/assets/player/cover_sunset.webp'
 
-export const PLAYER_IMG = { play, pause, next, prev, shuffle, repeat, volume, mute, more, add, equalizer, note, close, playlist, vinyl, cat, sleepCat }
+export const PLAYER_IMG = themedMap({ play, pause, next, prev, shuffle, repeat, volume, mute, more, add, equalizer, note, close, playlist, vinyl, cat, sleepCat }) as { play: string, pause: string, next: string, prev: string, shuffle: string, repeat: string, volume: string, mute: string, more: string, add: string, equalizer: string, note: string, close: string, playlist: string, vinyl: string, cat: string, sleepCat: string }
 
 /** Обложки для песен без своей картинки: выбираются по id песни, чтобы у каждой был свой вид и он не менялся. */
 export const COVERS = [sakura, namsan, palace, moon, sunset]
-export const coverFor = (id: string) => COVERS[[...id].reduce((s, c) => s + c.charCodeAt(0), 0) % COVERS.length]!
+export const coverFor = (id: string) => themed(COVERS[[...id].reduce((s, c) => s + c.charCodeAt(0), 0) % COVERS.length]!)
 
 /** 83 → «1:23», 3725 → «1:02:05». */
 export function formatTime(sec: number): string {
