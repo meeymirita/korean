@@ -56,16 +56,16 @@ useHead({
 </template>
 
 <style scoped>
-.crumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 18px; background: rgba(255, 255, 255, .7); font-size: 12.5px; color: var(--muted); }
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 18px; background: rgba(255, 255, 255, .08); font-size: 12.5px; color: var(--muted); }
 .crumbs a:hover { color: var(--ink); }
 .crumbs b { color: var(--ink); font-weight: 600; }
-.box { padding: 20px 26px; border: 1px solid #fff; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
+.box { padding: 20px 26px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
 .box h1 { margin: 0; font-size: clamp(26px, 4.5vw, 38px); line-height: 1.2; font-weight: 700; }
-.intro { margin: 10px 0 0; max-width: 70ch; color: #3b3f7a; font-size: 15px; line-height: 1.55; }
+.intro { margin: 10px 0 0; max-width: 70ch; color: #ffd1e3; font-size: 15px; line-height: 1.55; }
 .grid { list-style: none; margin: 14px 0 20px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 10px; }
-.grid a { display: flex; flex-direction: column; gap: 6px; height: 100%; box-sizing: border-box; padding: 16px 20px; border: 1px solid #fff; border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; }
+.grid a { display: flex; flex-direction: column; gap: 6px; height: 100%; box-sizing: border-box; padding: 16px 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; }
 .grid a:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(70, 55, 140, .16); }
-.grid b { font-size: 16px; color: #43308c; }
+.grid b { font-size: 16px; color: #ffd1e3; }
 .grid span { font-size: 13px; color: var(--muted); }
 @media (max-width: 600px) { .box { padding: 16px; } }
 </style>

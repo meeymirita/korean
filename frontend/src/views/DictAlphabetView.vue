@@ -48,17 +48,17 @@ if (import.meta.server && !data.value && error.value?.statusCode === 404) setRes
 </template>
 
 <style scoped>
-.crumbs { display:flex; flex-wrap:wrap; gap:8px; align-items:center; width:fit-content; max-width:100%; margin:14px 0 12px; padding:6px 16px; border-radius:18px; background:rgba(255,255,255,.7); font-size:12.5px; color:var(--muted); }
-.box { padding:20px 26px; border:1px solid #fff; border-radius:24px; background:var(--surface); box-shadow:var(--shadow); }
+.crumbs { display:flex; flex-wrap:wrap; gap:8px; align-items:center; width:fit-content; max-width:100%; margin:14px 0 12px; padding:6px 16px; border-radius:18px; background:rgba(255,255,255,.08); font-size:12.5px; color:var(--muted); }
+.box { padding:20px 26px; border:1px solid var(--line); border-radius:24px; background:var(--surface); box-shadow:var(--shadow); }
 .box h1 { margin:0; font-size:clamp(26px,4.5vw,38px); line-height:1.2; }
-.box p { margin:10px 0 0; color:#3b3f7a; line-height:1.5; }
+.box p { margin:10px 0 0; color:#ffd1e3; line-height:1.5; }
 .list { list-style:none; margin:14px 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr)); gap:8px; }
-.list li { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:10px 16px; border:1px solid #fff; border-radius:16px; background:var(--surface); box-shadow:var(--shadow); }
+.list li { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; padding:10px 16px; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:var(--shadow); }
 .w { padding:4px 14px; border-radius:999px; background:var(--pink); color:var(--accent); font-weight:700; font-size:18px; }
-.ru { flex:1 1 140px; min-width:0; color:#43308c; font-size:15px; font-weight:600; }
+.ru { flex:1 1 140px; min-width:0; color:#ffd1e3; font-size:15px; font-weight:600; }
 .pos { font-size:11.5px; color:var(--muted); }
 .pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px; margin:16px 0; }
-.pagination a { padding:7px 12px; border-radius:999px; background:var(--surface); color:#43308c; font-weight:600; }
+.pagination a { padding:7px 12px; border-radius:999px; background:var(--surface); color:#ffd1e3; font-weight:600; }
 .pagination a[aria-current="page"] { background:var(--pink); }
 @media(max-width:600px){.box{padding:16px}}
 </style>

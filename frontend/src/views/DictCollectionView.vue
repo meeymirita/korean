@@ -77,27 +77,27 @@ const href = (w: string) => `/dict/${encodeURIComponent(w)}`
 </template>
 
 <style scoped>
-.crumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 18px; background: rgba(255, 255, 255, .7); font-size: 12.5px; color: var(--muted); }
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 18px; background: rgba(255, 255, 255, .08); font-size: 12.5px; color: var(--muted); }
 .crumbs a:hover { color: var(--ink); }
 .crumbs b { color: var(--ink); font-weight: 600; }
-.box { padding: 20px 26px; border: 1px solid #fff; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
+.box { padding: 20px 26px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
 .box h1 { margin: 0; font-size: clamp(26px, 4.5vw, 38px); line-height: 1.2; font-weight: 700; }
 .box h2 { margin: 0 0 10px; font-size: 16px; }
-.intro { margin: 10px 0 0; max-width: 70ch; color: #3b3f7a; font-size: 15px; line-height: 1.55; }
+.intro { margin: 10px 0 0; max-width: 70ch; color: #ffd1e3; font-size: 15px; line-height: 1.55; }
 .count { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 .list { list-style: none; margin: 14px 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 8px; }
-.list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 16px; border: 1px solid #fff; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+.list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
 .n { flex: none; min-width: 26px; font-size: 12px; color: var(--muted); }
 .w { padding: 4px 14px; border-radius: 999px; background: var(--pink); color: var(--accent); font-weight: 700; font-size: 18px; }
 .w:hover { background: var(--soft); }
 .pron { color: var(--muted); font-size: 13px; }
-.ru { flex: 1 1 140px; min-width: 0; color: #43308c; font-size: 15px; font-weight: 600; }
+.ru { flex: 1 1 140px; min-width: 0; color: #ffd1e3; font-size: 15px; font-weight: 600; }
 .pos { font-size: 11.5px; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
 .chips a { padding: 7px 16px; border-radius: 999px; background: var(--soft); color: var(--accent2); font-size: 13.5px; font-weight: 600; }
 .chips a:hover { background: var(--pink); }
 .more { margin-bottom: 20px; }
-.src { margin: 0 0 14px; padding: 8px 16px; width: fit-content; max-width: 100%; border-radius: 14px; background: rgba(255, 255, 255, .72); font-size: 12px; line-height: 1.5; color: var(--muted); }
-.src { margin: 0 0 14px; padding: 8px 16px; width: fit-content; max-width: 100%; border-radius: 14px; background: rgba(255, 255, 255, .72); font-size: 12px; line-height: 1.5; color: var(--muted); }
+.src { margin: 0 0 14px; padding: 8px 16px; width: fit-content; max-width: 100%; border-radius: 14px; background: rgba(255, 255, 255, .08); font-size: 12px; line-height: 1.5; color: var(--muted); }
+.src { margin: 0 0 14px; padding: 8px 16px; width: fit-content; max-width: 100%; border-radius: 14px; background: rgba(255, 255, 255, .08); font-size: 12px; line-height: 1.5; color: var(--muted); }
 @media (max-width: 600px) { .box { padding: 16px; } }
 </style>

@@ -81,10 +81,10 @@ useHead({ script: [{ key: 'ru-ld', type: 'application/ld+json', innerHTML: () =>
 </template>
 
 <style scoped>
-.rcrumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .7); font-size: 12.5px; color: var(--muted); }
+.rcrumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 12.5px; color: var(--muted); }
 .rcrumbs a:hover { color: var(--ink); }
 .rcrumbs b { color: var(--ink); font-weight: 600; }
-.rbox { margin-bottom: 14px; padding: 20px 26px; border: 1px solid #fff; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
+.rbox { margin-bottom: 14px; padding: 20px 26px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
 .rbox h1 { margin: 0; font-size: clamp(34px, 6vw, 52px); line-height: 1.1; font-weight: 700; }
 .rbox h2 { margin: 0 0 12px; font-size: 18px; }
 .rlead { margin: 10px 0 0; color: var(--muted); font-size: 16px; line-height: 1.55; }

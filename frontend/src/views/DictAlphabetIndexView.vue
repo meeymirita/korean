@@ -28,10 +28,10 @@ const href = (value: string) => `/dict/a/${encodeURIComponent(value)}`
 </template>
 
 <style scoped>
-.crumbs { display:flex; flex-wrap:wrap; gap:8px; align-items:center; width:fit-content; max-width:100%; margin:14px 0 12px; padding:6px 16px; border-radius:18px; background:rgba(255,255,255,.7); font-size:12.5px; color:var(--muted); }
-.box,.group { padding:20px 26px; border:1px solid #fff; border-radius:24px; background:var(--surface); box-shadow:var(--shadow); }
+.crumbs { display:flex; flex-wrap:wrap; gap:8px; align-items:center; width:fit-content; max-width:100%; margin:14px 0 12px; padding:6px 16px; border-radius:18px; background:rgba(255,255,255,.08); font-size:12.5px; color:var(--muted); }
+.box,.group { padding:20px 26px; border:1px solid var(--line); border-radius:24px; background:var(--surface); box-shadow:var(--shadow); }
 .box h1 { margin:0; font-size:clamp(26px,4.5vw,38px); line-height:1.2; }
-.box p { margin:10px 0 0; color:#3b3f7a; line-height:1.5; }
+.box p { margin:10px 0 0; color:#ffd1e3; line-height:1.5; }
 .group { margin-top:12px; }
 .group h2 { display:flex; align-items:baseline; gap:12px; margin:0 0 12px; font-size:21px; }
 .group h2 span,.syllables small { color:var(--muted); font-size:12px; font-weight:500; }

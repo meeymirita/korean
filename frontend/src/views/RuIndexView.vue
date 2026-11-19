@@ -26,9 +26,9 @@ useHead({ link: [{ rel: 'canonical', href: canonicalOf('/ru') }] })
 </template>
 
 <style scoped>
-.icrumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .7); font-size: 12.5px; color: var(--muted); }
+.icrumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: fit-content; max-width: 100%; margin: 14px 0 12px; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 12.5px; color: var(--muted); }
 .icrumbs b { color: var(--ink); font-weight: 600; }
-.ibox { padding: 22px 26px; border: 1px solid #fff; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
+.ibox { padding: 22px 26px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
 .ibox h1 { margin: 0 0 10px; font-size: clamp(30px, 5vw, 44px); }
 .ibox p { margin: 0 0 16px; color: var(--muted); line-height: 1.6; }
 .ibox p a { color: var(--accent); }
