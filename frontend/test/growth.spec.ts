@@ -4,26 +4,28 @@ import GrowthView from '@/views/GrowthView.vue'
 import { GROWTH } from '@/data/growth'
 
 describe('«Рост платформы»', () => {
-  it('рисует график: линия, цветок на каждое ключевое событие, столбик на каждый день', async () => {
+  it('рисует ленту: блок на каждое ключевое событие, лоза, веточка и цветок на каждый блок', async () => {
     const w = await mountSuspended(GrowthView, { route: '/growth' })
     expect(w.find('h1').text()).toBe('Рост платформы')
-    expect(w.find('path.line').attributes('d')).toMatch(/^M[\d. ]+C/)
-    expect(w.findAll('.bloom').length).toBe(GROWTH.marks.length)
-    expect(w.findAll('.bar').length).toBe(GROWTH.days.length)
-    expect(w.findAll('.gl').length).toBeGreaterThan(3)
-    expect(w.find('.count').text()).toContain('коммитов')
+    expect(w.findAll('.blk').length).toBe(GROWTH.marks.length)
+    expect(w.findAll('.blk.r').length).toBeGreaterThan(0)
+    expect(w.findAll('.blk.l').length).toBeGreaterThan(0)
+    expect(w.find('path.vine').exists()).toBe(true)
+    expect(w.findAll('.twig').length).toBe(GROWTH.marks.length)
+    expect(w.findAll('.fl').length).toBe(GROWTH.marks.length)
   })
 
-  it('события доступны текстом для чтения (не только графикой)', async () => {
+  it('события лежат в разметке текстом (читаются и без графики)', async () => {
     const w = await mountSuspended(GrowthView, { route: '/growth' })
-    expect(w.findAll('.sr-only li').length).toBe(GROWTH.marks.length)
-    expect(w.find('.sr-only').text()).toContain(GROWTH.marks[0]!.title)
+    expect(w.find('.blk').text()).toContain(GROWTH.marks[0]!.title)
+    expect(w.text()).toContain(GROWTH.marks[GROWTH.marks.length - 1]!.summary)
   })
 
-  it('есть ссылки на историю и кнопки перехода к началу и к итогу', async () => {
+  it('есть ссылки на историю, кнопки перехода, смена темы и итоги', async () => {
     const w = await mountSuspended(GrowthView, { route: '/growth' })
     expect(w.find('a[href="/history"]').exists()).toBe(true)
-    expect(w.findAll('.top .jump').length).toBe(2)
-    expect(w.find('.fin').text()).toContain('ключевых событий')
+    expect(w.findAll('.gr-top .jump').length).toBe(3)
+    expect(w.find('.theme-btn').exists()).toBe(true)
+    expect(w.find('.gr-fin').text()).toContain('ключевых событий')
   })
 })

@@ -235,24 +235,6 @@ html[data-theme='dark'][data-palette='wine'] .gh .gh-card:hover:where(:not(.pk *
 html[data-theme='dark'][data-palette='wine'] .gh .gh-card i:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
 html[data-theme='dark'][data-palette='wine'] .gh :is(.gh-backlink, .gh-name):where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 
-/* views/GrowthView.vue */
-html[data-theme='dark'][data-palette='wine'] .grow:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
-html[data-theme='dark'][data-palette='wine'] .top:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); }
-html[data-theme='dark'][data-palette='wine'] .brand .mark:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .bg:where(:not(.pk *)) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.07) 48%, rgba(255, 255, 255, 0.07) 100%); }
-html[data-theme='dark'][data-palette='wine'] .o1:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
-html[data-theme='dark'][data-palette='wine'] .o2:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
-html[data-theme='dark'][data-palette='wine'] .o3:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
-html[data-theme='dark'][data-palette='wine'] .petal:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 0.2)); }
-html[data-theme='dark'][data-palette='wine'] .grid line:where(:not(.pk *)) { stroke: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .intro p:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .count b:where(:not(.pk *)) { text-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .prog:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
-html[data-theme='dark'][data-palette='wine'] .prog i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
-html[data-theme='dark'][data-palette='wine'] .card:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .card p:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .fin:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
-
 /* views/ImagesUploadView.vue */
 html[data-theme='dark'][data-palette='wine'] .up-bg:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1) url('@/assets/upload/bg.webp') center / cover no-repeat; }
 html[data-theme='dark'][data-palette='wine'] .up-bg:where(:not(.pk *))::after { background: rgba(255, 255, 255, 0.04); }

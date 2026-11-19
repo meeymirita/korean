@@ -13,8 +13,8 @@ import { BRAND, SITE, canonicalOf, seoMetaFor } from '@/data/seo'
 
 const route = useRoute()
 // кнопка плеера: в шапке раздела (рядом с колокольчиком) и игр она своя, на остальных страницах закреплена в правом верхнем углу
-// закреплённые кнопки музыки и голоса: не на самой главной `/` (решение владельца 2026-11-17), в разделах и играх они стоят в шапке
-const fixedMusic = computed(() => route.path !== '/' && !route.path.startsWith('/korean') && !route.path.startsWith('/game'))
+// закреплённые кнопки музыки и голоса: не на самой главной `/` (решение владельца 2026-11-17) и не на `/growth` (2026-11-19), в разделах и играх они стоят в шапке
+const fixedMusic = computed(() => route.path !== '/' && route.path !== '/growth' && !route.path.startsWith('/korean') && !route.path.startsWith('/game'))
 
 // заголовок, описание, canonical и превью ссылки для каждой страницы (src/data/seo.ts): на сервере уходят в готовый HTML
 const meta = computed(() => seoMetaFor(route.path))

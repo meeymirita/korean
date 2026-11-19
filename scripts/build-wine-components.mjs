@@ -17,7 +17,7 @@ const PREFIX = "html[data-theme='dark'][data-palette='wine']"
 
 /** Файлы, у которых уже свой тёмно-розовый дизайн, или служебные. */
 const SKIP = [
-  'views/HomeView.vue', 'views/AboutView.vue', 'views/HistoryView.vue', 'views/PublicMeView.vue', 'views/Dict', 'views/Ru',
+  'views/HomeView.vue', 'views/HomeLightView.vue', 'views/GrowthView.vue', 'views/AboutView.vue', 'views/HistoryView.vue', 'views/PublicMeView.vue', 'views/Dict', 'views/Ru',
   'components/site/', 'components/dict/', 'components/home/',
 ]
 const CSS_FILES = ['assets/sky.css', 'assets/study.css', 'assets/cabinet.css', 'assets/garden.css', 'assets/breakdown.css']
