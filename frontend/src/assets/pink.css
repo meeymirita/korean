@@ -59,9 +59,9 @@
 @media (max-width: 640px) { .pk-card { border-radius: 24px; } }
 @media (prefers-reduced-motion: reduce) { .pk .pk-btn, .pk .pk-ghost { transition: none; } }
 
-/* своя полоса прокрутки: тонкая линия у правого края, заполняется по мере прокрутки (оболочка PinkShell) */
-.pk-scroll { position: fixed; z-index: 40; top: clamp(12px, 2.5vw, 36px); bottom: clamp(12px, 2.5vw, 36px); right: 6px; width: 14px; cursor: pointer; display: flex; justify-content: center; }
-.pk-scroll::before { content: ""; width: 2px; height: 100%; border-radius: 2px; background: rgba(255, 255, 255, .22); transition: width .2s; }
-.pk-scroll i { position: absolute; top: 0; bottom: 0; width: 2px; border-radius: 2px; background: #fff; box-shadow: 0 0 10px rgba(255, 111, 174, .9); transform-origin: top; transition: width .2s; }
-.pk-scroll:hover::before, .pk-scroll:hover i { width: 4px; }
-@media (max-width: 640px) { .pk-scroll { right: 2px; width: 10px; } }
+/* своя полоса прокрутки: широкая линия у правого края, чёрно-розовая; розовая заливка растёт по мере прокрутки (оболочка PinkShell) */
+.pk-scroll { position: fixed; z-index: 40; top: clamp(12px, 2.5vw, 36px); bottom: clamp(12px, 2.5vw, 36px); right: 8px; width: 22px; cursor: pointer; display: flex; justify-content: center; }
+.pk-scroll::before { content: ""; width: 10px; height: 100%; border-radius: 10px; background: #12070c; border: 1px solid rgba(255, 111, 174, .45); transition: width .2s; }
+.pk-scroll i { position: absolute; top: 0; bottom: 0; width: 10px; border-radius: 10px; background: linear-gradient(180deg, #ff9cc6, #ff4f9a 55%, #c2186b); box-shadow: 0 0 14px rgba(255, 79, 154, .8); transform-origin: top; transition: width .2s; }
+.pk-scroll:hover::before, .pk-scroll:hover i { width: 14px; }
+@media (max-width: 640px) { .pk-scroll { right: 3px; width: 16px; } .pk-scroll::before, .pk-scroll i { width: 8px; } }
