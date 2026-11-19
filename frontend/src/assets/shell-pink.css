@@ -16,9 +16,9 @@ html[data-theme='dark'][data-palette='wine'] body:has(.study.sky) { background: 
 html[data-theme='dark'][data-palette='wine']:has(.study.sky:not(.study-modal))::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(70% 55% at 0% 0%, rgba(255, 79, 154, .6) 0%, rgba(255, 79, 154, 0) 60%),
-    radial-gradient(60% 50% at 100% 30%, rgba(194, 24, 107, .55) 0%, rgba(194, 24, 107, 0) 70%),
-    radial-gradient(55% 45% at 50% 100%, rgba(232, 62, 140, .45) 0%, rgba(232, 62, 140, 0) 70%),
+    radial-gradient(70% 55% at 0% 0%, rgba(255, 79, 154, .28) 0%, rgba(255, 79, 154, 0) 60%),
+    linear-gradient(rgba(26, 6, 16, .38), rgba(26, 6, 16, .5)),
+    url('./game/bg-wine.webp') center / cover no-repeat,
     linear-gradient(#2a0a18, #1a0610);
 }
 html[data-theme='dark'][data-palette='wine'] .study.sky { --pk-pink: #ff6fae; --glass: rgba(20, 6, 12, .72); --panel: rgba(32, 8, 20, .85); --accent-soft: rgba(255, 111, 174, .18); --accent-ink: #2a0a18; }
@@ -111,7 +111,7 @@ html[data-theme='dark'][data-palette='wine'] .dash .cal .cell.today { outline-co
 html[data-theme='dark'][data-palette='wine'] .ov-search .sb input { color: #fff; }
 
 /* страница загрузки картинок (/upload): фон без картинки */
-html[data-theme='dark'][data-palette='wine'] .up-bg { background: radial-gradient(70% 55% at 0% 0%, rgba(255, 79, 154, .6), transparent 60%), radial-gradient(60% 50% at 100% 30%, rgba(194, 24, 107, .55), transparent 70%), #1a0610 !important; }
+html[data-theme='dark'][data-palette='wine'] .up-bg { background: linear-gradient(rgba(26, 6, 16, .45), rgba(26, 6, 16, .55)), url('./game/bg-wine.webp') center / cover no-repeat, #1a0610 !important; }
 
 /* вкладки «Сегодня»: общий список кнопок .fcb не должен делать их белыми */
 html[data-theme='dark'][data-palette='wine'] .study.sky .fcb .td-tabs button { background: transparent; color: #fff; border-color: transparent; }
@@ -122,3 +122,13 @@ html[data-theme='dark'][data-palette='wine'] .study .shx { --pur: #ff9cc6; }
 html[data-theme='dark'][data-palette='wine'] .nwd { background: #2a0a18; border-left-color: var(--pk-line); color: #fff; }
 html[data-theme='dark'][data-palette='wine'] .nwd .form { background: rgba(255, 255, 255, .05); border-color: var(--pk-line); }
 html[data-theme='dark'][data-palette='wine'] .nwd input, html[data-theme='dark'][data-palette='wine'] .nwd textarea { background: rgba(0, 0, 0, .3); border-color: var(--pk-line); color: #fff; }
+
+/* кнопки под заданием в игре: «Обновить вопрос», «Блиц», «На выживание», «Как играть» */
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .ghost { background: rgba(255, 111, 174, .12); border: 1px solid rgba(255, 190, 220, .3); color: #fff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .ghost:hover { background: rgba(255, 111, 174, .26); border-color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .helpbtn { background: #ff6fae; border: 1px solid #ff6fae; color: #2a0a18; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .helpbtn:hover { background: #ff9cc6; border-color: #ff9cc6; }
+
+/* страница массовой загрузки /upload: заголовок, ссылка «Назад» и значок были тёмно-фиолетовыми на тёмном */
+html[data-theme='dark'][data-palette='wine'] .study.sky.up { --up-deep: #ffd1e3; --up-violet: #ff9cc6; --up-pink: #ff6fae; }
+html[data-theme='dark'][data-palette='wine'] .up-head h1 { color: #fff; }
