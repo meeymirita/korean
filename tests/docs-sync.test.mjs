@@ -41,6 +41,10 @@ describe('документация не расходится с кодом', () 
 })
 
 describe('ночная тема не отстаёт от тёмной', () => {
+  test('wine-components.css получен скриптом scripts/build-wine-components.mjs (запусти его, если тест упал)', async () => {
+    const { buildWineComponents } = await import('../scripts/build-wine-components.mjs')
+    assert.equal(read('frontend/src/assets/wine-components.css'), buildWineComponents())
+  })
   test('wine.css получен из dark.css скриптом scripts/build-wine.mjs (запусти его, если тест упал)', async () => {
     const { buildWine } = await import('../scripts/build-wine.mjs')
     assert.equal(read('frontend/src/assets/wine.css'), buildWine(read('frontend/src/assets/dark.css')))

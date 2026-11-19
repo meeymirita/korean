@@ -1,0 +1,795 @@
+/* Винно-розовый вариант светлых стилей страниц и окон: файл собирается скриптом scripts/build-wine-components.mjs, руками не правь.
+   Тонкую настройку пиши в shell-pink.css (он подключён позже). Светлая тема этим файлом не меняется. */
+
+/* assets/sky.css */
+html[data-theme='dark'][data-palette='wine'] .study.sky:not(.study-modal):where(:not(.pk *)) { background-color: rgba(255, 255, 255, 0.1); background-image: linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)), linear-gradient(to bottom, transparent 68%, rgba(255, 255, 255, 0.1) 93%), url('./game/bg.webp'); }
+html[data-theme='dark'][data-palette='wine'] .study-modal.sky .gp:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .rich .tip:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study.sky .rich pre:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sb:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study.sky .chip:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study.sky mark:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study.sky .gc:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study.sky .tw-card:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study.sky .task:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study.sky .fc:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study.sky .pg-card:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study.sky .rich .card:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a.router-link-active:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links a.active:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-level:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-level .lv-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-main .wrap:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+@media (max-width: 860px) {
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-side:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+}
+html[data-theme='dark'][data-palette='wine'] .game.sky .over:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sw-btn:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+@media (min-width: 861px) {
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky.focus.peek .study-side:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+}
+html[data-theme='dark'][data-palette='wine'] .study.sky .side-show:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study.sky .sw-btn kbd:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study-main .crumbs ol:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-main .crumbs a:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-main .wrap:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-links .ct.rdy:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+
+/* assets/study.css */
+html[data-theme='dark'][data-palette='wine'] .study .sb:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study mark:where(:not(.pk *)) { background: rgba(194, 24, 107, 0.28); }
+html[data-theme='dark'][data-palette='wine'] .study .gc:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-modal:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gp:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gvp:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
+html[data-theme='dark'][data-palette='wine'] .study .c-p:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .c-k:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .rich .card:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .fc:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-side:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+
+/* assets/cabinet.css */
+html[data-theme='dark'][data-palette='wine'] .study .pg-card:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .pg-stack i.learning:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study .pg-legend i.learning:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .rs:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .rs-opt.dragging:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .rs-q .rs-fill:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .wk-bars i:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.3); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-note:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .study .cb-note button:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-note button:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-count.at:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study input.at:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study textarea.at:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .nt-warn:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .nt-status.error:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .nt-card.nt-dragging:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .im-err:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .im-view:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.78); }
+html[data-theme='dark'][data-palette='wine'] .study .im-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .im-info .danger:hover:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .db-err:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .ni .ni-open:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .ni .ni-x:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); border: 2px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .ni .ni-wait:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .ni-view:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.7); }
+html[data-theme='dark'][data-palette='wine'] .ni-view img:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; background: linear-gradient(115deg, rgba(42, 10, 24, 0.92), rgba(194, 24, 107, 0.7) 55%, rgba(255, 111, 174, 0.35)), radial-gradient(ellipse at 80% 80%, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1) 45%, rgba(194, 24, 107, 1) 80%); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover.photo:where(:not(.pk *)) { background: linear-gradient(180deg, rgba(20, 24, 70, .25), rgba(42, 10, 24, 0.72)), var(--cover) center / cover no-repeat; }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover .kicker:where(:not(.pk *))::before { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-lvl:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .cb-coins:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover .avatar:where(:not(.pk *)) { border: 2px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .study .cb-cover .cb-play:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .nt-form:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .nt input:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study .nt textarea:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .nt input:focus:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study .nt textarea:focus:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .nt-bar button[type="submit"]:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .study .nt-add:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .nt-card:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .nt-card:hover:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .nt-acts button:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .nt-acts .plain:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .nt-acts .danger:hover:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .rs-start:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study .rs-next:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study .rp-start:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .qk-prog i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study .mark-star:hover:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .mark-star.on:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .ht-c.h1:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.22); }
+html[data-theme='dark'][data-palette='wine'] .study .ht-c.h2:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.45); }
+html[data-theme='dark'][data-palette='wine'] .study .ht-c.h3:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.72); }
+html[data-theme='dark'][data-palette='wine'] .study .pg-recc:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .sy-tile.dragging:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .study .sy-slot.dragging:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .md-d.m1:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .study .md-d.m2:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .study .md-d.m3:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .study kbd.kb:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-top:where(:not(.pk *)) { background: linear-gradient(120deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-btn:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-btn.soft:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-rule:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-goals li.done:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 111, 174, 0.16); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-bar:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-chip.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study .shp-log .plus:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shp-log .minus:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .rs-item:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .rs-hint:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .study .rs-chance:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .study .rs-item:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .rs-hint:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .study .rs-chance:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .study .rs-combo:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shp-claim:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .study .tg-badge.ok:where(:not(.pk *)) { background: color-mix(in srgb, rgba(194, 24, 107, 1) 22%, transparent); }
+html[data-theme='dark'][data-palette='wine'] .study .tg-badge.no:where(:not(.pk *)) { background: color-mix(in srgb, rgba(255, 111, 174, 1) 22%, transparent); }
+html[data-theme='dark'][data-palette='wine'] .study .tg-line input:focus-visible:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .tg-btn.danger:where(:not(.pk *)) { background: color-mix(in srgb, rgba(255, 111, 174, 1) 20%, transparent); border-color: color-mix(in srgb, rgba(255, 190, 220, 0.35) 45%, transparent); }
+html[data-theme='dark'][data-palette='wine'] .study .tg-guide textarea:focus-visible:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .tg-count.over:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nm-remind:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nm-remind input:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .nm-acts .on:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); color: #ff9cc6; }
+
+/* assets/garden.css */
+html[data-theme='dark'][data-palette='wine'] .study .gd-field:where(:not(.pk *)) { box-shadow: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.1) 100%); }
+html[data-theme='dark'][data-palette='wine'] .study .gd-plant.wet:where(:not(.pk *))::after { background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .cl-badge.uncommon:where(:not(.pk *)) { background: rgba(194, 24, 107, 0.18); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .cl-badge.rare:where(:not(.pk *)) { background: rgba(194, 24, 107, 0.16); color: #ffd1e3; border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-badge.legend:where(:not(.pk *)) { background: rgba(194, 24, 107, 0.22); color: #ffd1e3; border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-card:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .cl-card.open.rare:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .cl-card.open.legend:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); box-shadow: none; background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), var(--surface)); }
+
+/* assets/breakdown.css */
+html[data-theme='dark'][data-palette='wine'] .study .bd-card.bd-hit:where(:not(.pk *)) { box-shadow: none; }
+
+/* game/game.css */
+html[data-theme='dark'][data-palette='wine'] .game .game-side:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .card:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .mhelp:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); }
+html[data-theme='dark'][data-palette='wine'] .game .tile.dragging:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .over:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.55); }
+html[data-theme='dark'][data-palette='wine'] .game .over .box:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .story-tr:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .game .story-tip:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .tile.sel:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .story-info:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .game .story-win-box:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(160deg,rgba(255, 255, 255, 0.07),rgba(255, 255, 255, 0.07) 60%,rgba(255, 255, 255, 0.07)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .story-win-x:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .game .story-mark:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .game .gap-in:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .game .gap-in:focus:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .game .gap-in.ok:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .game .gap-in.bad:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+
+/* game/redesign.css */
+html[data-theme='dark'][data-palette='wine'] .game.gx:where(:not(.pk *)) { background-color: rgba(255, 255, 255, 0.1); background: linear-gradient(to bottom, transparent 68%, rgba(255, 255, 255, 0.1) 93%), var(--gx-bg) center top -230px / 100% auto fixed no-repeat; }
+html[data-theme='dark'][data-palette='wine'] .gx-nav:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gx-find:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-modes .sm:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-modes .sm.on:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gx-level:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gx-level .lv-bar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .gx-level .lv-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .gx-star:where(:not(.pk *)) { color: #ff9cc6; text-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-round:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-ava:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gx-drop:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-drop .gx-me:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-drop .gx-di:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .gx-di kbd:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-body .chip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-body .chip.on:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .game .card:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .ghost:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .helpbtn:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .gx-actions .helpbtn:where(:not(.pk *)) { border: 1.5px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .game details.set:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-stats:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-stats .empty:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-stats .tabs button.on:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-stats .num:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-stats .goal .bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(194, 24, 107, 1), rgba(194, 24, 107, 1)); }
+html[data-theme='dark'][data-palette='wine'] .game .gx-top .gx-tools .game-pill:where(:not(.pk *)) { box-shadow: none; }
+
+/* game/shell.css */
+html[data-theme='dark'][data-palette='wine'] .game .game-menu-list:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .game-top .gm-item:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .game .game-top .gm-item.on:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .game .game-top .game-pill:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .game .game-top .game-pill kbd:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+
+/* views/GameHomeView.vue */
+html[data-theme='dark'][data-palette='wine'] .gh .gh-grp:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-grp.on:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-glist a.cur:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-glist a:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-tab:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-tab.on:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-block:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-card:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-card:hover:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gh .gh-card i:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .gh :is(.gh-backlink, .gh-name):where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+
+/* views/ImagesUploadView.vue */
+html[data-theme='dark'][data-palette='wine'] .up-bg:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1) url('@/assets/upload/bg.webp') center / cover no-repeat; }
+html[data-theme='dark'][data-palette='wine'] .up-bg:where(:not(.pk *))::after { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .up-empty:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .up-card:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .up-head p:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .up-drop:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 2px dashed rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .up-drop:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .up-drop.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .up-drop span:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .up-drop small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .up .up-btn:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1.5px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .up .up-btn:hover:not(:disabled):where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .up .up-btn.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .up .up-btn.danger:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .up .up-btn.main:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .up .up-btn.danger:hover:not(:disabled):where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .up .up-btn.main:hover:not(:disabled):where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 1), rgba(194, 24, 107, 1)); }
+html[data-theme='dark'][data-palette='wine'] .up-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); }
+html[data-theme='dark'][data-palette='wine'] .up .up-input:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1.5px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .up .tg-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .up .tg-chip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .up-row:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .up-thumb:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .up-file small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .up-lbl:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .up .up-x:hover:not(:disabled):where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); }
+html[data-theme='dark'][data-palette='wine'] .up-foot:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .up-status:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* views/NotFoundView.vue */
+html[data-theme='dark'][data-palette='wine'] .nf:where(:not(.pk *)) { background: radial-gradient(circle at 92% 4%, rgba(255, 255, 255, 0.1) 0, transparent 30%), radial-gradient(circle at 4% 96%, rgba(255, 111, 174, 0.2) 0, transparent 28%), rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .links a:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.05); }
+
+/* views/korean/ChatView.vue */
+html[data-theme='dark'][data-palette='wine'] .chat-msg.assistant:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .chat-hint:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .chat-form textarea:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+
+/* views/korean/ClipView.vue */
+html[data-theme='dark'][data-palette='wine'] .cw.dict:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .clip-state.dict:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+
+/* views/korean/CultureView.vue */
+html[data-theme='dark'][data-palette='wine'] .cat-badge:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .culture-gc.cat-food .cat-badge:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .culture-gc.cat-holiday .cat-badge:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .culture-gc.cat-etiquette .cat-badge:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.4); color: #ffd1e3; }
+
+/* views/korean/ExamView.vue */
+html[data-theme='dark'][data-palette='wine'] .ex-card.badc:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .ex-state:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .ex-state.okc:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .ex-state.badc:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .ex-rule i:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .ex-rule.own i:where(:not(.pk *)) { background: rgba(194, 24, 107, 1); }
+html[data-theme='dark'][data-palette='wine'] .ex-rule.mid i:where(:not(.pk *)) { background: rgba(194, 24, 107, 1); }
+html[data-theme='dark'][data-palette='wine'] .ex-rule.weak:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .ex-rule.weak i:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .ex-link:where(:not(.pk *)) { color: var(--link, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .ex-bl li:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .ex-ans .bad:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .ex-ans .ok:where(:not(.pk *)) { color: #ffffff; }
+
+/* views/korean/GardenView.vue */
+html[data-theme='dark'][data-palette='wine'] .study .garden-page .gd-field:where(:not(.pk *)) { background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.1) 100%); }
+
+/* views/korean/GrammarView.vue */
+html[data-theme='dark'][data-palette='wine'] .pill.ph:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study .grammar-page .gdone:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+
+/* views/korean/KeyboardView.vue */
+html[data-theme='dark'][data-palette='wine'] .cdrop:where(:not(.pk *)) { background: var(--bg, rgba(255, 255, 255, 0.07)); box-shadow: none; }
+
+/* views/korean/MarksView.vue */
+html[data-theme='dark'][data-palette='wine'] .mk-kw li:where(:not(.pk *)) { background: var(--surface, rgba(255, 255, 255, 0.07)); }
+
+/* views/korean/ReviewView.vue */
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-deck:where(:not(.pk *))::before,
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-deck:where(:not(.pk *))::after { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-flip:focus-visible:where(:not(.pk *)) { outline: 2px solid var(--accent, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-count:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-icon:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-icon:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.28); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-bottom .mark-star:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-num input:focus-visible:where(:not(.pk *)) { outline: 2px solid var(--accent, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-prog:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.16); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-prog i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-kind:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
+html[data-theme='dark'][data-palette='wine'] .review-page .rv-act kbd:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .study .review-page .rv-act button.rv-yes:where(:not(.pk *)) { background: rgba(194, 24, 107, 1); }
+html[data-theme='dark'][data-palette='wine'] .study .review-page .rv-act button.rv-no:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); border-color: rgba(255, 190, 220, 0.35); }
+
+/* views/korean/ShopView.vue */
+html[data-theme='dark'][data-palette='wine'] .study .shx-bal:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 2px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-bal span:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-card:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-card h3:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-card p:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-card footer:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-card footer small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-btn:where(:not(.pk *)) { background: linear-gradient(180deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-btn.ghost:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-rule:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-goals li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-goals li.done:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-goals b:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-goals small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-goals li > span:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-bar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-chips button:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-chips button.on:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-empty:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-log li:where(:not(.pk *)) { color: #ffffff; border-bottom: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-log .when:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-log .plus:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-log .minus:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-help:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 111, 174, 0.16); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-tip:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-tip i:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study-shell.sky .study-main .wrap.shx-wrap:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .shx-claim:where(:not(.pk *)) { background: linear-gradient(180deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .shx-hbal:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.35); }
+
+/* views/korean/TodayView.vue */
+html[data-theme='dark'][data-palette='wine'] .study .td-tasks li.ok:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .td-tasks li.bad:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .td-del:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .cl li.ok .cl-mark:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-size input:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-size button:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-prog:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .cl-bar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .study .cl li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .td-fold:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+
+/* views/korean/WordsView.vue */
+html[data-theme='dark'][data-palette='wine'] .study .row .tr .w-extra:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
+html[data-theme='dark'][data-palette='wine'] .study .page-head .sub .words-json:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .page-head .sub .nw-add:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .words-more:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .wd-topics-toggle:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .wd-topic-go:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+
+/* components/AuthGate.vue */
+html[data-theme='dark'][data-palette='wine'] .gate-card:where(:not(.pk *)) { background: var(--surface, rgba(255, 255, 255, 0.07)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gate-card .gate-err:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .gate-method:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gate-method:hover:not(:disabled):where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .gm-ico:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+
+/* components/Avatar.vue */
+html[data-theme='dark'][data-palette='wine'] .avatar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); border: 1px solid rgba(255, 190, 220, 0.35); }
+
+/* components/ConfirmDialog.vue */
+html[data-theme='dark'][data-palette='wine'] .cf:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .cf-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .cf-box p:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cf-token input:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .cf-token input.bad:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .cf-token .cf-err:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cf-token input:focus:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .cf-cancel:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .cf-cancel:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .cf-ok:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .cf-ok.danger:where(:not(.pk *)) { background: rgba(194, 24, 107, 1); }
+html[data-theme='dark'][data-palette='wine'] .cf-acts button:focus-visible:where(:not(.pk *)) { outline: 2px solid rgba(255, 190, 220, 0.35); }
+
+/* components/SearchResults.vue */
+html[data-theme='dark'][data-palette='wine'] .sr-g h3 small:where(:not(.pk *)) { color: var(--muted, #ff9cc6); }
+html[data-theme='dark'][data-palette='wine'] .sr-r:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .sr-r.on:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); }
+html[data-theme='dark'][data-palette='wine'] .sr-r .rd:where(:not(.pk *)) { color: var(--muted, #ffd1e3); }
+
+/* components/SearchWindow.vue */
+html[data-theme='dark'][data-palette='wine'] .sw-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .sw-x:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .sw-x:hover:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .sw-meta:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .sw .empty:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/SiteImageEditor.vue */
+html[data-theme='dark'][data-palette='wine'] .sie-frame:where(:not(.pk *)) { border: 2px dashed rgba(255, 190, 220, 0.35); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .sie-frame.hov:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .sie-gear:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .sie-gear:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .sie-bar:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .sie-bar button:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .sie-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] h3 code:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .ic:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .live:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .thumb:where(:not(.pk *)) { background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 10px, rgba(255, 255, 255, 0.07) 10px, rgba(255, 255, 255, 0.07) 20px); }
+html[data-theme='dark'][data-palette='wine'] label:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] label b:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .row input:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .row button:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .wide:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] footer button:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .main:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .lnk:where(:not(.pk *)) { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .lnk.danger:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .hint:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/StudyModal.vue */
+html[data-theme='dark'][data-palette='wine'] .sm .sm-box.study:where(:not(.pk *)) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.07) 55%, rgba(255, 255, 255, 0.07) 100%); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .sm-x:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); }
+html[data-theme='dark'][data-palette='wine'] .sm-x:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+
+/* components/StudyTimer.vue */
+html[data-theme='dark'][data-palette='wine'] .stm-btn:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .stm-btn.on:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .stm-btn small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .stm-note:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.96); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .stm-note .go:where(:not(.pk *)) { color: #ffd1e3; background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+
+/* components/ToastHost.vue */
+html[data-theme='dark'][data-palette='wine'] .tst-item:where(:not(.pk *)) { color: #ffd1e3; border: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(100deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .tst-item.info:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .tst-item.error:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; border-color: rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .tst-item .ic:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .tst-item.error .ic:where(:not(.pk *)) { background: rgba(194, 24, 107, 1); }
+
+/* components/cabinet/AnalyticsPanel.vue */
+html[data-theme='dark'][data-palette='wine'] .an-tile:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .an-tile.h0:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .an-tile.h1:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .an-tile.h2:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .an-tile.h3:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .an-tile.h4:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .an-diary li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .an-ans.wrong i:where(:not(.pk *)) { color: #ffd1e3; }
+@media print {
+html[data-theme='dark'][data-palette='wine'] .study .print-sheet:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .study .print-sheet td:where(:not(.pk *)) { border-bottom: 1px solid rgba(255, 190, 220, 0.18); }
+}
+
+/* components/cabinet/BackupBlock.vue */
+html[data-theme='dark'][data-palette='wine'] .study .bk-prob:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .bk-bar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.15); }
+html[data-theme='dark'][data-palette='wine'] .study .bk-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study .bk-steps:where(:not(.pk *)) { color: var(--muted, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .bk-steps .done:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .bk-ok:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .bk-warn:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .bk-bad:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/cabinet/GuestAccess.vue */
+html[data-theme='dark'][data-palette='wine'] .gu-list button:hover:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .gu-err:where(:not(.pk *)) { color: var(--bad, #ffd1e3); }
+
+/* components/cabinet/LevelsModal.vue */
+html[data-theme='dark'][data-palette='wine'] .lv-bar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .lv-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .lv-rank:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .lv-rank.cur:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .lv-rank li:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .lv-rank li.done:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .lv-rank li.done b:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .lv-rank li.now:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 190, 220, 0.35); }
+
+/* components/cabinet/NoteModal.vue */
+html[data-theme='dark'][data-palette='wine'] .nm-wrap:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.5); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .nm-box:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .nm-box time:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nm-tags li:where(:not(.pk *)) { color: #ff9cc6; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .nm-x:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .nm-x:hover:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nm-acts button:where(:not(.pk *)) { color: #ffffff; border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .nm-acts button:hover:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .nm-acts .danger:hover:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/cabinet/OverviewTab.vue */
+html[data-theme='dark'][data-palette='wine'] .study .pg-lvl-btn:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 111, 174, 0.06); color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .pg-lvl-btn:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pg-weak-rule-head b:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .pg-weak-rule-track i:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .pg-weak-rule-foot a:where(:not(.pk *)) { color: var(--link, #ffd1e3); }
+
+/* components/cabinet/PlansCalendar.vue */
+html[data-theme='dark'][data-palette='wine'] .study .pc-day.today:where(:not(.pk *)) { outline: 2px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-box:where(:not(.pk *)) { color: #ffffff; border-left: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 60%, rgba(255, 255, 255, 0.07)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .pc-x:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .pc-x:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-new:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .pc-empty:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-form:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .pc-form.drag:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .pc-f:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-f input:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .pc-f textarea:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-f input:focus:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .pc-f textarea:focus:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-check small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-hint:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-attach:where(:not(.pk *)) { color: #ff9cc6; background: rgba(255, 255, 255, 0.07); border: 1px dashed rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-file:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .pc-err:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-btn:where(:not(.pk *)) { color: #ffffff; border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-btn:hover:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-btn.danger:hover:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-card:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); border-left: 4px solid var(--own, rgba(255, 190, 220, 0.35)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .pc-card.tutor:where(:not(.pk *)) { border-left-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pc-kind.tutor:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .pc-kind.own:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .pc-time:where(:not(.pk *)) { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .pc-tags li:where(:not(.pk *)) { color: #ff9cc6; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .pc-th > button:first-child:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .pc-rm:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.55); }
+html[data-theme='dark'][data-palette='wine'] .pc-doc:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .pc-doc:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .pc-doc em:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .pc-doc small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-rm2:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .pc-rm2:hover:where(:not(.pk *)) { color: #ffd1e3; background: rgba(255, 255, 255, 0.07); }
+
+/* components/cabinet/ReportChartModal.vue */
+html[data-theme='dark'][data-palette='wine'] .rc .rc-chart.ch:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .rc-sum > div:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .rc-sum .a:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .rc-sum .b:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .rc-sum .c:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .rc-sum .d:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .rc-best:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .rc-tip:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); border: 1px dashed rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rc-right:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rc-seg:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .study .rc-seg button.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .rc-list li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rc-list li.bad:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rc-list .ok .rc-mark:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .rc-list .bad .rc-mark:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .rc-ans.wrong i:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/cabinet/ReportSessions.vue */
+html[data-theme='dark'][data-palette='wine'] .rs-s:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .rs-head .rs-mode:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .rs-head .rs-ok:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .rs-head .rs-bad:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .rs-chev:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl td:where(:not(.pk *)) { border-top: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.ok .rs-m:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.bad .rs-m:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.bad .rs-y:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .rs-tbl tr.bad:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.05); }
+
+/* components/cabinet/ReportTab.vue */
+html[data-theme='dark'][data-palette='wine'] .rp-sum > div:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rp-sum b:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .rp-bar:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .rp-bar i:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .study .rp-link:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .rp-link:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); border-color: rgba(255, 190, 220, 0.35); color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .rp-link:focus-visible:where(:not(.pk *)) { outline: 2px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .rp-chev:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .rp-gbtn:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 111, 174, 0.06); color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .rp-gbtn:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .study .rp-gbtn:focus-visible:where(:not(.pk *)) { outline: 2px solid rgba(255, 190, 220, 0.35); }
+
+/* components/cabinet/ServiceLinks.vue */
+html[data-theme='dark'][data-palette='wine'] .svl-card:where(:not(.pk *)) { border: 1px solid var(--line, rgba(255, 190, 220, 0.18)); background: var(--card, rgba(255, 255, 255, 0.06)); }
+html[data-theme='dark'][data-palette='wine'] .svl-card:hover:where(:not(.pk *)) { border-color: var(--gold, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .svl-card small:where(:not(.pk *)) { color: var(--muted, #ffd1e3); }
+
+/* components/cabinet/ServicesTab.vue */
+html[data-theme='dark'][data-palette='wine'] .ops-search-index:where(:not(.pk *)) { border: 1px solid var(--line, rgba(255, 190, 220, 0.18)); }
+html[data-theme='dark'][data-palette='wine'] .ops-service:where(:not(.pk *)) { border: 1px solid var(--line, rgba(255, 190, 220, 0.18)); background: var(--card, rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .ops-service.down:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .ops-service small:where(:not(.pk *)) { color: var(--muted, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .ops-service-top i:where(:not(.pk *)) { background: rgba(194, 24, 107, 1); }
+html[data-theme='dark'][data-palette='wine'] .ops-service-top i.down:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .ops-log:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
+html[data-theme='dark'][data-palette='wine'] .ops-error:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] select:where(:not(.pk *)) { color: var(--ink, #ffffff); border: 1px solid var(--line, rgba(255, 190, 220, 0.18)); background: var(--card, rgba(255, 255, 255, 0.07)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%238f7cf0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center; }
+html[data-theme='dark'][data-palette='wine'] select:hover:where(:not(.pk *)) { border-color: var(--gold, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] select:focus-visible:where(:not(.pk *)) { border-color: var(--gold, rgba(255, 190, 220, 0.35)); box-shadow: none; }
+
+/* components/cabinet/TagInput.vue */
+html[data-theme='dark'][data-palette='wine'] .study .tg-box:where(:not(.pk *)) { background: var(--bg, rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .study .tg-hints:where(:not(.pk *)) { background: var(--surface, rgba(255, 255, 255, 0.07)); box-shadow: none; }
+
+/* components/cabinet/TwoFaBlock.vue */
+html[data-theme='dark'][data-palette='wine'] .study .tf-on:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .study .tf-warn:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/charts/ChartTip.vue */
+html[data-theme='dark'][data-palette='wine'] .study .ch-tip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+
+/* components/korean/DashboardHome.vue */
+html[data-theme='dark'][data-palette='wine'] .panel:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .tbtn:where(:not(.pk *)) { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .hero:where(:not(.pk *)) { background: radial-gradient(circle at 78% 30%, rgba(255, 111, 174, 0.2), transparent 45%),
+    linear-gradient(115deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1) 55%, rgba(255, 255, 255, 0.1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .eyebrow:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .primary:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .gear:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .gear:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .gear:focus-visible:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .gear.in:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .wpanel:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); background: radial-gradient(circle at 12% 0%, rgba(255, 111, 174, 0.2), transparent 42%), radial-gradient(circle at 92% 100%, rgba(255, 255, 255, 0.1), transparent 45%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 60%, rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .word:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .word:hover:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .word small:nth-of-type(2):where(:not(.pk *)) { border-top: 1px dashed rgba(255, 190, 220, 0.18); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .quick a:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .quick a:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .phrase .label:where(:not(.pk *)) { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .pline:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .pline div:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .due-hint:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .due-hint:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .cal .cell:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cal .cell:hover:not(.done):where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .cal .cell:focus-visible:not(.done):where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .cal .cell.done:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)); }
+html[data-theme='dark'][data-palette='wine'] .cal .cell.today:where(:not(.pk *)) { outline: 2px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .quote:where(:not(.pk *)) { background: linear-gradient(120deg, rgba(255, 111, 174, 1), rgba(255, 255, 255, 0.1) 55%, rgba(255, 111, 174, 0.2)); }
+html[data-theme='dark'][data-palette='wine'] .quote a:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+
+/* components/korean/DayStatsModal.vue */
+html[data-theme='dark'][data-palette='wine'] .ds-sum > div:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .ds-sum .a:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .ds-sum .b:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .ds-sum .c:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .ds-sum .d:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .ds-goal:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .ds-groups li:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .ds-list li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .ds-list li.bad:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .ds-list li.ok .mk:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .ds-list li.bad .mk:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+
+/* components/korean/ExamRun.vue */
+html[data-theme='dark'][data-palette='wine'] .er-tile:not(:disabled):hover:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .er-tile.on:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); background: rgba(255, 111, 174, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .er-tile.dragging:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); background: var(--surface, rgba(255, 255, 255, 0.07)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .er-gap.drop-over:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .er-built.drop-over:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); background: rgba(255, 111, 174, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .er-gap:focus-visible:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .er-gap.on:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .er-gap.ok:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .er-gap.bad:where(:not(.pk *)) { border: 2px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .er-right:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .er-form:focus-visible:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .er-sel:focus-visible:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .er-sel.ok:where(:not(.pk *)) { background-color: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .er-sel.bad:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background-color: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .er-built.ok:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .er-built.bad:where(:not(.pk *)) { border: 2px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .er-mark.ok:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .er-mark.bad:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/korean/GrammarModal.vue */
+html[data-theme='dark'][data-palette='wine'] .study-modal .gph img:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gh .pass.ph:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study-modal .phm:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gpht button:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gpht button:hover:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gpht button.del:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .study-modal .gpha:hover:where(:not(.pk *)) { border-color: var(--pink, rgba(255, 190, 220, 0.35)); color: var(--pink, #ffd1e3); }
+
+/* components/korean/LetterCard.vue */
+html[data-theme='dark'][data-palette='wine'] .study .lc-card:hover:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .lc-over:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+
+/* components/korean/MatchGame.vue */
+html[data-theme='dark'][data-palette='wine'] .study .mg-card.mg-hint:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .mg-card.mg-aim:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .study .mg-lines .drag-dot:where(:not(.pk *)) { fill: #ff9cc6; }
+
+/* components/korean/NewWordDrawer.vue */
+html[data-theme='dark'][data-palette='wine'] .nwd:where(:not(.pk *)) { color: #ffffff; border-left: 1px solid rgba(255, 190, 220, 0.18); background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 60%, rgba(255, 255, 255, 0.07)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .nwd h2 small:where(:not(.pk *)) { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .nwd .x:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .nwd .x:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .form:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .nwd label small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd input:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .nwd textarea:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.07); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .nwd input:focus:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .nwd textarea:focus:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .nwd .save:where(:not(.pk *)) { background: linear-gradient(100deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .nwd .ghost:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .ghost:hover:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .q:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.06); color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .nwd .q:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .nwd .q:focus-visible:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .tipbox:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .nwd .flow:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .flow span:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .nwd .flow i:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .tokbox:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px dashed rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .nwd .tokbox small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .tokbox code:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .nwd .tokbox p:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .acc:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .nwd .acc-head:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .nwd .acc-head small:where(:not(.pk *)) { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .nwd .acc-head i:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .list li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .nwd .list li.cur:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .nwd .rd:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .acts button:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .ex:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .nwd .nt:where(:not(.pk *)) { border-left: 3px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.05); }
+html[data-theme='dark'][data-palette='wine'] .nwd .empty:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/korean/NotificationsBell.vue */
+html[data-theme='dark'][data-palette='wine'] .study.sky .nb-btn:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .nb-dot:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .nb-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .nb-item:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.08); }
+html[data-theme='dark'][data-palette='wine'] .nb-x:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); }
+html[data-theme='dark'][data-palette='wine'] .nb-x:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.18); }
+
+/* components/korean/PhotoViewer.vue */
+html[data-theme='dark'][data-palette='wine'] .pv-back:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.6); }
+html[data-theme='dark'][data-palette='wine'] .pv-img:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .pv-x:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .pv-size:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .pv-size button:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .pv-size button:hover:not(:disabled):where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+
+/* components/korean/TypingQuiz.vue */
+html[data-theme='dark'][data-palette='wine'] .study .tq-card:where(:not(.pk *)) { box-shadow: none; }
+@media print {
+html[data-theme='dark'][data-palette='wine'] .study .print-sheet:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); }
+}
+
+/* components/korean/WeekGoalRing.vue */
+html[data-theme='dark'][data-palette='wine'] .study .wg:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .study .wg-track:where(:not(.pk *)) { stroke: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .study .wg-arc:where(:not(.pk *)) { stroke: #ff9cc6; }
+
+/* components/korean/WordsCheck.vue */
+html[data-theme='dark'][data-palette='wine'] .study .wc-bad:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .study .wc-good:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+
+/* components/music/MusicButton.vue */
+html[data-theme='dark'][data-palette='wine'] .mp-fab:where(:not(.pk *)) { color: var(--ink, #ffffff); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-fab:hover:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-fab.on:where(:not(.pk *)) { background: linear-gradient(140deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .mp-fab.on:hover:where(:not(.pk *)) { box-shadow: none; }
+
+/* components/music/MusicPlayer.vue */
+html[data-theme='dark'][data-palette='wine'] .mp-mini:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-panel:where(:not(.pk *)) { background: linear-gradient(165deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.07) 100%); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-now:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .mp-now-text:where(:not(.pk *)) { background: linear-gradient(to top, rgba(42, 10, 24, 0.75), transparent); }
+html[data-theme='dark'][data-palette='wine'] .mp-tabs button:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .mp-tabs button.on:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-list li:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .mp-list li.cur:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .mp-play:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .mp-play-ic:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .mp-rename:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .mp-menu:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-menu button:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .mp-menu .mp-del:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .mp-err:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .mp-drop:where(:not(.pk *)) { border: 2px dashed rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .mp-drop.over:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .mp-btn:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .mp-url input:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .mp-jobs li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .mp-jobs .bad .mp-job-state:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .mp-jobs .bad .mp-job-bar i:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }

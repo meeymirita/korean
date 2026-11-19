@@ -89,5 +89,7 @@ docs/       документация по темам
 | [`docs/chat.md`](docs/chat.md) | помощник-чат |
 | [`docs/home-and-theme.md`](docs/home-and-theme.md) | главная, «О платформе», тема, общие окна, SEO |
 | [`docs/ideas.md`](docs/ideas.md) | идеи улучшений и нового функционала |
+| [`docs/redesign-plan.md`](docs/redesign-plan.md) | план перехода сайта на тёмно-розовый дизайн |
+| [`docs/redesign-assets.md`](docs/redesign-assets.md) | список картинок и иконок для нового дизайна, промпты |
 
 Правила для разработки и договорённости с владельцем: [`CLAUDE.md`](CLAUDE.md).
