@@ -7,17 +7,19 @@ html[data-theme='dark'][data-palette='wine'] {
   --pk-glass: rgba(20, 6, 12, .72);
   --pk-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
-/* фон: винные пятна света, без картинки */
+/* фон: винные пятна света, без картинки. Рисуется фиксированным слоем на всё окно (иначе по бокам оболочки, которая уже окна, оставались чёрные поля) */
+html[data-theme='dark'][data-palette='wine'] { background: #0b0508 !important; }
 html[data-theme='dark'][data-palette='wine'] .study.sky:not(.study-modal),
 html[data-theme='dark'][data-palette='wine']:has(.study-shell.sky),
-html[data-theme='dark'][data-palette='wine'] .game.gx {
-  background-color: #0b0508 !important;
-  background-image:
-    radial-gradient(70% 55% at 0% 0%, rgba(255, 79, 154, .55) 0%, rgba(255, 79, 154, 0) 60%),
-    radial-gradient(60% 50% at 100% 30%, rgba(194, 24, 107, .5) 0%, rgba(194, 24, 107, 0) 70%),
-    radial-gradient(55% 45% at 50% 100%, rgba(232, 62, 140, .4) 0%, rgba(232, 62, 140, 0) 70%),
-    linear-gradient(#2a0a18, #1a0610) !important;
-  background-position: 0 0 !important; background-size: 100% 100% !important; background-repeat: no-repeat !important; background-attachment: fixed !important;
+html[data-theme='dark'][data-palette='wine'] .game.gx,
+html[data-theme='dark'][data-palette='wine'] body:has(.study.sky) { background: transparent !important; }
+html[data-theme='dark'][data-palette='wine']:has(.study.sky:not(.study-modal))::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 0% 0%, rgba(255, 79, 154, .6) 0%, rgba(255, 79, 154, 0) 60%),
+    radial-gradient(60% 50% at 100% 30%, rgba(194, 24, 107, .55) 0%, rgba(194, 24, 107, 0) 70%),
+    radial-gradient(55% 45% at 50% 100%, rgba(232, 62, 140, .45) 0%, rgba(232, 62, 140, 0) 70%),
+    linear-gradient(#2a0a18, #1a0610);
 }
 html[data-theme='dark'][data-palette='wine'] .study.sky { --pk-pink: #ff6fae; --glass: rgba(20, 6, 12, .72); --panel: rgba(32, 8, 20, .85); --accent-soft: rgba(255, 111, 174, .18); --accent-ink: #2a0a18; }
 
@@ -65,3 +67,45 @@ html[data-theme='dark'][data-palette='wine'] .gx-nav, html[data-theme='dark'][da
 /* окна поверх страницы */
 html[data-theme='dark'][data-palette='wine'] .study-modal.sky { background: rgba(11, 5, 8, .75); }
 html[data-theme='dark'][data-palette='wine'] .study-modal.sky .gp { background: #2a0a18; border-color: var(--pk-line); }
+
+/* ---- главная раздела (components/korean/DashboardHome.vue): карточки в винном стиле ---- */
+html[data-theme='dark'][data-palette='wine'] .dash .panel { background: rgba(20, 6, 12, .72); border-color: var(--pk-line); border-radius: 24px; box-shadow: none; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+html[data-theme='dark'][data-palette='wine'] .dash .sh h3 { font-weight: 600; }
+html[data-theme='dark'][data-palette='wine'] .dash .tbtn { color: #ff9cc6; font-family: var(--pk-mono); }
+html[data-theme='dark'][data-palette='wine'] .dash .tbtn:hover { color: #fff; }
+/* «Сейчас изучаем» и «Корея — это не только язык» */
+html[data-theme='dark'][data-palette='wine'] .dash .hero, html[data-theme='dark'][data-palette='wine'] .dash .quote {
+  background: radial-gradient(70% 90% at 85% 20%, rgba(255, 111, 174, .55), transparent 60%), radial-gradient(60% 80% at 0% 100%, rgba(194, 24, 107, .6), transparent 65%), #2a0a18;
+  border: 1px solid var(--pk-line); box-shadow: none; color: #fff; }
+html[data-theme='dark'][data-palette='wine'] .dash .hero::before { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .dash .eyebrow { background: rgba(255, 255, 255, .1); border: 1px solid var(--pk-line); color: #ffd1e3; font-family: var(--pk-mono); font-weight: 400; letter-spacing: .08em; }
+html[data-theme='dark'][data-palette='wine'] .dash .hero h2 { font-weight: 500; letter-spacing: -.03em; }
+html[data-theme='dark'][data-palette='wine'] .dash .hero p { color: #ffd1e3; font-family: var(--pk-mono); font-size: 13px; }
+html[data-theme='dark'][data-palette='wine'] .dash .primary, html[data-theme='dark'][data-palette='wine'] .dash .quote a { background: #fff; color: #2a0a18; border-radius: 16px; font-weight: 600; }
+html[data-theme='dark'][data-palette='wine'] .dash .primary:hover, html[data-theme='dark'][data-palette='wine'] .dash .quote a:hover { background: #ffd1e3; filter: none; }
+html[data-theme='dark'][data-palette='wine'] .dash .gear { background: rgba(255, 255, 255, .12); color: #fff; }
+/* «Слова на сегодня» */
+html[data-theme='dark'][data-palette='wine'] .dash .wpanel { background: rgba(20, 6, 12, .72); border-color: var(--pk-line); }
+html[data-theme='dark'][data-palette='wine'] .dash .spark { color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .dash .word { --a: #ff9cc6; --b: #c2186b; background: rgba(255, 255, 255, .06); border-color: var(--pk-line); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .dash .word:hover { box-shadow: none; border-color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .dash .word.c1 { --a: #ff6fae; --b: #c2186b; }
+html[data-theme='dark'][data-palette='wine'] .dash .word.c2 { --a: #ff9cc6; --b: #e83e8c; }
+html[data-theme='dark'][data-palette='wine'] .dash .word.c3 { --a: #ffd1e3; --b: #ff6fae; }
+html[data-theme='dark'][data-palette='wine'] .dash .word.c4 { --a: #ffb3d1; --b: #c2186b; }
+html[data-theme='dark'][data-palette='wine'] .dash .wn { color: #2a0a18; }
+html[data-theme='dark'][data-palette='wine'] .dash .word small { color: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .dash .word small:nth-of-type(2) { border-top-color: var(--pk-line); color: #fff; }
+/* быстрый доступ */
+html[data-theme='dark'][data-palette='wine'] .dash .quick a { background: rgba(255, 255, 255, .06); border-color: var(--pk-line); border-radius: 20px; color: #fff; }
+html[data-theme='dark'][data-palette='wine'] .dash .quick a:hover { background: rgba(255, 111, 174, .2); }
+/* фразы дня, прогресс, календарь */
+html[data-theme='dark'][data-palette='wine'] .dash .phrase .label { color: #ffb3d1; font-family: var(--pk-mono); }
+html[data-theme='dark'][data-palette='wine'] .dash .pline { background: rgba(255, 255, 255, .12); }
+html[data-theme='dark'][data-palette='wine'] .dash .pline div { background: linear-gradient(90deg, #ff9cc6, #ff4f9a); }
+html[data-theme='dark'][data-palette='wine'] .dash .due-hint { background: rgba(255, 111, 174, .18); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .dash .cal .cell { background: rgba(255, 255, 255, .08); color: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .dash .cal .cell:hover:not(.done), html[data-theme='dark'][data-palette='wine'] .dash .cal .cell:focus-visible:not(.done) { background: rgba(255, 111, 174, .25); }
+html[data-theme='dark'][data-palette='wine'] .dash .cal .cell.done { background: linear-gradient(135deg, #ff9cc6, #ff4f9a); color: #2a0a18; }
+html[data-theme='dark'][data-palette='wine'] .dash .cal .cell.today { outline-color: #fff; }
+html[data-theme='dark'][data-palette='wine'] .ov-search .sb input { color: #fff; }
