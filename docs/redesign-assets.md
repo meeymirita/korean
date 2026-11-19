@@ -255,6 +255,9 @@ Subject:
 | Главная раздела (`components/korean/DashboardHome.vue`) | картинка-подложка блоков «hero» и «quote» (`fallback`), котик у «Фразы дня» (`<img class="phrase-cat">`) | `home/dash/bg-yuna.webp`, `home/dash/cat-wave.webp` |
 | Страница 404 (`views/NotFoundView.vue`) | котик над числом 404 (`<Cat name="think" />`, `cats/cat-think.webp`) | `cats/cat-think.webp` |
 | Страница загрузки `/upload` (`views/ImagesUploadView.vue`) | фон-картинка `.up-bg` в теме «Розовая» скрыт (`shell-pink.css`) | `upload/bg.webp` |
+| «Магазин» (`views/korean/ShopView.vue`) | большая Юна слева от предметов (левая колонка убрана, предметы на всю ширину) | `icons/shop-yuna.webp` |
+| «Сад» (`views/korean/GardenView.vue`) | баннер Юны с котом над вкладками (`<img class="gd-banner">`) | `home/yuna-garden.webp` |
+| «Грамматика» (`views/korean/GrammarView.vue`) | баннер Юны со светильником в шапке (`<img class="gr-banner">`) | `home/yuna-grammar.webp` |
 | Вся тема «Розовая» (`assets/shell-pink.css`) | фон `html` без картинки; в светлой теме по-прежнему `game/bg.webp` | `game/bg.webp` |
 
 Иконки (`assets/icons`, `assets/game/icons`, `assets/home/dash/q-*`, плеер) в вёрстке оставлены: они маленькие и несут смысл (меню, кнопки). Положи новые файлы под теми же именами, старые заменятся.

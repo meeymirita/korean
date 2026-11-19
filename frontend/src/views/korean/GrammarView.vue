@@ -5,7 +5,6 @@ import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { useGrammarPhotos } from '@/composables/useGrammarPhotos'
-import yunaGrammar from '@/assets/home/yuna-grammar.webp'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, SECS, tabOf } from '@/data/korean/grammar'
 import { F } from '@/data/korean/render'
@@ -71,7 +70,6 @@ onMounted(() => {
 <template>
   <div class="wrap grammar-page">
     <SectionHead id="grammar" :big="G.length" />
-    <img class="gr-banner" :src="yunaGrammar" alt="" aria-hidden="true" draggable="false" />
     <div class="chips">
       <button class="chip" :class="{ on: !sec }" @click="sec = ''"><Icon name="grammar" /> Все</button>
       <button v-for="s in SECS" :key="s" class="chip" :class="{ on: sec === s }" @click="sec = s"><Icon :name="SEC_ICON[s] ?? 'star'" /> {{ s }}</button>
