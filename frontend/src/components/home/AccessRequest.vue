@@ -46,18 +46,18 @@ function haveToken() {
 </template>
 
 <style scoped>
-.ar { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center; padding: 18px; background: rgba(32, 38, 92, .5); backdrop-filter: blur(6px); }
-.ar-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(440px, 100%); padding: 34px 30px 28px; text-align: center; color: #20265c;
-  background: linear-gradient(160deg, #fff7fd, #eef0ff); border: 1px solid #fff; border-radius: 26px; box-shadow: 0 30px 70px rgba(70, 55, 140, .4); font-family: 'Archivo', 'Noto Sans KR', sans-serif; }
-.ar-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; font: inherit; font-size: 15px; color: #20265c; cursor: pointer; background: rgba(255, 255, 255, .8); border: 1px solid #fff; border-radius: 50%; }
-.ar-x:hover { color: #d64da9; background: #fff; }
-.ar-lock { display: grid; place-items: center; width: 58px; height: 58px; font-size: 26px; background: #fff; border-radius: 50%; box-shadow: 0 8px 20px rgba(100, 87, 170, .2); }
+.ar { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center; padding: 18px; background: rgba(11, 5, 8, .75); backdrop-filter: blur(6px); }
+.ar-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(440px, 100%); padding: 34px 30px 28px; text-align: center; color: #fff;
+  background: #2a0a18; border: 1px solid rgba(255, 190, 220, .18); border-radius: 28px; box-shadow: 0 30px 70px rgba(0, 0, 0, .6); font-family: 'Archivo', 'Noto Sans KR', sans-serif; }
+.ar-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; font: inherit; font-size: 15px; color: #fff; cursor: pointer; background: rgba(255, 255, 255, .1); border: 0; border-radius: 50%; }
+.ar-x:hover { color: #2a0a18; background: #fff; }
+.ar-lock { display: grid; place-items: center; width: 58px; height: 58px; font-size: 26px; background: rgba(255, 255, 255, .1); border-radius: 50%; }
 .ar-box h2 { margin: 4px 0 0; font-size: 26px; font-weight: 700; }
-.ar-box p { margin: 0; font-size: 15px; line-height: 1.55; color: #6c70a8; }
-.ar-tg { margin-top: 8px; padding: 13px 24px; font-size: 15px; font-weight: 700; color: #fff; text-decoration: none; background: linear-gradient(100deg, #e86bc0, #d64da9); border-radius: 99px; box-shadow: 0 8px 18px rgba(214, 77, 169, .3); transition: filter .2s; }
-.ar-tg:hover { filter: brightness(1.06); }
-.ar-have { padding: 8px 14px; font: inherit; font-size: 14px; color: #6c70a8; cursor: pointer; background: none; border: 0; text-decoration: underline; }
-.ar-have:hover { color: #d64da9; }
+.ar-box p { margin: 0; font-size: 15px; line-height: 1.55; color: #ffd1e3; }
+.ar-tg { margin-top: 8px; padding: 13px 24px; font-size: 15px; font-weight: 600; color: #2a0a18; text-decoration: none; background: #fff; border-radius: 16px; transition: background .2s; }
+.ar-tg:hover { background: #ffd1e3; }
+.ar-have { padding: 8px 14px; font: inherit; font-size: 14px; color: #ffb3d1; cursor: pointer; background: none; border: 0; text-decoration: underline; }
+.ar-have:hover { color: #fff; }
 .ar-enter-active, .ar-leave-active { transition: opacity .2s; }
 .ar-enter-active .ar-box, .ar-leave-active .ar-box { transition: transform .25s ease; }
 .ar-enter-from, .ar-leave-to { opacity: 0; }

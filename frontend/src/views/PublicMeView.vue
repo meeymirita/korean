@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import PinkShell from '@/components/site/PinkShell.vue'
 import '@/assets/home/fonts.css'
 import Icon from '@/components/Icon.vue'
 import { EMOJI_ICON } from '@/lib/icons'
@@ -37,10 +38,8 @@ useSeoMeta({ robots: () => (state.value === 'open' ? 'index, follow, max-image-p
 </script>
 
 <template>
+  <PinkShell sub="визитка">
   <main class="me">
-    <header class="top">
-      <RouterLink to="/" class="brand"><span class="mark">✳︎</span><span class="name ko">우리말</span></RouterLink>
-    </header>
 
     <section v-if="state === 'closed'" class="closed">
       <div class="big ko">✳︎</div>
@@ -69,38 +68,29 @@ useSeoMeta({ robots: () => (state.value === 'open' ? 'index, follow, max-image-p
       <RouterLink to="/korean/home" class="btn">Заглянуть на платформу →</RouterLink>
     </article>
   </main>
+  </PinkShell>
 </template>
 
 <style scoped>
-.me { --ink: #1e2350; --soft: #8b8fc4; --accent: #d64da9; --accent2: #6a5cd0;
-  position: fixed; inset: 0; overflow: auto; padding: clamp(24px, 4vh, 44px) 20px 64px; color: var(--ink);
-  background: radial-gradient(circle at 92% 4%, rgba(201, 228, 255, .55) 0, transparent 30%), radial-gradient(circle at 4% 96%, rgba(255, 209, 236, .5) 0, transparent 28%), #fbf8ff;
-  font-family: 'Inter', 'Archivo', 'Noto Sans KR', sans-serif; word-break: keep-all; }
-.me > * { max-width: 640px; margin-left: auto; margin-right: auto; }
-.ko { font-family: 'Noto Sans KR', 'Archivo', sans-serif; }
-.me a { color: inherit; text-decoration: none; }
-.top { padding-bottom: 16px; }
-.brand { display: inline-flex; align-items: baseline; gap: 10px; }
-.brand .mark { font-size: 26px; color: var(--accent2); line-height: 1; }
-.brand .name { font-size: 18px; letter-spacing: 3px; font-weight: 700; }
-.msg { margin-top: 40px; text-align: center; color: var(--soft); }
-.closed { margin-top: 40px; text-align: center; }
-.closed .big { font-size: 64px; color: var(--accent); line-height: 1; }
-.closed h1 { margin: 10px 0 6px; font-size: 26px; }
-.closed p { margin: 0 0 20px; color: var(--soft); }
-.card { margin-top: 12px; overflow: hidden; background: rgba(255, 255, 255, .78); border: 1px solid rgba(120, 110, 200, .18); border-radius: 28px; box-shadow: 0 30px 60px -36px rgba(80, 70, 160, .5); }
-.cover { height: 150px; background: linear-gradient(120deg, #c9e4ff, #e8d5ff 50%, #ffd1ec); background-size: cover; background-position: center; }
+.me { width: 100%; max-width: 640px; margin: 0 auto; padding: clamp(32px, 5vw, 64px) 0 24px; }
+.msg { margin-top: 40px; text-align: center; font: 400 14px/1.7 var(--pk-mono); color: var(--pk-soft); }
+.closed { margin-top: 40px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.closed .big { font-size: 64px; color: var(--pk-pink); line-height: 1; }
+.closed h1 { margin: 0; font-size: 34px; font-weight: 500; letter-spacing: -.02em; }
+.closed p { margin: 0 0 12px; font: 400 14px/1.7 var(--pk-mono); color: var(--pk-soft); }
+.card { overflow: hidden; border: 1px solid var(--pk-line); border-radius: 28px; background: var(--pk-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.cover { height: 150px; background: linear-gradient(120deg, #ff4f9a, #c2186b 55%, #2a0a18); background-size: cover; background-position: center; }
 .who { display: flex; align-items: center; gap: 16px; margin: -36px 28px 0; position: relative; }
-.ava { width: 84px; height: 84px; border-radius: 50%; border: 4px solid #fff; background: #fff; object-fit: cover; box-shadow: 0 8px 20px -10px rgba(80, 70, 160, .6); }
+.ava { width: 84px; height: 84px; border-radius: 50%; border: 4px solid #2a0a18; background: #2a0a18; object-fit: cover; }
 .ava.emoji { display: grid; place-items: center; font-size: 42px; }
-.who h1 { margin: 36px 0 0; font-size: 26px; overflow-wrap: anywhere; }
-.who p { margin: 2px 0 0; color: var(--soft); font-size: 14px; }
+.who h1 { margin: 36px 0 0; font-size: 28px; font-weight: 600; overflow-wrap: anywhere; }
+.who p { margin: 2px 0 0; font: 400 13px/1.5 var(--pk-mono); color: var(--pk-label); }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 24px 28px; }
-.stats div { padding: 14px 8px; text-align: center; background: #f6f1ff; border-radius: 16px; }
-.stats b { display: block; font-size: 26px; font-variant-numeric: lining-nums; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.stats small { font-size: 11px; color: var(--soft); }
-.btn { display: inline-block; margin: 0 28px 28px; padding: 11px 22px; border: 1px solid var(--ink); border-radius: 22px; font-size: 13px; font-weight: 600; transition: .2s; }
-.btn:hover { background: var(--ink); color: #fff; }
+.stats div { padding: 16px 8px; text-align: center; background: var(--pk-panel); border: 1px solid var(--pk-line); border-radius: 18px; }
+.stats b { display: block; font-size: 28px; font-weight: 600; font-variant-numeric: lining-nums; color: var(--pk-pink-2); }
+.stats small { font: 400 11px/1.3 var(--pk-mono); color: var(--pk-label); }
+.btn { display: inline-flex; align-items: center; height: 48px; margin: 0 28px 28px; padding: 0 22px; border-radius: 14px; background: #fff; color: var(--pk-plum) !important; font-size: 15px; font-weight: 600; transition: background .2s; }
+.btn:hover { background: var(--pk-soft); }
 .closed .btn { margin: 0; }
 @media (max-width: 520px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .who, .stats { margin-left: 18px; margin-right: 18px; } .btn { margin-left: 18px; } }
 </style>
