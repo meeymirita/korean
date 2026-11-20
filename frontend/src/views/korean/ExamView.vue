@@ -39,7 +39,7 @@ const attempts = ref<ExamAttempt[]>([])
 let clock: ReturnType<typeof setInterval> | undefined
 onMounted(async () => {
   now.value = Date.now()
-  blitzLog.value = readBlitzLog()
+  void exams.loadBlitz()
   clock = setInterval(() => (now.value = Date.now()), 60_000)
   await Promise.all([exams.load(), exams.loadDraft().then(d => (draft.value = d))])
   if (view.value === 'log') await loadLog()
@@ -136,31 +136,8 @@ function startBlitz() {
   }, 1000)
   void router.push({ query: { blitz: '1' } })
 }
-/** Блиц дня один на сутки (как «Сегодня»); итоги по дням лежат на этом устройстве (лучший за день), последние 30 дней. */
-const BLITZ_LOG = 'exam_blitz_log'
-interface BlitzDay { day: string; right: number; total: number }
-const blitzLog = ref<BlitzDay[]>([])
-function readBlitzLog(): BlitzDay[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(BLITZ_LOG) ?? '[]') as BlitzDay[]
-    return Array.isArray(v) ? v.filter(x => x && typeof x.day === 'string' && x.total > 0) : []
-  } catch {
-    return []
-  }
-}
-function writeBlitzLog(right: number, total: number) {
-  const day = dayKey()
-  const list = readBlitzLog()
-  const cur = list.find(x => x.day === day)
-  if (!cur) list.unshift({ day, right, total })
-  else if (right / total > cur.right / cur.total) Object.assign(cur, { right, total })
-  list.sort((a, b) => (a.day < b.day ? 1 : -1))
-  const out = list.slice(0, 30)
-  try {
-    localStorage.setItem(BLITZ_LOG, JSON.stringify(out))
-  } catch {}
-  blitzLog.value = out
-}
+/** Блиц дня один на сутки (как «Сегодня»); итоги по дням и слабые правила лежат на сервере (`stores/exam.ts`). */
+const blitzLog = computed(() => exams.blitzDays)
 const blitzToday = computed(() => blitzLog.value.find(x => x.day === dayKey()))
 /** Серия дней подряд: считается назад от сегодня (если сегодня ещё не решали, от вчера, чтобы серия не обнулялась до конца дня). */
 const streak = computed(() => {
@@ -174,35 +151,10 @@ const streak = computed(() => {
   }
   return n
 })
-/** Слабые правила блица: накапливаются по итогам блицов на этом устройстве (старые результаты затухают); к ним добавляются слабые по последнему большому экзамену. Блиц чаще берёт блоки с ними. */
-const WEAK_KEY = 'exam_blitz_weak'
-function readWeak(): RuleScores {
-  try {
-    const v = JSON.parse(localStorage.getItem(WEAK_KEY) ?? '{}') as RuleScores
-    return v && typeof v === 'object' && !Array.isArray(v) ? v : {}
-  } catch {
-    return {}
-  }
-}
-function addWeak(rules: RuleScores) {
-  const w = readWeak()
-  for (const [id, r] of Object.entries(rules)) {
-    const c = w[id] ?? { ok: 0, total: 0 }
-    c.ok += r.ok
-    c.total += r.total
-    if (c.total > 60) {
-      c.ok = Math.round(c.ok / 2)
-      c.total = Math.round(c.total / 2)
-    }
-    w[id] = c
-  }
-  try {
-    localStorage.setItem(WEAK_KEY, JSON.stringify(w))
-  } catch {}
-}
+/** Слабые правила блица: накапливаются по итогам блицов (на сервере, старое затухает); к ним добавляются слабые по последнему большому экзамену. Блиц чаще берёт блоки с ними. */
 function weakSet(): Set<string> {
   const out = new Set<string>()
-  const all: RuleScores = { ...readWeak() }
+  const all: RuleScores = { ...exams.blitzWeak }
   for (const [id, r] of Object.entries(row.value?.rules ?? {})) all[id] = { ok: (all[id]?.ok ?? 0) + r.ok, total: (all[id]?.total ?? 0) + r.total }
   for (const [id, r] of Object.entries(all)) if (r.total >= 3 && r.ok / r.total < MIN_RULE) out.add(id)
   return out
@@ -210,8 +162,7 @@ function weakSet(): Set<string> {
 function blitzSaved(points: PointResult[]) {
   clearInterval(blitzTimer)
   const sum = summarize([points])
-  writeBlitzLog(sum.right, sum.total)
-  addWeak(sum.rules)
+  void exams.saveBlitz(dayKey(), sum.right, sum.total, sum.rules).then(ok => ok || toast.error('Итог блица не сохранился на сервере'))
   blitzDone.value = { at: Date.now(), right: sum.right, total: sum.total, passed: examPassed(sum.right, sum.total, sum.rules), rules: sum.rules, mistakes: sum.mistakes }
   blitz.value = null
   goTab('blitz')

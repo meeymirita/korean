@@ -43,7 +43,7 @@ describe('ExamRun в режиме блица', () => {
 })
 
 describe('страница экзамена: блиц', () => {
-  it('кнопка запускает блиц с таймером; по истечении пяти минут показывается итог и на сервер ничего не уходит', async () => {
+  it('кнопка запускает блиц с таймером; по истечении пяти минут показывается итог, на сервер уходит только итог блица', async () => {
     const w = await mountSuspended(ExamView, { route: '/korean/exam' })
     await flushPromises()
     // часы подменяются после монтирования: само монтирование идёт на настоящих таймерах
@@ -62,6 +62,8 @@ describe('страница экзамена: блиц', () => {
     expect(w.find('.ex-timer').exists()).toBe(false)
     expect(w.text()).toContain('Блиц:')
     expect(w.text()).toContain('в историю экзамена не идёт')
-    expect(calls.filter(c => c.method !== 'GET')).toHaveLength(0)
+    // итог блица записывается на сервер (дни и слабые правила), но не как попытка экзамена и не в черновик
+    const writes = calls.filter(c => c.method !== 'GET')
+    expect(writes.map(c => c.url)).toEqual(['/api/exams/blitz'])
   })
 })

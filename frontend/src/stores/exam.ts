@@ -22,6 +22,61 @@ export const useExamStore = defineStore('exam', () => {
     }
   }
 
+  /** Блиц дня: итоги по дням (серия дней подряд) и слабые правила; всё на сервере, на любом устройстве одно и то же. */
+  const blitzDays = ref<{ day: string; right: number; total: number }[]>([])
+  const blitzWeak = ref<RuleScores>({})
+  const apply = (b: { days?: typeof blitzDays.value; weak?: RuleScores } | null) => {
+    if (!b) return
+    blitzDays.value = Array.isArray(b.days) ? b.days : []
+    blitzWeak.value = b.weak && typeof b.weak === 'object' ? b.weak : {}
+  }
+  /** Старые данные блица из браузера (до переезда на сервер): один раз уходят на сервер, пока там пусто. */
+  const OLD_LOG = 'exam_blitz_log'
+  const OLD_WEAK = 'exam_blitz_weak'
+  async function loadBlitz() {
+    try {
+      const res = await fetchT('/api/exams/blitz', { headers: headers() })
+      if (!res.ok) return
+      const srv = (await res.json()) as { days: typeof blitzDays.value; weak: RuleScores }
+      apply(srv)
+      if (!srv.days.length && !Object.keys(srv.weak ?? {}).length) {
+        let days: unknown = []
+        let weak: unknown = {}
+        try {
+          days = JSON.parse(localStorage.getItem(OLD_LOG) ?? '[]')
+          weak = JSON.parse(localStorage.getItem(OLD_WEAK) ?? '{}')
+        } catch {
+          /* нечего переносить */
+        }
+        if ((Array.isArray(days) && days.length) || (weak && Object.keys(weak as object).length)) {
+          const put = await fetchT('/api/exams/blitz', { method: 'PUT', headers: headers(), body: JSON.stringify({ days, weak }) })
+          if (put.ok) {
+            apply(await put.json())
+            try {
+              localStorage.removeItem(OLD_LOG)
+              localStorage.removeItem(OLD_WEAK)
+            } catch {
+              /* ничего */
+            }
+          }
+        }
+      }
+    } catch {
+      /* без сети остаётся прежнее */
+    }
+  }
+  /** Записать итог блица; false, если сервер не принял. */
+  async function saveBlitz(day: string, right: number, total: number, rules: RuleScores): Promise<boolean> {
+    try {
+      const res = await fetchT('/api/exams/blitz', { method: 'POST', headers: headers(), body: JSON.stringify({ day, right, total, rules }) })
+      if (!res.ok) return false
+      apply(await res.json())
+      return true
+    } catch {
+      return false
+    }
+  }
+
   /** Экзамены единиц книги (`1A-6`): лучший и последний результат в процентах. */
   const units = ref<Record<string, { best: number; last: number; tries: number; at: number }>>({})
   async function loadUnits() {
@@ -94,5 +149,5 @@ export const useExamStore = defineStore('exam', () => {
       return { error: errText(e) }
     }
   }
-  return { results, loaded, load, units, loadUnits, saveUnit, log, loadDraft, saveDraft, dropDraft, submit }
+  return { results, loaded, load, units, loadUnits, saveUnit, blitzDays, blitzWeak, loadBlitz, saveBlitz, log, loadDraft, saveDraft, dropDraft, submit }
 })
