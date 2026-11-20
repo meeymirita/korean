@@ -209,6 +209,16 @@ async function answer(q, wantRight, how) {
       void exp
       if (right) ok++
     }
+    // перетаскивание иногда не доходит до пропуска (редко, не воспроизводится по заказу): человек бы просто нажал, и бот докладывает пропуски нажатием; сам факт попадает в предупреждения
+    if (how === 'drag') {
+      const empty = await ev(`(window.__gameProbe.question()?.gaps || []).map((g, i) => (g.picked === null && !g.input ? i : -1)).filter(i => i >= 0)`)
+      for (const k of empty) {
+        const g = q.gaps[k]
+        const bi = await ev(`[...document.querySelectorAll('#bank .tile')].findIndex(b => [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('') === ${JSON.stringify(g.right)})`)
+        if (bi >= 0) { await ev(clickJs('#bt' + bi)); await ev(clickJs('#sg' + k)) }
+      }
+      if (empty.length) warnings.push({ cell: currentCell, code: 'перетаскивание-не-дошло', detail: `${empty.length} из ${q.gaps.length} пропусков не заполнились перетаскиванием, добавлены нажатием` })
+    }
     await ev(clickJs('#schk'))
     return { ok, bad: q.gaps.length - ok, story: true }
   }
@@ -324,7 +334,11 @@ async function playSteps(steps, strategy, label) {
     await sleep(40)
     const after = await probeS()
     const stuck = !(await ev(`document.querySelector('#fb')?.classList.contains('show') || document.querySelector('#fb')?.childNodes.length > 0`))
-    if (stuck) await violation('нет-разбора-после-ответа', q.key, { key: q.key, json: JSON.stringify(q).slice(0, 600) })
+    if (stuck) {
+      // для текстов с пропусками показываем, что стоит в пропусках: так видно, какой не заполнился (перетаскивание, нажатие)
+      const picked = q.type === 'story' ? await ev(`(window.__gameProbe.question()?.gaps || []).map((g, i) => i + ':' + (g.picked ?? '∅'))`) : null
+      await violation('нет-разбора-после-ответа', `${q.key}${picked ? ' · пропуски ' + picked.join(' ') : ''}`, { key: q.key, json: JSON.stringify(q).slice(0, 600) })
+    }
     const dOk = after.ses.ok - before.ses.ok, dBad = after.ses.bad - before.ses.bad
     if (!res.build && (dOk !== res.ok || dBad !== res.bad)) await violation('счётчик-не-сошёлся', `ждали +${res.ok}/+${res.bad}, стало +${dOk}/+${dBad}`, { key: q.key })
     if (res.build && dOk + dBad !== 1) await violation('счётчик-не-сошёлся', `сборка дала +${dOk}/+${dBad}`, { key: q.key })
