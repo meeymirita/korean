@@ -244,7 +244,15 @@ function onKey(e: KeyboardEvent) {
     next()
   }
 }
+/** Тестовая сборка для бота-игрока (docs/bot.md, `NUXT_PUBLIC_TEST_HOOKS=1`): текущее задание с верным ответом и счётчики серии. В боевой сборке крючка нет. */
+const testHooks = !!useRuntimeConfig().public.testHooks
 onMounted(() => {
+  if (testHooks) {
+    ;(window as unknown as { __taskProbe?: unknown }).__taskProbe = {
+      task: () => (current.value ? (JSON.parse(JSON.stringify(current.value)) as unknown) : null),
+      state: () => ({ idx: idx.value, size: size.value, right: right.value, picked: picked.value, finished: finished.value, missed: missed.value.length }),
+    }
+  }
   document.addEventListener('keydown', onKey)
   tick = setInterval(() => {
     if (picked.value === null && !finished.value) elapsed.value = Math.min(Math.floor((Date.now() - shownAt.value) / 1000), PACE_CAP)
@@ -252,6 +260,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   dragOff()
+  if (testHooks) delete (window as unknown as { __taskProbe?: unknown }).__taskProbe
   document.removeEventListener('keydown', onKey)
   clearInterval(tick)
 })

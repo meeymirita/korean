@@ -441,6 +441,54 @@ async function mechanics(mode) {
   cell.tasks = Math.max(cell.tasks, 1)
 }
 
+/* ---------- тренажёры (TaskSession): серия «вопрос → варианты» ---------- */
+/** Открывает `?game=<id>` и определяет, что это: режим «Хлебушка» (`__gameProbe`), серия заданий (`__taskProbe`) или другой экран. */
+async function kindOf(id) {
+  await send('Page.navigate', { url: `${BASE}/game/home?game=${id}` })
+  for (let i = 0; i < 40; i++) {
+    await sleep(150)
+    const k = await ev(`window.__taskProbe && window.__taskProbe.task() ? 'task' : window.__gameProbe && window.__gameProbe.question() ? 'engine' : ''`)
+    if (k) return k
+  }
+  return 'other'
+}
+async function playTool(id, steps, strategy) {
+  const cell = stats.get(currentCell) || stats.set(currentCell, { tasks: 0, bad: 0, ms: [], strategies: new Set() }).get(currentCell)
+  for (let i = 0; i < steps; i++) {
+    const t = await ev('window.__taskProbe.task()')
+    if (!t) break
+    const before = await ev('window.__taskProbe.state()')
+    const wantRight = strategy === 'wrong' ? false : strategy === 'mix70' ? Math.random() < 0.7 : strategy === 'random' ? Math.random() < 0.5 : true
+    const others = t.options.filter(o => o !== t.answer)
+    const pick = wantRight ? t.answer : others[Math.floor(Math.random() * others.length)]
+    const idx = t.options.indexOf(pick)
+    if (strategy === 'keys') await press(String(idx + 1))
+    else await ev(`document.querySelectorAll('.rs-opts .rs-opt')[${idx}]?.click()`)
+    await sleep(60)
+    // «Второй шанс» у владельца без предметов не предлагается; если окно есть, оставляем ответ
+    await ev(`[...document.querySelectorAll('.rs-chance .rs-item.soft')].forEach(b => b.click())`)
+    const nOk = await ev(`document.querySelectorAll('.rs-opts .rs-opt.ok').length`)
+    if (nOk !== 1) await violation('верных-вариантов-на-экране-не-один', String(nOk), { key: `task:${t.id}` })
+    const after = await ev('window.__taskProbe.state()')
+    if (wantRight && !before.missed && after.right !== before.right + 1 && !(after.finished)) await violation('верный-ответ-не-засчитан', `${before.right} → ${after.right}`, { key: `task:${t.id}` })
+    if (!wantRight && after.right !== before.right) await violation('неверный-ответ-засчитан', `${before.right} → ${after.right}`, { key: `task:${t.id}` })
+    if (i === 0) await pageChecks(currentCell)
+    await flushEvents(currentCell)
+    cell.tasks++
+    cell.strategies.add(strategy)
+    const ms = await ev(`(() => { const b = document.querySelector('.rs-next'); if (!b) return -1; const t0 = performance.now(); b.click(); return performance.now() - t0 })()`)
+    if (ms < 0) { await violation('нет-кнопки-дальше', `task:${t.id}`); return }
+    cell.ms.push(ms)
+    if (await ev('window.__taskProbe.state().finished')) break
+  }
+  const st = await ev('window.__taskProbe.state()')
+  if (st.finished) {
+    const end = await ev(`document.querySelector('.rs-end')?.innerText || ''`)
+    if (!new RegExp(`${st.right}\\s*из\\s*${st.size}`).test(end)) await violation('итог-серии-не-совпал', `в игре ${st.right} из ${st.size}, на экране «${end.replace(/\s+/g, ' ').slice(0, 60)}»`)
+  }
+  cell.bad = violations.filter(v => v.cell === currentCell).length
+}
+
 /* ---------- прогон ---------- */
 await setup()
 await openMode('word')
@@ -483,6 +531,24 @@ for (const m of modes) {
     try { await openMode(m.id); await mechanics(m.id); row.cells.push(currentCell) } catch (e) { await violation('сбой-механик', e.message) }
   }
   table.push(row)
+}
+// тренажёры: id берутся из каталога на странице игр (ссылки ?game=...), тип определяется открытием
+if (!ONLY) {
+  await send('Page.navigate', { url: `${BASE}/game/home` })
+  await sleep(2500)
+  const ids = [...new Set(await ev(`[...document.querySelectorAll('a[href*="game="]')].map(a => new URL(a.href).searchParams.get('game')).filter(Boolean)`))]
+  const engineIds = new Set(modes.map(m => m.id))
+  let turn = 0
+  for (const id of ids.filter(x => !engineIds.has(x))) {
+    currentCell = `${id}/тренажёр`
+    try {
+      const kind = await kindOf(id)
+      const strategy = STRATEGY === 'all' ? ['right', 'wrong', 'mix70', 'random', 'keys'][turn++ % 5] : STRATEGY
+      const cell = stats.set(currentCell, { tasks: 0, bad: 0, ms: [], strategies: new Set() }).get(currentCell)
+      if (kind === 'task') await playTool(id, STEPS, strategy)
+      else { cell.tasks = 1; cell.strategies.add('открыт'); await pageChecks(currentCell); await flushEvents(currentCell) }
+    } catch (e) { await violation('сбой-тренажёра', e.message) }
+  }
 }
 if (GUEST && guestWrites.length) await violation('гость-записал-на-сервер', guestWrites.slice(0, 3).join(' '))
 
