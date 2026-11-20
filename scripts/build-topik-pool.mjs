@@ -12,20 +12,28 @@ const vocabSrc = readFileSync(fileURLToPath(new URL('backend/src/dict/dict.vocab
 const rows = [...vocabSrc.matchAll(/\[(\d+),"([^"]+)","([^"]*)","([ABC])"\]/g)].map(m => ({ rank: +m[1], word: m[2], pos: m[3], level: m[4] }))
 const raw = JSON.parse(readFileSync(fileURLToPath(new URL('материалы/словарь-krdict/krdict_ko_ru.json', root)), 'utf8')).entries
 const OK_POS = { 명사: 'сущ.', 동사: 'глаг.', 형용사: 'прил.', 부사: 'нареч.', 대명사: 'мест.', 수사: 'числ.', 관형사: 'опр.' }
-/** первое слово перевода без пояснений в скобках */
-const clean = t => t.split(/[;,(（]/)[0].trim()
+/**
+ * Из перевода берём один понятный вариант: в словаре они через «;», у глаголов скобки «[по]терять» значат необязательную приставку.
+ * Скобки убираем («потерять»), из вариантов выбираем самый короткий (так вместо «трапеза; обед; пища» выйдет «обед»), пояснения в круглых скобках отбрасываем.
+ */
+const clean = t => {
+  const variants = t.split(/[;,]/).map(v => v.replace(/\([^)]*\)/g, '').replace(/[\[\]]/g, '').trim()).filter(v => /^[а-яё -]{2,}$/i.test(v))
+  return variants.sort((a, b) => a.length - b.length)[0] ?? ''
+}
 const byWord = new Map()
 for (const e of raw) {
   if (e.vocabulary_level !== '초급') continue
-  const tr = e.senses?.[0]?.translations?.[0]?.translation
+  const tr = clean(e.senses?.[0]?.translations?.[0]?.translation ?? '')
   if (!tr) continue
   const k = e.word + '|' + e.part_of_speech
-  if (!byWord.has(k)) byWord.set(k, clean(tr))
+  if (!byWord.has(k)) byWord.set(k, tr)
 }
+/** Слова, где самый короткий вариант словаря вводит в заблуждение. */
+const FIX = { 식사: 'еда' }
 const out = []
 const seen = new Set()
 for (const r of rows.filter(r => r.level === 'A' && OK_POS[r.pos])) {
-  const ru = byWord.get(r.word + '|' + r.pos)
+  const ru = FIX[r.word] ?? byWord.get(r.word + '|' + r.pos)
   if (!ru || ru.length > 28 || seen.has(r.word)) continue
   seen.add(r.word)
   out.push([r.rank, r.word, OK_POS[r.pos], ru])

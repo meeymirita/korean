@@ -33,7 +33,9 @@ const shuffle = <T>(a: readonly T[], rng: () => number): T[] => {
 export function vocabQuestions(pool: readonly Entry[], n: number, rng: () => number = Math.random): Q[] {
   const picked = shuffle(pool, rng).slice(0, n)
   return picked.map(w => {
-    const same = shuffle(pool.filter(x => x[2] === w[2] && x[3] !== w[3] && x[1] !== w[1]), rng)
+    // неверные варианты: той же части речи и близкой частоты (слова, которые тоже знакомы), иначе вылезают редкие «тётка» и «трапеза»; не хватает таких: берём любые
+    const near = pool.filter(x => x[2] === w[2] && x[3] !== w[3] && x[1] !== w[1] && Math.abs(x[0] - w[0]) <= 1500)
+    const same = shuffle(near.length >= CHOICES * 2 ? near : pool.filter(x => x[2] === w[2] && x[3] !== w[3] && x[1] !== w[1]), rng)
     const wrong: string[] = []
     for (const x of same) if (!wrong.includes(x[3]) && wrong.length < CHOICES - 1) wrong.push(x[3])
     // части речи не хватило (редкая): добираем из всего списка
