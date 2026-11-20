@@ -17,7 +17,7 @@ const OK_POS = { 명사: 'сущ.', 동사: 'глаг.', 형용사: 'прил.',
  * Скобки убираем («потерять»), из вариантов выбираем самый короткий (так вместо «трапеза; обед; пища» выйдет «обед»), пояснения в круглых скобках отбрасываем.
  */
 const clean = t => {
-  const variants = t.split(/[;,]/).map(v => v.replace(/\([^)]*\)/g, '').replace(/[\[\]]/g, '').trim()).filter(v => /^[а-яё -]{2,}$/i.test(v))
+  const variants = t.split(/[;,]/).map(v => v.replace(/\([^)]*\)/g, '').replace(/[[\]]/g, '').trim()).filter(v => /^[а-яё -]{2,}$/i.test(v))
   return variants.sort((a, b) => a.length - b.length)[0] ?? ''
 }
 const byWord = new Map()
