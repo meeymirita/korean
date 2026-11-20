@@ -45,6 +45,11 @@ function check(t: Task): string[] {
   if (t.word && !STUDY_KO.has(t.word)) v.push('слово-вне-STUDY: ' + t.word)
   for (const k of [t.sentence].filter(Boolean) as string[]) for (const f of checkSentence(k).filter(x => x.severity === 'forbid')) v.push(`не-пройдено:${f.rule}: ${k}`)
   for (const r of [t.hint].filter(Boolean) as string[]) for (const f of checkSentence('', r).filter(x => x.severity === 'forbid')) v.push(`русский-перевод:${f.rule}: ${r}`)
+  // 하고, 와 и 과 в пропуске: 하고 подходит всегда, 와/과 по 받침; 하고 рядом с 와/과 даёт два верных ответа
+  if (t.kind === 'rule' && t.title.startsWith('Вставь') && ['하고', '와', '과'].includes(t.answer)) {
+    const bothWays = t.options.includes('하고') && t.options.some(o => o === '와' || o === '과')
+    if (bothWays) v.push(`второй-верный-ответ: 하고 и 와/과 вместе в «${t.prompt}»`)
+  }
   if (t.pairOf) {
     const keys = Object.keys(t.pairOf)
     if (!t.options.every(o => keys.includes(o))) v.push('pairOf-без-варианта')

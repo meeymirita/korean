@@ -10,6 +10,9 @@ const examplesOf = (g: Gram): Pair[] =>
   g.b.flatMap(b => (b[0] === 'ex' ? b[1] : []))
 
 /** Все части, которые правило меняет в примерах (выделены {o|…}, {b|…}, {k|…}). */
+/** Части, которые в одном пропуске подходят обе: если верная одна из них, другую в варианты не кладём (второго верного ответа быть не должно). 와 / 과 между собой различаются по 받침, поэтому они не в паре. */
+const BOTH_RIGHT: [string, string][] = [['하고', '와'], ['하고', '과']]
+const bothRight = (a: string, b: string) => BOTH_RIGHT.some(([x, y]) => (a === x && b === y) || (a === y && b === x))
 const partsOf = (pairs: Pair[]) => pairs.flatMap(([ko]) => [...ko.matchAll(MARK)].map(m => m[1]!))
 
 /** Номера заданий на правило начинаются с 1000, чтобы не пересекаться с остальными заданиями страницы. */
@@ -32,7 +35,7 @@ export function ruleTasks(g: Gram, n = 3): Task[] {
     const id = RULE_TASK_BASE + tasks.length
     if (marks.length === 1) {
       const answer = marks[0]![1]!
-      const wrong = shuffle([...new Set([...partsOf(own), ...partsOf(otherPairs)])].filter(p => p !== answer && p.length <= 8))
+      const wrong = shuffle([...new Set([...partsOf(own), ...partsOf(otherPairs)])].filter(p => p !== answer && !bothRight(p, answer) && p.length <= 8))
       // сначала части этого же правила: они сложнее всего, потом чужие
       const own1 = wrong.filter(p => partsOf(own).includes(p)).slice(0, 2)
       const rest = wrong.filter(p => !own1.includes(p)).slice(0, 3 - own1.length)
@@ -60,7 +63,8 @@ export const trainableRule = (g: Gram) => examplesOf(g).length >= 3
  */
 export function ruleSession(g: Gram, n = 10): Task[] {
   const own = examplesOf(g)
-  const others = G.filter(x => x.id !== g.id).flatMap(examplesOf)
+  // примеры других правил берём только из пройденных карточек: непройденное в заданиях появляться не должно
+  const others = G.filter(x => x.id !== g.id && x.st === 'ok').flatMap(examplesOf)
   const ownParts = [...new Set(partsOf(own))]
   const otherParts = [...new Set(partsOf(others))].filter(p => !ownParts.includes(p))
   const ownPlain = new Set(own.map(([ko]) => plain(ko)))
@@ -77,7 +81,7 @@ export function ruleSession(g: Gram, n = 10): Task[] {
       const answer = marks[0]![1]!
       const swap = (p: string) => ko.replace(marks[0]![0], p)
       // подмены: сначала части этого же правила (самые коварные), потом чужие
-      const cand = shuffle([...ownParts.filter(p => p !== answer), ...shuffle(otherParts)].filter(p => p.length <= 8))
+      const cand = shuffle([...ownParts.filter(p => p !== answer), ...shuffle(otherParts)].filter(p => p.length <= 8 && !bothRight(p, answer)))
       const wrong = shuffle([...new Set(cand)])
       const opts = shuffle([answer, ...wrong.slice(0, 3)])
       if (opts.length >= 3) fill.push(base('Вставь нужную форму', plain(ko.replace(marks[0]![0], '＿＿＿')), opts, answer, { hint: short(ru), sentence }))
