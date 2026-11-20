@@ -96,3 +96,18 @@ describe('итоговая оценка', () => {
     expect(await svc.remind(d31)).toBe('sent')
   })
 })
+
+import { applyUnit } from '../src/exams/exams.service.js'
+describe('экзамены единиц книги', () => {
+  it('записывает лучший, последний, число попыток; плохие данные отклоняет', () => {
+    let s = applyUnit({}, '1A-6', 15, 20, 1000)
+    expect(s['1A-6']).toEqual({ best: 75, last: 75, tries: 1, at: 1000 })
+    s = applyUnit(s, '1A-6', 18, 20, 2000)
+    s = applyUnit(s, '1A-6', 10, 20, 3000)
+    expect(s['1A-6']).toEqual({ best: 90, last: 50, tries: 3, at: 3000 })
+    expect(() => applyUnit({}, '2A-1', 1, 2)).toThrow()
+    expect(() => applyUnit({}, '1B-9', 3, 2)).toThrow()
+    expect(() => applyUnit({}, '1B-9', 1, 0)).toThrow()
+    expect(() => applyUnit({}, '1A-6', 1.5, 2)).toThrow()
+  })
+})

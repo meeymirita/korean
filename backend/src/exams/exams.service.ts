@@ -63,6 +63,20 @@ export function cleanRules(v: unknown): RuleScores {
   return out
 }
 
+/** Экзамены единиц книги (`1A-6`, `1B-12`): лучший и последний результат в процентах, число попыток; лежат в `meta.exams:units`. */
+export interface UnitResult { best: number; last: number; tries: number; at: number }
+const UNITS = 'exams:units'
+const UNIT_ID = /^(1A|1B)-\d{1,2}$/
+/** Применяет одну попытку к сохранённым результатам (чистая функция: проверяется тестом без базы). */
+export function applyUnit(store: Record<string, UnitResult>, unit: unknown, right: unknown, total: unknown, now = Date.now()): Record<string, UnitResult> {
+  if (typeof unit !== 'string' || !UNIT_ID.test(unit)) throw new BadRequestException({ error: 'invalid unit' })
+  if (typeof total !== 'number' || !Number.isInteger(total) || total < 1 || total > 100) throw new BadRequestException({ error: 'invalid unit' })
+  if (typeof right !== 'number' || !Number.isInteger(right) || right < 0 || right > total) throw new BadRequestException({ error: 'invalid unit' })
+  const pct = Math.round((right / total) * 100)
+  const prev = store[unit]
+  return { ...store, [unit]: { best: Math.max(prev?.best ?? 0, pct), last: pct, tries: Math.min((prev?.tries ?? 0) + 1, 999), at: now } }
+}
+
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')
 export function cleanMistakes(v: unknown): ExamMistake[] {
   if (!Array.isArray(v)) return []
@@ -105,6 +119,21 @@ export class ExamsService implements OnModuleInit, OnModuleDestroy {
     } catch {
       return { attempts: [] }
     }
+  }
+
+  async units(): Promise<Record<string, UnitResult>> {
+    try {
+      const v = JSON.parse((await this.db.getMeta(UNITS)) ?? '{}')
+      return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, UnitResult>) : {}
+    } catch {
+      return {}
+    }
+  }
+
+  async saveUnit(body: { unit?: unknown; right?: unknown; total?: unknown }, now = Date.now()) {
+    const next = applyUnit(await this.units(), body?.unit, body?.right, body?.total, now)
+    await this.db.setMeta(UNITS, JSON.stringify(next))
+    return { units: next }
   }
 
   async list() {

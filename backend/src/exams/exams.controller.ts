@@ -29,6 +29,17 @@ export class ExamsController {
     return this.exams.dropDraft()
   }
 
+  /** Экзамены единиц книги: лучший и последний результат по каждой. */
+  @Get('units')
+  units() {
+    return this.exams.units().then(units => ({ units }))
+  }
+
+  @Post('units')
+  saveUnit(@Body() body: { unit?: unknown; right?: unknown; total?: unknown }) {
+    return this.exams.saveUnit(body ?? {})
+  }
+
   /** Разбор последних попыток по правилу: где были ошибки. */
   @Get(':id/log')
   log(@Param('id') id: string) {
