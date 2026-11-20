@@ -389,6 +389,7 @@ html[data-theme='dark'][data-palette='wine'] .chip:where(:not(.pk *)) { backgrou
 html[data-theme='dark'][data-palette='wine'] .m .big:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
 html[data-theme='dark'][data-palette='wine'] .acts .no:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.25); }
 html[data-theme='dark'][data-palette='wine'] .res:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .rule.weak:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* views/korean/WordsView.vue */
 html[data-theme='dark'][data-palette='wine'] .study .row .tr .w-extra:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }

@@ -1,13 +1,9 @@
 /**
- * Вопросы для «Прогноза TOPIK I»: тест слов (слово → выбери перевод) и пробник в стиле TOPIK I «чтение» из того, что есть на сайте:
- * слова (12), грамматика пройденных карточек (12, как «Потренировать правило»), короткие тексты (6, как «Чтение»). Настоящих заданий TOPIK здесь нет:
- * они защищены правом; пробник считает только то, что владелец уже проходил, поэтому тем, которых ещё не было, в нём нет (решение: «не забегать вперёд»).
+ * Вопросы для «Прогноза TOPIK I»: тест слов (слово → выбери перевод) и пробник в стиле TOPIK I «чтение» на движке большого экзамена. Настоящих заданий TOPIK здесь нет:
+ * они защищены правом; всё берётся из пройденного (решение: «не забегать вперёд»).
  */
-import { G } from './grammar'
-import { readTasks } from './read'
-import { mixedSession, trainableRule } from './rule-tasks'
+import { blitzBlocks, examParts, type ExamBlock } from './exam'
 import { CHOICES } from './topik'
-import type { Task } from './tasks'
 
 export interface Q {
   id: string
@@ -44,13 +40,14 @@ export function vocabQuestions(pool: readonly Entry[], n: number, rng: () => num
   })
 }
 
-const fromTask = (t: Task, kind: Q['kind'], i: number): Q => ({ id: `${kind}:${t.id}:${i}`, kind, title: t.title, prompt: t.prompt, hint: t.hint, options: t.options.slice(0, CHOICES + 1), answer: t.answer })
+/** Сколько пунктов в пробнике: столько же, сколько вопросов в блоке «чтение» TOPIK I. */
+export const MOCK_POINTS = 40
 
-/** Пробник «чтение»: 12 слов, 12 вопросов по пройденной грамматике, 6 коротких текстов; по порядку видов. */
-export function buildMock(pool: readonly Entry[], rng: () => number = Math.random): Q[] {
-  const vocab = vocabQuestions(pool, 12, rng)
-  const cards = G.filter(g => g.st === 'ok' && trainableRule(g))
-  const grammar = mixedSession(cards, 12).map((t, i) => fromTask(t, 'grammar', i)).filter(q => q.options.includes(q.answer))
-  const reading = readTasks(6).map((t, i) => fromTask(t, 'reading', i)).filter(q => q.options.includes(q.answer))
-  return [...vocab, ...grammar, ...reading]
+/**
+ * Пробник «чтение»: блоки того же движка, что у большого экзамена (`data/korean/exam.ts`): текст с пропусками плитками, ввод частиц, перевод, порядок слов,
+ * поиск ошибок, формы глаголов, указатели, вопросительные и счётные слова, числа. Всё берётся из пройденного: когда пройдена новая тема, она сама попадает в
+ * генераторы экзамена, и пробник её подхватывает без правок. Около 40 пунктов, виды вперемешку.
+ */
+export function mockBlocks(points = MOCK_POINTS): ExamBlock[] {
+  return blitzBlocks(examParts(4), points)
 }

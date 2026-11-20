@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import ExamRun from '@/components/korean/ExamRun.vue'
 import TopikQuiz from '@/components/korean/TopikQuiz.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, type Gram } from '@/data/korean/grammar'
 import { FORMAT, LISTENING, SOURCES, levelOf, neededShare, readingRange, totalRange, vocabMargin, vocabShare, type ListeningMode, type Measures } from '@/data/korean/topik'
-import { buildMock, vocabQuestions, type Q } from '@/data/korean/topik-mock'
+import { MOCK_POINTS, mockBlocks, vocabQuestions, type Q } from '@/data/korean/topik-mock'
+import { ruleLabel, summarize, type ExamBlock, type ExamMistake, type PointResult } from '@/data/korean/exam'
 import { fetchT } from '@/lib/http'
 import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
@@ -115,20 +117,36 @@ const run = ref<'vocab' | 'mock' | null>(null)
 const qs = ref<Q[]>([])
 interface Done { kind: 'vocab' | 'mock'; correct: number; wrong: number; skipped: number; total: number; missed: Q[] }
 const done = ref<Done | null>(null)
+/** Блоки пробника (движок большого экзамена) и итог после него: по правилам и ошибки. */
+const blocks = ref<ExamBlock[]>([])
+const mockDone = ref<{ right: number; total: number; rules: ReturnType<typeof summarize>['rules']; mistakes: ExamMistake[] } | null>(null)
 function start(kind: 'vocab' | 'mock') {
-  qs.value = kind === 'vocab' ? vocabQuestions(pool.value, TEST_N) : buildMock(pool.value)
   done.value = null
+  mockDone.value = null
+  if (kind === 'vocab') qs.value = vocabQuestions(pool.value, TEST_N)
+  else blocks.value = mockBlocks()
   run.value = kind
 }
 function finish(r: { correct: number; wrong: number; skipped: number; missed: Q[] }) {
-  const kind = run.value!
   const total = qs.value.length
-  if (kind === 'vocab') store.value.tests = [...store.value.tests, { at: Date.now(), n: total, correct: r.correct, wrong: r.wrong }].slice(-50)
-  else store.value.mocks = [...store.value.mocks, { at: Date.now(), l: null, r: Math.round((r.correct / total) * 100), src: 'site' as const, n: total }].slice(-50)
-  done.value = { kind, ...r, total }
+  store.value.tests = [...store.value.tests, { at: Date.now(), n: total, correct: r.correct, wrong: r.wrong }].slice(-50)
+  done.value = { kind: 'vocab', ...r, total }
   run.value = null
   void save()
 }
+/** Пробник закончен: результат считается по пунктам экзамена, в «Свои пробники» идёт чтение из 100. */
+function mockSaved(points: PointResult[]) {
+  const sum = summarize([points])
+  store.value.mocks = [...store.value.mocks, { at: Date.now(), l: null, r: Math.round((sum.right / sum.total) * 100), src: 'site' as const, n: sum.total }].slice(-50)
+  mockDone.value = { right: sum.right, total: sum.total, rules: sum.rules, mistakes: sum.mistakes }
+  run.value = null
+  void save()
+}
+const ruleRows = computed(() =>
+  Object.entries(mockDone.value?.rules ?? {})
+    .map(([id, v]) => ({ id, label: ruleLabel(id), ...v, share: v.ok / v.total }))
+    .sort((a, b) => a.share - b.share),
+)
 
 /* ---------- настоящий пробник, введённый вручную ---------- */
 const mockL = ref<number | null>(null)
@@ -239,17 +257,22 @@ const clearAll = () => {
       </template>
     </section>
 
-    <!-- пробник с сайта -->
+    <!-- пробник на движке большого экзамена -->
     <section class="card test">
       <h2>Пробник «чтение» с сайта</h2>
-      <TopikQuiz v-if="run === 'mock'" :questions="qs" :allow-skip="false" label="Пробник" @done="finish" />
+      <template v-if="run === 'mock'">
+        <p class="note">Пробник: {{ MOCK_POINTS }} пунктов, как в блоке «чтение» (на настоящем экзамене на него 60 минут). Подсказок нет, неотвеченное считается неверным.</p>
+        <ExamRun :key="blocks.length + ':' + blocks[0]?.kind" :blocks="blocks" :part="1" :parts="1" blitz @saved="mockSaved" />
+        <p class="mock-exit"><button class="reset" type="button" @click="run = null">Выйти (результат не запишется)</button></p>
+      </template>
       <template v-else-if="run !== 'vocab'">
-        <p>30 вопросов в духе блока «чтение» TOPIK I: 12 слов, 12 вопросов по грамматике и 6 коротких текстов. Только то, что вы уже проходили; это не настоящие задания экзамена. Время не ограничено, подсказок нет, итог идёт в «Свои пробники» и подстраивает сравнение с прогнозом.</p>
-        <div v-if="done && done.kind === 'mock'" class="res">
-          Правильно {{ done.correct }} из {{ done.total }}: около {{ Math.round((done.correct / done.total) * 100) }} из 100 за чтение (по сайту).
-          <details v-if="done.missed.length">
-            <summary>Ошибки ({{ done.missed.length }})</summary>
-            <ul class="one"><li v-for="m in done.missed" :key="m.id">{{ m.prompt }} → <b class="ko">{{ m.answer }}</b></li></ul>
+        <p>Около {{ MOCK_POINTS }} пунктов тех же видов, что в большом экзамене: текст с пропусками плитками, ввод частиц, перевод, порядок слов, поиск ошибок, формы глаголов, указатели, вопросительные и счётные слова, числа. Только то, что вы уже проходили: новая пройденная тема попадает сюда сама. Это не настоящие задания экзамена. Итог идёт в «Свои пробники» и подстраивает сравнение с прогнозом.</p>
+        <div v-if="mockDone" class="res">
+          Верно {{ mockDone.right }} из {{ mockDone.total }}: около {{ Math.round((mockDone.right / mockDone.total) * 100) }} из 100 за чтение (по сайту).
+          <div v-for="r in ruleRows" :key="r.id" class="rule" :class="{ weak: r.share < 0.7 }"><span>{{ r.label }}</span><b>{{ r.ok }} из {{ r.total }}</b></div>
+          <details v-if="mockDone.mistakes.length">
+            <summary>Ошибки ({{ mockDone.mistakes.length }})</summary>
+            <ul class="one"><li v-for="(m, i) in mockDone.mistakes" :key="i">{{ m.q }} → <b class="ko">{{ m.a }}</b> <small>(у вас: {{ m.y }})</small></li></ul>
           </details>
         </div>
         <button type="button" class="go" :disabled="!pool.length" @click="start('mock')">{{ store.mocks.some(m => m.src === 'site') ? 'Пройти пробник ещё раз' : 'Начать пробник' }}</button>
@@ -352,6 +375,9 @@ html[data-theme='dark'] .tp { --vine: #ff9cc6; --petal: #ffd1e3; --petal-line: #
 .res { margin: 10px 0; padding: 10px 14px; border-radius: 16px; background: rgba(224, 85, 159, .1); font-size: 14px; }
 .res ul { margin: 8px 0 0; padding-left: 18px; columns: 2; font-size: 13px; }
 .res ul.one { columns: 1; }
+.rule { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; border-bottom: 1px dashed var(--line); }
+.rule.weak { color: #b44634; font-weight: 700; }
+.mock-exit { text-align: center; margin-top: 10px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .mf { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 8px 0; }
 .mf label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }

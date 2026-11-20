@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { CHOICES, FORMAT, levelOf, neededShare, readingRange, totalRange, vocabMargin, vocabShare } from '@/data/korean/topik'
-import { buildMock, vocabQuestions } from '@/data/korean/topik-mock'
+import { MOCK_POINTS, mockBlocks, vocabQuestions } from '@/data/korean/topik-mock'
+import { blockPoints } from '@/data/korean/exam'
 import { TOPIK_POOL } from '@/data/korean/topik-pool'
 import TopikView from '@/views/korean/TopikView.vue'
 
@@ -48,16 +49,12 @@ describe('прогноз TOPIK I: вопросы', () => {
       expect(q.options).toContain(q.answer)
     }
   })
-  it('пробник: 30 вопросов трёх видов, у каждого верный ответ среди вариантов, грамматика только из пройденного', () => {
-    const qs = buildMock(TOPIK_POOL)
-    expect(qs.filter(q => q.kind === 'vocab').length).toBe(12)
-    expect(qs.filter(q => q.kind === 'grammar').length).toBeGreaterThanOrEqual(8)
-    expect(qs.filter(q => q.kind === 'reading').length).toBeGreaterThanOrEqual(4)
-    for (const q of qs) {
-      expect(q.options).toContain(q.answer)
-      expect(new Set(q.options).size).toBe(q.options.length)
-      expect(q.prompt.trim()).not.toBe('')
-    }
+  it('пробник строится на движке большого экзамена: около 40 пунктов, блоки разных видов, всё посчитано по пунктам', () => {
+    const blocks = mockBlocks()
+    const points = blocks.reduce((n, b) => n + blockPoints(b), 0)
+    expect(points).toBeGreaterThanOrEqual(MOCK_POINTS)
+    expect(points).toBeLessThanOrEqual(MOCK_POINTS + 4)
+    expect(new Set(blocks.map(b => b.kind)).size).toBeGreaterThanOrEqual(3)
   })
   it('доля слов с поправкой на угадывание: «не знаю» не штрафуется, неверные снижают', () => {
     expect(vocabShare({ n: 40, correct: 40, wrong: 0 })).toBe(1)
