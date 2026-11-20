@@ -52,3 +52,35 @@ describe.skipIf(process.env.RUN_REDIS_INTEGRATION !== '1')('BullMQ with live Red
     }
   })
 })
+
+describe('BackgroundJobs: без двойных запусков', () => {
+  it('одна и та же задача не идёт дважды одновременно', async () => {
+    const { BackgroundJobs } = await import('../src/jobs/background-jobs.service.js')
+    const jobs = new BackgroundJobs()
+    let calls = 0
+    let release!: () => void
+    jobs.register('digest.tick', () => {
+      calls++
+      return new Promise<void>(resolve => (release = resolve))
+    })
+    const first = jobs.runOnce('digest.tick', { name: 'digest.tick' } as never)
+    expect(await jobs.runOnce('digest.tick', { name: 'digest.tick' } as never)).toBe(false) // второй запуск пока первый идёт пропущен
+    release()
+    expect(await first).toBe(true)
+    const third = jobs.runOnce('digest.tick', { name: 'digest.tick' } as never) // после окончания можно снова
+    release()
+    expect(await third).toBe(true)
+    expect(calls).toBe(2)
+  })
+  it('запасные таймеры можно остановить, когда очередь заработала', async () => {
+    const { BackgroundJobs } = await import('../src/jobs/background-jobs.service.js')
+    const jobs = new BackgroundJobs()
+    for (const n of ['digest.tick', 'reminder.tick', 'notes.remind', 'rule.tick', 'backup.run', 'trash.purge']) jobs.register(n, async () => {})
+    jobs.startLocalTimers()
+    expect(jobs.localTimerCount).toBe(6)
+    jobs.startLocalTimers() // повторный запуск ничего не добавляет
+    expect(jobs.localTimerCount).toBe(6)
+    jobs.stopLocalTimers()
+    expect(jobs.localTimerCount).toBe(0)
+  })
+})
