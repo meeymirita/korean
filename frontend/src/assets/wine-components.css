@@ -307,6 +307,12 @@ html[data-theme='dark'][data-palette='wine'] .gdone input[type='checkbox']:check
 /* views/korean/KeyboardView.vue */
 html[data-theme='dark'][data-palette='wine'] .cdrop:where(:not(.pk *)) { background: var(--bg, rgba(255, 255, 255, 0.07)); box-shadow: none; }
 
+/* views/korean/MapView.vue */
+html[data-theme='dark'][data-palette='wine'] .cnt:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .tag:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .tag:focus-visible:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .tag.next:where(:not(.pk *)) { box-shadow: none; }
+
 /* views/korean/MarksView.vue */
 html[data-theme='dark'][data-palette='wine'] .mk-kw li:where(:not(.pk *)) { background: var(--surface, rgba(255, 255, 255, 0.07)); }
 
