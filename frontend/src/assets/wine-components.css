@@ -763,6 +763,13 @@ html[data-theme='dark'][data-palette='wine'] .pv-size:where(:not(.pk *)) { color
 html[data-theme='dark'][data-palette='wine'] .pv-size button:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); }
 html[data-theme='dark'][data-palette='wine'] .pv-size button:hover:not(:disabled):where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 
+/* components/korean/TopikQuiz.vue */
+html[data-theme='dark'][data-palette='wine'] .prog i:where(:not(.pk *)) { background: linear-gradient(90deg, var(--petal, rgba(255, 111, 174, 0.2)), var(--petal-line, rgba(255, 111, 174, 1))); }
+html[data-theme='dark'][data-palette='wine'] .opt:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .opt:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .opt:focus-visible:where(:not(.pk *)) { border-color: var(--petal-line, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .n:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
+
 /* components/korean/TypingQuiz.vue */
 html[data-theme='dark'][data-palette='wine'] .study .tq-card:where(:not(.pk *)) { box-shadow: none; }
 @media print {

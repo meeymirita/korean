@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { FORMAT, levelOf, neededShare, readingRange, totalRange, vocabMargin } from '@/data/korean/topik'
+import { CHOICES, FORMAT, levelOf, neededShare, readingRange, totalRange, vocabMargin, vocabShare } from '@/data/korean/topik'
+import { buildMock, vocabQuestions } from '@/data/korean/topik-mock'
 import { TOPIK_POOL } from '@/data/korean/topik-pool'
 import TopikView from '@/views/korean/TopikView.vue'
 
@@ -36,15 +37,46 @@ describe('прогноз TOPIK I: расчёт', () => {
   })
 })
 
+describe('прогноз TOPIK I: вопросы', () => {
+  it('тест слов: 4 разных перевода, верный среди них, слова не повторяются', () => {
+    const qs = vocabQuestions(TOPIK_POOL, 40)
+    expect(qs.length).toBe(40)
+    expect(new Set(qs.map(q => q.prompt)).size).toBe(40)
+    for (const q of qs) {
+      expect(q.options.length).toBe(CHOICES)
+      expect(new Set(q.options).size).toBe(CHOICES)
+      expect(q.options).toContain(q.answer)
+    }
+  })
+  it('пробник: 30 вопросов трёх видов, у каждого верный ответ среди вариантов, грамматика только из пройденного', () => {
+    const qs = buildMock(TOPIK_POOL)
+    expect(qs.filter(q => q.kind === 'vocab').length).toBe(12)
+    expect(qs.filter(q => q.kind === 'grammar').length).toBeGreaterThanOrEqual(8)
+    expect(qs.filter(q => q.kind === 'reading').length).toBeGreaterThanOrEqual(4)
+    for (const q of qs) {
+      expect(q.options).toContain(q.answer)
+      expect(new Set(q.options).size).toBe(q.options.length)
+      expect(q.prompt.trim()).not.toBe('')
+    }
+  })
+  it('доля слов с поправкой на угадывание: «не знаю» не штрафуется, неверные снижают', () => {
+    expect(vocabShare({ n: 40, correct: 40, wrong: 0 })).toBe(1)
+    expect(vocabShare({ n: 40, correct: 20, wrong: 0 })).toBeCloseTo(0.5)
+    expect(vocabShare({ n: 40, correct: 20, wrong: 15 })).toBeCloseTo((20 - 5) / 40)
+    expect(vocabShare({ n: 40, correct: 0, wrong: 40 })).toBe(0)
+  })
+})
+
 describe('прогноз TOPIK I: страница', () => {
-  it('тест слов проходится до конца и даёт прогноз; результат сохраняется', async () => {
+  it('тест слов проходится до конца и даёт прогноз; результат сохраняется в кэше браузера', async () => {
     localStorage.removeItem('topik_v1')
     const w = await mountSuspended(TopikView)
     await flushPromises()
     expect(w.find('.verdict').text()).toContain('Пройди тест')
-    await w.find('button.go').trigger('click')
+    await w.findAll('button.go')[0]!.trigger('click')
     for (let i = 0; i < 40; i++) {
-      await w.findAll('.acts button')[i % 2]!.trigger('click')
+      const opts = w.findAll('.quiz .opt')
+      await opts[i % opts.length]!.trigger('click')
     }
     await flushPromises()
     expect(w.find('.verdict').text()).toMatch(/Сейчас около \d+ из 200/)

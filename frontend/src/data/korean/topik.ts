@@ -22,6 +22,15 @@ export const SOURCES: { title: string; url: string }[] = [
   { title: 'Грамматика TOPIK I (Elon)', url: 'https://elon.io/grammar/korean/paths/topik1-grammar-checklist' },
 ]
 
+/** В тесте слов к слову дают четыре перевода и ещё «не знаю»: угаданный ответ считается поправкой, чтобы случайные попадания не завышали запас. */
+export const CHOICES = 4
+
+/** Доля знакомых слов по тесту: верные минус угаданные (неверные ответы делятся на число вариантов без одного); «не знаю» не штрафуется. */
+export function vocabShare(t: { n: number; correct: number; wrong: number }): number {
+  if (t.n <= 0) return 0
+  return clamp((t.correct - t.wrong / (CHOICES - 1)) / t.n, 0, 1)
+}
+
 /** Что измерено: доли от 0 до 1; `null` — данных нет. */
 export interface Measures {
   /** доля знакомых слов по последнему тесту словаря */

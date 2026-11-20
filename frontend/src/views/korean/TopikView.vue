@@ -1,40 +1,81 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import TopikQuiz from '@/components/korean/TopikQuiz.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, type Gram } from '@/data/korean/grammar'
-import { FORMAT, LISTENING, SOURCES, levelOf, neededShare, readingRange, totalRange, vocabMargin, type ListeningMode, type Measures } from '@/data/korean/topik'
+import { FORMAT, LISTENING, SOURCES, levelOf, neededShare, readingRange, totalRange, vocabMargin, vocabShare, type ListeningMode, type Measures } from '@/data/korean/topik'
+import { buildMock, vocabQuestions, type Q } from '@/data/korean/topik-mock'
+import { fetchT } from '@/lib/http'
 import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
+import { useToastStore } from '@/stores/toast'
 
 const progress = useProgressStore()
 const { open } = useGrammarModal()
+const toast = useToastStore()
 
-/* ---------- результаты теста слов и пробных тестов: помнятся в этом браузере ---------- */
-interface Store { tests: { at: number; n: number; known: number }[]; mocks: { at: number; l: number; r: number }[] }
+/* ---------- результаты теста слов и пробников: на сервере (у владельца), кэш в браузере на случай, если сети нет ---------- */
+interface Test { at: number; n: number; correct: number; wrong: number }
+interface Mock { at: number; l: number | null; r: number; src: 'site' | 'real'; n: number }
+interface Store { tests: Test[]; mocks: Mock[] }
 const KEY = 'topik_v1'
 const store = ref<Store>({ tests: [], mocks: [] })
-const save = () => {
+/** Гость ничего не сохраняет (правило сайта), владелец хранит на сервере. */
+const canSave = computed(() => progress.unlocked && !progress.isGuest)
+const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${progress.bearer}` })
+/** Старый вид записи (до переезда на сервер) был `{ known }` без неверных: читаем его как «верно». */
+function normalize(raw: unknown): Store | null {
+  const r = raw as { tests?: Record<string, unknown>[]; mocks?: Record<string, unknown>[] } | null
+  if (!r || !Array.isArray(r.tests) || !Array.isArray(r.mocks)) return null
+  return {
+    tests: r.tests.filter(t => typeof t.n === 'number').map(t => ({ at: Number(t.at), n: Number(t.n), correct: Number(t.correct ?? t.known ?? 0), wrong: Number(t.wrong ?? 0) })),
+    mocks: r.mocks.filter(m => typeof m.r === 'number').map(m => ({ at: Number(m.at), l: m.l === null || m.l === undefined ? null : Number(m.l), r: Number(m.r), src: m.src === 'site' ? 'site' : 'real', n: Number(m.n ?? 0) })),
+  }
+}
+const cacheWrite = () => {
   try {
-    localStorage.setItem(KEY, JSON.stringify(store.value))
+    if (!progress.isGuest) localStorage.setItem(KEY, JSON.stringify(store.value))
   } catch {
     /* хранилище недоступно: результаты живут до закрытия страницы */
+  }
+}
+async function save() {
+  cacheWrite()
+  if (!canSave.value) return
+  try {
+    const res = await fetchT('/api/topik', { method: 'PUT', headers: headers(), body: JSON.stringify(store.value) })
+    if (!res.ok) throw new Error(String(res.status))
+  } catch {
+    toast.error('Результат сохранён только в этом браузере: сервер не ответил')
   }
 }
 type Entry = [number, string, string, string]
 const pool = ref<Entry[]>([])
 onMounted(async () => {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Store | null
-    if (raw && Array.isArray(raw.tests) && Array.isArray(raw.mocks)) store.value = raw
+    const local = normalize(JSON.parse(localStorage.getItem(KEY) ?? 'null'))
+    if (local && !progress.isGuest) store.value = local
   } catch {
     /* повреждённая запись: начинаем с чистого листа */
   }
   pool.value = (await import('@/data/korean/topik-pool')).TOPIK_POOL
+  if (!canSave.value) return
+  try {
+    const res = await fetchT('/api/topik', { headers: headers() })
+    if (!res.ok) return
+    const remote = normalize(await res.json())
+    if (remote && (remote.tests.length || remote.mocks.length)) {
+      store.value = remote
+      cacheWrite()
+    } else if (store.value.tests.length || store.value.mocks.length) void save() // то, что копилось в браузере до переезда, уходит на сервер
+  } catch {
+    /* сервер не ответил: работаем с тем, что в браузере */
+  }
 })
 
 /* ---------- измерения ---------- */
 const lastTest = computed(() => store.value.tests.at(-1) ?? null)
-const vocabShare = computed(() => (lastTest.value && lastTest.value.n >= 20 ? lastTest.value.known / lastTest.value.n : null))
+const vocabPart = computed(() => (lastTest.value && lastTest.value.n >= 20 ? vocabShare(lastTest.value) : null))
 const books = computed(() => G.filter(g => !!g.bk))
 const passed = computed(() => books.value.filter(g => g.st === 'ok').length)
 const grammarShare = computed(() => (books.value.length ? passed.value / books.value.length : 0))
@@ -45,7 +86,7 @@ const acc = computed(() => {
   return log.length >= 50 ? { share: log.filter(e => e.ok).length / log.length, n: log.length } : null
 })
 const siteKnown = computed(() => Object.values(progress.data.words).filter(w => w.streak >= KNOWN_STREAK).length)
-const measures = computed<Measures>(() => ({ vocab: vocabShare.value, vocabN: lastTest.value?.n ?? 0, grammar: grammarShare.value, accuracy: acc.value?.share ?? null }))
+const measures = computed<Measures>(() => ({ vocab: vocabPart.value, vocabN: lastTest.value?.n ?? 0, grammar: grammarShare.value, accuracy: acc.value?.share ?? null }))
 
 const mode = ref<ListeningMode>('same')
 const reading = computed(() => readingRange(measures.value))
@@ -68,63 +109,50 @@ const X0 = 30
 const X1 = 690
 const px = (s: number) => X0 + (Math.min(200, Math.max(0, s)) / 200) * (X1 - X0)
 
-/* ---------- тест слов ---------- */
+/* ---------- тест слов и пробник: вопросы с выбором ответа ---------- */
 const TEST_N = 40
-const running = ref(false)
-const words = ref<Entry[]>([])
-const idx = ref(0)
-const knownCount = ref(0)
-const missed = ref<Entry[]>([])
-const justDone = ref<{ share: number; n: number } | null>(null)
-function start() {
-  const p = [...pool.value]
-  for (let i = p.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[p[i], p[j]] = [p[j]!, p[i]!]
-  }
-  words.value = p.slice(0, TEST_N)
-  idx.value = 0
-  knownCount.value = 0
-  missed.value = []
-  justDone.value = null
-  running.value = true
+const run = ref<'vocab' | 'mock' | null>(null)
+const qs = ref<Q[]>([])
+interface Done { kind: 'vocab' | 'mock'; correct: number; wrong: number; skipped: number; total: number; missed: Q[] }
+const done = ref<Done | null>(null)
+function start(kind: 'vocab' | 'mock') {
+  qs.value = kind === 'vocab' ? vocabQuestions(pool.value, TEST_N) : buildMock(pool.value)
+  done.value = null
+  run.value = kind
 }
-function answer(know: boolean) {
-  if (!running.value) return
-  if (know) knownCount.value++
-  else missed.value.push(words.value[idx.value]!)
-  if (idx.value + 1 >= words.value.length) {
-    running.value = false
-    store.value.tests.push({ at: Date.now(), n: words.value.length, known: knownCount.value })
-    store.value.tests = store.value.tests.slice(-20)
-    save()
-    justDone.value = { share: knownCount.value / words.value.length, n: words.value.length }
-  } else idx.value++
+function finish(r: { correct: number; wrong: number; skipped: number; missed: Q[] }) {
+  const kind = run.value!
+  const total = qs.value.length
+  if (kind === 'vocab') store.value.tests = [...store.value.tests, { at: Date.now(), n: total, correct: r.correct, wrong: r.wrong }].slice(-50)
+  else store.value.mocks = [...store.value.mocks, { at: Date.now(), l: null, r: Math.round((r.correct / total) * 100), src: 'site' as const, n: total }].slice(-50)
+  done.value = { kind, ...r, total }
+  run.value = null
+  void save()
 }
-const onKey = (e: KeyboardEvent) => {
-  if (!running.value || e.ctrlKey || e.metaKey || e.altKey) return
-  if (e.key === 'ArrowRight') answer(true)
-  else if (e.key === 'ArrowLeft') answer(false)
-}
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
-/* ---------- пробный тест, введённый вручную ---------- */
+/* ---------- настоящий пробник, введённый вручную ---------- */
 const mockL = ref<number | null>(null)
 const mockR = ref<number | null>(null)
 const okScore = (v: number | null) => v !== null && Number.isFinite(v) && v >= 0 && v <= 100
 function addMock() {
   if (!okScore(mockL.value) || !okScore(mockR.value)) return
-  store.value.mocks.push({ at: Date.now(), l: Math.round(mockL.value!), r: Math.round(mockR.value!) })
-  store.value.mocks = store.value.mocks.slice(-20)
+  store.value.mocks = [...store.value.mocks, { at: Date.now(), l: Math.round(mockL.value!), r: Math.round(mockR.value!), src: 'real' as const, n: 0 }].slice(-50)
   mockL.value = mockR.value = null
-  save()
+  void save()
 }
 const lastMock = computed(() => store.value.mocks.at(-1) ?? null)
+/** Сравнение последнего пробника с прогнозом: пробник с сайта сравнивается по чтению, настоящий по сумме. */
+const cmp = computed(() => {
+  const m = lastMock.value
+  if (!m || !reading.value) return ''
+  const side = m.src === 'real' && m.l !== null ? { v: m.l + m.r, lo: total.value?.lo ?? 0, hi: total.value?.hi ?? 0 } : { v: m.r, lo: Math.round(reading.value.lo), hi: Math.round(reading.value.hi) }
+  return side.v > side.hi ? 'Реальный результат выше прогноза: формула занижает.' : side.v < side.lo ? 'Реальный результат ниже прогноза: формула завышает.' : 'Результат внутри прогноза.'
+})
 const fmtDate = (t: number) => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 const clearAll = () => {
   store.value = { tests: [], mocks: [] }
-  save()
+  done.value = null
+  void save()
 }
 </script>
 
@@ -173,9 +201,9 @@ const clearAll = () => {
     <div class="meas">
       <section class="card m">
         <h2>Слова</h2>
-        <div class="big">{{ pct(vocabShare) }}</div>
-        <div class="bar"><i :style="{ width: (vocabShare ?? 0) * 100 + '%' }" /></div>
-        <p v-if="lastTest">Из {{ lastTest.n }} слов начального уровня вы знаете {{ lastTest.known }} (±{{ vocabMargin(lastTest.known / lastTest.n, lastTest.n) }}%). Тест: {{ fmtDate(lastTest.at) }}</p>
+        <div class="big">{{ pct(vocabPart) }}</div>
+        <div class="bar"><i :style="{ width: (vocabPart ?? 0) * 100 + '%' }" /></div>
+        <p v-if="lastTest">Тест от {{ fmtDate(lastTest.at) }}: из {{ lastTest.n }} слов верно {{ lastTest.correct }}, неверно {{ lastTest.wrong }}; запас по списку около {{ Math.round(vocabShare(lastTest) * 100) }}% (±{{ vocabMargin(vocabShare(lastTest), lastTest.n) }}%).</p>
         <p v-else>Теста ещё не было.</p>
         <p class="note">По игре «выучено» {{ siteKnown }} слов, но игра не знает слов, которые вы знали раньше: поэтому слова измеряет тест, а не очки.</p>
       </section>
@@ -198,26 +226,34 @@ const clearAll = () => {
     <!-- тест слов -->
     <section class="card test">
       <h2>Тест словарного запаса</h2>
-      <template v-if="running && words[idx]">
-        <div class="prog"><i :style="{ width: (idx / words.length) * 100 + '%' }" /></div>
-        <div class="w ko">{{ words[idx]![1] }}</div>
-        <div class="pos">слово {{ idx + 1 }} из {{ words.length }}</div>
-        <div class="acts">
-          <button type="button" class="no" @click="answer(false)">Не знаю <small>←</small></button>
-          <button type="button" class="yes" @click="answer(true)">Знаю <small>→</small></button>
-        </div>
-        <p class="note">Отвечай честно: «знаю», если можешь сказать перевод. Стрелки ← и → тоже работают.</p>
-      </template>
-      <template v-else>
-        <p>{{ TEST_N }} случайных слов начального уровня «한국어 학습용 어휘 목록» ({{ pool.length }} слов в списке). Отвечаешь «знаю» или «не знаю»: по доле считается словарный запас, это точнее, чем очки в играх. Чем чаще проходишь, тем точнее.</p>
-        <div v-if="justDone" class="res">
-          Знакомо {{ Math.round(justDone.share * justDone.n) }} из {{ justDone.n }}: примерно {{ Math.round(justDone.share * pool.length) }} слов списка.
-          <details v-if="missed.length">
-            <summary>Какие слова не знакомы ({{ missed.length }})</summary>
-            <ul><li v-for="m in missed" :key="m[1]"><b class="ko">{{ m[1] }}</b> — {{ m[3] }} <small>{{ m[2] }}</small></li></ul>
+      <TopikQuiz v-if="run === 'vocab'" :questions="qs" allow-skip label="Слова" @done="finish" />
+      <template v-else-if="run !== 'mock'">
+        <p>{{ TEST_N }} случайных слов начального уровня «한국어 학습용 어휘 목록» ({{ pool.length }} слов в списке): к каждому слову четыре перевода, выбираешь верный. Если слова не знаешь, жми «не знаю» (это не штрафуется, а угадывание наугад учитывается поправкой). Так честнее, чем «знаю / не знаю». Чем чаще проходишь, тем точнее.</p>
+        <div v-if="done && done.kind === 'vocab'" class="res">
+          Верно {{ done.correct }}, неверно {{ done.wrong }}, не знаю {{ done.skipped }} из {{ done.total }}: запас по списку около {{ Math.round(vocabShare({ n: done.total, correct: done.correct, wrong: done.wrong }) * 100) }}%.
+          <details v-if="done.missed.length">
+            <summary>Слова, в которых промах ({{ done.missed.length }})</summary>
+            <ul><li v-for="m in done.missed" :key="m.id"><b class="ko">{{ m.prompt }}</b> — {{ m.answer }}</li></ul>
           </details>
         </div>
-        <button type="button" class="go" :disabled="!pool.length" @click="start">{{ lastTest ? 'Пройти ещё раз' : 'Начать тест' }}</button>
+        <button type="button" class="go" :disabled="!pool.length" @click="start('vocab')">{{ lastTest ? 'Пройти ещё раз' : 'Начать тест слов' }}</button>
+      </template>
+    </section>
+
+    <!-- пробник с сайта -->
+    <section class="card test">
+      <h2>Пробник «чтение» с сайта</h2>
+      <TopikQuiz v-if="run === 'mock'" :questions="qs" :allow-skip="false" label="Пробник" @done="finish" />
+      <template v-else-if="run !== 'vocab'">
+        <p>30 вопросов в духе блока «чтение» TOPIK I: 12 слов, 12 вопросов по грамматике и 6 коротких текстов. Только то, что вы уже проходили; это не настоящие задания экзамена. Время не ограничено, подсказок нет, итог идёт в «Свои пробники» и подстраивает сравнение с прогнозом.</p>
+        <div v-if="done && done.kind === 'mock'" class="res">
+          Правильно {{ done.correct }} из {{ done.total }}: около {{ Math.round((done.correct / done.total) * 100) }} из 100 за чтение (по сайту).
+          <details v-if="done.missed.length">
+            <summary>Ошибки ({{ done.missed.length }})</summary>
+            <ul class="one"><li v-for="m in done.missed" :key="m.id">{{ m.prompt }} → <b class="ko">{{ m.answer }}</b></li></ul>
+          </details>
+        </div>
+        <button type="button" class="go" :disabled="!pool.length" @click="start('mock')">{{ store.mocks.some(m => m.src === 'site') ? 'Пройти пробник ещё раз' : 'Начать пробник' }}</button>
       </template>
     </section>
 
@@ -234,17 +270,24 @@ const clearAll = () => {
 
     <!-- пробный тест -->
     <section class="card mock">
-      <h2>Свои баллы пробного теста</h2>
-      <p>Если решали настоящий пробный TOPIK I, впиши баллы блоков (0–100): страница покажет, насколько прогноз близок.</p>
+      <h2>Свои пробники</h2>
+      <p>Если решали настоящий пробный TOPIK I, впиши баллы блоков (0–100): страница покажет, насколько прогноз близок. Своих пробников у вас может не быть: прошлые экзамены лежат в архивах ниже (аудирование требует звука, поэтому его вы решаете вне сайта).</p>
       <form class="mf" @submit.prevent="addMock">
         <label>Аудирование <input v-model.number="mockL" type="number" min="0" max="100" inputmode="numeric" /></label>
         <label>Чтение <input v-model.number="mockR" type="number" min="0" max="100" inputmode="numeric" /></label>
         <button type="submit" :disabled="!okScore(mockL) || !okScore(mockR)">Записать</button>
       </form>
       <ul v-if="store.mocks.length" class="ml">
-        <li v-for="m in [...store.mocks].reverse()" :key="m.at">{{ fmtDate(m.at) }}: {{ m.l }} + {{ m.r }} = <b>{{ m.l + m.r }}</b> из 200 (уровень {{ levelOf(m.l + m.r) || 'ниже 1-го' }})</li>
+        <li v-for="m in [...store.mocks].reverse()" :key="m.at">
+          {{ fmtDate(m.at) }}: <template v-if="m.src === 'real'">аудирование {{ m.l }} + чтение {{ m.r }} = <b>{{ (m.l ?? 0) + m.r }}</b> из 200 (уровень {{ levelOf((m.l ?? 0) + m.r) || 'ниже 1-го' }})</template>
+          <template v-else>пробник с сайта: чтение <b>{{ m.r }}</b> из 100 ({{ m.n }} вопросов)</template>
+        </li>
       </ul>
-      <p v-if="lastMock && total" class="note">Последний пробный: {{ lastMock.l + lastMock.r }}, прогноз сейчас: {{ total.lo }}–{{ total.hi }}. {{ lastMock.l + lastMock.r > total.hi ? 'Реальный результат выше прогноза: формула занижает.' : lastMock.l + lastMock.r < total.lo ? 'Реальный результат ниже прогноза: формула завышает.' : 'Результат внутри прогноза.' }}</p>
+      <p v-if="lastMock && reading" class="note">
+        Последний пробник: {{ lastMock.src === 'site' || lastMock.l === null ? `чтение ${lastMock.r}, прогноз чтения ${Math.round(reading.lo)}–${Math.round(reading.hi)}` : `${lastMock.l + lastMock.r}, прогноз ${total?.lo}–${total?.hi}` }}.
+        {{ cmp }}
+      </p>
+      <p class="note">Где взять настоящие: <a href="https://www.topikguide.com/previous-papers/" target="_blank" rel="noopener">архив прошлых экзаменов TOPIK Guide</a> (сторонний, проверьте, что набор настоящий) или раздел «기출문제» на сайте <a href="https://www.topik.go.kr/" target="_blank" rel="noopener">topik.go.kr</a> (он иногда не работает).</p>
     </section>
 
     <!-- факты -->
@@ -309,6 +352,7 @@ html[data-theme='dark'] .tp { --vine: #ff9cc6; --petal: #ffd1e3; --petal-line: #
 .go:disabled, .mf button:disabled { opacity: .5; cursor: default; }
 .res { margin: 10px 0; padding: 10px 14px; border-radius: 16px; background: rgba(224, 85, 159, .1); font-size: 14px; }
 .res ul { margin: 8px 0 0; padding-left: 18px; columns: 2; font-size: 13px; }
+.res ul.one { columns: 1; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .mf { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 8px 0; }
 .mf label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
