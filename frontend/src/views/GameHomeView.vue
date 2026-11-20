@@ -76,6 +76,8 @@ function goBack() {
   cameFrom.value = ''
   void router.push(to)
 }
+/** Тестовая сборка для бота-игрока (docs/bot.md): читается в setup, там доступен контекст Nuxt. */
+const testHooks = !!useRuntimeConfig().public.testHooks
 let dispose: (() => void) | undefined
 function startEngine() {
   dispose?.()
@@ -91,6 +93,7 @@ function startEngine() {
     weak: () => weakRules(progress.data.log).map(r => ({ game: r.game, family: r.family })),
     saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
     grammar: (id: string) => openGrammar(id),
+    probe: testHooks,
     // предметы Юны только у владельца (docs/shop.md)
     items: {
       count: (id: string) => (progress.unlocked && !progress.isGuest ? shop.count(id) : 0),

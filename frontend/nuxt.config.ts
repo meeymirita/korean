@@ -121,6 +121,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // куда SSR ходит за данными API (визитка /me); в браузере запросы идут на /api того же сайта
     apiBase: API,
+    // бот-игрок (docs/bot.md): NUXT_PUBLIC_TEST_HOOKS=1 открывает игре крючок window.__gameProbe; в боевой сборке выключено
+    public: { testHooks: false },
   },
 
   nitro: {

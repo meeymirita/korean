@@ -79,7 +79,7 @@ if(![1,2,3,4,'any'].includes(S.level))S.level='any';
 Object.keys(S.levels).forEach(k=>{if(!['simple','story','long','expert'].includes(S.levels[k]!))S.levels[k]='simple';});
 
 /* ---------- генераторы заданий (generators.ts) ---------- */
-const { genQuestion, genBuild, tileGloss, normRu, STORY_MODES, EXPERT_LV, storyOn } = createGenerators(S, hooks);
+const { genQuestion, genBuild, tileGloss, normRu, STORY_MODES, LEVEL_LABELS, storyOn } = createGenerators(S, hooks);
 /** Чипы правил над заданием: выбор запоминается, по нему собираются предложения. */
 function famChips(){
   const lv=el('div','levels fams');
@@ -327,7 +327,6 @@ function checkBuild(){
   finish(ok,ans);
 }
 /** Чипы уровня над заданием: одно предложение (как раньше), текст из 2–4 или длинный из 5–10 (в блице и на выживании всегда простой). */
-const LEVEL_LABELS: Record<string, [string,string][]>={han:[['simple','Слоги'],['story','Слова'],['long','Строки']],spot:[['simple','Простой'],['story','Текст 2–3'],['long','Длинный 4–5']],when:EXPERT_LV,too:EXPERT_LV,neg:EXPERT_LV,place:EXPERT_LV,expert:[['simple','5 пропусков'],['story','10 пропусков'],['long','15 пропусков']]};
 function levelChips(mode: string){
   const lv=el('div','levels');
   (LEVEL_LABELS[mode]||([['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10']] as [string,string][])).forEach(function(x){
@@ -830,6 +829,20 @@ document.addEventListener('keydown',onKeydown);
 const onDocClick=(e: MouseEvent)=>{const t=e.target as HTMLElement|null;if(!(t&&t.closest&&t.closest('.story-tr')))closeTips();};
 document.addEventListener('click',onDocClick);
 
+/* ---------- крючок для бота-игрока (docs/bot.md): только в тестовой сборке, `NUXT_PUBLIC_TEST_HOOKS=1`; в боевой `hooks.probe` не задан ---------- */
+type ProbeWindow=Window&{__gameProbe?: unknown};
+if(hooks.probe&&typeof window!=='undefined'){
+  (window as ProbeWindow).__gameProbe={
+    /** Текущее задание без функций: бот по нему знает верный ответ. */
+    question:()=>S.cur?JSON.parse(JSON.stringify(S.cur)) as unknown:null,
+    /** Режимы и чипы уровней прямо из кода (`MODES`, `STORY_MODES`, `LEVEL_LABELS`): бот не держит своей копии списка. */
+    modes:()=>MODES.map(m=>({id:m.id,name:m.name,levels:STORY_MODES.includes(m.id)?(LEVEL_LABELS[m.id]||[['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10']]).map(x=>({id:x[0],label:x[1]})):[]})),
+    /** Счётчики и настройки, которые бот сверяет с экраном. */
+    state:()=>({mode:S.mode,levels:{...S.levels},level:S.level,ses:{...S.ses},all:{ok:S.all.ok,bad:S.all.bad,best:S.all.best},answered:S.answered,
+      blitz:{on:S.blitz.on,left:S.blitz.left,ok:S.blitz.ok,bad:S.blitz.bad},surv:{...S.surv},retry:S.retryQueue.length,hints:S.hints,histLen:S.hist.length}),
+  };
+}
+
 /* ---------- старт ---------- */
 Object.assign(view,{wq:'',blitzOn:false,survOn:false,help:false});Object.assign(view.over,{on:false});Object.assign(view.timer,{on:false,pct:100});Object.assign(view.toast,{on:false});
 drawCats();syncToggles();updateStats();renderList();drawLives();
@@ -837,6 +850,7 @@ renderQuestion(genQuestion());
 if(!S.seenHelp)openHelp();
 return ()=>{
   stopDrag();
+  if(hooks.probe&&typeof window!=='undefined')delete (window as ProbeWindow).__gameProbe;
   document.removeEventListener('keydown',onKeydown);
   document.removeEventListener('click',onDocClick);
   closeStoryWin();

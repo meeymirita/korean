@@ -1,0 +1,93 @@
+# Бот-игрок в браузере (docs/bot.md, уровень B): ночью 3 задания на клетку «режим × подрежим» (дымовой прогон), по воскресеньям полный (10 заданий, обе темы, телефон, гость, механики),
+# и по кнопке «Run workflow». Отдельно от CI: тяжёлый. Отчёты лежат в артефактах запуска. Уровень A (задания без браузера) идёт в обычном CI вместе с тестами сайта.
+name: Bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Полный прогон (10 заданий на клетку, все варианты)'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 1 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  bot:
+    name: Бот-игрок
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/korean_bot
+      TOKEN: ci-bot-token-not-a-secret
+      NUXT_PUBLIC_TEST_HOOKS: '1'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: korean_bot
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d korean_bot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Пакеты
+        run: |
+          npm --prefix frontend ci
+          npm --prefix backend ci
+          npm --prefix backend run db:generate
+          npm --prefix backend run build
+          npm --prefix backend run db:migrate
+
+      - name: Chromium для бота
+        run: npx --yes playwright@1.50.0 install --with-deps chromium-headless-shell
+
+      - name: Сервер и сайт
+        run: |
+          mkdir -p "$RUNNER_TEMP/data"
+          (cd backend && DATA_DIR="$RUNNER_TEMP/data" PORT=3011 PROGRESS_TOKEN="$TOKEN" DISABLE_2FA=1 nohup node dist/main.js > "$RUNNER_TEMP/backend.log" 2>&1 &)
+          (API_PORT=3011 nohup npx --prefix frontend nuxt dev --port 5198 --cwd frontend > "$RUNNER_TEMP/nuxt.log" 2>&1 &)
+          for i in $(seq 1 90); do curl -fs http://localhost:5198/game/home > /dev/null && break; sleep 2; done
+
+      - name: Бот (дымовой или полный)
+        run: |
+          mkdir -p bot-report
+          if [ "${{ inputs.full }}" = "true" ] || [ "$(date +%u)" = "7" ]; then
+            STEPS=10 THEME=light node scripts/play-bot.mjs
+            STEPS=10 THEME=wine SIZE=phone node scripts/play-bot.mjs
+            STEPS=6 GUEST=1 node scripts/play-bot.mjs
+            STEPS=6 MECHANICS=1 MODES=word,part,build,pair node scripts/play-bot.mjs
+          else
+            STEPS=3 node scripts/play-bot.mjs
+          fi
+        env:
+          OUT: bot-report
+
+      - name: Журналы и отчёты
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-report
+          path: |
+            bot-report
+            ${{ runner.temp }}/backend.log
+            ${{ runner.temp }}/nuxt.log

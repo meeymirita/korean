@@ -22,6 +22,8 @@ export interface GameHooks {
   grammar?: (id: string) => void
   /** Предметы Юны из магазина (только у владельца): сколько в запасе и потратить один (false: не вышло). */
   items?: { count: (id: string) => number; use: (id: string) => Promise<boolean> }
+  /** Тестовая сборка (`NUXT_PUBLIC_TEST_HOOKS=1`): игра открывает боту `window.__gameProbe` с текущим заданием и счётчиками. В боевой сборке не задан. */
+  probe?: boolean
 }
 
 /** Вариант ответа в задании с выбором. */
