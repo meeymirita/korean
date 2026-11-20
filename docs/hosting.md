@@ -111,5 +111,5 @@ cp /var/sites/korean/docker/caddy/maintenance.html /var/www/maintenance/
   AV1 не везде играет (Safari, часть iPad); перекодировать: `ffmpeg -i in.mp4 -c:v libx264 -crf 24 -c:a aac -movflags +faststart out.mp4`.
 
 
-## Яндекс.Диск, Telegram, вход на 4 часа
+## Яндекс.Диск, Telegram, вход на неделю
 Диск, раздача видео через Caddy, сеанс входа, поломки: `docs/disk-and-telegram.md`. Уведомления в Telegram: `docs/telegram.md`.

@@ -13,7 +13,7 @@ import { codeMail } from '../mail/templates.js'
 import { logError } from '../log.js'
 
 const SESSION_DAYS = 30
-/** OWNER_SESSION_HOURS=4: вход по токену живёт 4 часа, потом токен нужно вводить заново (0 или пусто: сеанс только после кода, 30 дней). */
+/** OWNER_SESSION_HOURS=168: вход по токену живёт неделю (168 часов), потом токен нужно вводить заново (0 или пусто: сеанс только после кода, 30 дней). */
 export const ownerSessionHours = () => Math.max(0, Math.min(Number(process.env.OWNER_SESSION_HOURS) || 0, 24 * 30))
 const sessionMs = () => (ownerSessionHours() > 0 ? ownerSessionHours() * 3_600_000 : SESSION_DAYS * 86_400_000)
 const CODE_TTL = 10 * 60_000
