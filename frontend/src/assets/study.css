@@ -96,7 +96,7 @@
   background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
   transition: transform .2s, border-color .2s; }
 .study .gc:hover { transform: translateY(-3px); border-color: var(--gold); }
-.study .gc h3 { margin: 0; font-family: var(--ko); font-size: 30px; font-weight: 700; line-height: 1.1; }
+.study .gc h3 { margin: 0; overflow-wrap: anywhere; font-family: var(--ko); font-size: 30px; font-weight: 700; line-height: 1.1; }
 .study .gc .rn { font-size: 15px; font-weight: 600; }
 .study .gc .d { font-size: 14px; line-height: 1.45; color: var(--muted); }
 .study .gc .ft { margin-top: auto; padding-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }

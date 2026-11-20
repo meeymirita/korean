@@ -301,6 +301,8 @@ html[data-theme='dark'][data-palette='wine'] .study .garden-page .gd-field:where
 /* views/korean/GrammarView.vue */
 html[data-theme='dark'][data-palette='wine'] .pill.ph:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
 html[data-theme='dark'][data-palette='wine'] .study .grammar-page .gdone:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
+html[data-theme='dark'][data-palette='wine'] .study .grammar-page .gparts-done:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .gdone input[type='checkbox']:checked:where(:not(.pk *))::after { border: solid rgba(255, 190, 220, 0.18); }
 
 /* views/korean/KeyboardView.vue */
 html[data-theme='dark'][data-palette='wine'] .cdrop:where(:not(.pk *)) { background: var(--bg, rgba(255, 255, 255, 0.07)); box-shadow: none; }

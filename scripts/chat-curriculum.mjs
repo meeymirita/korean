@@ -46,7 +46,7 @@ export async function build() {
 export const KNOWN_GRAMMAR = ${JSON.stringify(grammar.join('\n'))}
 
 /** Свои карточки («Мои карточки», без номера урока), которые ещё не пройдены: темы впереди (карточки-заглушки с полем ahead в grammar.ts) и непройденные карточки; инструкции модели не используют их без прямого вопроса. */
-export const KNOWN_NOT_YET = ${JSON.stringify(G.filter(g => !g.l && g.st !== 'ok').map(g => `${g.ko} (${g.ru})`).join('; '))}
+export const KNOWN_NOT_YET = ${JSON.stringify(G.filter(g => !g.l && g.st !== 'ok').map(g => (g.bk?.startsWith('1B ') ? g.ko : `${g.ko} (${g.ru})`)).join('; '))}
 
 /** Краткие правила пройденных карточек (для голосового собеседника). */
 export const KNOWN_RULES = ${JSON.stringify(rulesOf(G).join('\n'))}

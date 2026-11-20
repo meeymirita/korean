@@ -83,7 +83,8 @@ describe('голос: запрос временного ключа и инстр
     expect(SYSTEM_PROMPT).toMatch(/разбери КАЖДОЕ по шагам/)
   })
   it('инструкция короткая: весь список слов в неё не вставляется', () => {
-    expect(SYSTEM_PROMPT.length).toBeLessThan(13500)
+    // 14500: в «не пройдено» добавлены 32 темы книги 1B (2026-11-20), у них только названия, без пояснений
+    expect(SYSTEM_PROMPT.length).toBeLessThan(14500)
     expect(SYSTEM_PROMPT).not.toContain(KNOWN_WORDS.slice(0, 200))
   })
   it('нажми-и-говори выключает автоопределение конца фразы, обычный режим включает', () => {
