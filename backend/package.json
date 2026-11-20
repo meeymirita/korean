@@ -53,6 +53,7 @@
   "overrides": {
     "multer": "^2.5.0",
     "webpack": "5.112.2",
+    "effect": "3.22.5",
     "@nestjs/cli": {
       "minimatch": "^11.0.4"
     }
