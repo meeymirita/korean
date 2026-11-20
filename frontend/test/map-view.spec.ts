@@ -23,11 +23,15 @@ describe('карта обучения', () => {
   it('первая в ряду «следующая» — это первая непройденная по порядку книги; ярлыки ведут на карточки', async () => {
     const w = await mountSuspended(MapView)
     await flushPromises()
-    const tags = w.findAll('section.book')[0]!.findAll('a.tag')
+    const tags = w.findAll('section.book')[0]!.findAll('button.tag')
     const firstNotOk = tags.find(t => t.classes().includes('next'))!
     const idx = tags.indexOf(firstNotOk)
     expect(tags.slice(0, idx).every(t => t.classes().includes('ok'))).toBe(true)
     expect(tags.slice(idx + 1).every(t => !t.classes().includes('next'))).toBe(true)
-    expect(firstNotOk.attributes('href')).toMatch(/^\/korean\/grammar\?g=/)
+    // нажатие открывает окно карточки на самой карте, адрес страницы не меняется
+    const { useGrammarModal } = await import('@/composables/useGrammarModal')
+    await firstNotOk.trigger('click')
+    expect(useGrammarModal().current.value).not.toBeNull()
+    expect(window.location.pathname).not.toContain('/korean/grammar')
   })
 })

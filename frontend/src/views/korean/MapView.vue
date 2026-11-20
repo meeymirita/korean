@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useGrammarModal } from '@/composables/useGrammarModal'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { G, type Gram } from '@/data/korean/grammar'
 
@@ -51,9 +51,9 @@ const books = computed(() =>
 )
 /** Название на ярлыке: без пояснения после двоеточия («에 (когда): в пятницу…» → «에 (когда)»). */
 const short = (ko: string) => ko.split(':')[0]!.trim()
-const router = useRouter()
-/** Цветок и ярлык ведут на карточку в «Грамматике». */
-const go = (n: Node) => router.push({ path: '/korean/grammar', query: { g: n.g.id } })
+const { open } = useGrammarModal()
+/** Цветок и ярлык открывают окно карточки прямо на карте: после закрытия остаёмся здесь (окно общее для сайта, как в поиске и заданиях). */
+const go = (n: Node) => open(n.g.id, true)
 /** Лепестки, которые падают над веткой: только украшение, у каждого своё место, размер и задержка. */
 const FALL = Array.from({ length: 9 }, (_, i) => ({ left: 6 + i * 11, delay: -i * 1.7, dur: 9 + (i % 4) * 2, size: 10 + (i % 3) * 4 }))
 const PETAL = 'M0 0 C-7 -8 -6 -20 0 -26 C6 -20 7 -8 0 0Z'
@@ -103,18 +103,19 @@ onMounted(async () => {
               </g>
             </g>
           </svg>
-          <NuxtLink
+          <button
             v-for="n in b.nodes"
             :key="n.g.id"
+            type="button"
             class="tag"
             :class="[n.state, { up: n.up }]"
             :style="{ left: n.x - 44 + 'px', top: (n.up ? n.y - 118 : n.y + 42) + 'px' }"
-            :to="{ path: '/korean/grammar', query: { g: n.g.id } }"
             :title="`${n.g.ko}: ${n.g.ru}`"
+            @click="go(n)"
           >
             <b class="ko">{{ short(n.g.ko) }}</b>
             <small>{{ n.g.bk!.replace(/^1B /, '') }}</small>
-          </NuxtLink>
+          </button>
           <span v-for="n in b.nodes.filter(x => x.first)" :key="'u' + n.unit" class="unit" :style="{ left: n.x - 44 + 'px' }">Единица {{ n.unit }}</span>
         </div>
       </div>
@@ -158,7 +159,7 @@ html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: 
 .tag { animation: rise .6s ease-out backwards; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { .twig, .bloom, .tag, .fl.next .ring, .fl.next .core { animation: none; } .twig { stroke-dashoffset: 0; } .bloom { transform: none; } .fall { display: none; } }
-.tag { position: absolute; width: 88px; padding: 6px 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: inherit; text-align: center; text-decoration: none; line-height: 1.2; transition: transform .18s, box-shadow .18s; }
+.tag { position: absolute; width: 88px; padding: 6px 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: inherit; font: inherit; text-align: center; cursor: pointer; line-height: 1.2; transition: transform .18s, box-shadow .18s; }
 .tag:hover, .tag:focus-visible { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(100, 87, 170, .2); }
 .tag b { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; overflow-wrap: anywhere; }
 .tag small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
