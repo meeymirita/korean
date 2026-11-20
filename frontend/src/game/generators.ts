@@ -28,10 +28,26 @@ function memo<T>(key: string,make: ()=>T): T{if(!(key in POOLS))POOLS[key]=make(
 /** Создаёт генераторы заданий: `genQuestion` выбирает режим по `S.mode`, остальное нужно движку для отрисовки (плитки, уровни, подсказки). */
 export function createGenerators(S: GameState, hooks: GameHooks) {
 'use strict';
+/* ---------- что было недавно: одно и то же задание и один и тот же ответ подряд не идут (docs/bot.md, «разнообразие») ---------- */
+/** Ключи и верные ответы последних заданий этой игры. */
+const recent: {key: string;right: string}[]=[];
+/** Все ключи заданий этой игры: по их числу видно, сколько разных заданий в режиме (окно повторов растёт вместе с набором). */
+const seenKeys=new Set<string>();
+const RECENT_MAX=30;
+/** Сколько раз один и тот же верный ответ может встретиться в последних 10 заданиях: у режимов с двумя-тремя ответами (에 / 에서, 도) больше, у многих (частицы) меньше. */
+function sameCap(){
+  const tail=recent.slice(-RECENT_MAX);
+  const kinds=new Set(tail.map(x=>x.right)).size||1;
+  return Math.max(3,Math.min(5,Math.ceil(10/kinds)+1));
+}
 /* ---------- выбор с весами (ошибки возвращаются чаще) ---------- */
 function pickW<T>(arr: T[],keyFn: (x: T)=>string): T{
   let pool=arr;
   if(arr.length>1) pool=arr.filter(x=>keyFn(x)!==S.lastKey);
+  // не повторяем задания последних шагов: в большом наборе в окне до 30 заданий, в малом половину набора
+  const ban=new Set(recent.slice(-Math.min(RECENT_MAX,Math.floor(arr.length/2))).map(x=>x.key));
+  const fresh=pool.filter(x=>!ban.has(keyFn(x)));
+  if(fresh.length>=Math.min(3,pool.length))pool=fresh;
   const w=pool.map(x=>{const m=S.miss[keyFn(x)];return 1+3*(m?m.n:0);});
   let r=Math.random()*w.reduce((a,b)=>a+b,0);
   for(let i=0;i<pool.length;i++){r-=w[i]!;if(r<=0)return pool[i]!;}
@@ -417,20 +433,26 @@ function genTooStory(lo: number,hi: number){
   let order=shuffle(pool.subj),oi=0;
   const take=function(){if(oi>=order.length){order=shuffle(pool.subj);oi=0;}return order[oi++]!;};
   const sents: SentIn[]=[];let prev: {s: [string,string];p: [string,string]}|null=null,reps=0;
+  const seen=new Set<string>();
   for(let i=0;i<n;i++){
-    let sj=take();if(prev&&sj[0]===(prev as {s: [string,string]}).s[0])sj=take();
-    const repeat=!!prev&&(i===n-1&&!reps?true:Math.random()<.55);
-    if(repeat&&prev){const pv: {s: [string,string];p: [string,string]}=prev;
-      reps++;
-      sents.push({ko:sj[0]+'도 '+pv.p[0]+'.',ru:cap1(sj[1])+' тоже '+pv.p[1]+'.',
-        pieces:[sj[0],{right:'도',why:'То же действие, что в предыдущем предложении, но делает другой человек → 도 («тоже») вместо 은/는, 이/가'},' '+pv.p[0]+'.']});
-    }else{
-      const pv=prev as {p: [string,string]}|null;const p=rnd(pool.pred.filter(function(x){return !pv||x!==pv.p;}));
-      const fin=hasFinal(sj[0][sj[0].length-1]!);
-      const right=fin?'은':'는',alt=fin?'이':'가';
-      sents.push({ko:sj[0]+right+' '+p[0]+'.',ru:cap1(sj[1])+' '+p[1]+'.',
-        pieces:[sj[0],{right:right,accept:[alt],why:'Новое действие → частица темы '+right+' (у слова «'+sj[0]+'» '+(fin?'есть':'нет')+' 받침). Можно и '+alt+'.'},' '+p[0]+'.']});
-      prev={s:sj,p:p};
+    // одно и то же предложение в тексте не повторяется: пробуем другой набор, пока не выйдет новое
+    for(let tries=0;tries<40;tries++){
+      let sj=take();if(prev&&sj[0]===(prev as {s: [string,string]}).s[0])sj=take();
+      const repeat=!!prev&&(i===n-1&&!reps&&tries<20?true:Math.random()<.55);
+      let sent: SentIn,next: {s: [string,string];p: [string,string]}|null=prev;
+      if(repeat&&prev){const pv: {s: [string,string];p: [string,string]}=prev;
+        sent={ko:sj[0]+'도 '+pv.p[0]+'.',ru:cap1(sj[1])+' тоже '+pv.p[1]+'.',
+          pieces:[sj[0],{right:'도',why:'То же действие, что в предыдущем предложении, но делает другой человек → 도 («тоже») вместо 은/는, 이/가'},' '+pv.p[0]+'.']};
+      }else{
+        const pv=prev as {p: [string,string]}|null;const p=rnd(pool.pred.filter(function(x){return !pv||x!==pv.p;}));
+        const fin=hasFinal(sj[0][sj[0].length-1]!);
+        const right=fin?'은':'는',alt=fin?'이':'가';
+        sent={ko:sj[0]+right+' '+p[0]+'.',ru:cap1(sj[1])+' '+p[1]+'.',
+          pieces:[sj[0],{right:right,accept:[alt],why:'Новое действие → частица темы '+right+' (у слова «'+sj[0]+'» '+(fin?'есть':'нет')+' 받침). Можно и '+alt+'.'},' '+p[0]+'.']};
+        next={s:sj,p:p};
+      }
+      if(seen.has(sent.ko)&&tries<39)continue;
+      seen.add(sent.ko);sents.push(sent);if(repeat&&prev)reps++;prev=next;break;
     }
   }
   return makeStory('too','Тоже ('+plural(n)+'): 도 или другая частица',sents,['도','은','는','이','가'],'➕');
@@ -596,7 +618,7 @@ function genQwStory(lo: number,hi: number){
 
 function partPool(){
   return memo('PART_POOL',function(){
-  return D.PB.map(function(p){return {pre:p[0].split('___')[0]!,post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);});
+  return D.PB.map(function(p){return {pre:p[0].split('___')[0]!,post:p[0].split('___')[1]||'',ru:p[1],right:p[2],opts:p[3],why:p[4],ko:p[0].replace('___',p[2])};}).filter(function(x){return known(x.ko);}).filter(function(x,i,a){return a.findIndex(function(y){return y.ko===x.ko;})===i;});
   });
 }
 function genPartStory(lo: number,hi: number){
@@ -818,7 +840,7 @@ function genHanLine(){
   let guard=0;
   while(opts.size<4&&guard++<40){
     const swap=Math.floor(Math.random()*3);
-    const alt=picked.map(function(x,i){if(i!==swap)return x.r;const o=rnd(pool.filter(function(y){return y.r!==x.r&&Math.abs(y.r.length-x.r.length)<=1;}));return o.r;}).join(' ');
+    const alt=picked.map(function(x,i){if(i!==swap)return x.r;const near=pool.filter(function(y){return y.r!==x.r&&Math.abs(y.r.length-x.r.length)<=1;});const o=rnd(near.length?near:pool.filter(function(y){return y.r!==x.r;}));return o.r;}).join(' ');
     opts.add(alt);
   }
   const line=picked.map(function(x){return x.k;}).join(' ');
@@ -830,7 +852,7 @@ function genHanLine(){
 /** «Найди верное»: три текста из нескольких предложений, в двух по одной ошибке в частице, в одном всё верно. */
 function spotPool(){
   return memo('SPOT_POOL',function(){
-  return D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0]!,post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};});
+  return D.PB.filter(function(p){return !/\s/.test(p[2])&&known(p[0].replace('___',p[2]));}).map(function(p){return {pre:p[0].split('___')[0]!,post:p[0].split('___')[1]||'',right:p[2],opts:p[3].filter(function(t){return t!==p[2]&&!/\s/.test(t);}),ru:p[1],why:p[4]};}).filter(function(x,i,a){return a.findIndex(function(y){return y.pre+y.right+y.post===x.pre+x.right+x.post;})===i;});
   });
 }
 function genSpotText(lo: number,hi: number){
@@ -938,9 +960,9 @@ function genExpert(){
     if(!sn)continue;
     // перевода нет, кроме предложений, где без него не обойтись: «тоже», «только», «о чём речь» (도, 만, 은/는, 이/가)
     sn.noTr=!sn.pieces.some(function(p){return typeof p!=='string'&&p.right!==undefined&&AMBIG.includes(p.right);});
-    const key=sn.ru.toLowerCase();
-    if(seen.has(key)){n-=sn.pieces.filter(function(p){return typeof p!=='string';}).length;continue;}
-    seen.add(key);sents.push(sn);
+    const key=sn.ru.toLowerCase(),keyKo='ko:'+sn.ko;
+    if(seen.has(key)||seen.has(keyKo)){n-=sn.pieces.filter(function(p){return typeof p!=='string';}).length;continue;}
+    seen.add(key);seen.add(keyKo);sents.push(sn);
   }
   return makeStory('expert','Эксперт ('+n+' пропусков): правила вперемешку, перевод только где нужен',shuffle(sents),[...bank],'🎓');
 }
@@ -1145,6 +1167,8 @@ const cap1=(s: string)=>s.charAt(0).toUpperCase()+s.slice(1);
  * Перевод прячется только там, где без него ответ однозначен (`hideTr`: «Куда, где»); в остальных он решает смысл («тоже», «только», «не»).
  */
 const EXPERT_LV: [string,string][]=[['simple','Простой'],['story','Рассказ 2–4'],['long','Длинный 5–10'],['expert','Эксперт 8–12']];
+/** Чипы уровня над заданием: у режимов без записи три обычных («Простой», «Рассказ 2–4», «Длинный 5–10»). Читает движок и бот-игрок (`docs/bot.md`). */
+const LEVEL_LABELS: Record<string, [string,string][]>={han:[['simple','Слоги'],['story','Слова'],['long','Строки']],spot:[['simple','Простой'],['story','Текст 2–3'],['long','Длинный 4–5']],when:EXPERT_LV,too:EXPERT_LV,neg:EXPERT_LV,place:EXPERT_LV,expert:[['simple','5 пропусков'],['story','10 пропусков'],['long','15 пропусков']]};
 function textLevel(mode: string,gen: (lo: number,hi: number)=>Question,extra: string[],hideTr: boolean): Question{
   const lv=S.levels[mode];
   if(lv!=='expert')return lv==='long'?gen(5,10):gen(2,4);
@@ -1484,10 +1508,25 @@ function genPolite(){
 }
 const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,tenses:genTenses,finderr:genFindErrors,oddone:genOddOne,weak:genWeak,fut:genFut,only:genOnly};
 function genQuestion(): Question{
-  let m=S.mode;
-  if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);
-  return GEN[m]!();
+  // один и тот же верный ответ не больше `sameCap()` раз из последних 10: иначе «пять из десяти одной грамматикой»; не вышло с 30 попыток — берём что есть
+  let q: Question|undefined;
+  for(let t=0;t<30;t++){
+    let m=S.mode;
+    if(m==='mix')m=rnd(['word','word','word','rev','rev','form','form','form','qw','part','part','build','spot','spot','type','type','err','pair','ord','dlg','days','when','too','neg','place','dem','polite','fut','only']);
+    q=GEN[m]!();
+    // то же задание не ближе, чем через 60% набора, который уже встречался (но не дальше 30 шагов назад)
+    const win=Math.min(RECENT_MAX,Math.floor(seenKeys.size*.6));
+    if(recent.slice(-win).some(x=>x.key===q!.key))continue;
+    if(q.type==='story'||q.type==='build')break;
+    const id=q.mode+'|'+q.right;
+    const n=recent.slice(-10).filter(x=>x.right===id).length;
+    if(n<sameCap())break;
+  }
+  seenKeys.add(q!.key);
+  recent.push({key:q!.key,right:q!.type==='story'||q!.type==='build'?q!.key:q!.mode+'|'+q!.right});
+  if(recent.length>RECENT_MAX)recent.shift();
+  return q!;
 }
 
-return { genQuestion, genBuild, tileGloss, normRu, STORY_MODES, EXPERT_LV, storyOn };
+return { genQuestion, genBuild, tileGloss, normRu, STORY_MODES, EXPERT_LV, LEVEL_LABELS, storyOn };
 }
