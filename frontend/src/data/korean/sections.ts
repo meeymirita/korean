@@ -42,6 +42,7 @@ export const sections: Section[] = [
   { id: 'shop', num: '08', menu: 'Магазин', kicker: 'Монетки Юны', title: 'Магазин Юны', sub: 'предметы для заданий, сюрпризы, задания и награды', private: true },
   { id: 'garden', num: '09', menu: 'Сад', kicker: 'Прогресс слов', title: 'Сад воспоминаний', sub: 'каждое выученное слово — цветок, а ещё коллекция карточек', private: true },
   { id: 'culture', num: '18', menu: 'Культура', kicker: 'Мини-уроки', title: 'Культура Кореи', sub: 'еда, праздники и этикет короткими карточками', private: true, group: 'extra' },
+  { id: 'map', num: '27', menu: 'Карта', kicker: 'По учебнику', title: 'Карта обучения', sub: 'ветка сакуры по книгам 1A и 1B: пройденные темы расцвели, дальше бутоны', private: true, group: 'extra' },
   { id: 'know', num: '19', menu: 'Что я знаю', kicker: 'Перед созвоном', title: 'Что я уже знаю', sub: 'пройденная грамматика на одной странице: формула и пример', private: true, group: 'extra' },
   { id: 'lab', num: '20', menu: 'Мастерская', kicker: 'Грамматика', title: 'Мастерская грамматики', sub: 'собери предложение из слов, частиц и окончаний и посмотри, почему так', private: true, group: 'extra' },
   { id: 'keyboard', num: '21', menu: 'Клавиатура', kicker: 'Тренажёр', title: 'Печать на корейском', sub: 'от букв до предложений: учись печатать вслепую на корейской раскладке', private: true, group: 'extra' },
@@ -71,4 +72,4 @@ export function lastRefTab() {
 export const sectionById = (id: string) => sections.find(s => s.id === id)!
 
 /** Значки пунктов бокового меню: имена иконок из `src/lib/icons.ts`. У каждого пункта свой значок (тест `menu-icons.spec.ts`). */
-export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', lab: 'wand', sites: 'telescope', clip: 'pen', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }
+export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }
