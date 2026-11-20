@@ -77,6 +77,67 @@ export function applyUnit(store: Record<string, UnitResult>, unit: unknown, righ
   return { ...store, [unit]: { best: Math.max(prev?.best ?? 0, pct), last: pct, tries: Math.min((prev?.tries ?? 0) + 1, 999), at: now } }
 }
 
+/**
+ * Блиц дня на сервере (`meta.exams:blitz`): итог лучшего блица за каждый из последних 30 дней (по ним сайт считает серию дней подряд) и слабые правила
+ * (сколько верных из скольких по каждому правилу, старое затухает), чтобы блиц на любом устройстве чаще брал темы, где были ошибки.
+ */
+export interface BlitzDay { day: string; right: number; total: number }
+export interface BlitzState { days: BlitzDay[]; weak: Record<string, { ok: number; total: number }> }
+const BLITZ = 'exams:blitz'
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
+const BLITZ_DAYS = 30
+const WEAK_CAP = 60
+const emptyBlitz = (): BlitzState => ({ days: [], weak: {} })
+
+function cleanDays(v: unknown): BlitzDay[] {
+  if (!Array.isArray(v)) return []
+  const out = new Map<string, BlitzDay>()
+  for (const x of v as Record<string, unknown>[]) {
+    if (typeof x?.day !== 'string' || !DAY_RE.test(x.day)) continue
+    const total = x.total, right = x.right
+    if (typeof total !== 'number' || !Number.isInteger(total) || total < 1 || total > 100) continue
+    if (typeof right !== 'number' || !Number.isInteger(right) || right < 0 || right > total) continue
+    const cur = out.get(x.day)
+    if (!cur || right / total > cur.right / cur.total) out.set(x.day, { day: x.day, right, total })
+  }
+  return [...out.values()].sort((a, b) => (a.day < b.day ? 1 : -1)).slice(0, BLITZ_DAYS)
+}
+
+/** Правила: id до 40 знаков, числа в пределах; лишнее отбрасывается. */
+function cleanWeak(v: unknown): BlitzState['weak'] {
+  const out: BlitzState['weak'] = {}
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out
+  for (const [id, o] of Object.entries(v as Record<string, { ok?: unknown; total?: unknown }>).slice(0, 80)) {
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) continue
+    const total = o?.total, ok = o?.ok
+    if (typeof total === 'number' && typeof ok === 'number' && Number.isInteger(total) && Number.isInteger(ok) && total >= 1 && total <= 100_000 && ok >= 0 && ok <= total) out[id] = { ok, total }
+  }
+  return out
+}
+
+/** Чистое состояние из присланного (для переноса того, что копилось в браузере). */
+export function cleanBlitz(body: unknown): BlitzState {
+  const b = (body ?? {}) as { days?: unknown; weak?: unknown }
+  return { days: cleanDays(b.days), weak: cleanWeak(b.weak) }
+}
+
+/** Применяет итог одного блица: лучший за день и накопление слабых правил (чистая функция: проверяется тестом без базы). */
+export function applyBlitz(state: BlitzState, body: { day?: unknown; right?: unknown; total?: unknown; rules?: unknown }): BlitzState {
+  const entry = { day: body?.day, right: body?.right, total: body?.total }
+  if (cleanDays([entry]).length !== 1) throw new BadRequestException({ error: 'invalid blitz' }) // сам итог проверяем отдельно: плохой не должен «пройти» из-за такого же дня в базе
+  const days = cleanDays([...state.days, entry])
+  const weak = { ...state.weak }
+  for (const [id, r] of Object.entries(cleanWeak(body?.rules))) {
+    const c = { ok: (weak[id]?.ok ?? 0) + r.ok, total: (weak[id]?.total ?? 0) + r.total }
+    if (c.total > WEAK_CAP) {
+      c.ok = Math.round(c.ok / 2)
+      c.total = Math.max(1, Math.round(c.total / 2))
+    }
+    weak[id] = c
+  }
+  return { days, weak }
+}
+
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')
 export function cleanMistakes(v: unknown): ExamMistake[] {
   if (!Array.isArray(v)) return []
@@ -119,6 +180,30 @@ export class ExamsService implements OnModuleInit, OnModuleDestroy {
     } catch {
       return { attempts: [] }
     }
+  }
+
+  async blitz(): Promise<BlitzState> {
+    try {
+      return cleanBlitz(JSON.parse((await this.db.getMeta(BLITZ)) ?? '{}'))
+    } catch {
+      return emptyBlitz()
+    }
+  }
+
+  /** Итог блица. */
+  async saveBlitz(body: { day?: unknown; right?: unknown; total?: unknown; rules?: unknown }): Promise<BlitzState> {
+    const next = applyBlitz(await this.blitz(), body ?? {})
+    await this.db.setMeta(BLITZ, JSON.stringify(next))
+    return next
+  }
+
+  /** Перенос того, что копилось в браузере: принимается только пока на сервере пусто (чтобы старое не затёрло новое). */
+  async importBlitz(body: unknown): Promise<BlitzState> {
+    const cur = await this.blitz()
+    if (cur.days.length || Object.keys(cur.weak).length) return cur
+    const next = cleanBlitz(body)
+    await this.db.setMeta(BLITZ, JSON.stringify(next))
+    return next
   }
 
   async units(): Promise<Record<string, UnitResult>> {

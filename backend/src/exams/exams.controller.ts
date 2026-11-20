@@ -29,6 +29,23 @@ export class ExamsController {
     return this.exams.dropDraft()
   }
 
+  /** Блиц дня: дни и итоги (серия дней подряд) и слабые правила. */
+  @Get('blitz')
+  blitz() {
+    return this.exams.blitz()
+  }
+
+  @Post('blitz')
+  saveBlitz(@Body() body: { day?: unknown; right?: unknown; total?: unknown; rules?: unknown }) {
+    return this.exams.saveBlitz(body ?? {})
+  }
+
+  /** Один раз перенести данные блица из браузера (принимается, только пока на сервере пусто). */
+  @Put('blitz')
+  importBlitz(@Body() body: unknown) {
+    return this.exams.importBlitz(body)
+  }
+
   /** Экзамены единиц книги: лучший и последний результат по каждой. */
   @Get('units')
   units() {

@@ -111,3 +111,22 @@ describe('экзамены единиц книги', () => {
     expect(() => applyUnit({}, '1A-6', 1.5, 2)).toThrow()
   })
 })
+
+import { applyBlitz, cleanBlitz } from '../src/exams/exams.service.js'
+describe('блиц дня на сервере', () => {
+  it('держит лучший итог за день, до 30 дней, копит слабые правила и затухает', () => {
+    let s = applyBlitz({ days: [], weak: {} }, { day: '2026-11-20', right: 10, total: 20, rules: { a: { ok: 3, total: 10 } } })
+    s = applyBlitz(s, { day: '2026-11-20', right: 5, total: 20, rules: {} })
+    expect(s.days).toEqual([{ day: '2026-11-20', right: 10, total: 20 }])
+    s = applyBlitz(s, { day: '2026-11-21', right: 15, total: 20, rules: { a: { ok: 50, total: 60 } } })
+    expect(s.days.map(d => d.day)).toEqual(['2026-11-21', '2026-11-20'])
+    expect(s.weak.a!.total).toBeLessThanOrEqual(60) // накопилось 70, затухло
+    for (let i = 1; i <= 40; i++) s = applyBlitz(s, { day: `2026-10-${String(i % 28 + 1).padStart(2, '0')}`, right: 1, total: 2, rules: {} })
+    expect(s.days.length).toBeLessThanOrEqual(30)
+  })
+  it('плохие данные отклоняются или отбрасываются', () => {
+    expect(() => applyBlitz({ days: [], weak: {} }, { day: 'вчера', right: 1, total: 2 })).toThrow()
+    expect(() => applyBlitz({ days: [], weak: {} }, { day: '2026-11-20', right: 3, total: 2 })).toThrow()
+    expect(cleanBlitz({ days: [{ day: '2026-11-20', right: 1, total: 0 }], weak: { 'bad id!': { ok: 1, total: 2 }, ok1: { ok: 5, total: 3 } } })).toEqual({ days: [], weak: {} })
+  })
+})
