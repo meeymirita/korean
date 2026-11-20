@@ -312,6 +312,7 @@ html[data-theme='dark'][data-palette='wine'] .cnt:where(:not(.pk *)) { backgroun
 html[data-theme='dark'][data-palette='wine'] .tag:hover:where(:not(.pk *)),
 html[data-theme='dark'][data-palette='wine'] .tag:focus-visible:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .tag.next:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .unit.gold:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.28); box-shadow: none; }
 
 /* views/korean/MarksView.vue */
 html[data-theme='dark'][data-palette='wine'] .mk-kw li:where(:not(.pk *)) { background: var(--surface, rgba(255, 255, 255, 0.07)); }
@@ -714,6 +715,15 @@ html[data-theme='dark'][data-palette='wine'] .er-built.ok:where(:not(.pk *)) { b
 html[data-theme='dark'][data-palette='wine'] .er-built.bad:where(:not(.pk *)) { border: 2px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
 html[data-theme='dark'][data-palette='wine'] .er-mark.ok:where(:not(.pk *)) { color: #ffffff; }
 html[data-theme='dark'][data-palette='wine'] .er-mark.bad:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/korean/ExamUnits.vue */
+html[data-theme='dark'][data-palette='wine'] .res.okc:where(:not(.pk *)) { border-color: var(--gold, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .res.badc:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .tile:not(.closed):hover:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .tile.gold:where(:not(.pk *)) { border-color: var(--gold, rgba(255, 190, 220, 0.35)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .tile.closed:where(:not(.pk *)) { background-image: linear-gradient(135deg, transparent 40%, rgba(255, 111, 174, 0.18)); }
+html[data-theme='dark'][data-palette='wine'] .cnt:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .topics li.ok .t:where(:not(.pk *)) { border-color: var(--petal-line, rgba(255, 190, 220, 0.35)); }
 
 /* components/korean/GrammarModal.vue */
 html[data-theme='dark'][data-palette='wine'] .study-modal .gph img:where(:not(.pk *)) { box-shadow: none; }

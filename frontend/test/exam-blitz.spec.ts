@@ -48,7 +48,7 @@ describe('страница экзамена: блиц', () => {
     await flushPromises()
     // часы подменяются после монтирования: само монтирование идёт на настоящих таймерах
     vi.useFakeTimers({ toFake: ['setInterval', 'Date'] })
-    const btn = w.findAll('button').find(b => b.text().includes('Блиц дня на 5 минут'))!
+    const btn = w.findAll('button').find(b => b.text().includes('Начать блиц'))!
     expect(btn).toBeTruthy()
     await btn.trigger('click')
     await flushPromises()

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import SectionHead from '@/components/korean/SectionHead.vue'
 import TopikQuiz from '@/components/korean/TopikQuiz.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, type Gram } from '@/data/korean/grammar'
@@ -10,6 +9,7 @@ import { fetchT } from '@/lib/http'
 import { KNOWN_STREAK, useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
 
+/** Лежит во вкладке «Пробник TOPIK I» на странице «Экзамены» (2026-11-20): заголовок у страницы общий. */
 const progress = useProgressStore()
 const { open } = useGrammarModal()
 const toast = useToastStore()
@@ -158,7 +158,6 @@ const clearAll = () => {
 
 <template>
   <div class="wrap tp">
-    <SectionHead id="topik" :big="total ? total.mid : undefined" />
     <p class="intro">
       Ориентир, сколько баллов TOPIK I вы бы набрали сейчас. Это моя оценка по тому, что можно измерить на сайте (словарь, пройденные темы книг, точность в играх), а не официальный расчёт. Аудирование сайт не измеряет: звука нет, поэтому для него два допущения.
     </p>

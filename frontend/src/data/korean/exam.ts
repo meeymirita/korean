@@ -147,11 +147,17 @@ export function summarize(results: PointResult[][]) {
 export const BLITZ_POINTS = 20
 export const BLITZ_SECONDS = 300
 
-/** Блоки блица: случайные блоки из частей экзамена, пока не наберётся около BLITZ_POINTS пунктов (не больше +4), разных видов вперемешку. */
-export function blitzBlocks(parts: ExamBlock[][], points = BLITZ_POINTS): ExamBlock[] {
+/** Блоки блица: случайные блоки из частей экзамена (с `weak` чаще те, где есть слабые правила), пока не наберётся около BLITZ_POINTS пунктов (не больше +4), разных видов вперемешку. */
+export function blitzBlocks(parts: ExamBlock[][], points = BLITZ_POINTS, weak?: ReadonlySet<string>): ExamBlock[] {
   const out: ExamBlock[] = []
   let sum = 0
-  for (const b of shuffle(parts.flat())) {
+  let pool = shuffle(parts.flat())
+  // слабые правила: блоки с ними идут вперёд, но не все подряд (случайная добавка), чтобы набор оставался разным
+  if (weak && weak.size) {
+    const score = new Map(pool.map(b => [b, (blockRules(b).some(r => weak.has(r)) ? 0 : 1) + Math.random() * 1.4]))
+    pool = pool.sort((a, b) => score.get(a)! - score.get(b)!)
+  }
+  for (const b of pool) {
     const p = blockPoints(b)
     if (p === 0 || sum + p > points + 4) continue
     out.push(b)

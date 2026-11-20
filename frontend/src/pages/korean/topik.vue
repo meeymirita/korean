@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import TopikView from '@/views/korean/TopikView.vue'
-definePageMeta({ private: true })
+// Раньше отдельная страница; «Пробник TOPIK I» теперь вкладка на странице «Экзамены» (2026-11-20): старый адрес ведёт туда.
+definePageMeta({ private: true, redirect: '/korean/exam?tab=topik' })
 </script>
 
 <template>
-  <TopikView />
+  <div />
 </template>

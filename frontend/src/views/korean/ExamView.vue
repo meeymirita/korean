@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AskAi from '@/components/korean/AskAi.vue'
 import ExamRun from '@/components/korean/ExamRun.vue'
+import ExamUnits from '@/components/korean/ExamUnits.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { askConfirm } from '@/composables/useConfirm'
 import {
@@ -11,6 +12,7 @@ import {
   type ExamAttempt, type ExamBlock, type ExamDraft, type ExamMistake, type PartAnswers, type ExamResultRow, type PointResult, type RuleScores,
 } from '@/data/korean/exam'
 import { withSeed } from '@/lib/seeded'
+import TopikView from '@/views/korean/TopikView.vue'
 import { useExamStore } from '@/stores/exam'
 import { dayKey } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
@@ -47,6 +49,20 @@ onBeforeUnmount(() => {
   clearInterval(clock)
   clearInterval(blitzTimer)
 })
+
+/** Вкладки страницы: блиц дня, экзамен единицы, большой экзамен, пробник TOPIK I (`?tab=`). По умолчанию блиц; если есть начатый экзамен или свежий итог, то большой. */
+const TABS = [
+  { id: 'blitz', label: 'Блиц дня', sub: '5 минут каждый день' },
+  { id: 'units', label: 'Экзамен единицы', sub: 'по одной единице книги' },
+  { id: 'big', label: 'Большой экзамен', sub: 'всё пройденное' },
+  { id: 'topik', label: 'Пробник TOPIK I', sub: 'прогноз баллов' },
+] as const
+type TabId = (typeof TABS)[number]['id']
+const tab = computed<TabId>(() => {
+  const q = String(route.query.tab ?? '')
+  return (TABS.find(t => t.id === q)?.id ?? (finished.value || draft.value ? 'big' : 'blitz')) as TabId
+})
+const setTab = (id: TabId) => void router.push({ query: { tab: id } })
 
 const view = computed(() => (route.query.view === 'log' ? 'log' : route.query.blitz && blitz.value ? 'blitz' : route.query.part ? 'run' : 'home'))
 const partNo = computed(() => Math.min(Math.max(Number(route.query.part) || 1, 1), EXAM_PARTS))
@@ -93,9 +109,11 @@ function continueExam() {
   finished.value = null
   void router.push({ query: { part: String(nextPart.value) } })
 }
-function home() {
-  void router.push({ query: {} })
+/** Возврат на страницу: после блица на вкладку блица, после экзамена на большой. */
+function goTab(to: TabId) {
+  void router.push({ query: { tab: to } })
 }
+const home = () => goTab('big')
 /* ---------- пробный блиц: около 20 пунктов, 5 минут, результат нигде не записывается ---------- */
 const blitz = ref<{ blocks: ExamBlock[]; endsAt: number } | null>(null)
 const blitzDone = ref<ExamAttempt | null>(null)
@@ -104,7 +122,7 @@ let blitzTimer: ReturnType<typeof setInterval> | undefined
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 function startBlitz() {
   clearInterval(blitzTimer)
-  blitz.value = { blocks: withSeed(`blitz:${dayKey()}`, () => blitzBlocks(examParts(EXAM_PARTS))), endsAt: Date.now() + BLITZ_SECONDS * 1000 }
+  blitz.value = { blocks: withSeed(`blitz:${dayKey()}`, () => blitzBlocks(examParts(EXAM_PARTS), BLITZ_POINTS, weakSet())), endsAt: Date.now() + BLITZ_SECONDS * 1000 }
   blitzDone.value = null
   finished.value = null
   left.value = BLITZ_SECONDS
@@ -144,18 +162,64 @@ function writeBlitzLog(right: number, total: number) {
   blitzLog.value = out
 }
 const blitzToday = computed(() => blitzLog.value.find(x => x.day === dayKey()))
+/** Серия дней подряд: считается назад от сегодня (если сегодня ещё не решали, от вчера, чтобы серия не обнулялась до конца дня). */
+const streak = computed(() => {
+  const days = new Set(blitzLog.value.map(b => b.day))
+  const d = new Date()
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1)
+  let n = 0
+  while (days.has(dayKey(d))) {
+    n++
+    d.setDate(d.getDate() - 1)
+  }
+  return n
+})
+/** Слабые правила блица: накапливаются по итогам блицов на этом устройстве (старые результаты затухают); к ним добавляются слабые по последнему большому экзамену. Блиц чаще берёт блоки с ними. */
+const WEAK_KEY = 'exam_blitz_weak'
+function readWeak(): RuleScores {
+  try {
+    const v = JSON.parse(localStorage.getItem(WEAK_KEY) ?? '{}') as RuleScores
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {}
+  } catch {
+    return {}
+  }
+}
+function addWeak(rules: RuleScores) {
+  const w = readWeak()
+  for (const [id, r] of Object.entries(rules)) {
+    const c = w[id] ?? { ok: 0, total: 0 }
+    c.ok += r.ok
+    c.total += r.total
+    if (c.total > 60) {
+      c.ok = Math.round(c.ok / 2)
+      c.total = Math.round(c.total / 2)
+    }
+    w[id] = c
+  }
+  try {
+    localStorage.setItem(WEAK_KEY, JSON.stringify(w))
+  } catch {}
+}
+function weakSet(): Set<string> {
+  const out = new Set<string>()
+  const all: RuleScores = { ...readWeak() }
+  for (const [id, r] of Object.entries(row.value?.rules ?? {})) all[id] = { ok: (all[id]?.ok ?? 0) + r.ok, total: (all[id]?.total ?? 0) + r.total }
+  for (const [id, r] of Object.entries(all)) if (r.total >= 3 && r.ok / r.total < MIN_RULE) out.add(id)
+  return out
+}
 function blitzSaved(points: PointResult[]) {
   clearInterval(blitzTimer)
   const sum = summarize([points])
   writeBlitzLog(sum.right, sum.total)
+  addWeak(sum.rules)
   blitzDone.value = { at: Date.now(), right: sum.right, total: sum.total, passed: examPassed(sum.right, sum.total, sum.rules), rules: sum.rules, mistakes: sum.mistakes }
   blitz.value = null
-  home()
+  goTab('blitz')
 }
 function exitBlitz() {
   clearInterval(blitzTimer)
   blitz.value = null
-  home()
+  goTab('blitz')
 }
 
 function openLog() {
@@ -283,35 +347,66 @@ const summaryText = (a: ExamAttempt) =>
       <p class="ex-exit"><button class="ex-link" type="button" @click="home">← Назад</button></p>
     </template>
 
-    <!-- ГЛАВНАЯ СТРАНИЦА ЭКЗАМЕНА -->
+    <!-- ГЛАВНАЯ СТРАНИЦА ЭКЗАМЕНОВ: четыре вкладки -->
     <template v-else>
+      <div class="ex-tabs" role="tablist">
+        <button v-for="t in TABS" :key="t.id" type="button" role="tab" :aria-selected="tab === t.id" class="ex-tab" :class="{ on: tab === t.id }" @click="setTab(t.id)">
+          <b>{{ t.label }}</b><small>{{ t.sub }}</small>
+        </button>
+      </div>
+
+      <!-- ВКЛАДКА: БЛИЦ ДНЯ -->
+      <div v-show="tab === 'blitz'">
+        <section class="ex-card ex-blitz">
+          <h2>Блиц дня на {{ BLITZ_SECONDS / 60 }} минут</h2>
+          <p class="ex-sub">Около {{ BLITZ_POINTS }} пунктов из пройденного. Набор один на день и меняется в полночь; чаще попадаются темы, где вы ошибались.</p>
+          <p class="ex-streak"><b>Серия: {{ streak }} {{ streak % 10 === 1 && streak !== 11 ? 'день' : [2, 3, 4].includes(streak % 10) && ![12, 13, 14].includes(streak) ? 'дня' : 'дней' }} подряд</b><template v-if="blitzToday"> · сегодня {{ blitzToday.right }} из {{ blitzToday.total }}</template></p>
+          <div class="ex-btns">
+            <button class="rs-start ex-btn" type="button" :disabled="!ready" @click="startBlitz">{{ blitzToday ? 'Ещё раз' : 'Начать блиц' }}</button>
+          </div>
+        </section>
+      <!-- итог пробного блица (нигде не записан) -->
+        <section v-if="blitzDone" class="ex-card" :class="blitzDone.right / blitzDone.total >= EXAM_PASS ? 'okc' : 'badc'">
+          <h2>Блиц: {{ blitzDone.right }} из {{ blitzDone.total }} ({{ Math.round((blitzDone.right / blitzDone.total) * 100) }}%)</h2>
+          <p class="ex-sub">Итог записан в «Блицы по дням» (в историю экзамена не идёт). Для экзамена нужно не меньше {{ Math.round(EXAM_PASS * 100) }}%.</p>
+          <div class="ex-rules">
+            <div v-for="r in ruleRows(blitzDone.rules)" :key="r.id" class="ex-rule" :class="tone(r.share)">
+              <span>{{ r.label }}</span><b>{{ r.ok }} из {{ r.total }} · {{ pct(r) }}%</b>
+              <i :style="{ width: pct(r) + '%' }"></i>
+            </div>
+          </div>
+          <section v-for="[title, list] in byBlock(blitzDone.mistakes)" :key="title" class="ex-bl">
+            <h3>{{ title }} <small>{{ list.length }}</small></h3>
+            <ul>
+              <li v-for="(m, k) in list" :key="k">
+                <div class="ko ex-q">{{ m.q }}</div>
+                <div class="ex-ans"><span class="bad">Твой ответ: <b class="ko">{{ m.y }}</b></span><span class="ok">Верно: <b class="ko">{{ m.a }}</b></span></div>
+                <AskAi :context="mistakeContext(title, m)" :quick="EXAM_QUICK" placeholder="Спроси про эту ошибку…" />
+              </li>
+            </ul>
+          </section>
+        </section>
+
+      <section v-if="blitzLog.length" class="ex-card">
+          <h2>Блицы по дням</h2>
+          <p v-for="b in blitzLog.slice(0, 10)" :key="b.day" class="ex-sub">{{ b.day }}: {{ b.right }} из {{ b.total }} ({{ Math.round((b.right / b.total) * 100) }}%)</p>
+        </section>
+
+      </div>
+
+      <!-- ВКЛАДКА: ЭКЗАМЕН ЕДИНИЦЫ -->
+      <ExamUnits v-if="tab === 'units'" />
+
+      <!-- ВКЛАДКА: ПРОБНИК TOPIK I -->
+      <TopikView v-if="tab === 'topik'" />
+
+      <!-- ВКЛАДКА: БОЛЬШОЙ ЭКЗАМЕН -->
+      <div v-show="tab === 'big'">
       <p class="intro">
         Один большой экзамен по всему пройденному: {{ EXAM_PARTS }} части, около {{ draft ? total : EXAM_POINTS_APPROX }} пунктов (текст с пропусками плитками, ввод частиц, перевод, порядок слов, поиск ошибок, связка и отрицание, «есть / нет» и слова положения, формы глаголов).
         Без подсказок. После каждой части можно остановиться: ответы сохраняются. Сдан, если верных не меньше {{ Math.round(EXAM_PASS * 100) }}% и по каждому правилу не меньше {{ Math.round(MIN_RULE * 100) }}%.
         Не сдал: пересдача через сутки. Сдал: через {{ RECHECK_DAYS }} дней придёт напоминание подтвердить.
       </p>
-
-      <!-- итог пробного блица (нигде не записан) -->
-      <section v-if="blitzDone" class="ex-card" :class="blitzDone.right / blitzDone.total >= EXAM_PASS ? 'okc' : 'badc'">
-        <h2>Блиц: {{ blitzDone.right }} из {{ blitzDone.total }} ({{ Math.round((blitzDone.right / blitzDone.total) * 100) }}%)</h2>
-        <p class="ex-sub">Итог записан в «Блицы по дням» (в историю экзамена не идёт). Для экзамена нужно не меньше {{ Math.round(EXAM_PASS * 100) }}%.</p>
-        <div class="ex-rules">
-          <div v-for="r in ruleRows(blitzDone.rules)" :key="r.id" class="ex-rule" :class="tone(r.share)">
-            <span>{{ r.label }}</span><b>{{ r.ok }} из {{ r.total }} · {{ pct(r) }}%</b>
-            <i :style="{ width: pct(r) + '%' }"></i>
-          </div>
-        </div>
-        <section v-for="[title, list] in byBlock(blitzDone.mistakes)" :key="title" class="ex-bl">
-          <h3>{{ title }} <small>{{ list.length }}</small></h3>
-          <ul>
-            <li v-for="(m, k) in list" :key="k">
-              <div class="ko ex-q">{{ m.q }}</div>
-              <div class="ex-ans"><span class="bad">Твой ответ: <b class="ko">{{ m.y }}</b></span><span class="ok">Верно: <b class="ko">{{ m.a }}</b></span></div>
-              <AskAi :context="mistakeContext(title, m)" :quick="EXAM_QUICK" placeholder="Спроси про эту ошибку…" />
-            </li>
-          </ul>
-        </section>
-      </section>
 
       <!-- только что законченная попытка -->
       <section v-if="finished" class="ex-card" :class="finished.attempt.passed ? 'okc' : 'badc'">
@@ -359,23 +454,24 @@ const summaryText = (a: ExamAttempt) =>
       <div v-if="dev && draft" class="ex-btns">
         <button v-for="p in draft.parts.length" :key="p" class="rs-start ex-btn soft" type="button" @click="void router.push({ query: { part: String(p) } })">Часть {{ p }}{{ draft.results[p - 1] ? ' ✓' : '' }} (локально)</button>
       </div>
-      <section v-if="blitzLog.length" class="ex-card">
-        <h2>Блицы по дням</h2>
-        <p v-for="b in blitzLog.slice(0, 10)" :key="b.day" class="ex-sub">{{ b.day }}: {{ b.right }} из {{ b.total }} ({{ Math.round((b.right / b.total) * 100) }}%)</p>
-      </section>
       <div class="ex-btns">
         <button v-if="draft" class="rs-start ex-btn" :disabled="busy" @click="continueExam">Продолжить с части {{ nextPart }}</button>
         <button class="rs-start ex-btn" :class="{ soft: !!draft }" :disabled="busy || waitMs > 0 || !ready" @click="startNew">
           {{ waitMs > 0 ? waitText : draft ? 'Начать заново' : row ? 'Пересдать' : 'Начать экзамен' }}
         </button>
-        <button class="rs-start ex-btn soft" type="button" :disabled="!ready" title="Около 20 пунктов за 5 минут, набор меняется каждый день" @click="startBlitz">Блиц дня на {{ BLITZ_SECONDS / 60 }} минут{{ blitzToday ? ` · сегодня ${blitzToday.right}/${blitzToday.total}` : '' }}</button>
         <button v-if="row" type="button" class="ex-link" @click="openLog">Разбор попыток и ошибок</button>
+      </div>
       </div>
     </template>
   </div>
 </template>
 
 <style scoped>
+.ex-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 16px; }
+.ex-tab { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ex-tab small { color: var(--muted); font-size: 12px; }
+.ex-tab.on { border-color: var(--gold); background: var(--gold-soft); }
+.ex-streak { margin: 8px 0; font-size: 15px; }
 .intro { max-width: 820px; margin: 14px 0 18px; color: var(--muted); line-height: 1.5; }
 .empty { color: var(--muted); }
 .ex-card { margin: 14px 0; padding: 18px 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }

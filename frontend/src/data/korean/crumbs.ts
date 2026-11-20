@@ -26,6 +26,7 @@ const PAGE_TABS: Record<string, { param: string; labels: Record<string, string> 
   cabinet: { param: 'tab', labels: CABINET_TABS },
   today: { param: 'tab', labels: { list: 'Чек-лист', history: 'История' } },
   trainers: { param: 'mode', labels: { type: 'Напиши перевод' } },
+  exam: { param: 'tab', labels: { blitz: 'Блиц дня', units: 'Экзамен единицы', big: 'Большой экзамен', topik: 'Пробник TOPIK I' } },
 }
 
 const byId = (id: string) => sections.find(s => s.id === id)

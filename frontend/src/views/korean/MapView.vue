@@ -3,6 +3,8 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { G, type Gram } from '@/data/korean/grammar'
+import { UNIT_PASS } from '@/data/korean/exam-units'
+import { useExamStore } from '@/stores/exam'
 
 /**
  * Карта обучения: ветка сакуры по книгам «서울대 한국어+ 1A» и «1B» (`bk` у карточек в `grammar.ts`).
@@ -56,11 +58,15 @@ const { open } = useGrammarModal()
 const go = (n: Node) => open(n.g.id, true)
 /** Лепестки, которые падают над веткой: только украшение, у каждого своё место, размер и задержка. */
 const FALL = Array.from({ length: 9 }, (_, i) => ({ left: 6 + i * 11, delay: -i * 1.7, dur: 9 + (i % 4) * 2, size: 10 + (i % 3) * 4 }))
+/** Единица сдана на экзамене единицы (80% и больше): над подписью «Единица N» золотое кольцо. */
+const exams = useExamStore()
+const unitPassed = (b: string, unit: number) => (exams.units[`${b}-${unit}`]?.best ?? 0) >= UNIT_PASS * 100
 const PETAL = 'M0 0 C-7 -8 -6 -20 0 -26 C6 -20 7 -8 0 0Z'
 const scrollers = ref<HTMLElement[]>([])
 /** Лента встаёт так, чтобы «дальше» было в поле зрения. */
 onMounted(async () => {
   await nextTick()
+  void exams.loadUnits()
   books.value.forEach((b, i) => {
     const el = scrollers.value[i]
     const n = b.nodes.find(x => x.state === 'next')
@@ -116,7 +122,7 @@ onMounted(async () => {
             <b class="ko">{{ short(n.g.ko) }}</b>
             <small>{{ n.g.bk!.replace(/^1B /, '') }}</small>
           </button>
-          <span v-for="n in b.nodes.filter(x => x.first)" :key="'u' + n.unit" class="unit" :style="{ left: n.x - 44 + 'px' }">Единица {{ n.unit }}</span>
+          <span v-for="n in b.nodes.filter(x => x.first)" :key="'u' + n.unit" class="unit" :class="{ gold: unitPassed(b.id, n.unit) }" :style="{ left: n.x - 44 + 'px' }" :title="unitPassed(b.id, n.unit) ? 'Экзамен единицы сдан' : undefined">Единица {{ n.unit }}</span>
         </div>
       </div>
     </section>
@@ -166,6 +172,7 @@ html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: 
 .tag.ok { border-color: var(--petal-line); }
 .tag.next { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(243, 185, 61, .3); }
 .tag.ahead { opacity: .62; }
+.unit.gold { bottom: 2px; padding: 2px 0; border-radius: 99px; background: rgba(243, 185, 61, .28); color: var(--ink); font-weight: 700; box-shadow: 0 0 0 2px var(--gold); }
 .unit { position: absolute; bottom: 4px; width: 88px; text-align: center; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 @media (max-width: 640px) { .book { padding: 12px 8px 4px; border-radius: 20px; } }
 </style>

@@ -22,6 +22,28 @@ export const useExamStore = defineStore('exam', () => {
     }
   }
 
+  /** Экзамены единиц книги (`1A-6`): лучший и последний результат в процентах. */
+  const units = ref<Record<string, { best: number; last: number; tries: number; at: number }>>({})
+  async function loadUnits() {
+    try {
+      const res = await fetchT('/api/exams/units', { headers: headers() })
+      if (res.ok) units.value = ((await res.json()) as { units: typeof units.value }).units ?? {}
+    } catch {
+      /* без сети остаётся прежнее */
+    }
+  }
+  /** Записать попытку единицы; false, если сервер не принял. */
+  async function saveUnit(unit: string, right: number, total: number): Promise<boolean> {
+    try {
+      const res = await fetchT('/api/exams/units', { method: 'POST', headers: headers(), body: JSON.stringify({ unit, right, total }) })
+      if (!res.ok) return false
+      units.value = ((await res.json()) as { units: typeof units.value }).units
+      return true
+    } catch {
+      return false
+    }
+  }
+
   /** Разбор последних попыток (новые сверху). */
   async function log(id: string): Promise<ExamAttempt[]> {
     try {
@@ -72,5 +94,5 @@ export const useExamStore = defineStore('exam', () => {
       return { error: errText(e) }
     }
   }
-  return { results, loaded, load, log, loadDraft, saveDraft, dropDraft, submit }
+  return { results, loaded, load, units, loadUnits, saveUnit, log, loadDraft, saveDraft, dropDraft, submit }
 })
