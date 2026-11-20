@@ -51,6 +51,7 @@ export const sections: Section[] = [
   { id: 'services', num: '23', menu: 'Сервисы', kicker: 'Сервер', title: 'Сервисы', sub: 'контейнеры, журналы, поиск, Grafana и Prometheus', private: true, owner: true, group: 'extra' },
   { id: 'report', num: '25', menu: 'Отчёт', kicker: 'Кабинет', title: 'Отчёт', sub: 'все ответы по режимам: графики, PDF и каждое занятие целиком', private: true, owner: true, group: 'extra' },
   { id: 'exam', num: '24', menu: 'Итоговая оценка', kicker: 'Экзамен', title: 'Итоговая оценка', sub: 'один большой экзамен по всему пройденному: 85% верных и ни одно правило ниже 70%', private: true, owner: true },
+  { id: 'topik', num: '28', menu: 'TOPIK', kicker: 'Ориентир', title: 'Прогноз TOPIK I', sub: 'сколько баллов вы набрали бы сейчас и чего не хватает до 1-го уровня', private: true },
 ]
 
 /** вкладки раздела «Справочник» */
@@ -72,4 +73,4 @@ export function lastRefTab() {
 export const sectionById = (id: string) => sections.find(s => s.id === id)!
 
 /** Значки пунктов бокового меню: имена иконок из `src/lib/icons.ts`. У каждого пункта свой значок (тест `menu-icons.spec.ts`). */
-export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }
+export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', topik: 'calendar', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }

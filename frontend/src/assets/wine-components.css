@@ -381,6 +381,14 @@ html[data-theme='dark'][data-palette='wine'] .study .cl-bar:where(:not(.pk *)) {
 html[data-theme='dark'][data-palette='wine'] .study .cl li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
 html[data-theme='dark'][data-palette='wine'] .study .td-fold:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); }
 
+/* views/korean/TopikView.vue */
+html[data-theme='dark'][data-palette='wine'] .s0:where(:not(.pk *)) { stroke: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .range:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .chip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .m .big:where(:not(.pk *)) { color: var(--pink, #ffd1e3); }
+html[data-theme='dark'][data-palette='wine'] .acts .no:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.25); }
+html[data-theme='dark'][data-palette='wine'] .res:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.1); }
+
 /* views/korean/WordsView.vue */
 html[data-theme='dark'][data-palette='wine'] .study .row .tr .w-extra:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
 html[data-theme='dark'][data-palette='wine'] .study .page-head .sub .words-json:where(:not(.pk *)),
