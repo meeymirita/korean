@@ -628,6 +628,22 @@ export const useProgressStore = defineStore('progress', () => {
     }
   }
 
+  /**
+   * Срок гостя: таймер выше в спящей вкладке запаздывает, поэтому при возвращении на вкладку срок проверяется заново. Сервер всё равно не пускает по просроченному токену (401 «expired»),
+   * здесь только чтобы экран не показывал гостя после конца срока.
+   */
+  let wakeBound = false
+  function checkGuestExpiry() {
+    if (role.value === 'guest' && guestExpires.value && Date.now() >= guestExpires.value) void init()
+  }
+  function bindWake() {
+    if (wakeBound || typeof document === 'undefined') return
+    wakeBound = true
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkGuestExpiry()
+    })
+  }
+
   /** Гость: чистый прогресс в памяти, ничего не сохраняется и не уходит на сервер; по истечении срока доступ закрывается. */
   function enterGuest(expires: number) {
     if (role.value !== 'guest') {
@@ -642,6 +658,7 @@ export const useProgressStore = defineStore('progress', () => {
     syncMessage.value = 'гостевой доступ: ничего не сохраняется'
     clearTimeout(expireTimer)
     if (expires) expireTimer = setTimeout(() => void init(), Math.min(Math.max(expires - Date.now(), 0) + 500, 2_000_000_000))
+    bindWake()
   }
 
   /** Токен владельца подошёл после гостевого: возвращаем настоящее хранилище. */

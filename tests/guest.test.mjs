@@ -27,6 +27,31 @@ describe('гостевой режим: ничего не сохраняется'
   const guestReply = (expires = FUTURE()) => reply(200, {}, { 'X-Role': 'guest', 'X-Guest-Expires': expires })
   const real = () => ls // настоящее хранилище устройства (Map под заглушкой)
 
+  test('срок гостя проверяется и при возвращении на вкладку, а не только по таймеру', async () => {
+    const handlers = []
+    globalThis.document = { visibilityState: 'visible', addEventListener: (type, fn) => type === 'visibilitychange' && handlers.push(fn) }
+    try {
+      let calls = 0
+      globalThis.fetch = async (...a) => {
+        calls++
+        return guestReply(String(Date.now() + 200))(...a)
+      }
+      assert.equal(await store.connect('гость'), true)
+      assert.equal(handlers.length, 1, 'обработчик возвращения на вкладку поставлен один раз')
+      const before = calls
+      globalThis.document.visibilityState = 'hidden'
+      handlers[0]()
+      assert.equal(calls, before, 'пока вкладка скрыта, ничего не проверяется')
+      await new Promise(r => setTimeout(r, 260)) // срок вышел, таймер в спящей вкладке мог не сработать
+      globalThis.document.visibilityState = 'visible'
+      handlers[0]()
+      await new Promise(r => setTimeout(r, 20))
+      assert.ok(calls > before, 'при возвращении срок проверен заново (запрос на сервер)')
+    } finally {
+      delete globalThis.document
+    }
+  })
+
   test('вход гостем: полный доступ, прогресс чистый, роль и срок известны', async () => {
     store.record({ word: '사람', ok: true, source: 'game' }) // прогресс этого устройства до гостя
     globalThis.fetch = guestReply()
