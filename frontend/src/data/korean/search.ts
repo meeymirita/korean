@@ -1,5 +1,5 @@
 import { groups } from '@/data/alphabet'
-import { G, type Gram } from './grammar'
+import { G, shownCard, type Gram } from './grammar'
 import { cheatHtml, hangulHtml, numbersHtml, readingHtml, talkHtml } from './pages'
 import { blk, norm } from './render'
 import { D, SE, parseQuery, score, type Word } from './words'
@@ -115,7 +115,7 @@ export function index() {
   if (cache) return cache
   cache = {
     chunks: PAGES.flatMap(([tab, html]) => chunksOf(tab, html())),
-    grammar: G.map(g => ({
+    grammar: G.filter(shownCard).map(g => ({
       g,
       text: clean(
         [g.ko, g.ru, g.s, g.l, g.d].join(' ') +
