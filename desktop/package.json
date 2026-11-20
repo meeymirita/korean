@@ -1,0 +1,16 @@
+{
+  "name": "urimal-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Личная оболочка Mac вокруг сайта 우리말 (не публикуется)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "node build.mjs",
+    "install-app": "bash install.sh"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.4.1"
+  }
+}

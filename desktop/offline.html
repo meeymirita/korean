@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우리말</title>
+<style>
+  :root { --bg: #fbf8ff; --fg: #2b2440; --pink: #c2417e; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14152b; --fg: #f1e9ff; --pink: #ff8fc0; } }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 16px/1.5 -apple-system, system-ui, sans-serif; text-align: center; }
+  h1 { font-size: 28px; margin: 0 0 8px; } p { margin: 0 0 20px; opacity: .8; }
+  button { font: inherit; font-weight: 600; padding: 10px 22px; border: 0; border-radius: 999px; background: var(--pink); color: #fff; cursor: pointer; }
+</style></head>
+<body><main><h1>우리말</h1><p>Нет связи с сайтом. Проверь интернет и повтори.</p><button type="button" id="retry">Повторить</button></main>
+<script>
+  document.getElementById('retry').addEventListener('click', () => window.urimal.retry())
+  window.addEventListener('online', () => window.urimal.retry())
+</script></body></html>

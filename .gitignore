@@ -28,3 +28,9 @@ gpt/
 
 # local notes with secrets
 /план.md
+
+# Mac-приложение (docs/mac-app.md): сборки и пакеты в git не попадают
+desktop/node_modules/
+desktop/dist/
+desktop/build-tmp/
+desktop/icon.icns
