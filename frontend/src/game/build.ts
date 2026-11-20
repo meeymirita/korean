@@ -845,7 +845,7 @@ const hard: Tpl[] = [
   },
   // Не делаю (안)
   (r, tense) => {
-    const tr = r.pick(TRANS.filter(t => !t.v.presOnly))
+    const tr = r.pick(TRANS.filter(t => !t.v.presOnly && !/해요$/.test(t.v.p))) // у глаголов «имя + 하다» 안 стоит перед 하다 (청소 안 해요), здесь их нет
     const th = r.pick(tr.things)
     const s = r.pick(PEOPLE.filter(x => x.ko !== th.ko))
     const t = pickTime(r, tense)
