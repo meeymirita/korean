@@ -502,6 +502,27 @@ describe('очередь действий для сервера', () => {
     assert.equal(store.syncMessage, 'сервер отклонил часть действий')
   })
 
+  test('из-за одного плохого действия не теряются остальные: пачка досылается по одному', async () => {
+    owner()
+    const sent = []
+    // сервер принимает пачку целиком или никак: плохое действие (слово «плохо») валит и пачку
+    globalThis.fetch = async (url, opt = {}) => {
+      const ops = JSON.parse(opt.body).ops
+      sent.push(ops.map(o => o.word))
+      return reply(ops.some(o => o.word === 'плохо') ? 400 : 200, ops.some(o => o.word === 'плохо') ? { error: 'invalid op' } : { coins: 0 })()
+    }
+    store.record({ word: 'раз', ok: true, source: 'game' })
+    store.record({ word: 'плохо', ok: true, source: 'game' })
+    store.record({ word: 'три', ok: true, source: 'game' })
+    await store.push()
+    assert.deepEqual(sent, [['раз', 'плохо', 'три'], ['раз'], ['плохо'], ['три']])
+    assert.equal(ls.get('progress_outbox'), '[]', 'очередь пуста')
+    assert.equal(store.syncMessage, 'сервер отклонил часть действий')
+    const rejected = JSON.parse(ls.get('progress_rejected'))
+    assert.equal(rejected.length, 1, 'отклонённое действие сохранено для разбора')
+    assert.equal(rejected[0].word, 'плохо')
+  })
+
   test('большая очередь уходит пачками по 200', async () => {
     owner()
     globalThis.fetch = serverOk()

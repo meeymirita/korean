@@ -532,6 +532,16 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   /** Отправляет очередь пачками. Не удалось (сеть, ошибка сервера) — действия остаются в браузере и уйдут позже. */
+  /** Отклонённые сервером действия не пропадают бесследно: последние 20 лежат в браузере (`progress_rejected`), можно посмотреть, что именно не принято. */
+  function rememberRejected(op: Op) {
+    try {
+      const list = JSON.parse(read('progress_rejected') || '[]') as unknown[]
+      write('progress_rejected', JSON.stringify([...list, op].slice(-20)))
+    } catch {
+      /* хранилище недоступно: журнал отклонённых не ведём */
+    }
+  }
+
   async function push() {
     if (flushing || !token.value || role.value === 'guest' || !outbox.value.length) return
     flushing = true
@@ -543,8 +553,24 @@ export const useProgressStore = defineStore('progress', () => {
         const batch = outbox.value.slice(0, BATCH)
         const res = await fetchT('/api/ops', { method: 'POST', headers: headers(), body: JSON.stringify({ ops: batch }) })
         if (res.status === 401) return denied(res)
-        // 400: сервер не принял пачку; выбрасываем её, чтобы очередь не застряла навсегда
         if (!res.ok && res.status !== 400) throw new Error(`ошибка сервера ${res.status}`)
+        if (res.status === 400 && batch.length > 1) {
+          // Сервер принимает пачку целиком или никак: из-за одного плохого действия отказ получили и все хорошие. Шлём по одному: выбрасывается только то, что отклонено само.
+          for (const op of batch) {
+            const one = await fetchT('/api/ops', { method: 'POST', headers: headers(), body: JSON.stringify({ ops: [op] }) })
+            if (one.status === 401) return denied(one)
+            if (!one.ok && one.status !== 400) throw new Error(`ошибка сервера ${one.status}`)
+            outbox.value = outbox.value.slice(1)
+            if (one.status === 400) {
+              rejected = true
+              rememberRejected(op)
+            }
+            write(OUTBOX_KEY, JSON.stringify(outbox.value))
+          }
+          continue
+        }
+        // 400 для одного действия: сервер его не принял; выбрасываем, чтобы очередь не застряла навсегда
+        if (res.status === 400) rememberRejected(batch[0]!)
         outbox.value = outbox.value.slice(batch.length)
         if (res.ok && !outbox.value.length) {
           // сервер главный по монеткам: берём его баланс, когда очередь пуста
