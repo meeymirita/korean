@@ -6,6 +6,7 @@ import { breakdownContext, canAskAi } from '@/lib/askAi'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
 import { VLOG_TOPICS, VLOG_TOPIC, VLOG_LENGTHS } from '@/data/korean/vlog-topics'
+import { VLOG_ORDER_IDS, VLOG_STAGES, stageOf } from '@/data/korean/vlog-order'
 import { VLOG_PLAN, VLOG_AUTHORS, DEFAULT_AUTHOR, type VlogPlanItem } from '@/data/korean/vlog-plan'
 import { useToastStore } from '@/stores/toast'
 import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
@@ -50,22 +51,38 @@ async function loadFile() {
   }
 }
 /** Список: все влоги плейлиста по порядку; готовые открываются, остальные пока заглушки «скоро». */
-interface Item { yt: string; title: string; dur: number; author: string; vlog?: Vlog; plan?: VlogPlanItem }
+interface Item { yt: string; title: string; dur: number; author: string; rank: number; vlog?: Vlog; plan?: VlogPlanItem }
 const items = computed<Item[]>(() => {
   const out: Item[] = VLOG_PLAN.map(p => {
     const v = VLOGS.find(x => x.yt === p.yt)
-    return { yt: p.yt, title: v?.title ?? p.title, dur: v?.lines.length ? Math.round(v.lines[v.lines.length - 1]!.e) : p.dur, author: p.author ?? v?.channel ?? DEFAULT_AUTHOR, vlog: v, plan: p }
+    return { yt: p.yt, title: v?.title ?? p.title, dur: v?.lines.length ? Math.round(v.lines[v.lines.length - 1]!.e) : p.dur, author: p.author ?? v?.channel ?? DEFAULT_AUTHOR, rank: 999, vlog: v, plan: p }
   })
-  for (const v of VLOGS) if (!VLOG_PLAN.some(p => p.yt === v.yt)) out.push({ yt: v.yt, title: v.title, dur: Math.round(v.lines.at(-1)?.e ?? 0), author: v.channel, vlog: v })
-  return out
+  for (const v of VLOGS) if (!VLOG_PLAN.some(p => p.yt === v.yt)) out.push({ yt: v.yt, title: v.title, dur: Math.round(v.lines.at(-1)?.e ?? 0), author: v.channel, rank: 999, vlog: v })
+  // номер в общем порядке просмотра (от лёгкого к сложному); видео без текста идут в конце
+  const rankOf = new Map(VLOG_ORDER_IDS.map((id, i) => [id, i + 1]))
+  for (const it of out) it.rank = (it.vlog && rankOf.get(it.vlog.id)) || 999
+  return out.sort((a, b) => a.rank - b.rank)
 })
-/** Вкладки по авторам: у каждого автора свои видео; вкладка в адресе (`?a=`), чтобы после обновления остаться на ней. */
-const authorSlugs = VLOG_AUTHORS.map(a => a.slug)
-const tab = useQueryParam('a', VLOG_AUTHORS[0].slug, authorSlugs)
-const tabs = computed(() => VLOG_AUTHORS.map(a => ({ ...a, count: items.value.filter(i => i.author === a.name).length })))
+/** Вкладки: «Порядок» (все влоги по рекомендуемому порядку просмотра) и по одному автору; вкладка в адресе (`?a=`), чтобы после обновления остаться на ней. */
+const authorSlugs = ['order', ...VLOG_AUTHORS.map(a => a.slug)]
+const tab = useQueryParam('a', 'order', authorSlugs)
+const tabs = computed(() => [{ slug: 'order', tab: 'Порядок', count: items.value.length }, ...VLOG_AUTHORS.map(a => ({ slug: a.slug, tab: a.tab, count: items.value.filter(i => i.author === a.name).length }))])
 const ofAuthor = computed(() => {
+  if (tab.value === 'order') return items.value
   const name = VLOG_AUTHORS.find(a => a.slug === tab.value)?.name
   return items.value.filter(i => i.author === name)
+})
+const stageHeads = computed(() => {
+  if (tab.value !== 'order') return new Map<number, (typeof VLOG_STAGES)[number]>()
+  // заголовок этапа перед первым показанным влогом этапа
+  const heads = new Map<number, (typeof VLOG_STAGES)[number]>()
+  let last = 0
+  for (const it of shownItems.value) {
+    const n = stageOf(it.rank, VLOG_ORDER_IDS.length)
+    if (n !== last) heads.set(it.rank, VLOG_STAGES[n - 1]!)
+    last = n
+  }
+  return heads
 })
 /** Фильтры под вкладками: тема (`?t=`) и длина (`?l=`); показываются только те темы и длины, которые есть у этого автора. */
 const topic = useQueryParam('t', '', ['', ...VLOG_TOPICS.map(t => t.id)])
@@ -390,11 +407,15 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
           <button v-for="c in lengthChips" :key="c.id" type="button" class="vl-chip" :class="{ on: length === c.id }" @click="length = length === c.id ? '' : c.id">{{ c.label }} <small>{{ c.count }}</small></button>
         </div>
       </div>
+      <p v-if="tab === 'order'" class="vl-howto"><b>Как смотреть:</b> иди по номерам от 1 к {{ VLOG_ORDER_IDS.length }}, они расставлены от самого лёгкого к самому сложному по числу разных слов и скорости речи. Каждый влог: первый раз без текста, второй с текстом и переводом по нажатию, через день или два ещё раз. Не торопись к следующему, пока этот не стал в основном понятным.</p>
       <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. <template v-if="readyCount < shownItems.length">Готово {{ readyCount }} из {{ shownItems.length }}, остальные появятся по очереди.</template><template v-else>Всего {{ shownItems.length }} видео, у каждого текст и перевод.</template></p>
       <p v-if="!shownItems.length" class="vl-empty">С такой темой и длиной видео нет: сними один из фильтров.</p>
       <ul class="vl-list">
-        <li v-for="it in shownItems" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
+        <template v-for="it in shownItems" :key="it.yt">
+        <li v-if="stageHeads.get(it.rank)" class="vl-stage-h"><b>Этап {{ stageHeads.get(it.rank)!.n }} · {{ stageHeads.get(it.rank)!.title }}</b><span>{{ stageHeads.get(it.rank)!.hint }}</span></li>
+        <li class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
+            <span v-if="it.rank < 999" class="vl-no">№{{ it.rank }}</span>
             <img :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" />
             <b>{{ it.title }}</b>
             <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} <template v-if="it.dur"> · {{ dur(it.dur) }}</template></span>
@@ -412,6 +433,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
           </div>
           <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
         </li>
+        </template>
       </ul>
     </template>
 
@@ -541,7 +563,12 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-watch input:checked { background: var(--ok); border-color: var(--ok); }
 .vl-watch input:checked::after { opacity: 1; }
 .vl-watch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.vl-card { box-sizing: border-box; width: 100%; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
+.vl-howto { margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface); color: var(--ink); font-size: 14.5px; line-height: 1.5; }
+.vl-stage-h { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.vl-stage-h b { font-size: 16px; }
+.vl-stage-h span { color: var(--muted); font-size: 13.5px; }
+.vl-no { position: absolute; top: 16px; left: 16px; z-index: 1; padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff; font-size: 12.5px; font-weight: 700; }
+.vl-card { position: relative; box-sizing: border-box; width: 100%; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .vl-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
 .vl-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; font-size: 15px; }
 .vl-card span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; color: var(--muted); font-size: 13px; }

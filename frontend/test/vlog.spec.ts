@@ -27,7 +27,7 @@ describe('«Влог»', () => {
   it('без ?v= показывает список: все влоги плейлиста, готовые открываются, остальные заглушки', async () => {
     localStorage.clear()
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
-    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog?a=jaerim' })
     await flushPromises()
     expect(w.find('.page-head').exists()).toBe(true)
     const cards = w.findAll('.vl-card')
@@ -40,7 +40,7 @@ describe('«Влог»', () => {
   it('при наведении на карточку появляется окошко с описанием и цифрами; у заглушки пометка «ещё готовятся»', async () => {
     localStorage.clear()
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
-    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog?a=jaerim' })
     await flushPromises()
     const items = w.findAll('.vl-item')
     expect(w.find('.vl-pop').exists()).toBe(false)
@@ -64,7 +64,7 @@ describe('«Влог»', () => {
     const put = vi.fn(async () => new Response('{}', { status: 200 }))
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => (init?.method === 'PUT' ? put(url, init) : new Response(JSON.stringify({ watched: [] }), { status: 200 }))))
     who.owner = true
-    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog?a=jaerim' })
     await flushPromises()
     const boxes = w.findAll('.vl-watch input')
     expect(boxes.length).toBe(MAIN.length)
@@ -74,7 +74,7 @@ describe('«Влог»', () => {
     expect(JSON.parse((put.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({ watched: [MAIN[1]!.yt] })
     expect(w.findAll('.vl-item')[1]!.classes()).toContain('seen')
     who.owner = false
-    const g = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    const g = await mountSuspended(VlogView, { route: '/korean/vlog?a=jaerim' })
     await flushPromises()
     expect(g.find('.vl-watch').exists()).toBe(false)
     who.owner = true
@@ -116,6 +116,18 @@ describe('«Влог»', () => {
     expect(w.find('.vl-gram .vl-formula').text()).toContain('основа глагола')
     await chip.trigger('click')
     expect(w.find('.vl-gram').exists()).toBe(false)
+  })
+
+  it('первая вкладка «Порядок»: все влоги по номерам, с заголовками четырёх этапов', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    await flushPromises()
+    expect(w.findAll('.vl-card').length).toBe(VLOG_PLAN.length)
+    expect(w.findAll('.vl-stage-h').length).toBe(4)
+    const nos = w.findAll('.vl-no').map(n => n.text())
+    expect(nos[0]).toBe('№1')
+    expect(nos.at(-1)).toBe(`№${VLOG_PLAN.length}`)
   })
 
   it('ширина видео меняется разделителем между половинами, ползунка размера нет', async () => {

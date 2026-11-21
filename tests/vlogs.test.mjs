@@ -93,6 +93,20 @@ test('список влогов плейлиста: номера верные и
   for (const p of VLOG_LOCKED) assert.ok(YT_ID.test(p.yt) && !seen.has(p.yt), `закрытое видео ${p.yt} не должно быть и в списке`)
 })
 
+test('порядок просмотра: все влоги по разу, самые простые первыми, четыре этапа', async () => {
+  const { orderVlogs, stageOf, VLOG_STAGES, difficulty } = await load('/src/data/korean/vlog-order.ts')
+  const order = orderVlogs(VLOGS)
+  assert.equal(order.length, VLOGS.length)
+  assert.equal(new Set(order).size, VLOGS.length)
+  assert.deepEqual(order, orderVlogs([...VLOGS].reverse()), 'порядок не зависит от порядка в списке')
+  const d = id => difficulty(VLOGS.find(v => v.id === id))
+  for (let i = 1; i < order.length; i++) assert.ok(d(order[i - 1]) <= d(order[i]) + 1e-9, 'по возрастанию сложности')
+  const stages = order.map((_, i) => stageOf(i + 1, order.length))
+  assert.equal(stages[0], 1)
+  assert.equal(stages.at(-1), VLOG_STAGES.length)
+  for (let n = 1; n <= VLOG_STAGES.length; n++) assert.ok(stages.includes(n), `этап ${n}`)
+})
+
 test('у каждого видео списка есть тема для фильтра, и лишних тем нет', async () => {
   const { VLOG_TOPIC, VLOG_TOPICS } = await load('/src/data/korean/vlog-topics.ts')
   const ids = new Set(VLOG_TOPICS.map(t => t.id))
