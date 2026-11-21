@@ -15,7 +15,7 @@ description: Чеклист после любой правки на платфо
 - **Страница**: `seo.ts`, `crumbs.ts`, `guide.ts`, `sections.ts`, слайд в `about.ts`, `docs/home-and-theme.md`.
 - **Сервер, база, настройки**: миграция Prisma, `docker-compose.yml`, `.env.example`, `backend/src/config.ts`, `docs/server.md` и документ по теме (`docs/voice.md`, `docs/chat.md`), перезапуск сервера после выкладки.
 - **Инструкция голоса или чата** (`voice/prompt.ts`, `chat/prompt.ts`): правило, добавленное в одну, проверь и в другой (у них общие `KNOWN_*`, но проза своя); обе описаны в `docs/voice.md` и `docs/chat.md`; тесты `voice-util.spec.ts` (предел длины) и `chat-prompt.test.mjs`; правку инструкции голоса прогоняй через `scripts/voice-text-check.mjs` (20 сценариев, нужен ключ, см. `docs/voice.md`), новую живую ошибку добавляй туда сценарием.
-- **Любое заметное изменение**: запись в начало `HISTORY`; после заметной порции работы обнови график роста: `node scripts/build-commit-graph.mjs` (пишет `data/growth.ts`, не входит в `npm run sync`).
+- **Любое заметное изменение**: запись в начало `HISTORY` **и сразу `npm run growth`** (страница `/growth`: график, число коммитов и строк кода лежат только в `data/growth.ts`, не входит в `npm run sync`; тест `tests/growth.test.mjs` падает, если график отстал от «Истории» больше чем на день). Числа слов, правил и игр на `/growth` берутся живьём из данных, их руками не трогать.
 - **Входящие и API** (`materials`, `learning`, `rules.ts`, токены): `docs/data.md` («Входящие»), `docs/server.md`, `docs/desktop-skill.md`, вкладка «Инструкция» в `InboxPanel.vue` (`HELP`), `scripts/inbox.mjs`; новый урок проверки: правило в `rules.ts` и строка в `docs/data.md`.
 
 
@@ -23,7 +23,7 @@ description: Чеклист после любой правки на платфо
 
 1. **Производные файлы: одна команда `npm run sync`** (словарь, переводы, грамматика, статус карточки, режим, заглушки `ahead`, `dark.css`). Она обновляет пул писем, `words.json`, инструкции чата и голоса (пройденное и «не пройдено»), открытые данные для чтения, названия режимов, `night.css` и числа слов и правил в README и `docs/data.md`. `npm run sync:check` только проверяет; тест `tests/sync.test.mjs` падает, если забыли. Вручную остаётся: страница (слайд и скриншот в «О платформе»: `src/data/about.ts`, `scripts/about-shots.mjs`).
 2. **Описание**: поправь `docs/` по теме (для тренажёра `docs/trainers/<режим>.md`, для каталога `docs/games-catalog.md`). Расходится с кодом: верь коду.
-3. **История**: запись в начало `HISTORY` (`frontend/src/data/history.ts`), тест следит за форматом.
+3. **История и рост**: запись в начало `HISTORY` (`frontend/src/data/history.ts`), тест следит за форматом; **потом `npm run growth`** (обновляет `/growth`; без этого тест роста краснеет).
 4. **План**: локальный `plan-and-fixes/plan-new.md` (не в git): статус вверху ✅ / ⏳ / ❌, сделанное из разделов удали, новое допиши.
 5. **Тесты по одному файлу**:
    - данные и скрипты: `node --test --test-concurrency=1 tests/<файл>.test.mjs`;

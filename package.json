@@ -17,6 +17,7 @@
     "test": "npm --prefix backend run build && npm run test:nest && npm run test:nuxt && node --test \"tests/*.test.mjs\"",
     "sync": "node scripts/sync.mjs",
     "sync:check": "node scripts/sync.mjs --check",
+    "growth": "node scripts/build-commit-graph.mjs",
     "test:quick": "node scripts/test-quick.mjs",
     "test:nest": "npm --prefix backend test",
     "test:nuxt": "npm --prefix frontend test"

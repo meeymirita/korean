@@ -22,6 +22,12 @@ describe('данные страницы «Рост платформы» (growth.
     assert.equal(GROWTH.first.d, GROWTH.days[0].d)
   })
 
+  test('график роста не отстаёт от «Истории»: свежая запись не новее последнего дня графика больше чем на день (npm run growth)', () => {
+    const newest = HISTORY.map(h => h.date).sort().at(-1)
+    const days = (a, b) => (Date.parse(a) - Date.parse(b)) / 86_400_000
+    assert.ok(days(newest, GROWTH.generated) <= 1, `в «Истории» есть запись от ${newest}, а график роста собран ${GROWTH.generated}: запусти npm run growth`)
+  })
+
   test('ключевые события взяты из «Истории» и лежат на днях с коммитами', () => {
     assert.ok(GROWTH.marks.length >= 20 && GROWTH.marks.length <= 80, `событий ${GROWTH.marks.length}`)
     const days = new Set(GROWTH.days.map(d => d.d))
