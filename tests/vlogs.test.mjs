@@ -86,7 +86,7 @@ test('список влогов плейлиста: номера верные и
   for (const p of VLOG_PLAN) {
     assert.ok(YT_ID.test(p.yt), p.yt)
     assert.ok(!seen.has(p.yt), 'повтор ' + p.yt)
-    assert.ok(p.title.trim() && p.dur > 0, p.yt)
+    assert.ok(p.title.trim() && p.dur >= 0, p.yt)
     seen.add(p.yt)
   }
   for (const v of VLOGS) assert.ok(seen.has(v.yt), `влог ${v.id} не в списке плейлиста`)

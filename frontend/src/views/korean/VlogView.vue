@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
-import { VLOG_PLAN, type VlogPlanItem } from '@/data/korean/vlog-plan'
+import { VLOG_PLAN, VLOG_AUTHORS, DEFAULT_AUTHOR, type VlogPlanItem } from '@/data/korean/vlog-plan'
 import { useToastStore } from '@/stores/toast'
 import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
 import { usePersisted } from '@/composables/usePersisted'
@@ -46,16 +46,24 @@ async function loadFile() {
   }
 }
 /** Список: все влоги плейлиста по порядку; готовые открываются, остальные пока заглушки «скоро». */
-interface Item { yt: string; title: string; dur: number; vlog?: Vlog; plan?: VlogPlanItem }
+interface Item { yt: string; title: string; dur: number; author: string; vlog?: Vlog; plan?: VlogPlanItem }
 const items = computed<Item[]>(() => {
   const out: Item[] = VLOG_PLAN.map(p => {
     const v = VLOGS.find(x => x.yt === p.yt)
-    return { yt: p.yt, title: v?.title ?? p.title, dur: v?.lines.length ? Math.round(v.lines[v.lines.length - 1]!.e) : p.dur, vlog: v, plan: p }
+    return { yt: p.yt, title: v?.title ?? p.title, dur: v?.lines.length ? Math.round(v.lines[v.lines.length - 1]!.e) : p.dur, author: p.author ?? v?.channel ?? DEFAULT_AUTHOR, vlog: v, plan: p }
   })
-  for (const v of VLOGS) if (!VLOG_PLAN.some(p => p.yt === v.yt)) out.push({ yt: v.yt, title: v.title, dur: Math.round(v.lines.at(-1)?.e ?? 0), vlog: v })
+  for (const v of VLOGS) if (!VLOG_PLAN.some(p => p.yt === v.yt)) out.push({ yt: v.yt, title: v.title, dur: Math.round(v.lines.at(-1)?.e ?? 0), author: v.channel, vlog: v })
   return out
 })
-const readyCount = computed(() => items.value.filter(i => i.vlog).length)
+/** Вкладки по авторам: у каждого автора свои видео; вкладка в адресе (`?a=`), чтобы после обновления остаться на ней. */
+const authorSlugs = VLOG_AUTHORS.map(a => a.slug)
+const tab = useQueryParam('a', VLOG_AUTHORS[0].slug, authorSlugs)
+const tabs = computed(() => VLOG_AUTHORS.map(a => ({ ...a, count: items.value.filter(i => i.author === a.name).length })))
+const shownItems = computed(() => {
+  const name = VLOG_AUTHORS.find(a => a.slug === tab.value)?.name
+  return items.value.filter(i => i.author === name)
+})
+const readyCount = computed(() => shownItems.value.filter(i => i.vlog).length)
 
 /** Отметки «просмотрено»: на сервере (на всех устройствах), копия в браузере на случай, если сервер не ответил. Гость ничего не сохраняет. */
 const WATCHED_KEY = 'vlog_watched_v1'
@@ -317,13 +325,16 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
     <p v-if="!VLOGS.length" class="vl-empty">Влогов пока нет. Они появляются по одному: видео, текст по фразам и перевод.</p>
 
     <template v-else-if="!vlog">
-      <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. <template v-if="readyCount < items.length">Готово {{ readyCount }} из {{ items.length }}, остальные появятся по очереди.</template><template v-else>Всего {{ items.length }} видео, у каждого текст и перевод.</template></p>
+      <div class="vl-tabs" role="tablist" aria-label="Автор влога">
+        <button v-for="t in tabs" :key="t.slug" type="button" role="tab" class="vl-tab" :class="{ on: tab === t.slug }" :aria-selected="tab === t.slug" @click="tab = t.slug">{{ t.tab }} <small>{{ t.count }}</small></button>
+      </div>
+      <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. <template v-if="readyCount < shownItems.length">Готово {{ readyCount }} из {{ shownItems.length }}, остальные появятся по очереди.</template><template v-else>Всего {{ shownItems.length }} видео, у каждого текст и перевод.</template></p>
       <ul class="vl-list">
-        <li v-for="it in items" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
+        <li v-for="it in shownItems" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
             <img :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" />
             <b>{{ it.title }}</b>
-            <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} · {{ dur(it.dur) }}</span>
+            <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} <template v-if="it.dur"> · {{ dur(it.dur) }}</template></span>
           </button>
           <div v-if="hoverYt === it.yt" class="vl-pop" :class="popSide" role="tooltip">
             <template v-if="it.vlog">
@@ -334,7 +345,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
               </p>
               <p v-if="infoOf(it.vlog).sample" class="vl-pop-ex"><span lang="ko">{{ infoOf(it.vlog).sample!.ko }}</span><br />{{ infoOf(it.vlog).sample!.ru }}</p>
             </template>
-            <p v-else class="vl-pop-about">Текст и перевод ещё готовятся. Видео: {{ dur(it.dur) }}. Оригинальное название: {{ it.title }}</p>
+            <p v-else class="vl-pop-about">Текст и перевод ещё готовятся. <template v-if="it.dur">Видео: {{ dur(it.dur) }}. </template>Оригинальное название: {{ it.title }}</p>
           </div>
           <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
         </li>
@@ -430,6 +441,10 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 
 <style scoped>
 .vl-empty, .vl-intro, .vl-by, .vl-stat { margin: 10px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+.vl-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.vl-tab { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+.vl-tab small { color: var(--muted); margin-left: 4px; }
+.vl-tab.on { border-color: var(--ink); font-weight: 700; }
 .vl-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .vl-item { position: relative; display: grid; grid-template-rows: 1fr auto; gap: 6px; }
 .vl-pop { position: absolute; z-index: 30; top: 0; width: 310px; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgba(143, 124, 240, .5); border-radius: 16px; background: #fff; box-shadow: 0 14px 40px rgba(60, 40, 120, .28); pointer-events: none; font-size: 13.5px; line-height: 1.5; color: #2b2250; animation: vlpop .15s ease-out; }

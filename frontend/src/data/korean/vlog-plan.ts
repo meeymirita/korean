@@ -3,9 +3,23 @@ export interface VlogPlanItem {
   yt: string
   /** название на ютубе, пока нет своего */
   title: string
-  /** длительность, секунды */
+  /** длительность, секунды; 0 = пока неизвестна */
   dur: number
+  /** автор канала (`name` из `VLOG_AUTHORS`); не указан = Daily Korean with Jaerim */
+  author?: string
 }
+
+/** Авторы влогов: по вкладке на каждого. `slug` — папка для скачивания (`~/Movies/Korean-videos/vlog/<slug>`), `tab` — подпись вкладки. */
+export const VLOG_AUTHORS = [
+  { name: 'Daily Korean with Jaerim', slug: 'jaerim', tab: 'Jaerim' },
+  { name: 'Dora\'s Slow Korean', slug: 'dora', tab: 'Dora' },
+  { name: 'Ria Korea 리아 코리아', slug: 'ria', tab: 'Ria Korea' },
+  { name: 'Real Korean with Morning', slug: 'morning', tab: 'Morning' },
+  { name: '최수수 ChoiSusu', slug: 'choisusu', tab: 'ChoiSusu' },
+  { name: 'Korean Daily by Summer', slug: 'summer', tab: 'Summer' },
+] as const
+
+export const DEFAULT_AUTHOR = VLOG_AUTHORS[0].name
 
 export const VLOG_PLAN: VlogPlanItem[] = [
   { yt: 'Q7_UmOUi1XE', dur: 316, title: 'If You’re a BEGINNER, WATCH THIS! | Comprehensible Korean Input – Lunar New Year Soup (Tteokguk)' },
@@ -38,6 +52,34 @@ export const VLOG_PLAN: VlogPlanItem[] = [
   { yt: 'rNclAN43VQ0', dur: 922, title: 'Learn Korean the EASY way | Slow Korean + Real- Life Conversations' },
   { yt: 'Gy_nMwa51nY', dur: 822, title: 'Korean You Can Actually Understand | Slow Korean + Real-Life Conversations (Grocery Shopping)' },
   { yt: 'Xhm37Rybhv0', dur: 955, title: 'Learn Korean the EASY way | Slow Korean + Real- Life Conversations (A Day in Jeju)' },
+  { yt: 'Jex4XTA3BDg', dur: 175, author: "Dora's Slow Korean", title: "[Slow Korean] How to Introduce Yourself | Learn Korean for Beginners" },
+  { yt: 'W7ErKzubTjY', dur: 342, author: "Dora's Slow Korean", title: "My Daily Routine in Korea | Learn Korean with Comprehensible Input" },
+  { yt: '7T3l2syFC_s', dur: 400, author: "Dora's Slow Korean", title: "[Slow Korean] Hiking in Seoul | Learn Korean for Beginners" },
+  { yt: 'uPKRQhaYeMg', dur: 422, author: "Dora's Slow Korean", title: "[Slow Korean] What Koreans Do on Chuseok (Thanksgiving) | Learn Korean for Beginners" },
+  { yt: 'ENLlmkwv6jk', dur: 529, author: "Dora's Slow Korean", title: "[Slow Korean] A Day at Gyeongbokgung Palace | Learn Korean for Beginners" },
+  { yt: 'P1WgK4TxJYE', dur: 534, author: "Dora's Slow Korean", title: "[Slow Korean] Convenience Store Shopping & Eating | Learn Korean for Beginners" },
+  { yt: 'MFgVfcqBkJ0', dur: 582, author: "Dora's Slow Korean", title: "[Slow Korean] Shopping at Daiso | Learn Korean for Beginners" },
+  { yt: '8u47xrx3Ffw', dur: 587, author: "Dora's Slow Korean", title: "[Slow Korean] Traveling Outside Seoul: Daejeon | Learn Korean for Beginners" },
+  { yt: 'QJanmo9TXc8', dur: 631, author: "Dora's Slow Korean", title: "[Slow Korean] A Day in Seoul | Learn Korean for Beginners" },
+  { yt: '4qXLtgcswWY', dur: 642, author: "Dora's Slow Korean", title: "[Slow Korean] A Day at a Korean Cinema | Learn Korean for Beginners (Casual Korean ver.)" },
+  { yt: 'cIAydgtc7zE', dur: 842, author: "Dora's Slow Korean", title: "[Slow Korean] A Day in Seoul (Department Store Shopping) | Learn Korean for Beginners" },
+  { yt: 'wtIzSP2fDOk', dur: 851, author: "Dora's Slow Korean", title: "[Slow Korean] A Day in Korea Vlog | Learn Korean for Beginners" },
+  { yt: 'qlMmOiQPLsc', dur: 407, author: "Ria Korea 리아 코리아", title: "Slow Korean Vlog | Super Easy Korean for Beginners | Korean Comprehensible input" },
+  { yt: 'gy2kYPzvL7I', dur: 617, author: "Real Korean with Morning", title: "[한국어 팟캐스트] 상하이 여행 브이로그와 함께하는 느린 한국어 듣기 연습 | 한국어 배우기" },
+  { yt: '29mdX4IG7YI', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Morning Routine" },
+  { yt: '_kPYR0gBstk', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Hobby" },
+  { yt: '932sf30NQzE', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Health" },
+  { yt: 'R2WQ6wQCr1Y', dur: 0, author: "최수수 ChoiSusu", title: "Short story: My Neighborhood" },
+  { yt: 'B1NfSUKXaTs', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Buying Clothes" },
+  { yt: 'qoidYvlCiPM', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Preparing for a Trip" },
+  { yt: 'MNsHXC_-HVA', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Housework" },
+  { yt: 'wquDm0eqMMU', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Korean Convenience Stores" },
+  { yt: 'ZzcszvIgT_8', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Korean Summer Foods" },
+  { yt: '6y6YoL-TjYQ', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Ordering at a Korean Restaurant" },
+  { yt: '3GYl0X6tk2M', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Ordering Food Delivery" },
+  { yt: '23C9rdaLOCc', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Chuseok" },
+  { yt: 'BnTS2DOdMSY', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Apartments in Korea" },
+  { yt: 'fMrWnig71LI', dur: 407, author: "Korean Daily by Summer", title: "Learn Korean With a Vlog | Real-Life Korean [EN/KO SUB]" },
 ]
 
 /** Видео плейлиста «только для участников канала» (Members Only): платный доступ у автора, скачать и разобрать нельзя, в списке не показываются. */
