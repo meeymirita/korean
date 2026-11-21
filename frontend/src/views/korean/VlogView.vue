@@ -179,7 +179,26 @@ function pickGram(id: string) {
   gramOpen.value = gramOpen.value === id ? '' : id
 }
 /** Размер левой колонки (видео) на широком экране, % ширины: ползунок над видео. */
-const vsize = usePersisted<number>('vlog_w', 46, v => typeof v === 'number' && v >= 30 && v <= 70)
+const VSIZE_DEFAULT = 46
+/** ширина левой половины (видео) в процентах; тянется разделителем между половинами, как в карточке грамматики */
+const vsize = usePersisted<number>('vlog_w', VSIZE_DEFAULT, v => typeof v === 'number' && v >= 25 && v <= 75)
+const cols = ref<HTMLElement>()
+const dragging = ref(false)
+function splitDown(e: PointerEvent) {
+  if (e.button !== 0) return
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  dragging.value = true
+}
+function splitMove(e: PointerEvent) {
+  if (!dragging.value || !cols.value) return
+  const r = cols.value.getBoundingClientRect()
+  vsize.value = Math.round(Math.min(75, Math.max(25, ((e.clientX - r.left) / r.width) * 100)))
+}
+const splitUp = () => void (dragging.value = false)
+function splitReset() {
+  vsize.value = VSIZE_DEFAULT
+  dragging.value = false
+}
 const hints = computed(() => (vlog.value ? vlog.value.lines.map(l => grammarHints(l.ko)) : []))
 
 const SPEEDS = [0.5, 0.75, 1]
@@ -403,7 +422,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         <p class="vl-by">Автор: {{ vlog.channel }}.<template v-if="!useFile"> Видео показывается плеером ютуба.</template></p>
       </header>
 
-      <div class="vl-cols" :style="{ '--vl-w': `${vsize}%` }">
+      <div ref="cols" class="vl-cols" :class="{ dragging }" :style="{ '--vl-w': `${vsize}%` }">
        <div class="vl-left">
       <div ref="stage" class="vl-stage">
         <div class="vl-video">
@@ -418,7 +437,6 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
           <button type="button" class="vl-tog" :class="{ on: loop }" :aria-pressed="loop" @click="loop = !loop">повтор фразы</button>
           <button type="button" class="vl-tog" :class="{ on: follow }" :aria-pressed="follow" @click="follow = !follow">следовать за видео</button>
           <button type="button" class="vl-tog" @click="showAll(shown.size < vlog.lines.length)">{{ shown.size < vlog.lines.length ? 'весь перевод' : 'скрыть перевод' }}</button>
-          <label class="vl-size"><span>размер видео</span><input v-model.number="vsize" type="range" min="30" max="70" step="2" aria-label="Размер видео" /></label>
         </div>
         <p class="vl-stat">Из твоего словаря {{ knownShare }}% слов текста, ещё {{ words }} разных слов вне него.</p>
       </div>
@@ -460,6 +478,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
       </div>
        </div>
 
+      <div class="gsplit vl-split" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину. Двойной щелчок возвращает как было" @pointerdown="splitDown" @pointermove="splitMove" @pointerup="splitUp" @pointercancel="splitUp" @dblclick="splitReset"><i></i></div>
       <div ref="list" class="vl-lines" lang="ko">
         <div v-for="(l, i) in vlog.lines" :key="i" :data-i="i" class="vl-line" :class="{ now: i === active }">
           <button type="button" class="vl-at" :aria-label="`Включить с ${clock(l.s)}`" @click="play(i)">{{ clock(l.s) }}</button>
@@ -541,8 +560,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-formula { margin: 8px 0 0; padding: 8px 12px; border-radius: 12px; background: var(--gold-soft); font-size: 15px; }
 .vl-ex { margin: 8px 0 0; font-size: 15px; line-height: 1.6; }
 .vl-dim { color: var(--muted); font-size: 14px; }
-.vl-size { display: none; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-.vl-size input { width: 120px; accent-color: var(--accent); }
+.vl-split { display: none; }
 .vl-now-w { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
 .vl-now-w li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14.5px; }
 .vl-now-w li span { color: var(--muted); }
@@ -579,13 +597,19 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-tr { margin: 8px 0 0; font-size: 16px; line-height: 1.5; }
 /* Широкий экран: слева видео и карточка слова не уезжают, справа список фраз */
 @media (min-width: 1100px) {
-  .vl-cols { display: grid; grid-template-columns: minmax(340px, var(--vl-w, 46%)) 1fr; gap: 18px; align-items: start; }
+  .vl-cols { display: grid; grid-template-columns: minmax(340px, var(--vl-w, 46%)) 14px minmax(0, 1fr); gap: 0; align-items: start; }
+  .vl-cols.dragging { user-select: none; cursor: col-resize; }
+  .vl-cols.dragging .vl-video { pointer-events: none; }
+  .vl-split { display: flex; position: sticky; top: 8px; height: min(70vh, 520px); align-items: center; justify-content: center; cursor: col-resize; touch-action: none; border-left: 1px solid var(--line); }
+  .vl-split i { width: 5px; height: 56px; border-radius: 3px; background: var(--line); transition: background .15s, height .15s; }
+  .vl-split:hover i, .vl-cols.dragging .vl-split i { background: var(--gold, var(--accent)); height: 84px; }
+  .vl-left { padding-right: 14px; }
+  .vl-lines { padding-left: 14px; }
   .vl-left { display: block; position: sticky; top: 8px; }
   .vl-stage { position: static; padding-top: 0; }
   .vl-video { width: 100%; }
   .vl-card-word { position: static; }
   .vl-now { display: block; }
-  .vl-size { display: inline-flex; }
 }
 @media (max-width: 520px) { .vl-line { grid-template-columns: 1fr; gap: 0; } .vl-ko { font-size: 17px; } }
 </style>

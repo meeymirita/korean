@@ -118,6 +118,19 @@ describe('«Влог»', () => {
     expect(w.find('.vl-gram').exists()).toBe(false)
   })
 
+  it('ширина видео меняется разделителем между половинами, ползунка размера нет', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
+    const v = VLOGS[0]!
+    const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
+    await flushPromises()
+    expect(w.find('input[type="range"]').exists()).toBe(false)
+    const sep = w.find('.gsplit[role="separator"]')
+    expect(sep.exists()).toBe(true)
+    await sep.trigger('dblclick')
+    expect(w.find('.vl-cols').attributes('style')).toContain('--vl-w: 46%')
+  })
+
   it('если файл видео есть на сервере, играет свой <video>, а не ютуб', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ url: '/api/video/vlog/x/file?e=1&s=2' }), { status: 200 })))
     const v = VLOGS[0]!
