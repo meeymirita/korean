@@ -3,7 +3,8 @@
 import { CATS, MODE_HELP, MODES, W } from './modes'
 import type { BuildQ, ChoiceQ, GameHooks, GameState, Question, StoryQ } from './types'
 import { iconImg } from './icons'
-import { analyze, SEG_LABEL, type Segment } from '@/data/korean/parse'
+import { analyze, SEG_LABEL, splitCandidates, type Segment } from '@/data/korean/parse'
+import { wholeWords } from '@/lib/wholeWord'
 import { D as DICT } from '@/data/korean/words'
 import { TRANSLATIONS } from '@/data/korean/translations'
 import { itemIcon, itemName } from '@/data/shop'
@@ -630,6 +631,15 @@ function drawBreakdown(sentence: string,trans: string,exampleOf?: string|null){
     cards.appendChild(c);
   });
   box.appendChild(cards);
+  // пары «короткое слово + частица» (화 + 가): бывают и одним словом, проверяем в большом словаре
+  const cand=splitCandidates(segs);
+  // подсказка появляется только когда большой словарь подтвердил целое слово: на обычных «책 + 이» шума нет
+  if(cand.length){
+    void wholeWords(cand).then(function(w){
+      if(!w.length)return;
+      box.appendChild(el('p','bd-note bd-maybe',w.map(function(x){return '«'+x.token+'» может быть одним словом: '+x.token+' — '+x.ru+' (большой словарь). Разбор выше мог ошибиться.';}).join(' ')));
+    });
+  }
   return box;
 }
 function showFeedback(q: Question,ok: boolean){

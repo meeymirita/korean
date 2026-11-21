@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import '@/assets/breakdown.css'
-import { analyze, SEG_LABEL } from '@/data/korean/parse'
+import { analyze, SEG_LABEL, splitCandidates } from '@/data/korean/parse'
+import { wholeWords, type WholeWord } from '@/lib/wholeWord'
 import AskAi from '@/components/korean/AskAi.vue'
 import { breakdownContext } from '@/lib/askAi'
 import { TRANSLATIONS } from '@/data/korean/translations'
@@ -21,6 +22,13 @@ const isHit = (s: { type: string; text: string }) => {
   const stem = w.endsWith('다') ? w.slice(0, -1) : w
   return s.text === w || (stem.length > 0 && s.text.startsWith(stem))
 }
+/** Пары «короткое слово + частица» (화 + 가): может быть и одним словом. Большой словарь отвечает, есть ли такое слово целиком. */
+const candidates = computed(() => splitCandidates(segments.value))
+const whole = ref<WholeWord[]>([])
+watch(candidates, async c => {
+  whole.value = []
+  if (c.length && import.meta.client) whole.value = await wholeWords(c)
+}, { immediate: true })
 const hasUnknown = computed(() => segments.value.some(s => s.type === 'unknown'))
 </script>
 
@@ -42,6 +50,9 @@ const hasUnknown = computed(() => segments.value.some(s => s.type === 'unknown')
       </div>
     </div>
     <AskAi :context="() => breakdownContext(sentence, extra)" />
+    <p v-if="whole.length" class="bd-note bd-maybe">
+      <span v-for="w in whole" :key="w.token">«{{ w.token }}» может быть одним словом: <a :href="`/dict/${encodeURIComponent(w.token)}`" target="_blank" rel="noopener">{{ w.token }}</a> — {{ w.ru }} (большой словарь). Разбор выше мог ошибиться. </span>
+    </p>
     <p v-if="hasUnknown" class="bd-note">«?» — этого слова нет в словаре сайта. Когда его добавят в словарь, оно появится в разборе.</p>
   </div>
 </template>

@@ -28,6 +28,21 @@ export interface Segment {
   lemma?: string
 }
 
+/**
+ * Места, где разбор мог ошибиться: короткое слово из одного слога и сразу за ним частица 이 / 가 / 은 / 는 / 을 / 를 («화» + «가»).
+ * Такая пара бывает и настоящим «слово + частица» («책» + «이»), и одним словом («화가» — «художник»). Словарь сайта это не различает,
+ * поэтому такие пары проверяются в большом словаре (`lib/wholeWord.ts`). Возвращает целые слова («화가»), без повторов.
+ */
+export function splitCandidates(segs: readonly Segment[]): string[] {
+  const out: string[] = []
+  for (let i = 0; i + 1 < segs.length; i++) {
+    const a = segs[i]!
+    const b = segs[i + 1]!
+    if (a.type === 'word' && b.type === 'particle' && [...a.text].length === 1 && /^[이가은는을를]$/.test(b.text) && /^[가-힣]$/.test(a.text) && !out.includes(a.text + b.text)) out.push(a.text + b.text)
+  }
+  return out
+}
+
 /** Названия нижних согласных (받침) по индексу из Unicode. */
 const JONG = [
   '', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ',
