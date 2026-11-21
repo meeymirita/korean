@@ -14,9 +14,7 @@ export const VLOG_AUTHORS = [
   { name: 'Daily Korean with Jaerim', slug: 'jaerim', tab: 'Jaerim' },
   { name: 'Dora\'s Slow Korean', slug: 'dora', tab: 'Dora' },
   { name: 'Ria Korea 리아 코리아', slug: 'ria', tab: 'Ria Korea' },
-  { name: 'Real Korean with Morning', slug: 'morning', tab: 'Morning' },
   { name: '최수수 ChoiSusu', slug: 'choisusu', tab: 'ChoiSusu' },
-  { name: 'Korean Daily by Summer', slug: 'summer', tab: 'Summer' },
 ] as const
 
 export const DEFAULT_AUTHOR = VLOG_AUTHORS[0].name
@@ -71,7 +69,6 @@ export const VLOG_PLAN: VlogPlanItem[] = [
   { yt: 'FY9_RtFt84U', dur: 0, author: "Ria Korea 리아 코리아", title: "Easy Korean at the Movie Theater" },
   { yt: 'o-X_6t45Sic', dur: 0, author: "Ria Korea 리아 코리아", title: "Learn Korean at a Hair Salon" },
   { yt: 'Oh8fiYihNhM', dur: 0, author: "Ria Korea 리아 코리아", title: "Easy Korean Comprehensible Input: Cherry Blossoms" },
-  { yt: 'gy2kYPzvL7I', dur: 617, author: "Real Korean with Morning", title: "[한국어 팟캐스트] 상하이 여행 브이로그와 함께하는 느린 한국어 듣기 연습 | 한국어 배우기" },
   { yt: '29mdX4IG7YI', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Morning Routine" },
   { yt: '_kPYR0gBstk', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Hobby" },
   { yt: '932sf30NQzE', dur: 0, author: "최수수 ChoiSusu", title: "Short story: Health" },
@@ -85,7 +82,6 @@ export const VLOG_PLAN: VlogPlanItem[] = [
   { yt: '3GYl0X6tk2M', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Ordering Food Delivery" },
   { yt: '23C9rdaLOCc', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Chuseok" },
   { yt: 'BnTS2DOdMSY', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Apartments in Korea" },
-  { yt: 'fMrWnig71LI', dur: 407, author: "Korean Daily by Summer", title: "Learn Korean With a Vlog | Real-Life Korean [EN/KO SUB]" },
 ]
 
 /** Видео плейлиста «только для участников канала» (Members Only): платный доступ у автора, скачать и разобрать нельзя, в списке не показываются. */

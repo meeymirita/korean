@@ -18,6 +18,4 @@ ONLY="${1:-}"
 Y=https://www.youtube.com/watch?v=
 get dora "$Y"Jex4XTA3BDg "$Y"W7ErKzubTjY "$Y"7T3l2syFC_s "$Y"uPKRQhaYeMg "$Y"ENLlmkwv6jk "$Y"P1WgK4TxJYE "$Y"MFgVfcqBkJ0 "$Y"8u47xrx3Ffw "$Y"QJanmo9TXc8 "$Y"4qXLtgcswWY "$Y"cIAydgtc7zE "$Y"wtIzSP2fDOk
 get ria "$Y"qlMmOiQPLsc "$Y"NGPw_UD_D9U "$Y"EpGocbJZ3jc "$Y"9W4jYPAn1GY "$Y"FY9_RtFt84U "$Y"o-X_6t45Sic "$Y"Oh8fiYihNhM
-get morning "$Y"gy2kYPzvL7I
 get choisusu "$Y"29mdX4IG7YI "$Y"_kPYR0gBstk "$Y"932sf30NQzE "$Y"R2WQ6wQCr1Y "$Y"B1NfSUKXaTs "$Y"qoidYvlCiPM "$Y"MNsHXC_-HVA "$Y"wquDm0eqMMU "$Y"ZzcszvIgT_8 "$Y"6y6YoL-TjYQ "$Y"3GYl0X6tk2M "$Y"23C9rdaLOCc "$Y"BnTS2DOdMSY
-get summer "$Y"fMrWnig71LI
