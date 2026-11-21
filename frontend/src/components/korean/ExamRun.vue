@@ -189,7 +189,7 @@ const answered = computed(() => {
 
 <template>
   <div ref="root" class="er">
-    <p v-if="blitz" class="er-top">Всего пунктов: <b>{{ total }}</b>. Результат и разбор покажутся сразу после блица.</p>
+    <p v-if="blitz" class="er-top">Всего пунктов: <b>{{ total }}</b>. Результат и разбор покажутся сразу после кнопки «Показать итог».</p>
     <p v-else class="er-top">Часть <b>{{ part }}</b> из {{ parts }}: <b>{{ total }}</b> пунктов. Результаты и разбор будут после последней части.</p>
 
     <section v-for="(b, bi) in blocks" :key="b.id" class="er-block">
