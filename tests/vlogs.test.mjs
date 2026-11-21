@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
 const { VLOGS, lineAt, checkVlog, YT_ID } = await load('/src/data/korean/vlogs.ts')
+const { VLOG_PLAN } = await load('/src/data/korean/vlog-plan.ts')
 const { grammarHints, gramCard, gramState, gramById, finalOf } = await load('/src/data/korean/vlog-grammar.ts')
 
 after(close)
@@ -77,4 +78,15 @@ test('каждая тема из правил есть в карточках; к
   assert.equal(gramCard('b14_reo').state, 'ahead')
   assert.equal(gramCard('нет такой'), null)
   assert.equal(gramState({ st: 'soon' }), 'other')
+})
+
+test('список влогов плейлиста: номера верные и не повторяются, каждый готовый влог в списке', () => {
+  const seen = new Set()
+  for (const p of VLOG_PLAN) {
+    assert.ok(YT_ID.test(p.yt), p.yt)
+    assert.ok(!seen.has(p.yt), 'повтор ' + p.yt)
+    assert.ok(p.title.trim() && p.dur > 0, p.yt)
+    seen.add(p.yt)
+  }
+  for (const v of VLOGS) assert.ok(seen.has(v.yt), `влог ${v.id} не в списке плейлиста`)
 })

@@ -2,7 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
-import { VLOGS, lineAt } from '@/data/korean/vlogs'
+import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
+import { VLOG_PLAN, type VlogPlanItem } from '@/data/korean/vlog-plan'
+import { useToastStore } from '@/stores/toast'
 import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
 import { usePersisted } from '@/composables/usePersisted'
 import { searchDict, type DictHit } from '@/lib/dictApi'
@@ -16,6 +18,7 @@ import { useProgressStore } from '@/stores/progress'
  * иначе встроен плеер ютуба (youtube-nocookie), им управляем сообщениями (postMessage), скрипт ютуба не подключаем.
  */
 const progress = useProgressStore()
+const toast = useToastStore()
 const ids = VLOGS.map(v => v.id)
 const cur = useQueryParam('v', '', ids)
 const vlog = computed(() => VLOGS.find(v => v.id === cur.value))
@@ -41,6 +44,59 @@ async function loadFile() {
     fileState.value = 'failed'
   }
 }
+/** Список: все влоги плейлиста по порядку; готовые открываются, остальные пока заглушки «скоро». */
+interface Item { yt: string; title: string; dur: number; vlog?: Vlog; plan?: VlogPlanItem }
+const items = computed<Item[]>(() => {
+  const out: Item[] = VLOG_PLAN.map(p => {
+    const v = VLOGS.find(x => x.yt === p.yt)
+    return { yt: p.yt, title: v?.title ?? p.title, dur: v?.lines.length ? Math.round(v.lines[v.lines.length - 1]!.e) : p.dur, vlog: v, plan: p }
+  })
+  for (const v of VLOGS) if (!VLOG_PLAN.some(p => p.yt === v.yt)) out.push({ yt: v.yt, title: v.title, dur: Math.round(v.lines.at(-1)?.e ?? 0), vlog: v })
+  return out
+})
+const readyCount = computed(() => items.value.filter(i => i.vlog).length)
+
+/** Отметки «просмотрено»: на сервере (на всех устройствах), копия в браузере на случай, если сервер не ответил. Гость ничего не сохраняет. */
+const WATCHED_KEY = 'vlog_watched_v1'
+const watched = ref<string[]>([])
+const canSave = computed(() => !progress.isGuest && !!progress.bearer)
+const authHeaders = () => ({ Authorization: `Bearer ${progress.bearer}`, 'Content-Type': 'application/json' })
+async function toggleWatched(yt: string) {
+  const had = watched.value.includes(yt)
+  watched.value = had ? watched.value.filter(x => x !== yt) : [...watched.value, yt]
+  try {
+    localStorage.setItem(WATCHED_KEY, JSON.stringify(watched.value))
+  } catch {
+    /* хранилище недоступно */
+  }
+  if (!canSave.value) return
+  try {
+    const res = await fetchT('/api/vlog-watched', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ watched: watched.value }) })
+    if (!res.ok) throw new Error(String(res.status))
+  } catch {
+    toast.error('Отметка сохранена только в этом браузере: сервер не ответил')
+  }
+}
+async function loadWatched() {
+  try {
+    const local = JSON.parse(localStorage.getItem(WATCHED_KEY) ?? '[]')
+    if (Array.isArray(local)) watched.value = local.filter((x): x is string => typeof x === 'string')
+  } catch {
+    /* повреждённая запись */
+  }
+  if (!canSave.value) return
+  try {
+    const res = await fetchT('/api/vlog-watched', { headers: authHeaders() })
+    if (!res.ok) return
+    const remote = ((await res.json()) as { watched?: string[] }).watched ?? []
+    if (remote.length || !watched.value.length) watched.value = remote
+    else void fetchT('/api/vlog-watched', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ watched: watched.value }) }).catch(() => undefined)
+  } catch {
+    /* работаем с тем, что в браузере */
+  }
+}
+const dur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
 const frame = ref<HTMLIFrameElement | null>(null)
 const vid = ref<HTMLVideoElement | null>(null)
 const origin = ref('')
@@ -110,6 +166,7 @@ onMounted(() => {
   origin.value = window.location.origin
   window.addEventListener('message', onMessage)
   void loadFile()
+  void loadWatched()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
@@ -222,14 +279,15 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
     <p v-if="!VLOGS.length" class="vl-empty">Влогов пока нет. Они появляются по одному: видео, текст по фразам и перевод.</p>
 
     <template v-else-if="!vlog">
-      <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию.</p>
+      <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. Готово {{ readyCount }} из {{ items.length }}, остальные появятся по очереди.</p>
       <ul class="vl-list">
-        <li v-for="v in VLOGS" :key="v.id">
-          <button type="button" class="vl-card" @click="cur = v.id">
-            <img :src="`https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" />
-            <b>{{ v.title }}</b>
-            <span>{{ v.note }} · {{ v.lines.length }} фраз</span>
+        <li v-for="it in items" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }">
+          <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
+            <img :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" />
+            <b>{{ it.title }}</b>
+            <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} · {{ dur(it.dur) }}</span>
           </button>
+          <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
         </li>
       </ul>
     </template>
@@ -322,6 +380,15 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 <style scoped>
 .vl-empty, .vl-intro, .vl-by, .vl-stat { margin: 10px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .vl-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.vl-item { display: grid; gap: 6px; }
+.vl-item.soon .vl-card { opacity: .6; cursor: default; }
+.vl-item.seen .vl-card { border-color: var(--ok); }
+.vl-watch { display: flex; align-items: center; gap: 8px; padding: 0 6px; color: var(--muted); font-size: 13.5px; cursor: pointer; }
+.vl-watch input { appearance: none; -webkit-appearance: none; flex: none; width: 20px; height: 20px; margin: 0; border: 2px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; display: grid; place-content: center; }
+.vl-watch input::after { content: ''; width: 10px; height: 6px; border: solid #fff; border-width: 0 0 2.5px 2.5px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+.vl-watch input:checked { background: var(--ok); border-color: var(--ok); }
+.vl-watch input:checked::after { opacity: 1; }
+.vl-watch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .vl-card { width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .vl-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
 .vl-card span { color: var(--muted); font-size: 13px; }
@@ -332,7 +399,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-now-h { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; }
 .vl-now-k { margin: 6px 0 0; font-size: 20px; line-height: 1.6; }
 .vl-now-r { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
-.vl-gr { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.vl-gr { order: 1; display: flex; flex-wrap: wrap; gap: 6px; }
 .vl-gr-chip { display: inline-flex; align-items: baseline; gap: 6px; border: 1px dashed var(--accent); border-radius: 999px; background: transparent; color: var(--ink); padding: 3px 12px; font: inherit; font-size: 13px; cursor: pointer; }
 .vl-gr-chip small { color: var(--muted); font-size: 12px; }
 .vl-gr-chip.on { background: rgba(150, 190, 255, .22); border-style: solid; }
@@ -358,10 +425,10 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-line { scroll-margin-top: var(--vl-off, 220px); display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); transition: background .2s, border-color .2s; }
 .vl-line.now { border-color: var(--accent); background: rgba(150, 190, 255, .14); }
 .vl-at { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 13px; text-align: left; cursor: pointer; padding: 4px 0; font-variant-numeric: tabular-nums; }
-.vl-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
-.vl-ko { font-size: 18px; line-height: 2; overflow-wrap: anywhere; }
-.vl-ru-btn { padding: 3px 12px; font-size: 12.5px; }
-.vl-ru { margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--gold-soft); font-size: 15px; line-height: 1.5; }
+.vl-body { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.vl-ko { order: 0; max-width: 100%; font-size: 18px; line-height: 2; overflow-wrap: anywhere; }
+.vl-ru-btn { order: 2; padding: 3px 12px; font-size: 12.5px; }
+.vl-ru { order: 3; flex: 1 0 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--gold-soft); font-size: 15px; line-height: 1.5; }
 .cw { display: inline; border: 0; border-bottom: 2px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); padding: 1px 3px; font: inherit; cursor: pointer; }
 .cw.learned { background: var(--ok-bg); border-bottom-color: var(--ok); }
 .cw.learning, .cw.new { background: var(--gold-soft); border-bottom-color: var(--gold); }

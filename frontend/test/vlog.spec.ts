@@ -3,16 +3,55 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogView from '@/views/korean/VlogView.vue'
 import { VLOGS } from '@/data/korean/vlogs'
+import { VLOG_PLAN } from '@/data/korean/vlog-plan'
+
+/** вход подменён: настоящий без сервера невозможен */
+const who = vi.hoisted(() => ({ owner: true }))
+vi.mock('@/stores/progress', async original => {
+  const real = await original<typeof import('@/stores/progress')>()
+  const over: Record<string, () => unknown> = { isGuest: () => !who.owner, bearer: () => 'токен сеанс' }
+  return {
+    ...real,
+    useProgressStore: (...a: Parameters<typeof real.useProgressStore>) =>
+      new Proxy(real.useProgressStore(...a), { get: (t, k, r) => (typeof k === 'string' && over[k] ? over[k]() : Reflect.get(t, k, r)) }),
+  }
+})
 
 // «Влог»: список видео, открытие по адресу ?v=, перевод по нажатию, свой файл видео или плеер ютуба во встроенном окне.
 afterEach(() => vi.unstubAllGlobals())
 
 describe('«Влог»', () => {
-  it('без ?v= показывает список влогов', async () => {
+  it('без ?v= показывает список: все влоги плейлиста, готовые открываются, остальные заглушки', async () => {
     localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
     const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
-    expect(w.findAll('.vl-card').length).toBe(VLOGS.length)
+    await flushPromises()
+    const cards = w.findAll('.vl-card')
+    expect(cards.length).toBe(VLOG_PLAN.length)
+    expect(cards.filter(c => !(c.element as HTMLButtonElement).disabled).length).toBe(VLOGS.length)
+    expect(w.findAll('.vl-item.soon').length).toBe(VLOG_PLAN.length - VLOGS.length)
     expect(w.find('iframe').exists()).toBe(false)
+  })
+
+  it('галочка «просмотрено» сохраняется на сервере; гостю галочек нет', async () => {
+    localStorage.clear()
+    const put = vi.fn(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => (init?.method === 'PUT' ? put(url, init) : new Response(JSON.stringify({ watched: [] }), { status: 200 }))))
+    who.owner = true
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    await flushPromises()
+    const boxes = w.findAll('.vl-watch input')
+    expect(boxes.length).toBe(VLOG_PLAN.length)
+    await boxes[1]!.setValue(true)
+    await flushPromises()
+    expect(put).toHaveBeenCalledOnce()
+    expect(JSON.parse((put.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({ watched: [VLOG_PLAN[1]!.yt] })
+    expect(w.findAll('.vl-item')[1]!.classes()).toContain('seen')
+    who.owner = false
+    const g = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    await flushPromises()
+    expect(g.find('.vl-watch').exists()).toBe(false)
+    who.owner = true
   })
 
   it('с ?v= и без файла на сервере показывает плеер ютуба, фразы и открывает перевод по нажатию', async () => {
