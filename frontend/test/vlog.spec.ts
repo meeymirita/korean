@@ -130,6 +130,24 @@ describe('«Влог»', () => {
     expect(nos.at(-1)).toBe(`№${VLOG_PLAN.length}`)
   })
 
+  it('«записать» кладёт фразу в заметки с тегом «влог» и второй раз не пишет', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ v: 1, updated: 0, notes: [] }), { status: 200 })))
+    const v = VLOGS[0]!
+    const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
+    await flushPromises()
+    const btn = () => w.findAll('.vl-ru-btn').find(b => b.text() === 'записать')
+    await btn()!.trigger('click')
+    await flushPromises()
+    const { useNotesStore } = await import('@/stores/notes')
+    const note = useNotesStore().notes.find(n => n.tags.includes('влог'))
+    expect(note?.title).toBe(v.lines[0]!.ko.slice(0, 100))
+    expect(note?.text).toContain(v.lines[0]!.ru)
+    expect(note?.text).toContain(v.title)
+    expect(w.findAll('.vl-ru-btn').some(b => b.text() === 'записано')).toBe(true)
+    expect(useNotesStore().notes.filter(n => n.tags.includes('влог'))).toHaveLength(1)
+  })
+
   it('ширина видео меняется разделителем между половинами, ползунка размера нет', async () => {
     localStorage.clear()
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))

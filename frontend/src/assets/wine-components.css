@@ -399,6 +399,7 @@ html[data-theme='dark'][data-palette='wine'] .vl-pop-tag.ok:where(:not(.pk *)) {
 html[data-theme='dark'][data-palette='wine'] .vl-pop-tag small:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vl-pop-ex:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vl-watch input:where(:not(.pk *))::after { border: solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .vl-no:where(:not(.pk *)) { background: rgba(42, 10, 24, 0.62); }
 html[data-theme='dark'][data-palette='wine'] .vl-gr-chip.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vl-video:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
 html[data-theme='dark'][data-palette='wine'] .vl-video iframe:where(:not(.pk *)),

@@ -16,6 +16,7 @@ import { searchDict, type DictHit } from '@/lib/dictApi'
 import { fetchT } from '@/lib/http'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { useProgressStore } from '@/stores/progress'
+import { useNotesStore } from '@/stores/notes'
 
 /**
  * «Влог»: видео и текст по фразам. Идущая фраза подсвечена, нажатие на фразу перематывает, перевод открывается нажатием,
@@ -366,6 +367,22 @@ watch(cur, () => {
   picked.value = null
   speed.value = 1
 })
+/** «записать»: фраза с переводом, грамматикой и местом в видео становится заметкой с тегом «влог» (Кабинет → Заметки). Перед записью заметки подтягиваются с сервера, иначе запись затёрла бы их. */
+const notes = useNotesStore()
+const NOTE_TAG = 'влог'
+const noteTitle = (ko: string) => ko.slice(0, 100)
+const savedTitles = computed(() => new Set(notes.notes.filter(n => n.tags.includes(NOTE_TAG)).map(n => n.title)))
+async function saveLine(i: number) {
+  const v = vlog.value
+  const l = v?.lines[i]
+  if (!v || !l || savedTitles.value.has(noteTitle(l.ko))) return
+  await notes.init()
+  if (notes.status === 'error') return toast.error('Не записалось: заметки не загрузились с сервера. Попробуй ещё раз позже')
+  const gr = (hints.value[i] ?? []).map(g => `${g.ko} (${g.ru})`).join('; ')
+  const text = [l.ko, l.ru, '', gr ? `Грамматика: ${gr}` : '', `Влог «${v.title}» (${v.channel}), ${clock(l.s)}`].filter((x, k) => x || k === 2).join('\n')
+  if (notes.add(l.ko, text, [], [NOTE_TAG])) toast.ok('Записано в заметки с тегом «влог»: Кабинет → Заметки')
+  else toast.error('Не записалось: в заметках нет места (лимит)')
+}
 /** «Спросить ИИ» у фразы: одна открытая панель на странице; фраза с переводом, грамматикой и соседними фразами уходит модели как контекст. */
 const askAt = ref(-1)
 const ownerAsk = computed(() => canAskAi())
@@ -517,6 +534,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
             </div>
             <button type="button" class="vl-ru-btn" :aria-expanded="shown.has(i)" @click="toggle(i)">{{ shown.has(i) ? 'скрыть перевод' : 'перевод' }}</button>
             <button v-if="ownerAsk" type="button" class="vl-ru-btn" :class="{ on: askAt === i }" :aria-expanded="askAt === i" @click="askAt = askAt === i ? -1 : i">спросить</button>
+            <button v-if="canSave" type="button" class="vl-ru-btn" :disabled="savedTitles.has(noteTitle(l.ko))" @click="saveLine(i)">{{ savedTitles.has(noteTitle(l.ko)) ? 'записано' : 'записать' }}</button>
             <div v-if="askAt === i" class="vl-ask"><AskAi :key="`${vlog.id}-${i}`" open :context="() => askContext(i)" mode="vlog" :quick="ASK_QUICK" placeholder="Спроси про эту фразу…" /></div>
           </div>
         </div>
