@@ -524,7 +524,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-now-w li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14.5px; }
 .vl-now-w li span { color: var(--muted); }
 .vl-left { display: contents; }
-.vl-stage { position: sticky; top: 0; z-index: 5; background: var(--bg, var(--surface)); padding: 10px 0 6px; }
+.vl-stage { position: sticky; top: 0; z-index: 5; padding: 10px 0 6px; }
 .vl-video { aspect-ratio: 16 / 9; width: min(100%, calc(34vh * 16 / 9)); border-radius: 16px; overflow: hidden; background: #000; margin-inline: auto; }
 .vl-video iframe, .vl-video video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .vl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
