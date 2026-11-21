@@ -28,12 +28,12 @@ export function cspPolicy(hashes: string[]): string {
     // у разметки справочников и игры много атрибутов style, стили оставлены встроенными
     "style-src 'self' 'unsafe-inline'",
     // картинки грамматики и видео отдаются перенаправлением на Яндекс.Диск (/api/pic, /api/video): без этих адресов включённая CSP их заблокирует
-    "img-src 'self' data: blob: https://*.yandex.ru https://*.yandex.net",
+    "img-src 'self' data: blob: https://*.yandex.ru https://*.yandex.net https://i.ytimg.com",
     "media-src 'self' blob: https://*.yandex.ru https://*.yandex.net",
     "font-src 'self' data:",
     "connect-src 'self' https://api.openai.com",
     "worker-src 'self' blob:",
-    "frame-src 'self' blob:",
+    "frame-src 'self' blob: https://www.youtube-nocookie.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -4,7 +4,7 @@
  * Снимает только ДЕМО-сервер (не сервер владельца!): сначала `node scripts/demo-seed.mjs`, потом собранный сайт на этот сервер.
  * Запуск: TOKEN=токен-демо-сервера node scripts/about-shots.mjs
  * Переменные: BASE (адрес сайта, по умолчанию http://localhost:5198), ONLY=имя,имя (только эти), WAIT (мс на страницу, 2500), KEEP=1 (не удалять лишние файлы).
- * Нужны Node 24 (WebSocket), Chromium из кэша Playwright и `cwebp` (brew install webp). Кнопки плеера и таймера, плашки на кадр не попадают.
+ * Нужны Node 24 (WebSocket), Chromium из кэша Playwright и `cwebp` (brew install webp). Кнопки плеера и таймера, плашки и превью чужих видео (ytimg.com) на кадр не попадают.
  */
 import { spawn, execFileSync } from 'node:child_process'
 import { mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -61,7 +61,7 @@ for (const [name, to] of list) {
   await sleep(WAIT)
   // справка игры закрывается, плавающие кнопки и плашки прячутся
   await ev(`document.querySelector('#helpOk')?.click()`)
-  await ev(`(() => { const s = document.createElement('style'); s.textContent = '.stm,.mp-root,.mp-panel,[class*="toast"]{display:none!important}'; document.head.appendChild(s) })()`)
+  await ev(`(() => { const s = document.createElement('style'); s.textContent = '.stm,.mp-root,.mp-panel,[class*="toast"]{display:none!important} img[src*="ytimg.com"]{visibility:hidden!important}'; document.head.appendChild(s) })()`)
   await sleep(600)
   const png = path.join(tmp, name + '.png')
   writeFileSync(png, Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).result.data, 'base64'))
