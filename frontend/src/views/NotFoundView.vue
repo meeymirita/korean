@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
 import PinkShell from '@/components/site/PinkShell.vue'
-import Cat from '@/components/Cat.vue'
 import { openSearch } from '@/composables/useSearchWindow'
 import SearchHost from '@/components/SearchHost.vue'
 
@@ -17,7 +16,6 @@ const LINKS = [
 <template>
   <PinkShell sub="404">
     <main class="nf">
-      <Cat name="think" />
       <h1 class="ko">404</h1>
       <p class="lead">Такой страницы нет</p>
       <p class="path">{{ route.fullPath }}</p>
