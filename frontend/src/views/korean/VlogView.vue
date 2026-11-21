@@ -50,6 +50,8 @@ const follow = ref(true)
 const shown = ref<Set<number>>(new Set())
 const picked = ref<ClipWord | null>(null)
 const hit = ref<DictHit | null | 'busy' | 'error'>(null)
+/** Почему не ответил большой словарь (текст ошибки сервера). */
+const hitErr = ref('')
 
 const SPEEDS = [0.5, 0.75, 1]
 const src = computed(() => (vlog.value && origin.value && (fileState.value === 'none' || fileState.value === 'failed') ? `https://www.youtube-nocookie.com/embed/${vlog.value.yt}?enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(origin.value)}` : ''))
@@ -170,8 +172,11 @@ async function pick(w: ClipWord) {
     }
     cache.set(w.key, found)
     if (picked.value?.key === w.key) hit.value = found
-  } catch {
-    if (picked.value?.key === w.key) hit.value = 'error'
+  } catch (e) {
+    if (picked.value?.key === w.key) {
+      hitErr.value = e instanceof Error ? e.message : ''
+      hit.value = 'error'
+    }
   }
 }
 
@@ -257,7 +262,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         </div>
         <p v-if="picked.own" class="vl-tr">{{ picked.own.t }}</p>
         <p v-else-if="hit === 'busy'" class="vl-tr">Ищу в словаре…</p>
-        <p v-else-if="hit === 'error'" class="vl-tr">Словарь недоступен, нажми на слово ещё раз.</p>
+        <p v-else-if="hit === 'error'" class="vl-tr">Большой словарь не ответил<template v-if="hitErr"> ({{ hitErr }})</template>. Слова из твоего словаря работают; для остальных нажми ещё раз позже.</p>
         <p v-else-if="hit" class="vl-tr">{{ hit.ru }}</p>
         <p v-else class="vl-tr">Слова нет ни в твоём словаре, ни в большом. Возможно, это имя или редкая форма.</p>
       </div>
