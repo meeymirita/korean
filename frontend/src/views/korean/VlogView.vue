@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import AskAi from '@/components/korean/AskAi.vue'
+import { breakdownContext, canAskAi } from '@/lib/askAi'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
 import { VLOG_TOPICS, VLOG_TOPIC, VLOG_LENGTHS } from '@/data/korean/vlog-topics'
@@ -324,9 +326,28 @@ watch(cur, () => {
   void loadFile()
   time.value = 0
   shown.value = new Set()
+  askAt.value = -1
   picked.value = null
   speed.value = 1
 })
+/** «Спросить ИИ» у фразы: одна открытая панель на странице; фраза с переводом, грамматикой и соседними фразами уходит модели как контекст. */
+const askAt = ref(-1)
+const ownerAsk = computed(() => canAskAi())
+const ASK_QUICK = ['Расскажи подробнее', 'Объясни попроще', 'Что значит каждое слово?', 'Объясни грамматику', 'Дай ещё примеры']
+function askContext(i: number): string {
+  const v = vlog.value
+  const l = v?.lines[i]
+  if (!v || !l) return ''
+  const near = (j: number) => (v.lines[j] ? `${v.lines[j]!.ko} (${v.lines[j]!.ru})` : '')
+  const gr = (hints.value[i] ?? []).map(g => `${g.ko} (${g.ru})`).join('; ')
+  return breakdownContext(l.ko, [
+    `Влог: ${v.title}, автор ${v.channel}, время ${clock(l.s)}`,
+    `Перевод в влоге: ${l.ru}`,
+    gr ? `Грамматика во фразе: ${gr}` : '',
+    near(i - 1) ? `Фраза раньше: ${near(i - 1)}` : '',
+    near(i + 1) ? `Фраза дальше: ${near(i + 1)}` : '',
+  ])
+}
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 </script>
 
@@ -454,6 +475,8 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
               <button v-for="g in hints[i]" :key="g.id" type="button" class="vl-gr-chip" :class="{ on: gramOpen === g.id }" :aria-pressed="gramOpen === g.id" @click="pickGram(g.id)">{{ g.ko }}</button>
             </div>
             <button type="button" class="vl-ru-btn" :aria-expanded="shown.has(i)" @click="toggle(i)">{{ shown.has(i) ? 'скрыть перевод' : 'перевод' }}</button>
+            <button v-if="ownerAsk" type="button" class="vl-ru-btn" :class="{ on: askAt === i }" :aria-expanded="askAt === i" @click="askAt = askAt === i ? -1 : i">спросить</button>
+            <div v-if="askAt === i" class="vl-ask"><AskAi :key="`${vlog.id}-${i}`" open :context="() => askContext(i)" mode="vlog" :quick="ASK_QUICK" placeholder="Спроси про эту фразу…" /></div>
           </div>
         </div>
       </div>
@@ -540,6 +563,8 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-body { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
 .vl-ko { order: 0; max-width: 100%; font-size: 18px; line-height: 2; overflow-wrap: anywhere; }
 .vl-ru-btn { order: 2; padding: 3px 12px; font-size: 12.5px; }
+.vl-ru-btn.on { border-color: var(--ink); color: var(--ink); }
+.vl-ask { order: 4; flex: 1 1 100%; min-width: 0; }
 .vl-ru { order: 3; flex: 1 0 100%; box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--gold-soft); font-size: 15px; line-height: 1.5; }
 .cw { display: inline; border: 0; border-bottom: 2px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); padding: 1px 3px; font: inherit; cursor: pointer; }
 .cw.learned { background: var(--ok-bg); border-bottom-color: var(--ok); }

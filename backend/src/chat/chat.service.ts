@@ -5,6 +5,7 @@ import { CHAT_DAILY_LIMIT, CHAT_EXPLAIN_LIMIT, CHAT_MAX_CONTEXT, CHAT_MAX_HISTOR
 import { Db } from '../db/db.service.js'
 import { explainNote } from './explain.js'
 import { SYSTEM_PROMPT } from './prompt.js'
+import { VLOG_PROMPT } from './vlog-prompt.js'
 
 export interface ChatMsg {
   role: 'user' | 'assistant'
@@ -46,6 +47,13 @@ export function cleanContext(v: unknown): string {
   return v.trim().slice(0, CHAT_MAX_CONTEXT)
 }
 
+/** Режим вопроса: обычный или из «Влога» (инструкция без привязки к пройденному, `vlog-prompt.ts`; нужен `context` с фразой). */
+export function cleanMode(v: unknown, context: string): '' | 'vlog' {
+  if (v === undefined || v === null || v === '') return ''
+  if (v === 'vlog' && context) return 'vlog'
+  throw bad('invalid mode')
+}
+
 type Kind = 'chat' | 'explain'
 
 @Injectable()
@@ -82,6 +90,7 @@ export class ChatService {
     const messages = cleanMessages(body?.messages)
     const conv = cleanConv(body?.conv)
     const context = cleanContext(body?.context)
+    const mode = cleanMode(body?.mode, context)
     const kind: Kind = context ? 'explain' : 'chat'
     if (!CHAT_KEY) throw new ServiceUnavailableException({ error: 'chat not configured' })
     // чат проверяем до обращения к модели: вопрос не тратится, если чата нет или он переполнен
@@ -89,7 +98,7 @@ export class ChatService {
     const left = this.take(kind)
     // бесплатный маршрутизатор иногда отдаёт пустой ответ: пробуем ещё раз (вопрос в счётчике один раз)
     let reply = ''
-    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages, context, kind)
+    for (let attempt = 0; attempt < 2 && !reply; attempt++) reply = await this.once(messages, context, kind, mode)
     if (!reply) {
       this.usedBy[kind]--
       throw new BadGatewayException({ error: 'empty answer' })
@@ -152,7 +161,7 @@ export class ChatService {
   }
 
   /** Один запрос к модели; пустая строка, если модель ничего не написала. */
-  private async once(messages: ChatMsg[], context: string, kind: Kind): Promise<string> {
+  private async once(messages: ChatMsg[], context: string, kind: Kind, mode: '' | 'vlog' = ''): Promise<string> {
     let res: Response
     try {
       res = await fetch(`${CHAT_BASE}/chat/completions`, {
@@ -160,7 +169,7 @@ export class ChatService {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CHAT_KEY}`, 'HTTP-Referer': 'https://korean.meeymirita.ru', 'X-Title': 'Urimal' },
         body: JSON.stringify({
           model: CHAT_MODEL,
-          messages: [{ role: 'system', content: context ? `${SYSTEM_PROMPT}\n\n${explainNote(context)}` : SYSTEM_PROMPT }, ...messages.map(m => ({ role: m.role, content: m.text }))],
+          messages: [{ role: 'system', content: context ? `${mode === 'vlog' ? VLOG_PROMPT : SYSTEM_PROMPT}\n\n${explainNote(context, mode)}` : SYSTEM_PROMPT }, ...messages.map(m => ({ role: m.role, content: m.text }))],
           temperature: 0.4,
           max_tokens: 1200,
         }),

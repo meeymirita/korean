@@ -56,10 +56,14 @@ export interface AskOpts {
   /** быстрые вопросы кнопками (по умолчанию про разбор предложения) */
   quick?: string[]
   placeholder?: string
+  /** 'vlog': вопросы из «Влога», инструкция без привязки к пройденному (сервер, `vlog-prompt.ts`) */
+  mode?: 'vlog'
+  /** подпись кнопки (по умолчанию «Спросить ИИ») */
+  label?: string
 }
 
 export function buildAskAi(contextOf: () => string, mount: (panel: Node) => void, onToggle?: (open: boolean) => void, opts: AskOpts = {}): Node {
-  const btn = h('button', 'ask-btn', 'Спросить ИИ') as HTMLButtonElement
+  const btn = h('button', 'ask-btn', opts.label ?? 'Спросить ИИ') as HTMLButtonElement
   btn.type = 'button'
   const panel = h('div', 'ask-panel')
   panel.hidden = true
@@ -98,7 +102,7 @@ export function buildAskAi(contextOf: () => string, mount: (panel: Node) => void
     const wait = say('wait', 'Думаю…')
     msgs.push({ role: 'user', text })
     try {
-      const r = await askChat(useProgressStore().bearer, msgs, conv ?? 'new', contextOf())
+      const r = await askChat(useProgressStore().bearer, msgs, conv ?? 'new', contextOf(), opts.mode)
       conv = r.conv ?? conv
       msgs.push({ role: 'assistant', text: r.reply })
       wait.remove()
