@@ -392,6 +392,7 @@ html[data-theme='dark'][data-palette='wine'] .res:where(:not(.pk *)) { backgroun
 html[data-theme='dark'][data-palette='wine'] .rule.weak:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* views/korean/VlogView.vue */
+html[data-theme='dark'][data-palette='wine'] .vl-gr-chip.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vl-video:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
 html[data-theme='dark'][data-palette='wine'] .vl-video iframe:where(:not(.pk *)),
 html[data-theme='dark'][data-palette='wine'] .vl-video video:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }

@@ -1,4 +1,5 @@
-// Заливает видеоуроки на Яндекс.Диск в папку korean_video: node scripts/upload-videos.mjs [папка]
+// Заливает видео на Яндекс.Диск: node scripts/upload-videos.mjs [папка] [vlog]
+// Без второго слова: видеоуроки в korean_video. С «vlog»: видео влогов в korean_vlog (файлы вида SEywQdBW8W4.mp4 — номер видео на ютубе).
 // Папка по умолчанию ~/Movies/Korean-videos/upload. Токен: YADISK_TOKEN в окружении или в .env проекта (YADISK_ROOT — папка внутри приложения, по умолчанию корень).
 // Уже загруженные файлы того же размера пропускаются, можно прерывать и запускать снова. Нужна собранная серверная часть (npm run server:build).
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -21,8 +22,10 @@ if (!process.env.YADISK_TOKEN) {
 }
 const { YaDiskService, DISK_DIRS } = await import('../backend/dist/yadisk/yadisk.service.js')
 const disk = new YaDiskService()
-const dir = process.argv[2] || path.join(homedir(), 'Movies', 'Korean-videos', 'upload')
-const have = new Map((await disk.list(DISK_DIRS.video)).map(i => [i.name, i.size]))
+const vlog = process.argv[3] === 'vlog'
+const target = vlog ? DISK_DIRS.vlog : DISK_DIRS.video
+const dir = process.argv[2] || path.join(homedir(), 'Movies', 'Korean-videos', vlog ? 'vlog' : 'upload')
+const have = new Map((await disk.list(target).catch(() => [])).map(i => [i.name, i.size]))
 const files = readdirSync(dir).filter(f => /\.(mp4|webm|mov)$/i.test(f)).sort()
 let done = 0
 for (const f of files) {
@@ -33,7 +36,7 @@ for (const f of files) {
     continue
   }
   const t = Date.now()
-  await disk.upload(`${DISK_DIRS.video}/${f}`, file)
+  await disk.upload(`${target}/${f}`, file)
   done++
   console.log(`+ ${f} ${(size / 1048576).toFixed(0)} МБ, ${Math.round((Date.now() - t) / 1000)} с`)
 }

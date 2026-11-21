@@ -3,6 +3,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt } from '@/data/korean/vlogs'
+import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
+import { usePersisted } from '@/composables/usePersisted'
 import { searchDict, type DictHit } from '@/lib/dictApi'
 import { fetchT } from '@/lib/http'
 import { useQueryParam } from '@/composables/useQueryParam'
@@ -10,7 +12,7 @@ import { useProgressStore } from '@/stores/progress'
 
 /**
  * «Влог»: видео и текст по фразам. Идущая фраза подсвечена, нажатие на фразу перематывает, перевод открывается нажатием,
- * слова подсвечены как во «Вырезке». Если видео скачано (`vlog.file`), играет своё `<video>` по подписанной ссылке сервера;
+ * слова подсвечены как во «Вырезке». Если видео скачано (`vlog.own`), играет своё `<video>` по подписанной ссылке сервера;
  * иначе встроен плеер ютуба (youtube-nocookie), им управляем сообщениями (postMessage), скрипт ютуба не подключаем.
  */
 const progress = useProgressStore()
@@ -24,13 +26,13 @@ const fileUrl = ref('')
 const useFile = computed(() => fileState.value === 'ok')
 /** Подписанная ссылка на свой файл видео; нет файла или сервер не ответил: остаётся плеер ютуба. */
 async function loadFile() {
-  const name = vlog.value?.file
+  const name = vlog.value?.own ? vlog.value.yt : ''
   fileUrl.value = ''
   fileState.value = name ? 'loading' : 'none'
   if (!name) return
   try {
     const res = await fetchT(`/api/video/vlog/${name}/url`, { headers: { Authorization: `Bearer ${progress.bearer}` } })
-    if (vlog.value?.file !== name) return
+    if (vlog.value?.yt !== name) return
     if (res.ok) {
       fileUrl.value = ((await res.json()) as { url: string }).url
       fileState.value = 'ok'
@@ -52,6 +54,17 @@ const picked = ref<ClipWord | null>(null)
 const hit = ref<DictHit | null | 'busy' | 'error'>(null)
 /** Почему не ответил большой словарь (текст ошибки сервера). */
 const hitErr = ref('')
+/** Открытая тема грамматики (по нажатию на чип под фразой). */
+const gramOpen = ref('')
+const gram = computed(() => (gramOpen.value ? gramCard(gramOpen.value) : null))
+const GRAM_STATE: Record<string, string> = { ok: 'пройдено', ahead: 'ещё впереди', other: 'в курсе, но не отмечено пройденным' }
+function pickGram(id: string) {
+  picked.value = null
+  gramOpen.value = gramOpen.value === id ? '' : id
+}
+/** Размер левой колонки (видео) на широком экране, % ширины: ползунок над видео. */
+const vsize = usePersisted<number>('vlog_w', 46, v => typeof v === 'number' && v >= 30 && v <= 70)
+const hints = computed(() => (vlog.value ? vlog.value.lines.map(l => grammarHints(l.ko)) : []))
 
 const SPEEDS = [0.5, 0.75, 1]
 const src = computed(() => (vlog.value && origin.value && (fileState.value === 'none' || fileState.value === 'failed') ? `https://www.youtube-nocookie.com/embed/${vlog.value.yt}?enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(origin.value)}` : ''))
@@ -156,6 +169,7 @@ async function pick(w: ClipWord) {
     picked.value = null
     return
   }
+  gramOpen.value = ''
   picked.value = w
   hit.value = null
   if (w.own) return
@@ -225,7 +239,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
       <h2 class="vl-title">{{ vlog.title }}</h2>
       <p class="vl-by">Автор: {{ vlog.channel }}.<template v-if="!useFile"> Видео показывается плеером ютуба.</template></p>
 
-      <div class="vl-cols">
+      <div class="vl-cols" :style="{ '--vl-w': `${vsize}%` }">
        <div class="vl-left">
       <div ref="stage" class="vl-stage">
         <div class="vl-video">
@@ -240,6 +254,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
           <button type="button" class="vl-tog" :class="{ on: loop }" :aria-pressed="loop" @click="loop = !loop">повтор фразы</button>
           <button type="button" class="vl-tog" :class="{ on: follow }" :aria-pressed="follow" @click="follow = !follow">следовать за видео</button>
           <button type="button" class="vl-tog" @click="showAll(shown.size < vlog.lines.length)">{{ shown.size < vlog.lines.length ? 'весь перевод' : 'скрыть перевод' }}</button>
+          <label class="vl-size"><span>размер видео</span><input v-model.number="vsize" type="range" min="30" max="70" step="2" aria-label="Размер видео" /></label>
         </div>
         <p class="vl-stat">Из твоего словаря {{ knownShare }}% слов текста, ещё {{ words }} разных слов вне него.</p>
       </div>
@@ -247,12 +262,25 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         <div class="vl-now-h">Сейчас звучит</div>
         <p class="vl-now-k" lang="ko">{{ now.line.ko }}</p>
         <p class="vl-now-r" lang="ru">{{ now.line.ru }}</p>
+        <div v-if="hints[active]?.length" class="vl-gr">
+          <button v-for="g in hints[active]" :key="g.id" type="button" class="vl-gr-chip" :class="{ on: gramOpen === g.id }" @click="pickGram(g.id)">{{ g.ko }}<small>{{ g.ru }}</small></button>
+        </div>
         <ul class="vl-now-w">
           <li v-for="w in now.words" :key="w.key">
             <button type="button" class="cw" :class="[w.state, { on: picked?.key === w.key }]" lang="ko" @click="pick(w)">{{ w.core }}</button>
             <span>{{ w.own?.t ?? 'нажми: найду в словаре' }}</span>
           </li>
         </ul>
+      </div>
+      <div v-if="gram" class="vl-card-word vl-gram" role="status">
+        <div class="vl-head">
+          <h3 lang="ko">{{ gram.ko }}</h3>
+          <span class="vl-chip" :class="{ dict: gram.state !== 'ok' }">{{ GRAM_STATE[gram.state] }}</span>
+        </div>
+        <p class="vl-tr">{{ gram.ru }}<template v-if="gram.d">: {{ gram.d }}</template></p>
+        <p v-if="gram.state === 'ahead'" class="vl-tr vl-dim">Эту тему ты ещё не проходил(а): здесь только название, объяснения пока нет.</p>
+        <p v-if="gram.formula" class="vl-formula" lang="ko">{{ gram.formula }}</p>
+        <p v-if="gram.example" class="vl-ex"><span lang="ko">{{ gram.example.ko }}</span><br />{{ gram.example.ru }}</p>
       </div>
       <div v-if="picked" class="vl-card-word" role="status">
         <div class="vl-head">
@@ -279,6 +307,9 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
               </template>
             </div>
             <p v-if="shown.has(i)" class="vl-ru" lang="ru">{{ l.ru }}</p>
+            <div v-if="hints[i]?.length" class="vl-gr" aria-label="Грамматика во фразе">
+              <button v-for="g in hints[i]" :key="g.id" type="button" class="vl-gr-chip" :class="{ on: gramOpen === g.id }" :aria-pressed="gramOpen === g.id" @click="pickGram(g.id)">{{ g.ko }}</button>
+            </div>
             <button type="button" class="vl-ru-btn" :aria-expanded="shown.has(i)" @click="toggle(i)">{{ shown.has(i) ? 'скрыть перевод' : 'перевод' }}</button>
           </div>
         </div>
@@ -301,6 +332,15 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-now-h { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; }
 .vl-now-k { margin: 6px 0 0; font-size: 20px; line-height: 1.6; }
 .vl-now-r { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.vl-gr { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.vl-gr-chip { display: inline-flex; align-items: baseline; gap: 6px; border: 1px dashed var(--accent); border-radius: 999px; background: transparent; color: var(--ink); padding: 3px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.vl-gr-chip small { color: var(--muted); font-size: 12px; }
+.vl-gr-chip.on { background: rgba(150, 190, 255, .22); border-style: solid; }
+.vl-formula { margin: 8px 0 0; padding: 8px 12px; border-radius: 12px; background: var(--gold-soft); font-size: 15px; }
+.vl-ex { margin: 8px 0 0; font-size: 15px; line-height: 1.6; }
+.vl-dim { color: var(--muted); font-size: 14px; }
+.vl-size { display: none; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.vl-size input { width: 120px; accent-color: var(--accent); }
 .vl-now-w { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
 .vl-now-w li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14.5px; }
 .vl-now-w li span { color: var(--muted); }
@@ -335,12 +375,13 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-tr { margin: 8px 0 0; font-size: 16px; line-height: 1.5; }
 /* Широкий экран: слева видео и карточка слова не уезжают, справа список фраз */
 @media (min-width: 1100px) {
-  .vl-cols { display: grid; grid-template-columns: minmax(340px, 46%) 1fr; gap: 18px; align-items: start; }
+  .vl-cols { display: grid; grid-template-columns: minmax(340px, var(--vl-w, 46%)) 1fr; gap: 18px; align-items: start; }
   .vl-left { display: block; position: sticky; top: 8px; }
   .vl-stage { position: static; padding-top: 0; }
   .vl-video { width: 100%; }
   .vl-card-word { position: static; }
   .vl-now { display: block; }
+  .vl-size { display: inline-flex; }
 }
 @media (max-width: 520px) { .vl-line { grid-template-columns: 1fr; gap: 0; } .vl-ko { font-size: 17px; } }
 </style>

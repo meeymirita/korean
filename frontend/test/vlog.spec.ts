@@ -26,9 +26,27 @@ describe('«Влог»', () => {
     expect(w.find('.vl-ru').text()).toBe(v.lines[0]!.ru)
     // перевод стоит под текстом, а кнопка после него
     const body = w.find('.vl-body').element
-    expect([...body.children].map(c => c.className)).toEqual(['vl-ko', 'vl-ru', 'vl-ru-btn'])
+    const order = [...body.children].map(c => c.className)
+    expect(order[0]).toBe('vl-ko')
+    expect(order[1]).toBe('vl-ru')
+    expect(order.at(-1)).toBe('vl-ru-btn')
     expect(w.find('iframe').attributes('src')).toContain(`youtube-nocookie.com/embed/${v.yt}`)
     expect(w.find('video').exists()).toBe(false)
+  })
+
+  it('чип грамматики под фразой открывает карточку темы; нажатие ещё раз закрывает', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })))
+    const v = VLOGS[0]!
+    const i = v.lines.findIndex(l => l.ko.includes('갈 거예요'))
+    const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
+    await flushPromises()
+    const chip = w.findAll('.vl-line')[i]!.findAll('.vl-gr-chip').find(c => c.text().includes('거예요'))!
+    expect(chip).toBeTruthy()
+    await chip.trigger('click')
+    expect(w.find('.vl-gram').text()).toContain('пройдено')
+    expect(w.find('.vl-gram .vl-formula').text()).toContain('основа глагола')
+    await chip.trigger('click')
+    expect(w.find('.vl-gram').exists()).toBe(false)
   })
 
   it('если файл видео есть на сервере, играет свой <video>, а не ютуб', async () => {

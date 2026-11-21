@@ -8,7 +8,7 @@ const dir = mkdtempSync(path.join(tmpdir(), 'vlog-'))
 process.env.DATA_DIR = dir
 process.env.PROGRESS_TOKEN = 'test-token'
 mkdirSync(path.join(dir, 'vlog'))
-writeFileSync(path.join(dir, 'vlog', 'demo.mp4'), 'x')
+writeFileSync(path.join(dir, 'vlog', 'SEywQdBW8W4.mp4'), 'x')
 
 const { VideoController, VLOG_NAME } = await import('../src/video/video.controller.js')
 
@@ -20,33 +20,33 @@ const res = () => {
 }
 
 describe('видео влогов', () => {
-  it('имя: латиница, цифры, дефис, без точек и слэшей', () => {
-    expect(VLOG_NAME.test('bukchon')).toBe(true)
-    expect(VLOG_NAME.test('a-1')).toBe(true)
-    for (const bad of ['', '../x', 'a/b', 'A', '-a', 'a.mp4', 'a'.repeat(41)]) expect(VLOG_NAME.test(bad), bad).toBe(false)
+  it('имя: номер видео ютуба, 11 знаков, без точек и слэшей', () => {
+    expect(VLOG_NAME.test('SEywQdBW8W4')).toBe(true)
+    expect(VLOG_NAME.test('a-1_B2c3D4e')).toBe(true)
+    for (const bad of ['', '../x', 'a/b', 'short', 'SEywQdBW8W4.mp4', 'a'.repeat(12), '..........']) expect(VLOG_NAME.test(bad), bad).toBe(false)
   })
 
   it('ссылка подписана, файл отдаётся только по подписи', async () => {
     const c = new VideoController(disk)
-    const { url } = await c.vlogUrl('demo')
+    const { url } = await c.vlogUrl('SEywQdBW8W4')
     const q = new URL(url, 'http://x').searchParams
     const ok = res()
-    await c.vlogFile('demo', q.get('e')!, q.get('s')!, ok as never)
+    await c.vlogFile('SEywQdBW8W4', q.get('e')!, q.get('s')!, ok as never)
     expect(ok.sendFile).toHaveBeenCalledOnce()
 
     const bad = res()
-    await c.vlogFile('demo', q.get('e')!, 'f'.repeat(32), bad as never)
+    await c.vlogFile('SEywQdBW8W4', q.get('e')!, 'f'.repeat(32), bad as never)
     expect(bad.status).toHaveBeenCalledWith(403)
     expect(bad.sendFile).not.toHaveBeenCalled()
 
     // подпись от одного имени не годится для другого
     const other = res()
-    await c.vlogFile('other', q.get('e')!, q.get('s')!, other as never)
+    await c.vlogFile('AAAAAAAAAAA', q.get('e')!, q.get('s')!, other as never)
     expect(other.status).toHaveBeenCalledWith(403)
   })
 
   it('нет файла: ссылка не выдаётся (404)', async () => {
-    await expect(new VideoController(disk).vlogUrl('nope')).rejects.toThrow()
+    await expect(new VideoController(disk).vlogUrl('NOPE0000000')).rejects.toThrow()
     await expect(new VideoController(disk).vlogUrl('../x')).rejects.toThrow()
   })
 })

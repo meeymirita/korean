@@ -9,8 +9,8 @@ import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
 
 /** Имена видеоуроков: lesson-01 … lesson-30, lesson-16-1, part2-01 … (как на сайте, `videoOf`). */
 const NAME = /^(lesson-\d{2}(-\d)?|part2-\d{2})\.mp4$/
-/** Имя видео влога (`data/korean/vlogs.ts`, поле `file`): латиница, цифры и «-». */
-export const VLOG_NAME = /^[a-z0-9][a-z0-9-]{0,39}$/
+/** Имя файла видео влога = номер видео на ютубе (`yt` в `data/korean/vlogs.ts`): 11 знаков из латиницы, цифр, «-» и «_». */
+export const VLOG_NAME = /^[A-Za-z0-9_-]{11}$/
 
 /**
  * GET /api/video/lesson-01.mp4: видео лежат на Яндекс.Диске (папка korean_video в корне), отсюда браузер уходит на временную ссылку Диска
@@ -18,7 +18,7 @@ export const VLOG_NAME = /^[a-z0-9][a-z0-9-]{0,39}$/
  * Включается правкой Caddy (docs/hosting.md): /video/* → /api/video/*.
  *
  * Видео влогов (чужие ролики, скачанные владельцем) наружу не открыты: `GET /api/video/vlog/<имя>/url` (с токеном) отдаёт подписанную ссылку
- * на 6 часов, `GET /api/video/vlog/<имя>/file?e&s` проверяет подпись и уводит на Диск (`vlog-<имя>.mp4`) или отдаёт файл из `data/vlog/` (перемотка работает).
+ * на 6 часов, `GET /api/video/vlog/<имя>/file?e&s` проверяет подпись и уводит на Диск (`korean_vlog/<имя>.mp4`) или отдаёт файл из `data/vlog/` (перемотка работает).
  */
 @Controller('video')
 export class VideoController {
@@ -53,7 +53,7 @@ export class VideoController {
     res.setHeader('X-Content-Type-Options', 'nosniff')
     if (this.disk.configured()) {
       try {
-        return void res.redirect(302, await this.disk.cachedLink(`${DISK_DIRS.video}/vlog-${name}.mp4`))
+        return void res.redirect(302, await this.disk.cachedLink(`${DISK_DIRS.vlog}/${name}.mp4`))
       } catch {
         throw new NotFoundException({ error: 'not found' })
       }
@@ -65,7 +65,7 @@ export class VideoController {
   }
 
   private async vlogExists(name: string): Promise<boolean> {
-    if (this.disk.configured()) return this.disk.exists(`${DISK_DIRS.video}/vlog-${name}.mp4`).catch(() => false)
+    if (this.disk.configured()) return this.disk.exists(`${DISK_DIRS.vlog}/${name}.mp4`).catch(() => false)
     return existsSync(path.join(VLOG_DIR, `${name}.mp4`))
   }
 }
