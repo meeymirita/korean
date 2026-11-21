@@ -259,20 +259,38 @@ function startListening() {
   hello = setInterval(() => (heard ? clearInterval(hello) : listen()), 500)
 }
 let heard = false
+/**
+ * Пока ученик сам листает страницу (колесо, палец, клавиши), «следовать за видео» молчит 10 секунд: иначе при каждой смене фразы страница
+ * уезжала обратно к звучащей, и листать вверх было нельзя. Нажатие на фразу снимает паузу.
+ */
+const PAUSE_MS = 10_000
+let pausedUntil = 0
+const userScrolled = () => void (pausedUntil = Date.now() + PAUSE_MS)
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
+const onScrollKey = (e: KeyboardEvent) => {
+  if (SCROLL_KEYS.has(e.key) && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) userScrolled()
+}
 onMounted(() => {
   origin.value = window.location.origin
   window.addEventListener('message', onMessage)
+  window.addEventListener('wheel', userScrolled, { passive: true })
+  window.addEventListener('touchmove', userScrolled, { passive: true })
+  window.addEventListener('keydown', onScrollKey)
   void loadFile()
   void loadWatched()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
+  window.removeEventListener('wheel', userScrolled)
+  window.removeEventListener('touchmove', userScrolled)
+  window.removeEventListener('keydown', onScrollKey)
   clearInterval(hello)
 })
 
 function play(i: number) {
   const l = vlog.value?.lines[i]
   if (!l) return
+  pausedUntil = 0
   if (useFile.value && vid.value) {
     vid.value.currentTime = l.s
     void vid.value.play().catch(() => undefined)
@@ -351,13 +369,19 @@ async function pick(w: ClipWord) {
 const list = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 watch(active, async i => {
-  if (!follow.value || i < 0) return
+  if (!follow.value || i < 0 || Date.now() < pausedUntil) return
   await nextTick()
   const el = list.value
   if (!el) return
   const wide = window.matchMedia('(min-width: 1100px)').matches
-  el.style.setProperty('--vl-off', wide ? '90px' : `${(stage.value?.offsetHeight ?? 200) + 12}px`)
-  el.querySelector<HTMLElement>(`[data-i="${i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  const top = wide ? 90 : (stage.value?.offsetHeight ?? 200) + 12
+  el.style.setProperty('--vl-off', `${top}px`)
+  const line = el.querySelector<HTMLElement>(`[data-i="${i}"]`)
+  if (!line) return
+  // фраза уже на виду: страницу не двигаем
+  const r = line.getBoundingClientRect()
+  if (r.top >= top && r.bottom <= window.innerHeight - 40) return
+  line.scrollIntoView({ block: 'start', behavior: 'smooth' })
 })
 watch(cur, () => {
   void loadFile()
@@ -611,6 +635,8 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-now-w li span { color: var(--muted); }
 .vl-left { display: contents; }
 .vl-stage { position: sticky; top: 0; z-index: 5; padding: 10px 0 6px; }
+/* меню свёрнуто: кнопка «☰ Меню» стоит поверх страницы слева сверху, видео уезжает ниже неё */
+@media (min-width: 861px) { :global(.study-shell.focus) .vl-stage { top: 56px; } }
 .vl-video { aspect-ratio: 16 / 9; width: min(100%, calc(34vh * 16 / 9)); border-radius: 16px; overflow: hidden; background: #000; margin-inline: auto; }
 .vl-video iframe, .vl-video video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .vl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
@@ -652,6 +678,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
   .vl-lines { padding-left: 14px; }
   .vl-left { display: block; position: sticky; top: 8px; }
   .vl-stage { position: static; padding-top: 0; }
+  :global(.study-shell.focus) .vl-left, :global(.study-shell.focus) .vl-split { top: 62px; }
   .vl-video { width: 100%; }
   .vl-card-word { position: static; }
   .vl-now { display: block; }
