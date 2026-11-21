@@ -4,20 +4,43 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt } from '@/data/korean/vlogs'
 import { searchDict, type DictHit } from '@/lib/dictApi'
+import { fetchT } from '@/lib/http'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { useProgressStore } from '@/stores/progress'
 
 /**
- * «Влог»: видео с ютуба в окне плеера и текст по фразам. Идущая фраза подсвечена, нажатие на фразу перематывает,
- * перевод открывается нажатием, слова подсвечены как во «Вырезке». Файла видео у нас нет: плеер ютуба встроен по адресу
- * youtube-nocookie, им управляем сообщениями (postMessage), скрипт ютуба не подключаем.
+ * «Влог»: видео и текст по фразам. Идущая фраза подсвечена, нажатие на фразу перематывает, перевод открывается нажатием,
+ * слова подсвечены как во «Вырезке». Если видео скачано (`vlog.file`), играет своё `<video>` по подписанной ссылке сервера;
+ * иначе встроен плеер ютуба (youtube-nocookie), им управляем сообщениями (postMessage), скрипт ютуба не подключаем.
  */
 const progress = useProgressStore()
 const ids = VLOGS.map(v => v.id)
 const cur = useQueryParam('v', '', ids)
 const vlog = computed(() => VLOGS.find(v => v.id === cur.value))
 
+/** Свой файл видео: 'none' (нет в данных), 'loading', 'ok' (есть ссылка), 'failed' (нет на сервере: играет ютуб). */
+const fileState = ref<'none' | 'loading' | 'ok' | 'failed'>('none')
+const fileUrl = ref('')
+const useFile = computed(() => fileState.value === 'ok')
+/** Подписанная ссылка на свой файл видео; нет файла или сервер не ответил: остаётся плеер ютуба. */
+async function loadFile() {
+  const name = vlog.value?.file
+  fileUrl.value = ''
+  fileState.value = name ? 'loading' : 'none'
+  if (!name) return
+  try {
+    const res = await fetchT(`/api/video/vlog/${name}/url`, { headers: { Authorization: `Bearer ${progress.bearer}` } })
+    if (vlog.value?.file !== name) return
+    if (res.ok) {
+      fileUrl.value = ((await res.json()) as { url: string }).url
+      fileState.value = 'ok'
+    } else fileState.value = 'failed'
+  } catch {
+    fileState.value = 'failed'
+  }
+}
 const frame = ref<HTMLIFrameElement | null>(null)
+const vid = ref<HTMLVideoElement | null>(null)
 const origin = ref('')
 const time = ref(0)
 const active = computed(() => (vlog.value ? lineAt(vlog.value.lines, time.value) : -1))
@@ -29,7 +52,14 @@ const picked = ref<ClipWord | null>(null)
 const hit = ref<DictHit | null | 'busy' | 'error'>(null)
 
 const SPEEDS = [0.5, 0.75, 1]
-const src = computed(() => (vlog.value && origin.value ? `https://www.youtube-nocookie.com/embed/${vlog.value.yt}?enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(origin.value)}` : ''))
+const src = computed(() => (vlog.value && origin.value && (fileState.value === 'none' || fileState.value === 'failed') ? `https://www.youtube-nocookie.com/embed/${vlog.value.yt}?enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(origin.value)}` : ''))
+function onTime() {
+  const v = vid.value
+  if (!v) return
+  time.value = v.currentTime
+  const l = vlog.value?.lines[active.value]
+  if (loop.value && l && v.currentTime >= l.e) v.currentTime = l.s
+}
 
 function send(func: string, args: unknown[] = []) {
   frame.value?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), 'https://www.youtube-nocookie.com')
@@ -64,6 +94,7 @@ let heard = false
 onMounted(() => {
   origin.value = window.location.origin
   window.addEventListener('message', onMessage)
+  void loadFile()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
@@ -73,12 +104,18 @@ onBeforeUnmount(() => {
 function play(i: number) {
   const l = vlog.value?.lines[i]
   if (!l) return
+  if (useFile.value && vid.value) {
+    vid.value.currentTime = l.s
+    void vid.value.play().catch(() => undefined)
+    return
+  }
   send('seekTo', [l.s, true])
   send('playVideo')
 }
 function setSpeed(v: number) {
   speed.value = v
-  send('setPlaybackRate', [v])
+  if (vid.value) vid.value.playbackRate = v
+  else send('setPlaybackRate', [v])
 }
 function toggle(i: number) {
   const s = new Set(shown.value)
@@ -103,6 +140,12 @@ const knownShare = computed(() => {
     n += r.total
   }
   return n ? Math.round((k / n) * 100) : 0
+})
+
+/** Идущая фраза и её слова: заполняет свободное место слева на широком экране. */
+const now = computed(() => {
+  const l = vlog.value?.lines[active.value]
+  return l ? { line: l, words: parsed.value[active.value]!.words } : null
 })
 
 const cache = new Map<string, DictHit | null>()
@@ -139,10 +182,12 @@ watch(active, async i => {
   await nextTick()
   const el = list.value
   if (!el) return
-  el.style.setProperty('--vl-off', `${(stage.value?.offsetHeight ?? 200) + 12}px`)
+  const wide = window.matchMedia('(min-width: 1100px)').matches
+  el.style.setProperty('--vl-off', wide ? '90px' : `${(stage.value?.offsetHeight ?? 200) + 12}px`)
   el.querySelector<HTMLElement>(`[data-i="${i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
 })
 watch(cur, () => {
+  void loadFile()
   time.value = 0
   shown.value = new Set()
   picked.value = null
@@ -173,10 +218,13 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
     <template v-else>
       <button type="button" class="vl-back" @click="cur = ''">← Все влоги</button>
       <h2 class="vl-title">{{ vlog.title }}</h2>
-      <p class="vl-by">Автор: {{ vlog.channel }}. Видео показывается плеером ютуба, у нас его файла нет.</p>
+      <p class="vl-by">Автор: {{ vlog.channel }}.<template v-if="!useFile"> Видео показывается плеером ютуба.</template></p>
 
+      <div class="vl-cols">
+       <div class="vl-left">
       <div ref="stage" class="vl-stage">
         <div class="vl-video">
+          <video v-if="useFile" ref="vid" :src="fileUrl" controls playsinline preload="metadata" @timeupdate="onTime" @error="fileState = 'failed'" />
           <iframe v-if="src" ref="frame" :src="src" title="Видео" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" @load="startListening" />
         </div>
         <div class="vl-bar">
@@ -190,23 +238,17 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         </div>
         <p class="vl-stat">Из твоего словаря {{ knownShare }}% слов текста, ещё {{ words }} разных слов вне него.</p>
       </div>
-
-      <div ref="list" class="vl-lines" lang="ko">
-        <div v-for="(l, i) in vlog.lines" :key="i" :data-i="i" class="vl-line" :class="{ now: i === active }">
-          <button type="button" class="vl-at" :aria-label="`Включить с ${clock(l.s)}`" @click="play(i)">{{ clock(l.s) }}</button>
-          <div class="vl-body">
-            <div class="vl-ko">
-              <template v-for="(p, j) in parsed[i]!.parts" :key="j">
-                <button v-if="p.word" type="button" class="cw" :class="[p.word.state, { on: picked?.key === p.word.key }]" :aria-pressed="picked?.key === p.word.key" @click="pick(p.word)">{{ p.text }}</button>
-                <template v-else>{{ p.text }}</template>
-              </template>
-            </div>
-            <button type="button" class="vl-ru-btn" :aria-expanded="shown.has(i)" @click="toggle(i)">{{ shown.has(i) ? 'скрыть перевод' : 'перевод' }}</button>
-            <p v-if="shown.has(i)" class="vl-ru" lang="ru">{{ l.ru }}</p>
-          </div>
-        </div>
+      <div v-if="now" class="vl-now" aria-live="off">
+        <div class="vl-now-h">Сейчас звучит</div>
+        <p class="vl-now-k" lang="ko">{{ now.line.ko }}</p>
+        <p class="vl-now-r" lang="ru">{{ now.line.ru }}</p>
+        <ul class="vl-now-w">
+          <li v-for="w in now.words" :key="w.key">
+            <button type="button" class="cw" :class="[w.state, { on: picked?.key === w.key }]" lang="ko" @click="pick(w)">{{ w.core }}</button>
+            <span>{{ w.own?.t ?? 'нажми: найду в словаре' }}</span>
+          </li>
+        </ul>
       </div>
-
       <div v-if="picked" class="vl-card-word" role="status">
         <div class="vl-head">
           <h3 lang="ko">{{ picked.own?.k ?? (hit && typeof hit === 'object' ? hit.word : picked.core) }}</h3>
@@ -218,6 +260,24 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         <p v-else-if="hit === 'error'" class="vl-tr">Словарь недоступен, нажми на слово ещё раз.</p>
         <p v-else-if="hit" class="vl-tr">{{ hit.ru }}</p>
         <p v-else class="vl-tr">Слова нет ни в твоём словаре, ни в большом. Возможно, это имя или редкая форма.</p>
+      </div>
+       </div>
+
+      <div ref="list" class="vl-lines" lang="ko">
+        <div v-for="(l, i) in vlog.lines" :key="i" :data-i="i" class="vl-line" :class="{ now: i === active }">
+          <button type="button" class="vl-at" :aria-label="`Включить с ${clock(l.s)}`" @click="play(i)">{{ clock(l.s) }}</button>
+          <div class="vl-body">
+            <div class="vl-ko">
+              <template v-for="(p, j) in parsed[i]!.parts" :key="j">
+                <button v-if="p.word" type="button" class="cw" :class="[p.word.state, { on: picked?.key === p.word.key }]" :aria-pressed="picked?.key === p.word.key" @click="pick(p.word)">{{ p.text }}</button>
+                <template v-else>{{ p.text }}</template>
+              </template>
+            </div>
+            <p v-if="shown.has(i)" class="vl-ru" lang="ru">{{ l.ru }}</p>
+            <button type="button" class="vl-ru-btn" :aria-expanded="shown.has(i)" @click="toggle(i)">{{ shown.has(i) ? 'скрыть перевод' : 'перевод' }}</button>
+          </div>
+        </div>
+      </div>
       </div>
     </template>
   </div>
@@ -231,9 +291,18 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-card span { color: var(--muted); font-size: 13px; }
 .vl-back { margin-top: 14px; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 0; }
 .vl-title { margin: 8px 0 0; font-size: 22px; }
+.vl-cols { display: block; }
+.vl-now { display: none; margin-top: 14px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.vl-now-h { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; }
+.vl-now-k { margin: 6px 0 0; font-size: 20px; line-height: 1.6; }
+.vl-now-r { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.vl-now-w { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.vl-now-w li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14.5px; }
+.vl-now-w li span { color: var(--muted); }
+.vl-left { display: contents; }
 .vl-stage { position: sticky; top: 0; z-index: 5; background: var(--bg, var(--surface)); padding: 10px 0 6px; }
 .vl-video { aspect-ratio: 16 / 9; width: min(100%, calc(34vh * 16 / 9)); border-radius: 16px; overflow: hidden; background: #000; margin-inline: auto; }
-.vl-video iframe { width: 100%; height: 100%; border: 0; display: block; }
+.vl-video iframe, .vl-video video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
 .vl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .vl-time { min-width: 44px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .vl-grp { display: inline-flex; gap: 4px; }
@@ -244,9 +313,10 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-line { scroll-margin-top: var(--vl-off, 220px); display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); transition: background .2s, border-color .2s; }
 .vl-line.now { border-color: var(--accent); background: rgba(150, 190, 255, .14); }
 .vl-at { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 13px; text-align: left; cursor: pointer; padding: 4px 0; font-variant-numeric: tabular-nums; }
+.vl-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
 .vl-ko { font-size: 18px; line-height: 2; overflow-wrap: anywhere; }
-.vl-ru-btn { margin-top: 2px; padding: 3px 12px; font-size: 12.5px; }
-.vl-ru { margin: 6px 0 0; font-size: 15px; line-height: 1.5; }
+.vl-ru-btn { padding: 3px 12px; font-size: 12.5px; }
+.vl-ru { margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--gold-soft); font-size: 15px; line-height: 1.5; }
 .cw { display: inline; border: 0; border-bottom: 2px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); padding: 1px 3px; font: inherit; cursor: pointer; }
 .cw.learned { background: var(--ok-bg); border-bottom-color: var(--ok); }
 .cw.learning, .cw.new { background: var(--gold-soft); border-bottom-color: var(--gold); }
@@ -258,5 +328,14 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-chip { border-radius: 999px; padding: 2px 10px; font-size: 12.5px; background: var(--gold-soft); }
 .vl-chip.dict { background: rgba(150, 190, 255, .22); }
 .vl-tr { margin: 8px 0 0; font-size: 16px; line-height: 1.5; }
+/* Широкий экран: слева видео и карточка слова не уезжают, справа список фраз */
+@media (min-width: 1100px) {
+  .vl-cols { display: grid; grid-template-columns: minmax(340px, 46%) 1fr; gap: 18px; align-items: start; }
+  .vl-left { display: block; position: sticky; top: 8px; }
+  .vl-stage { position: static; padding-top: 0; }
+  .vl-video { width: 100%; }
+  .vl-card-word { position: static; }
+  .vl-now { display: block; }
+}
 @media (max-width: 520px) { .vl-line { grid-template-columns: 1fr; gap: 0; } .vl-ko { font-size: 17px; } }
 </style>

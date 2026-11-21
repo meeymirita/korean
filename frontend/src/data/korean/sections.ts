@@ -48,10 +48,10 @@ export const sections: Section[] = [
   { id: 'keyboard', num: '21', menu: 'Клавиатура', kicker: 'Тренажёр', title: 'Печать на корейском', sub: 'от букв до предложений: учись печатать вслепую на корейской раскладке', private: true, group: 'extra' },
   { id: 'sites', num: '22', menu: 'Сайты', kicker: 'Практика', title: 'Полезные сайты', sub: 'словари, уроки, произношение и общение с носителями', private: true, group: 'extra' },
   { id: 'clip', num: '26', menu: 'Вырезка', kicker: 'Свой текст', title: 'Вырезка из текста', sub: 'вставь корейский текст: слова из твоего словаря подсветятся, по нажатию будет перевод', private: true, group: 'extra' },
-  { id: 'vlog', num: '27', menu: 'Влог', kicker: 'Живая речь', title: 'Влог', sub: 'видео с медленной речью: текст по фразам, перевод по нажатию и подсветка слов', private: true, group: 'extra' },
   { id: 'services', num: '23', menu: 'Сервисы', kicker: 'Сервер', title: 'Сервисы', sub: 'контейнеры, журналы, поиск, Grafana и Prometheus', private: true, owner: true, group: 'extra' },
   { id: 'report', num: '25', menu: 'Отчёт', kicker: 'Кабинет', title: 'Отчёт', sub: 'все ответы по режимам: графики, PDF и каждое занятие целиком', private: true, owner: true, group: 'extra' },
   { id: 'exam', num: '24', menu: 'Экзамены', kicker: 'Проверка знаний', title: 'Экзамены', sub: 'блиц дня, экзамен единицы, большой экзамен и пробник TOPIK I в одном месте', private: true, owner: true },
+  { id: 'vlog', num: '28', menu: 'Влог', kicker: 'Живая речь', title: 'Влог', sub: 'видео с медленной речью: текст по фразам, перевод по нажатию и подсветка слов', private: true },
 ]
 
 /** вкладки раздела «Справочник» */
@@ -73,4 +73,4 @@ export function lastRefTab() {
 export const sectionById = (id: string) => sections.find(s => s.id === id)!
 
 /** Значки пунктов бокового меню: имена иконок из `src/lib/icons.ts`. У каждого пункта свой значок (тест `menu-icons.spec.ts`). */
-export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', vlog: 'speech', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }
+export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', vlog: 'picture', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }

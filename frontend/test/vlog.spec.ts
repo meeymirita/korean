@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogView from '@/views/korean/VlogView.vue'
 import { VLOGS } from '@/data/korean/vlogs'
 
-// «Влог»: список видео, открытие по адресу ?v=, перевод по нажатию, плеер ютуба во встроенном окне.
+// «Влог»: список видео, открытие по адресу ?v=, перевод по нажатию, свой файл видео или плеер ютуба во встроенном окне.
+afterEach(() => vi.unstubAllGlobals())
+
 describe('«Влог»', () => {
   it('без ?v= показывает список влогов', async () => {
     localStorage.clear()
@@ -12,14 +15,28 @@ describe('«Влог»', () => {
     expect(w.find('iframe').exists()).toBe(false)
   })
 
-  it('с ?v= показывает плеер, фразы и открывает перевод по нажатию', async () => {
+  it('с ?v= и без файла на сервере показывает плеер ютуба, фразы и открывает перевод по нажатию', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })))
     const v = VLOGS[0]!
     const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
+    await flushPromises()
     expect(w.findAll('.vl-line').length).toBe(v.lines.length)
     expect(w.find('.vl-ru').exists()).toBe(false)
     await w.find('.vl-ru-btn').trigger('click')
     expect(w.find('.vl-ru').text()).toBe(v.lines[0]!.ru)
-    const src = w.find('iframe').attributes('src') ?? ''
-    expect(src).toContain(`youtube-nocookie.com/embed/${v.yt}`)
+    // перевод стоит под текстом, а кнопка после него
+    const body = w.find('.vl-body').element
+    expect([...body.children].map(c => c.className)).toEqual(['vl-ko', 'vl-ru', 'vl-ru-btn'])
+    expect(w.find('iframe').attributes('src')).toContain(`youtube-nocookie.com/embed/${v.yt}`)
+    expect(w.find('video').exists()).toBe(false)
+  })
+
+  it('если файл видео есть на сервере, играет свой <video>, а не ютуб', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ url: '/api/video/vlog/x/file?e=1&s=2' }), { status: 200 })))
+    const v = VLOGS[0]!
+    const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
+    await flushPromises()
+    expect(w.find('video').attributes('src')).toBe('/api/video/vlog/x/file?e=1&s=2')
+    expect(w.find('iframe').exists()).toBe(false)
   })
 })

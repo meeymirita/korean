@@ -393,6 +393,8 @@ html[data-theme='dark'][data-palette='wine'] .rule.weak:where(:not(.pk *)) { col
 
 /* views/korean/VlogView.vue */
 html[data-theme='dark'][data-palette='wine'] .vl-video:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
+html[data-theme='dark'][data-palette='wine'] .vl-video iframe:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vl-video video:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
 html[data-theme='dark'][data-palette='wine'] .vl-line.now:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vl-card-word:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .vl-chip.dict:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }

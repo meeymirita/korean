@@ -4,6 +4,7 @@ import type { Vlog } from './vlogs'
 export const BUKCHON: Vlog = {
   id: 'bukchon',
   yt: 'SEywQdBW8W4',
+  file: 'bukchon',
   title: 'Свидание в Букчоне',
   channel: 'Daily Korean with Jaerim',
   note: 'медленная речь, метро, кафе, выставка',

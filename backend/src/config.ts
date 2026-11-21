@@ -64,6 +64,8 @@ export const MAX_IMAGES_TOTAL = Number(process.env.IMAGES_QUOTA_MB || 1024) * 10
 /** Музыка: без Яндекс.Диска песни лежат здесь; временные файлы загрузки и скачивания по ссылке во второй папке. */
 export const MUSIC_DIR = path.join(DATA_DIR, 'music')
 export const MUSIC_TMP = path.join(DATA_DIR, 'music-tmp')
+/** Видео влогов, если Яндекс.Диск не настроен (локально): `<имя>.mp4`. На Диске они лежат в korean_video как `vlog-<имя>.mp4`. */
+export const VLOG_DIR = path.join(DATA_DIR, 'vlog')
 /** Одна песня: до 350 МБ (решение владельца 2026-11-14: сборники весят до 330 МБ; то же число в Caddy и на сайте). */
 export const MAX_TRACK_MB = 350
 export const MAX_TRACK = MAX_TRACK_MB * 1024 * 1024
