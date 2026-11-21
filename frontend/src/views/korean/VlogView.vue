@@ -47,15 +47,28 @@ function onMessage(e: MessageEvent) {
   }
   const t = d.info?.currentTime
   if (d.event !== 'infoDelivery' || typeof t !== 'number') return
+  heard = true
   time.value = t
   const l = vlog.value?.lines[active.value]
   if (loop.value && l && t >= l.e) send('seekTo', [l.s, true])
 }
+/** Плеер ютуба может быть ещё не готов в момент загрузки окна: просим слать время, пока не пришёл первый ответ. */
+let hello: ReturnType<typeof setInterval> | undefined
+function startListening() {
+  clearInterval(hello)
+  heard = false
+  listen()
+  hello = setInterval(() => (heard ? clearInterval(hello) : listen()), 500)
+}
+let heard = false
 onMounted(() => {
   origin.value = window.location.origin
   window.addEventListener('message', onMessage)
 })
-onBeforeUnmount(() => window.removeEventListener('message', onMessage))
+onBeforeUnmount(() => {
+  window.removeEventListener('message', onMessage)
+  clearInterval(hello)
+})
 
 function play(i: number) {
   const l = vlog.value?.lines[i]
@@ -120,10 +133,14 @@ async function pick(w: ClipWord) {
 }
 
 const list = ref<HTMLElement | null>(null)
+const stage = ref<HTMLElement | null>(null)
 watch(active, async i => {
   if (!follow.value || i < 0) return
   await nextTick()
-  list.value?.querySelector<HTMLElement>(`[data-i="${i}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  const el = list.value
+  if (!el) return
+  el.style.setProperty('--vl-off', `${(stage.value?.offsetHeight ?? 200) + 12}px`)
+  el.querySelector<HTMLElement>(`[data-i="${i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
 })
 watch(cur, () => {
   time.value = 0
@@ -158,9 +175,9 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
       <h2 class="vl-title">{{ vlog.title }}</h2>
       <p class="vl-by">Автор: {{ vlog.channel }}. Видео показывается плеером ютуба, у нас его файла нет.</p>
 
-      <div class="vl-stage">
+      <div ref="stage" class="vl-stage">
         <div class="vl-video">
-          <iframe v-if="src" ref="frame" :src="src" title="Видео" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" @load="listen" />
+          <iframe v-if="src" ref="frame" :src="src" title="Видео" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" @load="startListening" />
         </div>
         <div class="vl-bar">
           <span class="vl-time">{{ clock(time) }}</span>
@@ -224,7 +241,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-grp button.on, .vl-tog.on { background: var(--gold-soft); color: var(--ink); border-color: var(--gold); }
 .vl-stat { margin-top: 6px; font-size: 13px; }
 .vl-lines { margin-top: 10px; display: grid; gap: 6px; }
-.vl-line { display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); transition: background .2s, border-color .2s; }
+.vl-line { scroll-margin-top: var(--vl-off, 220px); display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); transition: background .2s, border-color .2s; }
 .vl-line.now { border-color: var(--accent); background: rgba(150, 190, 255, .14); }
 .vl-at { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 13px; text-align: left; cursor: pointer; padding: 4px 0; font-variant-numeric: tabular-nums; }
 .vl-ko { font-size: 18px; line-height: 2; overflow-wrap: anywhere; }
