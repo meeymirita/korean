@@ -31,11 +31,12 @@ const useFile = computed(() => fileState.value === 'ok')
 /** Подписанная ссылка на свой файл видео; нет файла или сервер не ответил: остаётся плеер ютуба. */
 async function loadFile() {
   const name = vlog.value?.own ? vlog.value.yt : ''
+  const folder = VLOG_AUTHORS.find(a => a.name === vlog.value?.channel)?.slug ?? ''
   fileUrl.value = ''
   fileState.value = name ? 'loading' : 'none'
-  if (!name) return
+  if (!name || !folder) return void (fileState.value = 'none')
   try {
-    const res = await fetchT(`/api/video/vlog/${name}/url`, { headers: { Authorization: `Bearer ${progress.bearer}` } })
+    const res = await fetchT(`/api/video/vlog/${folder}/${name}/url`, { headers: { Authorization: `Bearer ${progress.bearer}` } })
     if (vlog.value?.yt !== name) return
     if (res.ok) {
       fileUrl.value = ((await res.json()) as { url: string }).url

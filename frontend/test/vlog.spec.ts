@@ -4,6 +4,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogView from '@/views/korean/VlogView.vue'
 import { VLOGS } from '@/data/korean/vlogs'
 import { VLOG_PLAN } from '@/data/korean/vlog-plan'
+/** Первая вкладка — Jaerim: видео без поля author */
+const MAIN = VLOG_PLAN.filter(p => !p.author)
 
 /** вход подменён: настоящий без сервера невозможен */
 const who = vi.hoisted(() => ({ owner: true }))
@@ -28,9 +30,9 @@ describe('«Влог»', () => {
     await flushPromises()
     expect(w.find('.page-head').exists()).toBe(true)
     const cards = w.findAll('.vl-card')
-    expect(cards.length).toBe(VLOG_PLAN.length)
+    expect(cards.length).toBe(MAIN.length)
     expect(cards.filter(c => !(c.element as HTMLButtonElement).disabled).length).toBe(VLOGS.length)
-    expect(w.findAll('.vl-item.soon').length).toBe(VLOG_PLAN.length - VLOGS.length)
+    expect(w.findAll('.vl-item.soon').length).toBe(MAIN.length - VLOGS.length)
     expect(w.find('iframe').exists()).toBe(false)
   })
 
@@ -64,11 +66,11 @@ describe('«Влог»', () => {
     const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
     await flushPromises()
     const boxes = w.findAll('.vl-watch input')
-    expect(boxes.length).toBe(VLOG_PLAN.length)
+    expect(boxes.length).toBe(MAIN.length)
     await boxes[1]!.setValue(true)
     await flushPromises()
     expect(put).toHaveBeenCalledOnce()
-    expect(JSON.parse((put.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({ watched: [VLOG_PLAN[1]!.yt] })
+    expect(JSON.parse((put.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({ watched: [MAIN[1]!.yt] })
     expect(w.findAll('.vl-item')[1]!.classes()).toContain('seen')
     who.owner = false
     const g = await mountSuspended(VlogView, { route: '/korean/vlog' })
