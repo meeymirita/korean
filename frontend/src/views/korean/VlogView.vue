@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
+import { VLOG_TOPICS, VLOG_TOPIC, VLOG_LENGTHS } from '@/data/korean/vlog-topics'
 import { VLOG_PLAN, VLOG_AUTHORS, DEFAULT_AUTHOR, type VlogPlanItem } from '@/data/korean/vlog-plan'
 import { useToastStore } from '@/stores/toast'
 import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
@@ -60,9 +61,19 @@ const items = computed<Item[]>(() => {
 const authorSlugs = VLOG_AUTHORS.map(a => a.slug)
 const tab = useQueryParam('a', VLOG_AUTHORS[0].slug, authorSlugs)
 const tabs = computed(() => VLOG_AUTHORS.map(a => ({ ...a, count: items.value.filter(i => i.author === a.name).length })))
-const shownItems = computed(() => {
+const ofAuthor = computed(() => {
   const name = VLOG_AUTHORS.find(a => a.slug === tab.value)?.name
   return items.value.filter(i => i.author === name)
+})
+/** Фильтры под вкладками: тема (`?t=`) и длина (`?l=`); показываются только те темы и длины, которые есть у этого автора. */
+const topic = useQueryParam('t', '', ['', ...VLOG_TOPICS.map(t => t.id)])
+const length = useQueryParam('l', '', ['', ...VLOG_LENGTHS.map(l => l.id)])
+const topicChips = computed(() => VLOG_TOPICS.map(t => ({ ...t, count: ofAuthor.value.filter(i => VLOG_TOPIC[i.yt] === t.id).length })).filter(t => t.count))
+const lengthChips = computed(() => VLOG_LENGTHS.map(l => ({ ...l, count: ofAuthor.value.filter(i => l.test(i.dur)).length })).filter(l => l.count))
+const shownItems = computed(() => {
+  const t = topicChips.value.some(c => c.id === topic.value) ? topic.value : ''
+  const len = VLOG_LENGTHS.find(l => l.id === length.value && lengthChips.value.some(c => c.id === l.id))
+  return ofAuthor.value.filter(i => (!t || VLOG_TOPIC[i.yt] === t) && (!len || len.test(i.dur)))
 })
 const readyCount = computed(() => shownItems.value.filter(i => i.vlog).length)
 
@@ -329,7 +340,18 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
       <div class="vl-tabs" role="tablist" aria-label="Автор влога">
         <button v-for="t in tabs" :key="t.slug" type="button" role="tab" class="vl-tab" :class="{ on: tab === t.slug }" :aria-selected="tab === t.slug" @click="tab = t.slug">{{ t.tab }} <small>{{ t.count }}</small></button>
       </div>
+      <div class="vl-filters">
+        <div class="vl-chips" role="group" aria-label="Тема">
+          <button type="button" class="vl-chip" :class="{ on: !topic }" @click="topic = ''">Все темы</button>
+          <button v-for="c in topicChips" :key="c.id" type="button" class="vl-chip" :class="{ on: topic === c.id }" @click="topic = topic === c.id ? '' : c.id">{{ c.label }} <small>{{ c.count }}</small></button>
+        </div>
+        <div v-if="lengthChips.length > 1" class="vl-chips" role="group" aria-label="Длина">
+          <button type="button" class="vl-chip" :class="{ on: !length }" @click="length = ''">Любая длина</button>
+          <button v-for="c in lengthChips" :key="c.id" type="button" class="vl-chip" :class="{ on: length === c.id }" @click="length = length === c.id ? '' : c.id">{{ c.label }} <small>{{ c.count }}</small></button>
+        </div>
+      </div>
       <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. <template v-if="readyCount < shownItems.length">Готово {{ readyCount }} из {{ shownItems.length }}, остальные появятся по очереди.</template><template v-else>Всего {{ shownItems.length }} видео, у каждого текст и перевод.</template></p>
+      <p v-if="!shownItems.length" class="vl-empty">С такой темой и длиной видео нет: сними один из фильтров.</p>
       <ul class="vl-list">
         <li v-for="it in shownItems" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
@@ -446,6 +468,11 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-tab { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer; }
 .vl-tab small { color: var(--muted); margin-left: 4px; }
 .vl-tab.on { border-color: var(--ink); font-weight: 700; }
+.vl-filters { display: grid; gap: 8px; margin-top: 12px; }
+.vl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.vl-chip { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 4px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+.vl-chip small { margin-left: 3px; }
+.vl-chip.on { background: var(--surface); border-color: var(--ink); color: var(--ink); font-weight: 600; }
 .vl-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .vl-item { position: relative; display: grid; grid-template-rows: 1fr auto; gap: 6px; }
 .vl-pop { position: absolute; z-index: 30; top: 0; width: 310px; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgba(143, 124, 240, .5); border-radius: 16px; background: #fff; box-shadow: 0 14px 40px rgba(60, 40, 120, .28); pointer-events: none; font-size: 13.5px; line-height: 1.5; color: #2b2250; animation: vlpop .15s ease-out; }

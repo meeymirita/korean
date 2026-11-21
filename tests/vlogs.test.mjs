@@ -93,6 +93,14 @@ test('список влогов плейлиста: номера верные и
   for (const p of VLOG_LOCKED) assert.ok(YT_ID.test(p.yt) && !seen.has(p.yt), `закрытое видео ${p.yt} не должно быть и в списке`)
 })
 
+test('у каждого видео списка есть тема для фильтра, и лишних тем нет', async () => {
+  const { VLOG_TOPIC, VLOG_TOPICS } = await load('/src/data/korean/vlog-topics.ts')
+  const ids = new Set(VLOG_TOPICS.map(t => t.id))
+  for (const p of VLOG_PLAN) assert.ok(ids.has(VLOG_TOPIC[p.yt]), `нет темы у ${p.yt}`)
+  const have = new Set(VLOG_PLAN.map(p => p.yt))
+  for (const k of Object.keys(VLOG_TOPIC)) assert.ok(have.has(k), `тема у неизвестного видео ${k}`)
+})
+
 test('у каждого готового влога есть описание для окошка в списке, и лишних описаний нет', () => {
   for (const v of VLOGS) assert.ok((VLOG_ABOUT[v.id] ?? '').length >= 40, `нет описания у ${v.id}`)
   const ids = new Set(VLOGS.map(v => v.id))
