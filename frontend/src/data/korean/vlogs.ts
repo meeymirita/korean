@@ -28,6 +28,18 @@ import { HAIR_SALON } from './vlog-hair-salon'
 import { BOOKSTORE } from './vlog-bookstore'
 import { WINTER_SNACKS } from './vlog-winter-snacks'
 import { LUNAR_NEW_YEAR_SOUP } from './vlog-lunar-new-year-soup'
+import { DORA_INTRODUCE_YOURSELF } from './vlog-dora-introduce-yourself'
+import { DORA_HIKING_INWANGSAN } from './vlog-dora-hiking-inwangsan'
+import { DORA_DAILY_ROUTINE } from './vlog-dora-daily-routine'
+import { DORA_CHUSEOK } from './vlog-dora-chuseok'
+import { DORA_GYEONGBOKGUNG } from './vlog-dora-gyeongbokgung'
+import { DORA_DAISO } from './vlog-dora-daiso'
+import { DORA_CONVENIENCE_STORE } from './vlog-dora-convenience-store'
+import { DORA_DAEJEON_TRIP } from './vlog-dora-daejeon-trip'
+import { DORA_CINEMA_CASUAL } from './vlog-dora-cinema-casual'
+import { DORA_SEOUL_DAY } from './vlog-dora-seoul-day'
+import { DORA_KOREA_VLOG } from './vlog-dora-korea-vlog'
+import { DORA_DEPARTMENT_STORE } from './vlog-dora-department-store'
 
 /** Влоги для «Влога»: видео с ютуба (встраивается плеером, файла у нас нет) и разобранный по фразам текст со временем. */
 export interface VlogLine {
@@ -56,7 +68,7 @@ export interface Vlog {
 /** Номер видео ютуба: ровно 11 знаков из латиницы, цифр, «-» и «_». */
 export const YT_ID = /^[A-Za-z0-9_-]{11}$/
 
-export const VLOGS: Vlog[] = [CHRISTMAS_CARDS, CLAW_MACHINE, JJIMJILBANG, SUMMER_HEAT, JEJU_UDO, TRADITIONAL_MARKET, GYEONGJU_TRIP, ACHASAN_HIKE, CLINIC_PHARMACY_DAY, DAILY_ROUTINE, DAISO_SHOPPING, BIKE_DAY, NEW_YEAR_CALENDAR, HOMEBODY_VS_OUTGOING, ERRANDS_DAY, BREAKFAST_ROUTINE, AIRPORT_TRIP, ISTANBUL_WALK, CONVENIENCE_STORE, WEEKEND_ROUTINE, SUPERMARKET, BIRTHDAY_CARD, ICE_CREAM_SHOP, MY_SATURDAY, SEOUL_WALK, HAIR_SALON, BOOKSTORE, WINTER_SNACKS, LUNAR_NEW_YEAR_SOUP, BUKCHON]
+export const VLOGS: Vlog[] = [CHRISTMAS_CARDS, CLAW_MACHINE, JJIMJILBANG, SUMMER_HEAT, JEJU_UDO, TRADITIONAL_MARKET, GYEONGJU_TRIP, ACHASAN_HIKE, CLINIC_PHARMACY_DAY, DAILY_ROUTINE, DAISO_SHOPPING, BIKE_DAY, NEW_YEAR_CALENDAR, HOMEBODY_VS_OUTGOING, ERRANDS_DAY, BREAKFAST_ROUTINE, AIRPORT_TRIP, ISTANBUL_WALK, CONVENIENCE_STORE, WEEKEND_ROUTINE, SUPERMARKET, BIRTHDAY_CARD, ICE_CREAM_SHOP, MY_SATURDAY, SEOUL_WALK, HAIR_SALON, BOOKSTORE, WINTER_SNACKS, LUNAR_NEW_YEAR_SOUP, BUKCHON, DORA_INTRODUCE_YOURSELF, DORA_HIKING_INWANGSAN, DORA_DAILY_ROUTINE, DORA_CHUSEOK, DORA_GYEONGBOKGUNG, DORA_DAISO, DORA_CONVENIENCE_STORE, DORA_DAEJEON_TRIP, DORA_CINEMA_CASUAL, DORA_SEOUL_DAY, DORA_KOREA_VLOG, DORA_DEPARTMENT_STORE]
 
 /** Фраза, которая звучит в секунду `t` (последняя из начавшихся); до первой фразы -1. */
 export function lineAt(lines: readonly VlogLine[], t: number): number {

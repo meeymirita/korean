@@ -6,6 +6,7 @@ import { VLOGS } from '@/data/korean/vlogs'
 import { VLOG_PLAN } from '@/data/korean/vlog-plan'
 /** Первая вкладка — Jaerim: видео без поля author */
 const MAIN = VLOG_PLAN.filter(p => !p.author)
+const READY_MAIN = VLOGS.filter(v => v.channel === 'Daily Korean with Jaerim').length
 
 /** вход подменён: настоящий без сервера невозможен */
 const who = vi.hoisted(() => ({ owner: true }))
@@ -31,8 +32,8 @@ describe('«Влог»', () => {
     expect(w.find('.page-head').exists()).toBe(true)
     const cards = w.findAll('.vl-card')
     expect(cards.length).toBe(MAIN.length)
-    expect(cards.filter(c => !(c.element as HTMLButtonElement).disabled).length).toBe(VLOGS.length)
-    expect(w.findAll('.vl-item.soon').length).toBe(MAIN.length - VLOGS.length)
+    expect(cards.filter(c => !(c.element as HTMLButtonElement).disabled).length).toBe(READY_MAIN)
+    expect(w.findAll('.vl-item.soon').length).toBe(MAIN.length - READY_MAIN)
     expect(w.find('iframe').exists()).toBe(false)
   })
 
