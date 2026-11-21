@@ -1,4 +1,4 @@
-/** Влоги плейлиста автора (Daily Korean with Jaerim) в порядке от простого к сложному (по числу слов в речи; видео без доступа в конце): для заглушек в списке «Влога». Готовый влог лежит в `vlogs.ts` и подменяет заглушку по номеру `yt`. */
+/** Влоги плейлиста автора (Daily Korean with Jaerim) в порядке от простого к сложному (по числу слов в речи): для заглушек в списке «Влога». Готовый влог лежит в `vlogs.ts` и подменяет заглушку по номеру `yt`. */
 export interface VlogPlanItem {
   yt: string
   /** название на ютубе, пока нет своего */
@@ -38,6 +38,10 @@ export const VLOG_PLAN: VlogPlanItem[] = [
   { yt: 'rNclAN43VQ0', dur: 922, title: 'Learn Korean the EASY way | Slow Korean + Real- Life Conversations' },
   { yt: 'Gy_nMwa51nY', dur: 822, title: 'Korean You Can Actually Understand | Slow Korean + Real-Life Conversations (Grocery Shopping)' },
   { yt: 'Xhm37Rybhv0', dur: 955, title: 'Learn Korean the EASY way | Slow Korean + Real- Life Conversations (A Day in Jeju)' },
+]
+
+/** Видео плейлиста «только для участников канала» (Members Only): платный доступ у автора, скачать и разобрать нельзя, в списке не показываются. */
+export const VLOG_LOCKED: VlogPlanItem[] = [
   { yt: '5v1KJX-jz58', dur: 264, title: 'Real-Life Korean Conversations | Dentist, Pharmacy, Banchan Shop, Cafe (Members Only)' },
   { yt: '095jPLJRYhE', dur: 133, title: 'Real-Life Korean Conversations | Traditional Korean market, Donut shop, Restaurant, Starbucks' },
   { yt: '0U6wOLBrRXo', dur: 87, title: '[FULL] Real-Life Korean Conversations | Restaurant, Cafe, Bakery (Members Only)' },

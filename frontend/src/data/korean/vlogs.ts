@@ -1,4 +1,16 @@
 import { BUKCHON } from './vlog-bukchon'
+import { CHRISTMAS_CARDS } from './vlog-christmas-cards'
+import { CLAW_MACHINE } from './vlog-claw-machine'
+import { JJIMJILBANG } from './vlog-jjimjilbang'
+import { SUMMER_HEAT } from './vlog-summer-heat'
+import { JEJU_UDO } from './vlog-jeju-udo'
+import { TRADITIONAL_MARKET } from './vlog-traditional-market'
+import { GYEONGJU_TRIP } from './vlog-gyeongju-trip'
+import { ACHASAN_HIKE } from './vlog-achasan-hike'
+import { CLINIC_PHARMACY_DAY } from './vlog-clinic-pharmacy-day'
+import { DAILY_ROUTINE } from './vlog-daily-routine'
+import { DAISO_SHOPPING } from './vlog-daiso-shopping'
+import { BIKE_DAY } from './vlog-bike-day'
 import { NEW_YEAR_CALENDAR } from './vlog-new-year-calendar'
 import { HOMEBODY_VS_OUTGOING } from './vlog-homebody-vs-outgoing'
 import { ERRANDS_DAY } from './vlog-errands-day'
@@ -44,7 +56,7 @@ export interface Vlog {
 /** Номер видео ютуба: ровно 11 знаков из латиницы, цифр, «-» и «_». */
 export const YT_ID = /^[A-Za-z0-9_-]{11}$/
 
-export const VLOGS: Vlog[] = [NEW_YEAR_CALENDAR, HOMEBODY_VS_OUTGOING, ERRANDS_DAY, BREAKFAST_ROUTINE, AIRPORT_TRIP, ISTANBUL_WALK, CONVENIENCE_STORE, WEEKEND_ROUTINE, SUPERMARKET, BIRTHDAY_CARD, ICE_CREAM_SHOP, MY_SATURDAY, SEOUL_WALK, HAIR_SALON, BOOKSTORE, WINTER_SNACKS, LUNAR_NEW_YEAR_SOUP, BUKCHON]
+export const VLOGS: Vlog[] = [CHRISTMAS_CARDS, CLAW_MACHINE, JJIMJILBANG, SUMMER_HEAT, JEJU_UDO, TRADITIONAL_MARKET, GYEONGJU_TRIP, ACHASAN_HIKE, CLINIC_PHARMACY_DAY, DAILY_ROUTINE, DAISO_SHOPPING, BIKE_DAY, NEW_YEAR_CALENDAR, HOMEBODY_VS_OUTGOING, ERRANDS_DAY, BREAKFAST_ROUTINE, AIRPORT_TRIP, ISTANBUL_WALK, CONVENIENCE_STORE, WEEKEND_ROUTINE, SUPERMARKET, BIRTHDAY_CARD, ICE_CREAM_SHOP, MY_SATURDAY, SEOUL_WALK, HAIR_SALON, BOOKSTORE, WINTER_SNACKS, LUNAR_NEW_YEAR_SOUP, BUKCHON]
 
 /** Фраза, которая звучит в секунду `t` (последняя из начавшихся); до первой фразы -1. */
 export function lineAt(lines: readonly VlogLine[], t: number): number {

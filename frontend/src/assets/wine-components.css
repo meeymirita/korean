@@ -392,6 +392,12 @@ html[data-theme='dark'][data-palette='wine'] .res:where(:not(.pk *)) { backgroun
 html[data-theme='dark'][data-palette='wine'] .rule.weak:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* views/korean/VlogView.vue */
+html[data-theme='dark'][data-palette='wine'] .vl-pop:where(:not(.pk *)) { border: 1px solid rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); box-shadow: none; color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .vl-pop-facts:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vl-pop-tag:where(:not(.pk *)) { border: 1px dashed rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .vl-pop-tag.ok:where(:not(.pk *)) { background: rgba(194, 24, 107, 0.14); }
+html[data-theme='dark'][data-palette='wine'] .vl-pop-tag small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vl-pop-ex:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vl-watch input:where(:not(.pk *))::after { border: solid rgba(255, 190, 220, 0.18); }
 html[data-theme='dark'][data-palette='wine'] .vl-gr-chip.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vl-video:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }

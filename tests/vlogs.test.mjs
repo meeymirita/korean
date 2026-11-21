@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { close, load } from './_load.mjs'
 
 const { VLOGS, lineAt, checkVlog, YT_ID } = await load('/src/data/korean/vlogs.ts')
-const { VLOG_PLAN } = await load('/src/data/korean/vlog-plan.ts')
+const { VLOG_ABOUT } = await load('/src/data/korean/vlog-about.ts')
+const { VLOG_PLAN, VLOG_LOCKED } = await load('/src/data/korean/vlog-plan.ts')
 const { grammarHints, gramCard, gramState, gramById, finalOf } = await load('/src/data/korean/vlog-grammar.ts')
 
 after(close)
@@ -89,4 +90,11 @@ test('список влогов плейлиста: номера верные и
     seen.add(p.yt)
   }
   for (const v of VLOGS) assert.ok(seen.has(v.yt), `влог ${v.id} не в списке плейлиста`)
+  for (const p of VLOG_LOCKED) assert.ok(YT_ID.test(p.yt) && !seen.has(p.yt), `закрытое видео ${p.yt} не должно быть и в списке`)
+})
+
+test('у каждого готового влога есть описание для окошка в списке, и лишних описаний нет', () => {
+  for (const v of VLOGS) assert.ok((VLOG_ABOUT[v.id] ?? '').length >= 40, `нет описания у ${v.id}`)
+  const ids = new Set(VLOGS.map(v => v.id))
+  for (const id of Object.keys(VLOG_ABOUT)) assert.ok(ids.has(id), `описание без влога: ${id}`)
 })

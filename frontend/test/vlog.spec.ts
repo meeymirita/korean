@@ -26,11 +26,34 @@ describe('«Влог»', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
     const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
     await flushPromises()
+    expect(w.find('.page-head').exists()).toBe(true)
     const cards = w.findAll('.vl-card')
     expect(cards.length).toBe(VLOG_PLAN.length)
     expect(cards.filter(c => !(c.element as HTMLButtonElement).disabled).length).toBe(VLOGS.length)
     expect(w.findAll('.vl-item.soon').length).toBe(VLOG_PLAN.length - VLOGS.length)
     expect(w.find('iframe').exists()).toBe(false)
+  })
+
+  it('при наведении на карточку появляется окошко с описанием и цифрами; у заглушки пометка «ещё готовятся»', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    await flushPromises()
+    const items = w.findAll('.vl-item')
+    expect(w.find('.vl-pop').exists()).toBe(false)
+    const ready = items.findIndex(i => !i.classes().includes('soon'))
+    await items[ready]!.trigger('mouseenter')
+    expect(w.findAll('.vl-pop').length).toBe(1)
+    expect(w.find('.vl-pop').text()).toContain('фраз')
+    expect(w.find('.vl-pop-about').text().length).toBeGreaterThan(40)
+    await items[ready]!.trigger('mouseleave')
+    expect(w.find('.vl-pop').exists()).toBe(false)
+    // заглушки (видео без текста) показывают пометку; если все влоги готовы, заглушек в списке нет
+    const soon = items.findIndex(i => i.classes().includes('soon'))
+    if (soon >= 0) {
+      await items[soon]!.trigger('mouseenter')
+      expect(w.find('.vl-pop').text()).toContain('ещё готовятся')
+    }
   })
 
   it('галочка «просмотрено» сохраняется на сервере; гостю галочек нет', async () => {
@@ -60,6 +83,10 @@ describe('«Влог»', () => {
     const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
     await flushPromises()
     expect(w.findAll('.vl-line').length).toBe(v.lines.length)
+    // у открытого влога шапки раздела нет: сверху «← Все влоги», название и автор
+    expect(w.find('.page-head').exists()).toBe(false)
+    expect(w.find('.vl-back').text()).toContain('Все влоги')
+    expect(w.find('.vl-title').text()).toBe(v.title)
     expect(w.find('.vl-ru').exists()).toBe(false)
     await w.find('.vl-ru-btn').trigger('click')
     expect(w.find('.vl-ru').text()).toBe(v.lines[0]!.ru)

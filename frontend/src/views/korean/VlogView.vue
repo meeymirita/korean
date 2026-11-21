@@ -7,6 +7,7 @@ import { VLOG_PLAN, type VlogPlanItem } from '@/data/korean/vlog-plan'
 import { useToastStore } from '@/stores/toast'
 import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
 import { usePersisted } from '@/composables/usePersisted'
+import { VLOG_ABOUT } from '@/data/korean/vlog-about'
 import { searchDict, type DictHit } from '@/lib/dictApi'
 import { fetchT } from '@/lib/http'
 import { useQueryParam } from '@/composables/useQueryParam'
@@ -94,6 +95,43 @@ async function loadWatched() {
   } catch {
     /* работаем с тем, что в браузере */
   }
+}
+/** Окошко при наведении на карточку: описание, цифры по тексту и главные темы грамматики (считается один раз, когда навели). */
+const hoverYt = ref('')
+/** С какой стороны от карточки показать окошко: справа, если там хватает места, иначе слева. */
+const popSide = ref<'right' | 'left'>('right')
+function hover(yt: string, e: Event) {
+  hoverYt.value = yt
+  const el = e.currentTarget as HTMLElement | null
+  if (el) popSide.value = el.getBoundingClientRect().right + 330 < window.innerWidth ? 'right' : 'left'
+}
+interface Info { about: string; phrases: number; words: number; known: number; topics: { id: string; ko: string; n: number; state: string }[]; sample: { ko: string; ru: string } | null }
+const infoCache = new Map<string, Info>()
+function infoOf(v: Vlog): Info {
+  const hit = infoCache.get(v.id)
+  if (hit) return hit
+  const parsed = v.lines.map(l => clipText(l.ko, k => progress.data.words[k]?.streak ?? 0))
+  let known = 0
+  let total = 0
+  const uniq = new Set<string>()
+  for (const r of parsed) {
+    known += r.known
+    total += r.total
+    for (const w of r.words) uniq.add(w.key)
+  }
+  const counts = new Map<string, number>()
+  for (const l of v.lines) for (const g of grammarHints(l.ko)) counts.set(g.id, (counts.get(g.id) ?? 0) + 1)
+  const topics = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .flatMap(([id, n]) => {
+      const c = gramCard(id)
+      return c ? [{ id, ko: c.ko, n, state: c.state }] : []
+    })
+  const mid = v.lines.slice(Math.floor(v.lines.length * 0.3)).find(l => l.ko.length >= 10 && l.ko.length <= 34)
+  const info: Info = { about: VLOG_ABOUT[v.id] ?? '', phrases: v.lines.length, words: uniq.size, known: total ? Math.round((known / total) * 100) : 0, topics, sample: mid ? { ko: mid.ko, ru: mid.ru } : null }
+  infoCache.set(v.id, info)
+  return info
 }
 const dur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -274,28 +312,41 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 
 <template>
   <div class="wrap">
-    <SectionHead id="vlog" />
+    <SectionHead v-if="!vlog" id="vlog" />
 
     <p v-if="!VLOGS.length" class="vl-empty">Влогов пока нет. Они появляются по одному: видео, текст по фразам и перевод.</p>
 
     <template v-else-if="!vlog">
-      <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. Готово {{ readyCount }} из {{ items.length }}, остальные появятся по очереди.</p>
+      <p class="vl-intro">Выбери видео: медленная речь, фразы со временем и перевод по нажатию. <template v-if="readyCount < items.length">Готово {{ readyCount }} из {{ items.length }}, остальные появятся по очереди.</template><template v-else>Всего {{ items.length }} видео, у каждого текст и перевод.</template></p>
       <ul class="vl-list">
-        <li v-for="it in items" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }">
+        <li v-for="it in items" :key="it.yt" class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
             <img :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" />
             <b>{{ it.title }}</b>
             <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} · {{ dur(it.dur) }}</span>
           </button>
+          <div v-if="hoverYt === it.yt" class="vl-pop" :class="popSide" role="tooltip">
+            <template v-if="it.vlog">
+              <p class="vl-pop-about">{{ infoOf(it.vlog).about }}</p>
+              <p class="vl-pop-facts">{{ infoOf(it.vlog).phrases }} фраз · {{ dur(it.dur) }} · {{ infoOf(it.vlog).words }} разных слов · {{ infoOf(it.vlog).known }}% знакомых</p>
+              <p v-if="infoOf(it.vlog).topics.length" class="vl-pop-row"><b>Грамматика:</b>
+                <span v-for="t in infoOf(it.vlog).topics" :key="t.id" class="vl-pop-tag" :class="t.state">{{ t.ko }} <small>×{{ t.n }}</small></span>
+              </p>
+              <p v-if="infoOf(it.vlog).sample" class="vl-pop-ex"><span lang="ko">{{ infoOf(it.vlog).sample!.ko }}</span><br />{{ infoOf(it.vlog).sample!.ru }}</p>
+            </template>
+            <p v-else class="vl-pop-about">Текст и перевод ещё готовятся. Видео: {{ dur(it.dur) }}. Оригинальное название: {{ it.title }}</p>
+          </div>
           <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
         </li>
       </ul>
     </template>
 
     <template v-else>
-      <button type="button" class="vl-back" @click="cur = ''">← Все влоги</button>
-      <h2 class="vl-title">{{ vlog.title }}</h2>
-      <p class="vl-by">Автор: {{ vlog.channel }}.<template v-if="!useFile"> Видео показывается плеером ютуба.</template></p>
+      <header class="vl-top">
+        <button type="button" class="vl-back" @click="cur = ''">← Все влоги</button>
+        <h2 class="vl-title">{{ vlog.title }}</h2>
+        <p class="vl-by">Автор: {{ vlog.channel }}.<template v-if="!useFile"> Видео показывается плеером ютуба.</template></p>
+      </header>
 
       <div class="vl-cols" :style="{ '--vl-w': `${vsize}%` }">
        <div class="vl-left">
@@ -380,7 +431,23 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 <style scoped>
 .vl-empty, .vl-intro, .vl-by, .vl-stat { margin: 10px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .vl-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-.vl-item { display: grid; gap: 6px; }
+.vl-item { position: relative; display: grid; grid-template-rows: 1fr auto; gap: 6px; }
+.vl-pop { position: absolute; z-index: 30; top: 0; width: 310px; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgba(143, 124, 240, .5); border-radius: 16px; background: #fff; box-shadow: 0 14px 40px rgba(60, 40, 120, .28); pointer-events: none; font-size: 13.5px; line-height: 1.5; color: #2b2250; animation: vlpop .15s ease-out; }
+.vl-pop.right { left: calc(100% + 10px); }
+.vl-pop.left { right: calc(100% + 10px); }
+:global(html[data-theme='dark']) .vl-pop { background: #261d3f; border-color: rgba(255, 190, 220, .35); color: #f4eeff; box-shadow: 0 14px 40px rgba(0, 0, 0, .55); }
+.vl-pop p { margin: 0 0 6px; }
+.vl-pop p:last-child { margin-bottom: 0; }
+.vl-pop-facts { color: #5d5388; }
+:global(html[data-theme='dark']) .vl-pop-facts { color: #cbbfe8; }
+.vl-pop-tag { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border: 1px dashed #8f7cf0; border-radius: 999px; }
+.vl-pop-tag.ok { border-style: solid; border-color: #2e9e6b; background: rgba(46, 158, 107, .14); }
+.vl-pop-tag small { color: #5d5388; }
+.vl-pop-ex { color: #5d5388; font-size: 13px; }
+:global(html[data-theme='dark']) .vl-pop-tag small, :global(html[data-theme='dark']) .vl-pop-ex { color: #cbbfe8; }
+@media (max-width: 760px) { .vl-pop { display: none; } }
+@keyframes vlpop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .vl-pop { animation: none; } }
 .vl-item.soon .vl-card { opacity: .6; cursor: default; }
 .vl-item.seen .vl-card { border-color: var(--ok); }
 .vl-watch { display: flex; align-items: center; gap: 8px; padding: 0 6px; color: var(--muted); font-size: 13.5px; cursor: pointer; }
@@ -389,10 +456,12 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-watch input:checked { background: var(--ok); border-color: var(--ok); }
 .vl-watch input:checked::after { opacity: 1; }
 .vl-watch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.vl-card { width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
+.vl-card { box-sizing: border-box; width: 100%; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .vl-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
-.vl-card span { color: var(--muted); font-size: 13px; }
-.vl-back { margin-top: 14px; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 0; }
+.vl-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; font-size: 15px; }
+.vl-card span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; color: var(--muted); font-size: 13px; }
+.vl-top { margin-bottom: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.vl-back { margin-top: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 0; }
 .vl-title { margin: 8px 0 0; font-size: 22px; }
 .vl-cols { display: block; }
 .vl-now { display: none; margin-top: 14px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
