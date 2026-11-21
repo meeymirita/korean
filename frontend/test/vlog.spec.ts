@@ -75,7 +75,7 @@ describe('«Влог»', () => {
 
   it('чип грамматики под фразой открывает карточку темы; нажатие ещё раз закрывает', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })))
-    const v = VLOGS[0]!
+    const v = VLOGS.find(x => x.id === 'bukchon')!
     const i = v.lines.findIndex(l => l.ko.includes('갈 거예요'))
     const w = await mountSuspended(VlogView, { route: `/korean/vlog?v=${v.id}` })
     await flushPromises()
