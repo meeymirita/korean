@@ -215,7 +215,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-back { margin-top: 14px; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 0; }
 .vl-title { margin: 8px 0 0; font-size: 22px; }
 .vl-stage { position: sticky; top: 0; z-index: 5; background: var(--bg, var(--surface)); padding: 10px 0 6px; }
-.vl-video { aspect-ratio: 16 / 9; width: min(100%, calc(34vh * 16 / 9)); border-radius: 16px; overflow: hidden; background: #000; background: #000; margin-inline: auto;
+.vl-video { aspect-ratio: 16 / 9; width: min(100%, calc(34vh * 16 / 9)); border-radius: 16px; overflow: hidden; background: #000; margin-inline: auto; }
 .vl-video iframe { width: 100%; height: 100%; border: 0; display: block; }
 .vl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .vl-time { min-width: 44px; color: var(--muted); font-variant-numeric: tabular-nums; }
