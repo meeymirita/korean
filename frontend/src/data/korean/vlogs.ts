@@ -1,4 +1,13 @@
 import { BUKCHON } from './vlog-bukchon'
+import { SUPERMARKET } from './vlog-supermarket'
+import { BIRTHDAY_CARD } from './vlog-birthday-card'
+import { ICE_CREAM_SHOP } from './vlog-ice-cream-shop'
+import { MY_SATURDAY } from './vlog-my-saturday'
+import { SEOUL_WALK } from './vlog-seoul-walk'
+import { HAIR_SALON } from './vlog-hair-salon'
+import { BOOKSTORE } from './vlog-bookstore'
+import { WINTER_SNACKS } from './vlog-winter-snacks'
+import { LUNAR_NEW_YEAR_SOUP } from './vlog-lunar-new-year-soup'
 
 /** Влоги для «Влога»: видео с ютуба (встраивается плеером, файла у нас нет) и разобранный по фразам текст со временем. */
 export interface VlogLine {
@@ -27,7 +36,7 @@ export interface Vlog {
 /** Номер видео ютуба: ровно 11 знаков из латиницы, цифр, «-» и «_». */
 export const YT_ID = /^[A-Za-z0-9_-]{11}$/
 
-export const VLOGS: Vlog[] = [BUKCHON]
+export const VLOGS: Vlog[] = [SUPERMARKET, BIRTHDAY_CARD, ICE_CREAM_SHOP, MY_SATURDAY, SEOUL_WALK, HAIR_SALON, BOOKSTORE, WINTER_SNACKS, LUNAR_NEW_YEAR_SOUP, BUKCHON]
 
 /** Фраза, которая звучит в секунду `t` (последняя из начавшихся); до первой фразы -1. */
 export function lineAt(lines: readonly VlogLine[], t: number): number {
