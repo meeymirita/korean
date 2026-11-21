@@ -30,13 +30,24 @@ export class AuthService {
    * 'read': только чтение помеченных маршрутов; 'write': ещё и добавление (слова, материалы), но не правка и не удаление; null: токен не подошёл.
    */
   async inboxScope(header?: string): Promise<'read' | 'write' | null> {
+    const s = await this.inboxCheck(header)
+    return s === 'expired' ? null : s
+  }
+
+  /** Токен был настоящим временным токеном «Входящих», но его срок вышел (не подбор, а просроченный токен приложения). */
+  async inboxExpired(header?: string): Promise<boolean> {
+    return (await this.inboxCheck(header)) === 'expired'
+  }
+
+  private async inboxCheck(header?: string): Promise<'read' | 'write' | 'expired' | null> {
     const given = (header || '').replace(/^Bearer\s+/i, '')
     if (!given || given.length > 200) return null
     const raw = await this.db.getMeta(INBOX_META)
     if (!raw) return null
     try {
       const { h, exp, w } = JSON.parse(raw) as { h: string; exp: number; w?: boolean }
-      if (typeof exp !== 'number' || exp <= Date.now() || !same(sha(given), Buffer.from(h, 'hex'))) return null
+      if (typeof exp !== 'number' || !same(sha(given), Buffer.from(h, 'hex'))) return null
+      if (exp <= Date.now()) return 'expired'
       return w === true ? 'write' : 'read'
     } catch {
       return null

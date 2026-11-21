@@ -41,6 +41,22 @@ interface Bad {
 /** IP клиента: за Caddy (loopback) берётся из X-Forwarded-For, напрямую — адрес соединения. Задано через `trust proxy` в main.ts. */
 export const clientIp = (req: Request) => req.ip || req.socket.remoteAddress || 'unknown'
 
+/** Адреса Anthropic (по данным whois: 160.79.104.0/21): оттуда ходит десктопное приложение Claude со временным токеном «Входящих». */
+const ANTHROPIC_NET = { base: (160 << 24) | (79 << 16) | (104 << 8), mask: ~((1 << 11) - 1) >>> 0 }
+export const isAnthropicIp = (address: string) => {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(address.replace(/^::ffff:/, ''))
+  if (!m) return false
+  const n = ((Number(m[1]) << 24) | (Number(m[2]) << 16) | (Number(m[3]) << 8) | Number(m[4])) >>> 0
+  return (n & ANTHROPIC_NET.mask) >>> 0 === (ANTHROPIC_NET.base & ANTHROPIC_NET.mask) >>> 0
+}
+
+/** Кто и что запросил, одной строкой для журнала: адрес (с пометкой Anthropic), метод, путь без параметров, начало User-Agent. Токены и параметры адреса сюда не попадают. */
+export const describeClient = (req: Request) => {
+  const ip = clientIp(req)
+  const ua = String(req.headers['user-agent'] ?? '').replace(/\s+/g, ' ').slice(0, 60)
+  return `${ip}${isAnthropicIp(ip) ? ' [Anthropic]' : ''} ${req.method} ${req.path}${ua ? ' · ' + ua : ''}`
+}
+
 /** Частный или локальный адрес: сама машина, сеть Docker, домашняя сеть. */
 export const isPrivateAddress = (address: string) => {
   const a = address.replace(/^::ffff:/, '').toLowerCase()

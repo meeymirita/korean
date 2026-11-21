@@ -39,10 +39,11 @@ export class Events {
     void this.notify.sendSecurity(rule.topic, rule.title, lead || 'Время и подробности: Кабинет → Сервисы.')
   }
 
-  async log(type: string, info = '') {
+  /** `info` пишется в журнал целиком; `alertInfo` (обычно адрес) идёт в Telegram и в ключ «не чаще раза в 10 минут». */
+  async log(type: string, info = '', alertInfo = info) {
     // подозрительные события (неверный токен и код, блокировка) пишем как предупреждение
-    console[/bad|locked|failed/.test(type) ? 'warn' : 'log'](`событие ${type}${info ? ': ' + info : ''}`) // видно в «Сервисы → Журнал»
-    this.alert(type, info)
+    console[/bad|locked|failed|denied|expired/.test(type) ? 'warn' : 'log'](`событие ${type}${info ? ': ' + info : ''}`) // видно в «Сервисы → Журнал»
+    this.alert(type, alertInfo)
     const events = await this.db.orm()
     await events.event.create({ data: { t: BigInt(Date.now()), type, info: info.slice(0, 200) } })
     const latest = await events.event.aggregate({ _max: { id: true } })

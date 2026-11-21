@@ -4,13 +4,13 @@ export interface GrowthMark { d: string; title: string; summary: string; items: 
 export interface Growth { generated: string; commits: number; first: { d: string; subject: string } | null; lines: number; days: GrowthDay[]; marks: GrowthMark[] }
 
 export const GROWTH: Growth = {
- "generated": "2026-11-21",
- "commits": 1008,
+ "generated": "2026-11-22",
+ "commits": 1009,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 103560,
+ "lines": 103620,
  "days": [
   {
    "d": "2026-10-21",
@@ -179,6 +179,13 @@ export const GROWTH: Growth = {
    "cum": 1008,
    "add": 10573,
    "del": 495
+  },
+  {
+   "d": "2026-11-22",
+   "n": 1,
+   "cum": 1009,
+   "add": 95,
+   "del": 94
   }
  ],
  "marks": [
@@ -489,6 +496,13 @@ export const GROWTH: Growth = {
    "summary": "Видео с медленной корейской речью и текст по фразам рядом: идущая фраза подсвечивается, перевод открывается нажатием.",
    "items": 14,
    "cum": 1008
+  },
+  {
+   "d": "2026-11-22",
+   "title": "Журнал запросов приложения Claude и неверных токенов",
+   "summary": "Сервер теперь подробно записывает, кто и что запрашивал с токеном «Входящих», и кто присылал неверный токен.",
+   "items": 3,
+   "cum": 1009
   }
  ]
 }
