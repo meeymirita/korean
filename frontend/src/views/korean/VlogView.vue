@@ -174,6 +174,18 @@ function infoOf(v: Vlog): Info {
   return info
 }
 const dur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+/** Обложки с ютуба: если картинка не загрузилась (на планшете сеть может не пускать на i.ytimg.com), вместо белого фона плашка. */
+const thumbFail = ref<Set<string>>(new Set())
+function failThumb(yt: string) {
+  if (!thumbFail.value.has(yt)) thumbFail.value = new Set([...thumbFail.value, yt])
+}
+/** Ошибка могла случиться до оживления страницы (картинки пришли в HTML с сервера): проверяем уже брошенные. */
+function sweepThumbs() {
+  document.querySelectorAll<HTMLImageElement>('.vl-card img').forEach(img => {
+    const m = /\/vi\/([^/]+)\//.exec(img.src)
+    if (m && img.complete && img.naturalWidth === 0) failThumb(m[1]!)
+  })
+}
 
 const frame = ref<HTMLIFrameElement | null>(null)
 const vid = ref<HTMLVideoElement | null>(null)
@@ -278,6 +290,7 @@ onMounted(() => {
   window.addEventListener('keydown', onScrollKey)
   void loadFile()
   void loadWatched()
+  sweepThumbs()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
@@ -457,7 +470,8 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         <li class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
             <span v-if="it.rank < 999" class="vl-no">№{{ it.rank }}</span>
-            <img :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" />
+            <img v-if="!thumbFail.has(it.yt)" :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" @error="failThumb(it.yt)" />
+            <span v-else class="vl-ph" aria-hidden="true">우리말</span>
             <b>{{ it.title }}</b>
             <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} <template v-if="it.dur"> · {{ dur(it.dur) }}</template></span>
           </button>
@@ -609,7 +623,11 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-stage-h { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .vl-stage-h b { font-size: 16px; }
 .vl-stage-h span { color: var(--muted); font-size: 13.5px; }
-.vl-no { position: absolute; top: 16px; left: 16px; z-index: 1; padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff; font-size: 12.5px; font-weight: 700; }
+/* «.vl-card span» (приглушённый цвет, min-height и ограничение строк) сильнее одиночного класса: номер перебивается тем же селектором через .vl-card */
+.vl-card .vl-no { position: absolute; top: 16px; left: 16px; z-index: 1; display: block; min-height: 0; overflow: visible; padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1.4; }
+/* картинки ютуба могут не грузиться (сеть планшета): вместо белого фона пастельная плашка */
+.vl-card .vl-ph { display: grid; min-height: 0; overflow: visible; place-items: center; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: linear-gradient(135deg, #fbd9ea, #cfe4ff); color: rgba(255, 255, 255, .85); font-size: 28px; font-weight: 700; letter-spacing: .08em; }
+:global(html[data-theme='dark']) .vl-card .vl-ph { background: linear-gradient(135deg, #4a2c55, #2c3c66); color: rgba(255, 255, 255, .5); }
 .vl-card { position: relative; box-sizing: border-box; width: 100%; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .vl-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
 .vl-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; font-size: 15px; }
