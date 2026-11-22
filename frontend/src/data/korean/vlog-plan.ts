@@ -15,7 +15,7 @@ export const VLOG_AUTHORS = [
   { name: 'Dora\'s Slow Korean', slug: 'dora', tab: 'Dora' },
   { name: 'Ria Korea 리아 코리아', slug: 'ria', tab: 'Ria Korea' },
   { name: '최수수 ChoiSusu', slug: 'choisusu', tab: 'ChoiSusu' },
-  { name: 'учитель корейского, Соня', slug: 'sony', tab: 'Соня' },
+  { name: 'учитель корейского, Соня', slug: 'sony', tab: 'Sonya' },
 ] as const
 
 export const DEFAULT_AUTHOR = VLOG_AUTHORS[0].name
