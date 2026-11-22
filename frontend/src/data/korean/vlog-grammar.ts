@@ -68,6 +68,15 @@ export function grammarHints(ko: string): VlogGram[] {
     })
 }
 
+/** Слово фразы, на котором сработало правило темы `id` (для подсветки в примерах); пусто, если правило не сработало. */
+export function hintToken(id: string, ko: string): string {
+  const test = RULES.find(r => r[0] === id)?.[1]
+  if (!test) return ''
+  const toks = tokensOf(ko)
+  const i = toks.findIndex((t, k) => test(t, toks[k + 1], toks[k - 1]))
+  return i < 0 ? '' : toks[i]!
+}
+
 /** Текст карточки без разметки `{b|…}`. */
 const plain = (s: string) => s.replace(/\{[a-z]\|([^}]*)\}/g, '$1').replace(/<br\s*\/?>/g, ' ')
 
