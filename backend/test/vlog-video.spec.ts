@@ -19,6 +19,19 @@ const res = () => {
   return r
 }
 
+describe('обложки влогов', () => {
+  it('отдаёт файл из data/vlog/covers и 404 для чужого имени и для отсутствующего файла', async () => {
+    mkdirSync(path.join(dir, 'vlog', 'covers'), { recursive: true })
+    writeFileSync(path.join(dir, 'vlog', 'covers', 'SEywQdBW8W4.jpg'), 'x')
+    const c = new VideoController(disk)
+    const r = res()
+    await c.vlogCover('SEywQdBW8W4', r as never)
+    expect(r.sendFile).toHaveBeenCalledOnce()
+    expect(String(r.sendFile.mock.calls[0]![0])).toContain(path.join('covers', 'SEywQdBW8W4.jpg'))
+    for (const bad of ['../etc/passwd', 'short', 'AAAAAAAAAAA']) await expect(c.vlogCover(bad, res() as never)).rejects.toThrow()
+  })
+})
+
 describe('видео влогов', () => {
   it('имя: номер видео ютуба, 11 знаков, без точек и слэшей', () => {
     expect(VLOG_NAME.test('SEywQdBW8W4')).toBe(true)

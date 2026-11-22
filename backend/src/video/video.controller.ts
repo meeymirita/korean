@@ -13,6 +13,8 @@ const NAME = /^(lesson-\d{2}(-\d)?|part2-\d{2})\.mp4$/
 export const VLOG_NAME = /^[A-Za-z0-9_-]{11}$/
 /** Папка автора влога (`slug` из `VLOG_AUTHORS`): строчная латиница и цифры. */
 export const VLOG_FOLDER = /^[a-z0-9]{2,20}$/
+/** Папка обложек рядом с папками авторов: `korean_vlog/covers/<номер видео>.jpg`. */
+export const VLOG_COVERS = 'covers'
 
 /**
  * GET /api/video/lesson-01.mp4: видео лежат на Яндекс.Диске (папка korean_video в корне), отсюда браузер уходит на временную ссылку Диска
@@ -21,6 +23,9 @@ export const VLOG_FOLDER = /^[a-z0-9]{2,20}$/
  *
  * Видео влогов (чужие ролики, скачанные владельцем) наружу не открыты: `GET /api/video/vlog/<автор>/<имя>/url` (с токеном) отдаёт подписанную ссылку
  * на 6 часов, `GET /api/video/vlog/<автор>/<имя>/file?e&s` проверяет подпись и уводит на Диск (`korean_vlog/<автор>/<имя>.mp4`) или отдаёт файл из `data/vlog/<автор>/` (перемотка работает).
+ *
+ * Обложки влогов: `GET /api/video/vlog-cover/<номер видео>` (открыто, это общедоступные обложки ютуба) уводит на Диск (`korean_vlog/covers/<номер>.jpg`) или отдаёт
+ * файл из `data/vlog/covers/`; нет файла: 404, и сайт берёт обложку с ютуба, а если не вышло, показывает плашку (в сети планшета ютуб может не открываться).
  */
 @Controller('video')
 export class VideoController {
@@ -38,6 +43,27 @@ export class VideoController {
     }
     res.setHeader('Cache-Control', 'public, max-age=600')
     res.redirect(302, href)
+  }
+
+  /** Обложка влога (картинка 320×180): с Диска или из `data/vlog/covers/`; 404, если файла нет. */
+  @Public()
+  @Get('vlog-cover/:name')
+  async vlogCover(@Param('name') name: string, @Res() res: Response) {
+    if (!VLOG_NAME.test(name)) throw new NotFoundException({ error: 'not found' })
+    if (this.disk.configured()) {
+      let href: string
+      try {
+        href = await this.disk.cachedLink(`${DISK_DIRS.vlog}/${VLOG_COVERS}/${name}.jpg`)
+      } catch {
+        throw new NotFoundException({ error: 'not found' })
+      }
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+      return void res.redirect(302, href)
+    }
+    const file = path.join(VLOG_DIR, VLOG_COVERS, `${name}.jpg`)
+    if (!existsSync(file)) throw new NotFoundException({ error: 'not found' })
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+    res.sendFile(file)
   }
 
   /** Подписанная ссылка на видео влога; 404, если файла нет. */
