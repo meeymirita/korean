@@ -5,6 +5,7 @@ import AskAi from '@/components/korean/AskAi.vue'
 import { breakdownContext, canAskAi } from '@/lib/askAi'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
+import { STUDY_VLOGS } from '@/data/korean/vlog-study'
 import { VLOG_TOPICS, VLOG_TOPIC, VLOG_LENGTHS } from '@/data/korean/vlog-topics'
 import { VLOG_ORDER_IDS, VLOG_STAGES, stageOf } from '@/data/korean/vlog-order'
 import { VLOG_PLAN, VLOG_AUTHORS, DEFAULT_AUTHOR, type VlogPlanItem } from '@/data/korean/vlog-plan'
@@ -486,7 +487,10 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
             </template>
             <p v-else class="vl-pop-about">Текст и перевод ещё готовятся. <template v-if="it.dur">Видео: {{ dur(it.dur) }}. </template>Оригинальное название: {{ it.title }}</p>
           </div>
-          <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
+          <div v-if="canSave || (it.vlog && STUDY_VLOGS.includes(it.vlog.id))" class="vl-foot">
+            <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
+            <NuxtLink v-if="it.vlog && STUDY_VLOGS.includes(it.vlog.id)" class="vl-study" :to="`/korean/vlog-study?v=${it.vlog.id}`">разбор</NuxtLink>
+          </div>
         </li>
         </template>
       </ul>
@@ -613,6 +617,8 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 @media (prefers-reduced-motion: reduce) { .vl-pop { animation: none; } }
 .vl-item.soon .vl-card { opacity: .6; cursor: default; }
 .vl-item.seen .vl-card { border-color: var(--ok); }
+.vl-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vl-study { margin-left: auto; padding: 3px 12px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); font-size: 13px; text-decoration: none; }
 .vl-watch { display: flex; align-items: center; gap: 8px; padding: 0 6px; color: var(--muted); font-size: 13.5px; cursor: pointer; }
 .vl-watch input { appearance: none; -webkit-appearance: none; flex: none; width: 20px; height: 20px; margin: 0; border: 2px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; display: grid; place-content: center; }
 .vl-watch input::after { content: ''; width: 10px; height: 6px; border: solid #fff; border-width: 0 0 2.5px 2.5px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }

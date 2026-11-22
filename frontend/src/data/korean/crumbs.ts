@@ -7,7 +7,7 @@ export interface Crumb {
 }
 
 /** Страницы, открывающиеся из другой страницы: id родителя. Вкладки справочника (group 'ref') родителя получают отдельно. */
-const PARENT: Record<string, string> = { particles: 'trainers', pairs: 'trainers', translate: 'trainers', syllables: 'trainers', keyboard: 'trainers', forms: 'words', report: 'cabinet' }
+const PARENT: Record<string, string> = { particles: 'trainers', pairs: 'trainers', translate: 'trainers', syllables: 'trainers', keyboard: 'trainers', forms: 'words', report: 'cabinet', 'vlog-study': 'vlog' }
 
 /** Вкладки кабинета (?tab=…); «Обзор» без параметра. */
 export const CABINET_TABS: Record<string, string> = {

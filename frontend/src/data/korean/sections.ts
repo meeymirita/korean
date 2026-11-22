@@ -51,6 +51,7 @@ export const sections: Section[] = [
   { id: 'services', num: '23', menu: 'Сервисы', kicker: 'Сервер', title: 'Сервисы', sub: 'контейнеры, журналы, поиск, Grafana и Prometheus', private: true, owner: true, group: 'extra' },
   { id: 'report', num: '25', menu: 'Отчёт', kicker: 'Кабинет', title: 'Отчёт', sub: 'все ответы по режимам: графики, PDF и каждое занятие целиком', private: true, owner: true, group: 'extra' },
   { id: 'exam', num: '24', menu: 'Экзамены', kicker: 'Проверка знаний', title: 'Экзамены', sub: 'блиц дня, экзамен единицы, большой экзамен и пробник TOPIK I в одном месте', private: true, owner: true },
+  { id: 'vlog-study', num: '29', menu: 'Разбор влога', kicker: 'Живая речь', title: 'Разбор влога', sub: 'текст влога с переводом, справка по новой грамматике и слова', private: true, group: 'extra' },
   { id: 'vlog', num: '28', menu: 'Влог', kicker: 'Живая речь', title: 'Влог', sub: 'видео с медленной речью: текст по фразам, перевод по нажатию и подсветка слов', private: true },
 ]
 

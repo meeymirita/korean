@@ -127,7 +127,8 @@ describe('«Влог»', () => {
     expect(w.findAll('.vl-stage-h').length).toBe(4)
     const nos = w.findAll('.vl-no').map(n => n.text())
     expect(nos[0]).toBe('№1')
-    expect(nos.at(-1)).toBe(`№${VLOG_PLAN.length}`)
+    // номера только у готовых влогов; видео без текста (заглушки) идут в конце без номера
+    expect(nos.at(-1)).toBe(`№${VLOGS.length}`)
   })
 
   it('«записать» кладёт фразу в заметки с тегом «влог» и второй раз не пишет', async () => {

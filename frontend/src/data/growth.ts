@@ -5,12 +5,12 @@ export interface Growth { generated: string; commits: number; first: { d: string
 
 export const GROWTH: Growth = {
  "generated": "2026-11-22",
- "commits": 1016,
+ "commits": 1019,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 104056,
+ "lines": 104101,
  "days": [
   {
    "d": "2026-10-21",
@@ -182,10 +182,10 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-22",
-   "n": 8,
-   "cum": 1016,
-   "add": 642,
-   "del": 179
+   "n": 11,
+   "cum": 1019,
+   "add": 711,
+   "del": 189
   }
  ],
  "marks": [
@@ -502,7 +502,7 @@ export const GROWTH: Growth = {
    "title": "Влог: вопросы ИИ к фразам и разделитель размера видео",
    "summary": "У каждой фразы влога появилась кнопка «спросить», а размер видео теперь меняется разделителем, как в карточке грамматики.",
    "items": 6,
-   "cum": 1016
+   "cum": 1019
   }
  ]
 }
