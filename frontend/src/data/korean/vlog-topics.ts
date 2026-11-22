@@ -26,6 +26,8 @@ export const VLOG_TOPIC: Record<string, VlogTopic> = {
   // ChoiSusu
   '29mdX4IG7YI': 'daily', _kPYR0gBstk: 'daily', '932sf30NQzE': 'daily', R2WQ6wQCr1Y: 'walk', B1NfSUKXaTs: 'shop', qoidYvlCiPM: 'trip',
   'MNsHXC_-HVA': 'daily', wquDm0eqMMU: 'shop', ZzcszvIgT_8: 'food', '6y6YoL-TjYQ': 'food', '3GYl0X6tk2M': 'food', '23C9rdaLOCc': 'season', BnTS2DOdMSY: 'daily',
+  // Соня (уроки на русском: списки слов)
+  '320kkUFKfys': 'talk', c2IuofCwVQM: 'talk', soIe113WbV8: 'talk',
 }
 
 /** Длина видео для фильтра: короткие до 6 минут, средние 6–10, длинные дольше 10; длительность 0 (пока неизвестна) ни в одну группу не входит. */

@@ -15,6 +15,7 @@ export const VLOG_AUTHORS = [
   { name: 'Dora\'s Slow Korean', slug: 'dora', tab: 'Dora' },
   { name: 'Ria Korea 리아 코리아', slug: 'ria', tab: 'Ria Korea' },
   { name: '최수수 ChoiSusu', slug: 'choisusu', tab: 'ChoiSusu' },
+  { name: 'учитель корейского, Соня', slug: 'sony', tab: 'Соня' },
 ] as const
 
 export const DEFAULT_AUTHOR = VLOG_AUTHORS[0].name
@@ -82,6 +83,9 @@ export const VLOG_PLAN: VlogPlanItem[] = [
   { yt: '3GYl0X6tk2M', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Ordering Food Delivery" },
   { yt: '23C9rdaLOCc', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Chuseok" },
   { yt: 'BnTS2DOdMSY', dur: 0, author: "최수수 ChoiSusu", title: "Beginner Podcast: Apartments in Korea" },
+  { yt: '320kkUFKfys', dur: 637, author: 'учитель корейского, Соня', title: 'КОРЕЙСКИЕ СЛОВА НА ТЕМУ ЭМОЦИИ.' },
+  { yt: 'c2IuofCwVQM', dur: 752, author: 'учитель корейского, Соня', title: 'ТОП 100 прилагательных КОРЕЙСКОГО ЯЗЫКА' },
+  { yt: 'soIe113WbV8', dur: 741, author: 'учитель корейского, Соня', title: 'ТОП 100 глаголов КОРЕЙСКОГО ЯЗЫКА' },
 ]
 
 /** Видео плейлиста «только для участников канала» (Members Only): платный доступ у автора, скачать и разобрать нельзя, в списке не показываются. */
