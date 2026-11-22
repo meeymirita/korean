@@ -29,7 +29,11 @@ test('справки: у каждой темы объяснение и форм�
     for (const t of VLOG_NEW_GRAMMAR[id] ?? []) {
       assert.ok(NEW_GRAMMAR[t.id], t.id)
       assert.ok(t.lines.length >= 1)
-      for (const i of t.lines) assert.ok(first[i], `${id}: нет фразы ${i}`)
+      assert.equal(t.marks.length, t.lines.length, `${id}: у каждого примера своя метка`)
+      t.lines.forEach((i, k) => {
+        assert.ok(first[i], `${id}: нет фразы ${i}`)
+        assert.ok(first[i].ko.includes(t.marks[k]), `${id}: метка «${t.marks[k]}» не найдена во фразе ${i}`)
+      })
     }
   }
 })
@@ -45,5 +49,5 @@ test('файл справок читает только страница раз�
     }
   }
   walk(root)
-  assert.deepEqual(users.sort(), ['views/korean/VlogStudyView.vue', 'views/korean/VlogView.vue'])
+  assert.deepEqual(users.sort(), ['components/korean/VlogGrammarList.vue', 'views/korean/VlogStudyView.vue', 'views/korean/VlogView.vue'])
 })
