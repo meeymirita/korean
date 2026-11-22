@@ -392,7 +392,9 @@ html[data-theme='dark'][data-palette='wine'] .res:where(:not(.pk *)) { backgroun
 html[data-theme='dark'][data-palette='wine'] .rule.weak:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* views/korean/VlogStudyView.vue */
+html[data-theme='dark'][data-palette='wine'] .vs-hist li.bad:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
 html[data-theme='dark'][data-palette='wine'] .vs-fresh:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vs-g-rule b:where(:not(.pk *)) { background: color-mix(in srgb, var(--c, rgba(255, 111, 174, 1)) 20%, transparent); }
 html[data-theme='dark'][data-palette='wine'] .vs-gr-chip.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vs-card:where(:not(.pk *)) { box-shadow: none; }
 
@@ -809,6 +811,20 @@ html[data-theme='dark'][data-palette='wine'] .study .tq-card:where(:not(.pk *)) 
 @media print {
 html[data-theme='dark'][data-palette='wine'] .study .print-sheet:where(:not(.pk *)) { color: #ffffff; background: rgba(255, 255, 255, 0.07); }
 }
+
+/* components/korean/VlogGrammarList.vue */
+html[data-theme='dark'][data-palette='wine'] .vg-state.ahead:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vg-rule b:where(:not(.pk *)) { background: color-mix(in srgb, var(--c, rgba(255, 111, 174, 1)) 20%, transparent); }
+
+/* components/korean/VlogTest.vue */
+html[data-theme='dark'][data-palette='wine'] .vt-w.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vt-w.bad:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .vt-gap.full:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vt-gap.drop-over:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vt-tile.dragging:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vt-ev.drop-over:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vt-ev.dragging:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vt-res.bad:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* components/korean/WeekGoalRing.vue */
 html[data-theme='dark'][data-palette='wine'] .study .wg:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 190, 220, 0.18); }
