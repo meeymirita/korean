@@ -49,5 +49,5 @@ test('файл справок читает только страница раз�
     }
   }
   walk(root)
-  assert.deepEqual(users.sort(), ['components/korean/VlogGrammarList.vue', 'views/korean/VlogStudyView.vue', 'views/korean/VlogView.vue'])
+  assert.deepEqual(users.sort(), ['components/korean/VlogGrammarList.vue', 'components/korean/VlogMap.vue', 'data/korean/vlog-lang.ts', 'data/korean/vlog-words.ts', 'views/korean/VlogStudyView.vue', 'views/korean/VlogView.vue'])
 })

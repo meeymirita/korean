@@ -183,6 +183,7 @@ html[data-theme='dark'][data-palette='wine'] .game .gap-in:where(:not(.pk *)) { 
 html[data-theme='dark'][data-palette='wine'] .game .gap-in:focus:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); }
 html[data-theme='dark'][data-palette='wine'] .game .gap-in.ok:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
 html[data-theme='dark'][data-palette='wine'] .game .gap-in.bad:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .game .asm-date:where(:not(.pk *)) { box-shadow: none; }
 
 /* game/redesign.css */
 html[data-theme='dark'][data-palette='wine'] .game.gx:where(:not(.pk *)) { background-color: rgba(255, 255, 255, 0.1); background: linear-gradient(to bottom, transparent 68%, rgba(255, 255, 255, 0.1) 93%), var(--gx-bg) center top -230px / 100% auto fixed no-repeat; }
@@ -815,6 +816,68 @@ html[data-theme='dark'][data-palette='wine'] .study .print-sheet:where(:not(.pk 
 /* components/korean/VlogGrammarList.vue */
 html[data-theme='dark'][data-palette='wine'] .vg-state.ahead:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vg-rule b:where(:not(.pk *)) { background: color-mix(in srgb, var(--c, rgba(255, 111, 174, 1)) 20%, transparent); }
+
+/* components/korean/VlogMap.vue */
+html[data-theme='dark'][data-palette='wine'] .vm:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); }
+html[data-theme='dark'][data-palette='wine'] .vm-chips:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-chip:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-chip:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.14); }
+html[data-theme='dark'][data-palette='wine'] .vm-chip.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .vm-q:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-q:where(:not(.pk *))::placeholder { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-ico:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-tip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-tip span:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-tip img:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vm-tip small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-dim:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-hint:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-zoom:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-x:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .vm-ru:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-sum:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .vm-pl .vm-chip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
+html[data-theme='dark'][data-palette='wine'] .vm-panel h4:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-vl li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .vm-vl li.seen:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .vm-vl img:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+html[data-theme='dark'][data-palette='wine'] .vm-vl small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-links a:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vm-ph2 a:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vm-ph2 li:where(:not(.pk *)) { border-left: 3px solid rgba(255, 190, 220, 0.18); }
+@media (max-width: 760px) {
+html[data-theme='dark'][data-palette='wine'] .vm-panel:where(:not(.pk *)) { box-shadow: none; }
+}
+
+/* components/korean/VlogMapScene.vue */
+html[data-theme='dark'][data-palette='wine'] .vs-sea:where(:not(.pk *)) { background: radial-gradient(ellipse at 20% 15%, rgba(255, 255, 255, 0.04), transparent 45%),
+  radial-gradient(ellipse at 80% 85%, rgba(255, 111, 174, 0.2), transparent 50%),
+  repeating-linear-gradient(176deg, rgba(255, 255, 255, 0.04) 0 3px, transparent 3px 46px),
+  linear-gradient(170deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1) 40%, rgba(255, 111, 174, 1) 100%); }
+html[data-theme='dark'][data-palette='wine'] .vs-petal:where(:not(.pk *)) { background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.07), rgba(255, 111, 174, 0.2)); }
+html[data-theme='dark'][data-palette='wine'] .vs-pill:where(:not(.pk *)) { border: 2px solid rgba(255, 190, 220, 0.18); background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vs-pill:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vs-pill.on:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vs-pill:focus-visible:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vs-pt small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vs-n:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); border: 2px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .vs-pin:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .vs-pin span:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vs-pin small:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .vs-pin.on span:where(:not(.pk *)) { box-shadow: none; }
+
+/* components/korean/VlogNote.vue */
+html[data-theme='dark'][data-palette='wine'] .vn-foot .error:where(:not(.pk *)) { color: #ffd1e3; }
+
+/* components/korean/VlogPhrasebook.vue */
+html[data-theme='dark'][data-palette='wine'] .pb-st.ahead:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
+
+/* components/korean/VlogPoliteForms.vue */
+html[data-theme='dark'][data-palette='wine'] .pf-steps li:where(:not(.pk *)) { color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .pf-steps li.lit:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .pf-opt.wrong:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
+html[data-theme='dark'][data-palette='wine'] .pf-why.bad:where(:not(.pk *)) { color: #ffd1e3; }
 
 /* components/korean/VlogTest.vue */
 html[data-theme='dark'][data-palette='wine'] .vt-w.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }

@@ -97,6 +97,8 @@ export interface Question {
   checked?: boolean
   bonus?: number
   need?: boolean
+  /** «Собери число»: что показать крупно (число, день, сумма) и мелкая подпись (месяц, «вон») */
+  asm?: { kind: string; big: string; small: string }
   /** build: номера выбранных плиток по порядку; story: номер выбранной плитки банка */
   sel?: number[] | number | null
 }
@@ -120,6 +122,8 @@ export interface GameState {
   /** уровень текста по режимам: simple / story / long */
   levels: Record<string, string>
   pfam: string
+  /** «Собери число»: что собирать: mix | num | date | price */
+  asm: string
   bstory: { st: Story; i: number; lv: string; shown: boolean } | null
   gloss: boolean
   cats: Record<string, number>

@@ -10,11 +10,12 @@ import VoicePanel from '@/components/voice/VoicePanel.vue'
 import VoiceButton from '@/components/voice/VoiceButton.vue'
 import SiteImageEditor from '@/components/SiteImageEditor.vue'
 import { BRAND, SITE, canonicalOf, seoMetaFor } from '@/data/seo'
+import { showFixedFab } from '@/lib/fab'
 
 const route = useRoute()
 // кнопка плеера: в шапке раздела (рядом с колокольчиком) и игр она своя, на остальных страницах закреплена в правом верхнем углу
-// закреплённые кнопки музыки и голоса: не на самой главной `/` (решение владельца 2026-11-17) и не на `/growth` (2026-11-19), в разделах и играх они стоят в шапке
-const fixedMusic = computed(() => route.path !== '/' && route.path !== '/growth' && !route.path.startsWith('/korean') && !route.path.startsWith('/game'))
+// закреплённые кнопки музыки и голоса: где показывать, решает `lib/fab.ts` (нет на `/`, `/growth`, `/about`, `/history`, `/dict*`; в разделах и играх они стоят в шапке)
+const fixedMusic = computed(() => showFixedFab(route.path))
 
 // заголовок, описание, canonical и превью ссылки для каждой страницы (src/data/seo.ts): на сервере уходят в готовый HTML
 const meta = computed(() => seoMetaFor(route.path))

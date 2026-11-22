@@ -47,20 +47,20 @@ describe('SEO', () => {
     assert.equal(seoFor('/нет-такой').noindex, true)
   })
 
-  test('nuxt.config.ts: проверка Яндекса, язык, манифест и значки в <head> всех страниц', () => {
+  test('nuxt.config.ts: проверка Яндекса, язык и значки в <head> всех страниц', () => {
     const cfg = file('nuxt.config.ts')
-    for (const must of ["content: '7e91f055e8c3fe9f'", "lang: 'ru'", "rel: 'manifest'", "name: 'theme-color'", "rel: 'icon'", "'@nuxtjs/robots'", "'@nuxtjs/sitemap'", "'nuxt-schema-org'"]) {
+    for (const must of ["content: '7e91f055e8c3fe9f'", "lang: 'ru'", "name: 'theme-color'", "rel: 'icon'", "'@nuxtjs/robots'", "'@nuxtjs/sitemap'", "'nuxt-schema-org'"]) {
       assert.ok(cfg.includes(must), `в nuxt.config.ts нет ${must}`)
     }
   })
 
   test('файлы, на которые ссылаются метатеги, существуют', () => {
-    for (const f of ['public/og-image.png', 'public/favicon.svg', 'public/favicon-32.png', 'public/apple-touch-icon.png', 'public/icon-192.png', 'public/icon-512.png', 'public/manifest.webmanifest']) {
+    for (const f of ['public/og-image.png', 'public/favicon.svg', 'public/favicon-32.png', 'public/apple-touch-icon.png', 'public/icon-192.png', 'public/icon-512.png']) {
       assert.ok(existsSync(new URL(`../frontend/${f}`, import.meta.url)), f)
     }
-    const m = JSON.parse(file('public/manifest.webmanifest'))
-    assert.equal(m.lang, 'ru')
-    assert.ok(m.icons.length >= 2)
+    // PWA убрано (2026-11-22): манифеста и сервис-воркера быть не должно
+    for (const f of ['public/manifest.webmanifest', 'public/sw.js']) assert.ok(!existsSync(new URL(`../frontend/${f}`, import.meta.url)), `${f} должен быть удалён`)
+    assert.ok(!file('nuxt.config.ts').includes("rel: 'manifest'"))
   })
 
   test('в public нет тяжёлых лишних файлов (всё из public попадает на сайт)', () => {

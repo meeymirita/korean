@@ -61,7 +61,7 @@
 - Скриншоты «О платформе» и «Что здесь есть» (`assets/about`, 72 файла): пересобрать `node scripts/about-shots.mjs` на демо-данных после этапов 2–7 (до этого на них старый светлый вид).
 - Баннеры Telegram `public/tg/tg-*.png` (8 штук, 1280×640): нарисовать заново в винном стиле; потом поднять `BANNER_VERSION` в `notify.service.ts` (Telegram кэширует картинки).
 - Превью ссылки `public/og-image.png` (1200×630): макет главной в новом виде.
-- Значок вкладки и приложения: `favicon.svg` (розовая ✳︎, уже подходит), `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`: ✳︎ на винном фоне; в `manifest.webmanifest` поменять `theme_color` и `background_color` на `#0b0508`.
+- Значок вкладки и приложения: `favicon.svg` (розовая ✳︎, уже подходит), `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`: ✳︎ на винном фоне (манифеста больше нет: PWA убрано 2026-11-22).
 - Видео-демонстрация `public/demo.webm` (скрыта с 2026-11-14): снимать заново только если владелец вернёт кнопку.
 - Баннер письма и PDF отчёта: проверить цвета (`backend/src/mail`, отчёт на `/korean/report`).
 

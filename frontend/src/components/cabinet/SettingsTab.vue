@@ -13,7 +13,6 @@ import { CATN } from '@/data/korean/words'
 import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
 import { usePersisted } from '@/composables/usePersisted'
-import { canInstall, installApp, isInstalled } from '@/lib/pwa'
 import { studyTime } from '@/data/weeks'
 import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
@@ -199,12 +198,6 @@ async function reconnect() {
   }
 }
 
-/* ---------- установка как приложение ---------- */
-const installed = isInstalled()
-async function install() {
-  if (await installApp()) toast.ok('Приложение установлено')
-}
-
 /* ---------- вкладки нижней части ---------- */
 const SYS_TABS = [
   { id: 'data', label: 'Прогресс и копии' },
@@ -287,15 +280,6 @@ async function refreshPublic() {
       </div>
     </div>
 
-    <div class="st-block">
-      <h3>Приложение</h3>
-      <p v-if="installed">Сайт открыт как приложение. Уже открытые страницы работают и без сети, а ответы досылаются на сервер, когда сеть вернётся.</p>
-      <template v-else>
-        <p>Сайт можно поставить как приложение на MacBook и телефон: своё окно и значок, уже открытые страницы работают без сети.</p>
-        <div class="pg-btns"><button v-if="canInstall" type="button" @click="install">⬇ Установить приложение</button></div>
-        <p class="st-sub">{{ canInstall ? '' : 'Кнопки нет, если браузер не предлагает установку. ' }}Chrome и Edge: значок установки справа в адресной строке. Safari на Mac: «Файл → Добавить в Dock». iPhone: «Поделиться → На экран „Домой“». Android: меню браузера → «Установить приложение».</p>
-      </template>
-    </div>
 
     <div class="st-block">
       <h3>Цель дня</h3>

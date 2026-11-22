@@ -11,7 +11,7 @@
 
 ## Встроенная игра «Хлебушек» — `/game/home?game=<id>`
 
-Один движок на все 32 режима (в 25 из них есть уровни-тексты «Рассказ» и «Длинный», у четырёх ещё «Эксперт 8–12», см. `docs/trainers/bread-game.md`): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
+Один движок на все 33 режима (в 25 из них есть уровни-тексты «Рассказ» и «Длинный», у четырёх ещё «Эксперт 8–12», см. `docs/trainers/bread-game.md`): `src/game/engine.ts` (`initGame(hooks, view)`, под проверкой типов; карточка вопроса на чистом DOM), оболочка на Vue `components/game/GameShell.vue` + `game/view.ts`, стили `game/game.css` + `redesign.css` + `shell.css`. Хук прогресса
 и переключение режимов — `GameHomeView.vue`. Слова движка свои (`src/game/words.ts`), это не тот же массив,
 что общий словарь `data/korean/words.ts`.
 
@@ -36,6 +36,7 @@
 | too | Тоже (도) | 도, 에도, 에서도 | `genToo` |
 | num | Числа | Число и цифра, корейский и китайский счёт | `genNum` |
 | price | Сколько стоит? | Прочитать цену в вонах | `genPrice`, `sinoNum` |
+| assemble | Собери число | Число, дата или цена крупно: собрать чтение слогами из плиток (нажатием или перетаскиванием); чипы «Всё вместе / Числа / Даты / Цены» | `genAssemble`, `asmGloss`, тип `build` движка (`S.asm`) |
 | count | Счётные слова | Вставь счётное слово или число (병, 잔, 개, 명…) | `genCount`, банк `D.PB` |
 | neg | Это или не это | 이에요/예요 и 이/가 아니에요 по 받침 | `genNeg` |
 | place | Куда, где | 에 или 에서 при месте | `genPlace` |

@@ -39,7 +39,7 @@ test('поиск по названию и описанию, пустой зап�
 
 test('группы по темам: «Числа и деньги» и «Время и дни недели» со своими играми', () => {
   const byId = Object.fromEntries(GAME_GROUPS.map(g => [g.id, g.games.map(x => x.id)]))
-  assert.deepEqual(byId.numbers, ['num', 'price', 'count'])
+  assert.deepEqual(byId.numbers, ['num', 'price', 'assemble', 'count'])
   assert.deepEqual(byId.time, ['days', 'when', 'too', 'fut'])
 })
 

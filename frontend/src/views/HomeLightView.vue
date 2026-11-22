@@ -7,7 +7,6 @@ import yunaImg from '@/assets/home/yuna.webp'
 import HomeGuideDrawer from '@/components/home/HomeGuideDrawer.vue'
 import { D } from '@/data/korean/words'
 import { RULES_COUNT } from '@/data/korean/grammar'
-import { installApp, isInstalled } from '@/lib/pwa'
 import { useToastStore } from '@/stores/toast'
 import { HOME_LINKS, HOME_MORE, useHome, useHomePicks } from '@/composables/useHome'
 import { withSeed } from '@/lib/seeded'
@@ -52,15 +51,6 @@ watch(demo, open => {
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 const toast = useToastStore()
-/** Сайт открыт как установленное приложение: узнаём только в браузере, после оживления страницы. */
-const installed = ref(false)
-onMounted(() => (installed.value = isInstalled()))
-/** Окно установки браузера; если браузер его не даёт (Safari, iPhone), подсказываем, где искать. */
-async function install() {
-  if (await installApp()) toast.ok('Приложение установлено')
-  else if (!isInstalled()) toast.ok('Chrome и Edge: значок установки в адресной строке. Safari на Mac: «Файл → Добавить в Dock». iPhone: «Поделиться → На экран „Домой“».')
-}
-
 /** Слово дня: другое после каждой перезагрузки страницы (от того же зерна, что и фраза: одинаково на сервере и в браузере). */
 const word = withSeed(seed + ':word', () => D[Math.floor(Math.random() * D.length)]!)
 /** Карточка слова переворачивается по нажатию: видно перевод. */
@@ -119,7 +109,6 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <RouterLink to="/korean/home" class="btn-main">Продолжить <span class="arrow">→</span></RouterLink>
           <button class="link" aria-haspopup="dialog" @click="guide = true">что здесь есть</button>
           <RouterLink to="/korean/cabinet" class="link"><Icon v-if="hello.locked" name="lock" /> {{ hello.title }}</RouterLink>
-          <button v-if="!installed" class="link" @click="install">скачать приложение</button>
         </div>
 
         <RouterLink v-if="due" to="/korean/review" class="due">

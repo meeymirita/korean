@@ -4,6 +4,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogStudyView from '@/views/korean/VlogStudyView.vue'
 import VlogView from '@/views/korean/VlogView.vue'
 import { STUDY_VLOGS } from '@/data/korean/vlog-study'
+import { vlogHitsFor } from '@/data/korean/vlog-words'
+import WordInVlogs from '@/components/korean/WordInVlogs.vue'
 
 /** вход подменён: настоящий без сервера невозможен */
 vi.mock('@/stores/progress', async original => {
@@ -76,5 +78,49 @@ describe('«Разбор влога»', () => {
     expect(img().attributes('src')).toBe(`https://i.ytimg.com/vi/${yt}/mqdefault.jpg`)
     await img().trigger('error')
     expect(w.find('.vl-card .vl-ph').exists()).toBe(true)
+  })
+  it('на карточках результат теста, «следующий» и фильтр по статусу', async () => {
+    localStorage.clear()
+    const attempts = [{ yt: '_kPYR0gBstk', at: 1, score: 27, total: 30, passed: true, blocks: [] }]
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(JSON.stringify(String(url).includes('vlog-tests') ? { attempts } : { watched: [] }), { status: 200 })))
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    await flushPromises()
+    expect(w.findAll('.vl-badge').some(b => b.text() === 'сдано 90%')).toBe(true)
+    expect(w.findAll('.vl-badge.next').length).toBe(1)
+    const chips = w.findAll('[aria-label="Статус"] .vl-chip').map(c => c.text())
+    expect(chips.some(t => t.startsWith('Сдано'))).toBe(true)
+    await w.findAll('[aria-label="Статус"] .vl-chip').find(c => c.text().startsWith('Сдано'))!.trigger('click')
+    await flushPromises()
+    await new Promise(r => setTimeout(r, 50))
+    await flushPromises()
+    expect(w.findAll('.vl-card').length).toBe(1)
+  })
+
+  it('слово находит фразы в других влогах и показывает ссылку на момент', async () => {
+    const r = vlogHitsFor('카페', 'choisusu-hobby')
+    expect(r.total).toBeGreaterThan(0)
+    expect(r.hits.every(h => h.id !== 'choisusu-hobby')).toBe(true)
+    const w = await mountSuspended(WordInVlogs, { props: { wordKey: '카페', exclude: 'choisusu-hobby' } })
+    expect(w.find('.wv-h').text()).toContain('Звучит ещё')
+    expect(w.find('.wv-link').attributes('href')).toMatch(/^\/korean\/vlog\?v=.+&t=\d+$/)
+  })
+  it('сортировка «по доле знакомых слов» показывает процент на карточках', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [], attempts: [] }), { status: 200 })))
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog?o=known' })
+    await flushPromises()
+    const b = w.findAll('.vl-badge').filter(x => x.text().endsWith('% знакомых'))
+    expect(b.length).toBeGreaterThan(30)
+    const nums = b.map(x => parseInt(x.text(), 10))
+    expect(nums[0]).toBeGreaterThanOrEqual(nums[nums.length - 1]!)
+  })
+
+  it('на странице разбора есть блок «до 90% понимания»', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => emptySearch()))
+    const w = await mountSuspended(VlogStudyView, { route: '/korean/vlog-study?v=choisusu-hobby' })
+    await flushPromises()
+    expect(w.find('.vs-need').exists()).toBe(true)
+    expect(w.find('.vs-need').text()).toContain('90%')
   })
 })

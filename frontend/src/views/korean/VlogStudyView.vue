@@ -4,6 +4,7 @@ import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS } from '@/data/korean/vlogs'
 import { gramCard, grammarHints } from '@/data/korean/vlog-grammar'
 import { NEW_GRAMMAR, STUDY_VLOGS, VLOG_NEW_GRAMMAR, passes } from '@/data/korean/vlog-study'
+import { missingFor } from '@/data/korean/vlog-lang'
 import { searchDict } from '@/lib/dictApi'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { useProgressStore } from '@/stores/progress'
@@ -12,6 +13,9 @@ import { fetchT } from '@/lib/http'
 import { useToastStore } from '@/stores/toast'
 import { ASK_QUICK, noteTitle, useVlogPhrases } from '@/composables/useVlogPhrases'
 import AskAi from '@/components/korean/AskAi.vue'
+import WordInVlogs from '@/components/korean/WordInVlogs.vue'
+import VlogNote from '@/components/korean/VlogNote.vue'
+import VlogPoliteForms from '@/components/korean/VlogPoliteForms.vue'
 import VlogTest from '@/components/korean/VlogTest.vue'
 import { hasTest } from '@/data/korean/vlog-test'
 
@@ -34,7 +38,7 @@ async function loadAttempts() {
   if (!canSave.value) return
   try {
     const res = await fetchT('/api/vlog-tests', { headers: headers() })
-    if (res.ok) attempts.value = ((await res.json()) as { attempts: Attempt[] }).attempts
+    if (res.ok) attempts.value = ((await res.json()) as { attempts?: Attempt[] }).attempts ?? []
   } catch {
     /* история не загрузилась: вкладка покажет пустой список */
   }
@@ -44,7 +48,7 @@ async function onFinish(r: { score: number; total: number; blocks: { id: string;
   try {
     const res = await fetchT('/api/vlog-tests', { method: 'POST', headers: headers(), body: JSON.stringify({ yt: vlog.value.yt, score: r.score, total: r.total, blocks: r.blocks }) })
     if (!res.ok) throw new Error(String(res.status))
-    attempts.value = ((await res.json()) as { attempts: Attempt[] }).attempts
+    attempts.value = ((await res.json()) as { attempts?: Attempt[] }).attempts ?? []
   } catch {
     toast.error('Результат не сохранился: сервер не ответил')
   }
@@ -168,6 +172,8 @@ const wordMeta = (w: ClipWord) => {
   const f = dict.value[w.key]
   return w.own ? 'в твоём словаре' : f && f !== 'busy' && f !== 'none' ? [f.pos, f.level].filter(Boolean).join(' · ') : ''
 }
+/** До 90% понимания: какие слова выучить, чтобы знать девять слов из десяти текста (самые частые из незнакомых). */
+const need = computed(() => (vlog.value && import.meta.client ? missingFor(vlog.value, 0.9) : null))
 const ownCount = computed(() => words.value.filter(w => w.own).length)
 </script>
 
@@ -187,6 +193,8 @@ const ownCount = computed(() => words.value.filter(w => w.own).length)
       </header>
 
       <template v-if="tab === 'study'">
+      <VlogNote :vlog="vlog" />
+
       <details class="vs-how">
         <summary>Как работать с этим влогом</summary>
         <ol>
@@ -218,6 +226,8 @@ const ownCount = computed(() => words.value.filter(w => w.own).length)
       </section>
 
       <div class="vs-cols">
+      <VlogPoliteForms v-if="vlog.id === 'sony-emotions'" />
+
       <section aria-label="Текст">
         <h3 class="vs-h">Текст с переводом</h3>
         <div class="vs-lines" lang="ko">
@@ -235,6 +245,7 @@ const ownCount = computed(() => words.value.filter(w => w.own).length)
                 <div v-if="hints[i]?.length" class="vs-gr" aria-label="Грамматика во фразе">
                   <button v-for="g in hints[i]" :key="g.id" type="button" class="vs-gr-chip" :class="{ on: gramOpen === g.id }" :aria-pressed="gramOpen === g.id" @click="picked = null; gramOpen = gramOpen === g.id ? '' : g.id">{{ g.ko }}</button>
                 </div>
+                <NuxtLink class="vs-btn vs-btn-link" :to="`/korean/vlog?v=${vlog.id}&t=${Math.floor(l.s)}`">в видео</NuxtLink>
                 <button v-if="ownerAsk" type="button" class="vs-btn" :class="{ on: askAt === i }" :aria-expanded="askAt === i" @click="askAt = askAt === i ? -1 : i">спросить</button>
                 <button v-if="canSaveNotes" type="button" class="vs-btn" :disabled="savedTitles.has(noteTitle(l.ko))" @click="saveLine(i)">{{ savedTitles.has(noteTitle(l.ko)) ? 'записано' : 'записать' }}</button>
               </div>
@@ -254,8 +265,23 @@ const ownCount = computed(() => words.value.filter(w => w.own).length)
       <div v-if="picked" class="vs-card" role="status">
         <div class="vs-g-head"><b lang="ko">{{ picked.own?.k ?? picked.core }}</b><span>{{ wordMeta(picked) }}</span></div>
         <p class="vs-g-rule">{{ wordRu(picked) }}</p>
+        <WordInVlogs v-if="canSave" :word-key="picked.key" :exclude="vlog.id" />
       </div>
 
+      <section v-if="need && (need.list.length || need.pct >= 90)" class="vs-need" aria-label="До девяноста процентов">
+          <h3 class="vs-h">До 90% понимания</h3>
+          <p v-if="!need.list.length" class="vs-note">Сейчас знакомо {{ need.pct }}% слов текста: больше девяноста, влог уже понятен.</p>
+          <template v-else>
+            <p class="vs-note">Сейчас знакомо {{ need.pct }}% слов текста. Чтобы понимать 90%, выучи ещё {{ need.list.length }} {{ need.list.length === 1 ? 'слово' : 'слов' }}, самые частые первыми:</p>
+            <ul class="vs-words">
+              <li v-for="m in need.list" :key="m.word.key">
+                <span class="cw" :class="m.word.state" lang="ko">{{ m.word.core }}</span>
+                <span class="vs-wr">{{ wordRu(m.word) }}</span>
+                <small>{{ m.n }} раз</small>
+              </li>
+            </ul>
+          </template>
+      </section>
       <section aria-label="Слова">
         <h3 class="vs-h">Слова влога</h3>
         <p class="vs-note">Всего {{ words.length }} разных слов, из них {{ ownCount }} в твоём словаре. Для остальных перевод из большого словаря.</p>
@@ -358,6 +384,7 @@ const ownCount = computed(() => words.value.filter(w => w.own).length)
 .vs-gr { display: flex; flex-wrap: wrap; gap: 6px; }
 .vs-btn { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 3px 12px; font: inherit; font-size: 12.5px; cursor: pointer; }
 .vs-btn.on { border-color: var(--ink); color: var(--ink); }
+.vs-btn-link { text-decoration: none; }
 .vs-btn:disabled { opacity: .6; cursor: default; }
 .vs-ask { margin-top: 8px; min-width: 0; }
 .vs-gr-chip { border: 1px dashed var(--accent); border-radius: 999px; background: transparent; color: var(--ink); padding: 3px 12px; font: inherit; font-size: 13px; cursor: pointer; }

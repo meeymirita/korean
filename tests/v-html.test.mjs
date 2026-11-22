@@ -13,6 +13,7 @@ const walk = d => readdirSync(d).flatMap(f => (statSync(join(d, f)).isDirectory(
 const STATIC = {
   'components/korean/GrammarModal.vue': { "current.b.map(blk).join('')": 'блоки карточки грамматики из data/korean/grammar.ts' },
   'components/cabinet/TelegramGuide.vue': { preview: 'текст экранируется, обратно разрешены только теги b, i, u, s, code и ссылки http(s)' },
+  'components/korean/VlogMap.vue': { ICON_DEFS: 'значки мест из data/korean/vlog-map-art.ts, строка собрана из кода сайта' },
   'views/korean/RichView.vue': { html: 'готовые страницы справочника из data/korean/pages.ts' },
 }
 

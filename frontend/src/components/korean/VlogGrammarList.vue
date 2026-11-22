@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { VLOGS } from '@/data/korean/vlogs'
 import { gramCard, grammarHints, hintToken } from '@/data/korean/vlog-grammar'
-import { NEW_GRAMMAR, passes } from '@/data/korean/vlog-study'
+import { NEW_GRAMMAR, STUDY_VLOGS, passes } from '@/data/korean/vlog-study'
 
 /**
  * Вкладка «Грамматика из влогов»: общий список всей грамматики, которая встречается во фразах влогов (по правилам `grammarHints`,
@@ -17,6 +17,8 @@ interface Row {
   state: State
   phrases: number
   vlogs: Map<string, string>
+  /** сколько фраз с темой в каждом влоге */
+  perVlog: Map<string, number>
   examples: { id: string; title: string; ko: string; ru: string; mark: string }[]
   formula: string
   rule: string
@@ -31,9 +33,10 @@ const rows = computed<Row[]>(() => {
       for (const g of grammarHints(l.ko)) {
         const key = keyOf(g.ko)
         const card = gramCard(g.id)
-        const row: Row = m.get(key) ?? { key, id: g.id, ko: g.ko, ru: g.ru, state: (card?.state ?? 'other') as State, phrases: 0, vlogs: new Map(), examples: [], formula: card?.formula ?? '', rule: '' }
+        const row: Row = m.get(key) ?? { key, id: g.id, ko: g.ko, ru: g.ru, state: (card?.state ?? 'other') as State, phrases: 0, vlogs: new Map(), perVlog: new Map(), examples: [], formula: card?.formula ?? '', rule: '' }
         row.phrases++
         row.vlogs.set(v.id, v.title)
+        row.perVlog.set(v.id, (row.perVlog.get(v.id) ?? 0) + 1)
         if (row.examples.length < 3 && !row.examples.some(e => e.id === v.id)) row.examples.push({ id: v.id, title: v.title, ko: l.ko, ru: l.ru, mark: hintToken(g.id, l.ko) })
         m.set(key, row)
       }
@@ -46,7 +49,7 @@ const rows = computed<Row[]>(() => {
     if (row) {
       row.rule = n.rule
       row.formula = n.formula
-    } else m.set(key, { key, id: key, ko: n.ko, ru: n.ru, state: 'note', phrases: 0, vlogs: new Map(), examples: [], formula: n.formula, rule: n.rule })
+    } else m.set(key, { key, id: key, ko: n.ko, ru: n.ru, state: 'note', phrases: 0, vlogs: new Map(), perVlog: new Map(), examples: [], formula: n.formula, rule: n.rule })
   }
   return [...m.values()].sort((a, b) => b.phrases - a.phrases || a.ko.localeCompare(b.ko, 'ko'))
 })
@@ -55,6 +58,8 @@ const STATE: Record<State, string> = { ok: 'пройдено', ahead: 'ещё в
 const filter = ref<'all' | State>('all')
 const chips = computed(() => (['all', 'ok', 'ahead', 'other', 'note'] as const).map(id => ({ id, label: id === 'all' ? 'Все' : STATE[id], n: id === 'all' ? rows.value.length : rows.value.filter(r => r.state === id).length })).filter(c => c.n))
 const shown = computed(() => rows.value.filter(r => filter.value === 'all' || r.state === filter.value))
+/** Влоги темы: по числу фраз с ней, самые насыщенные первыми. */
+const vlogsOf = (r: Row) => [...r.perVlog].sort((a, b) => b[1] - a[1]).map(([id, n]) => ({ id, n, title: r.vlogs.get(id) ?? id }))
 const rich = (text: string) => text.split('**').map((t, i) => ({ t, b: i % 2 === 1 }))
 /** Пример с подсвеченной формой: слово `mark` выделяется внутри фразы. */
 function hl(ko: string, mark: string) {
@@ -81,6 +86,15 @@ function hl(ko: string, mark: string) {
           <template v-for="(part, k) in r.formula.split(' + ')" :key="k"><span v-if="k" class="vg-plus">+</span><span class="vg-chipf" :class="{ end: k > 0 }">{{ part }}</span></template>
         </div>
         <p v-if="r.rule" class="vg-rule"><template v-for="(x, k) in rich(r.rule)" :key="k"><b v-if="x.b">{{ x.t }}</b><template v-else>{{ x.t }}</template></template></p>
+        <details v-if="r.vlogs.size" class="vg-vl">
+          <summary>В каких влогах ({{ r.vlogs.size }})</summary>
+          <ul>
+            <li v-for="x in vlogsOf(r)" :key="x.id">
+              <NuxtLink :to="`/korean/vlog?v=${x.id}`">{{ x.title }}</NuxtLink> <small>{{ x.n }} фраз</small>
+              <NuxtLink v-if="STUDY_VLOGS.includes(x.id)" :to="`/korean/vlog-study?v=${x.id}`" class="vg-link vg-an">разбор</NuxtLink>
+            </li>
+          </ul>
+        </details>
         <ul v-if="r.examples.length" class="vg-ex">
           <li v-for="e in r.examples" :key="e.id"><span lang="ko"><template v-for="(p, k) in hl(e.ko, e.mark)" :key="k"><mark v-if="p.m" class="vg-hl">{{ p.t }}</mark><template v-else>{{ p.t }}</template></template></span><br />{{ e.ru }} <NuxtLink :to="`/korean/vlog?v=${e.id}`" class="vg-link">{{ e.title }}</NuxtLink></li>
         </ul>
@@ -115,5 +129,11 @@ function hl(ko: string, mark: string) {
 .vg-ex { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.6; }
 .vg-ex li { padding: 4px 0 4px 10px; border-left: 3px solid var(--c, var(--line)); }
 .vg-hl { background: color-mix(in srgb, var(--c) 32%, transparent); color: inherit; border-radius: 6px; padding: 0 3px; font-weight: 700; }
+.vg-vl { margin-top: 10px; font-size: 14px; }
+.vg-vl summary { cursor: pointer; color: var(--accent); }
+.vg-vl ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.vg-vl li a:first-child { color: var(--ink); text-decoration: none; }
+.vg-vl small { color: var(--muted); }
+.vg-an { margin-left: 6px; }
 .vg-link { display: inline-block; margin-left: 4px; color: var(--accent); font-size: 12.5px; text-decoration: none; }
 </style>

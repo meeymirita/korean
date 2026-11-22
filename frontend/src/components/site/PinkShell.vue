@@ -2,14 +2,14 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useProgressStore } from '@/stores/progress'
-import { toggleTheme } from '@/lib/theme'
+import { themeDark, toggleTheme } from '@/lib/theme'
 import '@/assets/home/fonts.css'
 
 /**
  * Общая оболочка открытых страниц в тёмно-розовом оформлении (по файлу urimal-landing): винный фон, свечение за курсором,
  * шапка-«таблетка» с ссылками и кнопкой входа. Содержимое страницы идёт в слот, ссылки шапки можно заменить слотом `nav`.
  */
-withDefaults(defineProps<{ sub?: string; width?: string; themeToggle?: boolean }>(), { sub: 'korean space', width: '1220px', themeToggle: false })
+withDefaults(defineProps<{ sub?: string; width?: string; themeToggle?: boolean }>(), { sub: 'korean space', width: '1220px', themeToggle: true })
 const progress = useProgressStore()
 const card = ref<HTMLElement>()
 const root = ref<HTMLElement>()
@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
             <RouterLink to="/dict">Большой словарь</RouterLink>
           </slot>
         </nav>
-        <button v-if="themeToggle" type="button" class="theme-btn" aria-label="Включить светлую тему" @click="toggleTheme">☀︎ Светлая</button>
+        <button v-if="themeToggle" type="button" class="theme-btn" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme">{{ themeDark ? '☀︎ Светлая' : '☾ Тёмная' }}</button>
         <RouterLink to="/korean/home" class="enter">
           {{ progress.unlocked ? 'Платформа' : 'Войти' }}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>

@@ -38,7 +38,7 @@ export function weakRules(log: ProgressData['log'], days = 30, now = Date.now())
   const categories: Record<string, { label: string; family?: string; game?: string }> = {
     part: { label: 'Частицы', family: 'all' }, particles: { label: 'Частицы', family: 'all' },
     ptext: { label: 'Семейства частиц', family: 'all' }, form: { label: 'Формы', game: 'form' }, type: { label: 'Формы', game: 'form' },
-    num: { label: 'Числа', game: 'num' }, count: { label: 'Числа', game: 'num' }, price: { label: 'Числа', game: 'num' },
+    num: { label: 'Числа', game: 'num' }, count: { label: 'Числа', game: 'num' }, price: { label: 'Числа', game: 'num' }, assemble: { label: 'Числа', game: 'num' },
     when: { label: 'Время', game: 'when' }, days: { label: 'Время', game: 'when' },
   }
   for (const answer of log) {

@@ -1432,6 +1432,44 @@ function genPrice(){
   return {type:'choice',mode:'price',key:key,word:null,label:'Сколько это стоит?',prompt:readable(n),promptKo:true,options:set.map(v=>({text:fmtMoney(v)})),correct:set.indexOf(n),
     right:fmtMoney(n),explain:[readable(n)+' = '+fmtMoney(n),how],teach:readable(n)+'이에요.',trans:'Это стоит '+fmtMoney(n)+'.',hp:readable(n),hr:fmtMoney(n),icon:'💴'};
 }
+
+/* ---------- «Собери число»: число, дата или цена крупно, плитки со словами, ответ собирается слотами ---------- */
+const ASM_MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const ASM_GLOSS: Record<string,string>={'일':'1','이':'2','삼':'3','사':'4','오':'5','육':'6','칠':'7','팔':'8','구':'9','십':'10','백':'100','천':'1000','만':'10 000','월':'месяц','유':'6 (только в 유월)','시':'10 (только в 시월)','원':'воны'};
+/** Слово на плитке «Собери число»: цифра, которую оно значит. */
+function asmGloss(tok: string){return ASM_GLOSS[tok]||'';}
+const ASM_ALL=['일','이','삼','사','오','육','칠','팔','구','십','백','천','만'];
+/** Китайское число по слогам: 23405 → 이 만 삼 천 사 백 오 */
+function asmSino(n: number){return Array.from(sinoNum(n));}
+function asmDay(d: number){return [...asmSino(d),'일'];}
+function asmMonth(m: number){return m===6?['유','월']:m===10?['시','월']:[...asmSino(m),'월'];}
+function genAssemble(){
+  const kind=S.asm==='mix'||!S.asm?rnd(['num','num','date','price']):S.asm;
+  let toks: string[],big: string,small: string,label: string,note: string,key: string,spare: string[]=[],read: string;
+  if(kind==='date'){
+    const m=1+Math.floor(Math.random()*12),d=1+Math.floor(Math.random()*31);
+    toks=[...asmMonth(m),...asmDay(d)];read=toks.join('');
+    big=String(d);small=ASM_MONTHS[m-1]!;key='as:d:'+m+'.'+d;label='Собери дату по-корейски';
+    note='Месяц: число + 월, день: число + 일. '+(m===6?'Июнь — 유월 (не 육월). ':m===10?'Октябрь — 시월 (не 십월). ':'')+d+' '+small+' = '+read;
+    if(m===6)spare.push('육');if(m===10)spare.push('십');
+  }else if(kind==='price'){
+    const n=rnd([1,2,3,4,5,6,7,8,9])*1000+rnd([0,0,500,100,200,300])*(Math.random()<.5?1:0)+(Math.random()<.3?rnd([1,2,3,4])*10000:0);
+    toks=[...asmSino(n),'원'];read=toks.join('');
+    big=fmtMoney(n);small='цена';key='as:p:'+n;label='Собери цену по-корейски';
+    note=fmtMoney(n)+' = '+sinoNum(n)+' 원'+(n>=10000&&Math.floor(n/10000)===1?'. Перед 만 цифру 일 не говорят.':'');
+  }else{
+    const r=Math.random();
+    const n=r<.15?11+Math.floor(Math.random()*89):r<.4?100+Math.floor(Math.random()*900):r<.7?1000+Math.floor(Math.random()*9000):10000+Math.floor(Math.random()*89999);
+    toks=asmSino(n);read=toks.join('');
+    big=String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');small='число';key='as:n:'+n;label='Собери число по-корейски';
+    note='Китайские числа: '+big+' = '+read+(n>=10000?'. Перед 만 цифру 일 не говорят (10 000 = 만).':'');
+  }
+  // лишние плитки: слоги чисел, которых в ответе нет (две штуки, по одной в коротких)
+  shuffle(ASM_ALL).forEach(function(w){if(spare.length<(toks.length>=5?2:1)&&!toks.includes(w)&&!spare.includes(w))spare.push(w);});
+  const right=toks.join(' ');
+  return {type:'build',mode:'assemble',key:key,level:2,label:label,ru:big,asm:{kind:kind,big:big,small:small},tiles:shuffle([...toks,...spare]),
+    accept:[right],right:right,note:note,explain:[read,note],hp:big+(kind==='date'?' '+small:''),hr:read,icon:'🔢'};
+}
 const COUNTERS=['병','잔','개','그릇','명','마리','권','장'];
 function countPool(){return D.PB.map((x,k)=>k).filter(k=>{const p=D.PB[k]!;return COUNTERS.includes(p[2])||/^Перед счётным/.test(p[4]);});}
 function genCount(){
@@ -1506,7 +1544,7 @@ function genPolite(){
   if(toKo)return {type:'choice',mode:'polite',key:'po:'+w[0]+':k',word:null,label:'Как сказать «спасибо» этому человеку?',prompt:w[1].replace(/ \(.*$/,''),promptKo:false,options:set.map(x=>({text:x[0],ko:true})),correct:set.indexOf(w),right:w[0],explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[1],hr:w[0],icon:'🙇'};
   return {type:'choice',mode:'polite',key:'po:'+w[0]+':r',word:null,label:'Кому так говорят «спасибо»?',prompt:w[0],promptKo:true,options:set.map(x=>({text:x[1].replace(/ \(.*$/,'')})),correct:set.indexOf(w),right:w[1].replace(/ \(.*$/,''),explain:[w[0]+' — '+w[1],note],teach:POLITE_EX[w[0]],hp:w[0],hr:w[1],icon:'🙇'};
 }
-const GEN: Record<string, ()=>Question>={word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,tenses:genTenses,finderr:genFindErrors,oddone:genOddOne,weak:genWeak,fut:genFut,only:genOnly};
+const GEN: Record<string, ()=>Question>={assemble:genAssemble,word:genWord,rev:genRev,form:()=>(storyOn('form')?(S.levels.form==='long'?genFormStory(5,10):genFormStory(2,4)):(()=>{const r=Math.random();return S.fut!=='off'&&S.tense==='both'&&r>.7?genFuture():r<.5?genForm():genPast();})()),qw:genQw,part:genPart,build:genBuild,spot:genSpot,type:genType,err:genErr,pair:genPair,ord:genOrd,dlg:genDlg,han:genHan,days:genDays,when:genWhen,too:genToo,num:genNum,price:genPrice,count:genCount,neg:genNeg,place:genPlace,dem:genDem,polite:genPolite,ptext:genPtext,expert:genExpert,tenses:genTenses,finderr:genFindErrors,oddone:genOddOne,weak:genWeak,fut:genFut,only:genOnly};
 function genQuestion(): Question{
   // один и тот же верный ответ не больше `sameCap()` раз из последних 10: иначе «пять из десяти одной грамматикой»; не вышло с 30 попыток — берём что есть
   let q: Question|undefined;
@@ -1528,5 +1566,5 @@ function genQuestion(): Question{
   return q!;
 }
 
-return { genQuestion, genBuild, tileGloss, normRu, STORY_MODES, EXPERT_LV, LEVEL_LABELS, storyOn };
+return { genQuestion, genBuild, tileGloss, asmGloss, normRu, STORY_MODES, EXPERT_LV, LEVEL_LABELS, storyOn };
 }

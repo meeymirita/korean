@@ -27,7 +27,7 @@
 
 ## Что проверено
 
-- Линтер (`npm run lint`), `npm run type-check`, тесты `docs-sync`, `theme`, `history`, `pwa`, `readme`, `frontend/test/guide-access.spec.ts`: всё зелёное (после слияния с `main`).
+- Линтер (`npm run lint`), `npm run type-check`, тесты `docs-sync`, `theme`, `history`, `readme`, `frontend/test/guide-access.spec.ts`: всё зелёное (после слияния с `main`).
 - Скриншотами (демо-данные, вход под токеном) смотрел: `/`, `/about`, `/dict`, `/korean/home`, `today`, `words`, `grammar` и окно правила, `ref`, `review`, `know`, `lab`, `clip`, `cabinet` (обзор, заметки, настройки), `shop`, `garden`, `report`, `/game/home`, «Найди пару», «5 минут», поиск, «Новые слова».
 
 ## Что не проверено или не сделано

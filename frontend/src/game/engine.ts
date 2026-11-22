@@ -48,20 +48,21 @@ function labelWithHelp(q: Question){
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S: GameState={
-  mode:'mix',fut:'on',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple',expert:'simple'},pfam:'topic',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',fut:'on',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple',expert:'simple'},pfam:'topic',asm:'mix',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:undefined,win:null,
   blitz:{on:false,left:60,total:60,ok:0,bad:0,iv:undefined},retryQueue:[],retryKeys:new Set()
 };
 S.retryQueue=[];S.retryKeys=new Set();
-function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,fut:S.fut,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch{}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({level:S.level,levels:S.levels,gloss:S.gloss,cats:S.cats,reading:S.reading,tense:S.tense,fut:S.fut,blitzSecs:S.blitzSecs,survLives:S.survLives,pfam:S.pfam,asm:S.asm,mode:S.mode,all:S.all,miss:S.miss,seenHelp:S.seenHelp,modeHelp:S.modeHelp}));}catch{}}
 function load(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(!j)return;
   if(j.cats)Object.assign(S.cats,j.cats);
   if(j.levels&&typeof j.levels==='object')Object.assign(S.levels,j.levels);
   else if(j.pairLevel)S.levels.pair=j.pairLevel;
   (['reading','tense','fut','mode','seenHelp','modeHelp','level','gloss'] as const).forEach(k=>{if(j[k]!==undefined)(S as unknown as Record<string, unknown>)[k]=j[k];});
   if(PFAMS.some(f=>f.id===j.pfam))S.pfam=j.pfam;
+  if(['mix','num','date','price'].includes(j.asm))S.asm=j.asm;
   if([30,60,120].includes(j.blitzSecs))S.blitzSecs=j.blitzSecs;
   if([0,3,5].includes(j.survLives))S.survLives=j.survLives;
   if(j.all)Object.assign(S.all,j.all);if(j.miss)S.miss=j.miss;}catch{}}
@@ -80,7 +81,9 @@ if(![1,2,3,4,'any'].includes(S.level))S.level='any';
 Object.keys(S.levels).forEach(k=>{if(!['simple','story','long','expert'].includes(S.levels[k]!))S.levels[k]='simple';});
 
 /* ---------- генераторы заданий (generators.ts) ---------- */
-const { genQuestion, genBuild, tileGloss, normRu, STORY_MODES, LEVEL_LABELS, storyOn } = createGenerators(S, hooks);
+const { genQuestion, genBuild, tileGloss: sentGloss, asmGloss, normRu, STORY_MODES, LEVEL_LABELS, storyOn } = createGenerators(S, hooks);
+/** Подпись плитки: в «Собери число» это цифра, в остальных сборках перевод слова. */
+const tileGloss=(t: string)=>S.cur&&S.cur.mode==='assemble'?asmGloss(t):sentGloss(t);
 /** Чипы правил над заданием: выбор запоминается, по нему собираются предложения. */
 function famChips(){
   const lv=el('div','levels fams');
@@ -219,13 +222,28 @@ function renderQuestion(q: Question){
     setTimeout(()=>inp.focus({preventScroll:true}),0);
   }else{
     const lv=el('div','levels');
-    ([['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер']] as [number|'any',string][]).forEach(function(x){
-      const b=el('button','chip'+(S.level===x[0]?' on':''),x[1]);b.type='button';
-      b.addEventListener('click',function(){S.level=x[0];save();renderQuestion(genBuild());});
-      lv.appendChild(b);
-    });
+    if(q.asm){
+      // «Собери число»: чипы выбирают, что собирать, а не уровень предложения
+      ([['mix','Всё вместе'],['num','Числа'],['date','Даты'],['price','Цены']] as [string,string][]).forEach(function(x){
+        const b=el('button','chip'+(S.asm===x[0]?' on':''),x[1]);b.type='button';
+        b.addEventListener('click',function(){S.asm=x[0];save();renderQuestion(genQuestion());});
+        lv.appendChild(b);
+      });
+    }else{
+      ([['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер']] as [number|'any',string][]).forEach(function(x){
+        const b=el('button','chip'+(S.level===x[0]?' on':''),x[1]);b.type='button';
+        b.addEventListener('click',function(){S.level=x[0];save();renderQuestion(genBuild());});
+        lv.appendChild(b);
+      });
+    }
     card.appendChild(lv);
-    card.appendChild(el('div','prompt',q.ru));
+    if(q.asm){
+      // крупно: число на «бирке», дата как листок календаря (месяц сверху, день крупно)
+      const big=el('div','asm-big asm-'+q.asm.kind);
+      if(q.asm.kind==='date'){big.appendChild(el('span','asm-mon',q.asm.small));big.appendChild(el('b','asm-num',q.asm.big));}
+      else{big.appendChild(el('b','asm-num',q.asm.big));big.appendChild(el('span','asm-mon',q.asm.small));}
+      card.appendChild(big);
+    }else card.appendChild(el('div','prompt',q.ru));
     const slots=el('div','slots');slots.id='slots';card.appendChild(slots);
     const tiles=el('div','tiles');tiles.id='tiles';
     q.tiles!.forEach((t,i)=>{
@@ -244,7 +262,7 @@ function renderQuestion(q: Question){
     const gb=el('button','ghost hint','🔤 '+(S.gloss?'Скрыть переводы':'Показать переводы'));gb.type='button';gb.id='glossBtn';
     gb.addEventListener('click',toggleGloss);
     acts.append(chk,clr,gb);if(!S.blitz.on)acts.appendChild(hb);card.appendChild(acts);
-    card.appendChild(el('div','scheme','Не все плитки нужны: среди них есть лишние (с неверной частицей, временем или местом). Не знаешь слово — нажми «Показать переводы» (клавиша T) или наведи на плитку. Клавиши: 1–9 — выбрать слово, Enter — проверить, Backspace — убрать последнее, H — подсказка.'));
+    card.appendChild(el('div','scheme',q.asm?'Собери по слогам, как это читается: плитки нажимай по порядку или перетаскивай в строку. Лишние слоги не нужны. Переводы плиток (цифры): кнопка «Показать переводы» или клавиша T. Enter — проверить, Backspace — убрать последний.':'Не все плитки нужны: среди них есть лишние (с неверной частицей, временем или местом). Не знаешь слово — нажми «Показать переводы» (клавиша T) или наведи на плитку. Клавиши: 1–9 — выбрать слово, Enter — проверить, Backspace — убрать последнее, H — подсказка.'));
     q.sel=[];drawBuild();
     // плитку можно перетащить в строку ответа: встаёт туда, где её отпустили (нажатие по-прежнему ставит в конец)
     dragOff=dragDrop({tiles:tiles.querySelectorAll('.tile'),targets:function(){return S.answered?[]:[slots];},

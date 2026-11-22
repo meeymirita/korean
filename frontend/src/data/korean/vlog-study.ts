@@ -4,7 +4,7 @@ import type { VlogLine } from './vlogs'
  * Страница «Разбор влога» (`/korean/vlog-study?v=<id>`): текст с переводом, справка по новой грамматике, слова. Видео на ней нет.
  * Пока только для влогов из этого списка (решение владельца 2026-11-22: сначала первый влог, потом остальные).
  */
-export const STUDY_VLOGS: string[] = ['choisusu-hobby', 'choisusu-my-neighborhood', 'choisusu-health', 'choisusu-trip-packing', 'choisusu-morning-routine', 'choisusu-housework', 'choisusu-buying-clothes']
+export const STUDY_VLOGS: string[] = ['choisusu-hobby', 'choisusu-my-neighborhood', 'choisusu-health', 'choisusu-trip-packing', 'choisusu-morning-routine', 'choisusu-housework', 'choisusu-buying-clothes', 'sony-emotions']
 
 /**
  * Рассказ в влогах ChoiSusu звучит несколько раз подряд с тем же текстом (слушаем, с субтитрами, с двумя языками, повторяем за автором с паузами).
@@ -59,6 +59,22 @@ export const NEW_GRAMMAR: Record<string, NewGrammar> = {
     rule: 'К основе глагола: после гласной **-면서**, после согласной **-으면서**. Два действия идут **одновременно**, у обоих **одно подлежащее**. С прошедшим временем **не используется**. Особая форма: у 듣다 ㄷ меняется на ㄹ, получается **들으면서**.',
     formula: '동사 + -(으)면서',
     book: '1B, урок 14-2 ④',
+    read: true,
+  },
+  mnida: {
+    ko: '-ㅂ니다 / -습니다',
+    ru: 'официальная вежливая форма',
+    rule: 'К основе глагола или прилагательного: после гласной **-ㅂ니다**, после согласной **-습니다**: **официальная** вежливая форма, её говорят **на собрании, в новостях, начальству**. Вопрос: **-ㅂ니까 / -습니까?**. Например, 기쁘다 → **기쁩니다**.',
+    formula: '동사 / 형용사 + -ㅂ니다 / -습니다',
+    book: '1B, урок 10-1 ②',
+    read: false,
+  },
+  banmal: {
+    ko: '반말 (без -요)',
+    ru: 'неформально, для близких',
+    rule: 'Убери **-요** из вежливой формы: 기뻐요 → **기뻐**. Так говорят **друзьям и младшим**; старшим и малознакомым так говорить нельзя. Вместо 저는 («я») говорят **나는**.',
+    formula: '해요체 − 요 = 반말',
+    book: '',
     read: true,
   },
   neungeot: {
@@ -166,6 +182,10 @@ export const VLOG_NEW_GRAMMAR: Record<string, { id: keyof typeof NEW_GRAMMAR; li
     { id: 'gosipda', lines: [7], marks: ['고 싶'] },
     { id: 'myeonseo', lines: [3], marks: ['으면서'] },
     { id: 'neungeot', lines: [2, 4, 9, 17], marks: ['는 거', '는 것', '는 것', '는 것'] },
+  ],
+  'sony-emotions': [
+    { id: 'mnida', lines: [5, 9, 13], marks: ['니다', '니다', '니다'] },
+    { id: 'banmal', lines: [4, 8, 12], marks: ['나는 기뻐', '나는 슬퍼', '나는 화가 나'] },
   ],
   'choisusu-my-neighborhood': [
     { id: 'go', lines: [1], marks: ['고'] },

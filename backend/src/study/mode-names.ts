@@ -1,6 +1,7 @@
 // Файл создаёт scripts/build-mode-names.mjs из данных сайта, руками не править.
 /** Названия режимов игр и тренажёров (как `modeName` на сайте). */
 export const MODE_NAMES: Record<string, string> = {
+  "assemble": "Собери число",
   "build": "Собери предложение",
   "cards": "Повторение: карточки",
   "chain": "Цепочки слов",

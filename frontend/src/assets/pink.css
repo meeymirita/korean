@@ -56,6 +56,10 @@
 .pk .pk-kick { font: 400 12px/1.4 var(--pk-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--pk-label); }
 .pk .pk-lead { font: 400 14px/1.75 var(--pk-mono); color: var(--pk-soft); text-wrap: pretty; }
 .pk .pk-panel { border: 1px solid var(--pk-line); border-radius: 24px; background: var(--pk-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+/* Светлая тема открытых страниц (по умолчанию, решение владельца 2026-11-22; пока на <html> нет data-theme="dark").
+   Оболочка и страницы нарисованы в тёмно-розовых цветах, поэтому светлый вариант получается инверсией цветов с возвратом оттенка, картинки не трогаем. */
+html:not([data-theme='dark']) .pk { filter: invert(1) hue-rotate(180deg); color-scheme: light; }
+html:not([data-theme='dark']) .pk :is(img, video, canvas, picture) { filter: invert(1) hue-rotate(180deg); }
 @media (max-width: 640px) { .pk-card { border-radius: 24px; } }
 @media (prefers-reduced-motion: reduce) { .pk .pk-btn, .pk .pk-ghost { transition: none; } }
 

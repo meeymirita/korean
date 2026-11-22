@@ -3,6 +3,8 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogTest from '@/components/korean/VlogTest.vue'
 import VlogGrammarList from '@/components/korean/VlogGrammarList.vue'
+import VlogCoreWords from '@/components/korean/VlogCoreWords.vue'
+import VlogPhrasebook from '@/components/korean/VlogPhrasebook.vue'
 import { VLOGS } from '@/data/korean/vlogs'
 import { passes } from '@/data/korean/vlog-study'
 import { VLOG_TEST } from '@/data/korean/vlog-test'
@@ -83,5 +85,33 @@ describe('Вкладка «Грамматика из влогов»', () => {
       await chip.trigger('click')
       expect(w.findAll('.vg-row').length).toBeLessThan(all)
     }
+  })
+})
+
+describe('Слова влогов, разговорник и влоги по теме грамматики', () => {
+  it('«Слова влогов»: ядро слов и охват по влогам', async () => {
+    const w = await mountSuspended(VlogCoreWords)
+    expect(w.findAll('.cw-row').length).toBeGreaterThan(5)
+    expect(w.findAll('.cw-cov li').length).toBeGreaterThan(30)
+    expect(w.find('.cw-sum b').text()).toMatch(/^\d+%$/)
+    await w.find('.cw-head').trigger('click')
+    expect(w.find('.cw-head').attributes('aria-expanded')).toBe('true')
+  })
+
+  it('«Разговорник»: ситуации и шаблоны фраз', async () => {
+    const w = await mountSuspended(VlogPhrasebook)
+    await w.find('.pb-chk input').setValue(false)
+    expect(w.findAll('.pb-list li').length).toBeGreaterThan(0)
+    await w.findAll('.pb-chip').find(c => c.text() === 'Шаблоны фраз')!.trigger('click')
+    expect(w.findAll('.pb-pat').length).toBe(8)
+    expect(w.find('.pb-hl').exists()).toBe(true)
+  })
+
+  it('тема грамматики показывает влоги, где она встречается', async () => {
+    const w = await mountSuspended(VlogGrammarList)
+    const d = w.find('.vg-vl')
+    expect(d.exists()).toBe(true)
+    expect(d.findAll('li').length).toBeGreaterThan(0)
+    expect(d.find('a').attributes('href')).toMatch(/^\/korean\/vlog\?v=/)
   })
 })

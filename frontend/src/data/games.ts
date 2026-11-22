@@ -131,6 +131,7 @@ export const GAME_GROUPS: GameGroup[] = [
     games: [
       { id: 'num', name: 'Числа', desc: 'Число и цифра: корейский и китайский счёт', icon: 'dice', to: '/game/home?game=num' },
       { id: 'price', name: 'Сколько стоит?', desc: 'Прочитай цену в вонах', icon: 'croissant', to: '/game/home?game=price' },
+      { id: 'assemble', name: 'Собери число', desc: 'Число, дата или цена крупно: собери по слогам', icon: 'dice', to: '/game/home?game=assemble' },
       { id: 'count', name: 'Счётные слова', desc: 'Бутылка, чашка, штука: выбери слово и число', icon: 'macaron', to: '/game/home?game=count' },
     ],
   },

@@ -6,6 +6,10 @@ import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
 import { STUDY_VLOGS } from '@/data/korean/vlog-study'
 import VlogGrammarList from '@/components/korean/VlogGrammarList.vue'
+import VlogCoreWords from '@/components/korean/VlogCoreWords.vue'
+import VlogPhrasebook from '@/components/korean/VlogPhrasebook.vue'
+import VlogMap from '@/components/korean/VlogMap.vue'
+import { coverageOf } from '@/data/korean/vlog-lang'
 import { VLOG_TOPICS, VLOG_TOPIC, VLOG_LENGTHS } from '@/data/korean/vlog-topics'
 import { VLOG_ORDER_IDS, VLOG_STAGES, stageOf } from '@/data/korean/vlog-order'
 import { VLOG_PLAN, VLOG_AUTHORS, DEFAULT_AUTHOR, type VlogPlanItem } from '@/data/korean/vlog-plan'
@@ -18,6 +22,9 @@ import { fetchT } from '@/lib/http'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { useProgressStore } from '@/stores/progress'
 import { useVlogWatched } from '@/composables/useVlogWatched'
+import { useRoute } from 'vue-router'
+import WordInVlogs from '@/components/korean/WordInVlogs.vue'
+import VlogNote from '@/components/korean/VlogNote.vue'
 import { ASK_QUICK, clock, noteTitle, useVlogPhrases } from '@/composables/useVlogPhrases'
 
 /**
@@ -67,9 +74,9 @@ const items = computed<Item[]>(() => {
   return out.sort((a, b) => a.rank - b.rank)
 })
 /** Вкладки: «Порядок» (все влоги по рекомендуемому порядку просмотра) и по одному автору; вкладка в адресе (`?a=`), чтобы после обновления остаться на ней. */
-const authorSlugs = ['order', ...VLOG_AUTHORS.map(a => a.slug), 'grammar']
+const authorSlugs = ['order', ...VLOG_AUTHORS.map(a => a.slug), 'grammar', 'words', 'phrases', 'map']
 const tab = useQueryParam('a', 'order', authorSlugs)
-const tabs = computed(() => [{ slug: 'order', tab: 'Порядок', count: items.value.length }, ...VLOG_AUTHORS.map(a => ({ slug: a.slug, tab: a.tab, count: items.value.filter(i => i.author === a.name).length })), { slug: 'grammar', tab: 'Грамматика из влогов', count: 0 }])
+const tabs = computed(() => [{ slug: 'order', tab: 'Порядок', count: items.value.length }, ...VLOG_AUTHORS.map(a => ({ slug: a.slug, tab: a.tab, count: items.value.filter(i => i.author === a.name).length })), { slug: 'grammar', tab: 'Грамматика из влогов', count: 0 }, { slug: 'words', tab: 'Слова влогов', count: 0 }, { slug: 'phrases', tab: 'Разговорник', count: 0 }, { slug: 'map', tab: 'Карта мест', count: 0 }])
 const ofAuthor = computed(() => {
   if (tab.value === 'order') return items.value
   const name = VLOG_AUTHORS.find(a => a.slug === tab.value)?.name
@@ -95,12 +102,68 @@ const lengthChips = computed(() => VLOG_LENGTHS.map(l => ({ ...l, count: ofAutho
 const shownItems = computed(() => {
   const t = topicChips.value.some(c => c.id === topic.value) ? topic.value : ''
   const len = VLOG_LENGTHS.find(l => l.id === length.value && lengthChips.value.some(c => c.id === l.id))
-  return ofAuthor.value.filter(i => (!t || VLOG_TOPIC[i.yt] === t) && (!len || len.test(i.dur)))
+  const list = ofAuthor.value.filter(i => (!t || VLOG_TOPIC[i.yt] === t) && (!len || len.test(i.dur)) && (!status.value || statusKey(i) === status.value))
+  return sortBy.value === 'known' && import.meta.client ? [...list].sort((a, b) => knownPct(b) - knownPct(a)) : list
 })
 const readyCount = computed(() => shownItems.value.filter(i => i.vlog).length)
 
 /** Отметки «просмотрено»: общий код со страницей «Разбор влога» (`composables/useVlogWatched.ts`). */
 const { watched, canSave, toggleWatched, loadWatched } = useVlogWatched()
+
+/**
+ * Результаты теста (`GET /api/vlog-tests`, только владелец) на карточках, фильтр по статусу и пометка «следующий» (первый непросмотренный по порядку).
+ * Статус: «не смотрел», «смотрел, не сдал» (отмечен просмотренным, но теста не сдано), «сдано» (есть попытка не ниже проходного).
+ */
+interface Attempt { yt: string; score: number; total: number; passed: boolean }
+const attempts = ref<Attempt[]>([])
+async function loadAttempts() {
+  if (!canSave.value) return
+  try {
+    const res = await fetchT('/api/vlog-tests', { headers: { Authorization: `Bearer ${progress.bearer}` } })
+    if (res.ok) attempts.value = ((await res.json()) as { attempts?: Attempt[] }).attempts ?? []
+  } catch {
+    /* без результатов карточки просто без значков */
+  }
+}
+const bestBy = computed(() => {
+  const m = new Map<string, Attempt>()
+  for (const a of attempts.value) {
+    const b = m.get(a.yt)
+    if (!b || a.score / a.total > b.score / b.total) m.set(a.yt, a)
+  }
+  return m
+})
+const passedSet = computed(() => new Set(attempts.value.filter(a => a.passed).map(a => a.yt)))
+const pctOf = (a: Attempt) => Math.round((a.score / a.total) * 100)
+const statusKey = (i: Item) => (!i.vlog ? 'soon' : passedSet.value.has(i.yt) ? 'passed' : watched.value.includes(i.yt) ? 'seen' : 'todo')
+const STATUSES = [{ id: 'todo', label: 'Не смотрел' }, { id: 'seen', label: 'Смотрел, не сдал' }, { id: 'passed', label: 'Сдано' }] as const
+const status = useQueryParam('s', '', ['', 'todo', 'seen', 'passed'])
+/** Порядок карточек: по номеру или по доле знакомых слов (охват считается только в браузере). */
+const sortBy = useQueryParam('o', '', ['', 'known'])
+const knownPct = (i: Item) => (import.meta.client && i.vlog ? coverageOf(i.vlog).pct : -1)
+const avgKnown = computed(() => {
+  if (!import.meta.client || sortBy.value !== 'known') return 0
+  const cs = shownItems.value.flatMap(i => (i.vlog ? [coverageOf(i.vlog)] : []))
+  const t = cs.reduce((a, c) => a + c.total, 0)
+  return t ? Math.round((cs.reduce((a, c) => a + c.known, 0) / t) * 100) : 0
+})
+const statusChips = computed(() => (canSave.value ? STATUSES.map(s => ({ ...s, count: ofAuthor.value.filter(i => statusKey(i) === s.id).length })).filter(s => s.count) : []))
+const nextYt = computed(() => (canSave.value && tab.value === 'order' ? (shownItems.value.find(i => i.vlog && !watched.value.includes(i.yt))?.yt ?? '') : ''))
+
+/** `?t=<секунды>`: открыть влог и перемотать на фразу (ссылки «в видео» со страницы «Разбор» и «звучит во влогах»). */
+const route = useRoute()
+let startAt: number | null = null
+function takeStart() {
+  const t = Number(route.query.t)
+  startAt = vlog.value && route.query.t !== undefined && Number.isFinite(t) && t >= 0 ? t : null
+}
+function applyStart() {
+  const v = vlog.value
+  if (startAt == null || !v) return
+  const i = Math.max(0, lineAt(v.lines, startAt))
+  startAt = null
+  play(i)
+}
 /** Окошко при наведении на карточку: описание, цифры по тексту и главные темы грамматики (считается один раз, когда навели). */
 const hoverYt = ref('')
 /** С какой стороны от карточки показать окошко: справа, если там хватает места, иначе слева. */
@@ -228,6 +291,7 @@ function onMessage(e: MessageEvent) {
   const t = d.info?.currentTime
   if (d.event !== 'infoDelivery' || typeof t !== 'number') return
   heard = true
+  applyStart()
   time.value = t
   const l = vlog.value?.lines[active.value]
   if (loop.value && l && t >= l.e) send('seekTo', [l.s, true])
@@ -258,8 +322,10 @@ onMounted(() => {
   window.addEventListener('wheel', userScrolled, { passive: true })
   window.addEventListener('touchmove', userScrolled, { passive: true })
   window.addEventListener('keydown', onScrollKey)
+  takeStart()
   void loadFile()
   void loadWatched()
+  void loadAttempts()
   sweepThumbs()
 })
 onBeforeUnmount(() => {
@@ -364,6 +430,7 @@ watch(active, async i => {
   el.scrollTo({ top: el.scrollTop + (r.top - box.top) - 8, behavior: 'smooth' })
 })
 watch(cur, () => {
+  takeStart()
   void loadFile()
   time.value = 0
   shown.value = new Set()
@@ -386,8 +453,20 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
         <button v-for="t in tabs" :key="t.slug" type="button" role="tab" class="vl-tab" :class="{ on: tab === t.slug }" :aria-selected="tab === t.slug" @click="tab = t.slug">{{ t.tab }} <small v-if="t.count">{{ t.count }}</small></button>
       </div>
       <VlogGrammarList v-if="tab === 'grammar'" />
+      <VlogCoreWords v-else-if="tab === 'words'" />
+      <VlogPhrasebook v-else-if="tab === 'phrases'" />
+      <ClientOnly v-else-if="tab === 'map'"><VlogMap /></ClientOnly>
       <template v-else>
       <div class="vl-filters">
+        <div class="vl-chips" role="group" aria-label="Порядок">
+          <button type="button" class="vl-chip" :class="{ on: !sortBy }" @click="sortBy = ''">По номеру</button>
+          <button type="button" class="vl-chip" :class="{ on: sortBy === 'known' }" @click="sortBy = 'known'">По доле знакомых слов</button>
+        </div>
+        <p v-if="sortBy === 'known'" class="vl-intro">В среднем у показанных влогов ты знаешь <b>{{ avgKnown }}%</b> слов текста: выше в списке те, что проще понять.</p>
+        <div v-if="statusChips.length" class="vl-chips" role="group" aria-label="Статус">
+          <button type="button" class="vl-chip" :class="{ on: !status }" @click="status = ''">Все</button>
+          <button v-for="c in statusChips" :key="c.id" type="button" class="vl-chip" :class="{ on: status === c.id }" @click="status = status === c.id ? '' : c.id">{{ c.label }} <small>{{ c.count }}</small></button>
+        </div>
         <div class="vl-chips" role="group" aria-label="Тема">
           <button type="button" class="vl-chip" :class="{ on: !topic }" @click="topic = ''">Все темы</button>
           <button v-for="c in topicChips" :key="c.id" type="button" class="vl-chip" :class="{ on: topic === c.id }" @click="topic = topic === c.id ? '' : c.id">{{ c.label }} <small>{{ c.count }}</small></button>
@@ -403,7 +482,7 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
       <ul class="vl-list">
         <template v-for="it in shownItems" :key="it.yt">
         <li v-if="stageHeads.get(it.rank)" class="vl-stage-h"><b>Этап {{ stageHeads.get(it.rank)!.n }} · {{ stageHeads.get(it.rank)!.title }}</b><span>{{ stageHeads.get(it.rank)!.hint }}</span></li>
-        <li class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
+        <li class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt), next: nextYt === it.yt }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
             <span v-if="it.rank < 999" class="vl-no">№{{ it.rank }}</span>
             <img v-if="(thumbStep[it.yt] ?? 0) < 2" :src="coverSrc(it.yt, thumbStep[it.yt] ?? 0)" alt="" loading="lazy" referrerpolicy="no-referrer" @error="failThumb(it.yt)" />
@@ -424,6 +503,9 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
           </div>
           <div v-if="canSave || (it.vlog && STUDY_VLOGS.includes(it.vlog.id))" class="vl-foot">
             <label v-if="canSave" class="vl-watch"><input type="checkbox" :checked="watched.includes(it.yt)" @change="toggleWatched(it.yt)" />просмотрено</label>
+            <span v-if="nextYt === it.yt" class="vl-badge next">следующий</span>
+            <span v-if="sortBy === 'known' && it.vlog" class="vl-badge">{{ knownPct(it) }}% знакомых</span>
+            <span v-if="bestBy.get(it.yt)" class="vl-badge" :class="{ ok: passedSet.has(it.yt) }" :title="`Лучший результат теста: ${bestBy.get(it.yt)!.score} из ${bestBy.get(it.yt)!.total}`">{{ passedSet.has(it.yt) ? 'сдано' : 'тест' }} {{ pctOf(bestBy.get(it.yt)!) }}%</span>
             <NuxtLink v-if="it.vlog && STUDY_VLOGS.includes(it.vlog.id)" class="vl-study" :to="`/korean/vlog-study?v=${it.vlog.id}`">разбор</NuxtLink>
           </div>
         </li>
@@ -437,13 +519,14 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
         <button type="button" class="vl-back" @click="cur = ''">← Все влоги</button>
         <h2 class="vl-title">{{ vlog.title }}</h2>
         <p class="vl-by">Автор: {{ vlog.channel }}.<template v-if="!useFile"> Видео показывается плеером ютуба.</template></p>
+        <VlogNote :vlog="vlog" />
       </header>
 
       <div ref="cols" class="vl-cols" :class="{ dragging }" :style="{ '--vl-w': `${vsize}%` }">
        <div class="vl-left">
       <div class="vl-stage">
         <div class="vl-video">
-          <video v-if="useFile" ref="vid" :src="fileUrl" controls playsinline preload="metadata" @timeupdate="onTime" @error="fileState = 'failed'" />
+          <video v-if="useFile" ref="vid" :src="fileUrl" controls playsinline preload="metadata" @timeupdate="onTime" @loadedmetadata="applyStart" @error="fileState = 'failed'" />
           <iframe v-if="src" ref="frame" :src="src" title="Видео" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" @load="startListening" />
         </div>
         <div class="vl-bar">
@@ -492,6 +575,7 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
         <p v-else-if="hit === 'error'" class="vl-tr">Большой словарь не ответил<template v-if="hitErr"> ({{ hitErr }})</template>. Слова из твоего словаря работают; для остальных нажми ещё раз позже.</p>
         <p v-else-if="hit" class="vl-tr">{{ hit.ru }}</p>
         <p v-else class="vl-tr">Слова нет ни в твоём словаре, ни в большом. Возможно, это имя или редкая форма.</p>
+        <WordInVlogs v-if="canSave" :word-key="picked.key" :exclude="vlog.id" />
       </div>
        </div>
 
@@ -553,6 +637,10 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
 @media (prefers-reduced-motion: reduce) { .vl-pop { animation: none; } }
 .vl-item.soon .vl-card { opacity: .6; cursor: default; }
 .vl-item.seen .vl-card { border-color: var(--ok); }
+.vl-badge { padding: 1px 9px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.vl-badge.ok { border-color: var(--ok); background: var(--ok-bg); color: var(--ink); }
+.vl-badge.next { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.vl-item.next .vl-card { border-color: var(--accent); }
 .vl-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .vl-study { margin-left: auto; padding: 3px 12px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); font-size: 13px; text-decoration: none; }
 .vl-watch { display: flex; align-items: center; gap: 8px; padding: 0 6px; color: var(--muted); font-size: 13.5px; cursor: pointer; }
