@@ -2,10 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import AskAi from '@/components/korean/AskAi.vue'
-import { breakdownContext, canAskAi } from '@/lib/askAi'
 import { clipText, pickDictHit, type ClipWord } from '@/data/korean/clip'
 import { VLOGS, lineAt, type Vlog } from '@/data/korean/vlogs'
 import { STUDY_VLOGS } from '@/data/korean/vlog-study'
+import VlogGrammarList from '@/components/korean/VlogGrammarList.vue'
 import { VLOG_TOPICS, VLOG_TOPIC, VLOG_LENGTHS } from '@/data/korean/vlog-topics'
 import { VLOG_ORDER_IDS, VLOG_STAGES, stageOf } from '@/data/korean/vlog-order'
 import { VLOG_PLAN, VLOG_AUTHORS, DEFAULT_AUTHOR, type VlogPlanItem } from '@/data/korean/vlog-plan'
@@ -17,7 +17,8 @@ import { searchDict, type DictHit } from '@/lib/dictApi'
 import { fetchT } from '@/lib/http'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { useProgressStore } from '@/stores/progress'
-import { useNotesStore } from '@/stores/notes'
+import { useVlogWatched } from '@/composables/useVlogWatched'
+import { ASK_QUICK, clock, noteTitle, useVlogPhrases } from '@/composables/useVlogPhrases'
 
 /**
  * «Влог»: видео и текст по фразам. Идущая фраза подсвечена, нажатие на фразу перематывает, перевод открывается нажатием,
@@ -66,9 +67,9 @@ const items = computed<Item[]>(() => {
   return out.sort((a, b) => a.rank - b.rank)
 })
 /** Вкладки: «Порядок» (все влоги по рекомендуемому порядку просмотра) и по одному автору; вкладка в адресе (`?a=`), чтобы после обновления остаться на ней. */
-const authorSlugs = ['order', ...VLOG_AUTHORS.map(a => a.slug)]
+const authorSlugs = ['order', ...VLOG_AUTHORS.map(a => a.slug), 'grammar']
 const tab = useQueryParam('a', 'order', authorSlugs)
-const tabs = computed(() => [{ slug: 'order', tab: 'Порядок', count: items.value.length }, ...VLOG_AUTHORS.map(a => ({ slug: a.slug, tab: a.tab, count: items.value.filter(i => i.author === a.name).length }))])
+const tabs = computed(() => [{ slug: 'order', tab: 'Порядок', count: items.value.length }, ...VLOG_AUTHORS.map(a => ({ slug: a.slug, tab: a.tab, count: items.value.filter(i => i.author === a.name).length })), { slug: 'grammar', tab: 'Грамматика из влогов', count: 0 }])
 const ofAuthor = computed(() => {
   if (tab.value === 'order') return items.value
   const name = VLOG_AUTHORS.find(a => a.slug === tab.value)?.name
@@ -98,45 +99,8 @@ const shownItems = computed(() => {
 })
 const readyCount = computed(() => shownItems.value.filter(i => i.vlog).length)
 
-/** Отметки «просмотрено»: на сервере (на всех устройствах), копия в браузере на случай, если сервер не ответил. Гость ничего не сохраняет. */
-const WATCHED_KEY = 'vlog_watched_v1'
-const watched = ref<string[]>([])
-const canSave = computed(() => !progress.isGuest && !!progress.bearer)
-const authHeaders = () => ({ Authorization: `Bearer ${progress.bearer}`, 'Content-Type': 'application/json' })
-async function toggleWatched(yt: string) {
-  const had = watched.value.includes(yt)
-  watched.value = had ? watched.value.filter(x => x !== yt) : [...watched.value, yt]
-  try {
-    localStorage.setItem(WATCHED_KEY, JSON.stringify(watched.value))
-  } catch {
-    /* хранилище недоступно */
-  }
-  if (!canSave.value) return
-  try {
-    const res = await fetchT('/api/vlog-watched', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ watched: watched.value }) })
-    if (!res.ok) throw new Error(String(res.status))
-  } catch {
-    toast.error('Отметка сохранена только в этом браузере: сервер не ответил')
-  }
-}
-async function loadWatched() {
-  try {
-    const local = JSON.parse(localStorage.getItem(WATCHED_KEY) ?? '[]')
-    if (Array.isArray(local)) watched.value = local.filter((x): x is string => typeof x === 'string')
-  } catch {
-    /* повреждённая запись */
-  }
-  if (!canSave.value) return
-  try {
-    const res = await fetchT('/api/vlog-watched', { headers: authHeaders() })
-    if (!res.ok) return
-    const remote = ((await res.json()) as { watched?: string[] }).watched ?? []
-    if (remote.length || !watched.value.length) watched.value = remote
-    else void fetchT('/api/vlog-watched', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ watched: watched.value }) }).catch(() => undefined)
-  } catch {
-    /* работаем с тем, что в браузере */
-  }
-}
+/** Отметки «просмотрено»: общий код со страницей «Разбор влога» (`composables/useVlogWatched.ts`). */
+const { watched, canSave, toggleWatched, loadWatched } = useVlogWatched()
 /** Окошко при наведении на карточку: описание, цифры по тексту и главные темы грамматики (считается один раз, когда навели). */
 const hoverYt = ref('')
 /** С какой стороны от карточки показать окошко: справа, если там хватает места, иначе слева. */
@@ -175,16 +139,21 @@ function infoOf(v: Vlog): Info {
   return info
 }
 const dur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-/** Обложки с ютуба: если картинка не загрузилась (на планшете сеть может не пускать на i.ytimg.com), вместо белого фона плашка. */
-const thumbFail = ref<Set<string>>(new Set())
+/**
+ * Обложки: сначала с нашего хранилища (`/api/video/vlog-cover/<номер>`, лежат на Диске в `korean_vlog/covers`, на планшете открываются), потом с ютуба,
+ * если и это не вышло (нет файла, сеть не пускает на i.ytimg.com), плашка вместо белого фона. Шаг 0 наша, 1 ютуб, 2 плашка.
+ */
+const thumbStep = ref<Record<string, number>>({})
+const coverSrc = (yt: string, step: number) => (step === 0 ? `/api/video/vlog-cover/${yt}` : `https://i.ytimg.com/vi/${yt}/mqdefault.jpg`)
 function failThumb(yt: string) {
-  if (!thumbFail.value.has(yt)) thumbFail.value = new Set([...thumbFail.value, yt])
+  thumbStep.value = { ...thumbStep.value, [yt]: (thumbStep.value[yt] ?? 0) + 1 }
 }
 /** Ошибка могла случиться до оживления страницы (картинки пришли в HTML с сервера): проверяем уже брошенные. */
 function sweepThumbs() {
   document.querySelectorAll<HTMLImageElement>('.vl-card img').forEach(img => {
-    const m = /\/vi\/([^/]+)\//.exec(img.src)
-    if (m && img.complete && img.naturalWidth === 0) failThumb(m[1]!)
+    const m = /\/vlog-cover\/([^/?]+)|\/vi\/([^/]+)\//.exec(img.src)
+    const yt = m?.[1] ?? m?.[2]
+    if (yt && img.complete && img.naturalWidth === 0) failThumb(yt)
   })
 }
 
@@ -381,21 +350,18 @@ async function pick(w: ClipWord) {
 }
 
 const list = ref<HTMLElement | null>(null)
-const stage = ref<HTMLElement | null>(null)
 watch(active, async i => {
   if (!follow.value || i < 0 || Date.now() < pausedUntil) return
   await nextTick()
   const el = list.value
   if (!el) return
-  const wide = window.matchMedia('(min-width: 1100px)').matches
-  const top = wide ? 90 : (stage.value?.offsetHeight ?? 200) + 12
-  el.style.setProperty('--vl-off', `${top}px`)
   const line = el.querySelector<HTMLElement>(`[data-i="${i}"]`)
   if (!line) return
-  // фраза уже на виду: страницу не двигаем
+  // список листается сам (своя область прокрутки), страницу не трогаем: двигаем только его
+  const box = el.getBoundingClientRect()
   const r = line.getBoundingClientRect()
-  if (r.top >= top && r.bottom <= window.innerHeight - 40) return
-  line.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  if (r.top >= box.top && r.bottom <= box.bottom) return
+  el.scrollTo({ top: el.scrollTop + (r.top - box.top) - 8, behavior: 'smooth' })
 })
 watch(cur, () => {
   void loadFile()
@@ -405,41 +371,8 @@ watch(cur, () => {
   picked.value = null
   speed.value = 1
 })
-/** «записать»: фраза с переводом, грамматикой и местом в видео становится заметкой с тегом «влог» (Кабинет → Заметки). Перед записью заметки подтягиваются с сервера, иначе запись затёрла бы их. */
-const notes = useNotesStore()
-const NOTE_TAG = 'влог'
-const noteTitle = (ko: string) => ko.slice(0, 100)
-const savedTitles = computed(() => new Set(notes.notes.filter(n => n.tags.includes(NOTE_TAG)).map(n => n.title)))
-async function saveLine(i: number) {
-  const v = vlog.value
-  const l = v?.lines[i]
-  if (!v || !l || savedTitles.value.has(noteTitle(l.ko))) return
-  await notes.init()
-  if (notes.status === 'error') return toast.error('Не записалось: заметки не загрузились с сервера. Попробуй ещё раз позже')
-  const gr = (hints.value[i] ?? []).map(g => `${g.ko} (${g.ru})`).join('; ')
-  const text = [l.ko, l.ru, '', gr ? `Грамматика: ${gr}` : '', `Влог «${v.title}» (${v.channel}), ${clock(l.s)}`].filter((x, k) => x || k === 2).join('\n')
-  if (notes.add(l.ko, text, [], [NOTE_TAG])) toast.ok('Записано в заметки с тегом «влог»: Кабинет → Заметки')
-  else toast.error('Не записалось: в заметках нет места (лимит)')
-}
-/** «Спросить ИИ» у фразы: одна открытая панель на странице; фраза с переводом, грамматикой и соседними фразами уходит модели как контекст. */
-const askAt = ref(-1)
-const ownerAsk = computed(() => canAskAi())
-const ASK_QUICK = ['Расскажи подробнее', 'Объясни попроще', 'Что значит каждое слово?', 'Объясни грамматику', 'Дай ещё примеры']
-function askContext(i: number): string {
-  const v = vlog.value
-  const l = v?.lines[i]
-  if (!v || !l) return ''
-  const near = (j: number) => (v.lines[j] ? `${v.lines[j]!.ko} (${v.lines[j]!.ru})` : '')
-  const gr = (hints.value[i] ?? []).map(g => `${g.ko} (${g.ru})`).join('; ')
-  return breakdownContext(l.ko, [
-    `Влог: ${v.title}, автор ${v.channel}, время ${clock(l.s)}`,
-    `Перевод в влоге: ${l.ru}`,
-    gr ? `Грамматика во фразе: ${gr}` : '',
-    near(i - 1) ? `Фраза раньше: ${near(i - 1)}` : '',
-    near(i + 1) ? `Фраза дальше: ${near(i + 1)}` : '',
-  ])
-}
-const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+/** «записать» и «спросить» у фразы: общий код со страницей «Разбор влога» (`composables/useVlogPhrases.ts`). */
+const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vlog, hints)
 </script>
 
 <template>
@@ -450,8 +383,10 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 
     <template v-else-if="!vlog">
       <div class="vl-tabs" role="tablist" aria-label="Автор влога">
-        <button v-for="t in tabs" :key="t.slug" type="button" role="tab" class="vl-tab" :class="{ on: tab === t.slug }" :aria-selected="tab === t.slug" @click="tab = t.slug">{{ t.tab }} <small>{{ t.count }}</small></button>
+        <button v-for="t in tabs" :key="t.slug" type="button" role="tab" class="vl-tab" :class="{ on: tab === t.slug }" :aria-selected="tab === t.slug" @click="tab = t.slug">{{ t.tab }} <small v-if="t.count">{{ t.count }}</small></button>
       </div>
+      <VlogGrammarList v-if="tab === 'grammar'" />
+      <template v-else>
       <div class="vl-filters">
         <div class="vl-chips" role="group" aria-label="Тема">
           <button type="button" class="vl-chip" :class="{ on: !topic }" @click="topic = ''">Все темы</button>
@@ -471,7 +406,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         <li class="vl-item" :class="{ soon: !it.vlog, seen: watched.includes(it.yt) }" @mouseenter="hover(it.yt, $event)" @mouseleave="hoverYt = ''" @focusin="hover(it.yt, $event)" @focusout="hoverYt = ''">
           <button type="button" class="vl-card" :disabled="!it.vlog" @click="it.vlog && (cur = it.vlog.id)">
             <span v-if="it.rank < 999" class="vl-no">№{{ it.rank }}</span>
-            <img v-if="!thumbFail.has(it.yt)" :src="`https://i.ytimg.com/vi/${it.yt}/mqdefault.jpg`" alt="" loading="lazy" referrerpolicy="no-referrer" @error="failThumb(it.yt)" />
+            <img v-if="(thumbStep[it.yt] ?? 0) < 2" :src="coverSrc(it.yt, thumbStep[it.yt] ?? 0)" alt="" loading="lazy" referrerpolicy="no-referrer" @error="failThumb(it.yt)" />
             <span v-else class="vl-ph" aria-hidden="true">우리말</span>
             <b>{{ it.title }}</b>
             <span>{{ it.vlog ? `${it.vlog.note} · ${it.vlog.lines.length} фраз` : 'скоро' }} <template v-if="it.dur"> · {{ dur(it.dur) }}</template></span>
@@ -494,6 +429,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
         </li>
         </template>
       </ul>
+      </template>
     </template>
 
     <template v-else>
@@ -505,7 +441,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 
       <div ref="cols" class="vl-cols" :class="{ dragging }" :style="{ '--vl-w': `${vsize}%` }">
        <div class="vl-left">
-      <div ref="stage" class="vl-stage">
+      <div class="vl-stage">
         <div class="vl-video">
           <video v-if="useFile" ref="vid" :src="fileUrl" controls playsinline preload="metadata" @timeupdate="onTime" @error="fileState = 'failed'" />
           <iframe v-if="src" ref="frame" :src="src" title="Видео" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" @load="startListening" />
@@ -641,7 +577,8 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-top { margin-bottom: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .vl-back { margin-top: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 14px; cursor: pointer; padding: 0; }
 .vl-title { margin: 8px 0 0; font-size: 22px; }
-.vl-cols { display: block; }
+/* Список фраз листается отдельно от страницы: у него своя область прокрутки, чтобы до верха страницы не приходилось пролистывать весь список */
+.vl-cols { display: flex; flex-direction: column; height: calc(100dvh - 210px); min-height: 360px; }
 .vl-now { display: none; margin-top: 14px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
 .vl-now-h { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; }
 .vl-now-k { margin: 6px 0 0; font-size: 20px; line-height: 1.6; }
@@ -658,7 +595,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-now-w li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14.5px; }
 .vl-now-w li span { color: var(--muted); }
 .vl-left { display: contents; }
-.vl-stage { position: sticky; top: 0; z-index: 5; padding: 10px 0 6px; }
+.vl-stage { position: static; flex: none; padding: 10px 0 6px; }
 /* меню свёрнуто: кнопка «☰ Меню» стоит поверх страницы слева сверху, видео уезжает ниже неё */
 @media (min-width: 861px) { :global(.study-shell.focus) .vl-stage { top: 56px; } }
 .vl-video { aspect-ratio: 16 / 9; width: min(100%, calc(34vh * 16 / 9)); border-radius: 16px; overflow: hidden; background: #000; margin-inline: auto; }
@@ -669,7 +606,7 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-grp button, .vl-tog, .vl-ru-btn { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
 .vl-grp button.on, .vl-tog.on { background: var(--gold-soft); color: var(--ink); border-color: var(--gold); }
 .vl-stat { margin-top: 6px; font-size: 13px; }
-.vl-lines { margin-top: 10px; display: grid; gap: 6px; }
+.vl-lines { margin-top: 10px; display: grid; gap: 6px; align-content: start; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
 .vl-line { scroll-margin-top: var(--vl-off, 220px); display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); transition: background .2s, border-color .2s; }
 .vl-line.now { border-color: var(--accent); background: rgba(150, 190, 255, .14); }
 .vl-at { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 13px; text-align: left; cursor: pointer; padding: 4px 0; font-variant-numeric: tabular-nums; }
@@ -692,14 +629,15 @@ const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60))
 .vl-tr { margin: 8px 0 0; font-size: 16px; line-height: 1.5; }
 /* Широкий экран: слева видео и карточка слова не уезжают, справа список фраз */
 @media (min-width: 1100px) {
-  .vl-cols { display: grid; grid-template-columns: minmax(340px, var(--vl-w, 46%)) 14px minmax(0, 1fr); gap: 0; align-items: start; }
+  .vl-cols { display: grid; height: auto; min-height: 0; grid-template-columns: minmax(340px, var(--vl-w, 46%)) 14px minmax(0, 1fr); gap: 0; align-items: start; }
   .vl-cols.dragging { user-select: none; cursor: col-resize; }
   .vl-cols.dragging .vl-video { pointer-events: none; }
   .vl-split { display: flex; position: sticky; top: 8px; height: min(70vh, 520px); align-items: center; justify-content: center; cursor: col-resize; touch-action: none; border-left: 1px solid var(--line); }
   .vl-split i { width: 5px; height: 56px; border-radius: 3px; background: var(--line); transition: background .15s, height .15s; }
   .vl-split:hover i, .vl-cols.dragging .vl-split i { background: var(--gold, var(--accent)); height: 84px; }
   .vl-left { padding-right: 14px; }
-  .vl-lines { padding-left: 14px; }
+  .vl-lines { position: sticky; top: 8px; max-height: calc(100vh - 90px); margin-top: 0; padding-left: 14px; padding-right: 6px; }
+  :global(.study-shell.focus) .vl-lines { top: 62px; max-height: calc(100vh - 76px); }
   .vl-left { display: block; position: sticky; top: 8px; }
   .vl-stage { position: static; padding-top: 0; }
   :global(.study-shell.focus) .vl-left, :global(.study-shell.focus) .vl-split { top: 62px; }

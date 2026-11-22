@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogStudyView from '@/views/korean/VlogStudyView.vue'
 import VlogView from '@/views/korean/VlogView.vue'
+import { STUDY_VLOGS } from '@/data/korean/vlog-study'
 
 /** вход подменён: настоящий без сервера невозможен */
 vi.mock('@/stores/progress', async original => {
@@ -34,7 +35,8 @@ describe('«Разбор влога»', () => {
     expect(w.findAll('.vs-words li').length).toBeGreaterThan(20)
     const tabs = w.findAll('.vs-tab')
     expect(tabs[0]!.classes()).toContain('on')
-    expect(tabs[1]!.attributes('disabled')).toBeDefined()
+    expect(tabs.map(t => t.text())).toEqual(['Разбор', 'Тест', 'История'])
+    expect(tabs[1]!.attributes('disabled')).toBeUndefined()
   })
 
   it('нажатие на слово открывает карточку с переводом', async () => {
@@ -53,13 +55,26 @@ describe('«Разбор влога»', () => {
     expect(w.findAll('.vs-line').length).toBe(0)
   })
 
-  it('в списке влогов кнопка «разбор» только у первого влога', async () => {
+  it('в списке влогов кнопка «разбор» только у влогов с разбором', async () => {
     localStorage.clear()
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
     const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
     await flushPromises()
     const links = w.findAll('.vl-study')
-    expect(links.length).toBe(1)
-    expect(links[0]!.attributes('href')).toBe('/korean/vlog-study?v=choisusu-hobby')
+    expect(links.length).toBe(STUDY_VLOGS.length)
+    expect(links.map(l => l.attributes('href'))).toContain('/korean/vlog-study?v=choisusu-hobby')
+  })
+  it('обложка: сначала наше хранилище, потом ютуб, потом плашка', async () => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ watched: [] }), { status: 200 })))
+    const w = await mountSuspended(VlogView, { route: '/korean/vlog' })
+    await flushPromises()
+    const img = () => w.find('.vl-card img')
+    expect(img().attributes('src')).toContain('/api/video/vlog-cover/')
+    const yt = /vlog-cover\/([^/?]+)/.exec(img().attributes('src')!)![1]!
+    await img().trigger('error')
+    expect(img().attributes('src')).toBe(`https://i.ytimg.com/vi/${yt}/mqdefault.jpg`)
+    await img().trigger('error')
+    expect(w.find('.vl-card .vl-ph').exists()).toBe(true)
   })
 })
