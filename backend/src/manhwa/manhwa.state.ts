@@ -14,6 +14,8 @@ export interface ManhwaState {
   /** когда состояние менялось в последний раз (мс); побеждает более позднее */
   at: number
   status?: ManhwaStatus
+  /** сколько глав в манхве было при последнем открытии списка глав (для метки «новые главы») */
+  seen?: number
   marks: ManhwaMark[]
 }
 
@@ -49,7 +51,8 @@ export function cleanState(body: unknown): ManhwaState {
     p: int(m?.p, 0, 5000),
     note: typeof m?.note === 'string' ? m.note.slice(0, MAX_NOTE) : '',
   }))
-  return { read, pos, at: int(b.at, 0, AT_MAX), ...(status ? { status } : {}), marks }
+  const seen = b.seen === undefined || b.seen === null ? undefined : int(b.seen, 0, 999)
+  return { read, pos, at: int(b.at, 0, AT_MAX), ...(status ? { status } : {}), ...(seen !== undefined ? { seen } : {}), marks }
 }
 
 export function cleanSlug(slug: string): string {

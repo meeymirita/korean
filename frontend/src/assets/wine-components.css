@@ -313,12 +313,18 @@ html[data-theme='dark'][data-palette='wine'] .book:where(:not(.pk *)) { box-shad
 html[data-theme='dark'][data-palette='wine'] .book:hover:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .book-cover:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .hero-up:where(:not(.pk *)) { background: linear-gradient(transparent, rgba(42, 10, 24, 0.7)); }
+html[data-theme='dark'][data-palette='wine'] .chip:where(:not(.pk *)) { background: color-mix(in srgb, var(--gold) 16%, rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .chip.st-done:where(:not(.pk *)) { background: color-mix(in srgb, var(--ok) 16%, rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .chip.st-want:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .chip.st-new:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
+html[data-theme='dark'][data-palette='wine'] .cont-cover:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .reader:where(:not(.pk *)) { background: rgba(11, 5, 8, 1); }
 html[data-theme='dark'][data-palette='wine'] .dock:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.82); }
 html[data-theme='dark'][data-palette='wine'] .dk-btn:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
 html[data-theme='dark'][data-palette='wine'] .dk-btn:hover:not(:disabled):where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
 html[data-theme='dark'][data-palette='wine'] .rd-close:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.82); }
 html[data-theme='dark'][data-palette='wine'] .rd-close:hover:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.2); }
+html[data-theme='dark'][data-palette='wine'] .dk-mark.on:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 0.2)); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .dk-toc.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
 html[data-theme='dark'][data-palette='wine'] .toc:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.82); }
 html[data-theme='dark'][data-palette='wine'] .toc-i:hover:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
@@ -327,6 +333,11 @@ html[data-theme='dark'][data-palette='wine'] .toc-i.on:where(:not(.pk *)) { back
 html[data-theme='dark'][data-palette='wine'] .dk-read.on:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .dk-fill:where(:not(.pk *)) { background: linear-gradient(90deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); }
 html[data-theme='dark'][data-palette='wine'] .strip:where(:not(.pk *)) { background: rgba(42, 10, 24, 1); }
+html[data-theme='dark'][data-palette='wine'] .end .ghost:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); background: rgba(255, 255, 255, 0.04); }
+html[data-theme='dark'][data-palette='wine'] .end .ghost:hover:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .next-big:where(:not(.pk *)) { background: linear-gradient(135deg, rgba(255, 111, 174, 0.2), rgba(255, 111, 174, 1)); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .next-big:hover:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .dk-two.on:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.04); }
 html[data-theme='dark'][data-palette='wine'] .crop-back:where(:not(.pk *)) { background: rgba(11, 5, 8, 0.6); }
 html[data-theme='dark'][data-palette='wine'] .crop:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .crop-view:where(:not(.pk *)) { box-shadow: none; }

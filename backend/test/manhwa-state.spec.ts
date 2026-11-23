@@ -15,10 +15,12 @@ describe('прогресс чтения манхвы на сервере', () =>
     expect(c.status).toBe('reading')
     expect(c.marks).toEqual([{ c: 1, p: 2, note: 'x'.repeat(300) }])
     expect('junk' in c).toBe(false)
+    expect(cleanState(st(1, { seen: 38 })).seen).toBe(38)
+    expect('seen' in cleanState(st(1))).toBe(false)
   })
 
   it('отклоняет кривые данные', () => {
-    for (const bad of [null, {}, st(1, { read: 'a' }), st(1, { read: [-1] }), st(1, { pos: { x: 1 } }), st(1, { pos: { '1': -5 } }), st(1, { status: 'bad' }), st(1, { marks: [{ c: 1.5, p: 0 }] }), st(-1)]) expect(() => cleanState(bad)).toThrow()
+    for (const bad of [null, {}, st(1, { read: 'a' }), st(1, { read: [-1] }), st(1, { pos: { x: 1 } }), st(1, { pos: { '1': -5 } }), st(1, { status: 'bad' }), st(1, { seen: -2 }), st(1, { marks: [{ c: 1.5, p: 0 }] }), st(-1)]) expect(() => cleanState(bad)).toThrow()
   })
 
   it('свежее состояние побеждает, старое не затирает новое, имя манхвы проверяется', async () => {
