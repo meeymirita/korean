@@ -81,7 +81,25 @@ const resume = computed(() => {
   const started = chapters.value.find(c => !isRead(c.n) && state.value.pos[c.n] !== undefined)
   return started ?? chapters.value.find(c => !isRead(c.n))
 })
-const shown = computed(() => chapters.value.filter(c => (filter.value === 'all' ? true : filter.value === 'read' ? isRead(c.n) : !isRead(c.n))))
+const filtered = computed(() => chapters.value.filter(c => (filter.value === 'all' ? true : filter.value === 'read' ? isRead(c.n) : !isRead(c.n))))
+/** Список глав выводится рядами: сначала два ряда, дальше по кнопке «Загрузить ещё» (по два ряда). Колонок до 7, их число считается по ширине сетки. */
+const ROWS_STEP = 2
+const cols = ref(7)
+const rows = ref(ROWS_STEP)
+const gridEl = ref<HTMLElement | null>(null)
+const shown = computed(() => filtered.value.slice(0, rows.value * cols.value))
+const hasMore = computed(() => filtered.value.length > shown.value.length)
+let gridObs: ResizeObserver | null = null
+watch(gridEl, el => {
+  gridObs?.disconnect()
+  if (!el || typeof ResizeObserver === 'undefined') return
+  gridObs = new ResizeObserver(() => {
+    cols.value = Math.max(2, Math.min(7, Math.floor((el.clientWidth + 14) / (128 + 14))))
+  })
+  gridObs.observe(el)
+})
+watch(filter, () => (rows.value = ROWS_STEP))
+watch(slug, () => (rows.value = ROWS_STEP))
 
 /** сводка по карточке на полке: сколько прочитано и с какой главы продолжить (страницы глав на полке не грузятся) */
 function summary(b: Book) {
@@ -306,6 +324,7 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
   if (raf) cancelAnimationFrame(raf)
+  gridObs?.disconnect()
   window.removeEventListener('keydown', onKey)
 })
 </script>
@@ -356,7 +375,7 @@ onBeforeUnmount(() => {
       <div class="filters">
         <button v-for="f in [['all', 'Все'], ['todo', 'Не прочитано'], ['read', 'Прочитано']] as const" :key="f[0]" :class="{ on: filter === f[0] }" @click="filter = f[0]">{{ f[1] }}</button>
       </div>
-      <ul class="grid">
+      <ul ref="gridEl" class="grid" :style="{ '--cols': cols }">
         <li v-for="c in shown" :key="c.n">
           <a class="card" :class="{ done: isRead(c.n) }" :href="`/korean/manhwa?b=${slug}&c=${c.n}`" @click.prevent="openChapter(c.n)">
             <span class="cover"><img :src="cover(c)" :alt="`Глава ${c.n}`" loading="lazy" decoding="async" /></span>
@@ -370,6 +389,9 @@ onBeforeUnmount(() => {
         </li>
       </ul>
       <p v-if="!shown.length" class="note">В этом списке пока пусто.</p>
+      <div v-if="hasMore" class="more">
+        <button class="ghost" @click="rows += ROWS_STEP">Загрузить ещё · осталось {{ filtered.length - shown.length }}</button>
+      </div>
     </template>
   </div>
 
@@ -471,7 +493,8 @@ onBeforeUnmount(() => {
 .filters button, .ghost { padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: inherit; font: inherit; font-size: 13.5px; cursor: pointer; transition: border-color .15s; }
 .filters button:hover, .ghost:hover { border-color: var(--gold); }
 .filters button.on, .ghost.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 16%, var(--surface)); }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 44%), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.more { display: flex; justify-content: center; margin-top: 18px; }
+.grid { display: grid; grid-template-columns: repeat(var(--cols, 7), minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
 .card { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: inherit; text-decoration: none; transition: transform .15s, border-color .15s; }
 .card:hover { transform: translateY(-3px); border-color: var(--gold); }
 .card.done { border-color: var(--ok); }
