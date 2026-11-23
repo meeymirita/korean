@@ -128,6 +128,8 @@ export default defineNuxtConfig({
     preset: 'node-server',
     devProxy: { '/api': { target: `${API}/api`, changeOrigin: true } },
     prerender: { crawlLinks: false, routes: STATIC },
+    // статика (public/ и сборка) кладётся в .output уже сжатой (gzip и brotli): сервер отдаёт готовые файлы, не сжимая на каждый запрос
+    compressPublicAssets: true,
   },
 
   vite: {

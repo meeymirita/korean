@@ -15,7 +15,7 @@ export const ENV_VARS: Record<string, EnvKind> = {
   NODE_ENV: 'string', VITEST: 'string', TZ: 'string', OWNER_SESSION_HOURS: 'num', DISABLE_2FA: 'flag', SITE_URL: 'url',
   RATE_LIMIT_PER_MIN: 'int', RATE_HEAVY_PER_MIN: 'int', RATE_BAD_LIMIT: 'int', RATE_LOCK_MIN: 'int',
   // база и поиск
-  DATABASE_URL: 'url', REDIS_URL: 'url', MEILISEARCH_URL: 'url', MEILISEARCH_MASTER_KEY: 'secret', DICT_FILE: 'path',
+  DATABASE_URL: 'url', REDIS_URL: 'url', CACHE_REDIS_URL: 'url', MEILISEARCH_URL: 'url', MEILISEARCH_MASTER_KEY: 'secret', DICT_FILE: 'path',
   PG_DUMP_BIN: 'path', PG_DUMP_DATABASE_URL: 'url', PG_DUMP_SCHEMA: 'string',
   // лимиты места
   IMAGES_QUOTA_MB: 'num', DOCS_QUOTA_MB: 'num', MANHWA_CACHE_MB: 'num',
