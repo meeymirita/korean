@@ -39,8 +39,8 @@ function size(file) {
 
 rmSync(out, { recursive: true, force: true })
 const chapters = []
-for (const dir of readdirSync(src).filter(d => /^chapter-\d+$/i.test(d)).sort()) {
-  const n = Number(dir.slice(8))
+for (const dir of readdirSync(src).filter(d => /(^|-)chapter-\d+$/i.test(d)).sort()) {
+  const n = Number(dir.match(/(\d+)$/)[1]) // Chapter-007, chapter-07 и tom-1-chapter-07
   const files = readdirSync(join(src, dir))
     .filter(f => /\.(webp|jpe?g|png)$/i.test(f))
     .map(f => {
