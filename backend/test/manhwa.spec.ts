@@ -113,23 +113,48 @@ describe('манхва', () => {
     }
   })
 
-  it('ссылка на страницу с Диска: при сбое Диска просим ещё раз, а не отвечаем 404', async () => {
+  it('страница с Диска: при сбое Диска просим ссылку ещё раз, файл ложится в кэш и дальше отдаётся без Диска', async () => {
     vi.useFakeTimers()
+    const realFetch = globalThis.fetch
     try {
       let calls = 0
       const disk2 = { configured: () => true, cachedLink: vi.fn(() => (++calls === 1 ? Promise.reject(new Error('yadisk 429: слишком много запросов')) : Promise.resolve('https://disk.example/p'))) }
+      const download = vi.fn(async () => new Response(JPG, { status: 200 }))
+      globalThis.fetch = download as never
       const c = new ManhwaController(disk2 as never)
-      const e = '1795564800000'
-      const s = signPath('/api/manhwa/disk-a/1/cover.jpg', TOKEN, Number(e) - 2 * 24 * 3600_000, 2 * 24 * 3600_000)
+      const s = signPath('/api/manhwa/disk-a/1/cover.jpg', TOKEN, 1795564800000 - 2 * 24 * 3600_000, 2 * 24 * 3600_000)
       const p = parts(s)
       const r = res()
       const done = c.page('disk-a', '1', 'cover.jpg', p.e, p.s, r as never)
       await vi.advanceTimersByTimeAsync(5_000)
       await done
-      expect(r.redirect).toHaveBeenCalledWith(302, 'https://disk.example/p')
       expect(disk2.cachedLink).toHaveBeenCalledTimes(2)
+      expect(download).toHaveBeenCalledTimes(1)
+      expect(r.sendFile).toHaveBeenCalledWith(expect.stringContaining('manhwa-cache'))
+      // второй запрос: файл уже у нас, ни ссылки Диска, ни скачивания
+      const r2 = res()
+      await c.page('disk-a', '1', 'cover.jpg', p.e, p.s, r2 as never)
+      expect(r2.sendFile).toHaveBeenCalledTimes(1)
+      expect(disk2.cachedLink).toHaveBeenCalledTimes(2)
+      expect(download).toHaveBeenCalledTimes(1)
     } finally {
+      globalThis.fetch = realFetch
       vi.useRealTimers()
+    }
+  })
+
+  it('не вышло скачать в кэш: перенаправление на ссылку Диска', async () => {
+    const realFetch = globalThis.fetch
+    try {
+      globalThis.fetch = (async () => new Response('нет', { status: 500 })) as never
+      const disk3 = { configured: () => true, cachedLink: vi.fn().mockResolvedValue('https://disk.example/q') }
+      const c = new ManhwaController(disk3 as never)
+      const p = parts(signPath('/api/manhwa/disk-b/1/001.jpg', TOKEN, 1795564800000 - 2 * 24 * 3600_000, 2 * 24 * 3600_000))
+      const r = res()
+      await c.page('disk-b', '1', '001.jpg', p.e, p.s, r as never)
+      expect(r.redirect).toHaveBeenCalledWith(302, 'https://disk.example/q')
+    } finally {
+      globalThis.fetch = realFetch
     }
   })
 })

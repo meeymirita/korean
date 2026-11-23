@@ -8,6 +8,7 @@ import { Owner, Public } from '../auth/auth.js'
 import { DATA_DIR, TOKEN } from '../config.js'
 import { signPath, verifySigned } from '../music/music.util.js'
 import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
+import { cacheDrop, cacheFill, cacheGet } from './manhwa.cache.js'
 
 /** Папка манхвы на сервере, если Яндекс.Диск не подключён (локальная проверка): `data/manhwa/<манхва>/<глава>/<NNN>.<расширение>` и `data/manhwa/<манхва>/index.json`. */
 export const MANHWA_DIR = path.join(DATA_DIR, 'manhwa')
@@ -110,6 +111,20 @@ export class ManhwaController {
     return signPath(`/api/manhwa/${slug}/${f}`, TOKEN, day, 2 * DAY)
   }
 
+  /**
+   * Файл с Диска: из кэша на сервере; нет в кэше, значит скачиваем с Диска и оставляем (обложки и страницы читаются у нас, лимиты Диска не мешают);
+   * не вышло скачать (большой файл, сбой), тогда перенаправление на временную ссылку Диска.
+   */
+  private async fromDisk(key: string, res: Response) {
+    const cached = cacheGet(key) ?? (await cacheFill(key, () => this.diskLink(`${DISK_DIRS.manhwa}/${key}`)))
+    if (cached) return void res.sendFile(cached)
+    try {
+      return void res.redirect(302, await this.diskLink(`${DISK_DIRS.manhwa}/${key}`))
+    } catch {
+      throw new NotFoundException({ error: 'not found' })
+    }
+  }
+
   /** Полка: все манхвы (без списка страниц). */
   @Owner()
   @Get()
@@ -183,6 +198,7 @@ export class ManhwaController {
       if (old && OWN_COVER.test(old)) {
         const p = `${DISK_DIRS.manhwa}/${slug}/${old}`
         this.disk.forgetLink(p)
+        cacheDrop(`${slug}/${old}`)
         await retryDisk(() => this.disk.remove(p)).catch(() => undefined)
       }
     } else {
@@ -204,13 +220,7 @@ export class ManhwaController {
     if (!verifySigned(`/api/manhwa/${slug}/${file}`, e, s, TOKEN)) return void res.status(403).json({ error: 'forbidden' })
     res.setHeader('Cache-Control', 'private, max-age=86400')
     res.setHeader('X-Content-Type-Options', 'nosniff')
-    if (this.disk.configured()) {
-      try {
-        return void res.redirect(302, await this.diskLink(`${DISK_DIRS.manhwa}/${slug}/${file}`))
-      } catch {
-        throw new NotFoundException({ error: 'not found' })
-      }
-    }
+    if (this.disk.configured()) return this.fromDisk(`${slug}/${file}`, res)
     const f = path.join(MANHWA_DIR, slug, file)
     if (!existsSync(f)) throw new NotFoundException({ error: 'not found' })
     res.sendFile(f)
@@ -223,13 +233,7 @@ export class ManhwaController {
     if (!verifySigned(`/api/manhwa/${slug}/${n}/${file}`, e, s, TOKEN)) return void res.status(403).json({ error: 'forbidden' })
     res.setHeader('Cache-Control', 'private, max-age=86400')
     res.setHeader('X-Content-Type-Options', 'nosniff')
-    if (this.disk.configured()) {
-      try {
-        return void res.redirect(302, await this.diskLink(`${DISK_DIRS.manhwa}/${slug}/${n}/${file}`))
-      } catch {
-        throw new NotFoundException({ error: 'not found' })
-      }
-    }
+    if (this.disk.configured()) return this.fromDisk(`${slug}/${n}/${file}`, res)
     const f = path.join(MANHWA_DIR, slug, n, file)
     if (!existsSync(f)) throw new NotFoundException({ error: 'not found' })
     res.sendFile(f)
