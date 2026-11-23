@@ -21,6 +21,7 @@ import { PublicModule } from './public/public.module.js'
 import { DigestModule } from './digest/digest.module.js'
 import { RuleModule } from './rule/rule.module.js'
 import { TopikModule } from './topik/topik.module.js'
+import { CacheModule } from './cache/cache.module.js'
 import { VlogModule } from './vlog/vlog.module.js'
 import { ReminderModule } from './reminders/reminder.module.js'
 import { LessonModule } from './lesson/lesson.module.js'
@@ -44,7 +45,7 @@ import { YaDiskModule } from './yadisk/yadisk.module.js'
 import { WordsExportModule } from './wordsexport/wordsexport.module.js'
 
 @Module({
-  imports: [PicModule, VideoModule, ManhwaModule, MusicModule, VoiceModule, TalksModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, MaterialsModule, LearningModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, RuleModule, TopikModule, VlogModule, WordsExportModule, AdminModule, SearchModule, DictModule],
+  imports: [CacheModule, PicModule, VideoModule, ManhwaModule, MusicModule, VoiceModule, TalksModule, YaDiskModule, NotifyModule, JobsModule, DbModule, EventsModule, AuthModule, GuestsModule, NotesModule, TrashModule, NewWordsModule, MaterialsModule, LearningModule, ProgressModule, ImagesModule, PlansModule, ChatModule, SetsModule, ExamsModule, PublicModule, SiteImgModule, ReminderModule, LessonModule, DigestModule, RuleModule, TopikModule, VlogModule, WordsExportModule, AdminModule, SearchModule, DictModule],
   controllers: [HealthController, MetricsController, CspReportController],
   providers: [{ provide: APP_FILTER, useClass: ErrorFilter }, MetricsService, ContainerMetrics],
 })

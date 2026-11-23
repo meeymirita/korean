@@ -1,5 +1,6 @@
 import { logError } from '../log.js'
-import { BadRequestException, Injectable, Logger, NotFoundException, OnApplicationBootstrap, ServiceUnavailableException } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, NotFoundException, OnApplicationBootstrap, Optional, ServiceUnavailableException } from '@nestjs/common'
+import { CacheService } from '../cache/cache.service.js'
 import { access, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { buildDocs, type DictDoc, type RawEntry } from './dict.data.js'
@@ -120,6 +121,14 @@ const q1 = (v: string) => `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 @Injectable()
 export class DictService implements OnApplicationBootstrap {
   private indexing = false
+
+  /** Кэш: Redis для кэша (переживает перезапуск, общий для процессов) или память, если Redis не задан; тесты создают сервис без параметров. */
+  constructor(@Optional() private readonly cache: CacheService = new CacheService()) {}
+
+  /** Номер версии кэша словаря: растёт при переиндексации, и все прежние ответы перестают находиться. */
+  private ver() {
+    return this.cache.version('dict')
+  }
   private readonly log = new Logger('Dict')
 
   /** Файл словаря лежит на сервере, а индекса ещё нет (первый запуск, чистый Meilisearch): собираем его в фоне, запуск сервера не ждёт. */
@@ -190,6 +199,14 @@ export class DictService implements OnApplicationBootstrap {
     if (this.sitemapCache && Date.now() - this.sitemapCache.at < TTL) return this.sitemapCache.urls
     if (this.sitemapLoading) return this.sitemapLoading
     this.sitemapLoading = (async () => {
+      // после перезапуска карту берём из кэша (Redis), а не обходим весь индекс заново
+      const v = await this.ver()
+      const saved = await this.cache.get<{ urls: { loc: string; lastmod?: string }[]; ru: string[] }>(`dict:sitemap:${v}`)
+      if (saved?.urls.length) {
+        this.sitemapCache = { at: Date.now(), urls: saved.urls }
+        this.ruCache = saved.ru
+        return saved.urls
+      }
       const words = new Set<string>()
       const learnerDocs: { tr?: string[]; freq?: number }[] = []
       for (let offset = 0; ; offset += 1000) {
@@ -229,6 +246,7 @@ export class DictService implements OnApplicationBootstrap {
       if (urls.length && !this.indexing) {
         this.sitemapCache = { at: Date.now(), urls }
         this.ruCache = ru
+        await this.cache.set(`dict:sitemap:${v}`, { urls, ru }, TTL / 1000)
       }
       return urls
     })().finally(() => { this.sitemapLoading = null })
@@ -240,15 +258,17 @@ export class DictService implements OnApplicationBootstrap {
     const q = raw.replace(/\s+/g, ' ').trim().toLowerCase()
     if (!isRuWord(q)) throw new NotFoundException({ error: 'not found' })
     this.notWhileIndexing()
-    const r = await this.req<{ hits?: DictDoc[] }>(`/indexes/${INDEX}/search`, {
-      method: 'POST',
-      body: JSON.stringify({ q: '', limit: 30, filter: `tr = ${q1(q)}`, sort: ['rank:desc'] }),
-    }, [404])
-    const exact = r?.hits ?? []
-    if (!exact.length) throw new NotFoundException({ error: 'not found' })
-    const ids = new Set(exact.map(h => h.id))
-    const related = (await this.search(q)).hits.filter(h => !ids.has(h.id)).slice(0, 12)
-    return { q, exact: exact.map(slim), related }
+    return this.cache.wrap(`dict:ru:${await this.ver()}:${q}`, 86_400, async () => {
+      const r = await this.req<{ hits?: DictDoc[] }>(`/indexes/${INDEX}/search`, {
+        method: 'POST',
+        body: JSON.stringify({ q: '', limit: 30, filter: `tr = ${q1(q)}`, sort: ['rank:desc'] }),
+      }, [404])
+      const exact = r?.hits ?? []
+      if (!exact.length) throw new NotFoundException({ error: 'not found' })
+      const ids = new Set(exact.map(h => h.id))
+      const related = (await this.search(q)).hits.filter(h => !ids.has(h.id)).slice(0, 12)
+      return { q, exact: exact.map(slim), related }
+    }, () => this.indexing)
   }
 
   /** Указатель /ru: самые частые русские слова (то же, что идёт в карту сайта; список собирается вместе с картой). */
@@ -309,8 +329,8 @@ export class DictService implements OnApplicationBootstrap {
   /** Сбрасывает запомненные ответы: карту сайта, папки, подборки. */
   private clearCaches() {
     this.sitemapCache = null
-    this.foldersCache = null
-    this.collectionCache.clear()
+    this.ruCache = []
+    void this.cache.bump('dict') // все ответы словаря в кэше (слова, алфавит, поиск, подборки, карта) перестают находиться
   }
 
   /** Пока идёт сборка индекса, в нём только часть слов: такие ответы не отдаём и не запоминаем. */
@@ -318,7 +338,16 @@ export class DictService implements OnApplicationBootstrap {
     if (this.indexing) throw new ServiceUnavailableException({ error: 'словарь сейчас индексируется' })
   }
 
+  /** Поиск: ответы на одинаковые запросы живут в кэше 10 минут (боты и повторы), ключ нормализован и ограничен по длине. */
   async search(raw: string, opts: { level?: string; pos?: string; offset?: number } = {}): Promise<DictSearchResult> {
+    const query = raw.replace(/\s+/g, ' ').trim().slice(0, MAX_QUERY)
+    if (!query || this.indexing) return this.searchLoad(raw, opts)
+    const offset = Number.isSafeInteger(opts.offset) ? Math.min(1980, Math.max(0, opts.offset!)) : 0
+    const key = `dict:s:${await this.ver()}:${query}|${opts.level && LEVELS.includes(opts.level) ? opts.level : ''}|${(opts.pos ?? '').slice(0, 40)}|${offset}`
+    return this.cache.wrap(key, 600, () => this.searchLoad(raw, opts), () => this.indexing)
+  }
+
+  private async searchLoad(raw: string, opts: { level?: string; pos?: string; offset?: number } = {}): Promise<DictSearchResult> {
     const query = raw.replace(/\s+/g, ' ').trim().slice(0, MAX_QUERY)
     const offset = Number.isSafeInteger(opts.offset) ? Math.min(1980, Math.max(0, opts.offset!)) : 0
     const empty: DictSearchResult = { query, hits: [], total: 0, limit: LIMIT, offset, facets: { level: {}, pos: {} } }
@@ -371,23 +400,18 @@ export class DictService implements OnApplicationBootstrap {
     return r?.hits ?? []
   }
 
-  private foldersCache: { at: number; data: { total: number; level: Record<string, number>; pos: Record<string, number> } } | null = null
-
   /** Папки меню «Все слова»: сколько слов в каждом уровне и в каждой части речи. Кэш на час (база не меняется). */
   async folders() {
     this.notWhileIndexing()
-    if (this.foldersCache && Date.now() - this.foldersCache.at < 3_600_000) return this.foldersCache.data
-    const r = await this.req<MeiliSearch & { facetDistribution?: { level?: Record<string, number>; pos?: Record<string, number> } }>(`/indexes/${INDEX}/search`, {
-      method: 'POST',
-      body: JSON.stringify({ q: '', limit: 0, facets: ['level', 'pos'] }),
-    }, [404])
-    if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
-    const data = { total: Number(r.estimatedTotalHits) || 0, level: r.facetDistribution?.level ?? {}, pos: r.facetDistribution?.pos ?? {} }
-    if (data.total > 0) this.foldersCache = { at: Date.now(), data }
-    return data
+    return this.cache.wrap(`dict:folders:${await this.ver()}`, 3600, async () => {
+      const r = await this.req<MeiliSearch & { facetDistribution?: { level?: Record<string, number>; pos?: Record<string, number> } }>(`/indexes/${INDEX}/search`, {
+        method: 'POST',
+        body: JSON.stringify({ q: '', limit: 0, facets: ['level', 'pos'] }),
+      }, [404])
+      if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
+      return { total: Number(r.estimatedTotalHits) || 0, level: r.facetDistribution?.level ?? {}, pos: r.facetDistribution?.pos ?? {} }
+    }, d => d.total <= 0)
   }
-
-  private collectionCache = new Map<string, { at: number; data: unknown }>()
 
   private async collectionRows(slug: string) {
     const c = collectionBySlug(slug)
@@ -407,25 +431,19 @@ export class DictService implements OnApplicationBootstrap {
   /** Список подборок для страницы `/dict/podborki`: название, описание и сколько слов в каждой. Кэш на час. */
   async collections() {
     this.notWhileIndexing()
-    const hit = this.collectionCache.get('*')
-    if (hit && Date.now() - hit.at < 3_600_000) return hit.data
-    const data = await Promise.all(COLLECTIONS.map(async c => {
+    return this.cache.wrap(`dict:collections:${await this.ver()}`, 3600, () => Promise.all(COLLECTIONS.map(async c => {
       const r = await this.req<MeiliSearch>(`/indexes/${INDEX}/search`, { method: 'POST', body: JSON.stringify({ q: '', limit: 0, filter: c.filter }) }, [404])
       return { slug: c.slug, title: c.title, description: c.description, count: Math.min(c.limit, Number(r?.estimatedTotalHits) || 0) }
-    }))
-    if (data.every(d => d.count > 0)) this.collectionCache.set('*', { at: Date.now(), data })
-    return data
+    })), d => !d.every(x => x.count > 0))
   }
 
   /** Одна подборка: заголовки, вступление и слова (самые употребительные первыми). Кэш на час. */
   async collection(slug: string) {
     this.notWhileIndexing()
-    const hit = this.collectionCache.get(slug)
-    if (hit && Date.now() - hit.at < 3_600_000) return hit.data
-    const { c, items } = await this.collectionRows(slug)
-    const data = { slug: c.slug, title: c.title, seoTitle: c.seoTitle, description: c.description, intro: c.intro, items, others: COLLECTIONS.filter(o => o.slug !== slug).map(o => ({ slug: o.slug, title: o.title })) }
-    if (items.length) this.collectionCache.set(slug, { at: Date.now(), data })
-    return data
+    return this.cache.wrap(`dict:collection:${await this.ver()}:${slug}`, 3600, async () => {
+      const { c, items } = await this.collectionRows(slug)
+      return { slug: c.slug, title: c.title, seoTitle: c.seoTitle, description: c.description, intro: c.intro, items, others: COLLECTIONS.filter(o => o.slug !== slug).map(o => ({ slug: o.slug, title: o.title })) }
+    }, d => d.items.length === 0)
   }
 
   /** Список всех слов для меню слева: по «популярности» или по алфавиту, порциями. */
@@ -437,13 +455,15 @@ export class DictService implements OnApplicationBootstrap {
     if (opts.level && LEVELS.includes(opts.level)) filters.push(`level = ${q1(opts.level)}`)
     if (opts.pos) filters.push(`pos = ${q1(opts.pos.slice(0, 40))}`)
     const sort = opts.order === 'abc' ? ['word:asc', 'hom:asc'] : ['rank:desc']
-    const r = await this.req<MeiliSearch>(`/indexes/${INDEX}/search`, {
-      method: 'POST',
-      body: JSON.stringify({ q: '', limit, offset, filter: filters.join(' AND ') || undefined, sort, attributesToRetrieve: ['id', 'word', 'hom', 'pos', 'level', 'ru'] }),
-    }, [404])
-    if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
-    const items = (r.hits ?? []).map(d => ({ id: d.id, word: d.word, hom: d.hom, pos: d.pos, level: d.level, ru: shortRu(d.ru).split('; ').slice(0, 2).join('; ') }))
-    return { items, total: Math.max(0, Number(r.estimatedTotalHits) || items.length), limit, offset }
+    return this.cache.wrap(`dict:list:${await this.ver()}:${filters.join('&')}|${sort[0]}|${limit}|${offset}`, 3600, async () => {
+      const r = await this.req<MeiliSearch>(`/indexes/${INDEX}/search`, {
+        method: 'POST',
+        body: JSON.stringify({ q: '', limit, offset, filter: filters.join(' AND ') || undefined, sort, attributesToRetrieve: ['id', 'word', 'hom', 'pos', 'level', 'ru'] }),
+      }, [404])
+      if (!r) throw new ServiceUnavailableException({ error: 'словарь ещё не проиндексирован' })
+      const items = (r.hits ?? []).map(d => ({ id: d.id, word: d.word, hom: d.hom, pos: d.pos, level: d.level, ru: shortRu(d.ru).split('; ').slice(0, 2).join('; ') }))
+      return { items, total: Math.max(0, Number(r.estimatedTotalHits) || items.length), limit, offset }
+    }, () => this.indexing)
   }
 
   /** Слово могли написать в спряжении: достаём словарные формы-кандидаты (только глаголы и прилагательные). */
@@ -462,6 +482,12 @@ export class DictService implements OnApplicationBootstrap {
   async word(word: string) {
     const w = word.replace(/\s+/g, ' ').trim().slice(0, MAX_QUERY)
     if (!w) throw new BadRequestException({ error: 'пустое слово' })
+    // страница слова самая тяжёлая открытая (три запроса к поиску и обход карты слов) и меняется только при переиндексации: сутки в кэше;
+    // ответ без соседей по алфавиту (карта не собралась) и ответ во время индексации не запоминаем
+    return this.cache.wrap(`dict:word:${await this.ver()}:${w}`, 86_400, () => this.wordLoad(w), r => this.indexing || r.navigation === undefined)
+  }
+
+  private async wordLoad(w: string) {
     const r = await this.req<{ hits?: DictDoc[] }>(`/indexes/${INDEX}/search`, {
       method: 'POST',
       body: JSON.stringify({ q: '', limit: 20, filter: `word = ${q1(w)}`, sort: ['hom:asc'] }),
@@ -497,6 +523,10 @@ export class DictService implements OnApplicationBootstrap {
 
   /** Счётчики для общедоступного алфавитного указателя. */
   async alphabetIndex() {
+    return this.cache.wrap(`dict:alphaidx:${await this.ver()}`, 86_400, () => this.alphabetIndexLoad(), () => this.indexing)
+  }
+
+  private async alphabetIndexLoad() {
     const words = namesFromSitemap(await this.sitemap())
     const counts = new Map<string, number>()
     for (const word of words) {
@@ -513,6 +543,10 @@ export class DictService implements OnApplicationBootstrap {
     this.notWhileIndexing()
     const key = initial.trim()
     if (!CHOSEONG.includes(key) && !(key.length === 1 && initialOf(key))) throw new NotFoundException({ error: 'нет такого алфавитного раздела' })
+    return this.cache.wrap(`dict:alpha:${await this.ver()}:${key}:${offset}:${limit}`, 86_400, () => this.alphabetLoad(key, offset, limit), () => this.indexing)
+  }
+
+  private async alphabetLoad(key: string, offset: number, limit: number) {
     const words = namesFromSitemap(await this.sitemap())
     const filtered = words.filter(word => CHOSEONG.includes(key) ? initialOf(word) === key : syllableOf(word) === key)
     const selected = filtered.slice(offset, offset + limit)
