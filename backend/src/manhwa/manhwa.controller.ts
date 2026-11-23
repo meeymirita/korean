@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { BadRequestException, Controller, Get, HttpCode, NotFoundException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Controller, Get, HttpCode, NotFoundException, ServiceUnavailableException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import type { Response } from 'express'
@@ -19,6 +19,19 @@ const FILE = /^(\d{3}\.(webp|jpe?g|png)|cover\.jpg)$/
 const OWN_COVER = /^cover-[a-z0-9]{1,12}\.(jpg|png|webp)$/
 const MAX_COVER = 8 * 1024 * 1024
 const DAY = 24 * 3600_000
+
+/** Диск отвечает 423 («ресурс заблокирован»), 429 и 5xx, пока над папкой идёт другая операция (например, загрузка папки манхвы в браузере): пробуем ещё раз через паузу. */
+async function retryDisk<T>(fn: () => Promise<T>): Promise<T> {
+  for (let k = 1; ; k++) {
+    try {
+      return await fn()
+    } catch (e) {
+      const busy = e instanceof Error && /yadisk (upload )?(423|429|5\d\d)\b/.test(e.message)
+      if (!busy || k >= 5) throw e
+      await new Promise(r => setTimeout(r, 1500 * k))
+    }
+  }
+}
 
 interface Index {
   title?: string
@@ -138,12 +151,16 @@ export class ManhwaController {
     const next: Index = { ...idx, cover: name }
     const json = Buffer.from(JSON.stringify(next))
     if (this.disk.configured()) {
-      await this.disk.put(`${DISK_DIRS.manhwa}/${slug}/${name}`, b)
-      await this.disk.put(`${DISK_DIRS.manhwa}/${slug}/index.json`, json)
+      try {
+        await retryDisk(() => this.disk.put(`${DISK_DIRS.manhwa}/${slug}/${name}`, b))
+        await retryDisk(() => this.disk.put(`${DISK_DIRS.manhwa}/${slug}/index.json`, json))
+      } catch {
+        throw new ServiceUnavailableException({ error: 'Диск сейчас занят другой операцией (например, идёт загрузка папки): попробуй через минуту' })
+      }
       if (old && OWN_COVER.test(old)) {
         const p = `${DISK_DIRS.manhwa}/${slug}/${old}`
         this.disk.forgetLink(p)
-        await this.disk.remove(p).catch(() => undefined)
+        await retryDisk(() => this.disk.remove(p)).catch(() => undefined)
       }
     } else {
       const dir = path.join(MANHWA_DIR, slug)

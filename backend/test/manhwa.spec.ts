@@ -85,4 +85,31 @@ describe('манхва', () => {
     expect(denied.status).toHaveBeenCalledWith(403)
     expect(existsSync(path.join(dir, own()[0]!))).toBe(true)
   })
+
+  it('Диск занят (423): сохранение обложки повторяется, а при долгой блокировке отвечает понятным 503', async () => {
+    book('busy-a', [{ n: 1, pages: [{ f: '001.jpg', w: 1, h: 1 }] }])
+    vi.useFakeTimers()
+    try {
+      const busy = () => Promise.reject(new Error('yadisk 423: Ресурс заблокирован'))
+      let calls = 0
+      const flaky = { configured: () => true, put: vi.fn(() => (++calls <= 2 ? busy() : Promise.resolve())), remove: vi.fn(), forgetLink: vi.fn(), link: vi.fn() }
+      const ok = new ManhwaController(flaky as never)
+      const warm = (c: ManhwaController) => (c as unknown as { cache: Map<string, unknown> }).cache.set('busy-a', { until: Date.now() + 60_000, data: { chapters: [] } }) // индекс уже в памяти: не ходим на Диск за ним
+      warm(ok)
+      const done = ok.setCover('busy-a', file(JPG))
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect((await done).cover).toContain('/api/manhwa/busy-a/cover-')
+      expect(flaky.put).toHaveBeenCalledTimes(4) // две неудачи, картинка, index.json
+
+      const stuck = new ManhwaController({ configured: () => true, put: () => busy(), remove: vi.fn(), forgetLink: vi.fn() } as never)
+      warm(stuck)
+      const failed = stuck.setCover('busy-a', file(JPG)).catch((e: Error) => e)
+      await vi.advanceTimersByTimeAsync(60_000)
+      const err = (await failed) as { getStatus(): number; getResponse(): { error: string } }
+      expect(err.getStatus()).toBe(503)
+      expect(err.getResponse().error).toContain('Диск сейчас занят')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
