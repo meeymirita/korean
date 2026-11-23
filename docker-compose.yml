@@ -93,6 +93,7 @@ services:
       MAIL_DUMP_FILE: ${MAIL_DUMP_FILE:-}
       DOCS_QUOTA_MB: ${DOCS_QUOTA_MB:-1024}
       IMAGES_QUOTA_MB: ${IMAGES_QUOTA_MB:-1024}
+      MANHWA_CACHE_MB: ${MANHWA_CACHE_MB:-3000}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s

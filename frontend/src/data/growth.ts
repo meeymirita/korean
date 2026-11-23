@@ -4,13 +4,13 @@ export interface GrowthMark { d: string; title: string; summary: string; items: 
 export interface Growth { generated: string; commits: number; first: { d: string; subject: string } | null; lines: number; days: GrowthDay[]; marks: GrowthMark[] }
 
 export const GROWTH: Growth = {
- "generated": "2026-11-22",
- "commits": 1030,
+ "generated": "2026-11-24",
+ "commits": 1040,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 108458,
+ "lines": 110269,
  "days": [
   {
    "d": "2026-10-21",
@@ -186,6 +186,13 @@ export const GROWTH: Growth = {
    "cum": 1030,
    "add": 5395,
    "del": 637
+  },
+  {
+   "d": "2026-11-24",
+   "n": 10,
+   "cum": 1040,
+   "add": 1626,
+   "del": 49
   }
  ],
  "marks": [
@@ -510,6 +517,13 @@ export const GROWTH: Growth = {
    "summary": "В боковом меню появился раздел «Манхва»: на полке карточка каждой манхвы, внутри главы, а читалка листает ленту без фона сайта и помнит, где остановился. Картинки лежат на Яндекс.Диске.",
    "items": 5,
    "cum": 1030
+  },
+  {
+   "d": "2026-11-24",
+   "title": "Манхва: прогресс на сервере, закладки, статусы, кэш и webp",
+   "summary": "Чтение манхвы стало удобнее и быстрее: прогресс одинаков на всех устройствах, есть закладки с заметками, статусы, клавиши, две страницы и размытие непрочитанного; картинки кэшируются на сервере и переведены в webp.",
+   "items": 6,
+   "cum": 1040
   }
  ]
 }

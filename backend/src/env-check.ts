@@ -18,7 +18,7 @@ export const ENV_VARS: Record<string, EnvKind> = {
   DATABASE_URL: 'url', REDIS_URL: 'url', MEILISEARCH_URL: 'url', MEILISEARCH_MASTER_KEY: 'secret', DICT_FILE: 'path',
   PG_DUMP_BIN: 'path', PG_DUMP_DATABASE_URL: 'url', PG_DUMP_SCHEMA: 'string',
   // лимиты места
-  IMAGES_QUOTA_MB: 'num', DOCS_QUOTA_MB: 'num',
+  IMAGES_QUOTA_MB: 'num', DOCS_QUOTA_MB: 'num', MANHWA_CACHE_MB: 'num',
   // помощник-чат
   OPENROUTER_API_KEY: 'secret', CHAT_MODEL: 'string', CHAT_BASE: 'url', CHAT_DAILY_LIMIT: 'int', CHAT_EXPLAIN_LIMIT: 'int',
   // голосовой собеседник
