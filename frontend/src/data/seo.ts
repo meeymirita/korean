@@ -121,6 +121,7 @@ const PAGES: Record<string, Seo> = {
   '/korean/vlog-study': { title: `Разбор влога · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/vlog': { title: `Влог: смотри и читай по-корейски · ${BRAND}`, description: 'Видео с медленной корейской речью: текст по фразам со временем, перевод по нажатию, подсветка слов из твоего словаря, замедление и повтор фразы.', noindex: true },
   '/korean/clip': { title: `Вырезка из текста · ${BRAND}`, description: 'Вставь корейский текст: слова из твоего словаря подсветятся по очкам, слова большого словаря и перевод покажутся по нажатию. Текст нигде не сохраняется.', noindex: true },
+  '/korean/manhwa': { title: `Манхва · ${BRAND}`, description: 'Манхва с главами лентой: листай, отмечай прочитанные главы и продолжай с того места, где остановился.', noindex: true },
   '/korean/sites': { title: `Полезные сайты · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/game/home': { title: `Игры на слова · ${BRAND}`, description: DEFAULT.description, noindex: true },
 }

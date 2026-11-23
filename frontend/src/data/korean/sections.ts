@@ -52,6 +52,7 @@ export const sections: Section[] = [
   { id: 'report', num: '25', menu: 'Отчёт', kicker: 'Кабинет', title: 'Отчёт', sub: 'все ответы по режимам: графики, PDF и каждое занятие целиком', private: true, owner: true, group: 'extra' },
   { id: 'exam', num: '24', menu: 'Экзамены', kicker: 'Проверка знаний', title: 'Экзамены', sub: 'блиц дня, экзамен единицы, большой экзамен и пробник TOPIK I в одном месте', private: true, owner: true },
   { id: 'vlog-study', num: '29', menu: 'Разбор влога', kicker: 'Живая речь', title: 'Разбор влога', sub: 'текст влога с переводом, справка по новой грамматике и слова', private: true, group: 'extra' },
+  { id: 'manhwa', num: '30', menu: 'Манхва', kicker: 'Чтение', title: 'Манхва', sub: 'главы лентой: листай, отмечай прочитанное, продолжай с того места, где остановился', private: true },
   { id: 'vlog', num: '28', menu: 'Влог', kicker: 'Живая речь', title: 'Влог', sub: 'видео с медленной речью: текст по фразам, перевод по нажатию и подсветка слов', private: true },
 ]
 
@@ -74,4 +75,4 @@ export function lastRefTab() {
 export const sectionById = (id: string) => sections.find(s => s.id === id)!
 
 /** Значки пунктов бокового меню: имена иконок из `src/lib/icons.ts`. У каждого пункта свой значок (тест `menu-icons.spec.ts`). */
-export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', vlog: 'picture', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }
+export const MENU_ICONS: Record<string, string> = { game: 'dice', home: 'home', today: 'sun', cabinet: 'heart', words: 'dict', grammar: 'grammar', ref: 'book', trainers: 'target', review: 'card', garden: 'sakura', chat: 'speech', shop: 'coin', exam: 'trophy', culture: 'flag-kr', know: 'bulb', map: 'plant-bloom', lab: 'wand', sites: 'telescope', clip: 'pen', vlog: 'picture', manhwa: 'sparkle', report: 'chart', mistakes: 'eraser', marks: 'goldstar', forms: 'wrench', services: 'gear' }

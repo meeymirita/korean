@@ -34,3 +34,6 @@ desktop/node_modules/
 desktop/dist/
 desktop/build-tmp/
 desktop/icon.icns
+
+# Манхва: картинки глав ставит scripts/manhwa-import.mjs, в git не идут
+/data/manhwa/

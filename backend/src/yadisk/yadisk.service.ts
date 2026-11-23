@@ -25,6 +25,8 @@ export const DISK_DIRS = {
   video: 'korean_video',
   /** видео влогов: `<номер видео на ютубе>.mp4` (11 знаков), по одному файлу на влог */
   vlog: 'korean_vlog',
+  /** манхва: `<глава>/<NNN>.webp` и `index.json` (список страниц и размеры, `scripts/manhwa-import.mjs`) */
+  manhwa: 'korean_manhwa',
   /** музыкальный плеер: песни `<id>.<расширение>` и обложки `<id>.jpg` */
   music: 'korean_music',
   /** картинки карточек грамматики: lesson-N.webp и own-<id>.webp */
