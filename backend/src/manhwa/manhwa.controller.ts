@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { BadRequestException, Controller, Get, HttpCode, Logger, NotFoundException, ServiceUnavailableException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Controller, Get, HttpCode, Logger, NotFoundException, Optional, ServiceUnavailableException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import type { Response } from 'express'
@@ -8,6 +8,7 @@ import { Owner, Public } from '../auth/auth.js'
 import { DATA_DIR, TOKEN } from '../config.js'
 import { signPath, verifySigned } from '../music/music.util.js'
 import { DISK_DIRS, YaDiskService } from '../yadisk/yadisk.service.js'
+import { CacheService } from '../cache/cache.service.js'
 import { cacheDrop, cacheFill, cacheGet } from './manhwa.cache.js'
 
 /** Папка манхвы на сервере, если Яндекс.Диск не подключён (локальная проверка): `data/manhwa/<манхва>/<глава>/<NNN>.<расширение>` и `data/manhwa/<манхва>/index.json`. */
@@ -64,9 +65,8 @@ interface Index {
  */
 @Controller('manhwa')
 export class ManhwaController {
-  constructor(private readonly disk: YaDiskService) {}
-
-  private cache = new Map<string, { until: number; data: Index }>()
+  /** Кэш: Redis для кэша или память (тесты создают контроллер без второго параметра). */
+  constructor(private readonly disk: YaDiskService, @Optional() private readonly cacheSvc: CacheService = new CacheService()) {}
   private readonly log = new Logger('Manhwa')
 
   /** Временная ссылка Диска на файл: очередь, повторы при занятости Диска, причина сбоя в журнал. */
@@ -77,28 +77,28 @@ export class ManhwaController {
     })
   }
 
-  private async readIndex(slug: string): Promise<Index> {
-    const hit = this.cache.get(slug)
-    if (hit && hit.until > Date.now()) return hit.data
-    let data: Index
-    if (this.disk.configured()) {
-      const res = await fetch(await this.disk.link(`${DISK_DIRS.manhwa}/${slug}/index.json`), { signal: AbortSignal.timeout(15_000) })
-      if (!res.ok) throw new Error(`index ${res.status}`)
-      data = (await res.json()) as Index
-    } else {
-      data = JSON.parse(readFileSync(path.join(MANHWA_DIR, slug, 'index.json'), 'utf8')) as Index
-    }
-    this.cache.set(slug, { until: Date.now() + 5 * 60_000, data })
-    return data
+  /** index.json манхвы: 5 минут в общем кэше (после загрузки обложки обновляется сразу). */
+  private readIndex(slug: string): Promise<Index> {
+    return this.cacheSvc.wrap(`manhwa:index:${slug}`, 300, async () => {
+      if (this.disk.configured()) {
+        const res = await fetch(await this.disk.link(`${DISK_DIRS.manhwa}/${slug}/index.json`), { signal: AbortSignal.timeout(15_000) })
+        if (!res.ok) throw new Error(`index ${res.status}`)
+        return (await res.json()) as Index
+      }
+      return JSON.parse(readFileSync(path.join(MANHWA_DIR, slug, 'index.json'), 'utf8')) as Index
+    })
   }
 
-  private async slugs(): Promise<string[]> {
-    const names = this.disk.configured()
-      ? (await this.disk.list(DISK_DIRS.manhwa)).filter(i => i.type === 'dir').map(i => i.name)
-      : existsSync(MANHWA_DIR)
-        ? readdirSync(MANHWA_DIR, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name)
-        : []
-    return names.filter(n => SLUG.test(n)).sort()
+  /** Список манхв (папки в korean_manhwa): минута в кэше, новая манхва появляется на полке не позже чем через минуту. */
+  private slugs(): Promise<string[]> {
+    return this.cacheSvc.wrap('manhwa:slugs', 60, async () => {
+      const names = this.disk.configured()
+        ? (await this.disk.list(DISK_DIRS.manhwa)).filter(i => i.type === 'dir').map(i => i.name)
+        : existsSync(MANHWA_DIR)
+          ? readdirSync(MANHWA_DIR, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name)
+          : []
+      return names.filter(n => SLUG.test(n)).sort()
+    })
   }
 
   private sign(slug: string, n: number, f: string) {
@@ -208,7 +208,7 @@ export class ManhwaController {
       writeFileSync(path.join(dir, 'index.json'), json)
       if (old && OWN_COVER.test(old)) rmSync(path.join(dir, old), { force: true })
     }
-    this.cache.set(slug, { until: Date.now() + 5 * 60_000, data: next })
+    await this.cacheSvc.set(`manhwa:index:${slug}`, next, 300)
     return { cover: this.signRoot(slug, name) }
   }
 

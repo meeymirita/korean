@@ -94,7 +94,7 @@ describe('манхва', () => {
       let calls = 0
       const flaky = { configured: () => true, put: vi.fn(() => (++calls <= 2 ? busy() : Promise.resolve())), remove: vi.fn(), forgetLink: vi.fn(), link: vi.fn() }
       const ok = new ManhwaController(flaky as never)
-      const warm = (c: ManhwaController) => (c as unknown as { cache: Map<string, unknown> }).cache.set('busy-a', { until: Date.now() + 60_000, data: { chapters: [] } }) // индекс уже в памяти: не ходим на Диск за ним
+      const warm = (c: ManhwaController) => void (c as unknown as { cacheSvc: { set(k: string, v: unknown, t: number): Promise<void> } }).cacheSvc.set('manhwa:index:busy-a', { chapters: [] }, 60) // индекс уже в памяти: не ходим на Диск за ним
       warm(ok)
       const done = ok.setCover('busy-a', file(JPG))
       await vi.advanceTimersByTimeAsync(20_000)

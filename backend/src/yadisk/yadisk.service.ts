@@ -4,7 +4,8 @@
  * Корневая папка внутри приложения: YADISK_ROOT (по умолчанию пусто). Без токена `configured()` ложь и ничего не отправляется.
  * Для тестов: YADISK_DUMP_DIR=путь — вместо сети файлы пишутся в эту папку.
  */
-import { Injectable } from '@nestjs/common'
+import { Injectable, Optional } from '@nestjs/common'
+import { CacheService } from '../cache/cache.service.js'
 import { cpSync, createReadStream, existsSync, mkdirSync, readdirSync, statSync, createWriteStream, rmSync } from 'node:fs'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -52,6 +53,9 @@ export interface DiskItem {
 
 @Injectable()
 export class YaDiskService {
+  /** Общий кэш (Redis для кэша или память): ссылки на скачивание переживают перезапуск и общие для процессов; тесты создают сервис без параметров. */
+  constructor(@Optional() private readonly cache: CacheService = new CacheService()) {}
+
   configured() {
     return !!process.env.YADISK_DUMP_DIR || !!process.env.YADISK_TOKEN
   }
@@ -129,14 +133,23 @@ export class YaDiskService {
     // fresh: файл на Диске заменили, старая ссылка умерла; новую берём не чаще раза в 30 секунд на файл
     const young = !!hit && hit.until - 20 * 60_000 > Date.now() - 30_000
     if (hit && hit.until > Date.now() && (!fresh || young)) return hit.href
-    const href = await this.link(remote)
-    this.links.set(remote, { href, until: Date.now() + 20 * 60_000 })
+    const key = `yadisk:link:${remote}`
+    if (fresh) {
+      const href = await this.link(remote)
+      this.links.set(remote, { href, until: Date.now() + 20 * 60_000 })
+      await this.cache.set(key, href, 15 * 60)
+      return href
+    }
+    // общий кэш: ссылка живёт у Диска около 30 минут, держим 15 (в памяти ещё 10), одновременные просьбы одной ссылки делают один запрос к Диску
+    const href = await this.cache.wrap(key, 15 * 60, () => this.link(remote))
+    this.links.set(remote, { href, until: Date.now() + 10 * 60_000 })
     return href
   }
 
   /** Файл заменили или удалили: ссылка из памяти больше не годится. */
   forgetLink(remote: string) {
     this.links.delete(remote)
+    void this.cache.del(`yadisk:link:${remote}`)
   }
 
   /** Временная ссылка на скачивание (живёт около 30 минут): для видео и больших файлов. */
