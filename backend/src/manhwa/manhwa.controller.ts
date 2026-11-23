@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { BadRequestException, Controller, Get, HttpCode, NotFoundException, ServiceUnavailableException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Controller, Get, HttpCode, Logger, NotFoundException, ServiceUnavailableException, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { memoryStorage } from 'multer'
 import type { Response } from 'express'
@@ -26,10 +26,24 @@ async function retryDisk<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn()
     } catch (e) {
-      const busy = e instanceof Error && /yadisk (upload )?(423|429|5\d\d)\b/.test(e.message)
+      const busy = e instanceof Error && /yadisk (upload )?(423|429|5\d\d)\b|fetch failed|timeout|aborted/i.test(e.message)
       if (!busy || k >= 5) throw e
       await new Promise(r => setTimeout(r, 1500 * k))
     }
+  }
+}
+
+/** Не больше 6 запросов ссылок к Диску одновременно: список глав просит сразу десятки обложек, и Диск часть из них отклоняет. */
+let active = 0
+const waiting: (() => void)[] = []
+async function limited<T>(fn: () => Promise<T>): Promise<T> {
+  while (active >= 6) await new Promise<void>(r => waiting.push(r))
+  active++
+  try {
+    return await fn()
+  } finally {
+    active--
+    waiting.shift()?.()
   }
 }
 
@@ -52,6 +66,15 @@ export class ManhwaController {
   constructor(private readonly disk: YaDiskService) {}
 
   private cache = new Map<string, { until: number; data: Index }>()
+  private readonly log = new Logger('Manhwa')
+
+  /** Временная ссылка Диска на файл: очередь, повторы при занятости Диска, причина сбоя в журнал. */
+  private diskLink(remote: string) {
+    return limited(() => retryDisk(() => this.disk.cachedLink(remote))).catch((e: unknown) => {
+      this.log.warn(`нет ссылки на ${remote}: ${e instanceof Error ? e.message : String(e)}`)
+      throw e
+    })
+  }
 
   private async readIndex(slug: string): Promise<Index> {
     const hit = this.cache.get(slug)
@@ -183,7 +206,7 @@ export class ManhwaController {
     res.setHeader('X-Content-Type-Options', 'nosniff')
     if (this.disk.configured()) {
       try {
-        return void res.redirect(302, await this.disk.cachedLink(`${DISK_DIRS.manhwa}/${slug}/${file}`))
+        return void res.redirect(302, await this.diskLink(`${DISK_DIRS.manhwa}/${slug}/${file}`))
       } catch {
         throw new NotFoundException({ error: 'not found' })
       }
@@ -202,7 +225,7 @@ export class ManhwaController {
     res.setHeader('X-Content-Type-Options', 'nosniff')
     if (this.disk.configured()) {
       try {
-        return void res.redirect(302, await this.disk.cachedLink(`${DISK_DIRS.manhwa}/${slug}/${n}/${file}`))
+        return void res.redirect(302, await this.diskLink(`${DISK_DIRS.manhwa}/${slug}/${n}/${file}`))
       } catch {
         throw new NotFoundException({ error: 'not found' })
       }

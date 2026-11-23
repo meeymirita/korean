@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { TOKEN } from '../src/config'
 import { ManhwaController, MANHWA_DIR } from '../src/manhwa/manhwa.controller'
-import { verifySigned } from '../src/music/music.util'
+import { signPath, verifySigned } from '../src/music/music.util'
 
 const disk = { configured: () => false }
 const res = () => {
@@ -108,6 +108,26 @@ describe('манхва', () => {
       const err = (await failed) as { getStatus(): number; getResponse(): { error: string } }
       expect(err.getStatus()).toBe(503)
       expect(err.getResponse().error).toContain('Диск сейчас занят')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('ссылка на страницу с Диска: при сбое Диска просим ещё раз, а не отвечаем 404', async () => {
+    vi.useFakeTimers()
+    try {
+      let calls = 0
+      const disk2 = { configured: () => true, cachedLink: vi.fn(() => (++calls === 1 ? Promise.reject(new Error('yadisk 429: слишком много запросов')) : Promise.resolve('https://disk.example/p'))) }
+      const c = new ManhwaController(disk2 as never)
+      const e = '1795564800000'
+      const s = signPath('/api/manhwa/disk-a/1/cover.jpg', TOKEN, Number(e) - 2 * 24 * 3600_000, 2 * 24 * 3600_000)
+      const p = parts(s)
+      const r = res()
+      const done = c.page('disk-a', '1', 'cover.jpg', p.e, p.s, r as never)
+      await vi.advanceTimersByTimeAsync(5_000)
+      await done
+      expect(r.redirect).toHaveBeenCalledWith(302, 'https://disk.example/p')
+      expect(disk2.cachedLink).toHaveBeenCalledTimes(2)
     } finally {
       vi.useRealTimers()
     }
