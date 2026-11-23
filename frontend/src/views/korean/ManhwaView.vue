@@ -501,6 +501,8 @@ onBeforeUnmount(() => {
 .cover { display: block; aspect-ratio: 3 / 4; overflow: hidden; background: var(--line); }
 .cover img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
 .card.done .cover img { opacity: .55; }
+/* обложки непрочитанных глав размыты, чтобы не спойлерили; прочитанные видны */
+.card:not(.done) .cover img { filter: blur(11px) saturate(.9); transform: scale(1.18); }
 .badge { position: absolute; top: 8px; left: 8px; padding: 3px 9px; border-radius: 99px; background: var(--ok); color: #fff; font-size: 11.5px; font-weight: 700; }
 .cap { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; }
 .cap b { font-size: 15px; }
