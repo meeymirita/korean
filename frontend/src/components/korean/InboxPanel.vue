@@ -101,8 +101,23 @@ onMounted(() => tab.value === 'learning' && loadLearning())
 
 // ---- предложения: все sentence из всех пачек одним списком ----
 const sentences = computed(() =>
-  mats.batches.flatMap(b => b.items.flatMap(it => (it.type === 'sentence' ? [{ ko: it.ko, ru: it.ru, topic: it.topic, source: b.source, created: b.created }] : []))),
+  mats.batches.flatMap(b => b.items.flatMap((it, index) => (it.type === 'sentence' ? [{ ko: it.ko, ru: it.ru, topic: it.topic, source: b.source, created: b.created, batch: b.id, index, done: it.done === true }] : []))),
 )
+/** отметка «разобрано» у слова и у предложения: хранится на сервере, Claude видит её через API */
+async function toggleWord(w: { id: string; status?: 'new' | 'done' }) {
+  try {
+    await words.setStatus(w.id, w.status === 'done' ? 'new' : 'done')
+  } catch (e) {
+    toast.error((e as Error).message)
+  }
+}
+async function toggleSentence(s: { batch: string; index: number; done: boolean }) {
+  try {
+    await mats.setItemDone(s.batch, s.index, !s.done)
+  } catch (e) {
+    toast.error((e as Error).message)
+  }
+}
 
 // ---- материалы ----
 const date = (ms: number) => new Date(ms).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -205,30 +220,38 @@ const claudeAsk = computed(
     <!-- слова -->
     <div v-if="tab === 'words'" class="ib-list">
       <p v-if="!words.items.length" class="ib-empty">Записанных слов пока нет. Они появятся, когда Claude отправит их по токену (вкладка «Как отправить»).</p>
-      <article v-for="w in words.items" :key="w.id" class="ib-card">
+      <article v-for="w in words.items" :key="w.id" class="ib-card" :class="{ done: w.status === 'done' }">
         <header>
           <span class="ko">{{ w.ko || 'заметка' }}</span>
           <span v-if="w.reading" class="ib-muted">{{ w.reading }}</span>
           <span v-if="w.ru">{{ w.ru }}</span>
+          <span v-if="w.status === 'done'" class="ib-badge ok">разобрано</span>
           <time class="ib-muted">{{ date(w.created) }}</time>
           <button type="button" class="ib-x" aria-label="Удалить" @click="removeWord(w.id, w.ko)">✕</button>
         </header>
         <p v-if="w.example" class="ko ib-ex">{{ w.example }}</p>
         <p v-if="w.note" class="ib-pre">{{ w.note }}</p>
+        <footer>
+          <button type="button" class="ib-btn ghost small" @click="toggleWord(w)">{{ w.status === 'done' ? 'Вернуть в новые' : 'Отметить разобранным' }}</button>
+        </footer>
       </article>
     </div>
 
     <!-- предложения -->
     <div v-else-if="tab === 'sentences'" class="ib-list">
       <p v-if="!sentences.length" class="ib-empty">Предложений пока нет. Они появятся, когда Claude отправит их (вкладка «Инструкция» → «Предложения»).</p>
-      <article v-for="(s, i) in sentences" :key="i" class="ib-card ib-sent">
+      <article v-for="s in sentences" :key="`${s.batch}-${s.index}`" class="ib-card ib-sent" :class="{ done: s.done }">
         <header>
           <span class="ko">{{ s.ko }}</span>
           <span v-if="s.topic" class="ib-badge">{{ s.topic }}</span>
+          <span v-if="s.done" class="ib-badge ok">разобрано</span>
           <time class="ib-muted">{{ date(s.created) }}</time>
         </header>
         <p v-if="s.ru">{{ s.ru }}</p>
         <p class="ib-muted">{{ s.source }}</p>
+        <footer>
+          <button type="button" class="ib-btn ghost small" @click="toggleSentence(s)">{{ s.done ? 'Вернуть в новые' : 'Отметить разобранным' }}</button>
+        </footer>
       </article>
     </div>
 

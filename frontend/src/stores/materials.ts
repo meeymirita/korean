@@ -7,8 +7,10 @@ export interface Pair {
   ko: string
   ru: string
 }
-export type MaterialItem =
-  | { type: 'word'; ko: string; reading: string; ru: string; example: string; note: string }
+/** Отметка «разобрано» у элемента пачки (ставит владелец; Claude видит её в `GET /api/materials`) */
+export type ItemFlags = { done?: boolean }
+export type MaterialItem = ItemFlags &
+  ({ type: 'word'; ko: string; reading: string; ru: string; example: string; note: string }
   | { type: 'sentence'; ko: string; ru: string; topic: string }
   | { type: 'dialog'; title: string; lines: Pair[] }
   | { type: 'text'; title: string; sentences: Pair[]; questions: { q: string; options: string[]; answer: number }[] }
@@ -16,7 +18,7 @@ export type MaterialItem =
   | { type: 'exercise'; prompt: string; body: string; answer: string }
   | { type: 'task'; title: string; body: string; topic: string }
   | { type: 'mistake'; no: string; mine: string; right: string; why: string; topic: string }
-  | { type: 'note'; text: string }
+  | { type: 'note'; text: string })
 
 export interface MaterialBatch {
   id: string
@@ -70,10 +72,14 @@ export const useMaterialsStore = defineStore('materials', () => {
     const row = (await call(`/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })) as MaterialBatch
     batches.value = batches.value.map(b => (b.id === id ? row : b))
   }
+  async function setItemDone(id: string, index: number, done: boolean) {
+    const row = (await call(`/${id}/items/${index}`, { method: 'PATCH', body: JSON.stringify({ done }) })) as MaterialBatch
+    batches.value = batches.value.map(b => (b.id === id ? row : b))
+  }
   async function remove(id: string) {
     await call(`/${id}`, { method: 'DELETE' })
     batches.value = batches.value.filter(b => b.id !== id)
   }
 
-  return { batches, loaded, format, load, loadFormat, setStatus, remove }
+  return { batches, loaded, format, load, loadFormat, setStatus, setItemDone, remove }
 })

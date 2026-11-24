@@ -87,6 +87,8 @@ model NewWord {
   ru      String
   example String @default("")
   note    String @default("")
+  /// new | done (отметка «разобрано» во «Входящих»)
+  status  String @default("new")
   created BigInt
   @@map("new_words")
 }

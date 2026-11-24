@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put } from '@nestjs/common'
 import { InboxRead, InboxWrite, Owner } from '../auth/auth.js'
 import { NewWordsService } from './newwords.service.js'
 
@@ -35,6 +35,11 @@ export class NewWordsController {
   @Put(':id')
   update(@Param('id') id: string, @Body() body: unknown) {
     return this.words.update(id, body)
+  }
+
+  @Patch(':id')
+  status(@Param('id') id: string, @Body() body: unknown) {
+    return this.words.setStatus(id, body)
   }
 
   @Delete(':id')

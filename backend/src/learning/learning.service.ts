@@ -42,7 +42,7 @@ export class LearningService {
       },
       homework: { mistakes: mistakesSummary(batches), hint: 'ошибки из проверок тетради (элементы mistake в присланных материалах): повторяй эти темы и составляй задания на них' },
       inbox: {
-        newWords: await orm.newWord.count(),
+        newWords: await orm.newWord.count({ where: { status: 'new' } }),
         materialsToReview: await orm.material.count({ where: { status: 'new' } }),
       },
     }

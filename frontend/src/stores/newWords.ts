@@ -10,9 +10,11 @@ export interface NewWord {
   ru: string
   example: string
   note: string
+  /** «new» или «done» (отмечено разобранным) */
+  status?: 'new' | 'done'
   created: number
 }
-export type NewWordInput = Omit<NewWord, 'id' | 'created'>
+export type NewWordInput = Omit<NewWord, 'id' | 'created' | 'status'>
 
 /** Те же лимиты, что на сервере (backend/src/newwords). */
 export const NEW_WORD_MAX = { ko: 60, reading: 80, ru: 120, example: 200, note: 3000 } as const
@@ -48,6 +50,10 @@ export const useNewWordsStore = defineStore('newWords', () => {
     const row = (await call(`/${id}`, { method: 'PUT', body: JSON.stringify(w) })) as NewWord
     items.value = items.value.map(i => (i.id === id ? row : i))
   }
+  async function setStatus(id: string, status: 'new' | 'done') {
+    const row = (await call(`/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })) as NewWord
+    items.value = items.value.map(i => (i.id === id ? row : i))
+  }
   async function remove(id: string) {
     await call(`/${id}`, { method: 'DELETE' })
     items.value = items.value.filter(i => i.id !== id)
@@ -61,5 +67,5 @@ export const useNewWordsStore = defineStore('newWords', () => {
     await call('/token', { method: 'DELETE' })
   }
 
-  return { items, loaded, load, add, update, remove, createToken, revokeToken }
+  return { items, loaded, load, add, update, setStatus, remove, createToken, revokeToken }
 })

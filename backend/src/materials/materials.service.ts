@@ -59,6 +59,21 @@ export class MaterialsService {
     return view(await db.material.update({ where: { id }, data: { status } }))
   }
 
+  /** Отметка «разобрано» у одного элемента пачки (слово, предложение…): `done: true` в самом элементе, Claude видит её в `GET /api/materials`. */
+  async setItemDone(id: string, index: number, body: unknown) {
+    const done = (body as { done?: unknown } | null)?.done
+    if (typeof done !== 'boolean' || !Number.isInteger(index) || index < 0) throw new BadRequestException({ error: 'done: true | false' })
+    const db = await this.db.orm()
+    const row = await db.material.findUnique({ where: { id } })
+    if (!row) throw new NotFoundException({ error: 'not found' })
+    const items = JSON.parse(row.items) as Record<string, unknown>[]
+    const item = items[index]
+    if (!item) throw new NotFoundException({ error: 'item not found' })
+    if (done) item.done = true
+    else delete item.done
+    return view(await db.material.update({ where: { id }, data: { items: JSON.stringify(items) } }))
+  }
+
   async remove(id: string) {
     const r = await (await this.db.orm()).material.deleteMany({ where: { id } })
     if (!r.count) throw new NotFoundException({ error: 'not found' })

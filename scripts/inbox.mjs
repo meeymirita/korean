@@ -36,11 +36,11 @@ async function dictLines(ko) {
   }
 }
 
-/** @type {{ words: { id: number; created: number; ko?: string; reading?: string; ru?: string; example?: string; note?: string }[] }} */
+/** @type {{ words: { id: number; created: number; status?: string; ko?: string; reading?: string; ru?: string; example?: string; note?: string }[] }} */
 const { words } = await res.json()
 console.log(`Записей: ${words.length}`)
 for (const w of words) {
-  console.log(`\n#${w.id} · ${new Date(w.created).toLocaleString('ru-RU')}`)
+  console.log(`\n#${w.id} · ${new Date(w.created).toLocaleString('ru-RU')}${w.status === 'done' ? ' · РАЗОБРАНО (владелец отметил)' : ''}`)
   if (w.ko || w.ru) {
     console.log(`${w.ko} | ${w.reading} | ${w.ru} | ${w.example}`)
     for (const line of await dictLines(w.ko ?? '')) console.log(line)
@@ -58,8 +58,9 @@ if (mres.ok) {
   for (const b of batches) {
     console.log(`\n[${b.id}] ${b.source} · ${b.kind} · ${b.status === 'done' ? 'разобрано' : 'новое'} · ${new Date(b.created).toLocaleString('ru-RU')} · элементов ${b.items.length}`)
     for (const it of b.items) {
-      if (it.type === 'word') console.log(`  слово: ${it.ko} | ${it.reading} | ${it.ru} | ${it.example}${it.note ? ` | ${it.note}` : ''}`)
-      else if (it.type === 'sentence') console.log(`  предложение: ${pair(it)}${it.topic ? ` (${it.topic})` : ''}`)
+      const mark = it.done ? ' [РАЗОБРАНО]' : ''
+      if (it.type === 'word') console.log(`  слово${mark}: ${it.ko} | ${it.reading} | ${it.ru} | ${it.example}${it.note ? ` | ${it.note}` : ''}`)
+      else if (it.type === 'sentence') console.log(`  предложение${mark}: ${pair(it)}${it.topic ? ` (${it.topic})` : ''}`)
       else if (it.type === 'dialog') console.log(`  диалог${it.title ? ` «${it.title}»` : ''}: ${it.lines.map(pair).join(' / ')}`)
       else if (it.type === 'text') {
         console.log(`  текст${it.title ? ` «${it.title}»` : ''}: ${it.sentences.map(pair).join(' ')}`)

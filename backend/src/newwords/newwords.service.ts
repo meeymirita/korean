@@ -50,6 +50,16 @@ export class NewWordsService {
     return { ...row, created: Number(row.created) }
   }
 
+  /** Отметка «разобрано» / «новое»: владелец ставит её во «Входящих», Claude видит её в `GET /api/new-words` (поле `status`). */
+  async setStatus(id: string, body: unknown) {
+    const status = (body as { status?: unknown } | null)?.status
+    if (status !== 'new' && status !== 'done') throw new BadRequestException({ error: 'status: new | done' })
+    const db = await this.db.orm()
+    if (!(await db.newWord.findUnique({ where: { id } }))) throw new NotFoundException({ error: 'not found' })
+    const row = await db.newWord.update({ where: { id }, data: { status } })
+    return { ...row, created: Number(row.created) }
+  }
+
   async remove(id: string) {
     const r = await (await this.db.orm()).newWord.deleteMany({ where: { id } })
     if (!r.count) throw new NotFoundException({ error: 'not found' })

@@ -87,6 +87,21 @@ describe('новые слова (вкладка «Записанные слов�
     await request(http).delete(`/api/new-words/${id}`).set(auth).expect(404)
   })
 
+  it('отметка «разобрано» у слова: видна в списке, снимается, при правке не теряется; чужие значения и гость отклоняются', async () => {
+    const http = app.getHttpServer()
+    const id = (await request(http).post('/api/new-words').set(auth).send(word).expect(201)).body.id as string
+    expect((await request(http).get('/api/new-words').set(auth).expect(200)).body.words.find((w: { id: string }) => w.id === id).status).toBe('new')
+    const done = await request(http).patch(`/api/new-words/${id}`).set(auth).send({ status: 'done' }).expect(200)
+    expect(done.body.status).toBe('done')
+    const upd = await request(http).put(`/api/new-words/${id}`).set(auth).send({ ...word, ru: 'ожидать' }).expect(200)
+    expect(upd.body.status).toBe('done')
+    expect((await request(http).patch(`/api/new-words/${id}`).set(auth).send({ status: 'new' }).expect(200)).body.status).toBe('new')
+    await request(http).patch(`/api/new-words/${id}`).set(auth).send({ status: 'ok' }).expect(400)
+    await request(http).patch('/api/new-words/missing').set(auth).send({ status: 'done' }).expect(404)
+    await request(http).patch(`/api/new-words/${id}`).send({ status: 'done' }).expect(401)
+    await request(http).delete(`/api/new-words/${id}`).set(auth).expect(200)
+  })
+
   it('нужны слово и перевод либо хотя бы заметка; слишком длинное и не-строки отклоняются', async () => {
     const http = app.getHttpServer()
     await request(http).post('/api/new-words').set(auth).send({ ko: '먹다' }).expect(400)
@@ -172,6 +187,22 @@ describe('токен входящих с записью и материалы (�
     const res = await request(app.getHttpServer()).get('/api/materials/format').expect(200)
     expect(res.body.routes.length).toBeGreaterThan(3)
     expect(res.body.example.items.length).toBeGreaterThan(3)
+  })
+
+  it('отметка «разобрано» у предложения из пачки: ставится владельцем, видна по токену, снимается', async () => {
+    const http = app.getHttpServer()
+    const w = await make(true)
+    const id = (await request(http).post('/api/materials').set(bearer(w.token)).send(batch).expect(201)).body.id as string
+    await request(http).patch(`/api/materials/${id}/items/1`).set(bearer(w.token)).send({ done: true }).expect(403) // токену Claude отмечать нельзя
+    const one = await request(http).patch(`/api/materials/${id}/items/1`).set(owner).send({ done: true }).expect(200)
+    expect(one.body.items[1]).toMatchObject({ type: 'sentence', done: true })
+    expect(one.body.items[0].done).toBeUndefined()
+    const seen = (await request(http).get('/api/materials').set(bearer(w.token)).expect(200)).body.batches.find((b: { id: string }) => b.id === id)
+    expect(seen.items[1].done).toBe(true)
+    expect((await request(http).patch(`/api/materials/${id}/items/1`).set(owner).send({ done: false }).expect(200)).body.items[1].done).toBeUndefined()
+    await request(http).patch(`/api/materials/${id}/items/9`).set(owner).send({ done: true }).expect(404)
+    await request(http).patch(`/api/materials/${id}/items/1`).set(owner).send({ done: 'yes' }).expect(400)
+    await request(http).delete(`/api/materials/${id}`).set(owner).expect(200)
   })
 
   it('токен с записью добавляет слова и материалы, токен на чтение нет', async () => {

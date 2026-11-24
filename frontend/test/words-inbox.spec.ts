@@ -93,6 +93,34 @@ describe('«Слова»: «Входящие»', () => {
     expect(w.find('.ib-badge.ok').exists()).toBe(true)
   })
 
+  it('у слова и у предложения есть кнопка «Отметить разобранным»: уходит на сервер, отметка видна', async () => {
+    const WORD = { id: 'w1', ko: '시', reading: 'си', ru: 'час', example: '', note: '', status: 'new', created: 1 }
+    vi.stubGlobal('fetch', async (u: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(u)
+      calls.push({ url, init })
+      const json = (v: unknown) => new Response(JSON.stringify(v), { status: 200 })
+      if (url.endsWith('/api/new-words/w1') && init?.method === 'PATCH') return json({ ...WORD, status: JSON.parse(String(init.body)).status })
+      if (url.endsWith('/api/materials/b1/items/1') && init?.method === 'PATCH') return json({ ...BATCH, items: [BATCH.items[0], { ...BATCH.items[1], done: true }] })
+      if (url.includes('/api/materials')) return json({ batches: [BATCH] })
+      if (url.includes('/api/new-words')) return json({ words: [WORD] })
+      return json({})
+    })
+    const w = await mountSuspended(WordsView, { route: '/korean/words' })
+    await w.find('.inbox-btn').trigger('click')
+    await flushPromises()
+    await w.findAll('.ib-card footer .ib-btn')[0]!.trigger('click')
+    await flushPromises()
+    const word = calls.find(c => c.url.endsWith('/api/new-words/w1') && c.init?.method === 'PATCH')!
+    expect(JSON.parse(String(word.init?.body))).toEqual({ status: 'done' })
+    expect(w.find('.ib-card .ib-badge.ok').text()).toBe('разобрано')
+    await w.findAll('.ib-tabs .chip')[1]!.trigger('click')
+    await w.find('.ib-sent footer .ib-btn').trigger('click')
+    await flushPromises()
+    const sent = calls.find(c => c.url.endsWith('/api/materials/b1/items/1') && c.init?.method === 'PATCH')!
+    expect(JSON.parse(String(sent.init?.body))).toEqual({ done: true })
+    expect(w.find('.ib-sent .ib-badge.ok').text()).toBe('разобрано')
+  })
+
   it('токен с записью создаётся с write: true и показывает просьбу для Claude', async () => {
     const w = await mountSuspended(WordsView, { route: '/korean/words' })
     await w.find('.inbox-btn').trigger('click')

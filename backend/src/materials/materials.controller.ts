@@ -35,6 +35,12 @@ export class MaterialsController {
     return this.materials.setStatus(id, body)
   }
 
+  @Patch(':id/items/:index')
+  @Owner()
+  itemDone(@Param('id') id: string, @Param('index') index: string, @Body() body: unknown) {
+    return this.materials.setItemDone(id, Number(index), body)
+  }
+
   @Delete(':id')
   @Owner()
   remove(@Param('id') id: string) {
