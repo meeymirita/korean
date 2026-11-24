@@ -11,7 +11,7 @@ const walk = d => readdirSync(d).flatMap(f => (statSync(join(d, f)).isDirectory(
 
 /** Выражения без esc/hl/F: каждое проверено руками, причина записана. Новое место сюда попадает только с объяснением. */
 const STATIC = {
-  'components/korean/GrammarModal.vue': { "current.b.map(blk).join('')": 'блоки карточки грамматики из data/korean/grammar.ts' },
+  'components/korean/GrammarModal.vue': { 'blocksHtml(current.b)': 'блоки карточки грамматики из data/korean/grammar.ts (blocksHtml только оборачивает их в <details>)' },
   'components/cabinet/TelegramGuide.vue': { preview: 'текст экранируется, обратно разрешены только теги b, i, u, s, code и ссылки http(s)' },
   'components/korean/VlogMap.vue': { ICON_DEFS: 'значки мест из data/korean/vlog-map-art.ts, строка собрана из кода сайта' },
   'views/korean/RichView.vue': { html: 'готовые страницы справочника из data/korean/pages.ts' },

@@ -361,3 +361,19 @@
 .study .rs-wl em { color: var(--muted); font-style: normal; }
 .study .rs-rules { margin: 10px 0 4px; }
 .study .rs-rules .rs-wl li { flex-wrap: wrap; justify-content: space-between; align-items: center; }
+
+/* «Глубже» в карточке грамматики (блок `deep`): свёрнуто, раскрывается плавно (где браузер умеет анимировать height: auto, иначе сразу) */
+.study .rich details.deep { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; margin-top: 18px; overflow: hidden; }
+.study .rich details.deep > summary { cursor: pointer; padding: 14px 20px; font-weight: 700; font-size: 16px; list-style: none; display: flex; gap: 8px; align-items: center; }
+.study .rich details.deep > summary:hover { background: var(--gold-soft); }
+.study .rich details.deep > summary::-webkit-details-marker { display: none; }
+.study .rich details.deep > summary:after { content: "+"; margin-left: auto; font-size: 22px; color: var(--gold); transition: transform .25s ease; }
+.study .rich details.deep[open] > summary { border-bottom: 1px solid var(--line); }
+.study .rich details.deep[open] > summary:after { transform: rotate(45deg); }
+.study .rich details.deep > .deep-in { padding: 4px 20px 18px; }
+@supports (interpolate-size: allow-keywords) {
+  .study .rich details.deep { interpolate-size: allow-keywords; }
+  .study .rich details.deep::details-content { height: 0; overflow: clip; transition: height .3s ease, content-visibility .3s allow-discrete; }
+  .study .rich details.deep[open]::details-content { height: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .study .rich details.deep::details-content, .study .rich details.deep > summary:after { transition: none; } }

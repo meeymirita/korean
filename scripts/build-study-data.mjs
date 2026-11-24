@@ -37,7 +37,7 @@ export async function data() {
     section: g.s,
     lesson: g.l ?? '',
     about: plain(g.d),
-    blocks: g.b.map(block),
+    blocks: g.b.filter(b => b[0] !== 'deep').map(block),
   }))
   const { TENSES } = await load('/src/data/korean/tenses.ts')
   const all = new Map(Object.entries(TRANSLATIONS))

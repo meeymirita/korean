@@ -8,7 +8,7 @@ import { trainableRule } from '@/data/korean/rule-tasks'
 import { famOfCard, gameOfCard } from '@/game/families'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { firstBlock } from '@/data/korean/grammar'
-import { F, blk } from '@/data/korean/render'
+import { F, blk, blocksHtml } from '@/data/korean/render'
 import { useShareCard } from '@/composables/useShareCard'
 import { useProgressStore } from '@/stores/progress'
 import { CHANNEL, videoOf } from '@/data/korean/course'
@@ -227,7 +227,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
         <button title="Закрыть" aria-label="Закрыть" @click="close">✕</button>
       </div>
       <div ref="gm" class="gm" :class="{ dragging }" :style="{ '--vw': split * 100 + '%' }">
-        <div :key="current.id" class="gb rich" v-html="current.b.map(blk).join('')"></div>
+        <div :key="current.id" class="gb rich" v-html="blocksHtml(current.b)"></div>
         <div class="gsplit" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину. Двойной щелчок возвращает как было" @pointerdown="splitDown" @pointermove="splitMove" @pointerup="splitUp" @pointercancel="splitUp" @dblclick="splitReset"><i></i></div>
         <aside class="gv">
           <video v-if="video" :key="video" class="gvp" :src="video" controls preload="metadata" @error="broken = video!"></video>
