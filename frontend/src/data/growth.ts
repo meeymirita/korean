@@ -5,7 +5,7 @@ export interface Growth { generated: string; commits: number; first: { d: string
 
 export const GROWTH: Growth = {
  "generated": "2026-11-24",
- "commits": 1055,
+ "commits": 1056,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
@@ -189,10 +189,10 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-24",
-   "n": 25,
-   "cum": 1055,
-   "add": 3453,
-   "del": 302
+   "n": 26,
+   "cum": 1056,
+   "add": 3518,
+   "del": 365
   }
  ],
  "marks": [
@@ -523,7 +523,7 @@ export const GROWTH: Growth = {
    "title": "Манхва: прогресс на сервере, закладки, статусы, кэш и webp",
    "summary": "Чтение манхвы стало удобнее и быстрее: прогресс одинаков на всех устройствах, есть закладки с заметками, статусы, клавиши, две страницы и размытие непрочитанного; картинки кэшируются на сервере и переведены в webp.",
    "items": 8,
-   "cum": 1055
+   "cum": 1056
   }
  ]
 }
