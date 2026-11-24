@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanState, ManhwaStateService } from '../src/manhwa/manhwa.state'
+import { cleanPrefs, cleanState, ManhwaStateService } from '../src/manhwa/manhwa.state'
 
 /** Db на памяти: только getMeta и setMeta. */
 const fakeDb = () => {
@@ -34,6 +34,18 @@ describe('прогресс чтения манхвы на сервере', () =>
     await svc.save('estetika-pitomca', st(500))
     expect(Object.keys(await svc.all()).sort()).toEqual(['estetika-pitomca', 'love-quest'])
     expect(() => svc.save('Bad Name', st(1))).toThrow()
+  })
+
+  it('настройки вида: проверка, свежее побеждает, до первой записи null', async () => {
+    const svc = new ManhwaStateService(fakeDb() as never)
+    expect(await svc.prefs()).toBeNull()
+    const p = (at: number, extra: Record<string, unknown> = {}) => ({ zoom: 3, blur: true, sort: 'recent', two: false, at, junk: 1, ...extra })
+    expect('junk' in cleanPrefs(p(1))).toBe(false)
+    for (const bad of [null, {}, p(1, { sort: 'x' }), p(1, { blur: 1 }), p(1, { zoom: -1 }), p(1, { zoom: 99 }), p(-1)]) expect(() => cleanPrefs(bad)).toThrow()
+    await svc.savePrefs(p(2000, { zoom: 5 }))
+    expect((await svc.savePrefs(p(1000, { zoom: 1 }))).zoom).toBe(5)
+    expect((await svc.savePrefs(p(3000, { zoom: 2, two: true }))).two).toBe(true)
+    expect((await svc.prefs())?.zoom).toBe(2)
   })
 
   it('два быстрых сохранения разных манхв не теряют друг друга', async () => {

@@ -20,6 +20,7 @@ export interface ManhwaState {
 }
 
 const KEY = 'manhwa_v1'
+const PREFS_KEY = 'manhwa_prefs_v1'
 const SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/
 export const MAX_MARKS = 200
 export const MAX_NOTE = 300
@@ -55,6 +56,16 @@ export function cleanState(body: unknown): ManhwaState {
   return { read, pos, at: int(b.at, 0, AT_MAX), ...(status ? { status } : {}), ...(seen !== undefined ? { seen } : {}), marks }
 }
 
+/** Вид читалки и полки (раньше жил только в браузере): ступень масштаба, размытие непрочитанного, порядок полки, две страницы. */
+export interface ManhwaPrefs { zoom: number; blur: boolean; sort: 'recent' | 'title'; two: boolean; at: number }
+
+/** Проверяет присланные настройки вида; лишнее отбрасывается. */
+export function cleanPrefs(body: unknown): ManhwaPrefs {
+  const b = (body ?? {}) as Record<string, unknown>
+  if (typeof b.blur !== 'boolean' || typeof b.two !== 'boolean' || (b.sort !== 'recent' && b.sort !== 'title')) throw new BadRequestException({ error: 'invalid manhwa prefs' })
+  return { zoom: int(b.zoom, 0, 20), blur: b.blur, sort: b.sort, two: b.two, at: int(b.at, 0, AT_MAX) }
+}
+
 export function cleanSlug(slug: string): string {
   if (!SLUG.test(slug)) throw new BadRequestException({ error: 'invalid manhwa' })
   return slug
@@ -84,6 +95,31 @@ export class ManhwaStateService {
     } catch {
       return {}
     }
+  }
+
+  /** Настройки вида (одни на все манхвы) или null, если ещё не сохранялись. */
+  async prefs(): Promise<ManhwaPrefs | null> {
+    const raw = await this.db.getMeta(PREFS_KEY)
+    if (!raw) return null
+    try {
+      return cleanPrefs(JSON.parse(raw))
+    } catch {
+      return null
+    }
+  }
+
+  /** Сохраняет настройки вида, если они не старее сохранённых; возвращает то, что теперь хранится. */
+  savePrefs(body: unknown): Promise<ManhwaPrefs> {
+    const p = cleanPrefs(body)
+    const run = async () => {
+      const old = await this.prefs()
+      if (old && old.at > p.at) return old
+      await this.db.setMeta(PREFS_KEY, JSON.stringify(p))
+      return p
+    }
+    const next = this.chain.then(run, run)
+    this.chain = next.catch(() => undefined)
+    return next
   }
 
   /** Сохраняет состояние манхвы, если оно не старее сохранённого; возвращает то, что теперь хранится (клиент берёт его). */

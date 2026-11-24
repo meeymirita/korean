@@ -237,11 +237,48 @@ const shelfSort = ref<'recent' | 'title'>('recent')
 const shelfQuery = ref('')
 const two = ref(false)
 const wide = ref(false)
+/** Вид (масштаб, размытие, порядок полки, две страницы) хранится в браузере и на сервере (`/api/manhwa/_prefs`): на всех устройствах одинаков. Побеждает запись с большим `at`. */
+interface Prefs { zoom: number; blur: boolean; sort: 'recent' | 'title'; two: boolean; at: number }
+let prefsTimer: ReturnType<typeof setTimeout> | undefined
 function pref(key: string, value: string) {
   try {
     localStorage.setItem(key, value)
+    localStorage.setItem('manhwa_prefs_at', String(Date.now()))
   } catch {
     /* без хранилища */
+  }
+  clearTimeout(prefsTimer)
+  prefsTimer = setTimeout(() => void pushPrefs(), 1000)
+}
+const prefsNow = (): Prefs => ({ zoom: zoom.value, blur: blurUnread.value, sort: shelfSort.value, two: two.value, at: Number(localStorage.getItem('manhwa_prefs_at') ?? 0) || Date.now() })
+async function pushPrefs() {
+  prefsTimer = undefined
+  try {
+    await fetchT('/api/manhwa/_prefs', { method: 'PUT', headers: { ...headers(), 'Content-Type': 'application/json' }, body: JSON.stringify(prefsNow()) }, 20_000)
+  } catch {
+    /* нет сети: останется в браузере и уйдёт при следующем изменении */
+  }
+}
+/** при открытии: берём с сервера, если там свежее; если свежее у нас, отправляем */
+async function syncPrefs() {
+  try {
+    const res = await fetchT('/api/manhwa/_prefs', { headers: headers() }, 20_000)
+    if (!res.ok) return
+    const remote = ((await res.json()) as { prefs: Prefs | null }).prefs
+    const local = Number(localStorage.getItem('manhwa_prefs_at') ?? 0)
+    if (!remote) {
+      if (local) void pushPrefs()
+      return
+    }
+    if (remote.at > local) {
+      blurUnread.value = remote.blur
+      shelfSort.value = remote.sort
+      two.value = remote.two
+      if (remote.zoom >= 0 && remote.zoom < ZOOMS.length) zoom.value = remote.zoom
+      for (const [k, v] of [['manhwa_blur', remote.blur ? '1' : '0'], ['manhwa_sort', remote.sort], ['manhwa_two', remote.two ? '1' : '0'], ['manhwa_zoom', String(remote.zoom)], ['manhwa_prefs_at', String(remote.at)]] as const) localStorage.setItem(k, v)
+    } else if (local > remote.at) void pushPrefs()
+  } catch {
+    /* сервер недоступен: работаем с тем, что в браузере */
   }
 }
 function setBlur(v: boolean) {
@@ -414,7 +451,7 @@ function setZoom(d: number) {
   if (z === zoom.value) return
   const keep = current.value
   zoom.value = z
-  try { localStorage.setItem('manhwa_zoom', String(z)) } catch { /* без хранилища */ }
+  pref('manhwa_zoom', String(z))
   void nextTick(() => pageEls.value[keep]?.scrollIntoView({ block: 'start' }))
 }
 /** ширина ленты: выбранная ступень, в режиме двух страниц вдвое шире (но не шире окна) */
@@ -508,9 +545,13 @@ onMounted(async () => {
     if (chapter.value) await enter()
   }
   await syncFromServer()
+  await syncPrefs()
 })
 function onVisible() {
-  if (document.visibilityState === 'hidden') flushPush()
+  if (document.visibilityState === 'hidden') {
+    flushPush()
+    if (prefsTimer) void pushPrefs()
+  }
 }
 /**
  * Клавиши читалки: Esc выход к главам; пробел (с Shift вверх) листает почти на экран, стрелки вверх и вниз на две пятых экрана;
