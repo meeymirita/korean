@@ -789,6 +789,7 @@ html[data-theme='dark'][data-palette='wine'] .cnt:where(:not(.pk *)) { backgroun
 html[data-theme='dark'][data-palette='wine'] .topics li.ok .t:where(:not(.pk *)) { border-color: var(--petal-line, rgba(255, 190, 220, 0.35)); }
 
 /* components/korean/GrammarModal.vue */
+html[data-theme='dark'][data-palette='wine'] .study-modal .gbd:where(:not(.pk *)) { background: var(--bg, rgba(255, 255, 255, 0.07)); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study-modal .gph img:where(:not(.pk *)) { box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .study-modal .gh .pass.ph:where(:not(.pk *)) { background: var(--pink, rgba(255, 111, 174, 1)); }
 html[data-theme='dark'][data-palette='wine'] .study-modal .phm:where(:not(.pk *)) { box-shadow: none; }

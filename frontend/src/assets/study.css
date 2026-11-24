@@ -371,6 +371,9 @@
 .study .rich details.deep[open] > summary { border-bottom: 1px solid var(--line); }
 .study .rich details.deep[open] > summary:after { transform: rotate(45deg); }
 .study .rich details.deep > .deep-in { padding: 4px 20px 18px; }
+.study-modal .rich details.deep > .deep-in::before { content: "Нажми на пример, чтобы увидеть разбор по словам"; display: block; margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+.study-modal .rich details.deep .exl > div { cursor: pointer; border-radius: 8px; transition: background .2s; }
+.study-modal .rich details.deep .exl > div:hover { background: var(--gold-soft); }
 @supports (interpolate-size: allow-keywords) {
   .study .rich details.deep { interpolate-size: allow-keywords; }
   .study .rich details.deep::details-content { height: 0; overflow: clip; transition: height .3s ease, content-visibility .3s allow-discrete; }

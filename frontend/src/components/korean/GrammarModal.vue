@@ -2,6 +2,7 @@
 import Icon from '@/components/Icon.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
 import AskAi from '@/components/korean/AskAi.vue'
+import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { trainableRule } from '@/data/korean/rule-tasks'
@@ -177,9 +178,27 @@ function splitReset() {
   splitUp()
 }
 
+/* ---------- «Глубже»: нажал на пример и увидел разбор по словам ---------- */
+/** Пример, который выбрали: корейский текст без «가:» / «나:» и пояснений, и его перевод. */
+const picked = ref<{ ko: string; ru: string } | null>(null)
+function pickExample(e: MouseEvent) {
+  const row = (e.target as HTMLElement | null)?.closest<HTMLElement>('details.deep .exl > div')
+  if (!row) return
+  const ko = row.querySelector(':scope > b')?.textContent ?? ''
+  const text = ko.split(' — ')[0]!.replace(/^[가나]:\s*/, '').replace(/\s*\[[^\]]*\]\s*$/, '').trim()
+  if (!text) return
+  const ru = (row.querySelector(':scope > span')?.textContent ?? '').replace(/^[АБ]:\s*/, '').trim()
+  picked.value = { ko: text, ru }
+}
+watch(current, () => (picked.value = null))
+
 function onKey(e: KeyboardEvent) {
   if (!current.value) return
-  if (e.key === 'Escape') close()
+  if (e.key === 'Escape') {
+    if (picked.value) picked.value = null
+    else close()
+    return
+  }
   if (e.key === 'ArrowLeft') prev()
   if (e.key === 'ArrowRight') next()
 }
@@ -227,7 +246,7 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
         <button title="Закрыть" aria-label="Закрыть" @click="close">✕</button>
       </div>
       <div ref="gm" class="gm" :class="{ dragging }" :style="{ '--vw': split * 100 + '%' }">
-        <div :key="current.id" class="gb rich" v-html="blocksHtml(current.b)"></div>
+        <div :key="current.id" class="gb rich" @click="pickExample" v-html="blocksHtml(current.b)"></div>
         <div class="gsplit" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину. Двойной щелчок возвращает как было" @pointerdown="splitDown" @pointermove="splitMove" @pointerup="splitUp" @pointercancel="splitUp" @dblclick="splitReset"><i></i></div>
         <aside class="gv">
           <video v-if="video" :key="video" class="gvp" :src="video" controls preload="metadata" @error="broken = video!"></video>
@@ -253,6 +272,10 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
           <AskAi :key="current.id" :context="askContext" :quick="ASK_QUICK" placeholder="Спроси про это правило…" />
         </aside>
       </div>
+      <div v-if="picked" class="gbd" role="region" aria-label="Разбор примера">
+        <button type="button" class="gbd-x" title="Закрыть разбор" aria-label="Закрыть разбор" @click="picked = null">✕</button>
+        <SentenceBreakdown :key="picked.ko" :sentence="picked.ko" :translation="picked.ru" />
+      </div>
     </div>
     <PhotoViewer :src="viewer" :alt="current.ru" @close="viewer = null" />
     <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden @change="onPhotoFile" />
@@ -260,6 +283,12 @@ watch(current, g => (document.body.style.overflow = g ? 'hidden' : ''))
 </template>
 
 <style>
+.study-modal .gp.wide { position: relative; }
+.study-modal .gbd { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 6; max-height: 58%; overflow: auto; padding: 16px 20px 18px;
+  background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 -10px 40px rgba(110, 90, 190, .25); }
+.study-modal .gbd-x { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 99px; font: inherit; cursor: pointer;
+  color: var(--ink); background: transparent; }
+.study-modal .gbd-x:hover { background: var(--gold-soft); }
 .study-modal .gph { all: unset; display: block; cursor: zoom-in; }
 .study-modal .gph img { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 8px 24px rgba(110, 90, 190, .18); }
 .study-modal .gh .pass.ph { color: #fff; background: var(--pink, #d64da9); border-color: transparent; }
