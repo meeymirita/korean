@@ -37,6 +37,7 @@ import '@/game/game.css'
 import '@/game/redesign.css'
 import '@/game/shell.css'
 import UiSearch from '@/components/ui/UiSearch.vue'
+import UiPlay from '@/components/ui/UiPlay.vue'
 
 const progress = useProgressStore()
 const shop = useShopStore()
@@ -261,12 +262,12 @@ watch(inGame, syncCatalogClass)
           <h2 class="gh-h">Все игровые режимы <small>{{ found }} игр</small></h2>
           <UiSearch v-model="q" class="gh-search" autocomplete="off" placeholder="Найти режим" aria-label="Найти режим" />
           <button v-if="timer.available" type="button" class="gh-timer" :class="{ on: timer.running }" :title="timer.running ? 'Остановить таймер' : 'Запустить таймер'" @click="timer.toggle()">
-            <i :class="{ pause: timer.running }" aria-hidden="true"></i><b>{{ timer.running ? formatClock(timer.session) : 'Таймер' }}</b><small>сегодня {{ formatClock(timer.today) }}</small>
+            <UiPlay :pause="timer.running" /><b>{{ timer.running ? formatClock(timer.session) : 'Таймер' }}</b><small>сегодня {{ formatClock(timer.today) }}</small>
           </button>
         </header>
 
         <div v-if="quick.length" class="gh-quick" aria-label="Быстрый старт">
-          <RouterLink v-for="x in quick" :key="x.id" :to="x.to" class="gh-q"><span class="gh-qi" :style="{ background: x.bg }"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /></span><span class="gh-qt"><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><i :style="{ background: x.fg }" aria-hidden="true"></i></RouterLink>
+          <RouterLink v-for="x in quick" :key="x.id" :to="x.to" class="gh-q"><span class="gh-qi" :style="{ background: x.bg }"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /></span><span class="gh-qt"><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><UiPlay :color="x.fg" /></RouterLink>
         </div>
 
         <div class="gh-secs">
@@ -277,7 +278,7 @@ watch(inGame, syncCatalogClass)
             </button>
             <div class="gh-fold" :class="{ open: secOpen(sec.id) }" :inert="!secOpen(sec.id)"><div class="gh-in">
               <div class="gh-rows">
-                <RouterLink v-for="x in sec.list" :key="x.id" :to="x.to" class="gh-row" :title="x.desc"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span>{{ x.name }}</span><i aria-hidden="true"></i></RouterLink>
+                <RouterLink v-for="x in sec.list" :key="x.id" :to="x.to" class="gh-row" :title="x.desc"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span>{{ x.name }}</span><UiPlay :size="26" /></RouterLink>
               </div>
             </div></div>
           </section>
@@ -339,7 +340,6 @@ body.gh-cat .stm { display: none; }
 .gh .gh-top .gh-h { flex: 1 1 auto; margin: 0; }
 .gh .gh-search { flex: 0 1 300px; min-width: 200px; }
 .gh .gh-timer { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px 0 6px; border-radius: 999px; border: 0; background: #fff; color: #2A2340; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 10px rgba(124, 92, 255, .12); }
-.gh .gh-timer i { width: 32px; height: 32px; background: #7C5CFF; }
 .gh .gh-timer small { font-size: 14px; font-weight: 600; color: #6E6585; }
 .gh .gh-timer.on { background: linear-gradient(100deg, #f8b9e9, #9de4ff); }
 .gh .gh-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); gap: 10px; margin-top: 16px; }
@@ -350,11 +350,6 @@ body.gh-cat .stm { display: none; }
 .gh .gh-qt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .gh .gh-qt b { font-size: 15px; font-weight: 800; }
 .gh .gh-qt small { font-size: 12px; font-weight: 600; color: #6E6585; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gh :is(.gh-q > i, .gh-row > i, .gh-timer > i) { display: grid; place-items: center; flex: none; border-radius: 50%; }
-/* значок «играть» нарисован, а не символом ▶: у символа центр смещён, и он «уезжал» вбок */
-.gh :is(.gh-q > i, .gh-row > i, .gh-timer > i)::after { content: ''; width: 36%; height: 40%; margin-left: 8%; background: #fff; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.gh .gh-timer > i.pause::after { width: 34%; margin-left: 0; clip-path: none; background: linear-gradient(90deg, #fff 0 36%, transparent 36% 64%, #fff 64%); }
-.gh .gh-q > i { width: 32px; height: 32px; }
 /* независимые колонки: свёрнутый раздел не оставляет дыру в строке и не двигает соседей */
 .gh .gh-secs { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; }
 .gh .gh-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -377,9 +372,9 @@ body.gh-cat .stm { display: none; }
 .gh .gh-row:hover, .gh .gh-row:focus-visible { background: rgba(255, 255, 255, .88); outline: none; }
 .gh .gh-row .gi-img { width: 26px; height: 26px; object-fit: contain; flex: none; }
 .gh .gh-row span { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gh .gh-row > i { width: 26px; height: 26px; background: #7C5CFF; opacity: 0; transition: opacity .12s; }
-.gh .gh-row:hover > i, .gh .gh-row:focus-visible > i { opacity: 1; }
-@media (hover: none) { .gh .gh-row > i { opacity: 1; } }
+.gh .gh-row > .ui-play { opacity: 0; transition: opacity .12s; }
+.gh .gh-row:hover > .ui-play, .gh .gh-row:focus-visible > .ui-play { opacity: 1; }
+@media (hover: none) { .gh .gh-row > .ui-play { opacity: 1; } }
 .gh .gh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 8px 10px 18px; }
 .gh .gh-mix .gh-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 .gh .gh-mix .gh-card small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
