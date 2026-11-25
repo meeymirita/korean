@@ -10,7 +10,7 @@ import GameTools from '@/components/korean/GameTools.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
-import { ALL_GAMES, GAME_GROUPS, GAME_MIX, TOOL_IDS, findGames } from '@/data/games'
+import { ALL_GAMES, CATALOG_SECTIONS, GAME_GROUPS, GAME_MIX, QUICK_COLORS, TOOL_IDS, findGames } from '@/data/games'
 import { searchGamesRemote } from '@/data/korean/search'
 import { weakRules } from '@/data/charts'
 import { initGame } from '@/game/engine'
@@ -29,6 +29,7 @@ import KeyboardView from '@/views/korean/KeyboardView.vue'
 import RuleView from '@/views/korean/RuleView.vue'
 import { ICON } from '@/game/icons'
 import { newRound, useProgressStore } from '@/stores/progress'
+import { formatClock, useTimerStore } from '@/stores/timer'
 import { useShopStore } from '@/stores/shop'
 import { themeDark, toggleTheme } from '@/lib/theme'
 import '@/assets/home/fonts.css'
@@ -39,10 +40,11 @@ import '@/game/shell.css'
 
 const progress = useProgressStore()
 const shop = useShopStore()
+const timer = useTimerStore()
 const { open: openGrammar } = useGrammarModal()
 /** Класс на body: глобальная кнопка поиска встаёт в одну линию с кнопками шапки (см. стили ниже). */
 onMounted(() => document.body.classList.add('on-game-home'))
-onBeforeUnmount(() => document.body.classList.remove('on-game-home'))
+onBeforeUnmount(() => document.body.classList.remove('on-game-home', 'gh-cat'))
 /** Что движок «Хлебушек» показывает оболочке игры (счёт, списки, блиц, окна); пишет его `initGame`. */
 const gameView = createGameView()
 
@@ -150,28 +152,52 @@ const findCatalogGames = (games: typeof ALL_GAMES) => {
 /** Пока открыта игра, список игр слева свёрнут: больше места под задание. Кнопка «☰» в шапке показывает его (помнится до закрытия вкладки). */
 const navOpen = usePersisted('gh_nav_open', false, v => typeof v === 'boolean')
 const folded = computed(() => !!game.value && !navOpen.value)
-/** Что показывать: все группы, одна группа или «Микс». Запоминается при обновлении страницы. */
-const view = usePersisted('gh_view', 'all', v => typeof v === 'string')
-/** Свёрнутые группы: отдельно в каталоге и в боковом меню (по умолчанию все свёрнуты, под Юной остаётся место). */
-const closed = usePersisted<string[]>('gh_closed', [], v => Array.isArray(v))
+/** Раскрытые разделы каталога: по умолчанию все свёрнуты; пока идёт поиск, всё раскрыто, чтобы найденное было видно. Помнится при обновлении страницы. */
+const openSecs = usePersisted<string[]>('gh_open_secs', [], v => Array.isArray(v))
+const secOpen = (id: string) => !!q.value.trim() || openSecs.value.includes(id)
+const secToggle = (id: string) => (openSecs.value = openSecs.value.includes(id) ? openSecs.value.filter(x => x !== id) : [...openSecs.value, id])
+/** Свёрнутые группы в боковом меню (по умолчанию все свёрнуты, под Юной остаётся место). */
 const sideClosed = usePersisted<string[]>('gh_side_closed', GAME_GROUPS.map(g => g.id), v => Array.isArray(v))
-const isOpen = (id: string) => !closed.value.includes(id)
-const toggle = (id: string) => (closed.value = isOpen(id) ? [...closed.value, id] : closed.value.filter(x => x !== id))
 /** Открытая сейчас игра подсвечена в меню слева, её группа раскрыта. */
 const isActive = (x: { id: string; to: string }) => !!game.value && x.to === `/game/home?game=${game.value}${route.query.mode === 'type' ? '&mode=type' : ''}`
 const hasActive = (g: { games: { id: string; to: string }[] }) => g.games.some(isActive)
 const sideOpen = (id: string) => hasActive(GAME_GROUPS.find(g => g.id === id)!) || !sideClosed.value.includes(id)
 const sideToggle = (id: string) => (sideClosed.value = sideOpen(id) ? [...sideClosed.value, id] : sideClosed.value.filter(x => x !== id))
 
-const found = computed(() => findCatalogGames(ALL_GAMES).length)
-const groups = computed(() =>
-  GAME_GROUPS.filter(g => view.value === 'all' || view.value === g.id)
-    .map(g => ({ ...g, list: findCatalogGames(g.games) }))
-    .filter(g => g.list.length),
+/** Каталог: быстрый старт и семь разделов (`CATALOG_SECTIONS`), поиск фильтрует и то и другое. */
+const byId = new Map(ALL_GAMES.map(g => [g.id, g]))
+const quick = computed(() => findCatalogGames(GAME_MIX).map(x => ({ ...x, ...QUICK_COLORS[x.id] })))
+const sections = computed(() =>
+  CATALOG_SECTIONS.map(sec => ({ ...sec, list: findCatalogGames(sec.ids.map(id => byId.get(id)).filter((g): g is (typeof ALL_GAMES)[number] => !!g)) })).filter(sec => sec.list.length),
 )
-const mix = computed(() => (view.value === 'all' || view.value === 'mix' ? findCatalogGames(GAME_MIX) : []))
+/** Разделы лежат в независимых колонках (по числу строк поровну): раскрыл или свернул один, остальные не двигаются. */
+const colCount = ref(3)
+const secCols = computed(() => {
+  const cols: (typeof sections.value)[] = Array.from({ length: colCount.value }, () => [])
+  const heights: number[] = Array(colCount.value).fill(0)
+  for (const sec of sections.value) {
+    const i = heights.indexOf(Math.min(...heights))
+    cols[i]?.push(sec)
+    heights[i] = (heights[i] ?? 0) + sec.list.length + 2
+  }
+  return cols
+})
+let colQueries: MediaQueryList[] = []
+const updateCols = () => (colCount.value = colQueries[0]?.matches ? 1 : colQueries[1]?.matches ? 2 : 3)
+onMounted(() => {
+  colQueries = [window.matchMedia('(max-width: 640px)'), window.matchMedia('(max-width: 1100px)')]
+  colQueries.forEach(m => m.addEventListener('change', updateCols))
+  updateCols()
+})
+onBeforeUnmount(() => colQueries.forEach(m => m.removeEventListener('change', updateCols)))
+const found = computed(() => quick.value.length + sections.value.reduce((n, sec) => n + sec.list.length, 0))
 const icon = (n: string) => ICON[n] ?? ICON.star
-const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' }, ...GAME_GROUPS.map(g => ({ id: g.id, t: g.title }))]
+/** Таймер стоит в шапке каталога, плавающая кнопка на этой странице прячется (класс `gh-cat` на body). */
+function syncCatalogClass() {
+  document.body.classList.toggle('gh-cat', !inGame.value)
+}
+onMounted(syncCatalogClass)
+watch(inGame, syncCatalogClass)
 </script>
 
 <template>
@@ -194,7 +220,7 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
           <nav id="sideModes" style="display: none" aria-hidden="true"></nav>
         </template>
         <nav class="gh-groups" aria-label="Группы игр">
-          <div v-for="g in GAME_GROUPS" :key="g.id" class="gh-grp" :class="{ on: view === g.id || hasActive(g) }">
+          <div v-for="g in GAME_GROUPS" :key="g.id" class="gh-grp" :class="{ on: hasActive(g) }">
             <button type="button" class="gh-gbtn" :aria-expanded="sideOpen(g.id)" @click="sideToggle(g.id)">
               <img class="gi-img" :src="icon(g.icon)" alt="" aria-hidden="true" /><span>{{ g.title }}</span><i aria-hidden="true">{{ sideOpen(g.id) ? '⌄' : '›' }}</i>
             </button>
@@ -230,25 +256,31 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
         <section v-if="tool" class="gh-panel gh-tool"><component :is="tool" :key="game" /></section>
         <GameShell v-else :view="gameView" />
       </template>
-      <section v-else class="gh-panel">
-        <div class="gh-tabs" role="tablist">
-          <button v-for="t in tabs" :key="t.id" role="tab" :aria-selected="view === t.id" class="gh-tab" :class="{ on: view === t.id }" @click="view = t.id">{{ t.t }}</button>
-        </div>
-        <h2 class="gh-h">{{ view === 'all' ? 'Все игровые режимы' : view === 'mix' ? 'Микс' : GAME_GROUPS.find(g => g.id === view)?.title }} <small>{{ found }} игр</small></h2>
-
-        <div v-if="mix.length" class="gh-block gh-mix">
-          <div class="gh-cards">
-            <RouterLink v-for="x in mix" :key="x.id" :to="x.to" class="gh-card"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><i aria-hidden="true">▶</i></RouterLink>
-          </div>
-        </div>
-        <div v-for="g in groups" :key="g.id" class="gh-block">
-          <button type="button" class="gh-bh" :aria-expanded="isOpen(g.id)" @click="toggle(g.id)">
-            <img class="gi-img" :src="icon(g.icon)" alt="" aria-hidden="true" /><b>{{ g.title }}</b><span>{{ g.desc }}</span><em>{{ g.list.length }} {{ g.list.length === 1 ? 'игра' : g.list.length < 5 ? 'игры' : 'игр' }} {{ isOpen(g.id) ? '⌄' : '›' }}</em>
+      <section v-else class="gh-panel gh-cat-panel">
+        <header class="gh-top">
+          <h2 class="gh-h">Все игровые режимы <small>{{ found }} игр</small></h2>
+          <label class="gh-search"><span aria-hidden="true">⌕</span><input v-model="q" type="search" autocomplete="off" placeholder="Найти режим" aria-label="Найти режим" /></label>
+          <button v-if="timer.available" type="button" class="gh-timer" :class="{ on: timer.running }" :title="timer.running ? 'Остановить таймер' : 'Запустить таймер'" @click="timer.toggle()">
+            <i :class="{ pause: timer.running }" aria-hidden="true"></i><b>{{ timer.running ? formatClock(timer.session) : 'Таймер' }}</b><small>сегодня {{ formatClock(timer.today) }}</small>
           </button>
-          <div class="gh-fold" :class="{ open: isOpen(g.id) }" :inert="!isOpen(g.id)">
-            <div class="gh-in"><div class="gh-cards">
-            <RouterLink v-for="x in g.list" :key="x.id" :to="x.to" class="gh-card"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><i aria-hidden="true">▶</i></RouterLink>
-          </div></div>
+        </header>
+
+        <div v-if="quick.length" class="gh-quick" aria-label="Быстрый старт">
+          <RouterLink v-for="x in quick" :key="x.id" :to="x.to" class="gh-q"><span class="gh-qi" :style="{ background: x.bg }"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /></span><span class="gh-qt"><b>{{ x.name }}</b><small>{{ x.desc }}</small></span><i :style="{ background: x.fg }" aria-hidden="true"></i></RouterLink>
+        </div>
+
+        <div class="gh-secs">
+          <div v-for="(col, ci) in secCols" :key="ci" class="gh-col">
+          <section v-for="sec in col" :key="sec.id" class="gh-sec" :style="{ background: sec.bg }">
+            <button type="button" class="gh-sh" :aria-expanded="secOpen(sec.id)" @click="secToggle(sec.id)">
+              <span class="gh-si" :style="{ background: sec.fg }"><img class="gi-img" :src="icon(sec.icon)" alt="" aria-hidden="true" /></span><h3>{{ sec.title }}</h3><span class="ko">{{ sec.ko }}</span><em>{{ sec.list.length }}</em><i class="gh-chev" :class="{ open: secOpen(sec.id) }" aria-hidden="true"></i>
+            </button>
+            <div class="gh-fold" :class="{ open: secOpen(sec.id) }" :inert="!secOpen(sec.id)"><div class="gh-in">
+              <div class="gh-rows">
+                <RouterLink v-for="x in sec.list" :key="x.id" :to="x.to" class="gh-row" :title="x.desc"><img class="gi-img" :src="icon(x.icon)" alt="" aria-hidden="true" /><span>{{ x.name }}</span><i aria-hidden="true"></i></RouterLink>
+              </div>
+            </div></div>
+          </section>
           </div>
         </div>
         <p v-if="!found" class="gh-empty">Ничего не нашлось. Попробуй другое слово.</p>
@@ -301,11 +333,56 @@ const tabs = [{ id: 'all', t: 'Все игры' }, { id: 'mix', t: 'Микс' },
 .gh .gh-h { margin: 16px 0 6px; font-family: inherit; font-weight: 800; font-size: 22px; }
 .gh .gh-h small { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
 .gh .gh-block { margin-top: 12px; padding: 8px; background: rgba(255, 255, 255, .5); border-radius: 20px; }
-.gh .gh-bh { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; cursor: pointer; }
-.gh .gh-bh b { font-size: 16px; }
-.gh .gh-bh span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
-.gh .gh-bh em { flex: none; white-space: nowrap; font-style: normal; font-size: 13px; font-weight: 700; color: var(--pink); }
-.gh .gh-bh .gi-img { width: 30px; height: 30px; object-fit: contain; }
+/* каталог (дизайн 2026-11-25): шапка, быстрый старт, семь цветных разделов; значки наши */
+body.gh-cat .stm { display: none; }
+.gh .gh-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.gh .gh-top .gh-h { flex: 1 1 auto; margin: 0; }
+.gh .gh-search { position: relative; flex: 0 1 300px; min-width: 200px; display: block; }
+.gh .gh-search span { position: absolute; left: 15px; top: 50%; transform: translateY(-52%); color: #7C5CFF; font-size: 17px; pointer-events: none; }
+.gh .gh-search input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 14px 0 38px; border-radius: 999px; border: 1.5px solid #E3D9FF; background: #fff; color: #2A2340; font: inherit; font-size: 15px; font-weight: 600; }
+.gh .gh-search input:focus { outline: none; border-color: #7C5CFF; }
+.gh .gh-timer { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px 0 6px; border-radius: 999px; border: 0; background: #fff; color: #2A2340; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 10px rgba(124, 92, 255, .12); }
+.gh .gh-timer i { width: 32px; height: 32px; background: #7C5CFF; }
+.gh .gh-timer small { font-size: 14px; font-weight: 600; color: #6E6585; }
+.gh .gh-timer.on { background: linear-gradient(100deg, #f8b9e9, #9de4ff); }
+.gh .gh-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); gap: 10px; margin-top: 16px; }
+.gh .gh-q { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 10px; border-radius: 18px; background: #fff; color: #2A2340; text-decoration: none; box-shadow: 0 2px 10px rgba(124, 92, 255, .10); transition: transform .15s ease, box-shadow .15s ease; }
+.gh .gh-q:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124, 92, 255, .18); }
+.gh .gh-qi { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; }
+.gh .gh-qi .gi-img { width: 26px; height: 26px; object-fit: contain; }
+.gh .gh-qt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.gh .gh-qt b { font-size: 15px; font-weight: 800; }
+.gh .gh-qt small { font-size: 12px; font-weight: 600; color: #6E6585; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gh :is(.gh-q > i, .gh-row > i, .gh-timer > i) { display: grid; place-items: center; flex: none; border-radius: 50%; }
+/* значок «играть» нарисован, а не символом ▶: у символа центр смещён, и он «уезжал» вбок */
+.gh :is(.gh-q > i, .gh-row > i, .gh-timer > i)::after { content: ''; width: 36%; height: 40%; margin-left: 8%; background: #fff; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.gh .gh-timer > i.pause::after { width: 34%; margin-left: 0; clip-path: none; background: linear-gradient(90deg, #fff 0 36%, transparent 36% 64%, #fff 64%); }
+.gh .gh-q > i { width: 32px; height: 32px; }
+/* независимые колонки: свёрнутый раздел не оставляет дыру в строке и не двигает соседей */
+.gh .gh-secs { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; }
+.gh .gh-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.gh .gh-sec { display: flex; flex-direction: column; padding: 6px; border-radius: 20px; box-shadow: 0 2px 12px rgba(124, 92, 255, .08); }
+.gh .gh-sh { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; color: #2A2340; cursor: pointer; border-radius: 14px; }
+.gh .gh-sh:focus-visible { outline: 2px solid #7C5CFF; outline-offset: -2px; }
+.gh .gh-sh em { font-style: normal; font-size: 12px; font-weight: 700; color: #6E6585; }
+/* стрелка нарисована рамкой, а не символом ⌄: символ стоял ниже центра */
+.gh .gh-chev { flex: none; width: 12px; height: 16px; display: grid; place-items: center; font-style: normal; transition: transform .3s ease; transform: rotate(-90deg); }
+.gh .gh-chev::after { content: ''; width: 7px; height: 7px; margin-top: -3px; border: solid #6E6585; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.gh .gh-chev.open { transform: none; }
+.gh .gh-sec .gh-fold.open { padding-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .gh .gh-chev { transition: none; } }
+.gh .gh-si { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 11px; }
+.gh .gh-si .gi-img { width: 24px; height: 24px; object-fit: contain; }
+.gh .gh-sh h3 { flex: 1; min-width: 0; margin: 0; font-size: 15.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gh .gh-sh .ko { font-size: 14px; color: #6E6585; }
+.gh .gh-rows { display: flex; flex-direction: column; gap: 6px; padding-bottom: 2px; }
+.gh .gh-row { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 10px; border-radius: 12px; background: rgba(255, 255, 255, .5); color: #2A2340; text-decoration: none; transition: background .12s ease; }
+.gh .gh-row:hover, .gh .gh-row:focus-visible { background: rgba(255, 255, 255, .88); outline: none; }
+.gh .gh-row .gi-img { width: 26px; height: 26px; object-fit: contain; flex: none; }
+.gh .gh-row span { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gh .gh-row > i { width: 26px; height: 26px; background: #7C5CFF; opacity: 0; transition: opacity .12s; }
+.gh .gh-row:hover > i, .gh .gh-row:focus-visible > i { opacity: 1; }
+@media (hover: none) { .gh .gh-row > i { opacity: 1; } }
 .gh .gh-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 8px 10px 18px; }
 .gh .gh-mix .gh-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 .gh .gh-mix .gh-card small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

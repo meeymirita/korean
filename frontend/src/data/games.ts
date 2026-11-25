@@ -157,6 +157,37 @@ export const GAME_MIX: GameCard[] = [
   { id: 'rule', name: 'Потренировать правило', desc: 'Десять заданий из примеров любой карточки', icon: 'grammar', to: '/game/home?game=rule' },
 ]
 
+/**
+ * Каталог `/game/home` (дизайн 2026-11-25): семь компактных разделов вместо одиннадцати групп.
+ * Боковое меню слева остаётся на `GAME_GROUPS`; здесь игры только перечислены по id, тест следит, что каждая игра в каталоге ровно в одном разделе.
+ * `icon`: значок раздела из `src/assets/game/icons`; `bg` / `fg`: фон карточки и цвет точки, `ko`: подпись хангылем.
+ */
+export interface CatalogSection {
+  id: string
+  title: string
+  ko: string
+  icon: string
+  bg: string
+  fg: string
+  ids: string[]
+}
+export const CATALOG_SECTIONS: CatalogSection[] = [
+  { id: 'words', title: 'Слова', ko: '단어', icon: 'dict', bg: '#FCE3F0', fg: '#D6488E', ids: ['word', 'rev', 'match', 'pair', 'typewords', 'pairs', 'neg', 'speech'] },
+  { id: 'forms', title: 'Формы и правила', ko: '문법', icon: 'pen', bg: '#FFE9D6', fg: '#D9722A', ids: ['form', 'type', 'tenses', 'fut', 'polite', 'qw', 'dem', 'ptext', 'expert'] },
+  { id: 'particles', title: 'Частицы', ko: '조사', icon: 'macaron', bg: '#D9F2E8', fg: '#2B9470', ids: ['particles', 'part', 'only', 'too', 'when', 'place'] },
+  { id: 'sentences', title: 'Предложения', ko: '문장', icon: 'board', bg: '#E0ECFF', fg: '#4A6FE0', ids: ['build', 'ord', 'spot', 'err', 'translate', 'explain'] },
+  { id: 'numbers', title: 'Числа и время', ko: '숫자', icon: 'clock', bg: '#E5F3D6', fg: '#5B9128', ids: ['num', 'assemble', 'count', 'price', 'days'] },
+  { id: 'texts', title: 'Тексты и диалоги', ko: '대화', icon: 'mail', bg: '#ECE3FF', fg: '#8357E0', ids: ['dlg', 'read', 'oddone', 'finderr'] },
+  { id: 'hangul', title: 'Хангыль', ko: '한글', icon: 'han', bg: '#DCEFFA', fg: '#2783B8', ids: ['han', 'syllables', 'keyboard'] },
+]
+/** Цвета плиток быстрого старта (по id игры из `GAME_MIX`). */
+export const QUICK_COLORS: Record<string, { bg: string; fg: string }> = {
+  mix: { bg: '#EEE6FF', fg: '#7C5CFF' },
+  weak: { bg: '#FDE4F0', fg: '#D6488E' },
+  quick: { bg: '#FFE9D6', fg: '#D9722A' },
+  rule: { bg: '#E0ECFF', fg: '#4A6FE0' },
+}
+
 /** Все игры списком (для счётчика и поиска). */
 export const ALL_GAMES: GameCard[] = [...GAME_MIX, ...GAME_GROUPS.flatMap(g => g.games)]
 

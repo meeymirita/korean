@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { load, close } from './_load.mjs'
 import { readFileSync } from 'node:fs'
 
-const { ALL_GAMES, GAME_GROUPS, TOOL_IDS, findGames } = await load('/src/data/games.ts')
+const { ALL_GAMES, GAME_GROUPS, GAME_MIX, CATALOG_SECTIONS, QUICK_COLORS, TOOL_IDS, findGames } = await load('/src/data/games.ts')
 after(close)
 
 test('одиннадцать групп и у каждой есть игры', () => {
@@ -60,4 +60,18 @@ test('игры: кнопки «Микс» в строке игры больше 
   const engine = readFileSync(new URL('../frontend/src/game/engine.ts', import.meta.url), 'utf8')
   assert.ok(!markup.includes('id="modes"'))
   assert.ok(!engine.includes('drawModes'))
+})
+
+test('каталог: семь разделов, каждая игра групп ровно в одном, иконки раздела есть', () => {
+  assert.equal(CATALOG_SECTIONS.length, 7)
+  const inGroups = GAME_GROUPS.flatMap(g => g.games.map(x => x.id)).sort()
+  const inSections = CATALOG_SECTIONS.flatMap(s => s.ids).sort()
+  assert.deepEqual(inSections, inGroups)
+  for (const s of CATALOG_SECTIONS) {
+    assert.ok(readFileSync(new URL(`../frontend/src/assets/game/icons/${s.icon}.webp`, import.meta.url)).length > 0, s.icon)
+  }
+})
+
+test('каталог: у каждого быстрого режима есть цвет плитки', () => {
+  for (const x of GAME_MIX) assert.ok(QUICK_COLORS[x.id], x.id)
 })
