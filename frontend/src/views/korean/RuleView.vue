@@ -84,7 +84,10 @@ const label = (ko: string) => ko.replace(/\{[a-z]\|([^}]*)\}/g, '$1')
 
 <style scoped>
 .rl-pick { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 14px; }
-.rl-pick label { font-weight: 600; }
-.rl-pick select { min-width: 260px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; font: inherit; }
+.rl-pick label { font-size: 15px; font-weight: 800; }
+/* список в стиле каталога игр: капсула, своя стрелка (у встроенной не было отступа справа и она заезжала на текст) */
+.rl-pick select { appearance: none; -webkit-appearance: none; min-width: 280px; max-width: 100%; height: 44px; padding: 0 44px 0 18px; border: 1.5px solid #E3D9FF; border-radius: 999px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%237C5CFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 18px center; color: #2A2340; font: inherit; font-size: 15px; font-weight: 600; text-overflow: ellipsis; cursor: pointer; }
+.rl-pick select:focus { outline: none; border-color: #7C5CFF; }
+:global(html[data-theme='dark']) .rl-pick select { background-color: #25274e; border-color: rgba(143, 124, 240, .35); color: #eceaff; }
 .rl-hint { color: var(--muted); max-width: 560px; }
 </style>
