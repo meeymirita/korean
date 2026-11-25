@@ -618,7 +618,8 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
 .vl-chip small { margin-left: 3px; }
 .vl-chip.on { background: var(--surface); border-color: var(--ink); color: var(--ink); font-weight: 600; }
 .vl-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-.vl-item { position: relative; display: grid; grid-template-rows: 1fr auto; gap: 6px; }
+/* колонка minmax(0, 1fr): без неё картинка с собственной шириной (320 px) растягивала первую карточку за ячейку сетки */
+.vl-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 6px; }
 .vl-pop { position: absolute; z-index: 30; top: 0; width: 310px; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgba(143, 124, 240, .5); border-radius: 16px; background: #fff; box-shadow: 0 14px 40px rgba(60, 40, 120, .28); pointer-events: none; font-size: 13.5px; line-height: 1.5; color: #2b2250; animation: vlpop .15s ease-out; }
 .vl-pop.right { left: calc(100% + 10px); }
 .vl-pop.left { right: calc(100% + 10px); }
@@ -658,7 +659,7 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
 /* картинки ютуба могут не грузиться (сеть планшета): вместо белого фона пастельная плашка */
 .vl-card .vl-ph { display: grid; min-height: 0; overflow: visible; place-items: center; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: linear-gradient(135deg, #fbd9ea, #cfe4ff); color: rgba(255, 255, 255, .85); font-size: 28px; font-weight: 700; letter-spacing: .08em; }
 :global(html[data-theme='dark']) .vl-card .vl-ph { background: linear-gradient(135deg, #4a2c55, #2c3c66); color: rgba(255, 255, 255, .5); }
-.vl-card { position: relative; box-sizing: border-box; width: 100%; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
+.vl-card { position: relative; box-sizing: border-box; width: 100%; min-width: 0; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .vl-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
 .vl-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; font-size: 15px; }
 .vl-card span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; color: var(--muted); font-size: 13px; }
