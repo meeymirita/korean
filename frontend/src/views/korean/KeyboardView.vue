@@ -8,6 +8,7 @@ import {
 } from '@/data/korean/keyboard'
 import { newRound, useProgressStore } from '@/stores/progress'
 import { KEY_LABELS, keysOfText, matches, ROWS } from '@/lib/hangulKeys'
+import UiSelect from '@/components/ui/UiSelect.vue'
 
 type Tab = KbLevel | 'custom'
 const LEVEL_IDS = KB_LEVELS.map(l => l.id)
@@ -206,9 +207,9 @@ const setLevel = (id: Tab) => {
     <div v-if="isCustom" class="cpick">
       <div class="chips">
         <button v-for="k in CUSTOM_KINDS" :key="k.id" type="button" class="chip" :class="{ on: kind === k.id }" @click="((kind = k.id), (q = ''))">{{ k.label }}</button>
-        <select v-model="src" aria-label="Откуда брать" @change="q = ''">
+        <UiSelect v-model="src" size="sm" aria-label="Откуда брать" @change="q = ''">
           <option v-for="x in CUSTOM_SOURCES" :key="x.id" :value="x.id">{{ x.label }} · {{ counts[x.id] }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="csearch">
         <input v-model="q" type="text" autocomplete="off" spellcheck="false" :placeholder="kind === 'words' ? 'Найти слово: ем, есть, 먹다…' : 'Найти предложение…'" aria-label="Поиск" @focus="dropOpen = true" @blur="dropOpen = false" @keydown.esc="dropOpen = false" />
@@ -282,7 +283,6 @@ const setLevel = (id: Tab) => {
 .cl li button, .link { border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
 .cl li button:hover, .link:hover { color: var(--pink); }
 .cl-empty { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
-.cpick .chips select { padding: 6px 10px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 99px; }
 .csearch { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .csearch input { flex: 1 1 220px; min-width: 0; padding: 10px 14px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
 .csearch input:focus { outline: none; border-color: var(--gold); }

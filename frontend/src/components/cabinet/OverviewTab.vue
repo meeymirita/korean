@@ -20,6 +20,7 @@ import { usePersisted } from '@/composables/usePersisted'
 import type { Task } from '@/data/korean/tasks'
 import { KNOWN_STREAK, dayKey, useProgressStore } from '@/stores/progress'
 import { formatSpent, useTimerStore } from '@/stores/timer'
+import UiSelect from '@/components/ui/UiSelect.vue'
 
 const progress = useProgressStore()
 const timer = useTimerStore()
@@ -217,10 +218,10 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
 
     <h2 class="today-h">Над чем стоит поработать <RouterLink v-if="weak.length" to="/korean/mistakes" class="mk-link">все ошибки →</RouterLink></h2>
     <label class="pg-filter">Тема
-      <select v-model="weakTopic" aria-label="Тема слабых слов">
+      <UiSelect v-model="weakTopic" size="sm" aria-label="Тема слабых слов">
         <option value="">Все</option>
         <option v-for="(name, id) in CATN" :key="id" :value="id">{{ name }}</option>
-      </select>
+      </UiSelect>
     </label>
     <div v-if="weak.length" class="pg-weak">
       <div v-for="x in weak" :key="x.d.n" class="pg-w">
@@ -291,7 +292,6 @@ const shareAch = (a: (typeof achievements.value)[number]) =>
 .pg-weak-rule-track i { display: block; height: 100%; border-radius: inherit; background: var(--pink, #d64da9); }
 .pg-weak-rule-foot small { color: var(--muted); }
 .pg-filter { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
-.pg-filter select { padding: 5px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; font: inherit; }
 .pg-stale-list { display: grid; gap: 6px; margin-top: 12px; max-width: 740px; }
 .pg-stale-row { display: grid; grid-template-columns: minmax(70px, 120px) 1fr; gap: 2px 12px; align-items: baseline; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .pg-stale-row b { font-size: 18px; }

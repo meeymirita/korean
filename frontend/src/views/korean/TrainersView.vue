@@ -9,6 +9,7 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import TypingQuiz from '@/components/korean/TypingQuiz.vue'
 import { CATN } from '@/data/korean/words'
 import { DIR_LABEL, type Direction, PAIR_SETS, SETS, dirsFor, fillsFromDict, isPairSet, pickRound, pool, shown } from '@/data/korean/trainer'
+import UiSelect from '@/components/ui/UiSelect.vue'
 
 type Mode = 'match' | 'type'
 
@@ -95,14 +96,14 @@ watch(mode, m => {
 
     <div class="tr-set">
       <label>Слов в раунде
-        <select :value="roundSize" @change="size = Number(($event.target as HTMLSelectElement).value); start()">
+        <UiSelect size="sm" :model-value="roundSize" @update:model-value="size = Number($event); start()">
           <option v-for="n in sizes" :key="n" :value="n">{{ !canFill && n === poolSize ? `${n} (все)` : n }}</option>
-        </select>
+        </UiSelect>
       </label>
       <label v-if="mode === 'type' && dirs.length > 1">Задание
-        <select v-model="dir" @change="start()">
+        <UiSelect v-model="dir" size="sm" @change="start()">
           <option v-for="d in dirs" :key="d" :value="d">{{ DIR_LABEL[d] }}</option>
-        </select>
+        </UiSelect>
       </label>
       <label v-if="mode === 'match' && hasReading" class="chk"><input v-model="showReading" type="checkbox" /> показывать чтение</label>
     </div>
@@ -125,7 +126,6 @@ watch(mode, m => {
 .study .tr-group { align-self: center; margin-right: 4px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
 .study .tr-set { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 16px; font-size: 14px; color: var(--muted); }
 .study .tr-set label { display: inline-flex; align-items: center; gap: 8px; }
-.study .tr-set select { padding: 6px 10px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 .study .tr-set .chk { cursor: pointer; }
 .study .tr-set .chk input { accent-color: var(--gold); }
 .study .tr-new { margin-left: auto; padding: 8px 16px; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; }

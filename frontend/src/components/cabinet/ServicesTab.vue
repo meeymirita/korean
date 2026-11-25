@@ -5,6 +5,7 @@ import { useProgressStore } from '@/stores/progress'
 import type { OpsLogsReply, OpsServiceState, OpsServicesReply } from '@/types/ops'
 import { searchDocuments } from '@/data/korean/search'
 import type { SearchServiceStatus } from '@/types/search'
+import UiSelect from '@/components/ui/UiSelect.vue'
 
 const progress = useProgressStore()
 const state = ref<OpsServicesReply | null>(null)
@@ -211,9 +212,9 @@ onBeforeUnmount(() => clearInterval(timer))
       <h3>Журнал приложения</h3>
       <label>
         <span class="sr-only">Выбрать сервис</span>
-        <select v-model="selected" @change="loadLogs">
+        <UiSelect v-model="selected" size="sm" @change="loadLogs">
           <option v-for="service in (state?.services || []).filter(item => !item.external)" :key="service.name" :value="service.name">{{ serviceName(service.name) }}</option>
-        </select>
+        </UiSelect>
       </label>
     </div>
     <p v-if="logError" class="ops-error" role="alert">{{ logError }}</p>
@@ -240,9 +241,5 @@ onBeforeUnmount(() => clearInterval(timer))
 .ops-service-top i.down { background: #c55; }
 .ops-log { overflow: auto; max-height: 32rem; min-height: 9rem; margin: 0; padding: 1rem; border-radius: 10px; background: #161a19; color: #d8e5df; font: .8rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ops-error { color: #a22; }
-select { max-width: 100%; appearance: none; padding: 9px 38px 9px 16px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink, #2b2d5b); border: 1px solid var(--line, #ddd); border-radius: 999px; cursor: pointer;
-  background: var(--card, #fff) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%238f7cf0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center; transition: border-color .15s, box-shadow .15s; }
-select:hover { border-color: var(--gold, #8f7cf0); }
-select:focus-visible { outline: none; border-color: var(--gold, #8f7cf0); box-shadow: 0 0 0 3px rgba(139, 124, 240, .22); }
 @media (max-width: 600px) { .ops-head, .ops-logs-head, .ops-search-index { align-items: flex-start; flex-wrap: wrap; } }
 </style>

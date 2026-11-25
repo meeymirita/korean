@@ -1,0 +1,10 @@
+/* Общие компоненты интерфейса (components/ui/): цвета и размеры в одном месте. Тема на сайте одна, светлая. Правила: docs/ui.md */
+:root {
+  --ui-ink: #2a2340;
+  --ui-muted: #6e6585;
+  --ui-line: #e3d9ff;
+  --ui-accent: #7c5cff;
+  --ui-surface: #fff;
+  --ui-h: 44px;
+  --ui-h-sm: 34px;
+}

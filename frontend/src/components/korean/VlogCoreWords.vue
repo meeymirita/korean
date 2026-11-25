@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { VLOGS } from '@/data/korean/vlogs'
 import { coverageOf, coreWords } from '@/data/korean/vlog-lang'
 import WordInVlogs from '@/components/korean/WordInVlogs.vue'
+import UiSelect from '@/components/ui/UiSelect.vue'
 
 /**
  * Вкладка «Слова влогов»: (1) ядро: слова, которые звучат сразу в нескольких влогах, в порядке пользы; (2) охват: сколько слов каждого влога из твоего словаря.
@@ -31,7 +32,7 @@ const avg = computed(() => {
 
     <div class="cw-ctl" role="group" aria-label="Фильтр">
       <label>Звучит не меньше чем в
-        <select v-model.number="minVlogs"><option v-for="n in [3, 5, 8, 12, 20]" :key="n" :value="n">{{ n }} влогах</option></select>
+        <UiSelect v-model.number="minVlogs" size="sm"><option v-for="n in [3, 5, 8, 12, 20]" :key="n" :value="n">{{ n }} влогах</option></UiSelect>
       </label>
       <label class="cw-chk"><input v-model="onlyNew" type="checkbox" /> только слова вне моего словаря</label>
     </div>
@@ -64,7 +65,6 @@ const avg = computed(() => {
 .cw-note { margin: 10px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
 .cw-sum { margin: 10px 0 0; font-size: 15px; }
 .cw-ctl { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: 12px; font-size: 14px; }
-.cw-ctl select { margin-left: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); padding: 4px 8px; font: inherit; }
 .cw-chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .cw-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
 @media (max-width: 760px) { .cw-list { grid-template-columns: 1fr; } }
