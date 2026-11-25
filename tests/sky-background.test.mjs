@@ -7,7 +7,7 @@ const css = name => readFileSync(new URL(`../frontend/src/assets/${name}`, impor
 // Оболочка раздела не шире 1640 px: если фон рисуется на body, на широких окнах слева и справа видны полосы цвета html.
 describe('фон раздела (храм и сакура)', () => {
   test('рисуется на html (холст), а не на body: полос по краям нет', () => {
-    for (const f of ['sky.css', 'dark.css', 'night.css']) {
+    for (const f of ['sky.css']) {
       const src = css(f)
       assert.ok(src.includes(':has(.study-shell.sky)'), f)
       assert.ok(!/body:has\(\.study-shell\.sky\)\s*[,{]/.test(src.replace(/body:has\(\.study-shell\.sky\) \{ background: transparent; \}/, '')), `${f}: фон снова на body`)

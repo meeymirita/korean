@@ -1,11 +1,9 @@
 /**
- * Картинки под тему: в тёмных темах (розовая, ночная, тёмная) берётся новый набор, в светлой старый.
- * Старый лежит рядом под именем `<имя>-light.webp`; файла `-light` нет у картинки, значит она общая для всех тем.
+ * Картинки: тема на сайте одна, светлая (тёмные убраны 2026-11-25), поэтому берётся набор `<имя>-light.webp`.
+ * Файла `-light` нет у картинки, значит она общая.
  * Подмена идёт по адресу картинки, поэтому работает и для импортов, и для `import.meta.glob`.
- * В шаблонах и `computed` вызывай `themed(url)`: он читает `themeLight`, страница сама перерисуется при смене темы.
+ * В шаблонах и `computed` вызывай `themed(url)`.
  */
-import { themeLight } from '@/lib/theme'
-
 const all = import.meta.glob(
   ['../assets/{icons,game,cats,levels,player}/**/*.webp', '../assets/home/dash/*.webp'],
   { eager: true, query: '?url', import: 'default' },
@@ -21,7 +19,7 @@ for (const [path, url] of Object.entries(all)) {
 /** Адрес картинки под текущую тему. */
 export function themed(url: string | undefined): string {
   if (!url) return ''
-  return themeLight.value ? (LIGHT.get(url) ?? url) : url
+  return LIGHT.get(url) ?? url
 }
 
 /** Словарь «имя → адрес», у которого значение подбирается под тему в момент чтения (`ICONS[name]`). */

@@ -6,7 +6,6 @@ import { GROWTH } from '@/data/growth'
 import { D } from '@/data/korean/words'
 import { RULES_COUNT } from '@/data/korean/grammar'
 import { ALL_GAMES } from '@/data/games'
-import { themeLight, toggleTheme } from '@/lib/theme'
 import { fetchT } from '@/lib/http'
 import RankPic from '@/components/RankPic.vue'
 import Icon from '@/components/Icon.vue'
@@ -243,7 +242,6 @@ onBeforeUnmount(() => {
 
 const toStart = () => rootEl.value?.scrollTo({ top: 0, behavior: 'smooth' })
 const toEnd = () => rootEl.value?.scrollTo({ top: rootEl.value.scrollHeight, behavior: 'smooth' })
-const themeLabel = computed(() => (themeLight.value ? '☾︎ Тёмная' : '☀︎ Светлая'))
 </script>
 
 <template>
@@ -255,7 +253,6 @@ const themeLabel = computed(() => (themeLight.value ? '☾︎ Тёмная' : '�
         <RouterLink to="/about">О платформе</RouterLink>
         <button type="button" class="jump" @click="toStart">↑ в начало</button>
         <button type="button" class="jump" @click="toEnd">к итогу ↓</button>
-        <button type="button" class="jump solid theme-btn" aria-label="Сменить тему" @click="toggleTheme">{{ themeLabel }}</button>
       </nav>
       <div class="gr-prog" aria-hidden="true"><i ref="progEl"></i></div>
     </header>

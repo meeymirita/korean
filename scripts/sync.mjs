@@ -1,5 +1,5 @@
 // Единая команда «обнови всё, что строится из данных сайта»: словарь, грамматика, переводы, режимы и тёмная тема лежат в frontend/src,
-// а всё производное (пул писем, words.json, инструкции чата и голоса, данные для чтения по API, названия режимов, night.css, числа в README и docs)
+// а всё производное (пул писем, words.json, инструкции чата и голоса, данные для чтения по API, названия режимов, числа в README и docs)
 // собирается отсюда. Одна команда вместо восьми скриптов по памяти.
 //
 //   npm run sync               обновить всё, что отстало
@@ -8,7 +8,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { close, load } from '../tests/_load.mjs'
-import { buildNight } from './build-night.mjs'
 
 const here = p => fileURLToPath(new URL(p, import.meta.url))
 
@@ -39,7 +38,6 @@ export async function targets() {
     const m = await import(`./${name}.mjs`)
     out.push({ name, path: m.OUT, content: await m.build() })
   }
-  out.push({ name: 'build-night', path: here('../frontend/src/assets/night.css'), content: buildNight(readFileSync(here('../frontend/src/assets/dark.css'), 'utf8')) })
   const { D } = await load('/src/data/korean/words.ts')
   const { G } = await load('/src/data/korean/grammar.ts')
   // правил грамматики: карточки-заглушки «впереди» (`ahead`) не считаются, объяснения у них ещё нет

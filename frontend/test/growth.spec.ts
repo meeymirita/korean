@@ -21,11 +21,11 @@ describe('«Рост платформы»', () => {
     expect(w.text()).toContain(GROWTH.marks[GROWTH.marks.length - 1]!.summary)
   })
 
-  it('есть ссылки на историю, кнопки перехода, смена темы и итоги', async () => {
+  it('есть ссылки на историю, кнопки перехода и итоги, кнопки смены темы нет', async () => {
     const w = await mountSuspended(GrowthView, { route: '/growth' })
     expect(w.find('a[href="/history"]').exists()).toBe(true)
-    expect(w.findAll('.gr-top .jump').length).toBe(3)
-    expect(w.find('.theme-btn').exists()).toBe(true)
+    expect(w.findAll('.gr-top .jump').length).toBe(2)
+    expect(w.find('.theme-btn').exists()).toBe(false)
     expect(w.find('.gr-fin').text()).toContain('ключевых событий')
   })
 

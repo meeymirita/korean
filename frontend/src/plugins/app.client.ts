@@ -1,18 +1,15 @@
 /**
- * Запуск в браузере (раньше src/main.ts): тема, вход по токену и картинки, заменённые владельцем.
+ * Запуск в браузере (раньше src/main.ts): вход по токену и картинки, заменённые владельцем.
  * Только в браузере: токен и настройки лежат в localStorage, на сервере их нет.
  */
 import type { Pinia } from 'pinia'
 import { initSiteImages } from '@/lib/siteImagesDom'
-import { initTheme, themeHydrated } from '@/lib/theme'
 import { useProgressStore } from '@/stores/progress'
 import { useSiteImagesStore } from '@/stores/siteImages'
 
 export default defineNuxtPlugin(nuxtApp => {
   const pinia = nuxtApp.$pinia as Pinia
   const router = useRouter()
-  initTheme()
-  nuxtApp.hook('app:mounted', themeHydrated)
   // PWA убрано (решение владельца 2026-11-22: приложение есть на Mac, Electron): у кого сервис-воркер уже стоял, снимаем его и чистим кэши
   if ('serviceWorker' in navigator) void navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => void r.unregister()))
   if ('caches' in window) void caches.keys().then(ks => ks.forEach(k => void caches.delete(k)))

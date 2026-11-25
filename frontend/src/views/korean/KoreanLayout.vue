@@ -17,7 +17,6 @@ import VoiceButton from '@/components/voice/VoiceButton.vue'
 import { MENU_ICONS, sections } from '@/data/korean/sections'
 import { D } from '@/data/korean/words'
 import { RULES_COUNT } from '@/data/korean/grammar'
-import { themeDark, toggleTheme } from '@/lib/theme'
 import { comboFromEvent } from '@/lib/shortcuts'
 import { useProgressStore } from '@/stores/progress'
 import { useShortcutsStore } from '@/stores/shortcuts'
@@ -147,7 +146,6 @@ onBeforeUnmount(() => {
       <div class="foot">
         <button v-if="focus" class="theme-btn" title="Вернуть меню на место (клавиша F)" aria-label="Закрепить меню" @click="setFocus(false)"><span aria-hidden="true">⇥</span> Закрепить меню</button>
         <button v-else class="theme-btn" title="Спрятать меню (клавиша F)" aria-label="Спрятать меню" @click="setFocus(true)"><span aria-hidden="true">⇤</span> Спрятать меню</button>
-        <button class="theme-btn" :title="themeDark ? 'Светлая тема' : 'Тёмная тема'" :aria-label="themeDark ? 'Включить светлую тему' : 'Включить тёмную тему'" @click="toggleTheme()"><span aria-hidden="true">{{ themeDark ? '☀' : '☾' }}</span> {{ themeDark ? 'Светлая' : 'Тёмная' }}</button>
       </div>
     </aside>
     <button v-if="focus && !bare" class="side-show" title="Наведи, чтобы открыть меню; нажми, чтобы закрепить (клавиша F)" aria-label="Показать меню" @mouseenter="peekOpen" @mouseleave="peekClose()" @focus="peekOpen" @click="setFocus(false)">☰ Меню</button>

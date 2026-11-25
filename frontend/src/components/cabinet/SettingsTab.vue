@@ -14,7 +14,6 @@ import { askConfirm, askTokenDo } from '@/composables/useConfirm'
 import { usePublicCard } from '@/composables/usePublicCard'
 import { usePersisted } from '@/composables/usePersisted'
 import { studyTime } from '@/data/weeks'
-import { MODES, setTheme, themeMode } from '@/lib/theme'
 import { useToastStore } from '@/stores/toast'
 import { useImagesStore } from '@/stores/images'
 import { useProgressStore } from '@/stores/progress'
@@ -271,15 +270,6 @@ async function refreshPublic() {
         <div v-for="j in journey" :key="j.t"><b>{{ j.n }}</b><small>{{ j.t }}</small></div>
       </div>
     </div>
-
-    <div class="st-block">
-      <h3>Оформление</h3>
-      <p>Светлая или тёмная тема; «как в системе» сама переключается вечером, если так настроен компьютер или телефон. Выбор помнится на этом устройстве.</p>
-      <div class="st-goals">
-        <button v-for="m in MODES" :key="m.id" class="chip" :class="{ on: themeMode === m.id }" :aria-pressed="themeMode === m.id" @click="setTheme(m.id)">{{ m.label }}</button>
-      </div>
-    </div>
-
 
     <div class="st-block">
       <h3>Цель дня</h3>

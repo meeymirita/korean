@@ -1,4 +1,4 @@
-// Светлая тема открытых страниц (по умолчанию, решение владельца 2026-11-22): правило в pink.css и кнопка смены темы в оболочке.
+// Открытые страницы в светлой теме (единственной, решение владельца 2026-11-25): правило в pink.css; кнопки смены темы в оболочке больше нет.
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -12,8 +12,7 @@ test('pink.css: светлый вариант включается без data-t
   assert.match(css, /html:not\(\[data-theme='dark'\]\) \.pk :is\(img[^)]*\)\s*\{[^}]*filter: invert\(1\) hue-rotate\(180deg\)/)
 })
 
-test('оболочка PinkShell: кнопка темы по умолчанию есть, подпись зависит от темы', () => {
+test('оболочка PinkShell: кнопки смены темы нет', () => {
   const v = read('components/site/PinkShell.vue')
-  assert.match(v, /themeToggle: true/)
-  assert.match(v, /themeDark \? '☀︎ Светлая' : '☾ Тёмная'/)
+  assert.doesNotMatch(v, /themeToggle|toggleTheme|themeDark/)
 })

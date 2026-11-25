@@ -31,7 +31,6 @@ import { ICON } from '@/game/icons'
 import { newRound, useProgressStore } from '@/stores/progress'
 import { formatClock, useTimerStore } from '@/stores/timer'
 import { useShopStore } from '@/stores/shop'
-import { themeDark, toggleTheme } from '@/lib/theme'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import '@/game/game.css'
@@ -244,11 +243,11 @@ watch(inGame, syncCatalogClass)
     <div class="gx-main">
       <template v-if="inGame">
         <h1 v-if="!tool" class="gx-sr">Игры на слова</h1>
-        <div class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="current" class="gh-name">{{ current.name }}</b><GameTools menu :folded="folded" :dark="themeDark" @menu="navOpen = !navOpen" @search="openSearch()" @theme="toggleTheme()" /></div>
+        <div class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="current" class="gh-name">{{ current.name }}</b><GameTools menu :folded="folded" @menu="navOpen = !navOpen" @search="openSearch()" /></div>
       </template>
       <header v-else class="game-top gx-top">
         <h1 class="gx-sr">Игры на слова</h1>
-        <GameTools :menu="false" :folded="folded" :dark="themeDark" @menu="navOpen = !navOpen" @search="openSearch()" @theme="toggleTheme()" />
+        <GameTools :menu="false" :folded="folded" @menu="navOpen = !navOpen" @search="openSearch()" />
       </header>
 
       <AuthGate v-if="!progress.unlocked" />

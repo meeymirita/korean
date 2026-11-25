@@ -10,7 +10,6 @@ import { RULES_COUNT } from '@/data/korean/grammar'
 import { useToastStore } from '@/stores/toast'
 import { HOME_LINKS, HOME_MORE, useHome, useHomePicks } from '@/composables/useHome'
 import { withSeed } from '@/lib/seeded'
-import { toggleTheme } from '@/lib/theme'
 
 const { progress, days, daysWord, hello, due, dueText } = useHome()
 /** Без входа в меню главной только «Большой словарь»; остальные ссылки (Словарь, Грамматика, Памятка, Чтение) видны вошедшим. */
@@ -74,7 +73,6 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
           <RouterLink to="/history" class="hide-sm">История изменений</RouterLink>
           <RouterLink to="/growth" class="hide-sm">Рост платформы</RouterLink>
           <RouterLink v-for="l in homeLinks" :key="l.to" :to="l.to" class="hide-sm">{{ l.title }}</RouterLink>
-          <button type="button" class="theme-toggle" aria-label="Включить тёмную тему" @click="toggleTheme">☾︎ Тёмная</button>
           <RouterLink to="/korean/home" class="enter">{{ progress.unlocked ? 'Платформа →' : 'Войти →' }}</RouterLink>
         </nav>
       </header>
@@ -222,8 +220,6 @@ const wordLink = computed(() => (word.k ? { path: '/korean/words', query: { q: w
 .nav { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); font-size: 12.5px; color: var(--soft); }
 .nav a { position: relative; transition: .2s; }
 .nav a:hover { color: var(--ink); }
-.nav .theme-toggle { padding: 7px 14px; font: inherit; font-size: 12px; color: var(--soft); white-space: nowrap; background: transparent; border: 1px solid currentColor; border-radius: 22px; cursor: pointer; transition: .2s; }
-.nav .theme-toggle:hover { color: var(--ink); }
 .nav a { white-space: nowrap; }
 .nav .enter { padding: 9px 18px; border: 1px solid var(--ink); border-radius: 22px; color: var(--ink); font-weight: 600; font-size: 12px; transition: .22s; }
 .nav .enter:hover { background: var(--ink); color: #fff; }
