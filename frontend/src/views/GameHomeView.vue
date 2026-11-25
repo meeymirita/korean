@@ -36,6 +36,7 @@ import '@/assets/sky.css'
 import '@/game/game.css'
 import '@/game/redesign.css'
 import '@/game/shell.css'
+import UiSearch from '@/components/ui/UiSearch.vue'
 
 const progress = useProgressStore()
 const shop = useShopStore()
@@ -258,7 +259,7 @@ watch(inGame, syncCatalogClass)
       <section v-else class="gh-panel gh-cat-panel">
         <header class="gh-top">
           <h2 class="gh-h">Все игровые режимы <small>{{ found }} игр</small></h2>
-          <label class="gh-search"><span aria-hidden="true">⌕</span><input v-model="q" type="search" autocomplete="off" placeholder="Найти режим" aria-label="Найти режим" /></label>
+          <UiSearch v-model="q" class="gh-search" autocomplete="off" placeholder="Найти режим" aria-label="Найти режим" />
           <button v-if="timer.available" type="button" class="gh-timer" :class="{ on: timer.running }" :title="timer.running ? 'Остановить таймер' : 'Запустить таймер'" @click="timer.toggle()">
             <i :class="{ pause: timer.running }" aria-hidden="true"></i><b>{{ timer.running ? formatClock(timer.session) : 'Таймер' }}</b><small>сегодня {{ formatClock(timer.today) }}</small>
           </button>
@@ -336,10 +337,7 @@ watch(inGame, syncCatalogClass)
 body.gh-cat .stm { display: none; }
 .gh .gh-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
 .gh .gh-top .gh-h { flex: 1 1 auto; margin: 0; }
-.gh .gh-search { position: relative; flex: 0 1 300px; min-width: 200px; display: block; }
-.gh .gh-search span { position: absolute; left: 15px; top: 50%; transform: translateY(-52%); color: #7C5CFF; font-size: 17px; pointer-events: none; }
-.gh .gh-search input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 14px 0 38px; border-radius: 999px; border: 1.5px solid #E3D9FF; background: #fff; color: #2A2340; font: inherit; font-size: 15px; font-weight: 600; }
-.gh .gh-search input:focus { outline: none; border-color: #7C5CFF; }
+.gh .gh-search { flex: 0 1 300px; min-width: 200px; }
 .gh .gh-timer { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px 0 6px; border-radius: 999px; border: 0; background: #fff; color: #2A2340; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 10px rgba(124, 92, 255, .12); }
 .gh .gh-timer i { width: 32px; height: 32px; background: #7C5CFF; }
 .gh .gh-timer small { font-size: 14px; font-weight: 600; color: #6E6585; }

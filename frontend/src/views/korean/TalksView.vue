@@ -4,6 +4,7 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import { highlight, listTalks, type Talk } from '@/lib/talks'
 import { useProgressStore } from '@/stores/progress'
 import { useVoiceStore } from '@/stores/voice'
+import UiSearch from '@/components/ui/UiSearch.vue'
 
 /** Общая история: чаты с помощником и голосовые разговоры в одном списке с поиском по тексту. */
 const progress = useProgressStore()
@@ -55,9 +56,7 @@ async function openTalk(t: Talk) {
     <SectionHead id="talks" />
     <p v-if="progress.isGuest" class="cb-empty">История доступна только владельцу сайта.</p>
     <template v-else>
-      <div class="tk-search">
-        <input v-model="q" type="search" placeholder="Поиск по тексту всех разговоров" aria-label="Поиск по тексту разговоров" autocomplete="off" @keydown.esc="q = ''" />
-      </div>
+      <UiSearch v-model="q" class="tk-search" placeholder="Поиск по тексту всех разговоров" aria-label="Поиск по тексту разговоров" autocomplete="off" @keydown.esc="q = ''" />
       <p v-if="error" class="tk-err">{{ error }}</p>
       <p v-else-if="loaded && !talks.length" class="cb-empty">{{ searched ? `Ничего не нашлось по «${searched}».` : 'Разговоров пока нет: они появятся после первого вопроса помощнику или голосового разговора.' }}</p>
       <ul v-else class="tk-list">
@@ -75,8 +74,6 @@ async function openTalk(t: Talk) {
 </template>
 
 <style scoped>
-.tk-search input { width: 100%; box-sizing: border-box; padding: 11px 16px; font: inherit; font-size: 15px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 999px; }
-.tk-search input:focus { outline: none; border-color: var(--accent); }
 .tk-err { color: var(--bad); }
 .tk-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .tk-item { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; padding: 12px 16px; text-align: left; font: inherit; color: inherit; cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
@@ -87,5 +84,4 @@ async function openTalk(t: Talk) {
 .tk-meta { color: var(--muted); font-size: 12px; }
 .tk-snip { grid-column: 2; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .tk-snip mark { color: var(--ink); background: var(--gold-soft); border-radius: 4px; padding: 0 2px; }
-html[data-theme='dark'] .tk-search input { background: var(--surface); }
 </style>

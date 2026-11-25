@@ -5,6 +5,7 @@ import SectionHead from '@/components/korean/SectionHead.vue'
 import { fetchT } from '@/lib/http'
 import { useProgressStore } from '@/stores/progress'
 import { useToastStore } from '@/stores/toast'
+import UiSearch from '@/components/ui/UiSearch.vue'
 
 /**
  * Манхва: полка (карточка на каждую манхву), список глав и читалка лентой. Картинки лежат на Яндекс.Диске (`korean_manhwa/<манхва>/`,
@@ -608,7 +609,7 @@ onBeforeUnmount(() => {
       <span class="cont-go">Открыть →</span>
     </button>
     <div class="tools">
-      <input v-model="shelfQuery" class="search" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию" />
+      <UiSearch v-model="shelfQuery" class="search" size="sm" placeholder="Поиск по названию" aria-label="Поиск по названию" />
       <div class="seg" role="group" aria-label="Порядок">
         <button :class="{ on: shelfSort === 'recent' }" @click="setSort('recent')">Недавние</button>
         <button :class="{ on: shelfSort === 'title' }" @click="setSort('title')">По названию</button>
@@ -823,8 +824,7 @@ onBeforeUnmount(() => {
 .hero-cover img.blur { filter: blur(8px); transform: scale(1.18); }
 .book-cover.blur img { filter: blur(11px) saturate(.9); transform: scale(1.18); }
 .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 16px 0 0; }
-.search { flex: 1 1 200px; min-width: 0; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: inherit; font: inherit; font-size: 14px; outline: none; }
-.search:focus { border-color: var(--gold); }
+.search { flex: 1 1 200px; min-width: 0; }
 .seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
 .seg button { padding: 5px 12px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
 .seg button.on { background: color-mix(in srgb, var(--gold) 22%, var(--surface)); font-weight: 700; }
