@@ -126,9 +126,9 @@ groups:
               expression: A
               refId: C
               conditions:
-                - evaluator: { type: gt, params: [30] }
+                - evaluator: { type: gt, params: [150] }
         noDataState: OK
         execErrState: Error
-        for: 10m
+        for: 30m
         annotations:
-          summary: "За час больше 30 запросов слов, которых нет в словаре. Возможны битые адреса в карте сайта: BASE=https://korean.meeymirita.ru node scripts/check-sitemap.mjs."
+          summary: "За час больше 150 запросов слов, которых нет в словаре (роботы, парсеры, опечатки). Какие слова: журнал backend, строки «dict 404, чаще всего за 15 минут» («Сервисы» в кабинете). Битые адреса в карте сайта: BASE=https://korean.meeymirita.ru node scripts/check-sitemap.mjs."
