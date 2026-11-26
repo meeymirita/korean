@@ -34,22 +34,8 @@ export function pinsFor(district: string, places: Place[]): { place: Place; x: n
 
 /** Картинка сцены: `n` файл, `x y w` положение и ширина, `z` слой, `t` поворот или отражение, `c` класс (анимация). */
 export interface Art { k: string; n: string; x: number; y: number; w: number; z: number; t?: string; c?: string }
-export const ART: Art[] = [
-  { k: 'mount', n: 'b_jeju', x: 1005, y: 78, w: 185, z: 1 },
-  { k: 'cloud1', n: 'cloud', x: 168, y: 148, w: 128, z: 1, c: 'drift' },
-  { k: 'cloud2', n: 'cloud', x: 1180, y: 560, w: 110, z: 1, c: 'drift2' },
-  { k: 'birds1', n: 'birds', x: 385, y: 112, w: 70, z: 2, c: 'fly' },
-  { k: 'birds2', n: 'birds', x: 870, y: 96, w: 96, z: 2, c: 'fly2' },
-  { k: 'island', n: 'island', x: 84, y: 82, w: 1136, z: 3, c: 'isl' },
-  { k: 'boat', n: 'boat', x: 940, y: 722, w: 172, z: 4, c: 'bob' },
-  { k: 'torii', n: 'torii', x: 395, y: 760, w: 335, z: 5 },
-  { k: 'branchR1', n: 'branch', x: 840, y: 850, w: 430, z: 6, t: 'rotate(-14deg)' },
-  { k: 'branchR2', n: 'branch', x: 1010, y: 800, w: 300, z: 6, t: 'scaleX(-1) rotate(8deg)' },
-  { k: 'fence', n: 'fence', x: 120, y: 835, w: 610, z: 7 },
-  { k: 'lantern', n: 'lantern', x: 0, y: 95, w: 122, z: 8, c: 'glow' },
-  { k: 'branchL', n: 'branch', x: -95, y: -10, w: 430, z: 8, t: 'rotate(22deg)' },
-  { k: 'girl', n: 'girl', x: -85, y: 575, w: 430, z: 9 },
-]
+/** Картинки сцены убраны по слову владельца (2026-11-26): остров и декор будут новой картинкой. Сюда кладут её слои. */
+export const ART: Art[] = []
 
 /** Падающие лепестки: положение, размер, задержка и длительность (в секундах). */
 export const PETALS = [
