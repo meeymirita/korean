@@ -38,8 +38,8 @@ const scale = computed(() => (n.value.state === 'ahead' ? 0.62 : n.value.state =
 .bloom { transform-box: fill-box; transform-origin: center; transform: scale(0) rotate(-60deg); animation: bloom .7s cubic-bezier(.2, 1.4, .4, 1) forwards; transition: transform .3s; }
 .fn:hover .bloom { animation: none; transform: scale(1.18) rotate(18deg); }
 .lbl { position: absolute; top: 66px; left: 50%; width: 104px; margin-left: -52px; text-align: center; line-height: 1.15; pointer-events: none; }
-.lbl b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; overflow-wrap: anywhere; color: var(--ink); text-shadow: 0 0 6px var(--surface), 0 0 6px var(--surface); }
-.lbl small { display: block; font-size: 10px; color: var(--muted); }
+.lbl b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: fit-content; max-width: 100%; margin: 0 auto; padding: 1px 7px; border-radius: 9px; background: var(--lbl-bg); font-size: 13px; overflow-wrap: anywhere; color: var(--ink); }
+.lbl small { display: block; width: fit-content; margin: 2px auto 0; padding: 0 6px; border-radius: 7px; background: var(--lbl-bg); font-size: 10px; color: var(--muted); }
 .here { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); padding: 2px 10px; border-radius: 99px; background: var(--gold); color: #5b3b00; font-size: 12px; font-weight: 700; white-space: nowrap; animation: hop 1.2s ease-in-out infinite; pointer-events: none; }
 .here::after { content: ''; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-bottom: 0; border-top-color: var(--gold); }
 @keyframes hop { 50% { transform: translateX(-50%) translateY(-6px); } }

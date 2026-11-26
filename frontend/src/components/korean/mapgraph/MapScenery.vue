@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 
 /**
- * Нарисованный кодом фон карты: холмы, река между рядами островов, сакуры, облака.
- * Лежит под графом в тех же координатах (двигается и приближается вместе с ним); всё детерминировано, без случайного.
+ * Нарисованный кодом фон карты: лес. Зелёная поляна и холмы, синие реки между рядами островов, лиственные деревья и ёлки,
+ * листья на траве. Лежит под графом в тех же координатах (двигается и приближается вместе с ним); всё детерминировано.
  */
 const props = defineProps<{ w: number; h: number; rowsY: number[] }>()
 const rnd = (i: number) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x) }
@@ -32,44 +32,65 @@ const hills = computed(() => {
   }
   return [mk(h - 260, 70, 260, 0), mk(h - 170, 60, 200, 2), mk(h - 90, 40, 170, 4)]
 })
-const clouds = computed(() => Array.from({ length: 9 }, (_, i) => ({ x: rnd(i) * props.w, y: 40 + rnd(i + 20) * (props.h * 0.35), s: 0.8 + rnd(i + 40) * 1.2 })))
-const trees = computed(() => Array.from({ length: 16 }, (_, i) => ({ x: rnd(i + 60) * props.w, y: props.h * 0.15 + rnd(i + 80) * props.h * 0.75, s: 0.7 + rnd(i + 100) * 0.9 })))
-const petals = computed(() => Array.from({ length: 70 }, (_, i) => ({ x: rnd(i + 200) * props.w, y: rnd(i + 300) * props.h, r: 6 + rnd(i + 400) * 10, a: rnd(i + 500) * 360 })))
+const spots = computed(() => Array.from({ length: 60 }, (_, i) => ({ x: rnd(i + 700) * props.w, y: rnd(i + 800) * props.h, r: 90 + rnd(i + 900) * 160, k: i % 3 })))
+const trees = computed(() => Array.from({ length: 44 }, (_, i) => ({ x: rnd(i + 60) * props.w, y: props.h * 0.05 + rnd(i + 80) * props.h * 0.9, s: 0.7 + rnd(i + 100) * 0.9, pine: i % 3 === 0, tone: i % 3 })))
+const leaves = computed(() => Array.from({ length: 240 }, (_, i) => ({ x: rnd(i + 200) * props.w, y: rnd(i + 300) * props.h, s: 0.5 + rnd(i + 400) * 0.9, a: rnd(i + 500) * 360, t: i % 4 })))
 </script>
 
 <template>
   <svg class="sc" :width="w" :height="h" :viewBox="`0 0 ${w} ${h}`" aria-hidden="true">
     <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sky1)" /><stop offset="1" stop-color="var(--sky2)" /></linearGradient>
-      <path id="cl" d="M0 40 C-6 20 20 10 34 22 C42 0 78 0 86 24 C108 18 124 40 106 52 L12 52 C2 50 -2 46 0 40Z" />
-      <g id="tr"><rect x="-4" y="30" width="8" height="48" rx="4" class="trunk" /><circle cx="0" cy="18" r="34" class="crown" /><circle cx="-26" cy="34" r="22" class="crown" /><circle cx="26" cy="34" r="22" class="crown" /><circle cx="-8" cy="6" r="14" class="crown2" /></g>
-      <path id="pt" d="M0 0 C-7 -8 -6 -20 0 -26 C6 -20 7 -8 0 0Z" />
+      <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--g1)" /><stop offset="1" stop-color="var(--g2)" /></linearGradient>
+      <!-- лиственное дерево: ствол, три шапки и листики поверх -->
+      <g id="tr">
+        <ellipse cx="0" cy="84" rx="40" ry="9" class="shade" />
+        <rect x="-6" y="30" width="12" height="54" rx="5" class="trunk" />
+        <circle cx="-30" cy="34" r="26" class="c1" /><circle cx="30" cy="34" r="26" class="c1" /><circle cx="0" cy="14" r="36" class="c2" />
+        <circle cx="-14" cy="2" r="18" class="c3" /><circle cx="18" cy="22" r="14" class="c3" />
+        <path v-for="(l, i) in [[-24,20,-30],[8,-4,20],[26,30,50],[-4,36,-60],[-34,40,-10],[14,10,-40]]" :key="i" :transform="`translate(${l[0]} ${l[1]}) rotate(${l[2]})`" d="M0 0 C-6 -6 -6 -14 0 -18 C6 -14 6 -6 0 0Z" class="lf" />
+      </g>
+      <!-- ёлка -->
+      <g id="pn">
+        <ellipse cx="0" cy="90" rx="34" ry="8" class="shade" />
+        <rect x="-5" y="66" width="10" height="24" rx="3" class="trunk" />
+        <path d="M0 -34 L28 8 H-28Z" class="c2" /><path d="M0 -14 L34 34 H-34Z" class="c1" /><path d="M0 8 L40 66 H-40Z" class="c2" />
+      </g>
+      <path id="l0" d="M0 0 C-7 -6 -7 -16 0 -22 C7 -16 7 -6 0 0Z" />
     </defs>
-    <rect :width="w" :height="h" fill="url(#sky)" />
+    <rect :width="w" :height="h" fill="url(#grass)" />
+    <circle v-for="(s, i) in spots" :key="'s' + i" :cx="s.x" :cy="s.y" :r="s.r" :class="'spot spot' + s.k" />
     <path v-for="(d, i) in hills" :key="'h' + i" :d="d" :class="'hill hill' + i" />
-    <path :d="river" class="river-bed" />
+    <path :d="river" class="river-bank" />
     <path :d="river" class="river" />
     <path :d="river" class="river-flow" />
-    <use v-for="(c, i) in clouds" :key="'c' + i" href="#cl" class="cloud" :transform="`translate(${c.x} ${c.y}) scale(${c.s * 1.6})`" />
-    <use v-for="(t, i) in trees" :key="'t' + i" href="#tr" :transform="`translate(${t.x} ${t.y}) scale(${t.s * 1.4})`" />
-    <use v-for="(p, i) in petals" :key="'p' + i" href="#pt" class="pet" :transform="`translate(${p.x} ${p.y}) rotate(${p.a}) scale(${p.r / 16})`" />
+    <use v-for="(l, i) in leaves" :key="'l' + i" href="#l0" :class="'leaf leaf' + l.t" :transform="`translate(${l.x} ${l.y}) rotate(${l.a}) scale(${l.s})`" />
+    <use v-for="(t, i) in trees" :key="'t' + i" :href="t.pine ? '#pn' : '#tr'" :class="'tone' + t.tone" :transform="`translate(${t.x} ${t.y}) scale(${t.s * 1.4})`" />
   </svg>
 </template>
 
 <style scoped>
-.sc { display: block; --sky1: #e6defb; --sky2: #fff0f8; }
-html[data-theme='dark'] .sc { --sky1: #1a1226; --sky2: #2a1a33; }
-.hill0 { fill: #f7d9ec; } .hill1 { fill: #f1c7e3; } .hill2 { fill: #ebb5d9; }
-html[data-theme='dark'] .hill0 { fill: #3a2340; } html[data-theme='dark'] .hill1 { fill: #432848; } html[data-theme='dark'] .hill2 { fill: #4d2d50; }
-.river-bed { fill: none; stroke: #ffffffb0; stroke-width: 74; stroke-linecap: round; }
-.river { fill: none; stroke: #bcd8ff; stroke-width: 56; stroke-linecap: round; }
-html[data-theme='dark'] .river-bed { stroke: #ffffff18; } html[data-theme='dark'] .river { stroke: #3b4a8a; }
-.river-flow { fill: none; stroke: #fff; stroke-width: 3; stroke-dasharray: 4 30; stroke-linecap: round; opacity: .7; animation: flow 4s linear infinite; }
+.sc { display: block; --g1: #bfe3b0; --g2: #9fd18f; }
+html[data-theme='dark'] .sc { --g1: #1d3a27; --g2: #162e1f; }
+.spot0 { fill: #d3efc4; opacity: .3; } .spot1 { fill: #a9d899; opacity: .3; } .spot2 { fill: #c6e8a8; opacity: .25; }
+html[data-theme='dark'] .spot0 { fill: #2c5237; } html[data-theme='dark'] .spot1 { fill: #254a2f; } html[data-theme='dark'] .spot2 { fill: #2f5a35; }
+.hill0 { fill: #8fc77d; } .hill1 { fill: #7bb869; } .hill2 { fill: #66a655; }
+html[data-theme='dark'] .hill0 { fill: #1f4a2c; } html[data-theme='dark'] .hill1 { fill: #1a4026; } html[data-theme='dark'] .hill2 { fill: #153620; }
+.river-bank { fill: none; stroke: #e9dcb4; stroke-width: 74; stroke-linecap: round; }
+.river { fill: none; stroke: #4aa3f0; stroke-width: 56; stroke-linecap: round; }
+html[data-theme='dark'] .river-bank { stroke: #4a5a3c; } html[data-theme='dark'] .river { stroke: #2b5fb0; }
+.river-flow { fill: none; stroke: #fff; stroke-width: 3; stroke-dasharray: 4 30; stroke-linecap: round; opacity: .75; animation: flow 4s linear infinite; }
 @keyframes flow { to { stroke-dashoffset: -68; } }
-.cloud { fill: #fff; opacity: .75; }
-html[data-theme='dark'] .cloud { fill: #ffffff14; }
-.trunk { fill: #b98a9c; } .crown { fill: #ffc3df; } .crown2 { fill: #ffd9ea; }
-html[data-theme='dark'] .trunk { fill: #6c4a5c; } html[data-theme='dark'] .crown { fill: #7a3e66; } html[data-theme='dark'] .crown2 { fill: #8c4a76; }
-.pet { fill: #ff9fcb; opacity: .5; }
+.shade { fill: #00000022; }
+.trunk { fill: #8a5a3b; }
+html[data-theme='dark'] .trunk { fill: #5a3d28; }
+.c1 { fill: #4f9a4a; } .c2 { fill: #5fb35a; } .c3 { fill: #7ccb6b; }
+.tone1 .c1 { fill: #3f8a52; } .tone1 .c2 { fill: #4da363; } .tone1 .c3 { fill: #6dbf7c; }
+.tone2 .c1 { fill: #5f9a3c; } .tone2 .c2 { fill: #74b34c; } .tone2 .c3 { fill: #94cf63; }
+html[data-theme='dark'] .c1 { fill: #1f5a34; } html[data-theme='dark'] .c2 { fill: #26703f; } html[data-theme='dark'] .c3 { fill: #2f8a4b; }
+.lf { fill: #a6e08f; opacity: .85; }
+html[data-theme='dark'] .lf { fill: #3f9a5c; }
+.leaf0 { fill: #78bd68; } .leaf1 { fill: #5aa65a; } .leaf2 { fill: #92cf72; } .leaf3 { fill: #6fb36b; }
+.leaf { opacity: .6; }
+html[data-theme='dark'] .leaf0, html[data-theme='dark'] .leaf2 { fill: #2c6c40; } html[data-theme='dark'] .leaf1, html[data-theme='dark'] .leaf3 { fill: #245a36; }
 @media (prefers-reduced-motion: reduce) { .river-flow { animation: none; } }
 </style>

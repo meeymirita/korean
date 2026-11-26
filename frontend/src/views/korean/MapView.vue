@@ -50,7 +50,7 @@ function build() {
   // нарисованный фон под всем графом, в тех же координатах
   const xs = graph.nodes.map(n => built.pos[n.id]!.x)
   const ys = graph.nodes.map(n => built.pos[n.id]!.y)
-  const M = 360
+  const M = 420
   const x0 = Math.min(...xs) - M
   const y0 = Math.min(...ys) - M
   const w = Math.max(...xs) - Math.min(...xs) + M * 2
@@ -135,10 +135,10 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.map { --petal: #ffb3da; --petal-line: #e0559f; --core: #fff6c8; --gold: #f3b93d; --bud: #cfc8ee; --bud-line: #9d97c7; --arrow: #f08ac0; --arrow2: #8f77d9; --grid: #efdcf5; --bg: #fdf6ff; }
-html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: #ff4f9a; --gold: #ffcf6e; --bud: #5a3a4c; --bud-line: #a77a93; --arrow: #ff8cc2; --arrow2: #b9a0ff; --grid: #3a2a38; --bg: #1d1520; }
+.map { --petal: #fff1f7; --petal-line: #e0559f; --core: #ffc83d; --gold: #f3b93d; --bud: #e3f4cf; --bud-line: #5f9a46; --arrow: #ff8fc4; --arrow2: #f1e8ff; --grid: #a9d899; --bg: #bfe3b0; --lbl-bg: rgba(255, 255, 255, .8); --cap-bg: rgba(255, 255, 255, .82); --cap-ink: #4a3a7a; }
+html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: #ffc83d; --gold: #ffcf6e; --bud: #355b3a; --bud-line: #8ccf86; --arrow: #ff8cc2; --arrow2: #cfc0ff; --grid: #2c5237; --bg: #1d3a27; --lbl-bg: rgba(18, 36, 24, .78); --cap-bg: rgba(18, 36, 24, .8); --cap-ink: #e9defa; }
 .intro { margin: 8px 0 14px; max-width: 860px; color: var(--muted); font-size: 14px; line-height: 1.55; }
-.k1 { color: var(--arrow); } .k2 { color: var(--arrow2); }
+.k1 { color: #e0559f; } .k2 { color: #8f77d9; }
 .board { position: relative; height: calc(100vh - 230px); min-height: 480px; border: 1px solid var(--line); border-radius: 26px; overflow: hidden; background: var(--bg); }
 .wait { display: grid; place-items: center; height: 100%; color: var(--muted); }
 .tip { position: absolute; z-index: 30; width: 270px; padding: 12px 16px; border: 1px solid var(--petal-line); border-radius: 18px; background: var(--surface); box-shadow: 0 14px 30px rgba(100, 87, 170, .3); transform: translate(-50%, calc(-100% - 12px)); line-height: 1.4; pointer-events: none; }
@@ -149,8 +149,8 @@ html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: 
 .fall { position: absolute; top: -20px; z-index: 5; pointer-events: none; border-radius: 80% 0 80% 0; background: var(--petal); opacity: .7; animation: fall linear infinite; }
 @keyframes fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: .7; } 100% { transform: translate(80px, 640px) rotate(420deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fall { display: none; } }
-.cap { width: 180px; text-align: center; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--arrow2); opacity: .85; pointer-events: none; }
-.cap.gold { padding: 2px 0; border-radius: 99px; background: rgba(243, 185, 61, .28); color: var(--ink); box-shadow: 0 0 0 2px var(--gold); opacity: 1; }
+.cap { width: 180px; padding: 3px 0; border-radius: 99px; background: var(--cap-bg); text-align: center; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--cap-ink); pointer-events: none; }
+.cap.gold { background: rgba(243, 185, 61, .55); color: #3d2a00; box-shadow: 0 0 0 2px var(--gold); }
 :deep(.vue-flow__node-scenery) { pointer-events: none !important; }
 :deep(.vue-flow__node), :deep(.vue-flow__edge) { transition: opacity .25s; }
 :deep(.vue-flow__node-flower:hover) { z-index: 1000 !important; }
