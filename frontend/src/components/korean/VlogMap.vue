@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { DISTRICTS, DISTRICT_BY_ID, PLACES, districtStat, mapIndex, type PlaceVlog } from '@/data/korean/vlog-map'
 import { ICON_DEFS } from '@/data/korean/vlog-map-art'
-import { PILL_OF, SCENE_H, SCENE_W, pinsFor } from '@/data/korean/vlog-map-scene'
+import { PLACE_AT, SCENE_H, SCENE_W, districtCenter } from '@/data/korean/vlog-map-scene'
 import VlogMapScene from './VlogMapScene.vue'
 import { STUDY_VLOGS } from '@/data/korean/vlog-study'
 import { useRoute } from 'vue-router'
@@ -150,9 +150,7 @@ async function focusOn(id: string) {
   if (!pz) return
   const p = PLACES.find(x => x.id === id)
   const d = DISTRICTS.find(x => `d:${x.id}` === id)
-  const pill = d ? PILL_OF.get(d.id) : p ? PILL_OF.get(p.district) : undefined
-  const pin = p && p.district !== 'sea' ? pinsFor(p.district, PLACES.filter(x => x.district === p.district)).find(x => x.place.id === p.id) : undefined
-  const at = pin ?? pill
+  const at = p ? PLACE_AT[p.id] : d ? districtCenter(d.id, PLACES) : undefined
   const cx = at ? at.x : W / 2
   const cy = at ? at.y : H / 2
   const sc = Math.max(fitScale() * 1.9, p ? 0.9 : 0.75)
@@ -251,7 +249,7 @@ onBeforeUnmount(() => {
 
       <div ref="view" class="vm-view" :class="{ 'has-hover': !!activeDistrict, panning }" @click="closePanel">
         <div ref="stage" class="vm-stage"             :style="{ width: `${W}px`, height: `${H}px` }">
-          <VlogMapScene :active="activeDistrict" :hover-id="hoverId" :sel-id="selId" :count="countOf" :faded="faded" @hover="hover" @move="moveTip" @leave="leave" @select="select" />
+          <VlogMapScene :hover-id="hoverId" :sel-id="selId" :count="countOf" :faded="faded" @hover="hover" @move="moveTip" @leave="leave" @select="select" />
         </div>
 
         <div v-if="tipOn && (place || tipDistrict)" ref="tipEl" class="vm-tip" role="tooltip">
