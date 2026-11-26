@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import type { NextFunction, Request, Response } from 'express'
-import { logWarn } from './log'
+import { logWarn } from './log.js'
 
 const BUCKETS = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5]
 type Aggregate = { count: number; sum: number; buckets: number[] }
