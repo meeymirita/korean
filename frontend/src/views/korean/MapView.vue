@@ -1,178 +1,148 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
-import { useGrammarModal } from '@/composables/useGrammarModal'
+import { nextTick, onMounted, ref, shallowRef } from 'vue'
+import { VueFlow, useVueFlow, type Edge, type Node } from '@vue-flow/core'
+import { Background } from '@vue-flow/background'
+import { Controls } from '@vue-flow/controls'
+import { MiniMap } from '@vue-flow/minimap'
+import '@vue-flow/core/dist/style.css'
+import '@vue-flow/core/dist/theme-default.css'
+import '@vue-flow/controls/dist/style.css'
+import '@vue-flow/minimap/dist/style.css'
+import FlowerNode from '@/components/korean/mapgraph/FlowerNode.vue'
+import PetalEdge from '@/components/korean/mapgraph/PetalEdge.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
-import { G, type Gram } from '@/data/korean/grammar'
+import { useGrammarModal } from '@/composables/useGrammarModal'
 import { UNIT_PASS } from '@/data/korean/exam-units'
+import { archipelago, buildGraph, type GNode } from '@/data/korean/map-graph'
 import { useExamStore } from '@/stores/exam'
 
 /**
- * Карта обучения: ветка сакуры по книгам «서울대 한국어+ 1A» и «1B» (`bk` у карточек в `grammar.ts`).
- * Пройденная тема (`st: 'ok'`) цветёт, первая непройденная по порядку книги светится («дальше»), остальные бутоны.
- * Данные только из карточек: отдельной отметки нет, пройдено то, что отметил владелец.
+ * Карта обучения графом: все темы книг «서울대 한국어+ 1A» и «1B» (`bk` у карточек в `grammar.ts`) на одной странице.
+ * Единицы книги островками, острова идут змейкой от первой темы до последней. Пройденная тема (`st: 'ok'`) цветёт,
+ * первая непройденная по порядку книги светится («ты здесь»), остальные бутоны. Розовая стрелка = порядок книги,
+ * фиолетовая пунктирная = «опирается на» (`DEPS` из `lab.ts`). Данные только из карточек: отдельной отметки нет.
  */
-const BOOKS = [
-  { id: '1A', title: 'Книга 1A', sub: 'единицы 1–8', is: (g: Gram) => !!g.bk && !g.bk.startsWith('1B ') },
-  { id: '1B', title: 'Книга 1B', sub: 'единицы 9–16', is: (g: Gram) => !!g.bk && g.bk.startsWith('1B ') },
-] as const
-
-/** «6-2 ③» или «1B 9-1 ②» → число для сортировки (единица, урок, пункт). */
-const key = (bk: string) => {
-  const m = /(\d+)-(\d+) ([①②③④])/.exec(bk)
-  return m ? Number(m[1]) * 100 + Number(m[2]) * 10 + '①②③④'.indexOf(m[3]!) + 1 : 0
-}
-const unitOf = (bk: string) => Number(/(\d+)-\d+/.exec(bk)?.[1] ?? 0)
-
-interface Node { g: Gram; state: 'ok' | 'next' | 'ahead'; x: number; y: number; up: boolean; unit: number; first: boolean }
-const STEP = 96
-const H = 330
-const books = computed(() =>
-  BOOKS.map(b => {
-    const cards = G.filter(b.is).sort((a, c) => key(a.bk!) - key(c.bk!))
-    const nextIdx = cards.findIndex(g => g.st !== 'ok')
-    const nodes: Node[] = cards.map((g, i) => ({
-      g,
-      state: g.st === 'ok' ? 'ok' : i === nextIdx ? 'next' : 'ahead',
-      x: 60 + i * STEP,
-      y: H / 2 + Math.sin(i * 0.9) * 26,
-      up: i % 2 === 0,
-      unit: unitOf(g.bk!),
-      first: i === 0 || unitOf(g.bk!) !== unitOf(cards[i - 1]!.bk!),
-    }))
-    const w = 60 * 2 + Math.max(0, nodes.length - 1) * STEP
-    // ветка плавной линией через все цветки
-    let d = nodes.length ? `M0 ${nodes[0]!.y}` : ''
-    nodes.forEach((n, i) => {
-      const p = i ? nodes[i - 1]! : { x: 0, y: n.y }
-      const mx = (p.x + n.x) / 2
-      d += ` C${mx} ${p.y} ${mx} ${n.y} ${n.x} ${n.y}`
-    })
-    if (nodes.length) d += ` L${w} ${nodes[nodes.length - 1]!.y}`
-    return { ...b, nodes, w, d, done: nodes.filter(n => n.state === 'ok').length }
-  }),
-)
-/** Название на ярлыке: без пояснения после двоеточия («에 (когда): в пятницу…» → «에 (когда)»). */
-const short = (ko: string) => ko.split(':')[0]!.trim()
+const graph = buildGraph()
 const { open } = useGrammarModal()
-/** Цветок и ярлык открывают окно карточки прямо на карте: после закрытия остаёмся здесь (окно общее для сайта, как в поиске и заданиях). */
-const go = (n: Node) => open(n.g.id, true)
-/** Лепестки, которые падают над веткой: только украшение, у каждого своё место, размер и задержка. */
-const FALL = Array.from({ length: 9 }, (_, i) => ({ left: 6 + i * 11, delay: -i * 1.7, dur: 9 + (i % 4) * 2, size: 10 + (i % 3) * 4 }))
-/** Единица сдана на экзамене единицы (80% и больше): над подписью «Единица N» золотое кольцо. */
 const exams = useExamStore()
+const { fitView, onNodeClick, onNodeMouseEnter, onNodeMouseLeave, updateNode, findEdge } = useVueFlow()
+onNodeClick(({ node }) => { if (node.type === 'flower') open(node.id, true) })
+
+/** Единица сдана на экзамене единицы (80% и больше): подпись острова золотая. */
 const unitPassed = (b: string, unit: number) => (exams.units[`${b}-${unit}`]?.best ?? 0) >= UNIT_PASS * 100
-const PETAL = 'M0 0 C-7 -8 -6 -20 0 -26 C6 -20 7 -8 0 0Z'
-const scrollers = ref<HTMLElement[]>([])
-/** Лента встаёт так, чтобы «дальше» было в поле зрения. */
+const BEND = { seq: 0.15, dep: 0.25 }
+const done = (id: string) => graph.nodes.find(n => n.id === id)?.state === 'ok'
+
+const nodes = shallowRef<Node[]>([])
+const edges = shallowRef<Edge[]>([])
+function build() {
+  const built = archipelago(graph)
+  const list: Node[] = graph.nodes.map((n, i) => ({
+    id: n.id,
+    type: 'flower',
+    position: { x: built.pos[n.id]!.x - 34, y: built.pos[n.id]!.y - 34 },
+    data: { n, delay: 0.2 + i * 0.03 },
+  }))
+  built.labels.forEach((t, i) =>
+    list.push({ id: 'cap' + i, type: 'caption', position: { x: t.x - 90, y: t.y }, data: { text: t.text, gold: unitPassed(t.book, t.unit) }, draggable: false, selectable: false, focusable: false }),
+  )
+  nodes.value = list
+  edges.value = graph.edges.map((e, i) => ({
+    id: e.id,
+    source: e.from,
+    target: e.to,
+    type: 'petal',
+    data: { kind: e.kind, bend: BEND[e.kind] * (e.kind === 'dep' && i % 2 ? -1 : 1), done: done(e.from) },
+  }))
+}
+build()
+
+/** Наведение: связи цветка загораются, остальные гаснут, рядом короткое описание темы. */
+function light(id: string | null) {
+  const near = new Set<string>(id ? [id] : [])
+  for (const e of edges.value) {
+    const hit = !!id && (e.source === id || e.target === id)
+    if (hit) { near.add(e.source); near.add(e.target) }
+    const ge = findEdge(e.id)
+    if (ge) ge.class = !id ? '' : hit ? 'hl' : 'dim'
+  }
+  for (const n of nodes.value) if (n.type === 'flower') updateNode(n.id, { class: !id || near.has(n.id) ? '' : 'dim' })
+}
+const board = ref<HTMLElement | null>(null)
+const tip = ref<{ n: GNode; x: number; y: number } | null>(null)
+onNodeMouseEnter(({ node, event }) => {
+  if (node.type !== 'flower') return
+  light(node.id)
+  const r = board.value?.getBoundingClientRect()
+  const el = (event.target as HTMLElement).closest('.vue-flow__node')?.getBoundingClientRect()
+  if (r && el) tip.value = { n: node.data.n as GNode, x: el.left + el.width / 2 - r.left, y: el.top - r.top }
+})
+onNodeMouseLeave(() => { light(null); tip.value = null })
+const stateText = (s: GNode['state']) => (s === 'ok' ? 'пройдено ✓' : s === 'next' ? 'следующая' : 'впереди')
+
+/** Лепестки, которые падают над доской: только украшение. */
+const FALL = Array.from({ length: 12 }, (_, i) => ({ left: 4 + i * 8, delay: -i * 1.9, dur: 10 + (i % 4) * 2, size: 10 + (i % 3) * 5 }))
+const doneCount = graph.nodes.filter(n => n.state === 'ok').length
 onMounted(async () => {
+  void exams.loadUnits().then(build)
   await nextTick()
-  void exams.loadUnits()
-  books.value.forEach((b, i) => {
-    const el = scrollers.value[i]
-    const n = b.nodes.find(x => x.state === 'next')
-    if (el && n) el.scrollLeft = Math.max(0, n.x - el.clientWidth / 2)
-  })
+  setTimeout(() => void fitView({ padding: 0.12, duration: 500 }), 80)
 })
 </script>
 
 <template>
   <div class="wrap map">
-    <SectionHead id="map" :big="books.reduce((a, b) => a + b.done, 0)" />
-    <p class="intro">Ветка сакуры по учебнику: пройденные темы расцвели, золотая рамка у следующей, дальше бутоны. Нажми на цветок, чтобы открыть карточку. Что пройдено, отмечаешь ты: карта берёт это из карточек.</p>
-    <section v-for="(b, bi) in books" :key="b.id" class="book">
-      <i v-for="(f, fi) in FALL" :key="'f' + fi" class="fall" aria-hidden="true" :style="{ left: f.left + '%', width: f.size + 'px', height: f.size + 'px', animationDelay: f.delay + 's', animationDuration: f.dur + 's' }" />
-      <header class="bh">
-        <h2>{{ b.title }} <small>{{ b.sub }}</small></h2>
-        <span class="cnt">{{ b.done }} из {{ b.nodes.length }}</span>
-      </header>
-      <div :ref="el => (scrollers[bi] = el as HTMLElement)" class="scroll" tabindex="0" :aria-label="`Ветка книги ${b.id}`">
-        <div class="branch" :style="{ width: b.w + 'px', height: H + 'px' }">
-          <svg :width="b.w" :height="H" :viewBox="`0 0 ${b.w} ${H}`" aria-hidden="true">
-            <path class="twig-base" :d="b.d" />
-            <path class="twig" :d="b.d" pathLength="1" />
-            <g
-              v-for="(n, i) in b.nodes"
-              :key="n.g.id"
-              :transform="`translate(${n.x} ${n.y})`"
-              :class="['fl', n.state]"
-              role="link"
-              tabindex="0"
-              :aria-label="`${n.g.ko}: открыть карточку`"
-              @click="go(n)"
-              @keydown.enter="go(n)"
-            >
-              <circle class="hit" r="32" />
-              <circle v-if="n.state === 'next'" class="ring" r="34" />
-              <g class="bloom" :style="{ animationDelay: 0.35 + i * 0.07 + 's' }">
-                <path v-for="k in 5" :key="k" class="petal" :d="PETAL" :transform="`rotate(${(k - 1) * 72}) scale(${n.state === 'ahead' ? 0.62 : n.state === 'next' ? 1.15 : 1})`" />
-                <circle class="core" :r="n.state === 'ahead' ? 3.5 : 5.5" />
-              </g>
-            </g>
-          </svg>
-          <button
-            v-for="n in b.nodes"
-            :key="n.g.id"
-            type="button"
-            class="tag"
-            :class="[n.state, { up: n.up }]"
-            :style="{ left: n.x - 44 + 'px', top: (n.up ? n.y - 118 : n.y + 42) + 'px' }"
-            :title="`${n.g.ko}: ${n.g.ru}`"
-            @click="go(n)"
-          >
-            <b class="ko">{{ short(n.g.ko) }}</b>
-            <small>{{ n.g.bk!.replace(/^1B /, '') }}</small>
-          </button>
-          <span v-for="n in b.nodes.filter(x => x.first)" :key="'u' + n.unit" class="unit" :class="{ gold: unitPassed(b.id, n.unit) }" :style="{ left: n.x - 44 + 'px' }" :title="unitPassed(b.id, n.unit) ? 'Экзамен единицы сдан' : undefined">Единица {{ n.unit }}</span>
-        </div>
+    <SectionHead id="map" :big="doneCount" />
+    <p class="intro">Единицы книги островками, ветка идёт от первой темы до последней. Пройденные темы расцвели, над следующей «ты здесь», дальше бутоны. <b class="k1">━▶</b> порядок книги, <b class="k2">┅▶</b> «опирается на». Наведи на цветок: покажется описание и загорятся его связи; нажми, чтобы открыть карточку. Что пройдено, отмечаешь ты: карта берёт это из карточек.</p>
+    <div ref="board" class="board">
+      <i v-for="(f, fi) in FALL" :key="fi" class="fall" aria-hidden="true" :style="{ left: f.left + '%', width: f.size + 'px', height: f.size + 'px', animationDelay: f.delay + 's', animationDuration: f.dur + 's' }" />
+      <div v-if="tip" class="tip" :style="{ left: Math.min(Math.max(tip.x, 140), (board?.clientWidth ?? 800) - 140) + 'px', top: Math.max(tip.y, 140) + 'px' }">
+        <b>{{ tip.n.g.ko }}</b>
+        <span class="ru">{{ tip.n.g.ru }}</span>
+        <span class="d">{{ tip.n.g.d }}</span>
+        <small>Книга {{ tip.n.book }} · {{ tip.n.g.bk!.replace(/^1B /, '') }} · {{ stateText(tip.n.state) }}</small>
       </div>
-    </section>
+      <ClientOnly>
+        <VueFlow v-model:nodes="nodes" v-model:edges="edges" :min-zoom="0.08" :max-zoom="1.6" :nodes-connectable="false" :elements-selectable="false" :zoom-on-double-click="false">
+          <template #node-flower="p"><FlowerNode :data="p.data" /></template>
+          <template #node-caption="p"><div class="cap" :class="{ gold: p.data.gold }" :title="p.data.gold ? 'Экзамен единицы сдан' : undefined">{{ p.data.text }}</div></template>
+          <template #edge-petal="p"><PetalEdge v-bind="p" /></template>
+          <Background :gap="26" :size="1.6" pattern-color="var(--grid)" />
+          <Controls position="bottom-left" :show-interactive="false" />
+          <MiniMap position="bottom-right" pannable zoomable :node-color="() => 'var(--petal-line)'" mask-color="rgba(214,77,169,.08)" />
+        </VueFlow>
+        <template #fallback><div class="wait">Рисую ветку…</div></template>
+      </ClientOnly>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.map { --petal: #ffb3da; --petal-line: #e0559f; --core: #fff6c8; --vine: #e0559f; --gold: #f3b93d; --bud: #cfc8ee; --bud-line: #9d97c7; }
-html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: #ff4f9a; --vine: #ff9cc6; --gold: #ffcf6e; --bud: #5a3a4c; --bud-line: #a77a93; }
-.intro { margin: 8px 0 18px; max-width: 760px; color: var(--muted); font-size: 14px; line-height: 1.55; }
-.book { position: relative; overflow: hidden; margin: 0 0 22px; padding: 14px 16px 6px; border: 1px solid var(--line); border-radius: 26px; background: var(--surface); }
-.bh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 6px 6px; }
-.bh h2 { margin: 0; font-size: 20px; }
-.bh h2 small { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
-.cnt { padding: 3px 12px; border-radius: 99px; background: rgba(214, 77, 169, .12); color: var(--pink, #d64da9); font-size: 13px; font-weight: 700; }
-.bh, .scroll { position: relative; z-index: 1; }
-.scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 10px; scrollbar-width: thin; border-radius: 18px; }
-.branch { position: relative; }
-.twig-base { fill: none; stroke: var(--line); stroke-width: 3; stroke-dasharray: 3 9; stroke-linecap: round; }
-.twig { fill: none; stroke: var(--vine); stroke-width: 5; stroke-linecap: round; opacity: .85; }
-.petal { fill: var(--petal); stroke: var(--petal-line); stroke-width: 1.5; }
-.core { fill: var(--core); }
-.fl.ahead .petal { fill: var(--bud); stroke: var(--bud-line); stroke-width: 1.2; }
-.fl.ahead .core { fill: var(--bud-line); }
-.ring { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 4 6; }
-.twig { stroke-dasharray: 1; stroke-dashoffset: 1; animation: grow 1.8s cubic-bezier(.3, .6, .2, 1) .1s forwards; }
-.fl { cursor: pointer; outline: none; }
-.hit { fill: transparent; }
-.bloom { transform-box: fill-box; transform-origin: center; transform: scale(0) rotate(-60deg); animation: bloom .7s cubic-bezier(.2, 1.4, .4, 1) forwards; }
-.fl:hover .bloom, .fl:focus-visible .bloom { animation: none; transform: scale(1.18) rotate(18deg); transition: transform .35s cubic-bezier(.2, 1.4, .4, 1); }
-.fl.next .ring { transform-box: fill-box; transform-origin: center; animation: spin 14s linear infinite, pulse 2.4s ease-in-out infinite; }
-.fl.next .core { animation: glow 2.4s ease-in-out infinite; }
-.fall { position: absolute; top: -20px; z-index: 0; pointer-events: none; border-radius: 80% 0 80% 0; background: var(--petal); opacity: .75; animation: fall linear infinite; }
-@keyframes grow { to { stroke-dashoffset: 0; } }
-@keyframes bloom { to { transform: scale(1) rotate(0); } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 50% { stroke-width: 5; opacity: .6; } }
-@keyframes glow { 50% { fill: var(--gold); } }
-@keyframes fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: .75; } 100% { transform: translate(60px, 380px) rotate(420deg); opacity: 0; } }
-.tag { animation: rise .6s ease-out backwards; }
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
-@media (prefers-reduced-motion: reduce) { .twig, .bloom, .tag, .fl.next .ring, .fl.next .core { animation: none; } .twig { stroke-dashoffset: 0; } .bloom { transform: none; } .fall { display: none; } }
-.tag { position: absolute; width: 88px; padding: 6px 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: inherit; font: inherit; text-align: center; cursor: pointer; line-height: 1.2; transition: transform .18s, box-shadow .18s; }
-.tag:hover, .tag:focus-visible { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(100, 87, 170, .2); }
-.tag b { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; overflow-wrap: anywhere; }
-.tag small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--muted); }
-.tag.ok { border-color: var(--petal-line); }
-.tag.next { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(243, 185, 61, .3); }
-.tag.ahead { opacity: .62; }
-.unit.gold { bottom: 2px; padding: 2px 0; border-radius: 99px; background: rgba(243, 185, 61, .28); color: var(--ink); font-weight: 700; box-shadow: 0 0 0 2px var(--gold); }
-.unit { position: absolute; bottom: 4px; width: 88px; text-align: center; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-@media (max-width: 640px) { .book { padding: 12px 8px 4px; border-radius: 20px; } }
+.map { --petal: #ffb3da; --petal-line: #e0559f; --core: #fff6c8; --gold: #f3b93d; --bud: #cfc8ee; --bud-line: #9d97c7; --arrow: #f08ac0; --arrow2: #8f77d9; --grid: #efdcf5; --bg: #fdf6ff; }
+html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: #ff4f9a; --gold: #ffcf6e; --bud: #5a3a4c; --bud-line: #a77a93; --arrow: #ff8cc2; --arrow2: #b9a0ff; --grid: #3a2a38; --bg: #1d1520; }
+.intro { margin: 8px 0 14px; max-width: 860px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.k1 { color: var(--arrow); } .k2 { color: var(--arrow2); }
+.board { position: relative; height: calc(100vh - 230px); min-height: 480px; border: 1px solid var(--line); border-radius: 26px; overflow: hidden; background: var(--bg); }
+.wait { display: grid; place-items: center; height: 100%; color: var(--muted); }
+.tip { position: absolute; z-index: 30; width: 270px; padding: 12px 16px; border: 1px solid var(--petal-line); border-radius: 18px; background: var(--surface); box-shadow: 0 14px 30px rgba(100, 87, 170, .3); transform: translate(-50%, calc(-100% - 12px)); line-height: 1.4; pointer-events: none; }
+.tip b { display: block; font-size: 17px; }
+.tip .ru { display: block; margin-top: 2px; font-size: 14px; }
+.tip .d { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+.tip small { display: block; margin-top: 8px; font-size: 11.5px; font-weight: 700; color: var(--petal-line); }
+.fall { position: absolute; top: -20px; z-index: 5; pointer-events: none; border-radius: 80% 0 80% 0; background: var(--petal); opacity: .7; animation: fall linear infinite; }
+@keyframes fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: .7; } 100% { transform: translate(80px, 640px) rotate(420deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fall { display: none; } }
+.cap { width: 180px; text-align: center; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--arrow2); opacity: .85; pointer-events: none; }
+.cap.gold { padding: 2px 0; border-radius: 99px; background: rgba(243, 185, 61, .28); color: var(--ink); box-shadow: 0 0 0 2px var(--gold); opacity: 1; }
+:deep(.vue-flow__node), :deep(.vue-flow__edge) { transition: opacity .25s; }
+:deep(.vue-flow__node:hover) { z-index: 1000 !important; }
+:deep(.vue-flow__node.dim) { opacity: .18; }
+:deep(.vue-flow__edge.dim) { opacity: .06; }
+:deep(.vue-flow__edge.hl .line) { opacity: 1 !important; stroke-width: 5 !important; }
+:deep(.vue-flow__edge.hl .head) { opacity: 1 !important; }
+:deep(.vue-flow__node-flower) { cursor: pointer; }
+:deep(.vue-flow__edge-path) { stroke: none; }
+:deep(.vue-flow__controls) { border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(100, 87, 170, .2); }
+:deep(.vue-flow__minimap) { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+@media (max-width: 640px) { .board { border-radius: 20px; height: calc(100vh - 260px); } }
 </style>

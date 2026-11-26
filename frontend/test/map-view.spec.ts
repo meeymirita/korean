@@ -1,37 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
-import MapView from '@/views/korean/MapView.vue'
 import { G } from '@/data/korean/grammar'
+import { DEPS } from '@/data/korean/lab'
+import { archipelago, buildGraph } from '@/data/korean/map-graph'
 
-// «Карта обучения»: по цветку на каждую карточку из книг 1A и 1B, пройдено только то, что отмечено в данных.
-describe('карта обучения', () => {
-  const A = G.filter(g => g.bk && !g.bk.startsWith('1B '))
-  const B = G.filter(g => g.bk?.startsWith('1B '))
-  it('в каждой книге по цветку на карточку; расцветшие = пройденные; одна «следующая» в каждой книге', async () => {
-    const w = await mountSuspended(MapView)
-    await flushPromises()
-    const books = w.findAll('section.book')
-    expect(books.length).toBe(2)
-    expect(books[0]!.findAll('.fl').length).toBe(A.length)
-    expect(books[1]!.findAll('.fl').length).toBe(B.length)
-    expect(books[0]!.findAll('.fl.ok').length).toBe(A.filter(g => g.st === 'ok').length)
-    expect(books[1]!.findAll('.fl.ok').length).toBe(B.filter(g => g.st === 'ok').length)
-    for (const b of books) expect(b.findAll('.fl.next').length).toBe(1)
-    expect(books[0]!.find('.cnt').text()).toBe(`${A.filter(g => g.st === 'ok').length} из ${A.length}`)
+// «Карта обучения»: узел на каждую карточку из книг 1A и 1B, пройдено только то, что отмечено в данных.
+describe('граф карты обучения', () => {
+  const cards = G.filter(g => g.bk)
+  const { nodes, edges } = buildGraph()
+  it('узел на каждую карточку; расцветшие = пройденные; одна «следующая» — первая непройденная по порядку книги', () => {
+    expect(nodes.length).toBe(cards.length)
+    expect(nodes.filter(n => n.state === 'ok').length).toBe(cards.filter(g => g.st === 'ok').length)
+    const next = nodes.filter(n => n.state === 'next')
+    expect(next.length).toBe(1)
+    expect(nodes.slice(0, nodes.indexOf(next[0]!)).every(n => n.state === 'ok')).toBe(true)
+    expect(nodes.filter(n => n.book === '1A').every((n, i, a) => !i || n.i > a[i - 1]!.i)).toBe(true)
   })
-  it('первая в ряду «следующая» — это первая непройденная по порядку книги; ярлыки ведут на карточки', async () => {
-    const w = await mountSuspended(MapView)
-    await flushPromises()
-    const tags = w.findAll('section.book')[0]!.findAll('button.tag')
-    const firstNotOk = tags.find(t => t.classes().includes('next'))!
-    const idx = tags.indexOf(firstNotOk)
-    expect(tags.slice(0, idx).every(t => t.classes().includes('ok'))).toBe(true)
-    expect(tags.slice(idx + 1).every(t => !t.classes().includes('next'))).toBe(true)
-    // нажатие открывает окно карточки на самой карте, адрес страницы не меняется
-    const { useGrammarModal } = await import('@/composables/useGrammarModal')
-    await firstNotOk.trigger('click')
-    expect(useGrammarModal().current.value).not.toBeNull()
-    expect(window.location.pathname).not.toContain('/korean/grammar')
+  it('стрелки: цепочка книги без разрывов и зависимости из DEPS без повторов', () => {
+    const seq = edges.filter(e => e.kind === 'seq')
+    expect(seq.length).toBe(nodes.length - 1)
+    const ids = new Set(nodes.map(n => n.id))
+    for (const [to, froms] of Object.entries(DEPS)) {
+      for (const f of froms) if (ids.has(to) && ids.has(f)) expect(edges.some(e => e.from === f && e.to === to)).toBe(true)
+    }
+    expect(new Set(edges.map(e => e.id)).size).toBe(edges.length)
+  })
+  it('раскладка: у каждого узла своё место, подпись на каждую единицу', () => {
+    const { pos, labels } = archipelago({ nodes, edges })
+    expect(new Set(nodes.map(n => `${Math.round(pos[n.id]!.x)}:${Math.round(pos[n.id]!.y)}`)).size).toBe(nodes.length)
+    expect(labels.length).toBe(new Set(nodes.map(n => n.book + n.unit)).size)
   })
 })

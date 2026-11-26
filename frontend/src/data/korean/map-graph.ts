@@ -4,13 +4,13 @@ import { DEPS } from './lab'
 /**
  * Граф «Карты обучения»: узлы = карточки грамматики с `bk` (место в книге 1A/1B),
  * стрелки `seq` = порядок книги, `dep` = «опирается на» (`DEPS` из `lab.ts`).
- * Пять раскладок (`LAYOUTS`) считают только координаты, сами узлы и стрелки одни и те же.
+ * Раскладка `archipelago` считает только координаты: единицы книги островками, острова идут змейкой.
  */
 export type NodeState = 'ok' | 'next' | 'ahead'
 export interface GNode { id: string; g: Gram; state: NodeState; unit: number; book: '1A' | '1B'; i: number }
 export interface GEdge { id: string; from: string; to: string; kind: 'seq' | 'dep' }
 export interface Pos { x: number; y: number }
-export interface Layout { pos: Record<string, Pos>; labels: { text: string; x: number; y: number; big?: boolean; r?: number }[] }
+export interface Layout { pos: Record<string, Pos>; labels: { text: string; x: number; y: number; book: string; unit: number }[] }
 
 const key = (bk: string) => {
   const m = /(\d+)-(\d+) ([①②③④])/.exec(bk)
@@ -53,52 +53,8 @@ type Graph = ReturnType<typeof buildGraph>
 const short = (ko: string) => ko.split(':')[0]!.trim()
 export { short }
 
-/** 1. «Ветка»: одна длинная извилистая лента змейкой, от первой карточки к последней. */
-function snake({ nodes }: Graph): Layout {
-  const perRow = 13
-  const dx = 150
-  const dy = 200
-  const pos: Layout['pos'] = {}
-  nodes.forEach((n, i) => {
-    const row = Math.floor(i / perRow)
-    const col = i % perRow
-    const c = row % 2 ? perRow - 1 - col : col
-    pos[n.id] = { x: c * dx, y: row * dy + Math.sin(i * 0.9) * 26 }
-  })
-  return { pos, labels: [] }
-}
-
-/** 2. «Слои»: колонки по глубине зависимостей, слева база, справа самые «высокие» темы. */
-function layers({ nodes, edges }: Graph): Layout {
-  const deps = edges.filter(e => e.kind === 'dep')
-  const linked = new Set(deps.flatMap(e => [e.from, e.to]))
-  const depth: Record<string, number> = {}
-  const dep = (id: string, seen: string[] = []): number => {
-    if (id in depth) return depth[id]!
-    if (seen.includes(id)) return 0
-    const ups = deps.filter(e => e.to === id).map(e => dep(e.from, [...seen, id]))
-    return (depth[id] = ups.length ? 1 + Math.max(...ups) : 0)
-  }
-  const cols: string[][] = []
-  const lone: string[] = []
-  nodes.forEach(n => {
-    if (!linked.has(n.id)) { lone.push(n.id); return }
-    const d = dep(n.id)
-    ;(cols[d] ??= []).push(n.id)
-  })
-  cols.push(lone)
-  const pos: Layout['pos'] = {}
-  const labels: Layout['labels'] = []
-  cols.forEach((col, ci) => {
-    if (!col) return
-    col.forEach((id, ri) => { pos[id] = { x: ci * 230, y: ri * 120 + (ci % 2) * 40 } })
-    labels.push({ text: ci === cols.length - 1 ? 'отдельные темы' : ci === 0 ? 'основа' : `уровень ${ci}`, x: ci * 230, y: -90, big: true })
-  })
-  return { pos, labels }
-}
-
-/** 6. «Сакура-острова»: единицы книги островками на мягких пятнах, острова идут змейкой, как ветка. */
-function archipelago({ nodes }: Graph): Layout {
+/** 6. «Сакура-острова»: единицы книги островками (без подложки), острова идут змейкой, как ветка. */
+export function archipelago({ nodes }: Graph): Layout {
   const units = [...new Set(nodes.map(n => n.book + n.unit))]
   const pos: Layout['pos'] = {}
   const labels: Layout['labels'] = []
@@ -119,52 +75,7 @@ function archipelago({ nodes }: Graph): Layout {
       pos[n.id] = { x: cx + Math.cos(t) * r, y: cy + Math.sin(t) * r }
     })
     const done = members.filter(n => n.state === 'ok').length
-    labels.push({ text: '', x: cx, y: cy, r: r + 105 })
-    labels.push({ text: `${members[0]!.book} · единица ${members[0]!.unit} · ${done}/${members.length}`, x: cx, y: cy - r - 120, big: true })
+    labels.push({ text: `${members[0]!.book} · единица ${members[0]!.unit} · ${done}/${members.length}`, x: cx, y: cy - r - 120, book: members[0]!.book, unit: members[0]!.unit })
   })
   return { pos, labels }
 }
-
-/** 4. «Острова»: каждая единица книги отдельным кружком из цветов, острова идут по сетке. */
-function islands({ nodes }: Graph): Layout {
-  const units = [...new Set(nodes.map(n => n.book + n.unit))]
-  const pos: Layout['pos'] = {}
-  const labels: Layout['labels'] = []
-  const perRow = 4
-  const gx = 520
-  const gy = 520
-  units.forEach((u, ui) => {
-    const members = nodes.filter(n => n.book + n.unit === u)
-    const row = Math.floor(ui / perRow)
-    const col = ui % perRow
-    const cx = (row % 2 ? perRow - 1 - col : col) * gx
-    const cy = row * gy
-    const r = members.length > 1 ? 70 + members.length * 12 : 0
-    members.forEach((n, k) => {
-      const t = (k / members.length) * Math.PI * 2 - Math.PI / 2
-      pos[n.id] = { x: cx + Math.cos(t) * r, y: cy + Math.sin(t) * r }
-    })
-    labels.push({ text: `${members[0]!.book} · единица ${members[0]!.unit}`, x: cx, y: cy - r - 90, big: true })
-  })
-  return { pos, labels }
-}
-
-/** 5. «Лента»: 1A сверху слева направо, 1B снизу, зависимости дугами между ними. */
-function ribbon({ nodes }: Graph): Layout {
-  const pos: Layout['pos'] = {}
-  const labels: Layout['labels'] = [{ text: 'Книга 1A', x: 0, y: -90, big: true }, { text: 'Книга 1B', x: 0, y: 410, big: true }]
-  const idx = { '1A': 0, '1B': 0 }
-  nodes.forEach(n => {
-    const i = idx[n.book]++
-    pos[n.id] = { x: i * 150, y: (n.book === '1A' ? 0 : 500) + (i % 2 ? 70 : -20) }
-  })
-  return { pos, labels }
-}
-
-export const LAYOUTS = [
-  { id: 1, name: 'Ветка', hint: 'одна змейка от первой темы до последней', build: snake, edges: 'seq+dep' },
-  { id: 2, name: 'Слои', hint: 'что на чём стоит: основа слева, сложное справа', build: layers, edges: 'dep' },
-  { id: 6, name: 'Сакура-острова', hint: 'единицы книги островками, ветка идёт змейкой', build: archipelago, edges: 'seq+dep' },
-  { id: 4, name: 'Острова', hint: 'каждая единица книги цветочным островком', build: islands, edges: 'seq+dep' },
-  { id: 5, name: 'Лента', hint: '1A над 1B, связи тем дугами', build: ribbon, edges: 'seq+dep' },
-] as const
