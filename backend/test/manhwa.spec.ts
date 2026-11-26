@@ -122,7 +122,7 @@ describe('манхва', () => {
       const download = vi.fn(async () => new Response(JPG, { status: 200 }))
       globalThis.fetch = download as never
       const c = new ManhwaController(disk2 as never)
-      const s = signPath('/api/manhwa/disk-a/1/cover.jpg', TOKEN, 1795564800000 - 2 * 24 * 3600_000, 2 * 24 * 3600_000)
+      const s = signPath('/api/manhwa/disk-a/1/cover.jpg', TOKEN, Date.now(), 2 * 24 * 3600_000)
       const p = parts(s)
       const r = res()
       const done = c.page('disk-a', '1', 'cover.jpg', p.e, p.s, r as never)
@@ -149,7 +149,7 @@ describe('манхва', () => {
       globalThis.fetch = (async () => new Response('нет', { status: 500 })) as never
       const disk3 = { configured: () => true, cachedLink: vi.fn().mockResolvedValue('https://disk.example/q') }
       const c = new ManhwaController(disk3 as never)
-      const p = parts(signPath('/api/manhwa/disk-b/1/001.jpg', TOKEN, 1795564800000 - 2 * 24 * 3600_000, 2 * 24 * 3600_000))
+      const p = parts(signPath('/api/manhwa/disk-b/1/001.jpg', TOKEN, Date.now(), 2 * 24 * 3600_000))
       const r = res()
       await c.page('disk-b', '1', '001.jpg', p.e, p.s, r as never)
       expect(r.redirect).toHaveBeenCalledWith(302, 'https://disk.example/q')
