@@ -40,7 +40,7 @@ const scale = computed(() => (n.value.state === 'ahead' ? 0.62 : n.value.state =
 .lbl { position: absolute; top: 66px; left: 50%; width: 104px; margin-left: -52px; text-align: center; line-height: 1.15; pointer-events: none; }
 .lbl b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; overflow-wrap: anywhere; color: var(--ink); text-shadow: 0 0 6px var(--surface), 0 0 6px var(--surface); }
 .lbl small { display: block; font-size: 10px; color: var(--muted); }
-.fn:hover .here { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); padding: 2px 10px; border-radius: 99px; background: var(--gold); color: #5b3b00; font-size: 12px; font-weight: 700; white-space: nowrap; animation: hop 1.2s ease-in-out infinite; pointer-events: none; }
+.here { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); padding: 2px 10px; border-radius: 99px; background: var(--gold); color: #5b3b00; font-size: 12px; font-weight: 700; white-space: nowrap; animation: hop 1.2s ease-in-out infinite; pointer-events: none; }
 .here::after { content: ''; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-bottom: 0; border-top-color: var(--gold); }
 @keyframes hop { 50% { transform: translateX(-50%) translateY(-6px); } }
 .ahead .lbl { opacity: .65; }

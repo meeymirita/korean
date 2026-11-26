@@ -25,7 +25,7 @@ import { useExamStore } from '@/stores/exam'
 const graph = buildGraph()
 const { open } = useGrammarModal()
 const exams = useExamStore()
-const { fitView, onNodeClick, onNodeMouseEnter, onNodeMouseLeave, updateNode, findEdge } = useVueFlow()
+const { fitView, setCenter, onNodeClick, onNodeMouseEnter, onNodeMouseLeave, updateNode, findEdge } = useVueFlow()
 onNodeClick(({ node }) => { if (node.type === 'flower') open(node.id, true) })
 
 /** Единица сдана на экзамене единицы (80% и больше): подпись острова золотая. */
@@ -86,7 +86,12 @@ const doneCount = graph.nodes.filter(n => n.state === 'ok').length
 onMounted(async () => {
   void exams.loadUnits().then(build)
   await nextTick()
-  setTimeout(() => void fitView({ padding: 0.12, duration: 500 }), 80)
+  // открываем там, где сейчас учишься: приближение к теме «ты здесь» (кнопка «вписать» слева внизу возвращает весь граф)
+  setTimeout(() => {
+    const here = nodes.value.find(n => n.type === 'flower' && (n.data.n as GNode).state === 'next')
+    if (here) void setCenter(here.position.x + 34, here.position.y + 34, { zoom: 0.85, duration: 600 })
+    else void fitView({ padding: 0.12, duration: 500 })
+  }, 120)
 })
 </script>
 
