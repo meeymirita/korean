@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MapView from '@/views/korean/MapView.vue'
-definePageMeta({ private: false })
+definePageMeta({ private: true })
 </script>
 
 <template>
