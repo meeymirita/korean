@@ -19,7 +19,7 @@ import { buildGraph, LAYOUTS } from '@/data/korean/map-graph'
  * розовые стрелки = порядок книги, фиолетовые пунктирные = «опирается на». Вид выбирается `?v=1..5`.
  */
 const graph = buildGraph()
-const view = useQueryParam('v', '6', ['1', '2', '3', '4', '5', '6'])
+const view = useQueryParam('v', '6', ['1', '2', '4', '5', '6'])
 const layout = computed(() => LAYOUTS.find(l => String(l.id) === view.value)!)
 const { open } = useGrammarModal()
 const { fitView, onNodeClick, onNodeMouseEnter, onNodeMouseLeave, updateNode, findEdge } = useVueFlow()
@@ -28,7 +28,6 @@ onNodeClick(({ node }) => { if (!node.id.startsWith('cap')) open(node.id, true) 
 const BEND: Record<number, { seq: number; dep: number }> = {
   1: { seq: 0.12, dep: 0.22 },
   2: { seq: 0, dep: 0.12 },
-  3: { seq: 0.1, dep: 0.3 },
   4: { seq: 0.15, dep: 0.25 },
   5: { seq: 0.08, dep: 0.35 },
   6: { seq: 0.1, dep: 0.3 },
@@ -48,7 +47,7 @@ function apply() {
     draggable: true,
   }))
   built.labels.forEach((t, i) =>
-    list.push({ id: 'cap' + i, type: 'caption', position: { x: t.x - 90, y: t.y }, data: { text: t.text }, draggable: false, selectable: false, focusable: false }),
+    list.push(t.r ? { id: 'cap' + i, type: 'blob', position: { x: t.x - t.r, y: t.y - t.r }, data: { r: t.r }, draggable: false, selectable: false, focusable: false, zIndex: -1 } : { id: 'cap' + i, type: 'caption', position: { x: t.x - 90, y: t.y }, data: { text: t.text }, draggable: false, selectable: false, focusable: false }),
   )
   nodes.value = list
   edges.value = graph.edges
@@ -106,6 +105,7 @@ const doneCount = graph.nodes.filter(n => n.state === 'ok').length
           :zoom-on-double-click="false"
         >
           <template #node-flower="p"><FlowerNode :data="p.data" /></template>
+          <template #node-blob="p"><div class="blob" :style="{ width: p.data.r * 2 + 'px', height: p.data.r * 2 + 'px' }" /></template>
           <template #node-caption="p"><div class="cap">{{ p.data.text }}</div></template>
           <template #edge-petal="p"><PetalEdge v-bind="p" /></template>
           <Background :gap="26" :size="1.6" pattern-color="var(--grid)" />
@@ -139,6 +139,8 @@ html[data-theme='dark'] .mg.v2, html[data-theme='dark'] .mg.v3, html[data-theme=
 .tabs small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.25; }
 .board { position: relative; height: calc(100vh - 250px); min-height: 460px; border: 1px solid var(--line); border-radius: 26px; overflow: hidden; background: var(--bg); }
 .wait { display: grid; place-items: center; height: 100%; color: var(--muted); }
+.blob { border-radius: 50%; background: radial-gradient(circle at 50% 40%, #ffd9ec99, #e9ddff55 70%, transparent); border: 2px dashed #e0559f44; pointer-events: none; }
+html[data-theme='dark'] .blob { background: radial-gradient(circle at 50% 40%, #ff6fae26, #8a6bd622 70%, transparent); }
 .cap { width: 180px; text-align: center; font-size: 15px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--arrow2); opacity: .8; pointer-events: none; }
 .fall { position: absolute; top: -20px; z-index: 5; pointer-events: none; border-radius: 80% 0 80% 0; background: var(--petal); opacity: .7; animation: fall linear infinite; }
 @keyframes fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: .7; } 100% { transform: translate(80px, 640px) rotate(420deg); opacity: 0; } }
