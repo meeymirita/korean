@@ -139,8 +139,10 @@ function fitScale() {
   // карта всегда накрывает окно целиком (как обои), полей и фона вокруг нет
   return c ? Math.max(c.clientWidth / W, c.clientHeight / H) : 0.5
 }
-/** Начальный масштаб: вся карта; на узком экране крупнее, иначе подписи не прочитать (карту двигают пальцем). */
-const startScale = () => Math.max(fitScale(), typeof window !== 'undefined' && window.innerWidth < 760 ? 0.38 : 0.5)
+/** Самый мелкий масштаб: карта всегда крупнее окна и по ширине, и по высоте, чтобы её можно было листать во все стороны (и подписи читались). */
+const floorScale = () => Math.max(fitScale() * 1.25, typeof window !== 'undefined' && window.innerWidth < 760 ? 0.5 : 0.75)
+/** Начальный масштаб чуть крупнее самого мелкого. */
+const startScale = () => floorScale() * 1.12
 function fit(animate = true) {
   if (!pz) return
   const sc = startScale()
@@ -175,8 +177,9 @@ async function setup() {
   if (!el || !box) return
   const { default: Panzoom } = await import('@panzoom/panzoom')
   if (stage.value !== el) return
-  pz = Panzoom(el, { maxScale: 3.4, minScale: fitScale(), contain: 'outside', cursor: 'grab', step: 0.28, canvas: false, startScale: startScale() })
-  pz.zoom(startScale(), { animate: false, force: true })
+  // Panzoom сам применяет стартовый сдвиг чуть позже запуска, поэтому центр карты задаём здесь, а не вызовом `pan` после
+  const sc0 = startScale()
+  pz = Panzoom(el, { maxScale: 3.4, minScale: floorScale(), contain: 'outside', cursor: 'grab', step: 0.28, canvas: false, startScale: sc0, startX: (box.clientWidth / 2 - W / 2) / sc0, startY: (box.clientHeight / 2 - H / 2) / sc0 })
   const wheel = (e: WheelEvent) => pz?.zoomWithWheel(e)
   box.addEventListener('wheel', wheel, { passive: false })
   const onZoom = () => (scale.value = pz?.getScale() ?? scale.value)
@@ -197,7 +200,7 @@ async function setup() {
   el.addEventListener('panzoomstart', onStart)
   el.addEventListener('panzoompan', onPan)
   el.addEventListener('panzoomend', onEnd)
-  const onResize = () => { pz?.setOptions({ minScale: fitScale() }); fit(false) }
+  const onResize = () => { pz?.setOptions({ minScale: floorScale() }); fit(false) }
   window.addEventListener('resize', onResize)
   stop = () => {
     box.removeEventListener('wheel', wheel)
