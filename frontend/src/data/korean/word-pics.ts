@@ -10,7 +10,7 @@ export interface WordPic {
   svg: string
 }
 
-export const WORD_PICS: WordPic[] = [
+const BASE: WordPic[] = [
   {
     k: '사과',
     svg: `<path d="M60 38q0-14 7-20" fill="none" stroke="#8b5a3c" stroke-width="5" stroke-linecap="round"/>
@@ -62,3 +62,11 @@ export const WORD_PICS: WordPic[] = [
 <path d="M40 72q4 12 14 14" fill="none" stroke="#ffd6e8" stroke-width="4" stroke-linecap="round"/>`,
   },
 ]
+
+import { FOOD } from './word-pics-food'
+import { NATURE } from './word-pics-nature'
+import { THINGS } from './word-pics-things'
+import { PLACES } from './word-pics-places'
+
+/** Все рисунки: основа и тематические файлы `word-pics-*.ts`. */
+export const WORD_PICS: WordPic[] = [...BASE, ...FOOD, ...NATURE, ...THINGS, ...PLACES]
