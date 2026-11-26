@@ -30,9 +30,9 @@ const scale = computed(() => (n.value.state === 'ahead' ? 0.62 : n.value.state =
 <style scoped>
 .fn { position: relative; width: 68px; height: 68px; cursor: pointer; }
 .hd { left: 50% !important; top: 50% !important; width: 1px; height: 1px; min-width: 0; border: 0; opacity: 0; pointer-events: none; transform: none; }
-.petal { fill: var(--petal); stroke: var(--petal-line); stroke-width: 1.5; }
+.petal { fill: var(--petal); stroke: var(--petal-line); stroke-width: 2; }
 .core { fill: var(--core); }
-.ahead .petal { fill: var(--bud); stroke: var(--bud-line); stroke-width: 1.2; }
+.ahead .petal { fill: var(--bud); stroke: var(--bud-line); stroke-width: 1.8; }
 .ahead .core { fill: var(--bud-line); }
 .ring { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 4 6; transform-box: fill-box; transform-origin: center; animation: spin 14s linear infinite; }
 .bloom { transform-box: fill-box; transform-origin: center; transform: scale(0) rotate(-60deg); animation: bloom .7s cubic-bezier(.2, 1.4, .4, 1) forwards; transition: transform .3s; }

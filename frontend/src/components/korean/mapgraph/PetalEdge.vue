@@ -43,6 +43,7 @@ const geo = computed(() => {
 
 <template>
   <g v-if="!geo.short" class="pe" :class="[data?.kind, { done: data?.done }]">
+    <path :d="geo.d" class="casing" />
     <path :d="geo.d" class="line" />
     <path v-if="data?.kind === 'seq' && data?.done" :d="geo.d" class="flow" />
     <polygon :points="geo.tip" class="head" />
@@ -50,15 +51,17 @@ const geo = computed(() => {
 </template>
 
 <style scoped>
-.line { fill: none; stroke-linecap: round; }
-.head { stroke-linejoin: round; }
-.seq .line { stroke: var(--arrow); stroke-width: 3.5; opacity: .85; }
-.seq .head { fill: var(--arrow); stroke: var(--arrow); stroke-width: 1; }
-.dep .line { stroke: var(--arrow2); stroke-width: 2.2; stroke-dasharray: 2 7; opacity: .8; }
-.dep .head { fill: var(--arrow2); stroke: var(--arrow2); stroke-width: 1; opacity: .85; }
+.line, .casing { fill: none; stroke-linecap: round; }
+.casing { stroke: #fff; opacity: .9; }
+.head { stroke-linejoin: round; paint-order: stroke; }
+.seq .casing { stroke-width: 8; } .dep .casing { stroke-width: 6; }
+.seq .line { stroke: var(--arrow); stroke-width: 4; }
+.seq .head { fill: var(--arrow); stroke: #fff; stroke-width: 3; }
+.dep .line { stroke: var(--arrow2); stroke-width: 3; stroke-dasharray: 3 8; }
+.dep .head { fill: var(--arrow2); stroke: #fff; stroke-width: 3; }
 .flow { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 2 16; opacity: .9; animation: run 1.1s linear infinite; }
 @keyframes run { to { stroke-dashoffset: -18; } }
 @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
-.seq:not(.done) .line, .seq:not(.done) .head { opacity: .38; }
-.dep:not(.done) .line, .dep:not(.done) .head { opacity: .35; }
+.seq:not(.done) .line, .seq:not(.done) .head, .dep:not(.done) .line, .dep:not(.done) .head { opacity: .72; }
+.seq:not(.done) .casing, .dep:not(.done) .casing { opacity: .55; }
 </style>
