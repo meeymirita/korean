@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { PLACES } from '@/data/korean/vlog-map'
-import { PLACE_AT, SCENE_H, SCENE_W, buildingAt } from '@/data/korean/vlog-map-scene'
+import { CITY_H, CITY_W, PAD, PLACE_AT, SCENE_H, SCENE_W, buildingAt as buildingOuter } from '@/data/korean/vlog-map-scene'
 
 /**
  * Город для «Карты мест», нарисованный кодом (векторный, чёткий при любом приближении): горы и городской фон, зелёные холмы,
  * улицы и мосты, река, море с пляжем и маяком, пруд парка, сакуры и деревья, здания-значки мест (`vm-<значок>` из `vlog-map-art.ts`).
  * Всё детерминировано (без случайного), ничего не записывается. Подписи и кнопки рисует `VlogMapScene.vue` поверх.
  */
-const W = SCENE_W
-const H = SCENE_H
+/** Рисуем в координатах города (`CITY_W × CITY_H`) внутри группы, сдвинутой на `PAD`; небо и трава по краям залиты на всю сцену. */
+const W = CITY_W
+const H = CITY_H
+const buildingAt = (id: string) => { const b = buildingOuter(id); return { ...b, x: b.x - PAD.l, y: b.y - PAD.t } }
+const placeAt = (id: string) => ({ x: PLACE_AT[id]!.x - PAD.l, y: PLACE_AT[id]!.y - PAD.t })
+const X0 = -PAD.l
+const X1 = W + PAD.r
+const Y1 = H + PAD.b
 const rnd = (i: number) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x) }
 
 type Pt = [number, number]
@@ -19,8 +25,8 @@ const line = (f: (x: number) => number, x0: number, x1: number, step = 12): Pt[]
 }
 const d = (pts: Pt[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')
 
-const roadA = line(x => 350 + 10 * Math.sin(x / 170), -20, W + 20)
-const roadB = line(x => 568 + 9 * Math.sin(x / 150 + 1), -20, W + 20)
+const roadA = line(x => 350 + 10 * Math.sin(x / 170), X0 - 20, X1 + 20)
+const roadB = line(x => 568 + 9 * Math.sin(x / 150 + 1), X0 - 20, X1 + 20)
 const riverY = (x: number) => 622 + 16 * Math.sin(x / 190)
 const river = line(riverY, 250, 1340)
 const lane = (x: number, y0: number, y1: number): Pt[] => {
@@ -31,7 +37,7 @@ const lane = (x: number, y0: number, y1: number): Pt[] => {
 const lanes = [lane(318, 350, 568), lane(1066, 350, 568), lane(830, 568, 640), lane(520, 568, 760)]
 const bridges = [830, 520].map(x => ({ x, y: riverY(x) }))
 
-const sea: Pt[] = [[W + 10, 566], [1520, 580], [1395, 612], [1308, 668], [1255, 760], [1225, 860], [1195, H + 10], [W + 10, H + 10]]
+const sea: Pt[] = [[X1 + 10, 556], [W + 120, 570], [1520, 585], [1395, 612], [1308, 668], [1255, 760], [1225, 860], [1195, Y1 + 10], [X1 + 10, Y1 + 10]]
 const seaD = `M${sea.map(p => p.join(' ')).join(' L')}Z`
 const inPoly = (x: number, y: number, poly: Pt[]) => {
   let c = false
@@ -45,22 +51,22 @@ const inPoly = (x: number, y: number, poly: Pt[]) => {
 const near = (x: number, y: number, pts: Pt[], r: number) => pts.some(p => Math.hypot(p[0] - x, p[1] - y) < r)
 
 const mount = (base: number, amp: number, k: number, off: number) => {
-  let s = `M0 ${H}`
-  for (let x = 0; x <= W; x += 40) s += ` L${x} ${base + Math.sin(x / k + off) * amp + Math.sin(x / (k / 3) + off * 2) * amp * 0.25}`
-  return `${s} L${W} ${H}Z`
+  let s = `M${X0} ${Y1}`
+  for (let x = X0; x <= X1; x += 40) s += ` L${x} ${base + Math.sin(x / k + off) * amp + Math.sin(x / (k / 3) + off * 2) * amp * 0.25}`
+  return `${s} L${X1} ${Y1}Z`
 }
 const mountains = [{ d: mount(135, 42, 170, 0.6), c: '#a8bfe9' }, { d: mount(172, 30, 120, 2.2), c: '#8fbfae' }]
-const skyline = Array.from({ length: 70 }, (_, i) => ({ x: i * 24 + rnd(i) * 14, w: 14 + rnd(i + 5) * 20, h: 24 + rnd(i + 9) * 52, c: i % 3 ? '#d3dcef' : '#e0e6f4' }))
+const skyline = Array.from({ length: 115 }, (_, i) => ({ x: X0 + i * 24 + rnd(i) * 14, w: 14 + rnd(i + 5) * 20, h: 24 + rnd(i + 9) * 52, c: i % 3 ? '#d3dcef' : '#e0e6f4' }))
 
 const buildings = PLACES.map(p => ({ p, b: buildingAt(p.id) })).sort((a, b) => a.b.y - b.b.y)
 const pondC = { x: 650, y: 862, rx: 135, ry: 44 }
 
 const trees = (() => {
   const out: { x: number; y: number; s: number; sak: boolean }[] = []
-  const boxes = PLACES.map(p => { const b = buildingAt(p.id); const a = PLACE_AT[p.id]!; return { x0: b.x - b.size * 0.55, x1: b.x + b.size * 0.55, y0: a.y - 30, y1: b.y + b.size * 0.5 } })
-  for (let i = 0; i < 1400 && out.length < 270; i++) {
-    const x = 10 + rnd(i * 3 + 1) * (W - 20)
-    const y = 205 + rnd(i * 3 + 2) * (H - 215)
+  const boxes = PLACES.map(p => { const b = buildingAt(p.id); const a = placeAt(p.id); return { x0: b.x - b.size * 0.55, x1: b.x + b.size * 0.55, y0: a.y - 30, y1: b.y + b.size * 0.5 } })
+  for (let i = 0; i < 4200 && out.length < 560; i++) {
+    const x = X0 + 10 + rnd(i * 3 + 1) * (X1 - X0 - 20)
+    const y = 205 + rnd(i * 3 + 2) * (Y1 - 215)
     const s = 15 + rnd(i * 3 + 3) * 17
     if (boxes.some(b => x > b.x0 - s && x < b.x1 + s && y > b.y0 - s && y < b.y1 + s)) continue
     if (near(x, y, roadA, 30 + s * 0.4) || near(x, y, roadB, 30 + s * 0.4) || near(x, y, river, 38 + s * 0.4) || lanes.some(l => near(x, y, l, 20 + s * 0.4))) continue
@@ -70,11 +76,11 @@ const trees = (() => {
   }
   return out.sort((a, b) => a.y - b.y)
 })()
-const waves = Array.from({ length: 36 }, (_, i) => ({ x: 1230 + rnd(i + 300) * 440, y: 600 + rnd(i + 400) * 330, w: 22 + rnd(i + 500) * 28 })).filter(w => inPoly(w.x, w.y, sea) && inPoly(w.x - 30, w.y, sea))
+const waves = Array.from({ length: 70 }, (_, i) => ({ x: 1230 + rnd(i + 300) * (X1 - 1240), y: 600 + rnd(i + 400) * (Y1 - 610), w: 22 + rnd(i + 500) * 28 })).filter(w => inPoly(w.x, w.y, sea) && inPoly(w.x - 30, w.y, sea))
 </script>
 
 <template>
-  <svg class="city" :width="W" :height="H" :viewBox="`0 0 ${W} ${H}`" aria-hidden="true">
+  <svg class="city" :width="SCENE_W" :height="SCENE_H" :viewBox="`0 0 ${SCENE_W} ${SCENE_H}`" aria-hidden="true">
     <defs>
       <linearGradient id="cy-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb4f2" /><stop offset=".55" stop-color="#bfe0fb" /><stop offset="1" stop-color="#e8f4ff" /></linearGradient>
       <linearGradient id="cy-grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fdc74" /><stop offset=".6" stop-color="#72c15f" /><stop offset="1" stop-color="#58a850" /></linearGradient>
@@ -83,13 +89,14 @@ const waves = Array.from({ length: 36 }, (_, i) => ({ x: 1230 + rnd(i + 300) * 4
       <g id="cy-grn"><ellipse cx="0" cy="13" rx="14" ry="5" class="cy-sh" /><rect x="-2.4" y="1" width="4.8" height="13" rx="2" class="cy-trunk" /><circle cx="-8" cy="-1" r="10" class="g1" /><circle cx="8" cy="-1" r="10" class="g1" /><circle cx="0" cy="-9" r="12" class="g2" /><circle cx="-4" cy="-12" r="5" class="g3" /></g>
     </defs>
 
-    <rect :width="W" :height="H" fill="url(#cy-sky)" />
+    <rect :width="SCENE_W" :height="SCENE_H" fill="url(#cy-sky)" />
+    <g :transform="`translate(${PAD.l} ${PAD.t})`">
     <ellipse cx="300" cy="62" rx="90" ry="22" class="cy-cloud" /><ellipse cx="380" cy="52" rx="60" ry="20" class="cy-cloud" />
     <ellipse cx="880" cy="48" rx="100" ry="22" class="cy-cloud" /><ellipse cx="1490" cy="70" rx="85" ry="20" class="cy-cloud" /><ellipse cx="1540" cy="58" rx="55" ry="17" class="cy-cloud" />
     <path v-for="(m, i) in mountains" :key="'m' + i" :d="m.d" :fill="m.c" />
     <rect v-for="(b, i) in skyline" :key="'s' + i" :x="b.x" :y="190 - b.h" :width="b.w" :height="b.h" :fill="b.c" opacity=".9" />
     <g class="cy-tower"><rect x="1226" y="40" width="5" height="120" /><ellipse cx="1228.5" cy="68" rx="14" ry="6" /><rect x="1214" y="62" width="30" height="3" /><path d="M1222 160 L1228.5 120 L1235 160Z" /></g>
-    <rect x="0" y="168" :width="W" :height="H - 168" fill="url(#cy-grass)" />
+    <rect :x="X0" y="168" :width="X1 - X0" :height="Y1 - 168" fill="url(#cy-grass)" />
     <ellipse cx="140" cy="790" rx="190" ry="120" class="cy-hill" /><path d="M60 880 q60 -70 110 -120 q50 -50 70 -120" class="cy-trail" />
 
     <path :d="d(roadA)" class="cy-road-edge" /><path :d="d(roadB)" class="cy-road-edge" />
@@ -115,6 +122,7 @@ const waves = Array.from({ length: 36 }, (_, i) => ({ x: 1230 + rnd(i + 300) * 4
     <use v-for="(t, i) in trees" :key="'t' + i" :href="t.sak ? '#cy-sak' : '#cy-grn'" :transform="`translate(${t.x} ${t.y}) scale(${t.s / 14})`" />
 
     <use v-for="{ p, b } in buildings" :key="p.id" :href="`#vm-${p.icon}`" :x="b.x - b.size / 2" :y="b.y - b.size / 2" :width="b.size" :height="b.size" :style="{ '--ic': p.color }" />
+    </g>
   </svg>
 </template>
 

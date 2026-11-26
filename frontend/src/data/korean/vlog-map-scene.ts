@@ -4,8 +4,12 @@ import type { Place } from './vlog-map'
  * Сцена «Карта мест»: город, нарисованный кодом (`VlogMapCity.vue`: дороги, река, море, деревья и здания-значки мест), и подпись-кнопка на каждом месте.
  * Координаты в системе картинки `SCENE_W × SCENE_H`. Только справка: ничего не записывается и не засчитывается.
  */
-export const SCENE_W = 1672
-export const SCENE_H = 941
+/** Город рисуется в рамке `CITY_W × CITY_H`, вокруг него `PAD` с продолжением леса, гор, дорог и моря: карта просторная, краёв не видно. */
+export const CITY_W = 1672
+export const CITY_H = 941
+export const PAD = { l: 380, t: 130, r: 380, b: 360 }
+export const SCENE_W = CITY_W + PAD.l + PAD.r
+export const SCENE_H = CITY_H + PAD.t + PAD.b
 
 /**
  * Раскладка города: три ряда мест (верхняя улица, средняя улица, низ), порядок как в списке мест; ряды идут слева направо, соседние
@@ -21,6 +25,8 @@ const LOW: Record<string, { x: number; y: number }> = {
 }
 export const PLACE_AT: Record<string, { x: number; y: number }> = { ...LOW }
 for (const r of ROWS) r.ids.forEach((id, i) => { PLACE_AT[id] = { x: Math.round(r.x0 + (i * (r.x1 - r.x0)) / (r.ids.length - 1)), y: r.y + (i % 2) * r.zig } })
+// всё сдвигаем внутрь расширенной сцены: подписи и здания стоят в её координатах
+for (const id of Object.keys(PLACE_AT)) PLACE_AT[id] = { x: PLACE_AT[id]!.x + PAD.l, y: PLACE_AT[id]!.y + PAD.t }
 
 /** Размер здания под подписью: дворец, ханок, аэропорт и универмаг крупнее. */
 const BIG: Record<string, number> = { palace: 170, stay: 140, airport: 140, mall: 104, sea: 150, mountain: 130, park: 120 }

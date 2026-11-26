@@ -312,7 +312,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.vm { position: relative; margin-top: 14px; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: #6f8fe8; }
+.vm { position: relative; margin-top: 14px; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: #72c15f; }
 .vm.full { position: fixed; inset: 0; z-index: 55; margin: 0; border-radius: 0; border: 0; }
 .vm-defs { position: absolute; width: 0; height: 0; }
 .vm-bar { position: absolute; z-index: 6; top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; pointer-events: none; }
