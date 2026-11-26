@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PLACES, type Place } from '@/data/korean/vlog-map'
 import { PETALS, PLACE_AT, SCENE_H, SCENE_W } from '@/data/korean/vlog-map-scene'
-import sceneUrl from '@/assets/vlogmap/scene.webp'
+import VlogMapCity from './VlogMapCity.vue'
 
 /**
  * Сцена карты мест: картинка владельца и кликабельная точка на значке каждого места (число влогов в кружке, название при наведении).
@@ -19,7 +19,7 @@ const isOn = (id: string) => props.hoverId === id || props.selId === id
 
 <template>
   <div class="vs" :style="{ width: `${SCENE_W}px`, height: `${SCENE_H}px` }" role="group" aria-label="Карта мест: город со значками">
-    <img class="vs-bg" :src="sceneUrl" alt="" draggable="false" :width="SCENE_W" :height="SCENE_H" />
+    <VlogMapCity />
     <span v-for="(p, i) in PETALS" :key="`p${i}`" class="vs-petal" aria-hidden="true" :style="{ left: `${p.x}px`, width: `${p.s}px`, height: `${p.s * 0.7}px`, animationDelay: `${p.d}s`, animationDuration: `${p.t}s` }"></span>
 
     <button
@@ -28,7 +28,7 @@ const isOn = (id: string) => props.hoverId === id || props.selId === id
       type="button"
       class="vs-pin"
       :class="{ on: isOn(pl.id), faded: faded(pl), none: !count(pl.id)}"
-      :style="{ left: `${PLACE_AT[pl.id]?.x ?? 0}px`, top: `${PLACE_AT[pl.id]?.y ?? 0}px`, width: `${PLACE_AT[pl.id]?.w ?? 100}px` }"
+      :style="{ left: `${PLACE_AT[pl.id]?.x ?? 0}px`, top: `${PLACE_AT[pl.id]?.y ?? 0}px`, '--pc': pl.color }"
       :aria-label="`${pl.ru}: ${count(pl.id)}`"
       @mouseenter="emit('hover', pl.id, $event)"
       @mousemove="emit('move', $event)"
@@ -37,6 +37,8 @@ const isOn = (id: string) => props.hoverId === id || props.selId === id
       @blur="emit('leave')"
       @click.stop="emit('select', pl.id)"
     >
+      <svg class="vs-ic" viewBox="0 0 120 120" aria-hidden="true"><use :href="`#vm-${pl.icon}`" :style="{ '--ic': pl.color }" /></svg>
+      <b lang="ko">{{ pl.ko }}</b>
       <i v-if="count(pl.id)" class="vs-n">{{ count(pl.id) }}</i>
     </button>
   </div>
@@ -44,11 +46,12 @@ const isOn = (id: string) => props.hoverId === id || props.selId === id
 
 <style scoped>
 .vs { position: relative; overflow: hidden; user-select: none; -webkit-user-select: none; }
-.vs-bg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
 .vs-petal { position: absolute; top: -30px; z-index: 2; border-radius: 80% 20% 80% 20%; background: radial-gradient(circle at 30% 30%, #ffe4f0, #ffb3d1); opacity: .85; pointer-events: none; animation: vs-fall linear infinite; }
 @keyframes vs-fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: .85; } 100% { transform: translate(180px, 980px) rotate(520deg); opacity: 0; } }
-.vs-pin { position: absolute; z-index: 5; height: 48px; margin: -24px 0 0 -0px; transform: translateX(-50%); padding: 0; border: 3px solid transparent; border-radius: 26px; background: transparent; color: #3a2a4a; font: inherit; cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, background .2s; }
-.vs-pin:hover, .vs-pin.on, .vs-pin:focus-visible { transform: translateX(-50%) scale(1.1); border-color: #fff; background: rgba(255, 255, 255, .22); box-shadow: 0 0 0 4px #ff6fa8, 0 10px 22px rgba(40, 30, 90, .4); outline: none; z-index: 8; }
+.vs-pin { position: absolute; z-index: 5; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 16px 0 8px; border: 3px solid var(--pc, #ff6fa8); border-radius: 26px; background: rgba(255, 255, 255, .96); color: #3a2a4a; font: inherit; white-space: nowrap; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 5px 12px rgba(40, 50, 90, .3); transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s; }
+.vs-ic { width: 32px; height: 32px; flex: none; }
+.vs-pin b { font: 800 19px/1 'Noto Sans KR', 'Archivo', sans-serif; }
+.vs-pin:hover, .vs-pin.on, .vs-pin:focus-visible { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 0 0 4px #ff6fa8, 0 10px 22px rgba(40, 30, 90, .4); outline: none; z-index: 8; }
 .vs-pin.faded { opacity: .15; }
 .vs-n { position: absolute; top: -14px; right: -10px; min-width: 26px; height: 26px; padding: 0 7px; box-sizing: border-box; border-radius: 999px; background: #ff6fa8; color: #fff; font: 800 14px/22px 'Archivo', system-ui, sans-serif; text-align: center; border: 2px solid #fff; font-style: normal; box-shadow: 0 3px 8px rgba(60, 40, 100, .35); }
 .vs-pin.none .vs-n { display: none; }

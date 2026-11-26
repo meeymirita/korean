@@ -1,26 +1,34 @@
 import type { Place } from './vlog-map'
 
 /**
- * Сцена «Карта мест»: картинка владельца `assets/vlogmap/scene.webp` (1672×941, аниме-город с подписями мест) и невидимая кнопка на каждой подписи.
+ * Сцена «Карта мест»: город, нарисованный кодом (`VlogMapCity.vue`: дороги, река, море, деревья и здания-значки мест), и подпись-кнопка на каждом месте.
  * Координаты в системе картинки `SCENE_W × SCENE_H`. Только справка: ничего не записывается и не засчитывается.
  */
 export const SCENE_W = 1672
 export const SCENE_H = 941
 
 /**
- * Где на картинке `assets/vlogmap/scene.webp` стоит подпись-пузырь каждого места (центр и ширина в системе `SCENE_W × SCENE_H`):
- * на ней лежит невидимая кнопка. Новая картинка: сверь все 30 точек.
+ * Раскладка города: три ряда мест (верхняя улица, средняя улица, низ), порядок как в списке мест; ряды идут слева направо, соседние
+ * подписи смещены по высоте, чтобы не налезать друг на друга. `PLACE_AT`: центр подписи места в системе `SCENE_W × SCENE_H`,
+ * здание стоит под подписью (`buildingAt`). Город рисует код (`VlogMapCity.vue`), картинки нет: рисунок чёткий при любом приближении.
  */
-export const PLACE_AT: Record<string, { x: number; y: number; w: number }> = {
-  mall: { x: 140, y: 205, w: 125 }, market: { x: 270, y: 225, w: 90 }, convenience: { x: 365, y: 232, w: 115 }, daiso: { x: 480, y: 243, w: 100 }, supermarket: { x: 580, y: 243, w: 95 }, clothes: { x: 685, y: 240, w: 120 },
-  cafe: { x: 810, y: 185, w: 100 }, restaurant: { x: 915, y: 218, w: 90 }, bakery: { x: 1020, y: 222, w: 95 }, icecream: { x: 1145, y: 232, w: 175 },
-  pharmacy: { x: 1270, y: 220, w: 95 }, clinic: { x: 1385, y: 197, w: 100 }, salon: { x: 1490, y: 222, w: 110 }, laundry: { x: 1595, y: 232, w: 105 },
-  home: { x: 115, y: 400, w: 85 }, work: { x: 305, y: 395, w: 170 },
-  bookstore: { x: 495, y: 412, w: 95 }, library: { x: 610, y: 402, w: 120 }, cinema: { x: 748, y: 395, w: 125 }, gym: { x: 880, y: 403, w: 115 }, bath: { x: 1012, y: 403, w: 120 },
-  subway: { x: 1190, y: 407, w: 115 }, bus: { x: 1305, y: 418, w: 95 }, train: { x: 1420, y: 418, w: 95 }, airport: { x: 1545, y: 428, w: 105 },
-  mountain: { x: 237, y: 596, w: 90 }, park: { x: 440, y: 678, w: 105 },
-  palace: { x: 820, y: 602, w: 85 }, stay: { x: 1120, y: 660, w: 185 },
-  sea: { x: 1450, y: 687, w: 175 },
+const ROWS: { ids: string[]; x0: number; x1: number; y: number; zig: number }[] = [
+  { ids: ['mall', 'market', 'convenience', 'daiso', 'supermarket', 'clothes', 'cafe', 'restaurant', 'bakery', 'icecream', 'pharmacy', 'clinic', 'salon', 'laundry'], x0: 80, x1: 1590, y: 165, zig: 36 },
+  { ids: ['home', 'work', 'bookstore', 'library', 'cinema', 'gym', 'bath', 'subway', 'bus', 'train', 'airport'], x0: 100, x1: 1580, y: 392, zig: 34 },
+]
+const LOW: Record<string, { x: number; y: number }> = {
+  mountain: { x: 175, y: 705 }, park: { x: 470, y: 730 }, palace: { x: 830, y: 690 }, stay: { x: 1130, y: 720 }, sea: { x: 1470, y: 705 },
+}
+export const PLACE_AT: Record<string, { x: number; y: number }> = { ...LOW }
+for (const r of ROWS) r.ids.forEach((id, i) => { PLACE_AT[id] = { x: Math.round(r.x0 + (i * (r.x1 - r.x0)) / (r.ids.length - 1)), y: r.y + (i % 2) * r.zig } })
+
+/** Размер здания под подписью: дворец, ханок, аэропорт и универмаг крупнее. */
+const BIG: Record<string, number> = { palace: 170, stay: 140, airport: 140, mall: 104, sea: 150, mountain: 130, park: 120 }
+/** Здание места: центр и сторона квадрата значка-здания (оно стоит под подписью). */
+export function buildingAt(id: string): { x: number; y: number; size: number } {
+  const at = PLACE_AT[id] ?? { x: 0, y: 0 }
+  const size = BIG[id] ?? 92
+  return { x: at.x, y: at.y + 24 + size / 2, size }
 }
 
 /** Середина района по его местам: куда приближается карта, когда выбран район. */
