@@ -1,27 +1,27 @@
 import type { Place } from './vlog-map'
 
 /**
- * Сцена «Карта мест»: картинка владельца `assets/vlogmap/scene.webp` (1672×941, аниме-город с пузырями-значками) и точка на каждом значке.
+ * Сцена «Карта мест»: картинка владельца `assets/vlogmap/scene.webp` (1672×941, аниме-город с подписями мест) и невидимая кнопка на каждой подписи.
  * Координаты в системе картинки `SCENE_W × SCENE_H`. Только справка: ничего не записывается и не засчитывается.
  */
 export const SCENE_W = 1672
 export const SCENE_H = 941
 
 /**
- * Где на картинке `assets/vlogmap/scene.webp` стоит значок каждого места (центр пузыря, система `SCENE_W × SCENE_H`).
- * `none: true`: на картинке значка нет, точка стоит на свободном месте и обведена пунктиром, пока владелец не дорисует значок.
+ * Где на картинке `assets/vlogmap/scene.webp` стоит подпись-пузырь каждого места (центр и ширина в системе `SCENE_W × SCENE_H`):
+ * на ней лежит невидимая кнопка. В магазинном ряду подписи на картинке перепутаны (на здании DAISO написано «판트», на магазине
+ * одежды «다이소»), поэтому точки поставлены по зданиям, а не по тексту.
  */
-export const PLACE_AT: Record<string, { x: number; y: number; none?: boolean }> = {
-  mall: { x: 200, y: 100 }, market: { x: 333, y: 128 }, convenience: { x: 408, y: 128 }, supermarket: { x: 497, y: 153 },
-  daiso: { x: 170, y: 250, none: true }, clothes: { x: 420, y: 240, none: true },
-  cafe: { x: 700, y: 100 }, restaurant: { x: 793, y: 140 }, bakery: { x: 897, y: 158 }, icecream: { x: 997, y: 160 },
-  pharmacy: { x: 1250, y: 122 }, clinic: { x: 1365, y: 128 }, salon: { x: 1458, y: 158 }, laundry: { x: 1555, y: 172 },
-  home: { x: 130, y: 310 }, work: { x: 275, y: 330 },
-  bookstore: { x: 487, y: 347 }, library: { x: 590, y: 327 }, cinema: { x: 727, y: 318 }, gym: { x: 838, y: 327 }, bath: { x: 940, y: 342 },
-  subway: { x: 1170, y: 285 }, bus: { x: 1313, y: 303 }, train: { x: 1428, y: 372 }, airport: { x: 1580, y: 382 },
-  park: { x: 378, y: 632 }, mountain: { x: 213, y: 553 },
-  palace: { x: 815, y: 560 }, stay: { x: 1090, y: 620 },
-  sea: { x: 1397, y: 708 },
+export const PLACE_AT: Record<string, { x: number; y: number; w: number }> = {
+  mall: { x: 150, y: 135, w: 130 }, market: { x: 275, y: 160, w: 100 }, convenience: { x: 372, y: 155, w: 130 }, daiso: { x: 475, y: 175, w: 110 }, supermarket: { x: 568, y: 198, w: 100 }, clothes: { x: 675, y: 195, w: 120 },
+  cafe: { x: 782, y: 115, w: 110 }, restaurant: { x: 890, y: 155, w: 100 }, bakery: { x: 998, y: 160, w: 100 }, icecream: { x: 1125, y: 180, w: 195 },
+  pharmacy: { x: 1268, y: 152, w: 110 }, clinic: { x: 1380, y: 128, w: 100 }, salon: { x: 1488, y: 160, w: 110 }, laundry: { x: 1603, y: 178, w: 110 },
+  home: { x: 105, y: 355, w: 85 }, work: { x: 292, y: 347, w: 170 },
+  bookstore: { x: 500, y: 362, w: 100 }, library: { x: 610, y: 347, w: 120 }, cinema: { x: 732, y: 337, w: 125 }, gym: { x: 868, y: 350, w: 120 }, bath: { x: 1012, y: 355, w: 120 },
+  subway: { x: 1198, y: 358, w: 125 }, bus: { x: 1322, y: 372, w: 95 }, train: { x: 1428, y: 373, w: 95 }, airport: { x: 1552, y: 390, w: 110 },
+  mountain: { x: 232, y: 572, w: 95 }, park: { x: 402, y: 660, w: 110 },
+  palace: { x: 836, y: 582, w: 90 }, stay: { x: 1135, y: 642, w: 185 },
+  sea: { x: 1472, y: 678, w: 180 },
 }
 
 /** Середина района по его местам: куда приближается карта, когда выбран район. */
