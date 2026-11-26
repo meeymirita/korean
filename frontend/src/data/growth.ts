@@ -4,13 +4,13 @@ export interface GrowthMark { d: string; title: string; summary: string; items: 
 export interface Growth { generated: string; commits: number; first: { d: string; subject: string } | null; lines: number; days: GrowthDay[]; marks: GrowthMark[] }
 
 export const GROWTH: Growth = {
- "generated": "2026-11-24",
- "commits": 1058,
+ "generated": "2026-11-26",
+ "commits": 1080,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 111481,
+ "lines": 112175,
  "days": [
   {
    "d": "2026-10-21",
@@ -189,10 +189,17 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-24",
-   "n": 28,
-   "cum": 1058,
-   "add": 3562,
-   "del": 425
+   "n": 29,
+   "cum": 1059,
+   "add": 3656,
+   "del": 435
+  },
+  {
+   "d": "2026-11-26",
+   "n": 21,
+   "cum": 1080,
+   "add": 1825,
+   "del": 932
   }
  ],
  "marks": [
@@ -523,7 +530,14 @@ export const GROWTH: Growth = {
    "title": "Манхва: прогресс на сервере, закладки, статусы, кэш и webp",
    "summary": "Чтение манхвы стало удобнее и быстрее: прогресс одинаков на всех устройствах, есть закладки с заметками, статусы, клавиши, две страницы и размытие непрочитанного; картинки кэшируются на сервере и переведены в webp.",
    "items": 8,
-   "cum": 1058
+   "cum": 1059
+  },
+  {
+   "d": "2026-11-26",
+   "title": "Карта обучения стала графом",
+   "summary": "Вместо ленты цветков одна страница-граф: единицы книг островками, ветка со стрелками от первой темы до последней.",
+   "items": 4,
+   "cum": 1080
   }
  ]
 }

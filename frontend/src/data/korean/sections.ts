@@ -19,7 +19,7 @@ export const sections: Section[] = [
   { id: 'today', num: '02', menu: 'Сегодня', kicker: 'На сегодня', title: 'Сегодня', sub: 'случайные слова, правило и задания — каждый раз новые', private: true },
   { id: 'words', num: '03', menu: 'Слова', kicker: 'Словарь', title: 'Слова', sub: 'словарь корейского', private: true },
   { id: 'grammar', num: '04', menu: 'Грамматика', kicker: 'Правила', title: 'Грамматика', sub: 'нажми на карточку — откроется объяснение', private: true },
-  { id: 'map', num: '27', menu: 'Карта', kicker: 'По учебнику', title: 'Карта обучения', sub: 'ветка сакуры по книгам 1A и 1B: пройденные темы расцвели, дальше бутоны', private: true },
+  { id: 'map', num: '27', menu: 'Карта', kicker: 'По учебнику', title: 'Карта обучения', sub: 'граф тем по книгам 1A и 1B: пройденные темы расцвели, дальше бутоны', private: true },
   { id: 'ref', num: '05', menu: 'Справочник', kicker: 'Справочник', title: 'Справочник', sub: 'шпаргалка, разговорник, письмо, чтение, примеры и числа', private: true },
   { id: 'cheat', num: '05', menu: 'Шпаргалка', kicker: 'Формулы', title: 'Шпаргалка', sub: 'частицы, формулы, шаблоны предложений', private: true, group: 'ref' },
   { id: 'talk', num: '05', menu: 'Разговорник', kicker: 'Фразы', title: 'Разговорник', sub: 'фразы из TikTok, диалоги знакомства, слэнг', private: true, group: 'ref' },

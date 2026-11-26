@@ -6,6 +6,7 @@
  */
 import { BRAND, SITE, indexablePaths, privatePaths } from './src/data/seo'
 import { HISTORY } from './src/data/history'
+import { OPEN_SRC } from './src/lib/metrika'
 
 const API = process.env.API_BASE || `http://${process.env.API_HOST || '127.0.0.1'}:${process.env.API_PORT || 3001}`
 const pub = indexablePaths()
@@ -60,6 +61,12 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       ],
+      script: [
+        // счётчик Яндекс.Метрики (владелец, 2026-11-26); адреса Метрики разрешены в CSP (src/nitro/plugins/csp.ts)
+        // подключается только на открытых страницах: вебвизор не должен видеть то, что под токеном (src/lib/metrika.ts)
+        { innerHTML: `if(new RegExp('${OPEN_SRC}').test(location.pathname)){(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=114693891','ym');ym(114693891,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});}`, tagPosition: 'head' },
+      ],
+      noscript: [{ innerHTML: '<div><img src="https://mc.yandex.ru/watch/114693891" style="position:absolute;left:-9999px" alt="" /></div>', tagPosition: 'bodyClose' }],
     },
   },
 

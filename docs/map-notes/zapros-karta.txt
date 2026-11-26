@@ -1,0 +1,40 @@
+КУДА ОТПРАВИТЬ ЗАПРОС И ЧТО НАПИСАТЬ (карта мест, 우리말)
+
+ГЛАВНОЕ
+Просить картинку БЕЗ ТЕКСТА и БЕЗ ЗНАЧКОВ, подписи на сайте нарисую я кодом.
+Потом поднять размер картинки программой Upscayl (бесплатная) в 4 раза.
+
+КУДА ОТПРАВЛЯТЬ (по порядку, что лучше)
+
+1. ChatGPT (chatgpt.com), вы им уже пользуетесь. Подходит, просто пишите запрос ниже.
+   Плюс: можно поправить словами. Минус: размер до ~1.5-2 тысяч пикселей, поэтому нужен Upscayl.
+
+2. Ideogram (ideogram.ai). Хорошо слушается запроса, аниме-стиль, есть бесплатные
+   попытки. Формат выбрать 16:9.
+
+3. Midjourney (midjourney.com), самая красивая картинка, но платный. В запросе в конце
+   добавить:  --ar 16:9 --style raw
+
+4. Flux (через сайты fal.ai, Replicate, Krea, Leonardo.ai), высокое разрешение,
+   есть бесплатные пробы. Формат 16:9.
+
+КАК ПОДНЯТЬ РАЗМЕР
+Upscayl (upscayl.org, бесплатная программа для ноутбука): загрузить картинку, выбрать
+увеличение 4x, сохранить. Из 1672x941 получится около 6700x3760.
+Платные варианты лучше дорисовывают детали: Krea Enhance, Magnific.
+
+ЗАПРОС (английский, лучше всего понимают все сети). Скопируйте всё ниже целиком:
+
+Bright cheerful anime-style isometric map of a Korean spring city in full cherry blossom bloom. Green hills and mountains with Namsan tower in the background, a river with stone bridges flowing to a blue sea with rocks, a lighthouse and a ferry. Left to right on the upper street: a department store, a market stall with striped awning, a convenience store, a red discount store, a pink supermarket, a clothes shop, a cafe with a terrace, a restaurant, a bakery, an ice cream shop, a pharmacy, a hospital, a hair salon, a laundry. Middle street: a house, an office and school building, a bookstore, an old library, a cinema, a gym, a traditional bathhouse, a subway tunnel with a yellow train, a bus stop with a bus, a train, an airport with a plane. Bottom: a mountain with a trail, a park with a fountain, pond and wooden bridge, a Korean royal palace gate, a hanok village and a beach with umbrellas. Winding roads connect everything. Vivid saturated colors, very detailed, clean outlines, 16:9 wide.
+IMPORTANT: no text, no letters, no writing on signs, no speech bubbles, no icons, no logos, no watermark.
+
+ЗАПРОС ПО-РУССКИ (если сеть лучше понимает русский)
+
+Яркая весёлая аниме-карта корейского города весной, всё в цвету сакуры, вид сверху под углом. Холмы и горы, на фоне башня Намсан, река с каменными мостами впадает в синее море со скалами, маяк и паром. Верхняя улица слева направо: универмаг, рынок с полосатым навесом, магазин у дома, красный магазин мелочей, розовый супермаркет, магазин одежды, кафе с террасой, ресторан, пекарня, мороженое, аптека, больница, парикмахерская, химчистка. Средняя улица: жилой дом, офис и школа, книжный магазин, старая библиотека, кинотеатр, спортзал, традиционная баня, туннель метро с жёлтым поездом, автобусная остановка с автобусом, поезд, аэропорт с самолётом. Внизу: гора с тропой, парк с фонтаном, прудом и деревянным мостиком, ворота королевского дворца, деревня ханок и пляж с зонтиками. Извилистые дороги соединяют всё. Яркие насыщенные цвета, очень детально, чёткие контуры, широкий формат 16:9.
+ВАЖНО: без текста, без букв, без надписей на вывесках, без облачков с подписями, без значков, без логотипов, без водяных знаков.
+
+ЕСЛИ ВЫШЛО НЕ ТАК
+- Надписи всё же появились: добавьте в запрос "absolutely no text anywhere" и перегенерируйте.
+- Здания в другом порядке: это нормально, главное, чтобы все 30 мест были видны.
+  Положение подписей я подгоню под вашу картинку.
+- Присылайте файл: положите в Загрузки и напишите название.

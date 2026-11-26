@@ -37,3 +37,6 @@ desktop/icon.icns
 
 # Манхва: картинки глав ставит scripts/manhwa-import.mjs, в git не идут
 /data/manhwa/
+
+# собранная читалка документации (tools/docs-reader)
+tools/docs-reader/index.html

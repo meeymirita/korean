@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리말 · документация</title>
+<style>
+:root { --bg: #fff7fb; --panel: #ffffffcc; --ink: #2d2547; --muted: #7d7499; --line: #f0d9e8; --pink: #e0559f; --violet: #7a5ad8; --soft: #fdeaf4; --code: #f6f0ff; --mark: #ffe58a; }
+html[data-t='dark'] { --bg: #1a1320; --panel: #261b2dcc; --ink: #f1e8f7; --muted: #a89bbd; --line: #3b2c46; --pink: #ff8cc2; --violet: #b9a0ff; --soft: #33223a; --code: #2b2036; --mark: #7a5b00; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font: 16px/1.7 'Noto Sans KR', 'Segoe UI', system-ui, sans-serif; color: var(--ink); background: radial-gradient(1100px 600px at 100% -10%, #ffd6ea55, transparent), radial-gradient(900px 500px at -10% 110%, #d8ccff55, transparent), var(--bg); min-height: 100vh; }
+.app { display: grid; grid-template-columns: 300px minmax(0, 1fr) 230px; gap: 22px; max-width: 1560px; margin: 0 auto; padding: 18px; }
+aside, .toc { position: sticky; top: 18px; align-self: start; max-height: calc(100vh - 36px); overflow: auto; }
+.nav { background: var(--panel); border: 1px solid var(--line); border-radius: 26px; padding: 18px 14px; backdrop-filter: blur(10px); scrollbar-width: thin; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 12px; font-size: 22px; font-weight: 800; }
+.brand i { color: var(--pink); font-style: normal; }
+.brand small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+.search { width: 100%; padding: 9px 14px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); color: inherit; font: inherit; font-size: 14px; outline: none; }
+.search:focus { border-color: var(--pink); box-shadow: 0 0 0 3px #e0559f33; }
+.grp { margin: 14px 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.nav a { display: block; padding: 6px 12px; border-radius: 12px; color: inherit; text-decoration: none; font-size: 14.5px; line-height: 1.35; }
+.nav a:hover { background: var(--soft); }
+.nav a.on { background: linear-gradient(90deg, #e0559f22, #7a5ad822); color: var(--pink); font-weight: 700; }
+.nav a small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.nav a .sn { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 400; }
+mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+.tools { display: flex; gap: 8px; margin: 12px 8px 0; }
+.tools button { flex: 1; padding: 7px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.tools button:hover { border-color: var(--pink); }
+main { background: var(--panel); border: 1px solid var(--line); border-radius: 30px; padding: 34px clamp(20px, 4vw, 56px) 50px; backdrop-filter: blur(10px); min-width: 0; }
+.crumb { color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+article h1 { margin: 6px 0 18px; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.2; background: linear-gradient(90deg, var(--pink), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+article h2 { margin: 2em 0 .5em; padding-bottom: .25em; border-bottom: 2px dashed var(--line); font-size: 25px; }
+article h3 { margin: 1.6em 0 .4em; font-size: 20px; color: var(--violet); }
+article h4 { margin: 1.3em 0 .3em; font-size: 17px; }
+article h2, article h3, article h4 { scroll-margin-top: 20px; }
+article p, article li { max-width: 78ch; }
+article a { color: var(--pink); text-underline-offset: 3px; }
+article code { padding: 1px 6px; border-radius: 8px; background: var(--code); font: 13.5px/1.5 ui-monospace, 'JetBrains Mono', Menlo, monospace; color: var(--violet); overflow-wrap: anywhere; }
+article pre { position: relative; margin: 1.1em 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--code); overflow: auto; }
+article pre code { padding: 0; background: none; color: inherit; overflow-wrap: normal; }
+.cp { position: absolute; top: 8px; right: 8px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); color: var(--muted); font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s; }
+pre:hover .cp { opacity: 1; }
+article blockquote { margin: 1.2em 0; padding: 4px 18px; border-left: 4px solid var(--pink); border-radius: 0 14px 14px 0; background: var(--soft); }
+article table { display: block; width: max-content; max-width: 100%; margin: 1.2em 0; overflow-x: auto; border-collapse: collapse; font-size: 14.5px; border-radius: 14px; }
+article th { background: var(--soft); text-align: left; }
+article th, article td { padding: 8px 14px; border: 1px solid var(--line); vertical-align: top; }
+article tr:nth-child(even) td { background: #e0559f0a; }
+article hr { border: 0; height: 2px; margin: 2em 0; background: linear-gradient(90deg, var(--pink), var(--violet), transparent); opacity: .4; }
+article li::marker { color: var(--pink); }
+article img { max-width: 100%; border-radius: 14px; }
+.pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 44px; }
+.pager a { flex: 1; padding: 12px 16px; border: 1px solid var(--line); border-radius: 18px; color: inherit; text-decoration: none; font-size: 14px; }
+.pager a:hover { border-color: var(--pink); background: var(--soft); }
+.pager a small { display: block; color: var(--muted); font-size: 12px; }
+.pager a:last-child { text-align: right; }
+.toc { font-size: 13.5px; }
+.toc b { display: block; margin: 8px 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.toc a { display: block; padding: 3px 0 3px 12px; border-left: 2px solid var(--line); color: var(--muted); text-decoration: none; line-height: 1.35; }
+.toc a:hover, .toc a.on { color: var(--pink); border-left-color: var(--pink); }
+.toc a.l3 { padding-left: 26px; font-size: 12.5px; }
+.home { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 18px; }
+.home a { padding: 14px 16px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg); color: inherit; text-decoration: none; transition: transform .15s, box-shadow .15s; }
+.home a:hover { transform: translateY(-3px); box-shadow: 0 10px 24px #7a5ad82e; border-color: var(--pink); }
+.home a b { display: block; font-size: 15px; }
+.home a small { color: var(--muted); font-size: 12.5px; }
+.home h2 { grid-column: 1 / -1; margin: 14px 0 0; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); border: 0; }
+.fall { position: fixed; top: -20px; z-index: 0; pointer-events: none; border-radius: 80% 0 80% 0; background: #ffb3da; opacity: .5; animation: fall linear infinite; }
+@keyframes fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: .5; } 100% { transform: translate(80px, 110vh) rotate(420deg); opacity: 0; } }
+.app { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .fall { display: none; } html { scroll-behavior: auto; } }
+@media (max-width: 1200px) { .app { grid-template-columns: 280px minmax(0, 1fr); } .toc { display: none; } }
+@media (max-width: 800px) { .app { grid-template-columns: 1fr; padding: 10px; } aside { position: static; max-height: none; } .nav { max-height: 46vh; overflow: auto; } main { padding: 22px 16px 36px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside><div class="nav">
+    <div class="brand"><i>✳︎</i><div>우리말<small>документация проекта</small></div></div>
+    <input class="search" id="q" type="search" placeholder="Поиск по всем файлам…  ( / )" autocomplete="off">
+    <div class="tools"><button id="theme">☾ тема</button><button id="top">↑ наверх</button></div>
+    <div id="list"></div>
+  </div></aside>
+  <main><div class="crumb" id="crumb"></div><article id="doc"></article><div class="pager" id="pager"></div></main>
+  <nav class="toc" id="toc"></nav>
+</div>
+<script>/*MARKED*/</script>
+<script>
+const { docs, order } = /*DATA*/
+const $ = s => document.querySelector(s)
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const byId = Object.fromEntries(docs.map(d => [d.id, d]))
+const sorted = order.flatMap(g => docs.filter(d => d.group === g))
+for (let i = 0; i < 14; i++) { const e = document.createElement('i'); e.className = 'fall'; const s = 10 + (i % 3) * 5; e.style.cssText = `left:${3 + i * 7}%;width:${s}px;height:${s}px;animation-delay:${-i * 2.1}s;animation-duration:${14 + (i % 4) * 3}s`; document.body.append(e) }
+
+/* тема */
+const setT = t => { document.documentElement.dataset.t = t; localStorage.setItem('dr-t', t); $('#theme').textContent = t === 'dark' ? '☀ тема' : '☾ тема' }
+setT(localStorage.getItem('dr-t') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
+$('#theme').onclick = () => setT(document.documentElement.dataset.t === 'dark' ? 'light' : 'dark')
+$('#top').onclick = () => scrollTo({ top: 0 })
+
+/* меню и поиск */
+const snippet = (md, q) => {
+  const i = md.toLowerCase().indexOf(q)
+  if (i < 0) return ''
+  const a = md.slice(Math.max(0, i - 40), i + q.length + 70).replace(/\s+/g, ' ')
+  return '…' + esc(a).replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), m => `<mark>${m}</mark>`) + '…'
+}
+function renderList() {
+  const q = $('#q').value.trim().toLowerCase()
+  const cur = location.hash.slice(1).split('~')[0]
+  let h = ''
+  for (const g of order) {
+    const items = sorted.filter(d => d.group === g && (!q || d.title.toLowerCase().includes(q) || d.id.includes(q) || d.md.toLowerCase().includes(q)))
+    if (!items.length) continue
+    h += `<div class="grp">${g}</div>` + items.map(d => `<a href="#${d.id}" class="${d.id === cur ? 'on' : ''}">${esc(d.title)}<small>${d.id}.md</small>${q ? `<span class="sn">${snippet(d.md, q)}</span>` : ''}</a>`).join('')
+  }
+  $('#list').innerHTML = h || '<div class="grp">ничего не найдено</div>'
+}
+$('#q').oninput = renderList
+addEventListener('keydown', e => { if (e.key === '/' && document.activeElement !== $('#q')) { e.preventDefault(); $('#q').focus() } else if (e.key === 'Escape') { $('#q').value = ''; $('#q').blur(); renderList() } })
+
+/* документ */
+const slug = s => s.toLowerCase().replace(/<[^>]+>/g, '').replace(/[^\p{L}\p{N}]+/g, '-').replace(/^-|-$/g, '')
+function show() {
+  const [id, anchor] = location.hash.slice(1).split('~')
+  const d = byId[id]
+  if (!d) {
+    $('#crumb').textContent = 'документация'
+    $('#doc').innerHTML = `<h1>우리말 · документация</h1><p>${docs.length} файлов. Выбери слева или найди по слову: поиск ищет по всему тексту.</p><div class="home">` +
+      order.map(g => `<h2>${g}</h2>` + sorted.filter(x => x.group === g).map(x => `<a href="#${x.id}"><b>${esc(x.title)}</b><small>${x.id}.md</small></a>`).join('')).join('') + '</div>'
+    $('#pager').innerHTML = ''; $('#toc').innerHTML = ''; document.title = '우리말 · документация'; renderList(); return
+  }
+  const used = {}
+  const r = new marked.Renderer()
+  r.heading = function ({ tokens, depth }) {
+    const text = this.parser.parseInline(tokens)
+    let s = slug(text) || 'h'
+    used[s] = (used[s] || 0) + 1
+    if (used[s] > 1) s += '-' + used[s]
+    return `<h${depth} id="${s}">${text}</h${depth}>`
+  }
+  r.link = function ({ href, title, tokens }) {
+    const text = this.parser.parseInline(tokens)
+    const m = /^(?:\.\/|\.\.\/docs\/|docs\/)?([\w\-\/]+)\.md(?:#(.*))?$/.exec(href)
+    if (m) {
+      const base = d.id.includes('/') && !href.startsWith('docs/') && !href.startsWith('../') ? d.id.replace(/[^/]+$/, '') : ''
+      const target = byId[base + m[1]] ? base + m[1] : m[1]
+      if (byId[target]) return `<a href="#${target}${m[2] ? '~' + m[2] : ''}">${text}</a>`
+    }
+    return `<a href="${href}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`
+  }
+  $('#crumb').textContent = d.group + ' · ' + d.id + '.md'
+  $('#doc').innerHTML = marked.parse(d.md, { renderer: r, gfm: true })
+  $('#doc').querySelectorAll('pre').forEach(p => { const b = document.createElement('button'); b.className = 'cp'; b.textContent = 'копировать'; b.onclick = () => { navigator.clipboard.writeText(p.innerText.replace(/копировать$/, '')); b.textContent = 'готово'; setTimeout(() => (b.textContent = 'копировать'), 1200) }; p.append(b) })
+  const hs = [...$('#doc').querySelectorAll('h2, h3')]
+  $('#toc').innerHTML = hs.length ? '<b>На странице</b>' + hs.map(h => `<a href="#${d.id}~${h.id}" class="${h.tagName === 'H3' ? 'l3' : ''}">${h.textContent}</a>`).join('') : ''
+  const i = sorted.indexOf(d)
+  const pa = sorted[i - 1], pb = sorted[i + 1]
+  $('#pager').innerHTML = (pa ? `<a href="#${pa.id}"><small>← назад</small>${esc(pa.title)}</a>` : '<span></span>') + (pb ? `<a href="#${pb.id}"><small>дальше →</small>${esc(pb.title)}</a>` : '')
+  document.title = d.title + ' · 우리말'
+  renderList()
+  if (anchor) setTimeout(() => document.getElementById(anchor)?.scrollIntoView(), 30); else scrollTo({ top: 0, behavior: 'instant' })
+}
+addEventListener('hashchange', show)
+/* подсветка пункта оглавления при прокрутке */
+addEventListener('scroll', () => {
+  const links = [...document.querySelectorAll('.toc a')]
+  let cur = null
+  for (const a of links) { const el = document.getElementById(a.getAttribute('href').split('~')[1]); if (el && el.getBoundingClientRect().top < 120) cur = a }
+  links.forEach(a => a.classList.toggle('on', a === cur))
+}, { passive: true })
+show()
+</script>
+</body>
+</html>

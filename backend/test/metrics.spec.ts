@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
-import { describe, expect, it } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MetricsService } from '../src/metrics.service'
 
 describe('метрики HTTP-запросов', () => {
@@ -34,4 +35,28 @@ describe('метрики HTTP-запросов', () => {
     expect(result).toContain('dict_word_not_found_total 1')
     expect(result).not.toContain('%EC%97%86')
   })
+
+  it('раз в 15 минут пишет в журнал, какие слова не нашлись чаще всего', () => {
+    vi.useFakeTimers()
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const metrics = new MetricsService()
+    const hit = (word: string) => {
+      const response = new EventEmitter() as EventEmitter & { statusCode: number; once: EventEmitter['once'] }
+      response.statusCode = 404
+      metrics.middleware({ method: 'GET', originalUrl: `/api/dict/word/${encodeURIComponent(word)}`, headers: {} } as never, response as never, () => undefined)
+      response.emit('finish')
+    }
+    hit('없는'); hit('없는'); hit('abc')
+    expect(warn).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(16 * 60_000)
+    hit('другое\nслово')
+    expect(warn).toHaveBeenCalledTimes(1)
+    const line = String(warn.mock.calls[0]![0])
+    expect(line).toContain('없는 ×2')
+    expect(line).toContain('abc ×1')
+    expect(line).not.toContain('\n')
+    expect(metrics.render()).toContain('dict_word_not_found_total 4')
+  })
+
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
 })
