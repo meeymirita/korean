@@ -345,11 +345,10 @@ html[data-theme='dark'][data-palette='wine'] .crop-row:where(:not(.pk *)) { colo
 html[data-theme='dark'][data-palette='wine'] .crop-actions .ghost:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; border-color: rgba(255, 190, 220, 0.18); }
 
 /* views/korean/MapView.vue */
-html[data-theme='dark'][data-palette='wine'] .cnt:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.12); color: var(--pink, #ffd1e3); }
-html[data-theme='dark'][data-palette='wine'] .tag:hover:where(:not(.pk *)),
-html[data-theme='dark'][data-palette='wine'] .tag:focus-visible:where(:not(.pk *)) { box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .tag.next:where(:not(.pk *)) { box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .unit.gold:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.28); box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .k1:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .k2:where(:not(.pk *)) { color: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tip:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .cap.gold:where(:not(.pk *)) { background: rgba(255, 111, 174, 0.55); color: #ffffff; box-shadow: none; }
 
 /* views/korean/MarksView.vue */
 html[data-theme='dark'][data-palette='wine'] .mk-kw li:where(:not(.pk *)) { background: var(--surface, rgba(255, 255, 255, 0.07)); }
@@ -863,7 +862,7 @@ html[data-theme='dark'][data-palette='wine'] .vm-chip.on:where(:not(.pk *)) { ba
 html[data-theme='dark'][data-palette='wine'] .vm-q:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .vm-q:where(:not(.pk *))::placeholder { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vm-ico:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .vm-tip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-tip:where(:not(.pk *)) { border-top: 5px solid var(--pc, rgba(255, 190, 220, 0.35)); background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .vm-tip span:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vm-tip img:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vm-tip small:where(:not(.pk *)) { color: #ffd1e3; }
@@ -871,38 +870,65 @@ html[data-theme='dark'][data-palette='wine'] .vm-dim:where(:not(.pk *)) { color:
 html[data-theme='dark'][data-palette='wine'] .vm-hint:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vm-zoom:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.06); color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vm-panel:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .vm-x:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .vm-x:where(:not(.pk *)) { background: color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 25%, rgba(255, 255, 255, 0.07)); color: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .vm-panel:where(:not(.pk *)) { border-left: 6px solid var(--pc, rgba(255, 190, 220, 0.35)); }
+html[data-theme='dark'][data-palette='wine'] .vm-ph:where(:not(.pk *)) { background: linear-gradient(135deg, var(--pc, rgba(255, 111, 174, 1)), color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 55%, rgba(255, 255, 255, 0.07))); }
+html[data-theme='dark'][data-palette='wine'] .vm-ph h3:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vm-ph .vm-ru:where(:not(.pk *)) { text-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vm-pic:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
 html[data-theme='dark'][data-palette='wine'] .vm-ru:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .vm-sum:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
-html[data-theme='dark'][data-palette='wine'] .vm-pl .vm-chip:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); }
-html[data-theme='dark'][data-palette='wine'] .vm-panel h4:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .vm-vl li:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .vm-sum:where(:not(.pk *)) { background: color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 18%, rgba(255, 255, 255, 0.07)); color: color-mix(in srgb, var(--pc, #ff9cc6) 55%, #ffffff); }
+html[data-theme='dark'][data-palette='wine'] .vm-pl .vm-chip:where(:not(.pk *)) { background: color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 18%, rgba(255, 255, 255, 0.07)); }
+html[data-theme='dark'][data-palette='wine'] .vm-panel h4:where(:not(.pk *)) { color: color-mix(in srgb, var(--pc, #ff9cc6) 70%, #ffffff); }
+html[data-theme='dark'][data-palette='wine'] .vm-vl li:where(:not(.pk *)) { background: color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 7%, rgba(255, 255, 255, 0.07)); border: 1px solid color-mix(in srgb, var(--pc, rgba(255, 190, 220, 0.35)) 25%, rgba(255, 190, 220, 0.18)); border-left: 5px solid var(--pc, rgba(255, 190, 220, 0.35)); }
 html[data-theme='dark'][data-palette='wine'] .vm-vl li.seen:where(:not(.pk *)) { border-color: rgba(255, 190, 220, 0.35); }
 html[data-theme='dark'][data-palette='wine'] .vm-vl img:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.1); }
 html[data-theme='dark'][data-palette='wine'] .vm-vl small:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .vm-links a:where(:not(.pk *)),
-html[data-theme='dark'][data-palette='wine'] .vm-ph2 a:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .vm-ph2 li:where(:not(.pk *)) { border-left: 3px solid rgba(255, 190, 220, 0.18); }
+html[data-theme='dark'][data-palette='wine'] .vm-ph2 a:where(:not(.pk *)) { color: color-mix(in srgb, var(--pc, #ff9cc6) 75%, #ffffff); }
+html[data-theme='dark'][data-palette='wine'] .vm-ph2 li:where(:not(.pk *)) { border-left: 4px solid var(--pc, rgba(255, 190, 220, 0.18)); background: color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 6%, rgba(255, 255, 255, 0.07)); }
 @media (max-width: 760px) {
 html[data-theme='dark'][data-palette='wine'] .vm-panel:where(:not(.pk *)) { box-shadow: none; }
 }
 
+/* components/korean/VlogMapCity.vue */
+html[data-theme='dark'][data-palette='wine'] .cy-patch.k0:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-patch.k1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-patch.k2:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-pz-rim:where(:not(.pk *)) { fill: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .cy-road-edge:where(:not(.pk *)) { stroke: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .cy-river:where(:not(.pk *)) { stroke: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-bridge:where(:not(.pk *)) { stroke: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .cy-rail:where(:not(.pk *)) { stroke: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-pond-rim:where(:not(.pk *)) { fill: #ffb3d1; }
+html[data-theme='dark'][data-palette='wine'] .cy-pond:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-lily:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-rocks path:where(:not(.pk *)) { fill: #ffd1e3; stroke: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-lh path:where(:not(.pk *)) { stroke: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-lh rect:last-child:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-umb .u1:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-umb .u2:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-umb rect:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-sh:where(:not(.pk *)) { fill: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .cy-trunk:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .g1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .g2:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .g3:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .car-b:where(:not(.pk *)) { fill: var(--car, #ff9cc6); }
+html[data-theme='dark'][data-palette='wine'] .car-t:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .walker:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cy-boat .cab:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .cl-sh:where(:not(.pk *)) { fill: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .cy-fountain .fn-rim:where(:not(.pk *)) { fill: #ffb3d1; stroke: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .cy-fountain .fn-water:where(:not(.pk *)) { fill: #ff9cc6; }
+
 /* components/korean/VlogMapScene.vue */
-html[data-theme='dark'][data-palette='wine'] .vs-sea:where(:not(.pk *)) { background: radial-gradient(ellipse at 20% 15%, rgba(255, 255, 255, 0.04), transparent 45%),
-  radial-gradient(ellipse at 80% 85%, rgba(255, 111, 174, 0.2), transparent 50%),
-  repeating-linear-gradient(176deg, rgba(255, 255, 255, 0.04) 0 3px, transparent 3px 46px),
-  linear-gradient(170deg, rgba(255, 111, 174, 1), rgba(255, 111, 174, 1) 40%, rgba(255, 111, 174, 1) 100%); }
 html[data-theme='dark'][data-palette='wine'] .vs-petal:where(:not(.pk *)) { background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.07), rgba(255, 111, 174, 0.2)); }
-html[data-theme='dark'][data-palette='wine'] .vs-pill:where(:not(.pk *)) { border: 2px solid rgba(255, 190, 220, 0.18); background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)); color: #ffffff; box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .vs-pill:hover:where(:not(.pk *)),
-html[data-theme='dark'][data-palette='wine'] .vs-pill.on:where(:not(.pk *)),
-html[data-theme='dark'][data-palette='wine'] .vs-pill:focus-visible:where(:not(.pk *)) { box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .vs-pt small:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .vs-n:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); border: 2px solid rgba(255, 190, 220, 0.18); }
-html[data-theme='dark'][data-palette='wine'] .vs-pin:where(:not(.pk *)) { color: #ffffff; }
-html[data-theme='dark'][data-palette='wine'] .vs-pin span:where(:not(.pk *)) { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
-html[data-theme='dark'][data-palette='wine'] .vs-pin small:where(:not(.pk *)) { color: #ffd1e3; }
-html[data-theme='dark'][data-palette='wine'] .vs-pin.on span:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vs-pin:where(:not(.pk *)) { border: 4px solid var(--pc, rgba(255, 190, 220, 0.35)); background: color-mix(in srgb, var(--pc, rgba(255, 111, 174, 1)) 18%, rgba(255, 255, 255, 0.07)); color: #ffffff; box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vs-pin:hover:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vs-pin.on:where(:not(.pk *)),
+html[data-theme='dark'][data-palette='wine'] .vs-pin:focus-visible:where(:not(.pk *)) { box-shadow: none; }
+html[data-theme='dark'][data-palette='wine'] .vs-n:where(:not(.pk *)) { background: rgba(255, 111, 174, 1); border: 2px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
 
 /* components/korean/VlogNote.vue */
 html[data-theme='dark'][data-palette='wine'] .vn-foot .error:where(:not(.pk *)) { color: #ffd1e3; }
@@ -934,6 +960,33 @@ html[data-theme='dark'][data-palette='wine'] .study .wg-arc:where(:not(.pk *)) {
 /* components/korean/WordsCheck.vue */
 html[data-theme='dark'][data-palette='wine'] .study .wc-bad:where(:not(.pk *)) { color: #ffd1e3; }
 html[data-theme='dark'][data-palette='wine'] .study .wc-good:where(:not(.pk *)) { color: var(--ok, #ffd1e3); }
+
+/* components/korean/mapgraph/FlowerNode.vue */
+html[data-theme='dark'][data-palette='wine'] .here:where(:not(.pk *)) { color: #ffffff; }
+
+/* components/korean/mapgraph/MapScenery.vue */
+html[data-theme='dark'][data-palette='wine'] .spot1:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .spot2:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .hill0:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .hill1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .hill2:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .river:where(:not(.pk *)) { stroke: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .shade:where(:not(.pk *)) { fill: #ffffff; }
+html[data-theme='dark'][data-palette='wine'] .trunk:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .c1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .c2:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .c3:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tone1 .c1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tone1 .c2:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tone1 .c3:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tone2 .c1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tone2 .c2:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .tone2 .c3:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .lf:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .leaf0:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .leaf1:where(:not(.pk *)) { fill: #ffd1e3; }
+html[data-theme='dark'][data-palette='wine'] .leaf2:where(:not(.pk *)) { fill: #ff9cc6; }
+html[data-theme='dark'][data-palette='wine'] .leaf3:where(:not(.pk *)) { fill: #ffd1e3; }
 
 /* components/music/MusicButton.vue */
 html[data-theme='dark'][data-palette='wine'] .mp-fab:where(:not(.pk *)) { color: var(--ink, #ffffff); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 190, 220, 0.18); box-shadow: none; }
