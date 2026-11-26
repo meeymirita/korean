@@ -62,6 +62,8 @@ const tipTotals = computed(() => {
   return { vlogs: 0, phrases: 0 }
 })
 const selPlace = computed(() => PLACES.find(p => p.id === selId.value))
+/** Цвет выбранного места (у района цвет района): им красятся шапка, акценты и рамка панели. */
+const panelColor = computed(() => selPlace.value?.color ?? DISTRICTS.find(x => `d:${x.id}` === selId.value)?.color ?? '#8f7cf0')
 const selDistrict = computed(() => (selId.value.startsWith('d:') ? DISTRICTS.find(d => d.id === selId.value.slice(2)) : undefined))
 const selStat = computed(() => {
   if (selPlace.value) {
@@ -262,7 +264,7 @@ onBeforeUnmount(() => {
           <VlogMapScene :hover-id="hoverId" :sel-id="selId" :count="countOf" :faded="faded" @hover="hover" @move="moveTip" @leave="leave" @select="select" />
         </div>
 
-        <div v-if="tipOn && (place || tipDistrict)" ref="tipEl" class="vm-tip" role="tooltip">
+        <div v-if="tipOn && (place || tipDistrict)" ref="tipEl" class="vm-tip" :style="{ '--pc': place?.color ?? '#8f7cf0' }" role="tooltip">
           <b lang="ko">{{ place?.ko ?? tipDistrict?.ko }}</b> <span>{{ place?.ru ?? tipDistrict?.ru }}</span>
           <p v-if="tipTotals.vlogs">{{ tipTotals.vlogs }} {{ plural(tipTotals.vlogs, 'влог', 'влога', 'влогов') }}, {{ tipTotals.phrases }} {{ plural(tipTotals.phrases, 'фраза', 'фразы', 'фраз') }}</p>
           <p v-else class="vm-dim">Пока ни в одном влоге.</p>
@@ -273,7 +275,7 @@ onBeforeUnmount(() => {
         <p class="vm-hint" aria-hidden="true">Двигай карту и приближай колесом или щипком. Наведи на место, нажми, чтобы увидеть влоги.</p>
       </div>
 
-      <aside class="vm-panel" :class="{ open: !!selStat }" aria-live="polite" @click.stop>
+      <aside class="vm-panel" :class="{ open: !!selStat }" :style="{ '--pc': panelColor }" aria-live="polite" @click.stop>
         <template v-if="selStat">
           <button type="button" class="vm-x" aria-label="Закрыть" @click="closePanel">✕</button>
           <div class="vm-ph">
@@ -344,7 +346,7 @@ onBeforeUnmount(() => {
 .vm-view.panning, .vm-view.panning * { cursor: grabbing !important; }
 
 /* подсказка при наведении */
-.vm-tip { position: absolute; z-index: 8; width: 280px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .96); color: #2b2250; box-shadow: 0 16px 40px rgba(60, 50, 110, .3); pointer-events: none; animation: vm-pop .16s ease-out; }
+.vm-tip { border-top: 5px solid var(--pc, #8f7cf0); position: absolute; z-index: 8; width: 280px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .96); color: #2b2250; box-shadow: 0 16px 40px rgba(60, 50, 110, .3); pointer-events: none; animation: vm-pop .16s ease-out; }
 .vm-tip b { font-size: 19px; }
 .vm-tip span { color: #6a5a9a; font-size: 14px; margin-left: 4px; }
 .vm-tip p { margin: 6px 0 0; font-size: 14px; }
@@ -361,25 +363,27 @@ onBeforeUnmount(() => {
 /* панель справа */
 .vm-panel { position: absolute; z-index: 9; top: 0; right: 0; bottom: 0; width: min(400px, 92vw); padding: 56px 18px 24px; overflow-y: auto; background: rgba(255, 255, 255, .97); color: #2b2250; box-shadow: -18px 0 50px rgba(60, 50, 110, .28); transform: translateX(104%); transition: transform .42s cubic-bezier(.2, .9, .25, 1); overscroll-behavior: contain; }
 .vm-panel.open { transform: none; }
-.vm-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #efeafb; color: #3b2f5e; font-size: 16px; cursor: pointer; }
-.vm-ph { display: flex; align-items: center; gap: 12px; }
-.vm-pic { width: 76px; height: 76px; flex: none; }
+.vm-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--pc, #8f7cf0) 25%, #fff); color: #3b2f5e; font-size: 16px; cursor: pointer; }
+.vm-panel { border-left: 6px solid var(--pc, #8f7cf0); }
+.vm-ph { display: flex; align-items: center; gap: 14px; margin: -56px -18px 0; padding: 56px 18px 16px; background: linear-gradient(135deg, var(--pc, #8f7cf0), color-mix(in srgb, var(--pc, #8f7cf0) 55%, #fff)); color: #fff; }
+.vm-ph h3, .vm-ph .vm-ru { color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.vm-pic { width: 84px; height: 84px; flex: none; padding: 6px; border-radius: 22px; background: rgba(255, 255, 255, .92); box-shadow: 0 6px 16px rgba(0, 0, 0, .2); }
 .vm-ph h3 { margin: 0; font-size: 28px; }
 .vm-ru { margin: 2px 0 0; color: #6a5a9a; font-size: 15px; }
 .vm-note { margin: 12px 0 0; font-size: 14.5px; line-height: 1.5; }
-.vm-sum { margin: 10px 0 0; padding: 6px 12px; border-radius: 12px; background: #f1ecfd; font-size: 14px; font-weight: 600; width: fit-content; }
+.vm-sum { margin: 12px 0 0; padding: 6px 12px; border-radius: 12px; background: color-mix(in srgb, var(--pc, #8f7cf0) 18%, #fff); color: color-mix(in srgb, var(--pc, #8f7cf0) 55%, #2b2250); font-size: 14px; font-weight: 700; width: fit-content; }
 .vm-pl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.vm-pl .vm-chip { background: #f1ecfd; }
-.vm-panel h4 { margin: 18px 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #8a82ad; }
+.vm-pl .vm-chip { background: color-mix(in srgb, var(--pc, #8f7cf0) 18%, #fff); }
+.vm-panel h4 { margin: 18px 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--pc, #8f7cf0) 70%, #2b2250); }
 .vm-vl, .vm-ph2 { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.vm-vl li { display: flex; gap: 10px; padding: 8px; border-radius: 14px; background: #faf8ff; border: 1px solid #ebe5fa; }
+.vm-vl li { display: flex; gap: 10px; padding: 8px; border-radius: 14px; background: color-mix(in srgb, var(--pc, #8f7cf0) 7%, #fff); border: 1px solid color-mix(in srgb, var(--pc, #8f7cf0) 25%, #fff); border-left: 5px solid var(--pc, #8f7cf0); }
 .vm-vl li.seen { border-color: #8ad0a8; }
 .vm-vl img { width: 96px; height: 54px; object-fit: cover; border-radius: 10px; flex: none; background: #e8e2f5; }
 .vm-vl b { display: block; font-size: 14px; line-height: 1.3; }
 .vm-vl small { display: block; margin-top: 2px; color: #7a72a0; font-size: 12px; }
 .vm-links { display: flex; gap: 12px; margin-top: 4px; }
-.vm-links a, .vm-ph2 a { color: #6a4fe0; font-size: 12.5px; text-decoration: none; }
-.vm-ph2 li { padding: 8px 12px; border-left: 3px solid #cdbff7; font-size: 15px; line-height: 1.5; }
+.vm-links a, .vm-ph2 a { color: color-mix(in srgb, var(--pc, #8f7cf0) 75%, #2b2250); font-weight: 600; font-size: 12.5px; text-decoration: none; }
+.vm-ph2 li { padding: 8px 12px; border-left: 4px solid var(--pc, #cdbff7); background: color-mix(in srgb, var(--pc, #8f7cf0) 6%, #fff); border-radius: 0 12px 12px 0; font-size: 15px; line-height: 1.5; }
 .vm-ph2 a { display: block; }
 @media (max-width: 760px) {
   .vm-view { height: calc(100dvh - 230px); min-height: 460px; }
