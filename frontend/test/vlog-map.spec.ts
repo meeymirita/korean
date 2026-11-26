@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VlogMap from '@/components/korean/VlogMap.vue'
-import { DISTRICTS, PLACES } from '@/data/korean/vlog-map'
+import { PLACES } from '@/data/korean/vlog-map'
 
 /** вход подменён: настоящий без сервера невозможен */
 vi.mock('@/stores/progress', async original => {
@@ -15,7 +15,7 @@ vi.mock('@/stores/progress', async original => {
   }
 })
 
-// «Карта мест»: районы и места, подсказка при наведении, панель с влогами по нажатию, поиск и фильтр.
+// «Карта мест»: значки мест на карте города, подсказка при наведении, панель с влогами по нажатию, поиск и фильтр.
 afterEach(() => vi.unstubAllGlobals())
 
 async function mountMap() {
@@ -27,29 +27,23 @@ async function mountMap() {
 }
 
 describe('Карта мест', () => {
-  it('рисует плашки девяти районов с числом влогов и значки в панели', async () => {
+  it('рисует значок на каждое место с числом влогов, значки лежат в определениях', async () => {
     const w = await mountMap()
-    expect(w.findAll('.vs-pill').length).toBe(9)
-    expect(w.findAll('.vs-pill .vs-n').length).toBeGreaterThan(5)
+    expect(w.findAll('.vs-pin').length).toBe(PLACES.length)
+    expect(w.findAll('.vs-pin .vs-n').length).toBeGreaterThan(5)
     expect(w.find('.vm-defs symbol').exists()).toBe(true)
     w.unmount()
   })
 
-  it('нажатие на плашку открывает панель района и ставит значки его мест, нажатие на место открывает влоги, Esc закрывает', async () => {
+  it('наведение показывает подсказку, нажатие на место открывает панель с влогами, Esc закрывает', async () => {
     const w = await mountMap()
-    const food = w.findAll('.vs-pill')[1]!
-    await food.trigger('mouseenter', { clientX: 200, clientY: 200 })
-    expect(w.find('.vm-tip').exists()).toBe(true)
-    await food.trigger('click')
-    await flushPromises()
-    expect(w.find('.vm-panel').classes()).toContain('open')
-    expect(w.find('.vm-panel h3').text()).toBe(DISTRICTS.find(d => d.id === 'food')!.ko)
-    expect(w.findAll('.vm-pl .vm-chip').length).toBeGreaterThan(2)
     const pins = w.findAll('.vs-pin')
-    expect(pins.length).toBe(PLACES.filter(p => p.district === 'food').length)
-    const cafe = pins[PLACES.filter(p => p.district === 'food').findIndex(p => p.id === 'cafe')]!
+    const cafe = pins[PLACES.findIndex(p => p.id === 'cafe')]!
+    await cafe.trigger('mouseenter', { clientX: 200, clientY: 200 })
+    expect(w.find('.vm-tip').exists()).toBe(true)
     await cafe.trigger('click')
     await flushPromises()
+    expect(w.find('.vm-panel').classes()).toContain('open')
     expect(w.find('.vm-panel h3').text()).toBe('카페')
     expect(w.findAll('.vm-vl li').length).toBeGreaterThan(3)
     expect(w.find('.vm-vl a').attributes('href')).toMatch(/^\/korean\/vlog\?v=.+&t=\d+$/)
@@ -59,18 +53,16 @@ describe('Карта мест', () => {
     w.unmount()
   })
 
-  it('плашка Чеджу открывает место «море и остров»', async () => {
+  it('значок «море и остров» открывает своё место', async () => {
     const w = await mountMap()
-    await w.findAll('.vs-pill')[8]!.trigger('click')
+    await w.findAll('.vs-pin')[PLACES.findIndex(p => p.id === 'sea')]!.trigger('click')
     await flushPromises()
     expect(w.find('.vm-panel h3').text()).toBe(PLACES.find(p => p.id === 'sea')!.ko)
     w.unmount()
   })
 
-  it('поиск гасит лишние места района, «где есть непросмотренные» оставляет места с новыми влогами', async () => {
+  it('поиск гасит лишние места, «где есть непросмотренные» оставляет места с новыми влогами', async () => {
     const w = await mountMap()
-    await w.findAll('.vs-pill')[1]!.trigger('click')
-    await flushPromises()
     await w.find('.vm-q').setValue('кафе')
     const pins = w.findAll('.vs-pin')
     const faded = w.findAll('.vs-pin.faded').length
