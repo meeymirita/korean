@@ -48,12 +48,12 @@ const isOn = (id: string) => props.hoverId === id || props.selId === id
 .vs { position: relative; overflow: hidden; user-select: none; -webkit-user-select: none; }
 .vs-petal { position: absolute; top: -30px; z-index: 2; border-radius: 80% 20% 80% 20%; background: radial-gradient(circle at 30% 30%, #ffe4f0, #ffb3d1); opacity: .85; pointer-events: none; animation: vs-fall linear infinite; }
 @keyframes vs-fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: .85; } 100% { transform: translate(180px, 980px) rotate(520deg); opacity: 0; } }
-.vs-pin { position: absolute; z-index: 5; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 16px 0 8px; border: 3px solid var(--pc, #ff6fa8); border-radius: 26px; background: rgba(255, 255, 255, .96); color: #3a2a4a; font: inherit; white-space: nowrap; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 5px 12px rgba(40, 50, 90, .3); transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s; }
-.vs-ic { width: 32px; height: 32px; flex: none; }
-.vs-pin b { font: 800 19px/1 'Noto Sans KR', 'Archivo', sans-serif; }
-.vs-pin:hover, .vs-pin.on, .vs-pin:focus-visible { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 0 0 4px #ff6fa8, 0 10px 22px rgba(40, 30, 90, .4); outline: none; z-index: 8; }
+.vs-pin { position: absolute; z-index: 5; display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 26px 0 12px; border: 4px solid var(--pc, #ff6fa8); border-radius: 34px; background: rgba(255, 255, 255, .97); color: #3a2a4a; font: inherit; white-space: nowrap; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 8px 18px rgba(40, 50, 90, .32); transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s; }
+.vs-ic { width: 46px; height: 46px; flex: none; }
+.vs-pin b { font: 800 27px/1 'Noto Sans KR', 'Archivo', sans-serif; }
+.vs-pin:hover, .vs-pin.on, .vs-pin:focus-visible { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 0 0 6px #ff6fa8, 0 14px 30px rgba(40, 30, 90, .45); outline: none; z-index: 8; }
 .vs-pin.faded { opacity: .15; }
-.vs-n { position: absolute; top: -14px; right: -10px; min-width: 26px; height: 26px; padding: 0 7px; box-sizing: border-box; border-radius: 999px; background: #ff6fa8; color: #fff; font: 800 14px/22px 'Archivo', system-ui, sans-serif; text-align: center; border: 2px solid #fff; font-style: normal; box-shadow: 0 3px 8px rgba(60, 40, 100, .35); }
+.vs-n { position: absolute; top: -20px; right: -14px; min-width: 38px; height: 38px; padding: 0 10px; box-sizing: border-box; border-radius: 999px; background: #ff6fa8; color: #fff; font: 800 20px/32px 'Archivo', system-ui, sans-serif; text-align: center; border: 2px solid #fff; font-style: normal; box-shadow: 0 3px 8px rgba(60, 40, 100, .35); }
 .vs-pin.none .vs-n { display: none; }
 @media (prefers-reduced-motion: reduce) { .vs-petal { display: none; } .vs-pin { transition: none; } }
 </style>

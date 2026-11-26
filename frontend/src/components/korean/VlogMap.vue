@@ -136,15 +136,22 @@ const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefe
 
 function fitScale() {
   const c = view.value
-  return c ? Math.min(c.clientWidth / W, c.clientHeight / H) : 0.5
+  // карта всегда накрывает окно целиком (как обои), полей и фона вокруг нет
+  return c ? Math.max(c.clientWidth / W, c.clientHeight / H) : 0.5
 }
 /** Начальный масштаб: вся карта; на узком экране крупнее, иначе подписи не прочитать (карту двигают пальцем). */
-const startScale = () => (typeof window !== 'undefined' && window.innerWidth < 760 ? Math.max(fitScale(), 0.3) : fitScale())
+const startScale = () => Math.max(fitScale(), typeof window !== 'undefined' && window.innerWidth < 760 ? 0.38 : 0.5)
 function fit(animate = true) {
   if (!pz) return
   const sc = startScale()
   pz.zoom(sc, { animate: animate && !reduced(), force: true })
-  pz.pan(0, 0, { animate: animate && !reduced(), force: true })
+  centerOn(W / 2, H / 2, sc, animate)
+}
+/** Холст стоит в левом верхнем углу окна, масштаб идёт от его центра (так считает `contain: 'outside'` у Panzoom): сдвиг, при котором точка карты (cx, cy) окажется по центру окна. */
+function centerOn(cx: number, cy: number, sc: number, animate = true, shiftX = 0) {
+  const v = view.value
+  if (!pz || !v) return
+  pz.pan((v.clientWidth / 2 - W / 2) / sc + W / 2 - cx - shiftX / sc, (v.clientHeight / 2 - H / 2) / sc + H / 2 - cy, { animate: animate && !reduced(), force: true })
 }
 async function focusOn(id: string) {
   if (!pz) return
@@ -157,7 +164,7 @@ async function focusOn(id: string) {
   const panelShift = (view.value?.clientWidth ?? 1200) > 900 ? 190 : 0
   pz.zoom(sc, { animate: !reduced(), force: true })
   await nextTick()
-  pz.pan(W / 2 - cx - panelShift / sc, H / 2 - cy, { animate: !reduced(), force: true })
+  centerOn(cx, cy, sc, true, panelShift)
 }
 const zoomIn = () => pz?.zoomIn({ animate: !reduced() })
 const zoomOut = () => pz?.zoomOut({ animate: !reduced() })
@@ -168,7 +175,7 @@ async function setup() {
   if (!el || !box) return
   const { default: Panzoom } = await import('@panzoom/panzoom')
   if (stage.value !== el) return
-  pz = Panzoom(el, { maxScale: 3.4, minScale: 0.18, cursor: 'grab', step: 0.28, canvas: false, startScale: startScale() })
+  pz = Panzoom(el, { maxScale: 3.4, minScale: fitScale(), contain: 'outside', cursor: 'grab', step: 0.28, canvas: false, startScale: startScale() })
   pz.zoom(startScale(), { animate: false, force: true })
   const wheel = (e: WheelEvent) => pz?.zoomWithWheel(e)
   box.addEventListener('wheel', wheel, { passive: false })
@@ -190,7 +197,7 @@ async function setup() {
   el.addEventListener('panzoomstart', onStart)
   el.addEventListener('panzoompan', onPan)
   el.addEventListener('panzoomend', onEnd)
-  const onResize = () => fit(false)
+  const onResize = () => { pz?.setOptions({ minScale: fitScale() }); fit(false) }
   window.addEventListener('resize', onResize)
   stop = () => {
     box.removeEventListener('wheel', wheel)
@@ -327,10 +334,10 @@ onBeforeUnmount(() => {
 .vm-ico { width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .88); color: #3b2f5e; font-size: 18px; cursor: pointer; box-shadow: 0 6px 18px rgba(70, 90, 140, .2); transition: transform .2s; }
 .vm-ico:hover { transform: translateY(-2px) scale(1.06); }
 
-.vm-view { position: relative; display: flex; align-items: center; justify-content: center; height: calc(100dvh - 330px); min-height: 480px; overflow: hidden; cursor: grab; touch-action: none; }
+.vm-view { position: relative; display: block; height: calc(100dvh - 330px); min-height: 480px; overflow: hidden; cursor: grab; touch-action: none; }
 .vm.full .vm-view { height: 100dvh; }
 .vm-view:active { cursor: grabbing; }
-.vm-stage { flex: none; will-change: transform; }
+.vm-stage { position: absolute; left: 0; top: 0; will-change: transform; }
 .vm-view.panning, .vm-view.panning * { cursor: grabbing !important; }
 
 /* подсказка при наведении */
