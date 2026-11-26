@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, shallowRef } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { VueFlow, useVueFlow, type Edge, type Node } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -34,6 +34,8 @@ const unitPassed = (b: string, unit: number) => (exams.units[`${b}-${unit}`]?.be
 const BEND = { seq: 0.15, dep: 0.25 }
 const done = (id: string) => graph.nodes.find(n => n.id === id)?.state === 'ok'
 
+const bounds = shallowRef<[[number, number], [number, number]]>([[-1e5, -1e5], [1e5, 1e5]])
+const minZoom = ref(0.1)
 const nodes = shallowRef<Node[]>([])
 const edges = shallowRef<Edge[]>([])
 function build() {
@@ -50,11 +52,15 @@ function build() {
   // нарисованный фон под всем графом, в тех же координатах
   const xs = graph.nodes.map(n => built.pos[n.id]!.x)
   const ys = graph.nodes.map(n => built.pos[n.id]!.y)
-  const M = 420
-  const x0 = Math.min(...xs) - M
-  const y0 = Math.min(...ys) - M
-  const w = Math.max(...xs) - Math.min(...xs) + M * 2
-  const h = Math.max(...ys) - Math.min(...ys) + M * 2
+  // фон шире графа в стороны и выше него, снизу поменьше; за его края карту не двигают (translate-extent)
+  const MX = 900
+  const MT = 800
+  const MB = 450
+  const x0 = Math.min(...xs) - MX
+  const y0 = Math.min(...ys) - MT
+  const w = Math.max(...xs) - Math.min(...xs) + MX * 2
+  const h = Math.max(...ys) - Math.min(...ys) + MT + MB
+  bounds.value = [[x0, y0], [x0 + w, y0 + h]]
   const rowsY = built.rows.map(y => y - y0)
   list.unshift({ id: 'scenery', type: 'scenery', position: { x: x0, y: y0 }, data: { w, h, rowsY }, draggable: false, selectable: false, focusable: false, zIndex: -10 })
   nodes.value = list
@@ -93,9 +99,18 @@ const stateText = (s: GNode['state']) => (s === 'ok' ? 'пройдено ✓' : 
 
 /** Лепестки, которые падают над доской: только украшение. */
 const FALL = Array.from({ length: 12 }, (_, i) => ({ left: 4 + i * 8, delay: -i * 1.9, dur: 10 + (i % 4) * 2, size: 10 + (i % 3) * 5 }))
+onBeforeUnmount(() => window.removeEventListener('resize', fitMinZoom))
 const doneCount = graph.nodes.filter(n => n.state === 'ok').length
+/** Дальше, чем виден весь лес, не отдалить: нижняя граница масштаба по размеру доски и фона. */
+function fitMinZoom() {
+  const el = board.value
+  const [[ax, ay], [bx, by]] = bounds.value
+  if (el) minZoom.value = Math.max(el.clientWidth / (bx - ax), el.clientHeight / (by - ay), 0.05)
+}
 onMounted(async () => {
-  void exams.loadUnits().then(build)
+  void exams.loadUnits().then(() => { build(); fitMinZoom() })
+  fitMinZoom()
+  window.addEventListener('resize', fitMinZoom)
   await nextTick()
   // открываем там, где сейчас учишься: приближение к теме «ты здесь» (кнопка «вписать» слева внизу возвращает весь граф)
   setTimeout(() => {
@@ -119,7 +134,7 @@ onMounted(async () => {
         <small>Книга {{ tip.n.book }} · {{ tip.n.g.bk!.replace(/^1B /, '') }} · {{ stateText(tip.n.state) }}</small>
       </div>
       <ClientOnly>
-        <VueFlow v-model:nodes="nodes" v-model:edges="edges" :min-zoom="0.08" :max-zoom="1.6" :nodes-connectable="false" :elements-selectable="false" :zoom-on-double-click="false">
+        <VueFlow v-model:nodes="nodes" v-model:edges="edges" :min-zoom="minZoom" :translate-extent="bounds" :max-zoom="1.6" :nodes-connectable="false" :elements-selectable="false" :zoom-on-double-click="false">
           <template #node-flower="p"><FlowerNode :data="p.data" /></template>
           <template #node-scenery="p"><MapScenery :w="p.data.w" :h="p.data.h" :rows-y="p.data.rowsY" /></template>
           <template #node-caption="p"><div class="cap" :class="{ gold: p.data.gold }" :title="p.data.gold ? 'Экзамен единицы сдан' : undefined">{{ p.data.text }}</div></template>
