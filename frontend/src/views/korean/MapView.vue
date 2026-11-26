@@ -9,6 +9,7 @@ import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 import '@vue-flow/minimap/dist/style.css'
 import FlowerNode from '@/components/korean/mapgraph/FlowerNode.vue'
+import MapScenery from '@/components/korean/mapgraph/MapScenery.vue'
 import PetalEdge from '@/components/korean/mapgraph/PetalEdge.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
@@ -46,6 +47,16 @@ function build() {
   built.labels.forEach((t, i) =>
     list.push({ id: 'cap' + i, type: 'caption', position: { x: t.x - 90, y: t.y }, data: { text: t.text, gold: unitPassed(t.book, t.unit) }, draggable: false, selectable: false, focusable: false }),
   )
+  // нарисованный фон под всем графом, в тех же координатах
+  const xs = graph.nodes.map(n => built.pos[n.id]!.x)
+  const ys = graph.nodes.map(n => built.pos[n.id]!.y)
+  const M = 360
+  const x0 = Math.min(...xs) - M
+  const y0 = Math.min(...ys) - M
+  const w = Math.max(...xs) - Math.min(...xs) + M * 2
+  const h = Math.max(...ys) - Math.min(...ys) + M * 2
+  const rowsY = built.rows.map(y => y - y0)
+  list.unshift({ id: 'scenery', type: 'scenery', position: { x: x0, y: y0 }, data: { w, h, rowsY }, draggable: false, selectable: false, focusable: false, zIndex: -10 })
   nodes.value = list
   edges.value = graph.edges.map((e, i) => ({
     id: e.id,
@@ -110,11 +121,12 @@ onMounted(async () => {
       <ClientOnly>
         <VueFlow v-model:nodes="nodes" v-model:edges="edges" :min-zoom="0.08" :max-zoom="1.6" :nodes-connectable="false" :elements-selectable="false" :zoom-on-double-click="false">
           <template #node-flower="p"><FlowerNode :data="p.data" /></template>
+          <template #node-scenery="p"><MapScenery :w="p.data.w" :h="p.data.h" :rows-y="p.data.rowsY" /></template>
           <template #node-caption="p"><div class="cap" :class="{ gold: p.data.gold }" :title="p.data.gold ? 'Экзамен единицы сдан' : undefined">{{ p.data.text }}</div></template>
           <template #edge-petal="p"><PetalEdge v-bind="p" /></template>
           <Background :gap="26" :size="1.6" pattern-color="var(--grid)" />
           <Controls position="bottom-left" :show-interactive="false" />
-          <MiniMap position="bottom-right" pannable zoomable :node-color="() => 'var(--petal-line)'" mask-color="rgba(214,77,169,.08)" />
+          <MiniMap position="bottom-right" pannable zoomable :node-color="(n: Node) => (n.type === 'scenery' ? 'transparent' : 'var(--petal-line)')" mask-color="rgba(214,77,169,.08)" />
         </VueFlow>
         <template #fallback><div class="wait">Рисую ветку…</div></template>
       </ClientOnly>
@@ -139,8 +151,9 @@ html[data-theme='dark'] .map { --petal: #ffd1e3; --petal-line: #ff6fae; --core: 
 @media (prefers-reduced-motion: reduce) { .fall { display: none; } }
 .cap { width: 180px; text-align: center; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--arrow2); opacity: .85; pointer-events: none; }
 .cap.gold { padding: 2px 0; border-radius: 99px; background: rgba(243, 185, 61, .28); color: var(--ink); box-shadow: 0 0 0 2px var(--gold); opacity: 1; }
+:deep(.vue-flow__node-scenery) { pointer-events: none !important; }
 :deep(.vue-flow__node), :deep(.vue-flow__edge) { transition: opacity .25s; }
-:deep(.vue-flow__node:hover) { z-index: 1000 !important; }
+:deep(.vue-flow__node-flower:hover) { z-index: 1000 !important; }
 :deep(.vue-flow__node.dim) { opacity: .18; }
 :deep(.vue-flow__edge.dim) { opacity: .06; }
 :deep(.vue-flow__edge.hl .line) { opacity: 1 !important; stroke-width: 5 !important; }

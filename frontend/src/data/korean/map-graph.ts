@@ -10,7 +10,7 @@ export type NodeState = 'ok' | 'next' | 'ahead'
 export interface GNode { id: string; g: Gram; state: NodeState; unit: number; book: '1A' | '1B'; i: number }
 export interface GEdge { id: string; from: string; to: string; kind: 'seq' | 'dep' }
 export interface Pos { x: number; y: number }
-export interface Layout { pos: Record<string, Pos>; labels: { text: string; x: number; y: number; book: string; unit: number }[] }
+export interface Layout { pos: Record<string, Pos>; labels: { text: string; x: number; y: number; book: string; unit: number }[]; rows: number[] }
 
 const key = (bk: string) => {
   const m = /(\d+)-(\d+) ([①②③④])/.exec(bk)
@@ -77,5 +77,6 @@ export function archipelago({ nodes }: Graph): Layout {
     const done = members.filter(n => n.state === 'ok').length
     labels.push({ text: `${members[0]!.book} · единица ${members[0]!.unit} · ${done}/${members.length}`, x: cx, y: cy - r - 120, book: members[0]!.book, unit: members[0]!.unit })
   })
-  return { pos, labels }
+  const rows = [...new Set(units.map((_, ui) => Math.floor(ui / perRow) * gy))]
+  return { pos, labels, rows }
 }
