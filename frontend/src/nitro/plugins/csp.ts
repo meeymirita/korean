@@ -24,16 +24,17 @@ export function inlineScriptHashes(html: string): string[] {
 export function cspPolicy(hashes: string[]): string {
   return [
     "default-src 'self'",
-    `script-src 'self' ${hashes.join(' ')}`.trim(),
+    // https://mc.yandex.ru: счётчик Яндекс.Метрики подгружает свой tag.js
+    `script-src 'self' https://mc.yandex.ru ${hashes.join(' ')}`.trim(),
     // у разметки справочников и игры много атрибутов style, стили оставлены встроенными
     "style-src 'self' 'unsafe-inline'",
     // картинки грамматики и видео отдаются перенаправлением на Яндекс.Диск (/api/pic, /api/video): без этих адресов включённая CSP их заблокирует
-    "img-src 'self' data: blob: https://*.yandex.ru https://*.yandex.net https://i.ytimg.com",
+    "img-src 'self' data: blob: https://*.yandex.ru https://*.yandex.net https://*.yandex.com https://i.ytimg.com",
     "media-src 'self' blob: https://*.yandex.ru https://*.yandex.net",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.openai.com",
+    "connect-src 'self' https://api.openai.com https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.ru",
     "worker-src 'self' blob:",
-    "frame-src 'self' blob: https://www.youtube-nocookie.com",
+    "frame-src 'self' blob: https://www.youtube-nocookie.com https://mc.yandex.ru https://yandexmetrica.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
