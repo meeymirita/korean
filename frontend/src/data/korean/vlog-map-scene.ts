@@ -9,19 +9,18 @@ export const SCENE_H = 941
 
 /**
  * Где на картинке `assets/vlogmap/scene.webp` стоит подпись-пузырь каждого места (центр и ширина в системе `SCENE_W × SCENE_H`):
- * на ней лежит невидимая кнопка. В магазинном ряду подписи на картинке перепутаны (на здании DAISO написано «판트», на магазине
- * одежды «다이소»), поэтому точки поставлены по зданиям, а не по тексту.
+ * на ней лежит невидимая кнопка. Новая картинка: сверь все 30 точек.
  */
 export const PLACE_AT: Record<string, { x: number; y: number; w: number }> = {
-  mall: { x: 150, y: 135, w: 130 }, market: { x: 275, y: 160, w: 100 }, convenience: { x: 372, y: 155, w: 130 }, daiso: { x: 475, y: 175, w: 110 }, supermarket: { x: 568, y: 198, w: 100 }, clothes: { x: 675, y: 195, w: 120 },
-  cafe: { x: 782, y: 115, w: 110 }, restaurant: { x: 890, y: 155, w: 100 }, bakery: { x: 998, y: 160, w: 100 }, icecream: { x: 1125, y: 180, w: 195 },
-  pharmacy: { x: 1268, y: 152, w: 110 }, clinic: { x: 1380, y: 128, w: 100 }, salon: { x: 1488, y: 160, w: 110 }, laundry: { x: 1603, y: 178, w: 110 },
-  home: { x: 105, y: 355, w: 85 }, work: { x: 292, y: 347, w: 170 },
-  bookstore: { x: 500, y: 362, w: 100 }, library: { x: 610, y: 347, w: 120 }, cinema: { x: 732, y: 337, w: 125 }, gym: { x: 868, y: 350, w: 120 }, bath: { x: 1012, y: 355, w: 120 },
-  subway: { x: 1198, y: 358, w: 125 }, bus: { x: 1322, y: 372, w: 95 }, train: { x: 1428, y: 373, w: 95 }, airport: { x: 1552, y: 390, w: 110 },
-  mountain: { x: 232, y: 572, w: 95 }, park: { x: 402, y: 660, w: 110 },
-  palace: { x: 836, y: 582, w: 90 }, stay: { x: 1135, y: 642, w: 185 },
-  sea: { x: 1472, y: 678, w: 180 },
+  mall: { x: 140, y: 205, w: 125 }, market: { x: 270, y: 225, w: 90 }, convenience: { x: 365, y: 232, w: 115 }, daiso: { x: 480, y: 243, w: 100 }, supermarket: { x: 580, y: 243, w: 95 }, clothes: { x: 685, y: 240, w: 120 },
+  cafe: { x: 810, y: 185, w: 100 }, restaurant: { x: 915, y: 218, w: 90 }, bakery: { x: 1020, y: 222, w: 95 }, icecream: { x: 1145, y: 232, w: 175 },
+  pharmacy: { x: 1270, y: 220, w: 95 }, clinic: { x: 1385, y: 197, w: 100 }, salon: { x: 1490, y: 222, w: 110 }, laundry: { x: 1595, y: 232, w: 105 },
+  home: { x: 115, y: 400, w: 85 }, work: { x: 305, y: 395, w: 170 },
+  bookstore: { x: 495, y: 412, w: 95 }, library: { x: 610, y: 402, w: 120 }, cinema: { x: 748, y: 395, w: 125 }, gym: { x: 880, y: 403, w: 115 }, bath: { x: 1012, y: 403, w: 120 },
+  subway: { x: 1190, y: 407, w: 115 }, bus: { x: 1305, y: 418, w: 95 }, train: { x: 1420, y: 418, w: 95 }, airport: { x: 1545, y: 428, w: 105 },
+  mountain: { x: 237, y: 596, w: 90 }, park: { x: 440, y: 678, w: 105 },
+  palace: { x: 820, y: 602, w: 85 }, stay: { x: 1120, y: 660, w: 185 },
+  sea: { x: 1450, y: 687, w: 175 },
 }
 
 /** Середина района по его местам: куда приближается карта, когда выбран район. */
