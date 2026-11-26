@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { DISTRICTS, DISTRICT_BY_ID, PLACES, districtStat, mapIndex, type PlaceVlog } from '@/data/korean/vlog-map'
 import { ICON_DEFS } from '@/data/korean/vlog-map-art'
 import { PLACE_AT, SCENE_H, SCENE_W, districtCenter } from '@/data/korean/vlog-map-scene'
+import { wheelIntent } from '@/lib/wheelIntent'
 import VlogMapScene from './VlogMapScene.vue'
 import { STUDY_VLOGS } from '@/data/korean/vlog-study'
 import { useRoute } from 'vue-router'
@@ -182,7 +183,14 @@ async function setup() {
   // Panzoom сам применяет стартовый сдвиг чуть позже запуска, поэтому центр карты задаём здесь, а не вызовом `pan` после
   const sc0 = startScale()
   pz = Panzoom(el, { maxScale: 3.4, minScale: floorScale(), contain: 'outside', cursor: 'grab', step: 0.28, canvas: false, startScale: sc0, startX: (box.clientWidth / 2 - W / 2) / sc0, startY: (box.clientHeight / 2 - H / 2) / sc0 })
-  const wheel = (e: WheelEvent) => pz?.zoomWithWheel(e)
+  // колесо мыши и щипок приближают, два пальца по тачпаду двигают карту (раньше любое колесо приближало, и тачпадом карту нельзя было отодвинуть)
+  const wheel = (e: WheelEvent) => {
+    if (!pz) return
+    if (wheelIntent(e) === 'zoom') return pz.zoomWithWheel(e)
+    e.preventDefault()
+    const k = pz.getScale() || 1
+    pz.pan(-e.deltaX / k, -e.deltaY / k, { relative: true, animate: false })
+  }
   box.addEventListener('wheel', wheel, { passive: false })
   const onZoom = () => (scale.value = pz?.getScale() ?? scale.value)
   el.addEventListener('panzoomzoom', onZoom)
@@ -272,7 +280,7 @@ onBeforeUnmount(() => {
           <small>Нажми, чтобы открыть список</small>
         </div>
         <div class="vm-zoom" aria-hidden="true">{{ Math.round(scale * 100) }}%</div>
-        <p class="vm-hint" aria-hidden="true">Двигай карту и приближай колесом или щипком. Наведи на место, нажми, чтобы увидеть влоги.</p>
+        <p class="vm-hint" aria-hidden="true">Двигай карту мышью или двумя пальцами по тачпаду, приближай щипком, колесом мыши или Ctrl+колесом. Наведи на место, нажми, чтобы увидеть влоги.</p>
       </div>
 
       <aside class="vm-panel" :class="{ open: !!selStat }" :style="{ '--pc': panelColor }" aria-live="polite" @click.stop>
