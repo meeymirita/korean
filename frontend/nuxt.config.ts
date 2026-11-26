@@ -6,6 +6,7 @@
  */
 import { BRAND, SITE, indexablePaths, privatePaths } from './src/data/seo'
 import { HISTORY } from './src/data/history'
+import { OPEN_SRC } from './src/lib/metrika'
 
 const API = process.env.API_BASE || `http://${process.env.API_HOST || '127.0.0.1'}:${process.env.API_PORT || 3001}`
 const pub = indexablePaths()
@@ -64,7 +65,8 @@ export default defineNuxtConfig({
         // тёмная тема до отрисовки, чтобы страница не мигала светлой; без сохранённого выбора светлая (src/lib/theme.ts)
         { innerHTML: 'try{var m=localStorage.getItem("theme_mode");if(m!=="light"&&m!=="dark"&&m!=="night"&&m!=="auto"&&m!=="wine")m="light";if(m==="dark"||m==="night"||m==="wine"||(m==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";if(m==="night"||m==="wine")document.documentElement.dataset.palette=m}catch(e){}', tagPosition: 'head' },
         // счётчик Яндекс.Метрики (владелец, 2026-11-26); адреса Метрики разрешены в CSP (src/nitro/plugins/csp.ts)
-        { innerHTML: "(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=114693891','ym');ym(114693891,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});", tagPosition: 'head' },
+        // подключается только на открытых страницах: вебвизор не должен видеть то, что под токеном (src/lib/metrika.ts)
+        { innerHTML: `if(new RegExp('${OPEN_SRC}').test(location.pathname)){(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=114693891','ym');ym(114693891,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});}`, tagPosition: 'head' },
       ],
       noscript: [{ innerHTML: '<div><img src="https://mc.yandex.ru/watch/114693891" style="position:absolute;left:-9999px" alt="" /></div>', tagPosition: 'bodyClose' }],
     },
