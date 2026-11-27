@@ -13,7 +13,7 @@ import { DATA_DIR, ROOT } from '../config.js'
 import { postgresDumpConfig } from '../db/postgres-dump.js'
 import { MailService } from '../mail/mail.service.js'
 import { NotifyService } from '../notify/notify.service.js'
-import { BACKUP_FOLDER_RE, DISK_DIRS, YaDiskService, backupFolder } from '../yadisk/yadisk.service.js'
+import { BACKUP_FOLDER_RE, BACKUP_ROOT, DISK_DIRS, YaDiskService, backupFolder } from '../yadisk/yadisk.service.js'
 import { backupMail } from '../mail/templates.js'
 import { logError } from '../log.js'
 
@@ -479,8 +479,13 @@ export class BackupArchiveService implements OnModuleInit, OnModuleDestroy {
   /** На Диске в каждой папке остаются последние KEEP_DISK архивов. */
   private async pruneDisk() {
     try {
-      const dirs = (await this.disk.list('')).filter(i => i.type === 'dir' && BACKUP_FOLDER_RE.test(i.name)).map(i => i.name).sort()
-      for (const d of dirs.slice(0, Math.max(0, dirs.length - KEEP_DISK))) await this.disk.remove(d)
+      // новые копии лежат в backup/, прежние остались в корне: считаем вместе, удаляем самые старые по дате в названии
+      const found = [
+        ...(await this.disk.list(BACKUP_ROOT)).map(i => ({ ...i, path: `${BACKUP_ROOT}/${i.name}` })),
+        ...(await this.disk.list('')).map(i => ({ ...i, path: i.name })),
+      ].filter(i => i.type === 'dir' && BACKUP_FOLDER_RE.test(i.name))
+      found.sort((a, b) => a.name.localeCompare(b.name))
+      for (const d of found.slice(0, Math.max(0, found.length - KEEP_DISK))) await this.disk.remove(d.path)
     } catch {
       /* чистка не критична */
     }

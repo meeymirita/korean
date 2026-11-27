@@ -34,11 +34,15 @@ export const DISK_DIRS = {
   grammar: 'korean_grammar',
 } as const
 
-/** Папка одной копии в корне: «Копия 2026-11-06 21-03» (дата и время в конце названия; внутри Весь сайт, База и env, Картинки). */
-export const backupFolder = (now = new Date()) => {
+/** Общая папка всех копий (с 2026-11-28): раньше копии лежали прямо в корне рядом с остальным. */
+export const BACKUP_ROOT = 'backup'
+/** Имя папки одной копии: «Копия 2026-11-06 21-03» (дата и время в конце названия; внутри Весь сайт, База и env, Картинки). */
+export const backupName = (now = new Date()) => {
   const p = (n: number) => String(n).padStart(2, '0')
   return `Копия ${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())} ${p(now.getHours())}-${p(now.getMinutes())}`
 }
+/** Путь папки копии на Диске: `backup/Копия …`. */
+export const backupFolder = (now = new Date()) => `${BACKUP_ROOT}/${backupName(now)}`
 export const BACKUP_FOLDER_RE = /^Копия \d{4}-\d{2}-\d{2} \d{2}-\d{2}$/
 
 /** Папки сервера, чьи файлы лежат на Диске одной плоской папкой «Картинки» (имена файлов уникальны: id или ключ с версией). */
