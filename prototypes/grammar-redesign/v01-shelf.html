@@ -1,0 +1,108 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>01 · Книжная полка</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Noto Sans KR',Archivo,system-ui,sans-serif;background:#f6efe4;color:#3a2c22;min-height:100vh}
+header{padding:26px 40px 0}h1{margin:0;font-size:28px}header p{margin:4px 0 0;opacity:.6}
+.room{padding:10px 40px 80px;max-width:1300px;margin:auto}
+.unit{margin-top:38px}.unit>small{font:700 11px/1 monospace;letter-spacing:.2em;opacity:.55;text-transform:uppercase}
+.row{display:flex;align-items:flex-end;gap:3px;padding:0 18px;margin-top:8px;min-height:240px;border-bottom:16px solid #b98a5a;box-shadow:0 14px 18px -10px rgba(80,50,20,.45);background:linear-gradient(#ead9bf,#f0e2cc);border-radius:6px 6px 0 0;flex-wrap:wrap}
+.spine{writing-mode:vertical-rl;text-orientation:upright;position:relative;border:0;cursor:pointer;color:#fff;font:800 17px 'Noto Sans KR';letter-spacing:.06em;padding:14px 0;border-radius:3px 3px 0 0;box-shadow:inset -5px 0 8px rgba(0,0,0,.18),inset 3px 0 4px rgba(255,255,255,.25);transition:transform .25s}
+.spine::before,.spine::after{content:'';position:absolute;left:0;right:0;height:5px;background:rgba(255,255,255,.55)}.spine::before{top:12px}.spine::after{bottom:12px}
+.spine:hover{transform:translateY(-14px) rotate(-2deg)}.spine.ahead{background:repeating-linear-gradient(135deg,#d9cdb8 0 6px,#e8dcc6 6px 12px)!important;color:#9a8a70;box-shadow:inset -5px 0 6px rgba(0,0,0,.08)}
+.spine.ahead::before,.spine.ahead::after{background:#c3b295}
+.lean{transform:rotate(7deg);transform-origin:bottom left;margin-right:20px}
+#book{position:fixed;inset:0;background:rgba(60,40,20,.5);display:none;place-items:center;z-index:9;padding:20px;perspective:2600px}#book.on{display:grid}
+@keyframes open{from{transform:scale(.4,.9) translateY(120px);opacity:0}}
+.spread{width:min(1080px,96vw);height:min(680px,88vh);display:grid;grid-template-columns:1fr 1fr;background:#fffaf0;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 0 10px var(--c);animation:open .45s cubic-bezier(.2,.9,.3,1.2);position:relative;transform-style:preserve-3d}
+.spread:after{content:'';position:absolute;left:50%;top:0;bottom:0;width:60px;margin-left:-30px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.14) 48%,rgba(0,0,0,.14) 52%,transparent);pointer-events:none;z-index:5}
+.leaf{position:absolute;top:0;bottom:0;width:50%;transform-style:preserve-3d;z-index:6;pointer-events:none}.leaf.r{left:50%;transform-origin:left center}.leaf.l{left:0;transform-origin:right center}
+.leaf>div{position:absolute;inset:0;backface-visibility:hidden;background:#fffaf0;overflow:hidden}.leaf>.bk{transform:rotateY(180deg)}.leaf{will-change:transform;box-shadow:0 0 30px rgba(60,40,20,.25)}.leaf .sh{position:absolute;inset:0;background:linear-gradient(90deg,rgba(40,25,10,.55),rgba(40,25,10,0));opacity:0;pointer-events:none}.leaf.l .sh{background:linear-gradient(270deg,rgba(40,25,10,.55),rgba(40,25,10,0))}.leaf>.bk .sh{transform:none}.leaf .pg{height:100%}.leaf *{user-select:none}
+.spread{touch-action:pan-y;user-select:none;-webkit-user-select:none}.hintc{position:absolute;right:16px;bottom:-34px;color:#fff;font:600 12px Archivo,sans-serif;opacity:.7}.nav{position:absolute;bottom:-52px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:16px;color:#fff;font:700 14px monospace}.nav button{border:0;border-radius:99px;padding:9px 20px;background:#fffaf0;color:#3a2c22;font:700 14px Archivo,sans-serif;cursor:pointer}.nav button:disabled{opacity:.35;cursor:default}
+.pn{position:absolute;bottom:12px;left:0;right:0;text-align:center;font:700 12px monospace;opacity:.45}
+.pg{position:relative;padding:34px 42px 44px;overflow:hidden;height:100%}.pg.l{border-right:1px solid #eadfc9}.pg .no{font:700 12px monospace;opacity:.5}
+.pg h2{font-size:42px;margin:8px 0 2px;color:var(--c)}.pg .ru{opacity:.7;margin-bottom:14px}
+.x{position:absolute;top:-4px;right:-4px;width:34px;height:34px;border-radius:50%;border:0;background:#3a2c22;color:#fff;cursor:pointer;z-index:2}
+.gc{--line:#e3d6bc}
+</style>
+<header><h1>Книжная полка</h1><p>Каждая единица учебника — полка, каждая тема — книга. Пустые «корешки с полосками» — темы впереди. Нажми на книгу.</p></header>
+<div class="room" id="room"></div>
+<div id="book"><div class="spread" id="spread"></div></div>
+<script src="data.js"></script><script src="common.js"></script>
+<script>
+const units={};MINE.forEach(c=>(units[unitOf(c)]??=[]).push(c));
+const keys=Object.keys(units).sort((a,b)=>parseFloat(a.replace('1B ','99.'))-parseFloat(b.replace('1B ','99.')));
+keys.forEach(k=>{const u=h('div',{class:'unit'},[h('small',{html:k==='—'?'Свои карточки без места в книге':(k.startsWith('1B')?'Книга 1B · единица '+k.slice(3):'Книга 1A · единица '+k)})]);
+ const row=h('div',{class:'row'});
+ units[k].forEach(c=>{const r=rnd(hash(c.id));const hgt=150+Math.round(r()*80),w=40+Math.min(40,c.b.length*2);
+  const b=h('button',{class:'spine'+(c.ahead?' ahead':'')+(r()<.08?' lean':''),title:c.ru,onclick:()=>open(c)},[headKo(c).slice(0,6)]);
+  b.style.cssText=`background:${colOf(c)};height:${hgt}px;width:${w}px`;row.append(b)});
+ u.append(row);$('#room').append(u)});
+// --- листание: содержимое режется на страницы по высоте, разворот = две страницы ---
+let pages=[],sp=0,cur=null,busy=false;
+const pageHTML=(i,c)=>{const p=pages[i];if(!p)return `<div class="pg" style="background:repeating-linear-gradient(#fffaf0 0 28px,#f6ecd6 28px 29px)"></div>`;return `<div class="pg ${i%2?'':'l'} gc">${p}<div class="pn">${i+1}</div></div>`};
+function paginate(c,halfW,H){
+ const out=[];const title=`<div class="no">${c.bk||'вне книги'} · ${esc(c.s)}</div><h2>${c.ko}</h2><div class="ru">${esc(strip(c.ru))}</div>`+(c.ahead?`<p style="margin-top:90px;text-align:center;opacity:.6">Эту книгу ещё не открывали.<br>Страницы склеены: тема впереди.</p>`:`<div class="formula">${F(formulaOf(c)||'')}</div><p style="opacity:.55;margin-top:30px">Листай → стрелками или кнопками внизу.</p>`);
+ out.push(title);if(c.ahead)return out;
+ // плоский список блоков; «Глубже» раскрыт, примеры режутся по строкам
+ const items=[];let first=true;
+ for(const b of c.b){if(b[0]==='deep'){items.push(`<h4>${esc(b[1])}</h4>`);continue}
+  if(b[0]==='formula'&&first){first=false;continue}
+  if(b[0]==='ex'){const rows=b[1];for(let k=0;k<rows.length;k+=2)items.push(blk(['ex',rows.slice(k,k+2)]));continue}
+  items.push(blk(b))}
+ const m=h('div',{class:'pg gc'});m.style.cssText=`position:absolute;visibility:hidden;left:-9999px;top:0;width:${halfW}px;height:${H}px`;document.body.append(m);
+ let cur=[];m.innerHTML='';
+ const flush=()=>{if(cur.length)out.push(cur.join(''));cur=[];m.innerHTML=''};
+ for(const it of items){m.insertAdjacentHTML('beforeend',it);if(m.scrollHeight>m.clientHeight+1&&cur.length){m.lastElementChild.remove();flush();m.insertAdjacentHTML('beforeend',it)}cur.push(it)}
+ flush();m.remove();return out}
+function open(c){cur=c;const s=$('#spread');s.style.setProperty('--c',colOf(c));
+ const H=Math.min(680,innerHeight*.88),W=Math.min(1080,innerWidth*.96);
+ pages=paginate(c,W/2,H);if(pages.length%2)pages.push('');pages=pages.map(p=>p||'');sp=0;leaf=null;draw();$('#book').classList.add('on')}
+function draw(){const s=$('#spread');s.innerHTML=pageHTML(sp*2)+pageHTML(sp*2+1)+`<button class="x" onclick="$('#book').classList.remove('on')">✕</button><div class="nav"><button id="pv" ${sp?'':'disabled'}>← назад</button><span>разворот ${sp+1} из ${pages.length/2}</span><button id="nx" ${sp<pages.length/2-1?'':'disabled'}>вперёд →</button></div><div class="hintc">потяни за уголок или свайпни</div>`;
+ $('#pv').onclick=()=>flip(-1);$('#nx').onclick=()=>flip(1)}
+
+// ---- живой лист: угол поворота = положение пальца/мыши, лист тянется за краем ----
+let leaf=null;// {el,dir,th,n,front,back,shadeF,shadeB,hover}
+let anim=0;
+const ease=t=>1-Math.pow(1-t,3);
+const canGo=d=>sp+d>=0&&sp+d<pages.length/2;
+function ensureLeaf(d){
+ if(leaf)return leaf.dir===d?leaf:null;if(!canGo(d))return null;const s=$('#spread'),n=sp+d;
+ const el=h('div',{class:'leaf '+(d>0?'r':'l')});
+ const front=d>0?pageHTML(sp*2+1):pageHTML(sp*2),back=d>0?pageHTML(n*2):pageHTML(n*2+1);
+ el.innerHTML=`<div class="fc">${front}<i class="sh"></i></div><div class="bk">${back}<i class="sh"></i></div>`;
+ const pgs=$$('.pg',s);if(d>0)pgs[1].outerHTML=pageHTML(n*2+1);else pgs[0].outerHTML=pageHTML(n*2);
+ s.append(el);leaf={el,dir:d,th:0,n,sf:$('.fc .sh',el),sb:$('.bk .sh',el)};setTh(0);return leaf}
+function setTh(th,dy=0){if(!leaf)return;leaf.th=th;const r=th*Math.PI/180,sin=Math.sin(r),sg=leaf.dir>0?-1:1;
+ leaf.el.style.transform=`rotateY(${sg*th}deg) skewY(${(dy*sin*sg*-1).toFixed(2)}deg)`;
+ leaf.sf.style.opacity=th<90?sin*.55:0;leaf.sb.style.opacity=th>=90?sin*.55:0}
+function settle(done){if(!leaf)return;const L=leaf;
+ if(done){sp=L.n;leaf=null;draw()}
+ else{const s=$('#spread'),pgs=$$('.pg',s);if(L.dir>0)pgs[1].outerHTML=pageHTML(sp*2+1);else pgs[0].outerHTML=pageHTML(sp*2);L.el.remove();leaf=null}}
+function animateTo(target,ms,done){if(!leaf)return;const L=leaf,from=L.th,my=++anim,t0=performance.now(),dur=Math.max(180,ms*Math.abs(target-from)/180);
+ const step=now=>{if(my!==anim)return;const k=Math.min(1,(now-t0)/dur);setTh(from+(target-from)*ease(k));if(k<1)requestAnimationFrame(step);else done?.()};requestAnimationFrame(step)}
+function flip(d){if(leaf&&leaf.th>0&&!leaf.hover)return;if(leaf&&leaf.dir!==d){anim++;settle(false)}const L=leaf&&leaf.dir===d?leaf:ensureLeaf(d);if(!L)return;L.hover=false;animateTo(180,780,()=>settle(true))}
+
+const SPR=()=>$('#spread');let drag=null;
+function geom(){const r=SPR().getBoundingClientRect();return {r,cx:r.left+r.width/2,half:r.width/2}}
+function thFor(d,x,off){const {cx,half}=geom();const edge=(d>0?cx+half:cx-half)+(x-off);const u=d>0?(edge-cx)/half:(cx-edge)/half;return Math.acos(Math.max(-1,Math.min(1,u)))*180/Math.PI}
+document.addEventListener('pointerdown',e=>{const s=SPR();if(!$('#book').classList.contains('on')||!s.contains(e.target)||e.target.closest('button'))return;if(busyAnim())return;
+ s.setPointerCapture?.(e.pointerId);drag={x:e.clientX,y:e.clientY,id:e.pointerId,d:0,lx:e.clientX,lt:performance.now(),v:0,moved:false};const {cx}=geom();drag.side=e.clientX>cx?1:-1;
+ // если лист уже «подвис» от наведения на уголок — берём его
+ if(leaf&&leaf.dir===drag.side){drag.d=leaf.dir;anim++;leaf.hover=false;drag.moved=true;drag.off=drag.x-leaf.dir*geom().half*(Math.cos(leaf.th*Math.PI/180)-1)}});
+const busyAnim=()=>leaf&&leaf.th>=179;
+document.addEventListener('pointermove',e=>{
+ if(drag&&e.pointerId===drag.id){const dx=e.clientX-drag.x;const now=performance.now();drag.v=(e.clientX-drag.lx)/Math.max(1,now-drag.lt);drag.lx=e.clientX;drag.lt=now;
+  if(!drag.d){if(Math.abs(dx)<6)return;const d=dx<0?1:-1;if(leaf){anim++;settle(false)}if(!ensureLeaf(d)){drag=null;return}drag.d=d;drag.off=drag.x;drag.moved=true}
+  const dy=(e.clientY-drag.y)/SPR().clientHeight*14;setTh(thFor(drag.d,e.clientX,drag.off),dy);return}
+ // наведение на уголок: лист чуть приподнимается
+ if(!$('#book').classList.contains('on')||!SPR().contains(e.target))return;
+ const {r,cx,half}=geom(),inR=e.clientX>cx,cornerX=inR?(r.right-e.clientX):(e.clientX-r.left),cornerY=r.bottom-e.clientY;const near=cornerX<110&&cornerY<110;const d=inR?1:-1;
+ SPR().style.cursor=near&&canGo(d)?'grab':'';
+ if(near&&canGo(d)){if(!leaf){const L=ensureLeaf(d);if(L){L.hover=true;animateTo(17,260)}}}
+ else if(leaf&&leaf.hover){const L=leaf;L.hover=false;animateTo(0,260,()=>{if(leaf===L)settle(false)})}});
+function endDrag(e){if(!drag||e.pointerId!==drag.id)return;const D=drag;drag=null;
+ if(!D.d)return;const L=leaf;if(!L)return;const go=L.th>90||(D.v*(D.d>0?-1:1)>0.45&&L.th>25);
+ if(go)animateTo(180,620,()=>settle(true));else animateTo(0,520,()=>settle(false))}
+document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{if(!$('#book').classList.contains('on'))return;if(e.key==='ArrowRight')flip(1);if(e.key==='ArrowLeft')flip(-1)});
+$('#book').onclick=e=>{if(e.target.id==='book')e.target.classList.remove('on')};addEventListener('keydown',e=>e.key==='Escape'&&$('#book').classList.remove('on'));
+</script></html>
