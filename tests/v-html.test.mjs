@@ -16,6 +16,7 @@ const STATIC = {
   'components/korean/GrammarShelf.vue': { 'pgBox(under.l)': 'страница книги из блоков карточки (data/korean/grammar.ts), названия через esc/F', 'pgBox(under.r)': 'то же, правая страница' },
   'components/korean/GrammarAsk.vue': { 'm.html': 'ответы помощника: собираются в коде из карточек грамматики через esc/F/blocksHtml, ввода пользователя нет', 'm.form': 'формула карточки, уже прошла через F()' },
   'components/cabinet/TelegramGuide.vue': { preview: 'текст экранируется, обратно разрешены только теги b, i, u, s, code и ссылки http(s)' },
+  'components/korean/PicCards.vue': { 'c.svg': 'рисунки слов из data/korean/word-pics*.ts, строки SVG написаны в коде сайта, ввода пользователя нет' },
   'components/korean/VlogMap.vue': { ICON_DEFS: 'значки мест из data/korean/vlog-map-art.ts, строка собрана из кода сайта' },
   'views/korean/RichView.vue': { html: 'готовые страницы справочника из data/korean/pages.ts' },
 }
