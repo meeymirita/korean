@@ -7,7 +7,7 @@
  *
  *   TOKEN=local-demo-token-2026 node scripts/play-bot.mjs
  *
- * Переменные: BASE (http://localhost:5198), TOKEN, THEME=light|wine, SIZE=desktop|phone, GUEST=1 (без токена), MODES=word,part (по умолчанию все из кода),
+ * Переменные: BASE (http://localhost:5198), TOKEN, THEME=light (тема одна, имя нужно только отчёту), SIZE=desktop|phone, GUEST=1 (без токена), MODES=word,part (по умолчанию все из кода),
  * STEPS (заданий на клетку «режим × подрежим», 10), STRATEGY=right|wrong|mix70|random|keys|drag|all (all: по кругу), MECHANICS=1 (блиц, выживание, подсказки, «Обновить вопрос», перезагрузка),
  * OUT (папка отчёта, по умолчанию ./bot-report), SHOTS=1 (скриншот на каждое нарушение), PORT (порт отладки Chromium, 9344), DEBUG=1.
  * Код выхода 1, если нашлись нарушения. Один браузер, всё по очереди: ноутбук слабый.
@@ -103,7 +103,7 @@ if (SIZE === 'phone') {
 async function setup() {
   await send('Page.navigate', { url: BASE + '/nope' })
   await sleep(900)
-  await ev(`localStorage.clear(); localStorage.setItem('theme_mode', '${THEME}');
+  await ev(`localStorage.clear();
     localStorage.setItem('progress_token','${GUEST ? guest.token : TOKEN}'); localStorage.setItem('progress_verified','1'); localStorage.setItem('progress_role','${GUEST ? 'guest' : 'owner'}')`)
 }
 async function openMode(mode) {
@@ -277,24 +277,6 @@ const PAGE_CHECKS = `(() => {
   if (/[\\u3040-\\u30ff\\u4e00-\\u9fff]/.test(t)) out.push(['японские-китайские-знаки', t.match(/[\\u3040-\\u30ff\\u4e00-\\u9fff]+/)[0]])
   return out
 })()`
-const COLOR_SCAN = `(() => {
-  // «Розовая»: нет зелёного, синего, фиолетового; допустимы розовые, золотое «верно» и коралловое «ошибка»
-  const parse = c => { const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) return null; const [r, g, b, a = 1] = m[1].split(/[ ,\\/]+/).map(Number); return a < 0.2 ? null : [r, g, b] }
-  const hsl = ([r, g, b]) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn
-    if (!d) return [0, 0, l]; const s = d / (1 - Math.abs(2 * l - 1)); let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return [(h * 60 + 360) % 360, s, l] }
-  const bad = new Set()
-  for (const el of document.querySelectorAll('#cardWrap *, .gx-actions *, .gx-body .card *, #list *')) {
-    const cs = getComputedStyle(el)
-    if (cs.display === 'none') continue
-    for (const p of ['color', 'backgroundColor', 'borderTopColor', 'borderBottomColor']) {
-      if (p.startsWith('border') && parseFloat(cs.borderTopWidth) === 0) continue
-      const c = parse(cs[p]); if (!c) continue
-      const [h, s, l] = hsl(c)
-      if (s > 0.25 && l > 0.12 && l < 0.92 && ((h >= 85 && h <= 175) || (h >= 195 && h <= 300))) bad.add((el.className && el.className.baseVal === undefined ? '.' + String(el.className).split(' ')[0] : el.tagName) + ' ' + p + ' ' + cs[p])
-    }
-  }
-  return [...bad].slice(0, 8)
-})()`
 const CONTRAST = `(() => {
   const parse = c => { const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) return null; const [r, g, b, a = 1] = m[1].split(/[ ,\\/]+/).map(Number); return { r, g, b, a } }
   const lum = ({ r, g, b }) => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b) }
@@ -312,7 +294,6 @@ const CONTRAST = `(() => {
 })()`
 async function pageChecks(context) {
   for (const [code, detail] of (await ev(PAGE_CHECKS)) || []) await violation(code, detail, { context })
-  if (THEME === 'wine') for (const d of (await ev(COLOR_SCAN)) || []) await violation('цвет-не-из-палитры', d, { context })
   for (const d of (await ev(CONTRAST)) || []) await violation('контраст-ниже-4.5', d, { context })
 }
 

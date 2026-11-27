@@ -11,7 +11,7 @@ const GROUPS = [
   ['Тренажёры', ['trainers/']],
   ['Сервер и выкладка', ['server', 'docker', 'hosting', 'backup', 'disk-and-telegram', 'telegram']],
   ['Возможности', ['dict', 'chat', 'voice', 'music', 'manhwa', 'shop', 'bot', 'mac-app', 'desktop-skill']],
-  ['Идеи и дизайн', ['ideas', 'redesign-plan', 'redesign-report', 'redesign-assets']],
+  ['Идеи и дизайн', ['ideas']],
 ]
 const files = []
 const walk = d => readdirSync(d).forEach(f => {
