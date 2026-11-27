@@ -35,6 +35,7 @@ export const EXTRA_MODES: Record<string, string> = {
   topic: 'Добить тему',
   stale: 'Давно не видел',
   marks: 'Важные слова',
+  garden: 'Сад: полить и подрастить',
   cards: 'Повторение: карточки',
   'check-pairs': 'Проверка слов: найди пару',
   'check-quiz': 'Проверка слов: выбери перевод',

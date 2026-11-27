@@ -3,6 +3,11 @@ import Cat from '@/components/Cat.vue'
 import Icon from '@/components/Icon.vue'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import TaskSession from '@/components/korean/TaskSession.vue'
+import { STUDY } from '@/data/korean/study'
+import type { Task } from '@/data/korean/tasks'
+import { drillTasks } from '@/data/korean/topics'
+import { usePersisted } from '@/composables/usePersisted'
 import PlantIcon from '@/components/garden/PlantIcon.vue'
 import { STAGE_NAME, plants, type Plant } from '@/data/garden'
 import { CATN } from '@/data/korean/words'
@@ -24,10 +29,55 @@ const ago = (t: number) => {
   return d <= 0 ? 'сегодня' : d === 1 ? 'вчера' : `${d} дн. назад`
 }
 const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
+
+/* ---------- «Как это работает» и действия: полить и подрастить ---------- */
+/** Объяснение раскрыто, пока человек его не свернул (помним на устройстве). */
+const howOpen = usePersisted('garden_how_open', true, v => typeof v === 'boolean')
+const inStudy = new Set(STUDY.map(d => d.k))
+/** Слова для «Полить»: хотят пить и завяли; для «Подрастить»: семечки, ростки и бутоны (только слова, годные для заданий). */
+const waterList = computed(() => thirsty.value.filter(p => inStudy.has(p.word.k)).map(p => p.word))
+const growList = computed(() => all.value.filter(p => ['seed', 'sprout', 'bud'].includes(p.stage) && inStudy.has(p.word.k)).map(p => p.word))
+const mode = ref<'water' | 'grow' | null>(null)
+const tasks = ref<Task[]>([])
+function start(m: 'water' | 'grow') {
+  mode.value = m
+  next()
+}
+function next() {
+  tasks.value = mode.value ? drillTasks(progress.data, mode.value === 'water' ? waterList.value : growList.value, 10) : []
+  if (!tasks.value.length) mode.value = null
+}
 </script>
 
 <template>
   <div class="cb-body">
+    <section v-if="mode" class="gd-drill">
+      <div class="gd-drill-head">
+        <b>{{ mode === 'water' ? 'Поливаем сад' : 'Растим ростки' }}</b>
+        <button type="button" class="plain" @click="mode = null">← В сад</button>
+      </div>
+      <TaskSession :tasks="tasks" source="trainer" mode="garden" again-label="Ещё серию" @again="next" />
+    </section>
+    <template v-else>
+    <section class="gd-how pg-card">
+      <button type="button" class="gd-how-h plain" :aria-expanded="howOpen" @click="howOpen = !howOpen">
+        <b>Что это такое и как пользоваться</b><span>{{ howOpen ? 'Скрыть' : 'Показать' }}</span>
+      </button>
+      <ol v-if="howOpen" class="gd-steps">
+        <li><b>Каждое слово — растение.</b> Как только отвечаешь на слово в игре, тренажёре или «Сегодня», оно появляется в саду семечком.</li>
+        <li><b>Верный ответ +1, ошибка −1.</b> Ответов набирается на росток, потом на бутон; на {{ KNOWN_STREAK }} очках слово расцветает: оно выучено.</li>
+        <li><b>Цветку тоже нужна вода.</b> Если слово давно не повторял, оно «хочет пить», а потом вянет. Верный ответ его оживляет.</li>
+        <li><b>Что делать здесь:</b> нажми «Полить», чтобы повторить слова, которые хотят пить, или «Подрастить», чтобы дотянуть ростки до цветка. Серия из 10 заданий, ответы идут в общий прогресс.</li>
+      </ol>
+    </section>
+    <div v-if="all.length" class="gd-actions">
+      <button type="button" class="gd-act" :disabled="!waterList.length" @click="start('water')">
+        <PlantIcon stage="thirsty" class="lg" /><span><b>Полить сад</b><small>{{ waterList.length ? `${waterList.length} слов хотят пить` : 'все слова напоены' }}</small></span>
+      </button>
+      <button type="button" class="gd-act" :disabled="!growList.length" @click="start('grow')">
+        <PlantIcon stage="sprout" class="lg" /><span><b>Подрастить ростки</b><small>{{ growList.length ? `${growList.length} слов ещё растут` : 'нет растущих слов' }}</small></span>
+      </button>
+    </div>
     <div class="pg-cards">
       <div class="pg-card">
         <div class="pg-k">Цветёт</div>
@@ -94,5 +144,6 @@ const cats = (p: Plant) => p.word.c.map(c => CATN[c]).join(', ')
       <PlantIcon stage="seed" class="lg" /> семечко (ошибся) · <PlantIcon stage="sprout" class="lg" /> росток · <PlantIcon stage="bud" class="lg" /> бутон · цветок — слово выучено (у каждой темы свой оттенок) · хочет пить — пора повторить, завяло —
       давно не повторял. <PlantIcon stage="wilted" class="lg" /> возвращается в цветок после верного ответа.
     </p>
+    </template>
   </div>
 </template>

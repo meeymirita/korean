@@ -45,3 +45,18 @@
 .study .cl-hid { color: var(--muted); font-size: 12px; }
 .study .cl-st { margin-top: auto; padding-top: 6px; font-size: 11.5px; color: var(--muted); }
 .study .cl-more { margin: 16px auto 0; display: block; cursor: pointer; }
+
+/* «Что это такое» и кнопки действий */
+.study .gd-how { margin-top: 18px; padding: 14px 20px; }
+.study .gd-how-h { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; font: inherit; text-align: left; }
+.study .gd-how-h span { font-size: 13px; color: var(--muted); }
+.study .gd-steps { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.55; }
+.study .gd-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
+.study .gd-act { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1.5px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, .75); font: inherit; text-align: left; cursor: pointer; transition: transform .15s, border-color .15s; }
+.study .gd-act:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--pink, #d64da9); }
+.study .gd-act:disabled { opacity: .55; cursor: default; }
+.study .gd-act .lg { width: 40px; height: 40px; flex: none; }
+.study .gd-act b { display: block; font-size: 17px; }
+.study .gd-act small { color: var(--muted); font-size: 13px; }
+.study .gd-drill { margin-top: 18px; }
+.study .gd-drill-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 18px; }
