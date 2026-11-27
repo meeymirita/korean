@@ -363,7 +363,7 @@ function onHover(e: MouseEvent) {
 
 <style>
 /* книга: перенос в body, поэтому стили не scoped */
-.gbook { perspective: 2600px; }
+.gbook { perspective: 8000px; }
 .gbook .spread { position: relative; width: min(1080px, 96vw); height: min(680px, 88vh); display: grid; grid-template-columns: 1fr 1fr; background: #fff; border-radius: 14px;
   box-shadow: 0 30px 80px rgba(60, 50, 140, .35), 0 0 0 8px var(--c); transform-style: preserve-3d; touch-action: none; user-select: none; -webkit-user-select: none; animation: gbook-open .45s cubic-bezier(.2, .9, .3, 1.2); }
 @keyframes gbook-open { from { transform: scale(.4, .9) translateY(120px); opacity: 0; } }
