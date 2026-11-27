@@ -187,6 +187,11 @@ function tileGloss(tok: string): string{
     if(/настоящее время/.test(sg.gloss))g+=' (наст.)';else if(/прошедшее время/.test(sg.gloss))g+=' (прош.)';
     return g;
   }).join(' + ');
+  // лишняя плитка с неверной частицей (버스을) не разбирается: показываем основу и частицу, не выдавая, что она неверная
+  if(out==='?'){
+    const p=Object.keys(PART_ROLE).sort(function(x,y){return y.length-x.length;}).find(function(k){return tok.length>k.length&&tok.endsWith(k);});
+    if(p){const g=tileGloss(tok.slice(0,-p.length));if(g&&!g.includes('?'))out=g+' + '+p+' — '+PART_ROLE[p];}
+  }
   glossCache.set(tok,out);return out;
 }
 /** «Собери предложение: Рассказ»: предложения одного рассказа из учебника идут подряд, каждое собирается из слов-плиток (плюс одна-две лишние). Следующее предложение появляется после «Дальше». */

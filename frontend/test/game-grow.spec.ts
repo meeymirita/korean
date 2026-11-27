@@ -70,3 +70,13 @@ describe('«Собери предложение»: уровень «Растёт
     expect(label()).toContain('уже есть: ' + steps[k]!.prefix)
   })
 })
+
+describe('подсказка к лишней плитке', () => {
+  it('у плитки с неверной частицей нет знака вопроса', () => {
+    for (let t = 0; t < 8; t++) {
+      start()
+      const glosses = [...document.querySelectorAll('#tiles .tile .tg')].map(e => e.textContent)
+      expect(glosses.filter(g => g === '?').length).toBe(0)
+    }
+  })
+})
