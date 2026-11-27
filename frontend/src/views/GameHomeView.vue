@@ -212,6 +212,7 @@ watch(inGame, syncCatalogClass)
           <div class="gx-sub">Учим корейский вместе ♡</div>
         </div>
       </RouterLink>
+      <button v-if="game" type="button" class="gh-hide" @click="navOpen = false">↑ Спрятать список игр</button>
       <img class="gx-cat gx-cat-nav" :src="themed(catWow)" alt="" aria-hidden="true" />
       <label class="gx-find"><span aria-hidden="true">⌕</span><input v-model="q" type="search" autocomplete="off" placeholder="Поиск игр…" aria-label="Поиск игры по названию" /></label>
       <div class="gx-navbox">
@@ -304,8 +305,11 @@ watch(inGame, syncCatalogClass)
 .gh.folded.game.gx { grid-template-columns: 0px minmax(0, 1fr); column-gap: 0; }
 .gh .gx-nav { min-width: 0; overflow: hidden; transition: opacity .3s ease, transform .45s cubic-bezier(.4, 0, .2, 1), visibility .45s; }
 .gh.folded .gx-nav { opacity: 0; transform: translateX(-28px); visibility: hidden; pointer-events: none; }
+.gh .gh-hide { display: none; }
 @media (max-width: 1100px) {
   /* узкий экран: список над игрой плавно сворачивается по высоте */
+  /* пока список открыт над игрой, кнопка «☰» ушла бы под него: своя кнопка в самом списке */
+  .gh .gh-hide { display: block; width: 100%; padding: 10px 14px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .75); color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
   .gh.folded.game.gx { grid-template-columns: minmax(0, 1fr); }
   .gh .gx-nav { max-height: 1800px; transition: max-height .45s ease, opacity .3s ease, padding .45s ease, border-width .45s ease; }
   .gh.folded .gx-nav { max-height: 0; padding-top: 0; padding-bottom: 0; border-width: 0; transform: none; }
