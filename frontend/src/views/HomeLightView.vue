@@ -315,5 +315,4 @@ a.note:hover .val { color: var(--accent); }
 
 <style>
 /* для тех, кто выбрал тёмную тему: пока страница оживает и заменяется на новую главную, светлую не видно */
-html[data-theme='dark'] .home-light { visibility: hidden; }
 </style>

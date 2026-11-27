@@ -31,7 +31,5 @@ const available = useMusicAvailable()
 .mp-fab-game img { width: 28px; height: 28px; }
 .mp-fab-eq { animation: mp-eq 1s ease-in-out infinite alternate; }
 @keyframes mp-eq { from { transform: scaleY(.7); } to { transform: scaleY(1.05); } }
-html[data-theme='dark'] .mp-fab { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
-html[data-theme='dark'] .mp-fab.on { background: linear-gradient(140deg, #b8509a, #7d6bf0); }
 @media (prefers-reduced-motion: reduce) { .mp-fab { transition: none; } .mp-fab-eq { animation: none; } }
 </style>

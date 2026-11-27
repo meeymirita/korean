@@ -623,16 +623,13 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
 .vl-pop { position: absolute; z-index: 30; top: 0; width: 310px; box-sizing: border-box; padding: 14px 16px; border: 1px solid rgba(143, 124, 240, .5); border-radius: 16px; background: #fff; box-shadow: 0 14px 40px rgba(60, 40, 120, .28); pointer-events: none; font-size: 13.5px; line-height: 1.5; color: #2b2250; animation: vlpop .15s ease-out; }
 .vl-pop.right { left: calc(100% + 10px); }
 .vl-pop.left { right: calc(100% + 10px); }
-:global(html[data-theme='dark']) .vl-pop { background: #261d3f; border-color: rgba(255, 190, 220, .35); color: #f4eeff; box-shadow: 0 14px 40px rgba(0, 0, 0, .55); }
 .vl-pop p { margin: 0 0 6px; }
 .vl-pop p:last-child { margin-bottom: 0; }
 .vl-pop-facts { color: #5d5388; }
-:global(html[data-theme='dark']) .vl-pop-facts { color: #cbbfe8; }
 .vl-pop-tag { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border: 1px dashed #8f7cf0; border-radius: 999px; }
 .vl-pop-tag.ok { border-style: solid; border-color: #2e9e6b; background: rgba(46, 158, 107, .14); }
 .vl-pop-tag small { color: #5d5388; }
 .vl-pop-ex { color: #5d5388; font-size: 13px; }
-:global(html[data-theme='dark']) .vl-pop-tag small, :global(html[data-theme='dark']) .vl-pop-ex { color: #cbbfe8; }
 @media (max-width: 760px) { .vl-pop { display: none; } }
 @keyframes vlpop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .vl-pop { animation: none; } }
@@ -658,7 +655,6 @@ const { savedTitles, saveLine, askAt, ownerAsk, askContext } = useVlogPhrases(vl
 .vl-card .vl-no { position: absolute; top: 16px; left: 16px; z-index: 1; display: block; min-height: 0; overflow: visible; padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1.4; }
 /* картинки ютуба могут не грузиться (сеть планшета): вместо белого фона пастельная плашка */
 .vl-card .vl-ph { display: grid; min-height: 0; overflow: visible; place-items: center; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: linear-gradient(135deg, #fbd9ea, #cfe4ff); color: rgba(255, 255, 255, .85); font-size: 28px; font-weight: 700; letter-spacing: .08em; }
-:global(html[data-theme='dark']) .vl-card .vl-ph { background: linear-gradient(135deg, #4a2c55, #2c3c66); color: rgba(255, 255, 255, .5); }
 .vl-card { position: relative; box-sizing: border-box; width: 100%; min-width: 0; height: 100%; align-content: start; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 10px; font: inherit; color: var(--ink); cursor: pointer; display: grid; gap: 6px; }
 .vl-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; }
 .vl-card b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.7em; line-height: 1.35; font-size: 15px; }

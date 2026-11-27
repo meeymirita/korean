@@ -356,11 +356,4 @@ onBeforeRouteLeave(async () => {
   .up-foot .up-btn.big { width: 100%; justify-content: center; }
 }
 
-html[data-theme='dark'] .up-bg::after { background: rgba(20, 21, 43, .55); }
-html[data-theme='dark'] .up-foot { background: rgba(37, 30, 66, .95); }
-html[data-theme='dark'] .up-card { background: rgba(37, 30, 66, .88); border-color: rgba(165, 160, 255, .2); color: #ece4ff; }
-html[data-theme='dark'] .up { --up-deep: #ece4ff; --up-violet: #c3a5ff; }
-html[data-theme='dark'] .up-head p, html[data-theme='dark'] .up-drop span, html[data-theme='dark'] .up-lbl, html[data-theme='dark'] .up-status { color: #c9b8ec; }
-html[data-theme='dark'] .up-drop { background: rgba(60, 45, 100, .6); }
-html[data-theme='dark'] .up-row, html[data-theme='dark'] .up .up-btn:not(.main):not(.danger), html[data-theme='dark'] .up .up-input, html[data-theme='dark'] .up .tg-box { background: rgba(50, 40, 88, .9); color: #ece4ff; }
 </style>

@@ -102,15 +102,6 @@
 
 
 /* тёмная тема */
-html[data-theme='dark'] .game.gx { --glass: rgba(30, 32, 70, .72); --panel: rgba(32, 34, 72, .9);
-  background: linear-gradient(rgba(14, 15, 40, .72), rgba(14, 15, 40, .72)), linear-gradient(to bottom, transparent 68%, #f1dff7 93%), var(--gx-bg) center top -230px / 100% auto fixed no-repeat !important; }
-html[data-theme='dark'] .gx-nav, html[data-theme='dark'] .game .card, html[data-theme='dark'] .game .gx-stats { border-color: var(--line); }
-html[data-theme='dark'] .gx-find, html[data-theme='dark'] .game .gx-round, html[data-theme='dark'] .game .gx-ava, html[data-theme='dark'] .gx-level,
-html[data-theme='dark'] .game .gx-body .chip, html[data-theme='dark'] .game .gx-actions .ghost { background: rgba(37, 39, 78, .82); border-color: var(--line); }
-html[data-theme='dark'] .game .gx-modes .sm:hover { background: rgba(255, 255, 255, .08); }
-html[data-theme='dark'] .gx-drop { background: #1d1f42; border-color: var(--line); }
-html[data-theme='dark'] .game .gx-drop .gx-me, html[data-theme='dark'] .game .gx-drop .gx-di:hover { background: rgba(255, 255, 255, .08); }
-html[data-theme='dark'] .gx-di kbd { background: rgba(255, 255, 255, .1); }
 .game .gi.gq { display: grid; place-items: center; width: 22px; height: 22px; font-size: 13px; border: 1.5px solid currentColor; border-radius: 50%; }
 
 

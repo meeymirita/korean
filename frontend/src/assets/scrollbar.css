@@ -9,24 +9,8 @@
   --sb-track: rgba(143, 124, 240, 0.1);
   --sb-flat: #b9a8f5;
 }
-html[data-theme='dark'] {
-  --sb-a: #c577b3;
-  --sb-b: #6f61c9;
-  --sb-ah: #f07fc6;
-  --sb-bh: #a898ff;
-  --sb-track: rgba(168, 152, 255, 0.12);
-  --sb-flat: #6f61c9;
-}
 
 /* розовая палитра (режим «Розовая»): ползунок розовый, а не фиолетовый */
-html[data-theme='dark'][data-palette='wine'] {
-  --sb-a: #ff9cc6;
-  --sb-b: #ff6fae;
-  --sb-ah: #ffd1e3;
-  --sb-bh: #ff9cc6;
-  --sb-track: rgba(255, 190, 220, 0.12);
-  --sb-flat: #ff6fae;
-}
 
 *::-webkit-scrollbar { width: 11px; height: 11px; }
 *::-webkit-scrollbar-track { background: var(--sb-track); border-radius: 999px; margin: 4px; }

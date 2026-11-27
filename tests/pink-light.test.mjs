@@ -6,10 +6,10 @@ import { fileURLToPath } from 'node:url'
 
 const read = p => readFileSync(fileURLToPath(new URL(`../frontend/src/${p}`, import.meta.url)), 'utf8')
 
-test('pink.css: светлый вариант включается без data-theme="dark", картинки не инвертируются', () => {
+test('pink.css: светлый вариант включён всегда, картинки не инвертируются', () => {
   const css = read('assets/pink.css')
-  assert.match(css, /html:not\(\[data-theme='dark'\]\) \.pk \{[^}]*filter: invert\(1\) hue-rotate\(180deg\)/)
-  assert.match(css, /html:not\(\[data-theme='dark'\]\) \.pk :is\(img[^)]*\)\s*\{[^}]*filter: invert\(1\) hue-rotate\(180deg\)/)
+  assert.match(css, /^\.pk \{[^}]*filter: invert\(1\) hue-rotate\(180deg\)/m)
+  assert.match(css, /^\.pk :is\(img[^)]*\)\s*\{[^}]*filter: invert\(1\) hue-rotate\(180deg\)/m)
 })
 
 test('оболочка PinkShell: кнопки смены темы нет', () => {
