@@ -66,11 +66,13 @@ describe('страница грамматики: виды', () => {
 })
 
 describe('помощники полки', () => {
-  it('полки: без книги, 1A и 1B; пустые не показываются', () => {
-    const shelves = shelvesOf(G, 'Мои карточки')
-    expect(shelves.map(s => s.key)).toContain('mine')
+  it('полки: свои и книга 1A на одной, книга 1B на другой; пустые не показываются', () => {
+    const shelves = shelvesOf(G, 'Мои карточки · Книга 1A')
+    expect(shelves.map(s => s.key)).toEqual(['mine', '1B'])
     expect(shelves.every(s => s.cards.length > 0)).toBe(true)
-    expect(shelves.find(s => s.key === '1B')?.cards.every(g => g.bk?.startsWith('1B '))).toBe(true)
+    expect(shelves[0]!.cards.every(g => !g.bk?.startsWith('1B '))).toBe(true)
+    expect(shelves[1]!.cards.every(g => g.bk?.startsWith('1B '))).toBe(true)
+    expect(shelvesOf(G.filter(g => !g.bk?.startsWith('1B ')), 'x').map(s => s.key)).toEqual(['mine'])
   })
 
   it('перестановка и сохранённый порядок', () => {

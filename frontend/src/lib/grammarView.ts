@@ -44,15 +44,11 @@ export interface Shelf {
   cards: Gram[]
 }
 
-/** Полки: карточки без места в книге, книга 1A, книга 1B (пустые полки не показываем). Порядок внутри полки сохраняется как пришёл. */
-export function shelvesOf(cards: Gram[], noBookLabel: string): Shelf[] {
-  const mine = cards.filter(g => !g.bk)
-  const a = cards.filter(g => g.bk && !g.bk.startsWith('1B '))
-  const b = cards.filter(g => g.bk?.startsWith('1B '))
+/** Полки: своя карточка и книга 1A стоят на одной полке (как во вкладке «Мои карточки»), книга 1B на отдельной; пустые полки не показываем. Порядок внутри полки сохраняется как пришёл. */
+export function shelvesOf(cards: Gram[], firstLabel: string): Shelf[] {
   return [
-    { key: 'mine', label: noBookLabel, cards: mine },
-    { key: '1A', label: 'Книга 1A', cards: a },
-    { key: '1B', label: 'Книга 1B', cards: b },
+    { key: 'mine', label: firstLabel, cards: cards.filter(g => !g.bk?.startsWith('1B ')) },
+    { key: '1B', label: 'Книга 1B', cards: cards.filter(g => g.bk?.startsWith('1B ')) },
   ].filter(s => s.cards.length)
 }
 

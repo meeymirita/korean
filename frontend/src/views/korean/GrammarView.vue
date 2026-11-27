@@ -135,7 +135,7 @@ onMounted(() => {
       </UiSelect>
     </div>
     <p v-if="!shown.length" class="gempty">Ничего не найдено.</p>
-    <GrammarShelf v-if="view === 'shelf'" :cards="shown" :no-book-label="cur === 0 ? 'Мои карточки' : 'Карточки уроков'" @open="id => open(id, cur === 0 || cur === 3)" />
+    <GrammarShelf v-if="view === 'shelf'" :cards="shown" :no-book-label="cur === 0 ? 'Мои карточки · Книга 1A' : 'Карточки уроков'" @open="id => open(id, cur === 0 || cur === 3)" />
     <GrammarColumns v-else-if="view === 'columns'" :cards="shown" @open="id => open(id, cur === 0 || cur === 3)" />
     <GrammarAsk v-else-if="view === 'ask'" :cards="shown" @open="id => open(id, cur === 0 || cur === 3)" />
     <div v-show="view === 'cards'" class="gg">
