@@ -5,7 +5,7 @@ import { useProgressStore } from '@/stores/progress'
 import '@/assets/home/fonts.css'
 
 /**
- * Общая оболочка открытых страниц в тёмно-розовом оформлении (по файлу urimal-landing): винный фон, свечение за курсором,
+ * Общая оболочка открытых страниц в светлом розово-голубом оформлении (как главная): кремовый фон, свечение за курсором,
  * шапка-«таблетка» с ссылками и кнопкой входа. Содержимое страницы идёт в слот, ссылки шапки можно заменить слотом `nav`.
  */
 withDefaults(defineProps<{ sub?: string; width?: string }>(), { sub: 'korean space', width: '1220px' })
@@ -111,16 +111,16 @@ onBeforeUnmount(() => {
 <style scoped>
 .pk-head { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; max-width: var(--pk-w); margin: 0 auto;
   padding: 14px 14px 14px 24px; border-radius: 999px; background: var(--pk-glass); border: 1px solid var(--pk-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.brand { display: flex; align-items: center; gap: 12px; flex: none; white-space: nowrap; color: #fff; }
+.brand { display: flex; align-items: center; gap: 12px; flex: none; white-space: nowrap; color: var(--pk-ink); }
 .brand .mark { font-size: 26px; line-height: 1; color: var(--pk-pink); }
 .brand .name { font-size: 21px; font-weight: 700; }
 .brand .sub { font: 400 11px/1 var(--pk-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--pk-label); }
 .links { display: flex; align-items: center; justify-content: center; gap: clamp(12px, 2.2vw, 40px); min-width: 0; font-size: clamp(13px, 1.4vw, 16px); white-space: nowrap; overflow: hidden; }
-.links :deep(a), .links :deep(button) { color: #fff; transition: filter .25s ease, opacity .25s ease; background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
+.links :deep(a), .links :deep(button) { color: var(--pk-ink); transition: filter .25s ease, opacity .25s ease; background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
 .links:hover :deep(> :not(:hover)) { filter: blur(2px); opacity: .45; }
 .links :deep(.router-link-exact-active) { color: var(--pk-pink-2); }
-.enter { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none; height: 41px; min-width: 113px; padding: 0 20px; border-radius: 999px; background: #fff; color: var(--pk-plum); font-weight: 600; font-size: 15px; white-space: nowrap; transition: background .2s; }
-.enter:hover { background: var(--pk-soft); }
+.enter { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none; height: 41px; min-width: 113px; padding: 0 20px; border-radius: 999px; background: var(--pk-ink); color: #fff; font-weight: 600; font-size: 15px; white-space: nowrap; transition: background .2s; }
+.enter:hover { background: #6a5cd0; }
 @media (max-width: 760px) { .brand .sub { display: none; } .links { gap: 14px; justify-content: flex-end; } }
 @media (max-width: 560px) { .pk-head { padding-left: 16px; gap: 12px; } .links { display: none; } .enter { margin-left: auto; } }
 </style>

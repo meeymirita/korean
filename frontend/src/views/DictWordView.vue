@@ -223,7 +223,7 @@ const ruLinks = computed(() => [...new Set((main.value?.tr ?? []).filter(t => /^
 .tsearch { flex: 1; max-width: 560px; }
 .tsearch input { width: 100%; box-sizing: border-box; padding: 11px 20px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; outline: none; }
 .tsearch input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--pink); }
-.crumbs { display: flex; gap: 8px; align-items: center; width: fit-content; margin: 14px 0 12px; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 12.5px; color: var(--muted); }
+.crumbs { display: flex; gap: 8px; align-items: center; width: fit-content; margin: 14px 0 12px; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, .6); font-size: 12.5px; color: var(--muted); }
 .crumbs a:hover { color: var(--ink); }
 .crumbs b { color: var(--ink); font-weight: 600; }
 .head, .meanings, .panel, .none { padding: 20px 26px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); }
@@ -240,14 +240,14 @@ const ruLinks = computed(() => [...new Set((main.value?.tr ?? []).filter(t => /^
 .meanings h2 { margin: 0; font-size: 18px; }
 .entry { display: flex; flex-direction: column; gap: 12px; }
 .hom { margin: 0; font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
-.sense { padding: 18px 20px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, .08); }
+.sense { padding: 18px 20px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, .6); }
 .sn { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 12px; font-weight: 700; color: var(--accent); }
 .sn span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: var(--pink); }
-.allbtn { align-self: flex-start; padding: 9px 20px; border: 1px solid rgba(255, 190, 220, .35); border-radius: 999px; background: rgba(255, 255, 255, .1); color: #ffd1e3; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.allbtn { align-self: flex-start; padding: 9px 20px; border: 1px solid rgba(120, 110, 200, .3); border-radius: 999px; background: rgba(255, 255, 255, .7); color: var(--accent2); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 12px; }
-.tabs button { padding: 10px 20px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 255, 255, .08); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: inherit; font-size: 14px; font-weight: 600; color: #ffd1e3; cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }
-.tabs button:hover { background: rgba(255, 255, 255, .16); box-shadow: 0 6px 18px rgba(70, 55, 140, .14); }
-.tabs button.cur { background: linear-gradient(135deg, #ff6fae, #c2186b); border-color: transparent; color: #fff; box-shadow: 0 8px 20px rgba(160, 90, 200, .3); }
+.tabs button { padding: 10px 20px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 255, 255, .6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: inherit; font-size: 14px; font-weight: 600; color: var(--accent2); cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }
+.tabs button:hover { background: rgba(255, 255, 255, .95); box-shadow: 0 6px 18px rgba(70, 55, 140, .14); }
+.tabs button.cur { background: linear-gradient(135deg, #ff7ab8, #d64da9); border-color: transparent; color: #fff; box-shadow: 0 8px 20px rgba(160, 90, 200, .3); }
 .forms { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
 .forms th { width: 30%; padding: 10px 14px; border-radius: 10px 0 0 10px; background: var(--soft); text-align: left; font-size: 13px; font-weight: 600; }
 .forms td { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 17px; }
@@ -259,9 +259,9 @@ const ruLinks = computed(() => [...new Set((main.value?.tr ?? []).filter(t => /^
 .ph { margin: 0 0 10px; font-size: 14px; }
 .cat2 { font-weight: 500; color: var(--muted); font-size: 12px; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-.lead { width: fit-content; max-width: 100%; margin: 12px 0 0; padding: 8px 16px; border-radius: 16px; background: rgba(255, 255, 255, .08); color: #ffd1e3; font-size: 14px; line-height: 1.5; }
+.lead { width: fit-content; max-width: 100%; margin: 12px 0 0; padding: 8px 16px; border-radius: 16px; background: rgba(255, 255, 255, .6); color: var(--accent2); font-size: 14px; line-height: 1.5; }
 .word-nav { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
-.word-nav a, .word-nav .disabled { padding: 9px 15px; border-radius: 999px; background: rgba(255, 255, 255, .08); color: #ffd1e3; font-size: 13px; font-weight: 600; }
+.word-nav a, .word-nav .disabled { padding: 9px 15px; border-radius: 999px; background: rgba(255, 255, 255, .6); color: var(--accent2); font-size: 13px; font-weight: 600; }
 .word-nav .disabled { color: var(--muted); }
 .pairs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pairs li { display: flex; align-items: center; gap: 14px; }
@@ -269,7 +269,7 @@ const ruLinks = computed(() => [...new Set((main.value?.tr ?? []).filter(t => /^
 .w.alt { background: var(--soft); color: var(--accent2); }
 .exlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .exlist.cols { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-.exlist li { padding: 10px 14px; border-radius: 12px; background: var(--pink); display: flex; flex-direction: column; gap: 3px; font-size: 16px; color: #fff; }
+.exlist li { padding: 10px 14px; border-radius: 12px; background: var(--pink); display: flex; flex-direction: column; gap: 3px; font-size: 16px; color: var(--ink); }
 .exlist small { font-size: 13px; opacity: .75; }
 @media (max-width: 600px) { .kv { grid-template-columns: 1fr; gap: 2px; } .kv dd { margin-bottom: 8px; } .forms th { width: auto; } .head, .meanings, .panel { padding: 16px; } .cat { margin-left: 0; } }
 </style>

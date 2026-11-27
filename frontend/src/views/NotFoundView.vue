@@ -40,7 +40,7 @@ h1 { margin: 0; font-size: clamp(88px, 20vw, 200px); font-weight: 500; letter-sp
 .hint { margin: 10px 0 18px; max-width: 460px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .links { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 30px; }
-.links a { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 110px; padding: 14px 16px; border: 1px solid var(--pk-line); border-radius: 20px; background: var(--pk-glass); color: #fff; font: 400 12px/1.3 var(--pk-mono); transition: border-color .2s, transform .2s; }
+.links a { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 110px; padding: 14px 16px; border: 1px solid var(--pk-line); border-radius: 20px; background: var(--pk-glass); color: var(--pk-ink); font: 400 12px/1.3 var(--pk-mono); transition: border-color .2s, transform .2s; }
 .links a .ko { font-size: 20px; color: var(--pk-pink-2); }
 .links a:hover { transform: translateY(-2px); border-color: var(--pk-pink-2); }
 </style>

@@ -79,9 +79,9 @@ useSeoMeta({ robots: () => (state.value === 'open' ? 'index, follow, max-image-p
 .closed h1 { margin: 0; font-size: 34px; font-weight: 500; letter-spacing: -.02em; }
 .closed p { margin: 0 0 12px; font: 400 14px/1.7 var(--pk-mono); color: var(--pk-soft); }
 .card { overflow: hidden; border: 1px solid var(--pk-line); border-radius: 28px; background: var(--pk-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.cover { height: 150px; background: linear-gradient(120deg, #ff4f9a, #c2186b 55%, #2a0a18); background-size: cover; background-position: center; }
+.cover { height: 150px; background: linear-gradient(120deg, #ffb3d6, #d9dcff 70%, #fff4fa); background-size: cover; background-position: center; }
 .who { display: flex; align-items: center; gap: 16px; margin: -36px 28px 0; position: relative; }
-.ava { width: 84px; height: 84px; border-radius: 50%; border: 4px solid #2a0a18; background: #2a0a18; object-fit: cover; }
+.ava { width: 84px; height: 84px; border-radius: 50%; border: 4px solid #fff; background: #fff; object-fit: cover; }
 .ava.emoji { display: grid; place-items: center; font-size: 42px; }
 .who h1 { margin: 36px 0 0; font-size: 28px; font-weight: 600; overflow-wrap: anywhere; }
 .who p { margin: 2px 0 0; font: 400 13px/1.5 var(--pk-mono); color: var(--pk-label); }
@@ -89,8 +89,8 @@ useSeoMeta({ robots: () => (state.value === 'open' ? 'index, follow, max-image-p
 .stats div { padding: 16px 8px; text-align: center; background: var(--pk-panel); border: 1px solid var(--pk-line); border-radius: 18px; }
 .stats b { display: block; font-size: 28px; font-weight: 600; font-variant-numeric: lining-nums; color: var(--pk-pink-2); }
 .stats small { font: 400 11px/1.3 var(--pk-mono); color: var(--pk-label); }
-.btn { display: inline-flex; align-items: center; height: 48px; margin: 0 28px 28px; padding: 0 22px; border-radius: 14px; background: #fff; color: var(--pk-plum) !important; font-size: 15px; font-weight: 600; transition: background .2s; }
-.btn:hover { background: var(--pk-soft); }
+.btn { display: inline-flex; align-items: center; height: 48px; margin: 0 28px 28px; padding: 0 22px; border-radius: 14px; background: var(--pk-ink); color: #fff !important; font-size: 15px; font-weight: 600; transition: background .2s; }
+.btn:hover { background: #6a5cd0; }
 .closed .btn { margin: 0; }
 @media (max-width: 520px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .who, .stats { margin-left: 18px; margin-right: 18px; } .btn { margin-left: 18px; } }
 </style>

@@ -24,7 +24,7 @@ function toggle() {
 </template>
 
 <style scoped>
-.dict-star { margin-left: auto; padding: 2px 10px; font: inherit; font-size: 28px; line-height: 1; color: #ffb3d1; background: transparent; border: 0; border-radius: 10px; cursor: pointer; }
+.dict-star { margin-left: auto; padding: 2px 10px; font: inherit; font-size: 28px; line-height: 1; color: #b9bde0; background: transparent; border: 0; border-radius: 10px; cursor: pointer; }
 .dict-star.sm { margin-left: 0; font-size: 20px; padding: 0 6px; }
 .dict-star:hover, .dict-star.on { color: #e0a028; }
 </style>

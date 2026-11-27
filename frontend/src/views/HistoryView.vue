@@ -40,13 +40,13 @@ const when = (d: string) => fmt.format(new Date(d + 'T12:00:00'))
 .intro p { margin: 0; max-width: 560px; }
 .line { list-style: none; margin: 40px 0 0; padding: 0 0 0 26px; border-left: 1px solid var(--pk-line); }
 .stage { position: relative; padding-bottom: 22px; }
-.dot { position: absolute; left: -33px; top: 26px; width: 12px; height: 12px; border-radius: 50%; background: #2a0a18; border: 2px solid var(--pk-pink-2); }
-.dot.now { background: var(--pk-pink); border-color: var(--pk-pink); box-shadow: 0 0 0 6px rgba(255, 111, 174, .25); }
+.dot { position: absolute; left: -33px; top: 26px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid var(--pk-pink-2); }
+.dot.now { background: var(--pk-pink); border-color: var(--pk-pink); box-shadow: 0 0 0 6px rgba(214, 77, 169, .2); }
 .card { padding: 24px 26px; border: 1px solid var(--pk-line); border-radius: 24px; background: var(--pk-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .card time { font: 400 12px/1 var(--pk-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--pk-label); }
 .card h2 { margin: 10px 0 6px; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
 .sum { margin: 0 0 12px; font: 400 13px/1.6 var(--pk-mono); color: var(--pk-soft); }
-.card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.6; color: rgba(255, 255, 255, .88); }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.6; color: var(--pk-ink); }
 .card li::marker { color: var(--pk-pink); }
 @media (max-width: 600px) { .line { padding-left: 18px; } .dot { left: -25px; } .card { padding: 18px; } }
 </style>

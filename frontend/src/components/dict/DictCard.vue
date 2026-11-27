@@ -31,7 +31,7 @@ defineEmits<{ open: [hit: DictHit]; save: [hit: DictHit] }>()
 </template>
 
 <style scoped>
-.card { --a: #ff9cc6; --bg: rgba(255, 111, 174, .2); --bg2: rgba(255, 255, 255, .08); --t: #ffd1e3; position: relative; padding: 24px 28px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; }
+.card { --a: #b83a92; --bg: rgba(214, 77, 169, .12); --bg2: rgba(255, 255, 255, .6); --t: #4a4f86; position: relative; padding: 24px 28px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; }
 .card:hover { transform: translateY(-2px); box-shadow: 0 22px 50px rgba(100, 87, 170, .18); }
 .cardlink { position: absolute; inset: 0; border-radius: 24px; z-index: 1; }
 .ch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 2px dotted var(--bg); }
@@ -47,7 +47,7 @@ defineEmits<{ open: [hit: DictHit]; save: [hit: DictHit] }>()
 .lab { margin-left: 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .lab:first-child { margin-left: 0; }
 .tag { padding: 4px 12px; border-radius: 999px; background: var(--bg); color: var(--a); font-size: 14px; font-weight: 600; }
-.savebtn { margin-left: auto; padding: 5px 14px; border: 1px solid rgba(255, 190, 220, .35); border-radius: 999px; background: rgba(255, 255, 255, .1); color: var(--t); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.savebtn { margin-left: auto; padding: 5px 14px; border: 1px solid rgba(120, 110, 200, .3); border-radius: 999px; background: rgba(255, 255, 255, .7); color: var(--t); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .savebtn:disabled { opacity: .6; cursor: default; }
 .open { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--a); pointer-events: none !important; }
 .savebtn ~ .open { margin-left: 8px; }

@@ -18,7 +18,7 @@ const defOf = computed(() => (ruList.value ? props.sense.ru[0]?.d ?? '' : props.
 <style scoped>
 .kv { margin: 0; min-width: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px 16px; }
 .kv dt { padding-top: 3px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.kv dd { margin: 0; color: #fff; font-size: 15px; line-height: 1.55; }
-.kv dd.ru { font-size: 18px; font-weight: 700; color: #ffd1e3; line-height: 1.4; }
+.kv dd { margin: 0; color: var(--ink); font-size: 15px; line-height: 1.55; }
+.kv dd.ru { font-size: 18px; font-weight: 700; color: var(--accent2); line-height: 1.4; }
 .exv { display: flex; flex-direction: column; gap: 4px; }
 </style>
