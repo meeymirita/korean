@@ -159,30 +159,35 @@ export function longTrap(w: string): string {
   return ''
 }
 
-/** Ступень уровня «Растёт»: предложение собирается по частям, а внутри части сначала основа (последние две группы), потом вся часть. */
+/** Перевод по частям: делит `ru` по связке (`, а …`, `, и …`, `, поэтому …`) или по границе предложений. `null`, если частей не столько же, сколько частей в корейской записи (тогда в «Растёт» предложение не идёт). */
+export function growRu(x: LongSentence): string[] | null {
+  const parts = x.ru.split(/(?<=[?.!])\s+|, (?=а |и |но |поэтому |а вот )/).map(p => p.trim()).filter(Boolean)
+  if (parts.length < 2 || parts.length !== longClauses(x).length) return null
+  return parts.map(p => {
+    const t = p[0]!.toUpperCase() + p.slice(1)
+    return /[.?!]$/.test(t) ? t : t + '.'
+  })
+}
+
+/** Ступень уровня «Растёт»: одна часть длинного предложения со своим переводом; собранные раньше части идут в `prefix`. */
 export interface GrowStep {
   /** части, собранные на прошлых ступенях (показываются над заданием) */
   prefix: string
   /** что собирается на этой ступени, в записи `LongSentence.ko` (для `checkLong`) */
   ko: string
-  /** основа части (true) или вся часть (false) */
-  core: boolean
-  /** номер части, с 0 */
-  clause: number
+  /** перевод этой части */
+  ru: string
 }
 
-/** Ступени предложения: у каждой части «основа» (если в части больше двух групп без связки) и «вся часть»; связка идёт первой. */
+/** Ступени предложения: по одной на часть (связка первая). Пусто, если перевод по частям не делится (`growRu`). */
 export function growSteps(x: LongSentence): GrowStep[] {
-  const out: GrowStep[] = []
+  const ru = growRu(x)
+  if (!ru) return []
   const done: string[] = []
-  longClauses(x).forEach((cl, ci) => {
-    const conn = cl.length > 1 && cl[0]!.length === 1 && CONN.includes(cl[0]![0]!) ? [cl[0]!] : []
-    const rest = cl.slice(conn.length)
-    const str = (gs: string[][]) => gs.map(g => g.join('_')).join(' ')
-    const prefix = done.join(' ')
-    if (rest.length > 2) out.push({ prefix, ko: str([...conn, ...rest.slice(-2)]), core: true, clause: ci })
-    out.push({ prefix, ko: str(cl), core: false, clause: ci })
-    done.push(str(cl).replace(/_/g, ' '))
+  return longClauses(x).map((cl, ci) => {
+    const ko = cl.map(g => g.join('_')).join(' ')
+    const step = { prefix: done.join(' '), ko, ru: ru[ci]! }
+    done.push(ko.replace(/_/g, ' '))
+    return step
   })
-  return out
 }

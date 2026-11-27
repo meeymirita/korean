@@ -234,7 +234,7 @@ function genBuildLong(){
   return {type:'build',mode:'build',key:'bl:'+i,level:4,label:'Собери предложение · '+LEVEL_NAME[4],ru:x.ru,tiles:shuffle([...words,...spare]),
     accept:[right],check:function(w: string[]){return checkLong(x,w);},right:right,note:x.note,explain:[text,x.note],teach:text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
 }
-/** «Собери предложение: Растёт»: длинное предложение собирается по ступеням (основа первой части → вся часть → основа второй → вся вторая), каждая ступень отдельное задание, прошлые части показаны над заданием. */
+/** «Собери предложение: Растёт»: длинное предложение собирается по частям, каждая часть отдельное задание со своим переводом, собранные раньше части показаны над заданием. */
 function genBuildGrow(){
   const fits=function(i: number){const t=LONG_SENTENCES[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');};
   let g=S.grow;
@@ -253,13 +253,12 @@ function genBuildGrow(){
   const spare: string[]=[];
   shuffle(words.slice()).forEach(function(w){
     const t=longTrap(w);
-    if(t&&spare.length<(st.core?1:2)&&!words.includes(t)&&!spare.includes(t))spare.push(t);
+    if(t&&spare.length<2&&!words.includes(t)&&!spare.includes(t))spare.push(t);
   });
   const last=g.k===steps.length-1;
-  const what=st.core?'сначала основа части':st.clause===0?'вся первая часть':'вся часть с новой связкой';
-  const label='Растёт · шаг '+(g.k+1)+' из '+steps.length+' · '+what+(st.prefix?' (уже есть: '+st.prefix+')':'');
-  return {type:'build',mode:'build',key:'bg:'+g.i+':'+g.k,level:5,label:label,ru:x.ru,tiles:shuffle([...words,...spare]),
-    accept:[right],check:function(w: string[]){return checkLong(part,w);},right:right,note:x.note,explain:[(st.prefix?st.prefix+' ':'')+text+'.',x.note],teach:last?longText(x):text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
+  const label='Растёт · часть '+(g.k+1)+' из '+steps.length+(st.prefix?' (уже есть: '+st.prefix+')':'');
+  return {type:'build',mode:'build',key:'bg:'+g.i+':'+g.k,level:5,label:label,ru:st.ru,tiles:shuffle([...words,...spare]),
+    accept:[right],check:function(w: string[]){return checkLong(part,w);},right:right,note:last?x.note:'',explain:last?[(st.prefix?st.prefix+' ':'')+text+'.',x.note]:[text+'.'],teach:last?longText(x):text,trans:last?x.ru:st.ru,hp:st.ru,hr:text,icon:'🏗️'};
 }
 function genBuild(){
   if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,4);
