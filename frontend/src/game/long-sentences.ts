@@ -93,7 +93,7 @@ export const LONG_SENTENCES: LongSentence[] = [
 /** «Мастер» и «Мастер+» вместе: «Растёт», «Тексты по правилу», экзамен и открытый список предложений берут отсюда. */
 export const LONG_ALL: LongSentence[] = [...LONG_SENTENCES, ...LONG3]
 
-const CONN = ['그리고', '그런데', '그래서', '하지만', '그러니까']
+export const CONN = ['그리고', '그런데', '그래서', '하지만', '그러니까']
 
 /** Предложение как текст: без служебных `_`. */
 export const longText = (x: LongSentence) => x.ko.replace(/_/g, ' ')

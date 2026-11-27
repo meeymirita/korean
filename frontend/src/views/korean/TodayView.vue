@@ -7,6 +7,7 @@ import { CHECK_DEFAULT, CHECK_MAX, CHECK_MIN, checklistFor, clampCheckSize, snap
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import WeakSpotCard from '@/components/korean/WeakSpotCard.vue'
+import TodayLong from '@/components/korean/TodayLong.vue'
 import WeekGoalRing from '@/components/korean/WeekGoalRing.vue'
 import WordsCheck, { type WordsCheckResult } from '@/components/korean/WordsCheck.vue'
 import { askConfirm } from '@/composables/useConfirm'
@@ -25,8 +26,8 @@ import { useToastStore } from '@/stores/toast'
 const progress = useProgressStore()
 const sets = useTodaySetsStore()
 const toast = useToastStore()
-const WORDS = 10
-const TASKS = 15
+const WORDS = 15
+const TASKS = 25
 
 type Tab = 'today' | 'list' | 'history'
 /** Вкладка в адресе (?tab=list|history), «Сегодня» без параметра. */
@@ -342,6 +343,8 @@ const markOf = (t: SnapTask) => (t.picked === null ? 'skip' : t.picked === t.ans
           </li>
         </ol>
       </template>
+
+      <TodayLong />
 
       <h2 class="today-h">
         Слова дня <small v-if="!wordsHidden">нажми на слово — увидишь перевод</small>
