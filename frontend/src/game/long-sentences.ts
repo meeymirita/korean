@@ -158,3 +158,31 @@ export function longTrap(w: string): string {
   if (last === '가' && !b && stem.length > 1) return stem + '이'
   return ''
 }
+
+/** Ступень уровня «Растёт»: предложение собирается по частям, а внутри части сначала основа (последние две группы), потом вся часть. */
+export interface GrowStep {
+  /** части, собранные на прошлых ступенях (показываются над заданием) */
+  prefix: string
+  /** что собирается на этой ступени, в записи `LongSentence.ko` (для `checkLong`) */
+  ko: string
+  /** основа части (true) или вся часть (false) */
+  core: boolean
+  /** номер части, с 0 */
+  clause: number
+}
+
+/** Ступени предложения: у каждой части «основа» (если в части больше двух групп без связки) и «вся часть»; связка идёт первой. */
+export function growSteps(x: LongSentence): GrowStep[] {
+  const out: GrowStep[] = []
+  const done: string[] = []
+  longClauses(x).forEach((cl, ci) => {
+    const conn = cl.length > 1 && cl[0]!.length === 1 && CONN.includes(cl[0]![0]!) ? [cl[0]!] : []
+    const rest = cl.slice(conn.length)
+    const str = (gs: string[][]) => gs.map(g => g.join('_')).join(' ')
+    const prefix = done.join(' ')
+    if (rest.length > 2) out.push({ prefix, ko: str([...conn, ...rest.slice(-2)]), core: true, clause: ci })
+    out.push({ prefix, ko: str(cl), core: false, clause: ci })
+    done.push(str(cl).replace(/_/g, ' '))
+  })
+  return out
+}

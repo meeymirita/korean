@@ -124,6 +124,8 @@ export interface GameState {
   pfam: string
   /** «Собери число»: что собирать: mix | num | date | price */
   asm: string
+  /** «Растёт»: какое предложение `LONG_SENTENCES` и какая ступень */
+  grow: { i: number; k: number; shown: boolean } | null
   bstory: { st: Story; i: number; lv: string; shown: boolean } | null
   gloss: boolean
   cats: Record<string, number>

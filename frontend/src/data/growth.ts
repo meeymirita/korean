@@ -4,13 +4,13 @@ export interface GrowthMark { d: string; title: string; summary: string; items: 
 export interface Growth { generated: string; commits: number; first: { d: string; subject: string } | null; lines: number; days: GrowthDay[]; marks: GrowthMark[] }
 
 export const GROWTH: Growth = {
- "generated": "2026-11-26",
- "commits": 1080,
+ "generated": "2026-11-27",
+ "commits": 1102,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 112175,
+ "lines": 111987,
  "days": [
   {
    "d": "2026-10-21",
@@ -195,11 +195,25 @@ export const GROWTH: Growth = {
    "del": 435
   },
   {
+   "d": "2026-11-25",
+   "n": 7,
+   "cum": 1066,
+   "add": 489,
+   "del": 2387
+  },
+  {
    "d": "2026-11-26",
-   "n": 21,
-   "cum": 1080,
-   "add": 1825,
-   "del": 932
+   "n": 30,
+   "cum": 1096,
+   "add": 2930,
+   "del": 1002
+  },
+  {
+   "d": "2026-11-27",
+   "n": 6,
+   "cum": 1102,
+   "add": 1251,
+   "del": 137
   }
  ],
  "marks": [
@@ -533,11 +547,25 @@ export const GROWTH: Growth = {
    "cum": 1059
   },
   {
+   "d": "2026-11-25",
+   "title": "Одна светлая тема: тёмные убраны",
+   "summary": "Тёмная, ночная и розовая темы удалены вместе с переключателем: сайт стал проще и везде выглядит одинаково.",
+   "items": 3,
+   "cum": 1066
+  },
+  {
    "d": "2026-11-26",
    "title": "Карта обучения стала графом",
    "summary": "Вместо ленты цветков одна страница-граф: единицы книг островками, ветка со стрелками от первой темы до последней.",
-   "items": 4,
-   "cum": 1080
+   "items": 9,
+   "cum": 1096
+  },
+  {
+   "d": "2026-11-27",
+   "title": "Грамматику можно смотреть по-разному",
+   "summary": "На странице «Грамматика» рядом с галочкой «пройдено» появился выбор вида: карточки, книжная полка, колонки как в Finder и диалог «Что хочешь сказать?».",
+   "items": 5,
+   "cum": 1102
   }
  ]
 }

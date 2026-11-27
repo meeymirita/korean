@@ -11,7 +11,7 @@ import { STUDY, STUDY_TRANSLATIONS } from '@/data/korean/study'
 import '@/assets/breakdown.css'
 import { EXCHANGES, type Exchange } from './dialogs'
 import { STORIES } from './stories'
-import { LONG_SENTENCES, checkLong, longText, longTrap, longWords } from './long-sentences'
+import { LONG_SENTENCES, checkLong, growSteps, longText, longTrap, longWords } from './long-sentences'
 import { PFAMS, type RuleFamily } from './families'
 import { ptextPool, type PtextMark } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
@@ -229,10 +229,38 @@ function genBuildLong(){
   return {type:'build',mode:'build',key:'bl:'+i,level:4,label:'Собери предложение · '+LEVEL_NAME[4],ru:x.ru,tiles:shuffle([...words,...spare]),
     accept:[right],check:function(w: string[]){return checkLong(x,w);},right:right,note:x.note,explain:[text,x.note],teach:text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
 }
+/** «Собери предложение: Растёт»: длинное предложение собирается по ступеням (основа первой части → вся часть → основа второй → вся вторая), каждая ступень отдельное задание, прошлые части показаны над заданием. */
+function genBuildGrow(){
+  const fits=function(i: number){const t=LONG_SENTENCES[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');};
+  let g=S.grow;
+  if(g&&g.shown&&g.k+1<growSteps(LONG_SENTENCES[g.i]!).length)g.k++;
+  else{
+    const all=LONG_SENTENCES.map(function(x,i){return i;}).filter(function(i){return growSteps(LONG_SENTENCES[i]!).length>=2;});
+    const fit=all.filter(fits);
+    const pool=fit.length?fit:all;
+    const rest=pool.filter(function(i){return !(S.lastKey||'').startsWith('bg:'+i+':');});
+    g=S.grow={i:rnd(rest.length?rest:pool),k:0,shown:false};
+  }
+  g.shown=true;
+  const x=LONG_SENTENCES[g.i]!,steps=growSteps(x),st=steps[g.k]!;
+  const part: typeof x={...x,ko:st.ko};
+  const words=longWords(part),right=words.join(' '),text=longText(part);
+  const spare: string[]=[];
+  shuffle(words.slice()).forEach(function(w){
+    const t=longTrap(w);
+    if(t&&spare.length<(st.core?1:2)&&!words.includes(t)&&!spare.includes(t))spare.push(t);
+  });
+  const last=g.k===steps.length-1;
+  const what=st.core?'сначала основа части':st.clause===0?'вся первая часть':'вся часть с новой связкой';
+  const label='Растёт · шаг '+(g.k+1)+' из '+steps.length+' · '+what+(st.prefix?' (уже есть: '+st.prefix+')':'');
+  return {type:'build',mode:'build',key:'bg:'+g.i+':'+g.k,level:5,label:label,ru:x.ru,tiles:shuffle([...words,...spare]),
+    accept:[right],check:function(w: string[]){return checkLong(part,w);},right:right,note:x.note,explain:[(st.prefix?st.prefix+' ':'')+text+'.',x.note],teach:last?longText(x):text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
+}
 function genBuild(){
   if(storyOn('build'))return S.levels.build==='long'?genBuildStory(5,10):genBuildStory(2,4);
   // «Мастер» только в самом режиме и в «Миксе»: в блице и на выживании длинное предложение не успеть собрать
   // «Любой» в самом режиме даёт «Мастера» примерно в каждом пятом задании
+  if(!S.blitz.on&&!S.surv.on&&S.level===5)return genBuildGrow();
   if(!S.blitz.on&&!S.surv.on&&(S.level===4||(S.level==='any'&&S.mode==='build'&&Math.random()<.2)))return genBuildLong();
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
   let level: Level|undefined,seed: number|undefined,tm: TenseMode=mode;
@@ -241,7 +269,7 @@ function genBuild(){
     const p=parseBuildKey(rnd(missed));
     if(p){level=p.level;tm=p.mode;seed=p.seed;}
   }
-  if(!seed){level=(S.level==='any'?rnd([1,2,2,3]):S.level===4?3:S.level) as Level;seed=1+Math.floor(Math.random()*2147483000);}
+  if(!seed){level=(S.level==='any'?rnd([1,2,2,3]):S.level>=4?3:S.level) as Level;seed=1+Math.floor(Math.random()*2147483000);}
   const b=makeBuild(level!,tm,seed!);
   return {type:'build',mode:'build',key:b.key,level:level,label:'Собери предложение · '+LEVEL_NAME[level!],ru:b.ru,tiles:b.tiles,
     accept:b.accept,right:b.right,note:b.note,explain:[b.right+'.',b.note],hp:b.ru,hr:b.right,icon:'🏗️'};

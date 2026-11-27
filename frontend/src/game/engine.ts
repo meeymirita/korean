@@ -48,7 +48,7 @@ function labelWithHelp(q: Question){
 /* ---------- состояние ---------- */
 const LS='hleb_game_v1';
 const S: GameState={
-  mode:'mix',fut:'on',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple',expert:'simple'},pfam:'topic',asm:'mix',bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
+  mode:'mix',fut:'on',level:'any',levels:{pair:'simple',place:'simple',too:'simple',neg:'simple',when:'simple',dem:'simple',word:'simple',rev:'simple',qw:'simple',part:'simple',form:'simple',days:'simple',num:'simple',price:'simple',count:'simple',polite:'simple',dlg:'simple',han:'simple',spot:'simple',err:'simple',type:'simple',ord:'simple',ptext:'story',build:'simple',expert:'simple'},pfam:'topic',asm:'mix',grow:null,bstory:null,gloss:false,cats:{v:1,a:1,q:1,p:1,d:1,n:1,l:1,s:0,w:1},reading:true,tense:'both',
   ses:{ok:0,bad:0,streak:0,best:0},all:{ok:0,bad:0,best:0,bestBlitz:0,bestSurv:0,bestBlitzBy:{},bestSurvBy:{},xp:0,byMode:{}},miss:{},hints:3,
   surv:{on:false,lives:3,max:3,ok:0},lastOver:'blitz',blitzSecs:60,survLives:3,
   seenHelp:false,modeHelp:{},hist:[],cur:null,answered:false,tab:'hist',lastKey:null,timer:undefined,win:null,
@@ -77,7 +77,7 @@ if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 const wantFam=hooks.fam&&hooks.fam();
 if(wantFam&&PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
-if(![1,2,3,4,'any'].includes(S.level))S.level='any';
+if(![1,2,3,4,5,'any'].includes(S.level))S.level='any';
 Object.keys(S.levels).forEach(k=>{if(!['simple','story','long','expert'].includes(S.levels[k]!))S.levels[k]='simple';});
 
 /* ---------- генераторы заданий (generators.ts) ---------- */
@@ -230,9 +230,9 @@ function renderQuestion(q: Question){
         lv.appendChild(b);
       });
     }else{
-      ([['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер']] as [number|'any',string][]).forEach(function(x){
+      ([['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер'],[5,'Растёт']] as [number|'any',string][]).forEach(function(x){
         const b=el('button','chip'+(S.level===x[0]?' on':''),x[1]);b.type='button';
-        b.addEventListener('click',function(){S.level=x[0];save();renderQuestion(genBuild());});
+        b.addEventListener('click',function(){S.level=x[0];S.grow=null;save();renderQuestion(genBuild());});
         lv.appendChild(b);
       });
     }

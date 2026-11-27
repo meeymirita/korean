@@ -29,7 +29,7 @@ function answer(words: string[]) {
 describe('«Собери предложение»: уровень «Мастер»', () => {
   it('чип стоит после «Сложного», даёт длинное предложение с лишними плитками', () => {
     start()
-    expect(chips().map(b => b.textContent).slice(-5)).toEqual(['Любой', 'Простой', 'Средний', 'Сложный', 'Мастер'])
+    expect(chips().map(b => b.textContent).slice(-6)).toEqual(['Любой', 'Простой', 'Средний', 'Сложный', 'Мастер', 'Растёт'])
     master().click()
     expect(master().classList.contains('on')).toBe(true)
     const x = current()
