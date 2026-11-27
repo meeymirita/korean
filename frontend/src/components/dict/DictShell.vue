@@ -10,7 +10,7 @@ defineProps<{ side?: boolean; sideOpen?: boolean; lock?: boolean }>()
 </script>
 
 <template>
-  <PinkShell sub="большой словарь">
+  <PinkShell sub="большой словарь" width="100%">
     <template #nav>
       <slot name="top">
         <RouterLink to="/dict/podborki">Подборки</RouterLink>
@@ -35,13 +35,13 @@ defineProps<{ side?: boolean; sideOpen?: boolean; lock?: boolean }>()
   /* переменные, которыми пользуются страницы словаря */
   --ink: #1e2350; --muted: #6b70a8; --line: rgba(120, 110, 200, .2); --accent: #b83a92; --accent2: #4a4f86;
   --soft: rgba(255, 255, 255, .6); --pink: rgba(214, 77, 169, .12); --surface: rgba(255, 255, 255, .72); --shadow: none;
-  flex: 1; display: flex; gap: 24px; align-items: flex-start; width: 100%; max-width: 1220px; margin: 0 auto; padding-top: 12px; color: var(--ink); }
+  flex: 1; display: flex; gap: 24px; align-items: flex-start; width: 100%; padding-top: 12px; color: var(--ink); }
 .dict-side { position: sticky; top: 96px; flex: none; width: 300px; height: calc(100vh - 150px); }
-.body { flex: 1; min-width: 0; max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; align-self: stretch; }
+.body { flex: 1; min-width: 0; margin: 0 auto; display: flex; flex-direction: column; align-self: stretch; }
 @media (max-width: 959px) {
   .dict-side { display: none; position: fixed; inset: 0; z-index: 60; width: auto; height: auto; padding: 12px; background: rgba(251, 248, 255, .85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .dict-side.open { display: block; }
 }
-.src { display: flex; flex-direction: column; gap: 2px; width: 100%; max-width: 1220px; margin: 36px auto 0; padding-top: 18px; border-top: 1px solid var(--pk-line); font: 400 12px/1.6 var(--pk-mono); color: var(--pk-label); }
+.src { display: flex; flex-direction: column; gap: 2px; width: 100%; margin: 36px auto 0; padding-top: 18px; border-top: 1px solid var(--pk-line); font: 400 12px/1.6 var(--pk-mono); color: var(--pk-label); }
 .src a { text-decoration: underline; text-underline-offset: 2px; }
 </style>
