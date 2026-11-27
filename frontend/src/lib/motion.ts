@@ -12,8 +12,8 @@ export const motionCalm = calm
 
 /** Карточки и ряды, которые выезжают, когда доходят до экрана. */
 export const REVEAL = [
-  '.gc', '.gh-card', '.shx-card', '.tw-flip', '.nt-card', '.im-card', '.cl-card', '.pc-card', '.bd-card', '.shp-item', '.pg-card', '.ov-card',
-  '.wk-stat', '.pg-recc', '.td-set', '.rs-item', '.sb', '.gh-block', '.word', '.task', '.md-b',
+  '.gc', '.gh-card', '.tw-flip', '.nt-card', '.im-card', '.cl-card', '.pc-card', '.bd-card', '.shp-item', '.pg-card', '.ov-card',
+  '.wk-stat', '.pg-recc', '.td-set', '.sb', '.gh-block', '.word', '.task', '.md-b',
 ].join(',')
 
 /** Блоки, которые не анимируем: фиксированные окна, меню и всё, что уже управляется своим Transition. */
@@ -119,7 +119,7 @@ export function countTo(node: Text, to: number, from = 0) {
 
 /* ---------- кнопки: упругое нажатие ---------- */
 /** Только то, что не перетаскивают: у перетаскиваемых карточек (`.opt`, `.wc-btn`) свои пружинки из `lib/fx.ts`. */
-const PRESS = 'button.primary, button.ghost, .chip, .gh-card, .gc, .shx-card, .gh-tab, .gpart, .pg-lvl-btn, .btn-main, .qk-home'
+const PRESS = 'button.primary, button.ghost, .chip, .gh-card, .gc, .gh-tab, .gpart, .pg-lvl-btn, .btn-main, .qk-home'
 function onPress(e: PointerEvent) {
   if (e.button !== 0) return
   const el = (e.target as Element | null)?.closest<HTMLElement>(PRESS)

@@ -6,7 +6,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { Db } from '../db/db.service.js'
 import { pruneImages } from '../images/images.service.js'
-import { ACHIEVEMENTS, DAILY, DAILY_ALL, GRAMMAR_MODES, WEEKLY } from './coins.js'
 import { Profile, Settings } from './progress.types.js'
 import { validWeekDays, validWeekOk } from '../study/week-goal.js'
 
@@ -15,25 +14,14 @@ import { validWeekDays, validWeekOk } from '../study/week-goal.js'
 const KNOWN_STREAK = 5
 const GOALS = [10, 20, 50]
 
-/** Монетки Юны: цены и награды живут тут и в src/data/coins.ts (менять в обоих). */
-export const COINS = {
-  answer: 2, // за верный ответ
-  dayCap: 300, // потолок монеток за ответы в день
-  combo: { 5: 3, 10: 7 } as Record<number, number>, // за 5 и 10 верных подряд (один раз за серию)
-  round: 5, // за завершённую серию заданий
-  gift: 100, // подарок при первом запуске
-  wrongXp: 3, // ошибка отнимает очки, но не ниже начала текущего уровня
-}
+/** Ошибка отнимает очки, но не ниже начала текущего уровня (то же число на сайте, `WRONG_XP` в stores/progress.ts). */
+const WRONG_XP = 3
 /** Очки, с которых начинается уровень L (как xpFor в src/data/levels.ts). */
 const xpFor = (L: number) => 30 * L * (L - 1)
 const levelOf = (xp: number) => Math.min(40, Math.floor((1 + Math.sqrt(1 + (4 * xp) / 30)) / 2))
 const LOG_LIMIT = 1000
 const MAX_OPS = 500
 const DAY = /^\d{4}-\d{2}-\d{2}$/
-const localDay = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 const bad = (msg: string): never => {
   throw new BadRequestException({ error: msg })
@@ -212,12 +200,6 @@ export class ProgressService {
     return { items, ok, bad }
   }
 
-  /** Баланс монеток и текущая серия верных ответов подряд. */
-  async coinState(day = localDay()) {
-    await this.gift()
-    return { coins: Number(await this.db.getMeta('coins') ?? 0), combo: Number(await this.db.getMeta('combo') ?? 0), ready: await this.readyCount(day) }
-  }
-
   async read() {
     const days: Record<string, number> = {}
     const all: Record<string, number> = {}
@@ -244,7 +226,6 @@ export class ProgressService {
       v: 1,
       updated: Number(await this.db.getMeta('updated') ?? 0),
       xp: Number(await this.db.getMeta('xp') ?? 0),
-      ...await this.coinState(),
       days,
       all,
       time,
@@ -261,19 +242,12 @@ export class ProgressService {
   async apply(body: unknown) {
     const ops = (body as { ops?: unknown })?.ops
     if (!Array.isArray(ops) || ops.length > MAX_OPS) bad('invalid ops')
-    let news: string[] = []
-    let last0: string | undefined
     await this.db.tx(async () => {
       for (const op of ops as Record<string, unknown>[]) await this.one(op)
-      const last = (ops as Record<string, unknown>[]).filter(o => typeof o?.day === 'string' && DAY.test(o.day as string)).pop()
-      if (last) {
-        last0 = last.day as string
-        news = await this.freshRewards(last0)
-      }
       await this.db.setMeta('updated', String(Date.now()))
     })
     void pruneImages(this.db) // старая обложка удаляется через час после замены
-    return { ok: true, applied: (ops as unknown[]).length, ...await this.coinState(last0), news }
+    return { ok: true, applied: (ops as unknown[]).length }
   }
 
   private async one(op: Record<string, unknown>) {
@@ -281,7 +255,7 @@ export class ProgressService {
       case 'answer':
         return await this.answer(op)
       case 'round':
-        return await this.round(op)
+        return // награды за серию (магазин) убраны; старые действия из очереди сайта принимаем и не применяем
       case 'reset':
         return await this.reset()
       case 'profile':
@@ -324,20 +298,15 @@ export class ProgressService {
 
     const detail = this.detail(op.detail)
     if (op.reward === false) {
-      // без награды (печать на корейском): только строка журнала; слово, очки, монетки, серия и счётчики дня не меняются
+      // без награды (печать на корейском): только строка журнала; слово, очки и счётчики дня не меняются
       await (await this.db.orm()).answer.create({ data: { t: BigInt(t), word: null, ok: ok ? 1 : 0, source, mode, xp: 0, detail } })
       return
     }
     const had = Number(await this.db.getMeta('xp') ?? 0)
     // ошибка отнимает очки, но уровень не падает: ниже начала текущего уровня очки не опускаются
-    const active = await this.active()
-    const shielded = !ok && active.shield
-    if (shielded) await this.setActive({ ...active, shield: false })
-    const xp = ok ? gain : shielded ? 0 : -Math.min(COINS.wrongXp, had - xpFor(levelOf(had)))
+    const xp = ok ? gain : -Math.min(WRONG_XP, had - xpFor(levelOf(had)))
     const orm = await this.db.orm()
     await orm.answer.create({ data: { t: BigInt(t), word, ok: ok ? 1 : 0, source, mode, xp, detail } })
-    await this.coinsForAnswer(t, day, ok, active.double ? 2 : 1)
-    if (ok && source === 'review') await this.bump('rev', day)
     if (word) {
       const w = await orm.word.findUnique({ where: { word }, select: { streak: true, kd: true } })
       const streak = Math.max(0, (w?.streak ?? 0) + (ok ? 1 : -1))
@@ -352,136 +321,6 @@ export class ProgressService {
     if (xp) await this.db.setMeta('xp', String(had + xp))
   }
 
-  /** Записывает в журнал монеток и меняет баланс (ref не даёт начислить дважды). Возвращает false, если такая запись уже была. */
-  async coin(t: number, day: string, kind: string, amount: number, reason: string, ref?: string): Promise<boolean> {
-    if (!amount) return false
-    const orm = await this.db.orm()
-    if (ref && await orm.coinLog.findUnique({ where: { ref }, select: { id: true } })) return false
-    await orm.coinLog.create({ data: { t: BigInt(t), day, kind, amount, reason, ref: ref ?? null } })
-    await this.db.setMeta('coins', String(Number(await this.db.getMeta('coins') ?? 0) + amount))
-    return true
-  }
-
-  /** Верный ответ: +монетки (до потолка за день) и бонус за серию подряд; ошибка обрывает серию, монетки не отнимает. */
-  private async coinsForAnswer(t: number, day: string, ok: boolean, times: number) {
-    if (!ok) return await this.db.setMeta('combo', '0')
-    const combo = Number(await this.db.getMeta('combo') ?? 0) + 1
-    await this.db.setMeta('combo', String(combo))
-    if (combo > Number(await this.db.getMeta('maxcombo') ?? 0)) await this.db.setMeta('maxcombo', String(combo))
-    const today = (await (await this.db.orm()).coinLog.aggregate({ where: { day, kind: 'answer' }, _sum: { amount: true } }))._sum.amount ?? 0
-    await this.coin(t, day, 'answer', Math.max(0, Math.min(COINS.answer, COINS.dayCap - today)) * times, times > 1 ? 'Верный ответ (×2)' : 'Верный ответ')
-    const bonus = COINS.combo[combo]
-    if (bonus) await this.coin(t, day, 'combo', bonus, `${combo} верных подряд`)
-  }
-
-  /** Серия заданий закончена: +монетки один раз (id придумывает сайт, повторная отправка не платит). */
-  private async round(op: Record<string, unknown>) {
-    const day = typeof op.day === 'string' && DAY.test(op.day) ? op.day : bad('invalid op')
-    const id = str(op.id, 40) || bad('invalid op')
-    const size = int(op.size, 0, 1000)
-    await this.setActive({ ...await this.active(), double: false }) // «Двойная награда» действует на одну серию
-    if (size >= 3 && int(op.right ?? 0, 0, 1000) === size) await this.db.setMeta('flawless_day', day)
-    if (size >= 3) await this.coin(int(op.t, 0, Number.MAX_SAFE_INTEGER), day, 'round', COINS.round, 'Серия заданий пройдена', `round:${id}`)
-  }
-
-  /** Включённые предметы: защита опыта и двойная награда. */
-  async active(): Promise<{ shield: boolean; double: boolean }> {
-    const a = await this.json<{ shield?: boolean; double?: boolean }>('active', {})
-    return { shield: !!a.shield, double: !!a.double }
-  }
-  async setActive(a: { shield: boolean; double: boolean }) {
-    await this.db.setMeta('active', JSON.stringify(a))
-  }
-
-  /** Счётчик «за день» в meta: { day, n }. */
-  private async bump(key: string, day: string) {
-    const cur = await this.json<{ day: string; n: number }>(key, { day, n: 0 })
-    await this.db.setMeta(key, JSON.stringify({ day, n: cur.day === day ? cur.n + 1 : 1 }))
-  }
-  private async bumped(key: string, day: string) {
-    const cur = await this.json<{ day: string; n: number }>(key, { day, n: 0 })
-    return cur.day === day ? cur.n : 0
-  }
-
-  /** Что выполнено сейчас: достижения, задания дня и недели (для магазина и для выдачи наград). */
-  async rewardState(day: string) {
-    const orm = await this.db.orm()
-    const okCount = await orm.answer.count({ where: { ok: 1 } })
-    const grammar = await orm.answer.count({ where: { mode: { in: [...GRAMMAR_MODES] } } })
-    const buys = await orm.coinLog.count({ where: { kind: 'buy' } })
-    // дней занятий: сколько разных дней были ответы (пропуск ничего не сбрасывает)
-    const studyDays = await orm.day.count({ where: { total: { gt: 0 } } })
-    const maxCombo = Number(await this.db.getMeta('maxcombo') ?? 0)
-    const ach: Record<string, { now: number; goal: number }> = {
-      first: { now: okCount, goal: 100 },
-      master: { now: okCount, goal: 500 },
-      grammar: { now: grammar, goal: 100 },
-      flawless: { now: maxCombo, goal: 20 },
-      steady: { now: studyDays, goal: 7 },
-      collector: { now: buys, goal: 10 },
-    }
-    const total = (await orm.day.findUnique({ where: { day }, select: { total: true } }))?.total ?? 0
-    const daily: Record<string, { now: number; goal: number }> = {
-      answers: { now: total, goal: 20 },
-      flawless: { now: await this.db.getMeta('flawless_day') === day ? 1 : 0, goal: 1 },
-      review: { now: await this.bumped('rev', day), goal: 5 },
-    }
-    const mon = new Date(day + 'T00:00:00Z')
-    mon.setUTCDate(mon.getUTCDate() - ((mon.getUTCDay() + 6) % 7))
-    const from = mon.toISOString().slice(0, 10)
-    mon.setUTCDate(mon.getUTCDate() + 6)
-    const week = { from, now: await orm.day.count({ where: { day: { gte: from, lte: mon.toISOString().slice(0, 10) }, total: { gt: 0 } } }), goal: WEEKLY.days }
-    return { ach, daily, week }
-  }
-
-  /** Все награды с отметками: выполнено (done) и получено (paid). ref уникален и не даёт выплатить дважды. */
-  async rewards(day: string) {
-    const st = await this.rewardState(day)
-    const paid = new Set((await (await this.db.orm()).coinLog.findMany({ where: { OR: [{ ref: { startsWith: 'ach:' } }, { ref: { startsWith: 'task:' } }, { ref: { startsWith: 'week:' } }] }, select: { ref: true } })).flatMap(r => r.ref ? [r.ref] : []))
-    const out: { ref: string; kind: string; name: string; coins: number; done: boolean; paid: boolean }[] = []
-    const add = (ref: string, kind: string, name: string, coins: number, done: boolean) => out.push({ ref, kind, name, coins, done, paid: paid.has(ref) })
-    for (const a of ACHIEVEMENTS) add(`ach:${a.id}`, 'achievement', a.name, a.coins, st.ach[a.id]!.now >= st.ach[a.id]!.goal)
-    for (const d of DAILY) add(`task:${d.id}:${day}`, 'task', d.name, d.coins, st.daily[d.id]!.now >= st.daily[d.id]!.goal)
-    add(`task:all:${day}`, 'task', 'Все задания дня', DAILY_ALL, DAILY.every(d => st.daily[d.id]!.now >= st.daily[d.id]!.goal))
-    add(`week:${st.week.from}`, 'task', WEEKLY.name, WEEKLY.coins, st.week.now >= st.week.goal)
-    return out
-  }
-
-  /** Сколько наград выполнено, но ещё не получено. */
-  async readyCount(day: string) {
-    return (await this.rewards(day)).filter(r => r.done && !r.paid).length
-  }
-
-  /** Забрать награду кнопкой: только если условие выполнено, и один раз. Возвращает false, если нельзя. */
-  async claim(ref: string, day: string): Promise<boolean> {
-    const r = (await this.rewards(day)).find(x => x.ref === ref)
-    if (!r || !r.done || r.paid) return false
-    return await this.coin(Date.now(), day, r.kind, r.coins, r.name, r.ref)
-  }
-
-  /** Награды, о которых сайт ещё не сообщал: выполнено и не получено, имя возвращается один раз. */
-  async freshRewards(day: string): Promise<string[]> {
-    let list: string[] = []
-    try {
-      list = JSON.parse(await this.db.getMeta('notified') ?? '[]') as string[]
-    } catch {
-      /* битая запись: начинаем заново */
-    }
-    const known = new Set(list)
-    const fresh = (await this.rewards(day)).filter(r => r.done && !r.paid && !known.has(r.ref))
-    if (fresh.length) await this.db.setMeta('notified', JSON.stringify([...known, ...fresh.map(r => r.ref)].slice(-400)))
-    return fresh.map(r => r.name)
-  }
-
-  /** Подарок при первом запуске: один раз за всё время. */
-  private async gift() {
-    if (await this.db.getMeta('coin_gift')) return
-    await this.db.setMeta('coin_gift', '1')
-    const now = new Date()
-    const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    await this.coin(now.getTime(), day, 'gift', COINS.gift, 'Подарок от Юны', 'gift')
-  }
-
   /** Сброс: ответы, слова, дни и очки обнуляются; профиль и настройки остаются. */
   private async reset() {
     const orm = await this.db.orm()
@@ -490,8 +329,6 @@ export class ProgressService {
     await orm.day.deleteMany()
     await orm.studyTime.deleteMany()
     await this.db.setMeta('xp', '0')
-    await this.db.setMeta('combo', '0')
-    await this.db.setMeta('maxcombo', '0')
     await this.db.setMeta('moods', '{}')
   }
 

@@ -31,7 +31,6 @@ import RuleView from '@/views/korean/RuleView.vue'
 import { ICON } from '@/game/icons'
 import { newRound, useProgressStore } from '@/stores/progress'
 import { formatClock, useTimerStore } from '@/stores/timer'
-import { useShopStore } from '@/stores/shop'
 import '@/assets/home/fonts.css'
 import '@/assets/sky.css'
 import '@/game/game.css'
@@ -41,7 +40,6 @@ import UiSearch from '@/components/ui/UiSearch.vue'
 import UiPlay from '@/components/ui/UiPlay.vue'
 
 const progress = useProgressStore()
-const shop = useShopStore()
 const timer = useTimerStore()
 const { open: openGrammar } = useGrammarModal()
 /** Класс на body: глобальная кнопка поиска встаёт в одну линию с кнопками шапки (см. стили ниже). */
@@ -98,16 +96,8 @@ function startEngine() {
     saveCats: (c: Record<string, number>) => progress.setSettings({ gameCats: { ...c } }),
     grammar: (id: string) => openGrammar(id),
     probe: testHooks,
-    // предметы Юны только у владельца (docs/shop.md)
-    items: {
-      count: (id: string) => (progress.unlocked && !progress.isGuest ? shop.count(id) : 0),
-      use: async (id: string) => !shop.busy && !!(await shop.use(id)),
-    },
   }, gameView)
 }
-/** Запас предметов нужен к первому вопросу, но игра не ждёт медленный сервер дольше двух секунд. */
-const loadShop = () =>
-  progress.unlocked && !progress.isGuest ? Promise.race([shop.load(), new Promise<void>(resolve => setTimeout(resolve, 2000))]) : Promise.resolve()
 function stopEngine() {
   dispose?.()
   dispose = undefined
@@ -117,14 +107,12 @@ watch([engineOn, game, () => progress.unlocked], async ([on, , open]) => {
   stopEngine()
   if (on && open) {
     await nextTick()
-    await loadShop()
     startEngine()
   }
 }, { flush: 'post' })
 onMounted(async () => {
   if (engineOn.value && progress.unlocked) {
     await nextTick()
-    await loadShop()
     startEngine()
   }
 })

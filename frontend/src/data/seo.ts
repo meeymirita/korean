@@ -107,7 +107,6 @@ const PAGES: Record<string, Seo> = {
   '/korean/marks': { title: `Важное · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/mistakes': { title: `Мои ошибки · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/review': { title: `Повторение · ${BRAND}`, description: DEFAULT.description, noindex: true },
-  '/korean/shop': { title: `Магазин Юны · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/upload': { title: `Массовая загрузка картинок · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/garden': { title: `Сад воспоминаний · ${BRAND}`, description: DEFAULT.description, noindex: true },
   '/korean/culture': { title: `Культура Кореи · ${BRAND}`, description: DEFAULT.description, noindex: true },

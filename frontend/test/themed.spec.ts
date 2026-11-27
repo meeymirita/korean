@@ -5,12 +5,12 @@ import { themed } from '@/lib/themed'
 
 describe('картинки: тема одна, светлая', () => {
   it('иконки берутся из набора `-light`', () => {
-    expect(ICONS.coin).toMatch(/coin-light/)
+    expect(ICONS.bell).toMatch(/bell-light/)
     expect(ICON.dice).toMatch(/dice-light/)
   })
 
   it('в словарях нет самих `-light` файлов как отдельных иконок', () => {
-    expect(ICONS['coin-light']).toBeUndefined()
+    expect(ICONS['bell-light']).toBeUndefined()
     expect(ICON['dice-light']).toBeUndefined()
   })
 

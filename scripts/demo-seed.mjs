@@ -77,7 +77,6 @@ if (process.env.IMAGES !== '0') {
   const pics = [
     ['frontend/src/assets/upload/bg.webp', 'Сакура ночью', ['сакура', 'фон']],
     ['frontend/src/assets/home/yuna.webp', 'Юна у окна', ['юна']],
-    ['frontend/src/assets/icons/shop-yuna.webp', 'Юна в магазине', ['юна', 'магазин']],
     ['frontend/src/assets/home/dash/bg-yuna.webp', 'Юна с флагом', ['юна', 'корея']],
   ]
   for (const [file, caption, tags] of pics) {

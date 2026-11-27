@@ -5,12 +5,12 @@ export interface Growth { generated: string; commits: number; first: { d: string
 
 export const GROWTH: Growth = {
  "generated": "2026-11-28",
- "commits": 1119,
+ "commits": 1121,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 112533,
+ "lines": 110821,
  "days": [
   {
    "d": "2026-10-21",
@@ -217,10 +217,10 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-28",
-   "n": 3,
-   "cum": 1119,
-   "add": 205,
-   "del": 212
+   "n": 5,
+   "cum": 1121,
+   "add": 303,
+   "del": 229
   }
  ],
  "marks": [
@@ -576,10 +576,10 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-28",
-   "title": "Словарь после проверки нейросетями",
-   "summary": "По итогам проверки всех слов и предложений поправили словарь и переводы.",
+   "title": "Магазин и монетки убраны",
+   "summary": "Магазин Юны, монетки и предметы в заданиях удалены целиком: платформа осталась про учёбу.",
    "items": 3,
-   "cum": 1119
+   "cum": 1121
   }
  ]
 }

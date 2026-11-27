@@ -5,16 +5,13 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExplainBox from '@/components/korean/ExplainBox.vue'
 import SentenceBreakdown from '@/components/korean/SentenceBreakdown.vue'
 import { MOODS, type Mood } from '@/data/mood'
-import { nextCombo } from '@/data/coins'
 import { clock, paceSummary, PACE_CAP } from '@/data/pace'
 import type { Task } from '@/data/korean/tasks'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G } from '@/data/korean/grammar'
 import { dragDrop } from '@/lib/dragdrop'
 import { burst, cascade, pop, shake } from '@/lib/fx'
-import { itemIcon, itemName } from '@/data/shop'
 import { newRound, useProgressStore } from '@/stores/progress'
-import { useShopStore } from '@/stores/shop'
 
 /**
  * Серия заданий по одному: вопрос, варианты (клавиши 1–9), «Дальше» (Enter или →), итог со списком ошибок.
@@ -27,8 +24,7 @@ const progress = useProgressStore()
 const { open: openRule } = useGrammarModal()
 /** Номер серии для журнала. */
 const round = newRound()
-const shop = useShopStore()
-/** Задания серии: «Повтор вопроса» переносит текущее в конец. */
+/** Задания серии. */
 const list = ref<Task[]>([...props.tasks])
 const idx = ref(0)
 const picked = ref<string | null>(null)
@@ -63,71 +59,14 @@ const blank = computed(() => {
 const finished = computed(() => idx.value >= list.value.length)
 /** Карточки правил задания (`Task.rules`): список со ссылками после ответа. */
 const ruleCards = computed(() => (current.value?.rules ?? []).flatMap(id => G.filter(g => g.id === id)))
-
-/* ---------- предметы из магазина ---------- */
-const owner = computed(() => progress.unlocked && !progress.isGuest)
-const removed = ref<string[]>([]) // варианты, убранные «50/50» и подсказкой
-const hintText = ref('')
-const hinted = ref(false)
-const pending = ref<string | null>(null) // неверный ответ, который ещё можно исправить «Вторым шансом»
-const chanceUsed = ref(false)
-const visible = computed(() => (current.value?.options ?? []).filter(o => !removed.value.includes(o)))
-const wrongLeft = () => visible.value.filter(o => o !== current.value?.answer)
-const ITEM_BTNS = [
-  { id: 'hint', label: 'Подсказка' },
-  { id: 'fifty', label: '50/50' },
-  { id: 'skip', label: 'Повтор' },
-] as const
-const btns = computed(() => (owner.value ? ITEM_BTNS.filter(b => shop.count(b.id) > 0) : []))
-const canUse = (id: string) => !shop.busy && (id !== 'skip' || idx.value + 1 < list.value.length) && (id !== 'hint' || !hinted.value) && (id !== 'fifty' || wrongLeft().length > 1)
-function resetItems() {
-  removed.value = []
-  hintText.value = ''
-  hinted.value = false
-  pending.value = null
-  chanceUsed.value = false
-}
-async function useItem(id: 'hint' | 'fifty' | 'skip') {
-  const t = current.value
-  if (!t || picked.value !== null || !canUse(id) || !(await shop.use(id))) return
-  if (id === 'skip') {
-    list.value.push(list.value.splice(idx.value, 1)[0]!)
-    resetItems()
-    shownAt.value = Date.now()
-    elapsed.value = 0
-    return enter()
-  }
-  const drop = (n: number) => {
-    const w = wrongLeft().sort(() => Math.random() - 0.5).slice(0, Math.min(n, wrongLeft().length - 1))
-    removed.value = [...removed.value, ...w]
-  }
-  if (id === 'hint') {
-    hinted.value = true
-    hintText.value = `Подсказка Юны: ответ начинается с «${[...t.answer][0]}»`
-    drop(1)
-  } else drop(2)
-}
-async function secondChance() {
-  const bad = pending.value
-  if (bad === null || !(await shop.use('second'))) return
-  removed.value = [...removed.value, bad]
-  pending.value = null
-  picked.value = null
-  chanceUsed.value = true
-  hintText.value = 'Второй шанс: выбери другой вариант'
-}
-function keepWrong() {
-  const bad = pending.value
-  if (bad === null) return
-  pending.value = null
-  commit(bad)
-}
+/** Варианты ответа текущего задания. */
+const visible = computed(() => current.value?.options ?? [])
 
 /* ---------- перетаскивание варианта на вопрос (общий помощник lib/dragdrop.ts), анимации ---------- */
 const zone = ref<HTMLElement>()
 const optsBox = ref<HTMLElement>()
 let dragOff = () => {}
-/** Варианты перерисовываются с каждым заданием и после «50/50»: перетаскивание подключается заново. */
+/** Варианты перерисовываются с каждым заданием: перетаскивание подключается заново. */
 function wireDrag() {
   dragOff()
   dragOff = dragDrop({
@@ -146,15 +85,11 @@ function enter() {
   })
 }
 watch([idx, () => props.tasks], enter)
-watch(visible, () => void nextTick(wireDrag))
 onMounted(() => {
   enter()
-  if (owner.value) void shop.load()
 })
-let roundId = Math.random().toString(36).slice(2, 12)
 watch(finished, v => {
   if (!v) return
-  progress.roundDone(roundId, size.value, right.value)
   void nextTick(() => {
     const r = document.querySelector('.rs-end')?.getBoundingClientRect()
     if (r && right.value >= size.value / 2) burst(r.left + r.width / 2, r.top + 40)
@@ -165,8 +100,6 @@ watch(finished, v => {
 function restart(tasks: Task[]) {
   list.value = [...tasks]
   size.value = tasks.length
-  resetItems()
-  roundId = Math.random().toString(36).slice(2, 12)
   idx.value = 0
   picked.value = null
   missed.value = []
@@ -187,18 +120,6 @@ function retryMissed() {
 function answer(option: string) {
   const t = current.value
   if (!t || picked.value !== null) return
-  // «Второй шанс»: неверный ответ ещё не записан, его можно исправить один раз
-  if (option !== t.answer && owner.value && !chanceUsed.value && shop.count('second') > 0) {
-    pending.value = option
-    picked.value = option
-    shake(zone.value)
-    return
-  }
-  commit(option)
-}
-function commit(option: string) {
-  const t = current.value
-  if (!t) return
   picked.value = option
   times.value.push(Math.min((Date.now() - shownAt.value) / 1000, PACE_CAP))
   const ok = option === t.answer
@@ -217,13 +138,12 @@ function commit(option: string) {
   }
   // повтор после ошибки засчитывается (ошибка −1, верно +1); второй верный ответ на то же задание не начисляется
   if (!already) {
-    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, ...(hinted.value && ok ? { xp: 5 } : {}), detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, ...(t.gram ? { g: t.gram } : {}), r: round } })
+    progress.record({ word: t.word, ok, source: props.source, mode: props.mode, detail: { q: `${t.title}: ${t.prompt}`, a: t.answer, y: ok ? undefined : option, ...(t.gram ? { g: t.gram } : {}), r: round } })
   }
   ;(ok ? pop : shake)(zone.value)
 }
 function next() {
   idx.value++
-  resetItems()
   picked.value = null
   shownAt.value = Date.now()
   elapsed.value = 0
@@ -236,9 +156,6 @@ function onKey(e: KeyboardEvent) {
   if (picked.value === null && /^[1-9]$/.test(e.key)) {
     const o = visible.value[Number(e.key) - 1]
     if (o) answer(o)
-  } else if (pending.value !== null && (e.key === 'Enter' || e.key === 'ArrowRight')) {
-    e.preventDefault()
-    keepWrong()
   } else if (picked.value !== null && (e.key === 'Enter' || e.key === 'ArrowRight')) {
     e.preventDefault()
     next()
@@ -275,18 +192,9 @@ onBeforeUnmount(() => {
         <span>верно: {{ right }}</span>
       </div>
       <div class="qk-prog" role="progressbar" :aria-valuenow="idx" aria-valuemin="0" :aria-valuemax="list.length"><i :style="{ width: (idx / list.length) * 100 + '%' }"></i></div>
-      <div v-if="owner && progress.data.combo >= 2" class="rs-combo">
-        Серия {{ progress.data.combo }}<template v-if="nextCombo(progress.data.combo)">: ещё {{ nextCombo(progress.data.combo)!.left }} до +{{ nextCombo(progress.data.combo)!.coins }} монеток</template>
-      </div>
       <div class="rs-sub" :class="{ 'rs-pre': current.title.includes('\n') }">{{ current.title }}</div>
-      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back', small: current.small }" title="Перетащи сюда вариант ответа"><template v-if="blank"><template v-if="picked !== null && pending === null">{{ blank[0] }}<b class="rs-fill">{{ current.answer }}</b>{{ blank[1] }}</template><template v-else>{{ current.prompt }}</template></template><template v-else>{{ current.prompt }}</template></div>
+      <div ref="zone" class="rs-q drop" :class="{ ru: current.kind === 'back', small: current.small }" title="Перетащи сюда вариант ответа"><template v-if="blank"><template v-if="picked !== null">{{ blank[0] }}<b class="rs-fill">{{ current.answer }}</b>{{ blank[1] }}</template><template v-else>{{ current.prompt }}</template></template><template v-else>{{ current.prompt }}</template></div>
       <div v-if="current.hint" class="rs-sub">{{ current.hint }}</div>
-      <div v-if="btns.length && picked === null" class="rs-items" aria-label="Предметы Юны">
-        <button v-for="b in btns" :key="b.id" type="button" class="rs-item" :disabled="!canUse(b.id)" :title="itemName(b.id)" @click="useItem(b.id)">
-          <img :src="itemIcon(b.id)" alt="" />{{ b.label }} <small>×{{ shop.count(b.id) }}</small>
-        </button>
-      </div>
-      <p v-if="hintText" class="rs-hint">{{ hintText }}</p>
       <div ref="optsBox" class="rs-opts">
         <button
           v-for="(o, i) in visible"
@@ -300,13 +208,8 @@ onBeforeUnmount(() => {
           <kbd>{{ i + 1 }}</kbd> {{ o }}
         </button>
       </div>
-      <div v-if="pending !== null" class="rs-chance">
-        <span>Неверно. Есть «Второй шанс» (×{{ shop.count('second') }}): можно исправить, ошибка не запишется.</span>
-        <button type="button" class="rs-item" @click="secondChance"><img :src="itemIcon('second')" alt="" />Исправить</button>
-        <button type="button" class="rs-item soft" @click="keepWrong">Оставить ответ</button>
-      </div>
-      <ExplainBox v-if="picked !== null && pending === null && picked !== current.answer" :task="current" :picked="picked" />
-      <div v-if="picked !== null && pending === null && current.sentence" class="rs-why">
+      <ExplainBox v-if="picked !== null && picked !== current.answer" :task="current" :picked="picked" />
+      <div v-if="picked !== null && current.sentence" class="rs-why">
         <p class="rs-sub">Разбор вариантов:</p>
         <ul v-if="current.pairOf" class="rs-wl">
           <li v-for="o in current.options" :key="o" :class="o === current.answer ? 'ok' : 'bad'">
@@ -321,8 +224,8 @@ onBeforeUnmount(() => {
         <p v-if="current.pairOf || current.prompt.includes('＿')" class="rs-sub">Как устроено верное предложение:</p>
         <SentenceBreakdown :sentence="current.sentence" :word="current.pairOf || current.prompt.includes('＿') ? undefined : current.word" :extra="[`Задание: ${current.prompt}`, `Верный ответ: ${current.answer}`, `Ответ ученика: ${picked}`]" />
       </div>
-      <p v-if="picked !== null && pending === null && current.note && picked === current.answer" class="rs-sub rs-note">{{ current.note }}</p>
-      <div v-if="picked !== null && pending === null && ruleCards.length" class="rs-rules">
+      <p v-if="picked !== null && current.note && picked === current.answer" class="rs-sub rs-note">{{ current.note }}</p>
+      <div v-if="picked !== null && ruleCards.length" class="rs-rules">
         <p class="rs-sub">Правила в этом предложении:</p>
         <ul class="rs-wl">
           <li v-for="g in ruleCards" :key="g.id">
@@ -331,7 +234,7 @@ onBeforeUnmount(() => {
           </li>
         </ul>
       </div>
-      <button v-if="picked !== null && pending === null" class="rs-next" @click="next">{{ idx + 1 < list.length ? 'Дальше →' : 'Итог' }}</button>
+      <button v-if="picked !== null" class="rs-next" @click="next">{{ idx + 1 < list.length ? 'Дальше →' : 'Итог' }}</button>
     </template>
     <div v-else class="rs-end">
       <Cat :name="right === size ? 'cheer' : right * 2 >= size ? 'happy' : 'sad'" />

@@ -124,7 +124,7 @@ function finish() {
   result.value = { cpm, acc, sec: Math.round(sec), best: isBest }
 }
 
-/** Слово или предложение набрано: строка в журнал ответов (отчёт), без очков, монеток и цели дня (`reward: false`). «Верно» = без ошибок. */
+/** Слово или предложение набрано: строка в журнал ответов (отчёт), без очков и цели дня (`reward: false`). «Верно» = без ошибок. */
 function logItem() {
   const sec = Math.max(1, Math.round((Date.now() - itemStart.value) / 1000))
   const strokes = keys.value.length

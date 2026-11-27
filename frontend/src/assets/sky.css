@@ -155,7 +155,3 @@ html { scrollbar-gutter: stable; }
 .study-shell.sky .study-main .crumbs { max-width: 1280px; }
 @media (max-width: 860px) { .study-shell.sky .study-main .wrap { padding: 18px 14px 44px; border-radius: 22px; } }
 
-.study-shell.sky .study-links .ct.rdy { opacity: 1; padding: 1px 8px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #e46fc0, #8a5cf0); border-radius: 99px; }
-
-/* «Магазин»: полоса «Главная › Магазин» остаётся наверху экрана вместе с кнопками «Меню» и «Поиск» */
-.study-shell.sky.pinned .study-main .crumbs { position: sticky; top: 14px; z-index: 30; }

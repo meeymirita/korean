@@ -10,7 +10,7 @@ const GROUPS = [
   ['Начало', ['home-and-theme', 'progress', 'data', 'game', 'games-catalog']],
   ['Тренажёры', ['trainers/']],
   ['Сервер и выкладка', ['server', 'docker', 'hosting', 'backup', 'disk-and-telegram', 'telegram']],
-  ['Возможности', ['dict', 'chat', 'voice', 'music', 'manhwa', 'shop', 'bot', 'mac-app', 'desktop-skill']],
+  ['Возможности', ['dict', 'chat', 'voice', 'music', 'manhwa', 'bot', 'mac-app', 'desktop-skill']],
   ['Идеи и дизайн', ['ideas']],
 ]
 const files = []

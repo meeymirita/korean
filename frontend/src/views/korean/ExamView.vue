@@ -259,7 +259,7 @@ const summaryText = (a: ExamAttempt) =>
     <!-- ЧАСТЬ ЭКЗАМЕНА -->
     <template v-else-if="view === 'run' && ready">
       <template v-if="draft && blocks.length">
-        <p class="intro">Итоговая оценка, часть {{ partNo }} из {{ EXAM_PARTS }}. Без подсказок и предметов Юны.</p>
+        <p class="intro">Итоговая оценка, часть {{ partNo }} из {{ EXAM_PARTS }}. Без подсказок.</p>
         <ExamRun ref="run" :key="'p' + partNo + ':' + draft.startedAt" :blocks="blocks" :part="partNo" :parts="draft.parts.length" :initial="draft.partial?.part === partNo ? draft.partial.answers : undefined" @saved="saved" @pause="pause" />
         <p class="ex-exit"><button class="ex-link" type="button" :disabled="busy" @click="home">Выйти из экзамена (ответы этой части не сохранятся)</button></p>
       </template>

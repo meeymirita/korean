@@ -2,12 +2,13 @@ import { SHORTCUT_IDS } from '@/data/shortcuts'
 import { cleanBindings } from '@/lib/shortcuts'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { COIN_RULES } from '@/data/coins'
 import { DAILY_GOAL, GOAL_OPTIONS, levelInfo, levelOf, validWeekDays, validWeekOk, xpFor } from '@/data/levels'
 import { canAddMark, cleanMarks, markKey, type MarkKind } from '@/lib/marks'
 import { disableGuestStorage, enableGuestStorage } from '@/lib/guestStorage'
 import { errText, fetchT } from '@/lib/http'
-import { useToastStore } from '@/stores/toast'
+
+/** Ошибка отнимает столько очков (но не ниже начала текущего уровня). Число то же на сервере (`WRONG_XP` в progress.service.ts). */
+const WRONG_XP = 3
 
 export interface WordStat {
   ok: number
@@ -70,11 +71,6 @@ export interface ProgressData {
   v: 1
   updated: number
   xp: number
-  /** монетки Юны (баланс считает сервер) и текущая серия верных ответов подряд */
-  coins: number
-  combo: number
-  /** сколько наград выполнено, но ещё не получено (кнопка «Получить» в магазине) */
-  ready: number
   /** дата → число верных ответов за день (ключ есть, если в этот день отвечала хоть раз) */
   days: Record<string, number>
   /** дата → все ответы за день */
@@ -144,7 +140,7 @@ const emptyProfile = (): Profile => ({ name: '', avatar: '🌸', cover: '' })
 const emptySettings = (): Settings => ({ goal: DAILY_GOAL, cats: [], gameCats: null, marks: [], keys: {} })
 export { MAX_MARKS, MAX_K_MARKS, markKey, type MarkKind } from '@/lib/marks'
 const empty = (): ProgressData => ({
-  v: 1, updated: 0, xp: 0, coins: 0, combo: 0, ready: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
+  v: 1, updated: 0, xp: 0, days: {}, all: {}, time: {}, words: {}, sources: {}, log: [],
   profile: emptyProfile(), settings: emptySettings(), moods: {},
 })
 
@@ -185,9 +181,6 @@ export function normalize(raw: unknown): ProgressData | null {
     v: 1,
     updated: Number(r.updated) || 0,
     xp: Number(r.xp) || 0,
-    coins: Math.max(0, Number(r.coins) || 0),
-    combo: Math.max(0, Number(r.combo) || 0),
-    ready: Math.max(0, Number(r.ready) || 0),
     days: obj(r.days, {}),
     all: obj(r.all, {}),
     time: obj(r.time, {}),
@@ -345,8 +338,8 @@ export const useProgressStore = defineStore('progress', () => {
 
   /* ---------- запись ответа ---------- */
   /**
-   * Запись ответа. `reward: false` (печать на корейском): ответ попадает только в журнал и счётчик раздела, а слово, очки, монетки,
-   * серия подряд, счётчики дня и цель дня не трогаются (так же на сервере, `progress.service.ts`).
+   * Запись ответа. `reward: false` (печать на корейском): ответ попадает только в журнал и счётчик раздела, а слово, очки,
+   * счётчики дня и цель дня не трогаются (так же на сервере, `progress.service.ts`).
    */
   function record(o: { word?: string | null; ok: boolean; source: string; xp?: number; mode?: string; detail?: AnswerDetail; reward?: boolean }) {
     const now = Date.now()
@@ -388,10 +381,8 @@ export const useProgressStore = defineStore('progress', () => {
     if (d.log.length > LOG_MAX) d.log.length = LOG_MAX
 
     let goalReached = false
-    // монетки и серия подряд (как на сервере; потолок за день сервер поправит при сохранении)
-    d.combo = o.ok ? d.combo + 1 : 0
-    if (o.ok) d.coins += COIN_RULES.answer + (COIN_RULES.combo[d.combo] ?? 0)
-    else d.xp -= Math.min(COIN_RULES.wrongXp, d.xp - xpFor(levelOf(d.xp)))
+    // ошибка отнимает очки, но не ниже начала текущего уровня
+    if (!o.ok) d.xp -= Math.min(WRONG_XP, d.xp - xpFor(levelOf(d.xp)))
     if (o.ok) {
       d.xp += o.xp ?? 10
       d.days[k]!++
@@ -401,14 +392,6 @@ export const useProgressStore = defineStore('progress', () => {
     queue({ type: 'answer', t: now, day: k, word: o.word ?? null, ok: o.ok, source: o.source, mode: o.mode, xp: o.xp ?? 10, ...(det ? { detail: det } : {}) })
     const level = levelOf(d.xp)
     return { level, levelUp: level > before, goalReached, bloomed, title: levelInfo(d.xp).title }
-  }
-
-  /** Серия заданий закончена: монетки за неё (один раз на `id`). */
-  function roundDone(id: string, size: number, right = size) {
-    if (!token.value || role.value === 'guest' || size < 3) return
-    const now = Date.now()
-    data.value.coins += COIN_RULES.round
-    queue({ type: 'round', t: now, day: dayKey(), id, size, right })
   }
 
   /** Один раз переносит очки старой версии игры. */
@@ -572,16 +555,6 @@ export const useProgressStore = defineStore('progress', () => {
         // 400 для одного действия: сервер его не принял; выбрасываем, чтобы очередь не застряла навсегда
         if (res.status === 400) rememberRejected(batch[0]!)
         outbox.value = outbox.value.slice(batch.length)
-        if (res.ok && !outbox.value.length) {
-          // сервер главный по монеткам: берём его баланс, когда очередь пуста
-          const st = (await res.json().catch(() => null)) as { coins?: number; combo?: number; ready?: number; news?: string[] } | null
-          if (st && typeof st.coins === 'number') {
-            data.value.coins = st.coins
-            data.value.combo = Number(st.combo) || 0
-            data.value.ready = Number(st.ready) || 0
-          }
-          for (const n of st?.news ?? []) useToastStore().reward(`Выполнено: ${n}. Забери награду`, '/korean/shop')
-        }
         write(OUTBOX_KEY, JSON.stringify(outbox.value))
         if (res.status === 400) rejected = true
       }
@@ -786,7 +759,7 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   return {
-    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, studyDays, status, record, roundDone, importXp, setProfile, setSettings, addTime,
+    data, goal, info, todayOk, isMarked, toggleMark, addMood, goalDone, studyDays, status, record, importXp, setProfile, setSettings, addTime,
     token, bearer, session, sessionCreatedAt, needs2fa, setSession, unlocked, sync, syncMessage, init, restore, takeRestoredLogin, push, connect, connectSession, disconnect, exportJson, importJson, reset, needsConfirm,
     role, isGuest, guestExpires, createGuest, listGuests, revokeGuest,
   }

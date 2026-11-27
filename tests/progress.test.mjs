@@ -509,7 +509,7 @@ describe('очередь действий для сервера', () => {
     globalThis.fetch = async (url, opt = {}) => {
       const ops = JSON.parse(opt.body).ops
       sent.push(ops.map(o => o.word))
-      return reply(ops.some(o => o.word === 'плохо') ? 400 : 200, ops.some(o => o.word === 'плохо') ? { error: 'invalid op' } : { coins: 0 })()
+      return reply(ops.some(o => o.word === 'плохо') ? 400 : 200, ops.some(o => o.word === 'плохо') ? { error: 'invalid op' } : {})()
     }
     store.record({ word: 'раз', ok: true, source: 'game' })
     store.record({ word: 'плохо', ok: true, source: 'game' })

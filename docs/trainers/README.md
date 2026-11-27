@@ -41,7 +41,6 @@
 Свои компоненты вне `TaskSession`: `match`, `typing`, `syllables`, `keyboard`, движок «Хлебушек».
 
 **Что уходит в прогресс** (`stores/progress.ts`): `progress.record({ word, ok, source, mode, detail? })`: очки слова (+1/−1, выучено на 5, `KNOWN_STREAK`), опыт, ответ в историю кабинета и отчёт по режиму (`mode`).
-Монетки за серию: `progress.roundDone(id, size, right)` (серия от 3 заданий, один раз на `id`); вызывает только `TaskSession`, поэтому у `match`, `typing`, `syllables`, `keyboard` и «Хлебушка» монеток за серию нет, а предметы магазина там не работают (`docs/shop.md`).
 Гость ничего не сохраняет (`record` и `roundDone` его не пишут).
 
 **Регистрация нового тренажёра** (чтобы он появился): id в `TOOL_IDS` и карточка в `data/games.ts`; компонент в `TOOLS` в `views/GameHomeView.vue`; страница в `data/korean/sections.ts`;

@@ -19,7 +19,7 @@
 
 **Состояние и хранение.** Как у «Найди пару» (`tr_cat`, `tr_size`, `tr_dir` и режим в адресе).
 
-**Прогресс и награды.** `progress.record({ word: statKey(w), ok, source: 'trainer', mode: 'typing', detail: { q, a, y } })`: подробности ответа видны в истории кабинета. Монеток за серию и предметов магазина нет (не `TaskSession`).
+**Прогресс и награды.** `progress.record({ word: statKey(w), ok, source: 'trainer', mode: 'typing', detail: { q, a, y } })`: подробности ответа видны в истории кабинета.
 
 **Тесты.** Отдельного теста нет; логика проверки ответа в `trainer.ts` (если будешь её менять, добавь тест на `isCorrect` и `acceptable`).
 

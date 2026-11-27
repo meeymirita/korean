@@ -6,7 +6,7 @@ export interface Toast {
   id: number
   kind: ToastKind
   text: string
-  /** адрес, куда ведёт нажатие на плашку (например, к награде в магазине) */
+  /** адрес, куда ведёт нажатие на плашку */
   to?: string
 }
 

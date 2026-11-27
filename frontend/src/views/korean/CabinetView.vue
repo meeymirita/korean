@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
-import { themed } from '@/lib/themed'
-import coinImg from '@/assets/icons/coin.webp'
 import { useShortcutsStore } from '@/stores/shortcuts'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -68,8 +66,6 @@ const route = useRoute()
 const router = useRouter()
 const shortcuts = useShortcutsStore()
 const q = route.query.tab
-// магазин из кабинета убран: старый адрес ?tab=shop ведёт на страницу магазина
-if (route.query.tab === 'shop') void router.replace('/korean/shop')
 // отчёт вынесен на свою страницу: старый адрес ?tab=report ведёт туда
 if (route.query.tab === 'report') void router.replace('/korean/report')
 /** Нажатие на вкладку; «Отчёт» открывает отдельную страницу. */
@@ -127,7 +123,6 @@ const tabs = computed<[CabinetTab, string][]>(() => [
         </div>
         <RouterLink to="/game/home" class="cb-play"><Icon name="dice" /> Играть</RouterLink>
       </div>
-      <span v-if="!progress.isGuest" class="cb-coins" title="Монетки Юны"><img :src="themed(coinImg)" alt="" /><span v-count="progress.data.coins">{{ progress.data.coins }}</span></span>
       <button type="button" class="cb-lvl" title="Все уровни" @click="levelsOpen = true">{{ progress.info.level }}<small>уровень</small></button>
     </header>
 

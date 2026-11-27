@@ -149,9 +149,9 @@ describe('временный токен входящих (кнопка «Соз�
     await request(http).delete('/api/new-words/token').set(bearer(token)).expect(403)
   })
 
-  it('остальные маршруты закрыты: прогресс, заметки, магазин', async () => {
+  it('остальные маршруты закрыты: прогресс, заметки', async () => {
     const { token } = await create()
-    for (const url of ['/api/progress', '/api/notes', '/api/shop']) await request(app.getHttpServer()).get(url).set(bearer(token)).expect(403)
+    for (const url of ['/api/progress', '/api/notes']) await request(app.getHttpServer()).get(url).set(bearer(token)).expect(403)
   })
 
   it('новый токен отменяет прежний, отзыв закрывает доступ, неверный токен 401', async () => {
@@ -231,7 +231,7 @@ describe('токен входящих с записью и материалы (�
     await request(http).patch('/api/materials/x').set(bearer(token)).send({ status: 'done' }).expect(403)
     await request(http).delete('/api/materials/x').set(bearer(token)).expect(403)
     await request(http).post('/api/new-words/token').set(bearer(token)).send({ write: true }).expect(403)
-    for (const url of ['/api/progress', '/api/notes', '/api/shop']) await request(http).get(url).set(bearer(token)).expect(403)
+    for (const url of ['/api/progress', '/api/notes']) await request(http).get(url).set(bearer(token)).expect(403)
   })
 
   it('слово из пачки попадает в «Новые слова» один раз; повтор не дублируется', async () => {
