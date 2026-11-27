@@ -332,7 +332,6 @@ const clearAll = () => {
 
 <style scoped>
 .tp { --vine: #e0559f; --petal: #ffb3da; --petal-line: #e0559f; --core: #fff6c8; --gold: #f3b93d; }
-html[data-theme='dark'] .tp { --vine: #ff9cc6; --petal: #ffd1e3; --petal-line: #ff6fae; --core: #ff4f9a; --gold: #ffcf6e; }
 .intro { margin: 8px 0 18px; max-width: 780px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .card { margin: 0 0 18px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 26px; background: var(--surface); }
 .card h2 { margin: 0 0 8px; font-size: 19px; }

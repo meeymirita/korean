@@ -172,6 +172,4 @@ const wordNote = (a: AnswerItem) => {
 .rs-tbl .rs-n { min-width: 220px; font-size: 12px; color: var(--muted); }
 .rs-none { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .rs-more { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
-html[data-theme='dark'] .rs-s { background: rgba(37, 39, 78, .6); border-color: var(--line); }
-html[data-theme='dark'] .rs-tbl td { border-color: var(--line); }
 </style>

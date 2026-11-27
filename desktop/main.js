@@ -57,8 +57,6 @@ async function updateBadge() {
   try {
     const n = await win.webContents.executeJavaScript(DUE_JS)
     if (process.platform === 'darwin') app.dock.setBadge(n > 0 ? String(n) : '')
-    const theme = await win.webContents.executeJavaScript(`document.documentElement.dataset.theme || 'light'`)
-    win.setBackgroundColor(theme === 'dark' ? '#14152b' : '#fbf8ff')
   } catch {
     /* страница ещё грузится */
   }

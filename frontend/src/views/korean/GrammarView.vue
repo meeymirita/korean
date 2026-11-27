@@ -3,6 +3,11 @@ import Icon from '@/components/Icon.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import SectionHead from '@/components/korean/SectionHead.vue'
+import GrammarShelf from '@/components/korean/GrammarShelf.vue'
+import GrammarColumns from '@/components/korean/GrammarColumns.vue'
+import GrammarAsk from '@/components/korean/GrammarAsk.vue'
+import UiSelect from '@/components/ui/UiSelect.vue'
+import { useQueryParam } from '@/composables/useQueryParam'
 import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { useGrammarPhotos } from '@/composables/useGrammarPhotos'
 import { useGrammarModal } from '@/composables/useGrammarModal'
@@ -12,6 +17,14 @@ import { COURSE } from '@/data/korean/course'
 import { useProgressStore } from '@/stores/progress'
 import { usePersisted } from '@/composables/usePersisted'
 
+/** Вид страницы: карточки (как было), книжная полка, колонки как в Finder, диалог «Что хочешь сказать?». В адресе `?view=`, плитки остаются в разметке для поисковиков. */
+const VIEWS = [
+  { id: 'cards', label: 'Карточки' },
+  { id: 'shelf', label: 'Книжная полка' },
+  { id: 'columns', label: 'Колонки, как в Finder' },
+  { id: 'ask', label: '«Что хочешь сказать?»' },
+] as const
+const view = useQueryParam<(typeof VIEWS)[number]['id']>('view', 'cards', VIEWS.map(v => v.id))
 const sec = usePersisted('grammar_sec', '', v => typeof v === 'string')
 const progress = useProgressStore()
 /** «пройдено» одно для всего сайта: `st: 'ok'` в данных (`grammar.ts`) */
@@ -117,9 +130,15 @@ onMounted(() => {
         <b>{{ p.label }}</b><small>{{ p.sub }} · {{ partCount(p.id) }} карточек</small>
       </button>
       <label class="gdone gparts-done" title="Показывать только пройденные карточки"><input v-model="onlyDone" type="checkbox" /> пройдено</label>
+      <UiSelect v-model="view" size="sm" class="gview" aria-label="Вид страницы" title="Вид страницы">
+        <option v-for="v in VIEWS" :key="v.id" :value="v.id">{{ v.label }}</option>
+      </UiSelect>
     </div>
     <p v-if="!shown.length" class="gempty">Ничего не найдено.</p>
-    <div class="gg">
+    <GrammarShelf v-if="view === 'shelf'" :cards="shown" :no-book-label="cur === 0 ? 'Мои карточки · Книга 1A' : 'Карточки уроков'" @open="id => open(id, cur === 0 || cur === 3)" />
+    <GrammarColumns v-else-if="view === 'columns'" :cards="shown" @open="id => open(id, cur === 0 || cur === 3)" />
+    <GrammarAsk v-else-if="view === 'ask'" :cards="shown" @open="id => open(id, cur === 0 || cur === 3)" />
+    <div v-show="view === 'cards'" class="gg">
       <button v-for="g in list" v-show="inTab(g, cur)" :key="g.id" class="gc" @click="open(g.id, cur === 0 || cur === 3)">
         <h3 v-html="F(g.ko)"></h3>
         <div class="rn">{{ g.ru }}</div>
@@ -144,7 +163,8 @@ onMounted(() => {
 .gdone { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 14px; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .gcourse { margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
 .gcourse a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
-.gparts { display: flex; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
+.gparts { display: flex; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; align-items: center; }
+.gview { min-width: 0; width: 210px; }
 .gpart { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: inherit; font: inherit; cursor: pointer; text-align: left; }
 .gpart small { color: var(--muted); font-size: 12.5px; }
 .gpart.on { border-color: var(--gold); background: var(--gold-soft); }

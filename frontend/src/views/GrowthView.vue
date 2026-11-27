@@ -337,13 +337,6 @@ const toEnd = () => rootEl.value?.scrollTo({ top: rootEl.value.scrollHeight, beh
   position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; color: var(--ink); font-family: 'Inter', 'Archivo', 'Noto Sans KR', sans-serif; word-break: keep-all;
   background: linear-gradient(160deg, #fff6fb 0%, #f1ecff 48%, #e6f5ff 100%) fixed;
 }
-html[data-theme='dark'] .gr {
-  --ink: #fff; --soft: #ffb3d1; --accent: #ff9cc6; --line: rgba(255, 190, 220, .18);
-  --card: rgba(32, 8, 20, .84); --card-line: rgba(255, 190, 220, .18); --card-shadow: 0 18px 44px rgba(0, 0, 0, .35);
-  --vine: #ff9cc6; --vine-base: rgba(255, 190, 220, .12); --petal: #ffd1e3; --petal-line: #ff6fae; --core: #ff4f9a; --leaf: #ff6fae;
-  --hdr: rgba(20, 6, 12, .72); --btn-ink: #2a0a18;
-  background: radial-gradient(60% 40% at 0 0, rgba(255, 79, 154, .28), transparent 60%), radial-gradient(50% 40% at 100% 35%, rgba(194, 24, 107, .28), transparent 70%), linear-gradient(#2a0a18, #12040a) fixed;
-}
 .gr a { color: inherit; text-decoration: none; }
 /* полосы прокрутки справа нет: о прогрессе говорит полоса под шапкой (решение владельца 2026-11-19) */
 .gr { scrollbar-width: none; }

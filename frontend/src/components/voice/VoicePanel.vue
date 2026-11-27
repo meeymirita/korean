@@ -441,14 +441,4 @@ const onKey = (e: KeyboardEvent) => {
 @keyframes vp-blink { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .vp-panel-enter-active, .vp-panel-leave-active, .vp-mini-enter-active, .vp-mini-leave-active { transition: none; } .vp-go.rec, .vp-dot { animation: none; } }
 
-html[data-theme='dark'] .vp-root, html[data-theme='dark'] .vp-panel { --vp-ink: #ece9ff; --vp-muted: #a49fd6; --vp-line: #3b3866; }
-html[data-theme='dark'] .vp-panel { background: linear-gradient(165deg, #2b2450 0%, #1f1e42 100%); border-color: #3b3866; }
-html[data-theme='dark'] .vp-mini { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
-html[data-theme='dark'] .vp-ic, html[data-theme='dark'] .vp-item { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
-html[data-theme='dark'] .vp-stop { background: #d6455d; border-color: #d6455d; }
-html[data-theme='dark'] .vp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
-html[data-theme='dark'] .vp-bd { background: #2b2450; border-color: #3b3866; }
-html[data-theme='dark'] .vp-cloud, html[data-theme='dark'] .vp-chip { background: rgba(43, 36, 80, .85); border-color: #3b3866; }
-html[data-theme='dark'] .vp-log-scene { background: linear-gradient(rgba(31, 30, 66, .82), rgba(31, 30, 66, .88)), var(--vp-scene) center / cover; border-color: #3b3866; }
-html[data-theme='dark'] .vp-line.assistant { background: #2b2450; border-color: #3b3866; }
 </style>

@@ -15,15 +15,10 @@
 .study .bd-rule:hover { background: var(--gold); color: #fff; }
 /* Цвета карточек: слово (сиреневый), частица (розовый), окончание (зелёный), глагол (синий). Плотные: слой цвета поверх белого или тёмного, поэтому не смешиваются с зелёным и красным фоном блока ответа в играх. */
 .study { --bd-base: #fff; }
-html[data-theme='dark'] .study { --bd-base: #25274e; }
-html[data-theme='dark'][data-palette='night'] .study { --bd-base: #2c232a; }
 .study .bd-card { --bd-tint: rgba(143, 124, 240, .16); --bd-line: rgba(143, 124, 240, .5); --bd-ink: var(--ink); }
 .study .bd-card.particle { --bd-tint: rgba(232, 107, 192, .2); --bd-line: #e86bc0; --bd-ink: #d64da9; }
 .study .bd-card.ending { --bd-tint: rgba(58, 168, 108, .2); --bd-line: #3aa86c; --bd-ink: #2f7a52; }
 .study .bd-card.verb { --bd-tint: rgba(95, 127, 224, .2); --bd-line: #5f7fe0; --bd-ink: #4a64c8; }
-html[data-theme='dark'] .study .bd-card.particle { --bd-ink: #f08bd0; }
-html[data-theme='dark'] .study .bd-card.ending { --bd-ink: #6fcf97; }
-html[data-theme='dark'] .study .bd-card.verb { --bd-ink: #8fa8ff; }
 .study .bd-card.particle .bd-k, .study .bd-card.ending .bd-k, .study .bd-card.verb .bd-k,
 .study .bd-card.particle .bd-kind, .study .bd-card.ending .bd-kind, .study .bd-card.verb .bd-kind { color: var(--bd-ink); }
 .study .bd-card.unknown { border-style: dashed; opacity: .75; }
@@ -72,15 +67,12 @@ html[data-theme='dark'] .study .bd-card.verb { --bd-ink: #8fa8ff; }
 .ask-send{padding:8px 14px;border:0;border-radius:12px;background:var(--accent,#ff8fc7);color:#fff;font:inherit;font-weight:600;cursor:pointer}
 .ask-send:disabled{opacity:.5}
 .ask-note{margin:0;font-size:12px;color:var(--muted)}
-html[data-theme='dark'] .ask-panel,html[data-theme='dark'] .ask-btn{background:rgba(255,255,255,.06)}
-html[data-theme='dark'] .ask-msg.bot{background:rgba(255,255,255,.08)}
 /* окно «Разбор» в игре: пол страницы разбор, пол страницы чат (оба на всю высоту); на узком экране чат ниже */
 .game .story-win.ask-on{gap:16px;align-items:stretch;padding:20px}
 .game .story-win.ask-on .story-win-box{flex:1 1 50%;width:auto;min-width:0;max-height:none;height:100%}
 .game .story-win.ask-on .ask-panel{margin:0;flex:1 1 50%;width:auto;min-width:0;height:100%;max-height:none;padding:18px 20px;font-size:15px;border:1px solid #fff;border-radius:20px;background:linear-gradient(160deg,#fbeefc,#eaedff 60%,#fff3f8);box-shadow:0 30px 60px -20px rgba(40,38,90,.5)}
 .game .story-win.ask-on .ask-head{font-size:18px}
 .game .story-win.ask-on .ask-log{flex:1 1 auto}
-html[data-theme='dark'] .game .story-win.ask-on .ask-panel{background:#25274e;border-color:var(--line)}
 @media (max-width:900px){
   .game .story-win.ask-on{flex-direction:column;justify-content:flex-start;overflow:auto}
   .game .story-win.ask-on .story-win-box{flex:0 0 auto;height:auto;overflow:visible}

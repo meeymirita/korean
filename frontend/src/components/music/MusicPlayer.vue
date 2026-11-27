@@ -584,18 +584,4 @@ const repeatLabel = computed(() => ({ off: 'Без повтора', all: 'Пов
 .mp-jobs .mp-retry-all { display: block; padding: 0; background: none; }
 .mp-x { position: absolute; right: 6px; top: 4px; width: 22px; height: 22px; padding: 0; font-size: 18px; line-height: 1; color: var(--mp-muted); background: none; border: 0; cursor: pointer; }
 
-html[data-theme='dark'] .mp-root, html[data-theme='dark'] .mp-panel { --mp-ink: #ece9ff; --mp-muted: #a49fd6; --mp-line: #3b3866; }
-html[data-theme='dark'] .mp-panel { background: linear-gradient(165deg, #2b2450 0%, #1f1e42 100%); border-color: #3b3866; }
-html[data-theme='dark'] .mp-mini { background: rgba(43, 36, 80, .95); border-color: #3b3866; }
-html[data-theme='dark'] .mp-list li:hover { background: rgba(255, 255, 255, .06); }
-html[data-theme='dark'] .mp-list li.cur { background: linear-gradient(90deg, rgba(232, 107, 192, .3), rgba(125, 107, 240, .25)); }
-html[data-theme='dark'] .mp-tabs button:not(.on) { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
-html[data-theme='dark'] .mp-pop, html[data-theme='dark'] .mp-newlist input, html[data-theme='dark'] .mp-menu-new input { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
-html[data-theme='dark'] .mp-chip:not(.on), html[data-theme='dark'] .mp-queue, html[data-theme='dark'] .mp-pl { background: rgba(255, 255, 255, .08); border-color: #3b3866; }
-html[data-theme='dark'] .mp-menu, html[data-theme='dark'] .mp-url input, html[data-theme='dark'] .mp-rename, html[data-theme='dark'] .mp-search input { background: #2b2450; border-color: #3b3866; color: var(--mp-ink); }
-html[data-theme='dark'] .mp-menu button { color: var(--mp-ink); }
-html[data-theme='dark'] .mp-menu button:hover { background: rgba(255, 255, 255, .08); }
-html[data-theme='dark'] .mp-jobs li { background: rgba(255, 255, 255, .06); }
-html[data-theme='dark'] .mp-drop { border-color: #4a4680; }
-html[data-theme='dark'] .mp-drop.over { background: rgba(232, 107, 192, .18); }
 </style>

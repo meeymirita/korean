@@ -27,7 +27,5 @@ const available = useVoiceAvailable()
 .vc-fab-fixed { position: fixed; top: 14px; right: 64px; z-index: 41; }
 .vc-fab-game svg { width: 26px; height: 26px; }
 @keyframes vc-pulse { 50% { box-shadow: 0 0 0 6px rgba(232, 107, 192, .25), 0 8px 22px rgba(214, 77, 169, .4); } }
-html[data-theme='dark'] .vc-fab { color: #ece9ff; background: rgba(43, 36, 80, .95); border-color: #3b3866; }
-html[data-theme='dark'] .vc-fab.on { color: #fff; background: linear-gradient(140deg, #b8509a, #7d6bf0); }
 @media (prefers-reduced-motion: reduce) { .vc-fab { transition: none; } .vc-fab.on { animation: none; } }
 </style>

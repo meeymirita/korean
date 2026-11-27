@@ -70,27 +70,19 @@ const leaves = computed(() => Array.from({ length: 240 }, (_, i) => ({ x: rnd(i 
 
 <style scoped>
 .sc { display: block; --g1: #bfe3b0; --g2: #9fd18f; }
-html[data-theme='dark'] .sc { --g1: #1d3a27; --g2: #162e1f; }
 .spot0 { fill: #d3efc4; opacity: .3; } .spot1 { fill: #a9d899; opacity: .3; } .spot2 { fill: #c6e8a8; opacity: .25; }
-html[data-theme='dark'] .spot0 { fill: #2c5237; } html[data-theme='dark'] .spot1 { fill: #254a2f; } html[data-theme='dark'] .spot2 { fill: #2f5a35; }
 .hill0 { fill: #8fc77d; } .hill1 { fill: #7bb869; } .hill2 { fill: #66a655; }
-html[data-theme='dark'] .hill0 { fill: #1f4a2c; } html[data-theme='dark'] .hill1 { fill: #1a4026; } html[data-theme='dark'] .hill2 { fill: #153620; }
 .river-bank { fill: none; stroke: #e9dcb4; stroke-width: 74; stroke-linecap: round; }
 .river { fill: none; stroke: #4aa3f0; stroke-width: 56; stroke-linecap: round; }
-html[data-theme='dark'] .river-bank { stroke: #4a5a3c; } html[data-theme='dark'] .river { stroke: #2b5fb0; }
 .river-flow { fill: none; stroke: #fff; stroke-width: 3; stroke-dasharray: 4 30; stroke-linecap: round; opacity: .75; animation: flow 4s linear infinite; }
 @keyframes flow { to { stroke-dashoffset: -68; } }
 .shade { fill: #00000022; }
 .trunk { fill: #8a5a3b; }
-html[data-theme='dark'] .trunk { fill: #5a3d28; }
 .c1 { fill: #4f9a4a; } .c2 { fill: #5fb35a; } .c3 { fill: #7ccb6b; }
 .tone1 .c1 { fill: #3f8a52; } .tone1 .c2 { fill: #4da363; } .tone1 .c3 { fill: #6dbf7c; }
 .tone2 .c1 { fill: #5f9a3c; } .tone2 .c2 { fill: #74b34c; } .tone2 .c3 { fill: #94cf63; }
-html[data-theme='dark'] .c1 { fill: #1f5a34; } html[data-theme='dark'] .c2 { fill: #26703f; } html[data-theme='dark'] .c3 { fill: #2f8a4b; }
 .lf { fill: #a6e08f; opacity: .85; }
-html[data-theme='dark'] .lf { fill: #3f9a5c; }
 .leaf0 { fill: #78bd68; } .leaf1 { fill: #5aa65a; } .leaf2 { fill: #92cf72; } .leaf3 { fill: #6fb36b; }
 .leaf { opacity: .6; }
-html[data-theme='dark'] .leaf0, html[data-theme='dark'] .leaf2 { fill: #2c6c40; } html[data-theme='dark'] .leaf1, html[data-theme='dark'] .leaf3 { fill: #245a36; }
 @media (prefers-reduced-motion: reduce) { .river-flow { animation: none; } }
 </style>

@@ -27,16 +27,12 @@
 .game .game-top .gm-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; border-radius: 12px; color: var(--ink); font-size: 13px; font-weight: 500; text-decoration: none; }
 .game .game-top .gm-item:hover { background: #fff; color: var(--pink); text-decoration: none; }
 .game .game-top .gm-item.on { background: linear-gradient(90deg, #f7d9f0, #e6e4ff); color: var(--pink); }
-html[data-theme='dark'] .game .game-menu-list { background: #1d1f42; border-color: var(--line); }
-html[data-theme='dark'] .game .game-top .gm-item:hover { background: rgba(255, 255, 255, .08); }
 .game .game-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 10px; align-self: center; }
 /* поиск, сад и словарь: одинаковые «таблетки» в одну линию */
 .game .game-top .game-pill { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; font: inherit; font-size: 12px; font-weight: 500; line-height: 1; color: var(--ink);
   background: rgba(255, 255, 255, .92); border: 1px solid #fff; border-radius: 99px; box-shadow: 0 8px 22px rgba(100, 87, 170, .2); cursor: pointer; text-decoration: none; transition: .2s; }
 .game .game-top .game-pill:hover { color: var(--pink); text-decoration: none; transform: translateY(-1px); }
 .game .game-top .game-pill kbd { font: inherit; font-size: 11px; font-weight: 500; color: var(--muted); padding: 2px 7px; border-radius: 7px; background: #eee9ff; }
-html[data-theme='dark'] .game .game-top .game-pill { background: rgba(37, 39, 78, .82); border-color: var(--line); }
-html[data-theme='dark'] .game .game-top .game-pill kbd { background: rgba(255, 255, 255, .1); }
 @media (max-width: 860px) { .game .game-top .game-pill kbd { display: none; } }
 .game .game-top a:hover { text-decoration: underline; }
 .game .game-title { text-align: center; }

@@ -245,6 +245,5 @@ function onKey(e: KeyboardEvent) {
 .chat-clear { border: 1px solid var(--line); background: transparent; color: var(--muted); }
 button:disabled { opacity: .5; cursor: default; }
 /* тёмная и ночная темы: светлые подложки заменены цветом карточки темы (--surface), иначе светлый текст стоит на белом */
-html[data-theme='dark'] .chat-msg.assistant, html[data-theme='dark'] .chat-hint, html[data-theme='dark'] .chat-form textarea { background: var(--surface); }
 @media (max-width: 520px) { .chat-box { max-height: 52vh; padding: 12px; } .chat-msg { max-width: 94%; } }
 </style>
