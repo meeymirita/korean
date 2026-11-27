@@ -1,4 +1,5 @@
 import { gsap } from 'gsap'
+import { nextTick } from 'vue'
 
 /**
  * Перетаскивание плитки в цель (пропуск, строку ответа) на GSAP Draggable: один помощник для игры на чистом DOM и для экранов Vue.
@@ -174,6 +175,169 @@ export function dragEdge(o: EdgeDragOptions): () => void {
       },
       onRelease() {
         o.onEnd?.()
+      },
+    })
+    stop = () => {
+      d?.kill()
+      proxy.remove()
+    }
+  })
+  return () => {
+    dead = true
+    stop()
+  }
+}
+
+export interface DragSortOptions {
+  /** Плитки (корешки), которые можно переставлять. */
+  items: ArrayLike<Element>
+  /** Место плитки на полке: оно стоит на месте, пока плитку тянут, и по нему считается «куда вставить». По умолчанию сама плитка. */
+  slot?: (tile: HTMLElement) => HTMLElement
+  /** Имя плитки для `onMove`. */
+  idOf: (tile: HTMLElement) => string
+  /** Тянутая плитка `id` встала до (`after: false`) или после (`true`) соседа `overId`: вызывающий переставляет свой список, помощник ждёт обновления DOM. */
+  onMove: (id: string, overId: string, after: boolean) => void
+  /** Перестановка закончилась. */
+  onEnd?: () => void
+  /** Класс плитки, пока её тянут (по умолчанию `dragging`). */
+  dragClass?: string
+}
+
+/**
+ * Перестановка плиток внутри ряда на GSAP Draggable. Плитка едет под рукой, соседи плавно (FLIP) раздвигаются, при отпускании плитка мягко встаёт на своё место.
+ * Порядок меняет вызывающий (`onMove`), а плитку после смены места в DOM помощник возвращает под руку.
+ */
+export function dragSort(o: DragSortOptions): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const dragClass = o.dragClass ?? 'dragging'
+  const slotOf = o.slot ?? ((t: HTMLElement) => t)
+  let items: DraggableItem[] = []
+  let dead = false
+  let busy = false
+  load().then(Draggable => {
+    if (dead) return
+    const tiles = Array.from(o.items).filter((t): t is HTMLElement => t instanceof HTMLElement)
+    items = Draggable.create(tiles, {
+      type: 'x,y' as const,
+      zIndexBoost: true,
+      minimumMovement: 6,
+      onDragStart(this: DraggableItem) {
+        ;(this.target as HTMLElement).classList.add(dragClass)
+      },
+      onDrag(this: DraggableItem) {
+        if (busy) return
+        const tile = this.target as HTMLElement
+        const x = this.pointerX - window.scrollX
+        const y = this.pointerY - window.scrollY
+        const own = slotOf(tile).getBoundingClientRect()
+        // пока рука над своим местом, порядок не меняем
+        if (x > own.left && x < own.right && y > own.top - 30 && y < own.bottom) return
+        let best: HTMLElement | null = null
+        let bestDist = 120
+        let after = false
+        for (const t of tiles) {
+          if (t === tile) continue
+          const r = slotOf(t).getBoundingClientRect()
+          const cx = r.left + r.width / 2
+          const d = Math.hypot(x - cx, (y - (r.top + r.height / 2)) * 1.4)
+          if (d < bestDist) {
+            best = t
+            bestDist = d
+            after = x > cx
+          }
+        }
+        if (!best) return
+        busy = true
+        const sync = () => this.update()
+        const before = tile.getBoundingClientRect()
+        const first = tiles.filter(t => t !== tile).map(t => [slotOf(t), slotOf(t).getBoundingClientRect()] as const)
+        o.onMove(o.idOf(tile), o.idOf(best), after)
+        void nextTick().then(() => {
+          const now = tile.getBoundingClientRect()
+          gsap.set(tile, { x: `+=${before.left - now.left}`, y: `+=${before.top - now.top}` })
+          sync()
+          for (const [el, r] of first) {
+            const n = el.getBoundingClientRect()
+            const dx = r.left - n.left
+            const dy = r.top - n.top
+            if (dx || dy) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 180, easing: 'cubic-bezier(.2,.8,.3,1)' })
+          }
+          busy = false
+        })
+      },
+      onDragEnd(this: DraggableItem) {
+        const tile = this.target as HTMLElement
+        tile.classList.remove(dragClass)
+        gsap.to(tile, { x: 0, y: 0, duration: 0.28, ease: 'back.out(1.6)', clearProps: 'transform' })
+        o.onEnd?.()
+      },
+    })
+  }).catch(() => {})
+  return () => {
+    dead = true
+    items.forEach(d => d.kill())
+    items = []
+  }
+}
+
+export interface DragPointerOptions {
+  /** Область, за которую тянут (разворот книги). Нужен `touch-action: none`. Кнопки внутри остаются нажимаемыми и перетаскивание не начинают. */
+  trigger: HTMLElement
+  /** Нажали: `x`, `y` в координатах окна. */
+  onPress?: (x: number, y: number) => void
+  /** Движение началось (после небольшого сдвига). */
+  onStart?: (x: number, y: number) => void
+  /** Рука движется. */
+  onMove: (x: number, y: number) => void
+  /** Отпустили; `vx` и `vy` это скорость руки в пикселях за миллисекунду, `moved` была ли настоящая протяжка. */
+  onEnd?: (x: number, y: number, vx: number, vy: number, moved: boolean) => void
+}
+
+/** Положение руки (мыши, пальца, пера) во время перетаскивания области, со скоростью при отпускании: для листания книги за угол. Тот же GSAP Draggable, двигается невидимая заготовка. */
+export function dragPointer(o: DragPointerOptions): () => void {
+  if (typeof window === 'undefined') return () => {}
+  let dead = false
+  let stop = () => {}
+  void load().then(Draggable => {
+    if (dead) return
+    const proxy = document.createElement('div')
+    proxy.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none'
+    document.body.appendChild(proxy)
+    let last = { x: 0, y: 0, t: 0 }
+    let v = { x: 0, y: 0 }
+    let moved = false
+    const at = (d: DraggableItem) => ({ x: d.pointerX - window.scrollX, y: d.pointerY - window.scrollY })
+    const [d] = Draggable.create(proxy, {
+      type: 'x,y',
+      trigger: o.trigger,
+      zIndexBoost: false,
+      minimumMovement: 6,
+      dragClickables: false,
+      onPress(this: DraggableItem) {
+        gsap.set(proxy, { x: 0, y: 0 })
+        this.update()
+        moved = false
+        v = { x: 0, y: 0 }
+        const p = at(this)
+        last = { ...p, t: performance.now() }
+        o.onPress?.(p.x, p.y)
+      },
+      onDragStart(this: DraggableItem) {
+        moved = true
+        const p = at(this)
+        o.onStart?.(p.x, p.y)
+      },
+      onDrag(this: DraggableItem) {
+        const p = at(this)
+        const now = performance.now()
+        const dt = Math.max(1, now - last.t)
+        v = { x: (p.x - last.x) / dt, y: (p.y - last.y) / dt }
+        last = { ...p, t: now }
+        o.onMove(p.x, p.y)
+      },
+      onRelease(this: DraggableItem) {
+        const p = at(this)
+        o.onEnd?.(p.x, p.y, v.x, v.y, moved)
       },
     })
     stop = () => {
