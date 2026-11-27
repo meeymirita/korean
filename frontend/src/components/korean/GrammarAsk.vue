@@ -7,6 +7,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { SECS, firstBlock, type Gram } from '@/data/korean/grammar'
 import { F, blocksHtml, esc } from '@/data/korean/render'
 import { INTENT, formulaOf, headKo, plain, ruleOf, secColor } from '@/lib/grammarView'
+import { CHAINS, LINKS, linksOf, marked, type Chain } from '@/data/korean/chains'
 
 const props = defineProps<{ cards: Gram[] }>()
 const emit = defineEmits<{ open: [id: string] }>()
@@ -40,11 +41,33 @@ async function start() {
   notes.value = []
   if (!(await say({ who: 'bot', html: 'Привет! Я подберу правило. <b>Что ты хочешь сказать по-корейски?</b>' }))) return
   const secs = sections()
-  if (!secs.length) {
-    await say({ who: 'bot', html: 'Здесь пока нет карточек: поменяй вкладку или сними фильтр.' })
-    return
-  }
-  await say({ who: 'bot', opts: secs.map(s => ({ label: INTENT[s] ?? s, color: secColor({ s }), run: () => void pickIntent(s) })) }, 250)
+  const opts: Opt[] = secs.map(s => ({ label: INTENT[s] ?? s, color: secColor({ s }), run: () => void pickIntent(s) }))
+  // цепочки предложений не привязаны к карточкам: они всегда под рукой
+  opts.push({ label: 'Соединить предложения в длинный рассказ', color: '#c9a24a', run: () => void pickChains() })
+  await say({ who: 'bot', opts }, 250)
+}
+/** Длинные предложения: две-три связки 그리고 / 그런데 / 그래서 в одной цепочке. */
+async function pickChains() {
+  await say({ who: 'me', html: 'Соединить предложения в длинный рассказ' })
+  const rows = Object.entries(LINKS).map(([k, v]) => `<div><span>${F(`{k|${k}}`)}</span> — ${esc(v)}</div>`).join('')
+  if (!(await say({ who: 'bot', html: `Короткие предложения склеиваются связками. Их три:<div class="links">${rows}</div>Одной связки мало: в рассказе их по две-три. Выбери цепочку.` }, 350))) return
+  await say({ who: 'bot', opts: CHAINS.map(c => ({ label: c.title, sub: [...new Set(linksOf(c))].join(' · '), color: '#c9a24a', run: () => void pickChain(c) })) }, 250)
+}
+async function pickChain(c: Chain) {
+  await say({ who: 'me', html: esc(c.title) })
+  const links = linksOf(c)
+  const total = links.length
+  if (!(await say({ who: 'bot', html: `Здесь ${total} связки: ${links.map(l => F(`{k|${l}}`)).join(' → ')}. Читай по порядку:`, pairs: c.steps.map(([ko, ru]) => [marked(ko), ru]) }, 350))) return
+  await say(
+    {
+      who: 'bot',
+      opts: [
+        { label: 'Другая цепочка', color: '#c9a24a', run: () => void pickChains() },
+        { label: 'Что хочешь сказать?', color: '#8f7cf0', run: () => void start() },
+      ],
+    },
+    350,
+  )
 }
 async function pickIntent(s: string) {
   await say({ who: 'me', html: esc(INTENT[s] ?? s) })
@@ -140,6 +163,7 @@ watch(
 .o.ahead { border-style: dashed; opacity: .55; }
 .form { font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 20px; background: #20265c; color: #fff; border-radius: 14px; padding: 10px 16px; margin: 6px 0; }
 .pair { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.links { margin: 8px 0; display: grid; gap: 4px; font-weight: 700; }
 .pair .a, .pair .b { padding: 8px 13px; border-radius: 16px; max-width: 92%; font-weight: 700; font-size: 17px; }
 .pair .a { background: #f2efff; align-self: flex-start; }
 .pair .b { background: #fff0f7; align-self: flex-end; }
