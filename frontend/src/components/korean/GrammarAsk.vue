@@ -7,7 +7,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { SECS, firstBlock, type Gram } from '@/data/korean/grammar'
 import { F, blocksHtml, esc } from '@/data/korean/render'
 import { INTENT, formulaOf, headKo, plain, ruleOf, secColor } from '@/lib/grammarView'
-import { CHAINS, LINKS, linksOf, marked, type Chain } from '@/data/korean/chains'
+import { CHAINS, LINKS, LONG_CHAINS, linksOf, marked, type Chain } from '@/data/korean/chains'
 
 const props = defineProps<{ cards: Gram[] }>()
 const emit = defineEmits<{ open: [id: string] }>()
@@ -46,15 +46,32 @@ async function start() {
   opts.push({ label: 'Соединить предложения в длинный рассказ', color: '#c9a24a', run: () => void pickChains() })
   await say({ who: 'bot', opts }, 250)
 }
-/** Длинные предложения: две-три связки 그리고 / 그런데 / 그래서 в одной цепочке. */
+/** Длинные предложения: две-три связки (그리고 / 그런데 / 그래서 / 하지만 / 그러니까) в одной цепочке. */
 async function pickChains() {
   await say({ who: 'me', html: 'Соединить предложения в длинный рассказ' })
   const rows = Object.entries(LINKS).map(([k, v]) => `<div><span>${F(`{k|${k}}`)}</span> — ${esc(v)}</div>`).join('')
-  if (!(await say({ who: 'bot', html: `Короткие предложения склеиваются связками. Их три:<div class="links">${rows}</div>Одной связки мало: в рассказе их по две-три. Выбери цепочку.` }, 350))) return
-  await say({ who: 'bot', opts: CHAINS.map(c => ({ label: c.title, sub: [...new Set(linksOf(c))].join(' · '), color: '#c9a24a', run: () => void pickChain(c) })) }, 250)
+  if (!(await say({ who: 'bot', html: `Короткие предложения склеиваются связками. Их пять:<div class="links">${rows}</div>Одной связки мало: в рассказе их по две-три. Выбери цепочку.` }, 350))) return
+  await say(
+    {
+      who: 'bot',
+      opts: [
+        { label: 'Случайный рассказ', sub: `ещё ${LONG_CHAINS.length} в запасе`, color: '#8f7cf0', run: () => void pickRandomChain() },
+        ...CHAINS.map(c => ({ label: c.title, sub: [...new Set(linksOf(c))].join(' · '), color: '#c9a24a', run: () => void pickChain(c) })),
+      ],
+    },
+    250,
+  )
 }
-async function pickChain(c: Chain) {
-  await say({ who: 'me', html: esc(c.title) })
+/** Случайный рассказ из «Мастера+»: каждый раз другой, не тот же самый подряд. */
+let lastLong = -1
+async function pickRandomChain() {
+  let i = Math.floor(Math.random() * LONG_CHAINS.length)
+  if (i === lastLong) i = (i + 1) % LONG_CHAINS.length
+  lastLong = i
+  await pickChain(LONG_CHAINS[i]!, true)
+}
+async function pickChain(c: Chain, random = false) {
+  await say({ who: 'me', html: random ? 'Случайный рассказ' : esc(c.title) })
   const links = linksOf(c)
   const total = links.length
   if (!(await say({ who: 'bot', html: `Здесь ${total} связки: ${links.map(l => F(`{k|${l}}`)).join(' → ')}. Читай по порядку:`, pairs: c.steps.map(([ko, ru]) => [marked(ko), ru]) }, 350))) return
@@ -62,6 +79,7 @@ async function pickChain(c: Chain) {
     {
       who: 'bot',
       opts: [
+        ...(random ? [{ label: 'Ещё случайный', color: '#8f7cf0', run: () => void pickRandomChain() }] : []),
         { label: 'Другая цепочка', color: '#c9a24a', run: () => void pickChains() },
         { label: 'Что хочешь сказать?', color: '#8f7cf0', run: () => void start() },
       ],

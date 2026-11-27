@@ -4,7 +4,7 @@ import { load, close } from './_load.mjs'
 
 after(close)
 
-const { CHAINS, LINKS, linksOf, marked, linkOf } = await load('/src/data/korean/chains.ts')
+const { CHAINS, LONG_CHAINS, LINKS, linksOf, marked, linkOf } = await load('/src/data/korean/chains.ts')
 
 // не пройдено (docs/data.md, «Проверка нейросетями»): -아서/어서, -고, -지만, (으)ㄹ게요, 에게/한테, (으)로 (그러니까 и 하지만 разрешены, решение владельца 2026-11-27)
 const AHEAD = /(아서|어서|해서|ㄹ게요|게요|에게|한테|으로|로 |(?<!하)지만|(?<!하)고[ .])/
@@ -36,4 +36,22 @@ test('каждое предложение переведено, «я» без р
 test('связка подсвечивается', () => {
   assert.equal(marked('그래서 저는 집에 있어요.'), '{k|그래서} 저는 집에 있어요.')
   assert.equal(marked('오늘 비가 와요.'), '오늘 비가 와요.')
+})
+
+test('рассказы «Мастера+»: 153 цепочки по три предложения с двумя разными связками, как в данных', () => {
+  assert.equal(LONG_CHAINS.length, 153)
+  assert.equal(Object.keys(LINKS).length, 5)
+  assert.equal(new Set(LONG_CHAINS.map(c => c.id)).size, 153)
+  for (const c of LONG_CHAINS) {
+    assert.equal(c.steps.length, 3, c.id)
+    const links = linksOf(c)
+    assert.equal(links.length, 2, c.id)
+    assert.notEqual(links[0], links[1], c.id)
+    assert.equal(linkOf(c.steps[0][0]), undefined, c.id)
+    assert.ok(c.title.length > 3, c.id)
+    for (const [ko, ru] of c.steps) {
+      assert.ok(ko.endsWith('.') && ru.endsWith('.') && !ko.includes('_'), `${c.id}: ${ko}`)
+      assert.doesNotMatch(ko.replaceAll('그리고', ''), AHEAD, `${c.id}: ${ko}`)
+    }
+  }
 })

@@ -5,12 +5,12 @@ export interface Growth { generated: string; commits: number; first: { d: string
 
 export const GROWTH: Growth = {
  "generated": "2026-11-27",
- "commits": 1107,
+ "commits": 1109,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 112141,
+ "lines": 112480,
  "days": [
   {
    "d": "2026-10-21",
@@ -210,10 +210,10 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-27",
-   "n": 11,
-   "cum": 1107,
-   "add": 1520,
-   "del": 207
+   "n": 13,
+   "cum": 1109,
+   "add": 1878,
+   "del": 258
   }
  ],
  "marks": [
@@ -562,10 +562,10 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-27",
-   "title": "Грамматику можно смотреть по-разному",
-   "summary": "На странице «Грамматика» рядом с галочкой «пройдено» появился выбор вида: карточки, книжная полка, колонки как в Finder и диалог «Что хочешь сказать?».",
+   "title": "Мастер+: предложения из трёх частей",
+   "summary": "В «Собери предложение» появился уровень «Мастер+»: длинное предложение из трёх частей с двумя разными связками.",
    "items": 5,
-   "cum": 1107
+   "cum": 1109
   }
  ]
 }

@@ -1,3 +1,6 @@
+import { LONG3 } from '@/game/long-sentences-3'
+import { growSteps } from '@/game/long-sentences'
+
 /**
  * Цепочки предложений для вида «Что хочешь сказать?» страницы грамматики: 3–4 коротких предложения, склеенные связками
  * 그리고 («и») / 그런데 («но») / 그래서 («поэтому»), по две-три разные связки в одной цепочке.
@@ -16,6 +19,8 @@ export const LINKS: Record<string, string> = {
   그리고: 'и, а (добавляет)',
   그런데: 'но, а вот (противопоставление)',
   그래서: 'поэтому (следствие)',
+  하지만: 'но (противопоставление)',
+  그러니까: 'так что (следствие)',
 }
 
 export const CHAINS: Chain[] = [
@@ -80,6 +85,19 @@ export const CHAINS: Chain[] = [
     ],
   },
 ]
+
+/**
+ * Рассказы «Мастера+»: каждое трёхчастное предложение (`game/long-sentences-3.ts`, 153) как цепочка из трёх коротких предложений с двумя связками.
+ * В меню не выводятся списком, их выдаёт кнопка «Случайный рассказ».
+ */
+export const LONG_CHAINS: Chain[] = LONG3.map((x, i) => {
+  const steps = growSteps(x)
+  return {
+    id: 'long' + i,
+    title: steps[0]!.ru.replace(/\.$/, ''),
+    steps: steps.map(s => [s.ko.replace(/_/g, ' ') + '.', s.ru] as ChainStep),
+  }
+})
 
 /** Связка в начале предложения или `undefined`. */
 export const linkOf = (ko: string) => Object.keys(LINKS).find(l => ko.startsWith(l + ' '))
