@@ -48,8 +48,10 @@
 
 /* «Что это такое» и кнопки действий */
 .study .gd-how { margin-top: 18px; padding: 14px 20px; }
-.study .gd-how-h { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; font: inherit; text-align: left; }
-.study .gd-how-h span { font-size: 13px; color: var(--muted); }
+.study .gd-how .gd-how-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 17px; text-align: left; cursor: pointer; }
+.study .gd-how .gd-how-h span { flex: none; padding: 4px 14px; border: 1px solid var(--line); border-radius: 99px; background: rgba(255, 255, 255, .8); font-size: 13px; color: var(--muted); }
+.study .gd-how .gd-how-h:hover span { border-color: var(--gold); }
+.study .gd-drill-head .plain { padding: 6px 16px; border: 1px solid var(--line); border-radius: 99px; background: rgba(255, 255, 255, .8); font: inherit; font-size: 14px; cursor: pointer; }
 .study .gd-steps { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.55; }
 .study .gd-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
 .study .gd-act { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1.5px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, .75); font: inherit; text-align: left; cursor: pointer; transition: transform .15s, border-color .15s; }
