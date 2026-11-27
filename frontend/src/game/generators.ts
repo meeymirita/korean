@@ -11,7 +11,8 @@ import { STUDY, STUDY_TRANSLATIONS } from '@/data/korean/study'
 import '@/assets/breakdown.css'
 import { EXCHANGES, type Exchange } from './dialogs'
 import { STORIES } from './stories'
-import { LONG_SENTENCES, checkLong, growSteps, longText, longTrap, longWords } from './long-sentences'
+import { LONG_ALL, LONG_SENTENCES, checkLong, growSteps, longText, longTrap, longWords } from './long-sentences'
+import { LONG3 } from './long-sentences-3'
 import { PFAMS, type RuleFamily } from './families'
 import { ptextPool, type PtextMark } from './ptext-pool'
 import { futureForm } from '@/data/korean/conjugation'
@@ -169,7 +170,7 @@ function genPart(){
     options:opts,correct:opts.findIndex(o=>o.text===p[2]),right:p[2],explain:[p[0].replace('___',p[2]),p[4]],
     hp:p[0].replace('___','…'),hr:p[2],icon:'🧩'};
 }
-const LEVEL_NAME: Record<number, string>={1:'простой',2:'средний',3:'сложный',4:'мастер'};
+const LEVEL_NAME: Record<number, string>={1:'простой',2:'средний',3:'сложный',4:'мастер',6:'мастер+'};
 /* перевод плитки: «дедушка + 는 — тема» */
 const PART_ROLE: Record<string, string>={'은':'тема','는':'тема','이':'подлежащее','가':'подлежащее','을':'объект','를':'объект','에':'куда / где','에서':'где (действие)',
   '하고':'и / с','이에요':'быть','예요':'быть','도':'тоже','의':'чей','로':'чем / куда','으로':'чем / куда','와':'и / с','과':'и / с',
@@ -218,36 +219,37 @@ function genBuildStory(lo: number,hi: number){
     label:'Рассказ «'+b.st.title+'»: предложение '+(b.i+1)+' из '+n+(before?' (до этого: '+before+')':''),
     ru:x.ru,tiles:tiles,accept:[right],right:right,note:'Предложение '+(b.i+1)+' рассказа «'+b.st.title+'»',explain:[right+'.',x.ru],hp:x.ru,hr:right,icon:'🏗️'};
 }
-/** «Собери предложение: Мастер»: длинное предложение из двух частей (`long-sentences.ts`). Группы внутри части можно ставить в любом порядке, сказуемое последнее (`checkLong`); лишние плитки с неверной частицей. */
-function genBuildLong(){
-  const all=LONG_SENTENCES.map(function(x,i){return i;});
-  const fit=all.filter(function(i){const t=LONG_SENTENCES[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');});
+/** «Собери предложение: Мастер» (две части, `long-sentences.ts`) и «Мастер+» (три части, `long-sentences-3.ts`). Группы внутри части можно ставить в любом порядке, сказуемое последнее (`checkLong`); лишние плитки с неверной частицей. */
+function genBuildLong(plus?: boolean){
+  const SRC=plus?LONG3:LONG_SENTENCES,tag=plus?'bm:':'bl:',lv=plus?6:4;
+  const all=SRC.map(function(x,i){return i;});
+  const fit=all.filter(function(i){const t=SRC[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');});
   const pool=fit.length?fit:all;
-  const rest=pool.filter(function(i){return 'bl:'+i!==S.lastKey;});
-  const i=rnd(rest.length?rest:pool),x=LONG_SENTENCES[i]!;
+  const rest=pool.filter(function(i){return tag+i!==S.lastKey;});
+  const i=rnd(rest.length?rest:pool),x=SRC[i]!;
   const words=longWords(x),right=words.join(' '),text=longText(x);
   const spare: string[]=[];
   shuffle(words.slice()).forEach(function(w){
     const t=longTrap(w);
     if(t&&spare.length<2&&!words.includes(t)&&!spare.includes(t))spare.push(t);
   });
-  return {type:'build',mode:'build',key:'bl:'+i,level:4,label:'Собери предложение · '+LEVEL_NAME[4],ru:x.ru,tiles:shuffle([...words,...spare]),
+  return {type:'build',mode:'build',key:tag+i,level:lv,label:'Собери предложение · '+LEVEL_NAME[lv],ru:x.ru,tiles:shuffle([...words,...spare]),
     accept:[right],check:function(w: string[]){return checkLong(x,w);},right:right,note:x.note,explain:[text,x.note],teach:text,trans:x.ru,hp:x.ru,hr:text,icon:'🏗️'};
 }
 /** «Собери предложение: Растёт»: длинное предложение собирается по частям, каждая часть отдельное задание со своим переводом, собранные раньше части показаны над заданием. */
 function genBuildGrow(){
-  const fits=function(i: number){const t=LONG_SENTENCES[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');};
+  const fits=function(i: number){const t=LONG_ALL[i]!.t;return S.tense==='pres'?t==='p':S.tense==='past'?t==='a':(S.fut!=='off'||t!=='f');};
   let g=S.grow;
-  if(g&&g.shown&&g.k+1<growSteps(LONG_SENTENCES[g.i]!).length)g.k++;
+  if(g&&g.shown&&g.k+1<growSteps(LONG_ALL[g.i]!).length)g.k++;
   else{
-    const all=LONG_SENTENCES.map(function(x,i){return i;}).filter(function(i){return growSteps(LONG_SENTENCES[i]!).length>=2;});
+    const all=LONG_ALL.map(function(x,i){return i;}).filter(function(i){return growSteps(LONG_ALL[i]!).length>=2;});
     const fit=all.filter(fits);
     const pool=fit.length?fit:all;
     const rest=pool.filter(function(i){return !(S.lastKey||'').startsWith('bg:'+i+':');});
     g=S.grow={i:rnd(rest.length?rest:pool),k:0,shown:false};
   }
   g.shown=true;
-  const x=LONG_SENTENCES[g.i]!,steps=growSteps(x),st=steps[g.k]!;
+  const x=LONG_ALL[g.i]!,steps=growSteps(x),st=steps[g.k]!;
   const part: typeof x={...x,ko:st.ko};
   const words=longWords(part),right=words.join(' '),text=longText(part);
   const spare: string[]=[];
@@ -265,7 +267,10 @@ function genBuild(){
   // «Мастер» только в самом режиме и в «Миксе»: в блице и на выживании длинное предложение не успеть собрать
   // «Любой» в самом режиме даёт «Мастера» примерно в каждом пятом задании
   if(!S.blitz.on&&!S.surv.on&&S.level===5)return genBuildGrow();
-  if(!S.blitz.on&&!S.surv.on&&(S.level===4||(S.level==='any'&&S.mode==='build'&&Math.random()<.2)))return genBuildLong();
+  if(!S.blitz.on&&!S.surv.on&&S.level===6)return genBuildLong(true);
+  // «Любой» в самом режиме: примерно каждое пятое «Мастер», каждое десятое «Мастер+»
+  if(!S.blitz.on&&!S.surv.on&&S.level==='any'&&S.mode==='build'){const r=Math.random();if(r<.1)return genBuildLong(true);if(r<.3)return genBuildLong();}
+  if(!S.blitz.on&&!S.surv.on&&S.level===4)return genBuildLong();
   const mode=S.tense==='pres'?'p':S.tense==='past'?'a':'b';
   let level: Level|undefined,seed: number|undefined,tm: TenseMode=mode;
   const missed=Object.keys(S.miss).filter(k=>/^b:/.test(k)&&k!==S.lastKey);

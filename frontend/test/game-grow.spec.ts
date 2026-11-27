@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { boot, closeHelp } from './game-helpers'
-import { LONG_SENTENCES, checkLong, growSteps, longWords } from '@/game/long-sentences'
+import { LONG_ALL as LONG_SENTENCES, checkLong, growSteps, longWords } from '@/game/long-sentences'
 
 // «Собери предложение»: уровень «Растёт» (ступени внутри длинного предложения).
 const chips = () => [...document.querySelectorAll<HTMLButtonElement>('.levels .chip')]

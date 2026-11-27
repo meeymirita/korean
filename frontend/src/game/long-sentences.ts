@@ -1,5 +1,7 @@
+import { LONG3 } from './long-sentences-3'
+
 /**
- * Длинные предложения для уровня «Мастер» в «Собери предложение» (после «Сложного»): 62 предложения владельца (2026-11-11),
+ * Длинные предложения для уровня «Мастер» в «Собери предложение» (после «Сложного»; трёхчастные «Мастер+» лежат в `long-sentences-3.ts`): 62 предложения владельца (2026-11-11),
  * проверены четырьмя нейросетями, замечания учтены (15, 28, 29, 47, 57, 58). Те же предложения идут в «Тексты по правилу» и экзамен (`ptext-pool.ts`).
  *
  * Запись `ko`: слова через пробел; `_` склеивает слова, которые стоят только вместе и только в этом порядке (`안_가요`, `먹을_거예요`, `교실_안에`).
@@ -12,6 +14,8 @@ export interface LongSentence {
   ko: string
   ru: string
   note: string
+  /** русский перевод каждой части (у предложений «Мастера+»); без него части делятся по `ru` (`growRu`) */
+  parts?: string[]
   /** false: не давать в задания с пропуском частицы (есть второй верный вариант или это вопрос с ответом) */
   pool?: false
 }
@@ -86,7 +90,10 @@ export const LONG_SENTENCES: LongSentence[] = [
   { t: 'm', ko: '저는 주말에 집에서만 쉬어요, 그런데 친구는 주말에도 일해요.', ru: 'Я на выходных отдыхаю только дома, а друг и на выходных работает.', note: '에 + 도 → 에도; 에서 + 만 → 에서만.' },
 ]
 
-const CONN = ['그리고', '그런데', '그래서']
+/** «Мастер» и «Мастер+» вместе: «Растёт», «Тексты по правилу», экзамен и открытый список предложений берут отсюда. */
+export const LONG_ALL: LongSentence[] = [...LONG_SENTENCES, ...LONG3]
+
+const CONN = ['그리고', '그런데', '그래서', '하지만', '그러니까']
 
 /** Предложение как текст: без служебных `_`. */
 export const longText = (x: LongSentence) => x.ko.replace(/_/g, ' ')
@@ -159,14 +166,16 @@ export function longTrap(w: string): string {
   return ''
 }
 
+const cap = (p: string) => {
+  const t = p[0]!.toUpperCase() + p.slice(1)
+  return /[.?!]$/.test(t) ? t : t + '.'
+}
+
 /** Перевод по частям: делит `ru` по связке (`, а …`, `, и …`, `, поэтому …`) или по границе предложений. `null`, если частей не столько же, сколько частей в корейской записи (тогда в «Растёт» предложение не идёт). */
 export function growRu(x: LongSentence): string[] | null {
   const parts = x.ru.split(/(?<=[?.!])\s+|, (?=а |и |но |поэтому |а вот )/).map(p => p.trim()).filter(Boolean)
   if (parts.length < 2 || parts.length !== longClauses(x).length) return null
-  return parts.map(p => {
-    const t = p[0]!.toUpperCase() + p.slice(1)
-    return /[.?!]$/.test(t) ? t : t + '.'
-  })
+  return parts.map(cap)
 }
 
 /** Ступень уровня «Растёт»: одна часть длинного предложения со своим переводом; собранные раньше части идут в `prefix`. */
@@ -181,8 +190,8 @@ export interface GrowStep {
 
 /** Ступени предложения: по одной на часть (связка первая). Пусто, если перевод по частям не делится (`growRu`). */
 export function growSteps(x: LongSentence): GrowStep[] {
-  const ru = growRu(x)
-  if (!ru) return []
+  const ru = x.parts ? x.parts.map(cap) : growRu(x)
+  if (!ru || ru.length !== longClauses(x).length) return []
   const done: string[] = []
   return longClauses(x).map((cl, ci) => {
     const ko = cl.map(g => g.join('_')).join(' ')

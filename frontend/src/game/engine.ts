@@ -77,7 +77,7 @@ if(wantMode&&MODES.some(m=>m.id===wantMode))S.mode=wantMode;
 if(!MODES.some(m=>m.id===S.mode))S.mode='mix';
 const wantFam=hooks.fam&&hooks.fam();
 if(wantFam&&PFAMS.some(f=>f.id===wantFam))S.pfam=wantFam;
-if(![1,2,3,4,5,'any'].includes(S.level))S.level='any';
+if(![1,2,3,4,5,6,'any'].includes(S.level))S.level='any';
 Object.keys(S.levels).forEach(k=>{if(!['simple','story','long','expert'].includes(S.levels[k]!))S.levels[k]='simple';});
 
 /* ---------- генераторы заданий (generators.ts) ---------- */
@@ -230,7 +230,7 @@ function renderQuestion(q: Question){
         lv.appendChild(b);
       });
     }else{
-      ([['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер'],[5,'Растёт']] as [number|'any',string][]).forEach(function(x){
+      ([['any','Любой'],[1,'Простой'],[2,'Средний'],[3,'Сложный'],[4,'Мастер'],[6,'Мастер+'],[5,'Растёт']] as [number|'any',string][]).forEach(function(x){
         const b=el('button','chip'+(S.level===x[0]?' on':''),x[1]);b.type='button';
         b.addEventListener('click',function(){S.level=x[0];S.grow=null;save();renderQuestion(genBuild());});
         lv.appendChild(b);
