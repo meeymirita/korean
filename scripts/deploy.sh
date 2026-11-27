@@ -13,6 +13,7 @@
 #   COMPOSE_CMD         команда Compose (по умолчанию: docker compose)
 #   BUILD_CMD / UP_CMD  свои команды сборки и запуска вместо Compose
 #   BACKUP_CMD          команда копии перед обновлением (по умолчанию: bash scripts/backup-docker.sh)
+#   MONITOR_RELOAD_CMD  перезапуск Grafana и Prometheus, если менялись их файлы в docker/grafana или docker/prometheus (по умолчанию: docker compose restart grafana prometheus; иначе новые тревоги и панели не подхватываются)
 #   PRUNE_CMD           чистка кэша сборки после удачного обновления (по умолчанию: docker builder prune -f --filter until=24h && docker image prune -f: кэш старше суток и образы без имени; образы с именем и тома не трогаются)
 #   HEALTH_URL          проверка API (по умолчанию: http://127.0.0.1:3001/api/health)
 #   SITE_HEALTH_URL     проверка сайта (по умолчанию: http://127.0.0.1:3000/robots.txt)
@@ -30,6 +31,7 @@ COMPOSE=${COMPOSE_CMD:-docker compose}
 BUILD_CMD=${BUILD_CMD:-$COMPOSE build}
 UP_CMD=${UP_CMD:-$COMPOSE up -d --remove-orphans}
 BACKUP_CMD=${BACKUP_CMD:-bash scripts/backup-docker.sh}
+MONITOR_RELOAD_CMD=${MONITOR_RELOAD_CMD:-$COMPOSE restart grafana prometheus}
 PRUNE_CMD=${PRUNE_CMD:-docker builder prune -f --filter until=24h && docker image prune -f}
 HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:3001/api/health}
 SITE_HEALTH_URL=${SITE_HEALTH_URL:-http://127.0.0.1:3000/robots.txt}
@@ -134,6 +136,13 @@ if [ "$RESTART" = 1 ]; then
     rollback
     fail "страница $BROKEN не открылась после обновления на $(git rev-parse --short "$NEW") (откатились на $(git rev-parse --short "$PREV")); смотри: docker compose logs --tail 50 frontend backend"
   fi
+fi
+
+# файлы тревог, панелей и сбора метрик лежат в томах только на чтение: после правки Grafana и Prometheus сами их не перечитывают,
+# и старые пороги тревог продолжали слать сообщения (2026-11-27). Сбой перезапуска деплой не ломает.
+if [ "$RESTART" = 1 ] && git diff --name-only "$PREV" "$NEW" | grep -qE '^docker/(grafana|prometheus)/'; then
+  say "Менялись настройки мониторинга: перезапуск Grafana и Prometheus"
+  bash -c "$MONITOR_RELOAD_CMD" >/dev/null 2>&1 || echo "(перезапуск мониторинга не удался: docker compose restart grafana prometheus)"
 fi
 
 # кэш сборки копится по гигабайтам за деплой (на сервере было 20 ГБ); свежий кэш (до недели) оставляем, чтобы сборки были быстрыми

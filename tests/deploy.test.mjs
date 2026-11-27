@@ -41,6 +41,7 @@ async function deploy(args = [], env = {}) {
         BUILD_CMD: `${tmp}/call.sh build`,
         UP_CMD: `${tmp}/up.sh`,
         PRUNE_CMD: 'true', // не трогать настоящий Docker
+        MONITOR_RELOAD_CMD: `${tmp}/call.sh monitoring`,
         ...env,
       },
     })
@@ -106,6 +107,19 @@ describe('скрипт обновления на сервере (scripts/deploy.
     assert.equal(r.code, 0, r.out)
     assert.deepEqual(calls(), ['backup', 'build', 'up'])
     assert.match(r.out, /Сайт, сервер и проверочные страницы отвечают/)
+  })
+
+  test('менялись настройки Grafana: после запуска перезапускается мониторинг, иначе нет', async () => {
+    await release({ 'docker/grafana/provisioning/alerting/rules.yml': 'a' })
+    resetCalls()
+    const r = await deploy()
+    assert.equal(r.code, 0, r.out)
+    assert.deepEqual(calls(), ['backup', 'build', 'up', 'monitoring'])
+    assert.match(r.out, /перезапуск Grafana и Prometheus/)
+    await release({ 'src/a.txt': 'g' })
+    resetCalls()
+    await deploy()
+    assert.deepEqual(calls(), ['backup', 'build', 'up'])
   })
 
   test('--no-backup пропускает копию, --no-restart только собирает', async () => {
