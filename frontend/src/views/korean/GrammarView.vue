@@ -12,6 +12,7 @@ import PhotoViewer from '@/components/korean/PhotoViewer.vue'
 import { useGrammarPhotos } from '@/composables/useGrammarPhotos'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { G, RULES_COUNT, SECS, tabOf } from '@/data/korean/grammar'
+import { bookKey } from '@/lib/grammarView'
 import { F } from '@/data/korean/render'
 import { COURSE } from '@/data/korean/course'
 import { useProgressStore } from '@/stores/progress'
@@ -64,10 +65,6 @@ const onlyAhead = usePersisted('grammar_ahead', false, v => typeof v === 'boolea
 const partCount = (n: number) => G.filter(g => inTab(g, n) && (!onlyDone.value || onlyAhead.value || isOk(g))).length
 /** Место в книге: «6-2 ③» — 1A, «1B 6-2 ③» — 1B. Порядок: сначала 1A, потом 1B; в каждой книге по единицам, урокам и пунктам. */
 const BOOK_RE = /^(?:(1[AB]) )?(\d+)-(\d+) ([①②③④])$/
-const bookKey = (g: (typeof G)[number]) => {
-  const m = BOOK_RE.exec(g.bk ?? '')
-  return m ? (m[1] === '1B' ? 10000 : 0) + Number(m[2]) * 100 + Number(m[3]) * 10 + '①②③④'.indexOf(m[4]!) + 1 : -1
-}
 /** Подпись на карточке: «1A · 6-2 ③» (без указания книга 1A). */
 const bookLabel = (bk: string) => { const m = BOOK_RE.exec(bk); return m ? `${m[1] ?? '1A'} · ${m[2]}-${m[3]} ${m[4]}` : bk }
 

@@ -7,6 +7,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AuthGate from '@/components/AuthGate.vue'
 import GrammarModal from '@/components/korean/GrammarModal.vue'
 import GameTools from '@/components/korean/GameTools.vue'
+import GameShelfWindow from '@/components/korean/GameShelfWindow.vue'
 import { useGrammarModal } from '@/composables/useGrammarModal'
 import { openSearch } from '@/composables/useSearchWindow'
 import { usePersisted } from '@/composables/usePersisted'
@@ -153,6 +154,8 @@ const findCatalogGames = (games: typeof ALL_GAMES) => {
 /** Пока открыта игра, список игр слева свёрнут: больше места под задание. Кнопка «☰» в шапке показывает его (помнится до закрытия вкладки). */
 const navOpen = usePersisted('gh_nav_open', false, v => typeof v === 'boolean')
 const folded = computed(() => !!game.value && !navOpen.value)
+/** Окно «Книжная полка» (правила грамматики) поверх игры. */
+const shelfOpen = ref(false)
 /** Раскрытые разделы каталога: по умолчанию все свёрнуты; пока идёт поиск, всё раскрыто, чтобы найденное было видно. Помнится при обновлении страницы. */
 const openSecs = usePersisted<string[]>('gh_open_secs', [], v => Array.isArray(v))
 const secOpen = (id: string) => !!q.value.trim() || openSecs.value.includes(id)
@@ -204,6 +207,7 @@ watch(inGame, syncCatalogClass)
 <template>
   <div class="study game sky gx gh" :class="{ folded }">
     <GrammarModal />
+    <GameShelfWindow v-model="shelfOpen" />
     <aside class="gx-nav">
       <RouterLink to="/korean/home" class="gx-brand" title="На платформу">
         <span class="gx-flower">✳︎</span>
@@ -246,7 +250,7 @@ watch(inGame, syncCatalogClass)
     <div class="gx-main">
       <template v-if="inGame">
         <h1 v-if="!tool" class="gx-sr">Игры на слова</h1>
-        <div class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="current" class="gh-name">{{ current.name }}</b><GameTools menu :folded="folded" @menu="navOpen = !navOpen" @search="openSearch()" /></div>
+        <div class="gh-back"><a :href="backTo" class="gh-backlink" @click.prevent="goBack">{{ backLabel }}</a><b v-if="current" class="gh-name">{{ current.name }}</b><GameTools menu shelf :folded="folded" @menu="navOpen = !navOpen" @search="openSearch()" @shelf="shelfOpen = true" /></div>
       </template>
       <header v-else class="game-top gx-top">
         <h1 class="gx-sr">Игры на слова</h1>
