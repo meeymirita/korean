@@ -4,13 +4,13 @@ export interface GrowthMark { d: string; title: string; summary: string; items: 
 export interface Growth { generated: string; commits: number; first: { d: string; subject: string } | null; lines: number; days: GrowthDay[]; marks: GrowthMark[] }
 
 export const GROWTH: Growth = {
- "generated": "2026-11-27",
- "commits": 1113,
+ "generated": "2026-11-28",
+ "commits": 1117,
  "first": {
   "d": "2026-10-21",
   "subject": "Add files via upload"
  },
- "lines": 112515,
+ "lines": 112500,
  "days": [
   {
    "d": "2026-10-21",
@@ -210,10 +210,17 @@ export const GROWTH: Growth = {
   },
   {
    "d": "2026-11-27",
-   "n": 17,
-   "cum": 1113,
-   "add": 2019,
-   "del": 744
+   "n": 20,
+   "cum": 1116,
+   "add": 2204,
+   "del": 918
+  },
+  {
+   "d": "2026-11-28",
+   "n": 1,
+   "cum": 1117,
+   "add": 40,
+   "del": 39
   }
  ],
  "marks": [
@@ -565,7 +572,14 @@ export const GROWTH: Growth = {
    "title": "Мастер+: предложения из трёх частей",
    "summary": "В «Собери предложение» появился уровень «Мастер+»: длинное предложение из трёх частей с двумя разными связками.",
    "items": 5,
-   "cum": 1113
+   "cum": 1116
+  },
+  {
+   "d": "2026-11-28",
+   "title": "Словарь после проверки нейросетями",
+   "summary": "По итогам проверки всех слов и предложений поправили словарь и переводы.",
+   "items": 3,
+   "cum": 1117
   }
  ]
 }
