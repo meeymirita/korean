@@ -3,8 +3,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import Icon from '@/components/Icon.vue'
 import SectionHead from '@/components/korean/SectionHead.vue'
 import MarkStar from '@/components/korean/MarkStar.vue'
-import PicCards from '@/components/korean/PicCards.vue'
-import { useQueryParam } from '@/composables/useQueryParam'
 import { CATN, D } from '@/data/korean/words'
 import { STUDY } from '@/data/korean/study'
 import { PAIR_SETS, SETS, pool } from '@/data/korean/trainer'
@@ -13,8 +11,6 @@ import { burst, cascade, pop } from '@/lib/fx'
 import { newRound, useProgressStore } from '@/stores/progress'
 
 const progress = useProgressStore()
-/** Вкладка в адресе (`?tab=pics`): обычные карточки или проба «Картинки к словам». */
-const tab = useQueryParam('tab', 'cards', ['cards', 'pics'] as const)
 const cat = ref('')
 const open = ref(false)
 
@@ -126,7 +122,6 @@ function answer(ok: boolean) {
 function onKey(e: KeyboardEvent) {
   const tag = (e.target as HTMLElement).tagName
   if (tag === 'SELECT' || tag === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return
-  if (tab.value !== 'cards') return
   if (finished.value) {
     if (e.key === 'Enter') start()
     return
@@ -155,12 +150,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 <template>
   <div class="wrap review-page">
     <SectionHead id="review" />
-    <div class="rv-tabs" role="tablist" aria-label="Режим повторения">
-      <button type="button" role="tab" class="chip" :class="{ on: tab === 'cards' }" :aria-selected="tab === 'cards'" @click="tab = 'cards'">Карточки</button>
-      <button type="button" role="tab" class="chip" :class="{ on: tab === 'pics' }" :aria-selected="tab === 'pics'" @click="tab = 'pics'">Картинки</button>
-    </div>
-    <PicCards v-if="tab === 'pics'" />
-    <template v-else>
     <div class="fcb">
       <select v-model="cat" aria-label="Группа слов" @change="start">
         <option value="">Все слова</option>
@@ -226,13 +215,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         <button type="button" class="rv-no" @click="answer(false)">Не помню <kbd>2</kbd></button>
       </template>
     </div>
-    </template>
   </div>
 </template>
 
 <style>
 /* ===== Повторение: Юна и стопка карточек (двигай здесь) ===== */
-.review-page .rv-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
 .review-page .rv-stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); align-items: end; gap: 0; }
 .review-page .rv-deck { position: relative; z-index: 2; margin: 28px 22px 26px 0; }
 /* две «карточки» под верхней: смещены вправо и вниз */
