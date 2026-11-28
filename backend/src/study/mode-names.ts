@@ -18,6 +18,7 @@ export const MODE_NAMES: Record<string, string> = {
   "finderr": "Найди ошибки в тексте",
   "form": "Выбери форму",
   "fut": "Планы (-(으)ㄹ 거예요)",
+  "garden": "Сад: полить и подрастить",
   "han": "Хангыль-блиц",
   "keyboard": "Печать на корейском",
   "marks": "Важные слова",
